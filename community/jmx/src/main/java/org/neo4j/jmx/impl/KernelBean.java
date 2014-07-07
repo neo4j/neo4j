@@ -28,10 +28,8 @@ import javax.management.ObjectName;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class KernelBean extends Neo4jMBean implements Kernel
 {
@@ -51,8 +49,8 @@ public class KernelBean extends Neo4jMBean implements Kernel
     {
         super( Kernel.class, kernel, support );
         dataSourceInfo = new DataSourceInfo();
-        kernel.graphDatabase().getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                .addDataSourceRegistrationListener( dataSourceInfo );
+        kernel.graphDatabase().getDependencyResolver().resolveDependency( DataSourceManager.class )
+                .addListener( dataSourceInfo );
         this.kernelVersion = kernel.version().toString();
         this.instanceId = kernel.instanceId();
         this.query = support.createMBeanQuery( instanceId );
@@ -65,82 +63,83 @@ public class KernelBean extends Neo4jMBean implements Kernel
         return instanceId;
     }
 
+    @Override
     public ObjectName getMBeanQuery()
     {
         return query;
     }
 
+    @Override
     public Date getKernelStartTime()
     {
         return new Date( kernelStartTime );
     }
 
+    @Override
     public Date getStoreCreationDate()
     {
         return new Date( storeCreationDate );
     }
 
+    @Override
     public String getStoreId()
     {
         return Long.toHexString( storeId );
     }
 
+    @Override
     public long getStoreLogVersion()
     {
         return storeLogVersion;
     }
 
+    @Override
     public String getKernelVersion()
     {
         return kernelVersion;
     }
 
+    @Override
     public boolean isReadOnly()
     {
         return isReadOnly;
     }
 
+    @Override
     public String getStoreDirectory()
     {
         return storeDir;
     }
 
     private class DataSourceInfo
-            implements DataSourceRegistrationListener
+            implements DataSourceManager.Listener
     {
         @Override
-        public void registeredDataSource( XaDataSource ds )
+        public void registered( NeoStoreXaDataSource ds )
         {
-            if ( ds instanceof NeoStoreXaDataSource )
-            {
-                NeoStoreXaDataSource datasource = (NeoStoreXaDataSource) ds;
-                storeCreationDate = datasource.getCreationTime();
-                storeLogVersion = datasource.getCurrentLogVersion();
-                isReadOnly = datasource.isReadOnly();
-                storeId = datasource.getRandomIdentifier();
+            storeCreationDate = ds.getCreationTime();
+            storeLogVersion = ds.getCurrentLogVersion();
+            isReadOnly = ds.isReadOnly();
+            storeId = ds.getRandomIdentifier();
 
-                try
-                {
-                    storeDir = new File( datasource.getStoreDir() ).getCanonicalFile().getAbsolutePath();
-                }
-                catch ( IOException e )
-                {
-                    storeDir = new File( datasource.getStoreDir() ).getAbsolutePath();
-                }
+            try
+            {
+                storeDir = new File( ds.getStoreDir() ).getCanonicalFile().getAbsolutePath();
+            }
+            catch ( IOException e )
+            {
+                storeDir = new File( ds.getStoreDir() ).getAbsolutePath();
             }
         }
 
         @Override
-        public void unregisteredDataSource( XaDataSource ds )
+        public void unregistered( NeoStoreXaDataSource ds )
         {
-            if ( ds instanceof NeoStoreXaDataSource )
-            {
-                storeCreationDate = -1;
-                storeLogVersion = -1;
-                isReadOnly = false;
-                storeId = -1;
-                storeDir = null;
-            }
+            storeCreationDate = -1;
+            storeLogVersion = -1;
+            isReadOnly = false;
+            storeId = -1;
+            storeDir = null;
         }
     }
 }

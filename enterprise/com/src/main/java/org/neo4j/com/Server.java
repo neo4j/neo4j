@@ -22,8 +22,6 @@ package org.neo4j.com;
 import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.com.Protocol.writeString;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -56,17 +54,18 @@ import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Triplet;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
@@ -249,7 +248,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     public void shutdown() throws Throwable
     {
     }
-    
+
     public InetSocketAddress getSocketAddress()
     {
         return socketAddress;
@@ -414,16 +413,8 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         catch ( Throwable failure ) // Unknown error trying to finish off the tx
         {
             submitSilent( unfinishedTransactionExecutor, newTransactionFinisher( slave ) );
-            if ( shouldLogFailureToFinishOffChannel( failure ) )
-            {
-                msgLog.logMessage( "Could not finish off dead channel", failure );
-            }
+            msgLog.logMessage( "Could not finish off dead channel", failure );
         }
-    }
-
-    protected boolean shouldLogFailureToFinishOffChannel( Throwable failure )
-    {
-        return true;
     }
 
     private void submitSilent( ExecutorService service, Runnable job )
@@ -564,7 +555,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             @SuppressWarnings("unchecked")
             public void run()
             {
-                Map<String, String> requestContext = new HashMap<String, String>();
+                Map<String, String> requestContext = new HashMap<>();
                 requestContext.put( "type", type.toString() );
                 requestContext.put( "remoteClient", channel.getRemoteAddress().toString() );
                 requestContext.put( "slaveContext", context.toString() );
@@ -577,7 +568,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                     response = type.getTargetCaller().call( requestTarget, context, bufferToReadFrom, targetBuffer );
                     type.getObjectSerializer().write( response.response(), targetBuffer );
                     writeStoreId( response.getStoreId(), targetBuffer );
-                    writeTransactionStreams( response.transactions(), targetBuffer, byteCounterMonitor );
+                    writeTransactionStreams( response, targetBuffer, byteCounterMonitor );
                     targetBuffer.done();
                     responseWritten( type, channel, context );
                 }
@@ -627,33 +618,26 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         targetBuffer.writeBytes( storeId.serialize() );
     }
 
-    private static void writeTransactionStreams( TransactionStream txStream, ChannelBuffer buffer, ByteCounterMonitor bufferMonitor )
+    private static void writeTransactionStreams( Response<?> response,
+            ChannelBuffer buffer, ByteCounterMonitor bufferMonitor ) throws IOException
     {
-        if ( !txStream.hasNext() )
+        final NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
+        final LogEntryWriterv1 writer = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
+        response.accept( new Visitor<CommittedTransactionRepresentation, IOException>()
         {
-            buffer.writeByte( 0 );
-            return;
-        }
-
-        String[] datasources = txStream.dataSourceNames();
-        assert datasources.length <= 255 : "too many data sources";
-        buffer.writeByte( datasources.length );
-        Map<String, Integer> datasourceId = new HashMap<String, Integer>();
-        for ( int i = 0; i < datasources.length; i++ )
-        {
-            String datasource = datasources[i];
-            writeString( buffer, datasource );
-            datasourceId.put( datasource, i + 1/*0 means "no more transactions"*/ );
-        }
-        for ( Triplet<String, Long, TxExtractor> tx : IteratorUtil.asIterable( txStream ) )
-        {
-            buffer.writeByte( datasourceId.get( tx.first() ) );
-            buffer.writeLong( tx.second() );
-            BlockLogBuffer blockBuffer = new BlockLogBuffer( buffer, bufferMonitor );
-            tx.third().extract( blockBuffer );
-            blockBuffer.done();
-        }
-        buffer.writeByte( 0/*no more transactions*/ );
+            @Override
+            public boolean visit( CommittedTransactionRepresentation tx ) throws IOException
+            {
+                LogEntry.Start startEntry = tx.getStartEntry();
+                writer.writeStartEntry( startEntry.getMasterId(), startEntry.getLocalId(),
+                        startEntry.getTimeWritten(), startEntry.getLastCommittedTxWhenTransactionStarted(),
+                        startEntry.getAdditionalHeader() );
+                writer.serialize( tx.getTransactionRepresentation() );
+                LogEntry.Commit commitEntry = tx.getCommitEntry();
+                writer.writeCommitEntry( commitEntry.getTxId(), commitEntry.getTimeWritten() );
+                return true;
+            }
+        } );
     }
 
     protected RequestContext readContext( ChannelBuffer buffer )
@@ -661,31 +645,19 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         long sessionId = buffer.readLong();
         int machineId = buffer.readInt();
         int eventIdentifier = buffer.readInt();
-        int txsSize = buffer.readByte();
-        Tx[] lastAppliedTransactions = new Tx[txsSize];
-        Tx neoTx = null;
-        for ( int i = 0; i < txsSize; i++ )
-        {
-            String ds = readString( buffer );
-            Tx tx = RequestContext.lastAppliedTx( ds, buffer.readLong() );
-            lastAppliedTransactions[i] = tx;
-
-            // Only perform checksum checks on the neo data source.
-            if ( ds.equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
-            {
-                neoTx = tx;
-            }
-        }
+        long neoTx = buffer.readLong();
         int masterId = buffer.readInt();
         long checksum = buffer.readLong();
 
+        RequestContext readRequestContext = new RequestContext( sessionId, machineId, eventIdentifier, neoTx, masterId,
+                checksum );
         // Only perform checksum checks on the neo data source. If there's none in the request
         // then don't perform any such check.
-        if ( neoTx != null )
+        if ( neoTx > 0 )
         {
-            txVerifier.assertMatch( neoTx.getTxId(), masterId, checksum );
+            txVerifier.assertMatch( neoTx, masterId, checksum );
         }
-        return new RequestContext( sessionId, machineId, eventIdentifier, lastAppliedTransactions, masterId, checksum );
+        return readRequestContext;
     }
 
     protected abstract RequestType<T> getRequestContext( byte id );
@@ -705,8 +677,8 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 }
                 else
                 {
-                    connectedSlaveChannels.put( channel, Pair.of( slave, new AtomicLong( System.currentTimeMillis() )
-                    ) );
+                    connectedSlaveChannels.put( channel,
+                            Pair.of( slave, new AtomicLong( System.currentTimeMillis() ) ) );
                 }
             }
         }

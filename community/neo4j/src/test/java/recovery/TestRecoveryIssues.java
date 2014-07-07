@@ -19,33 +19,22 @@
  */
 package recovery;
 
-import java.io.File;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
-import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.helpers.UTF8;
-import org.neo4j.index.impl.lucene.LuceneDataSource;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.impl.transaction.TxLog;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
-import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 // TODO These tests need review. Don't work after refactoring
 
@@ -155,25 +144,26 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
     }
 
     private final BreakPoint[] breakpoints = new BreakPoint[] {
-            new BreakPoint( XaResourceHelpImpl.class, "commit", Xid.class, boolean.class )
-            {
-                @Override
-                protected void callback( DebugInterface debug ) throws KillSubProcess
-                {
-                    if ( twoPhaseCommitIn( debug.thread() ) )
-                    {
-                        debug.thread().suspend( null );
-                        this.disable();
-                        afterWrite.countDown();
-                        throw KillSubProcess.withExitCode( -1 );
-                    }
-                }
-
-                private boolean twoPhaseCommitIn( DebuggedThread thread )
-                {
-                    return !Boolean.parseBoolean( thread.getLocal( 1, "onePhase" ) );
-                }
-            }, new BreakPoint( Crash.class, "run", InternalAbstractGraphDatabase.class )
+//            new BreakPoint( XaResourceHelpImpl.class, "commit", Xid.class, boolean.class )
+//            {
+//                @Override
+//                protected void callback( DebugInterface debug ) throws KillSubProcess
+//                {
+//                    if ( twoPhaseCommitIn( debug.thread() ) )
+//                    {
+//                        debug.thread().suspend( null );
+//                        this.disable();
+//                        afterWrite.countDown();
+//                        throw KillSubProcess.withExitCode( -1 );
+//                    }
+//                }
+//
+//                private boolean twoPhaseCommitIn( DebuggedThread thread )
+//                {
+//                    return !Boolean.parseBoolean( thread.getLocal( 1, "onePhase" ) );
+//                }
+//            },
+            new BreakPoint( Crash.class, "run", InternalAbstractGraphDatabase.class )
             {
                 @Override
                 protected void callback( DebugInterface debug ) throws KillSubProcess
@@ -225,17 +215,17 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
      */
     public static void main( String... args ) throws Exception
     {
-        TxLog log = new TxLog( new File(args[0]), new DefaultFileSystemAbstraction(), new Monitors() );
-        byte globalId[] = new byte[NEOKERNL.length + 16];
-        System.arraycopy( NEOKERNL, 0, globalId, 0, NEOKERNL.length );
-        ByteBuffer byteBuf = ByteBuffer.wrap( globalId );
-        byteBuf.position( NEOKERNL.length );
-        byteBuf.putLong( Long.parseLong( args[1] ) ).putLong( Long.parseLong( args[2] ) );
-        log.txStart( globalId );
-        log.addBranch( globalId, UTF8.encode( "414141" ) );
-        log.addBranch( globalId, LuceneDataSource.DEFAULT_BRANCH_ID );
-        log.markAsCommitting( globalId, ForceMode.unforced );
-        log.force();
-        log.close();
+//        TxLog log = new TxLog( new File(args[0]), new DefaultFileSystemAbstraction(), new Monitors() );
+//        byte globalId[] = new byte[NEOKERNL.length + 16];
+//        System.arraycopy( NEOKERNL, 0, globalId, 0, NEOKERNL.length );
+//        ByteBuffer byteBuf = ByteBuffer.wrap( globalId );
+//        byteBuf.position( NEOKERNL.length );
+//        byteBuf.putLong( Long.parseLong( args[1] ) ).putLong( Long.parseLong( args[2] ) );
+//        log.txStart( globalId );
+//        log.addBranch( globalId, UTF8.encode( "414141" ) );
+//        log.addBranch( globalId, LuceneDataSource.DEFAULT_BRANCH_ID );
+//        log.markAsCommitting( globalId, ForceMode.unforced );
+//        log.force();
+//        log.close();
     }
 }

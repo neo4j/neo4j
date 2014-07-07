@@ -104,11 +104,11 @@ trait LogicalPlanningTestSupport
   }
 
   def newMockedQueryPlanWithProjections(ids: String*)(implicit context: LogicalPlanningContext) = {
-    val projections = QueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
+    val projections = RegularQueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
     QueryPlan(
       newMockedLogicalPlan(ids: _*),
       PlannerQuery(
-        projection = projections,
+        horizon = QueryHorizon(projection = projections),
         graph = QueryGraph.empty.addPatternNodes(ids.map(IdName).toSeq: _*)
       )
     )
@@ -143,7 +143,7 @@ trait LogicalPlanningTestSupport
   def newPlanner(metricsFactory: MetricsFactory): Planner =
     new Planner(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor]())
 
-  def produceQueryPlan(queryText: String)(implicit planner: Planner, planContext: PlanContext): QueryPlan = {
+  def produceLogicalPlan(queryText: String)(implicit planner: Planner, planContext: PlanContext): LogicalPlan = {
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, _) = astRewriter.rewrite(queryText, parsedStatement)
@@ -157,9 +157,6 @@ trait LogicalPlanningTestSupport
         throw new IllegalArgumentException("produceLogicalPlan only supports ast.Query input")
     }
   }
-
-  def produceLogicalPlan(queryText: String)(implicit planner: Planner, planContext: PlanContext): LogicalPlan =
-    produceQueryPlan(queryText)(planner, planContext).plan
 
   implicit def idName(name: String): IdName = IdName(name)
 }

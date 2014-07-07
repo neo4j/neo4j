@@ -315,7 +315,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
                 do
                 {
                     cursor.setOffset( offset );
-                    recordIsInUse = recordIsInUse( (long) cursor.getByte() );
+                    recordIsInUse = recordIsInUse( cursor.getByte() );
                 } while ( cursor.retry() );
             }
             return recordIsInUse;

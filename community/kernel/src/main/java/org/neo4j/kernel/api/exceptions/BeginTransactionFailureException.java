@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-public class BeginTransactionFailureException extends TransactionalException
+public class BeginTransactionFailureException extends TransactionFailureException
 {
-    public BeginTransactionFailureException( Exception cause )
+    public BeginTransactionFailureException( String message, Exception cause )
     {
-        super( cause );
+        super( Status.Transaction.CouldNotBegin, cause, message );
     }
 }

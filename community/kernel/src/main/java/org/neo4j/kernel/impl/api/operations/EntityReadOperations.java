@@ -31,10 +31,14 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 
 public interface EntityReadOperations
 {
     // Currently, of course, most relevant operations here are still in the old core API implementation.
+    boolean nodeExists(KernelStatement state, long nodeId);
+
+    boolean relationshipExists( KernelStatement statement, long relId );
 
     /**
      * @param labelId the label id of the label that returned nodes are guaranteed to have
@@ -121,16 +125,10 @@ public interface EntityReadOperations
 
     PrimitiveIntIterator nodeGetRelationshipTypes( KernelStatement statement, long nodeId ) throws EntityNotFoundException;
 
-    Property nodeGetCommittedProperty( KernelStatement statement, long nodeId, int propertyKeyId ) throws
-            EntityNotFoundException;
+    PrimitiveLongIterator nodesGetAll( KernelStatement state );
 
-    Property relationshipGetCommittedProperty( KernelStatement statement, long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
+    PrimitiveLongIterator relationshipsGetAll( KernelStatement state );
 
-    Iterator<DefinedProperty> relationshipGetAllCommittedProperties( KernelStatement statement, long relId ) throws
-            EntityNotFoundException;
-
-    Iterator<DefinedProperty> nodeGetAllCommittedProperties( KernelStatement statement, long nodeId ) throws
-            EntityNotFoundException;
-
-    PrimitiveIntIterator nodeGetCommittedLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException;
+    <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
+            RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION;
 }

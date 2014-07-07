@@ -19,17 +19,20 @@
  */
 package org.neo4j.com;
 
+import java.io.IOException;
+
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 
 public class Response<T> implements AutoCloseable
 {
     private final T response;
     private final StoreId storeId;
-    private final TransactionStream transactions;
     private final ResourceReleaser releaser;
+    private final TransactionStream transactions;
 
-    public Response( T response, StoreId storeId,
-            TransactionStream transactions, ResourceReleaser releaser )
+    public Response( T response, StoreId storeId, TransactionStream transactions, ResourceReleaser releaser )
     {
         this.storeId = storeId;
         this.response = response;
@@ -47,24 +50,19 @@ public class Response<T> implements AutoCloseable
         return storeId;
     }
 
-    public TransactionStream transactions()
-    {
-        return transactions;
-    }
-
     @Override
     public void close()
     {
-        try
-        {
-            transactions.close();
-        }
-        finally
-        {
-            releaser.release();
-        }
+        releaser.release();
     }
 
-    public static final Response<Void> EMPTY = new Response<Void>( null, new StoreId( -1, -1 ),
-            TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+    public static <T> Response<T> empty()
+    {
+        return new Response<>( null, new StoreId( -1, -1 ), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+    }
+
+    public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
+    {
+        transactions.accept( visitor );
+    }
 }

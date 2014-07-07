@@ -709,19 +709,26 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void testChangeProperty2()
     {
+        // Create relationship with "test"="test1"
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.setProperty( "test", "test1" );
-        newTransaction();
+        newTransaction(); // commit
+
+        // Remove "test" and set "test"="test3" instead
         rel.removeProperty( "test" );
         rel.setProperty( "test", "test3" );
         assertEquals( "test3", rel.getProperty( "test" ) );
-        newTransaction();
+        newTransaction(); // commit
+
+        // Remove "test" and set "test"="test4" instead
         assertEquals( "test3", rel.getProperty( "test" ) );
         rel.removeProperty( "test" );
         rel.setProperty( "test", "test4" );
-        newTransaction();
+        newTransaction(); // commit
+
+        // Should still be "test4"
         assertEquals( "test4", rel.getProperty( "test" ) );
     }
 
@@ -806,7 +813,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             expectedCount++;
         }
         newTransaction();
-        getNodeManager().clearCache();
+        clearCache();
         for ( int i = 0; i < 50; i++ )
         {
             node1.createRelationshipTo( node2, TEST );
@@ -868,7 +875,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         int count = 0;
         for ( Relationship rel : at( getGraphDb() ).getAllRelationships() )
         {
-            assertTrue( allRelationships.contains( rel ) );
+            assertTrue( "Unexpected rel " + rel + ", expected one of " + allRelationships, allRelationships.contains( rel ) );
             count++;
         }
         assertEquals( allRelationships.size(), count );
@@ -925,7 +932,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             tx.success();
         }
         // WHEN
-        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        clearCache();
         int one, two;
         try ( Transaction tx = db.beginTx() )
         {

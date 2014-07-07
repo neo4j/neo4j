@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Map;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
@@ -33,7 +32,6 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
@@ -48,6 +46,8 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+
 public class ConsistencyCheckService
 {
     private final Date timestamp = new Date();
@@ -57,19 +57,16 @@ public class ConsistencyCheckService
                                            ProgressMonitorFactory progressFactory,
                                            StringLogger logger ) throws ConsistencyCheckIncompleteException
     {
-        Map<String, String> params = tuningConfiguration.getParams();
-        params.put( GraphDatabaseSettings.store_dir.name(), storeDir );
-        tuningConfiguration.applyChanges( params );
-
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Monitors monitors = new Monitors();
+        tuningConfiguration = configForStoreDir( tuningConfiguration, new File( storeDir ) );
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         LifecycledPageCache pageCache = new LifecycledPageCache( fileSystem, jobScheduler, tuningConfiguration );
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
                 pageCache, fileSystem, logger,
-                new DefaultTxHook(), monitors
+                monitors
         );
         jobScheduler.init();
         pageCache.start();
@@ -78,7 +75,7 @@ public class ConsistencyCheckService
         File reportFile = chooseReportPath( tuningConfiguration );
         StringLogger report = StringLogger.lazyLogger( reportFile );
 
-        NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
+        NeoStore neoStore = factory.newNeoStore( false );
         try
         {
             neoStore.makeStoreOk();
@@ -110,7 +107,6 @@ public class ConsistencyCheckService
         }
         finally
         {
-
             report.close();
             neoStore.close();
             pageCache.stop();
@@ -158,14 +154,14 @@ public class ConsistencyCheckService
     public enum Result
     {
         FAILURE( false ), SUCCESS( true );
-        
-        private boolean successful;
+
+        private final boolean successful;
 
         private Result( boolean successful )
         {
             this.successful = successful;
         }
-        
+
         public boolean isSuccessful()
         {
             return this.successful;

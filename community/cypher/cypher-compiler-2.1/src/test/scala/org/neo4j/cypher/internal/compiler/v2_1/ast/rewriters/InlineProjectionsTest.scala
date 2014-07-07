@@ -198,6 +198,23 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     result should equal(ast("MATCH (a:Start) WITH a.prop AS property, count(*) AS `count` MATCH (b) WHERE id(b) = property RETURN b AS `b`"))
   }
 
+  test("removes unneeded projection") {
+    val query = """MATCH (owner)
+                  |WITH owner, COUNT(*) AS xyz
+                  |WITH owner, xyz > 0 as collection
+                  |WHERE (owner)--()
+                  |RETURN owner""".stripMargin
+    val result = projectionInlinedAst(query)
+
+    result should equal(ast(
+      """MATCH (owner)
+        |WITH owner, COUNT(*) AS xyz
+        |WITH *
+        |WHERE (owner)--()
+        |RETURN owner
+      """.stripMargin))
+  }
+
   private def parseReturnedExpr(queryText: String) =
     projectionInlinedAst(queryText) match {
       case Query(_, SingleQuery(Seq(_, Return(_, ListedReturnItems(Seq(AliasedReturnItem(expr, Identifier("p")))), _, _, _)))) => expr

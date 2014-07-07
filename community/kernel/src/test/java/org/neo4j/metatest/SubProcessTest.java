@@ -19,6 +19,10 @@
  */
 package org.neo4j.metatest;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -28,14 +32,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.SubProcess;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class SubProcessTest
 {
@@ -181,7 +180,7 @@ public class SubProcessTest
         {
             HandoverImpl handover = new HandoverImpl( parameter );
             new ChildProcess().start( handover );
-            if ( !handover.isCalled( /*timeout:*/5, SECONDS ) ) System.out.println( "Child never started" );
+            handover.isCalled( /*timeout:*/5, SECONDS );
             shutdown();
         }
     }
@@ -194,21 +193,19 @@ public class SubProcessTest
         @Override
         protected synchronized void startup( Handover parameter ) throws Throwable
         {
-            System.out.println( "startup" );
             this.callback = parameter.handOver();
         }
 
         @Override
         protected synchronized void shutdown( boolean normal )
         {
-            System.out.println( normal ? "normal shutdown" : "abnormal shutdown" );
             try
             {
                 callback.callBack();
             }
             catch ( RemoteException e )
             {
-                e.printStackTrace();
+                throw new RuntimeException( e );
             }
         }
     }

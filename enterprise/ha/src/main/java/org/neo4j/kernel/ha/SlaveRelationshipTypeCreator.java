@@ -19,34 +19,40 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.io.IOException;
+
 import org.neo4j.com.Response;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 public class SlaveRelationshipTypeCreator implements TokenCreator
 {
     private final Master master;
     private final RequestContextFactory requestContextFactory;
-    private final HaXaDataSourceManager xaDsm;
+    private final TransactionCommittingResponseUnpacker unpacker;
 
+    // TODO 2.2-future write some tests for this, especially the application part
     public SlaveRelationshipTypeCreator( Master master, RequestContextFactory requestContextFactory,
-                                         HaXaDataSourceManager xaDsm )
+                                         TransactionCommittingResponseUnpacker unpacker )
     {
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.xaDsm = xaDsm;
+        this.unpacker = unpacker;
     }
 
     @Override
-    public int getOrCreate( AbstractTransactionManager txManager, EntityIdGenerator idGenerator,
-            PersistenceManager persistence, String name )
+    public int getOrCreate( String name )
     {
         Response<Integer> response = master.createRelationshipType( requestContextFactory.newRequestContext(), name );
-        xaDsm.applyTransactions( response );
-        return response.response().intValue();
+        try
+        {
+            return unpacker.unpackResponse( response );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

@@ -20,56 +20,62 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class TransactionMonitorTest
 {
     @Test
     public void shouldCountCommittedTransactions() throws Exception
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
-
-        Monitors monitors = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Monitors.class );
-        EideticTransactionMonitor monitor = new EideticTransactionMonitor();
-        monitors.addMonitorListener( monitor, XaResourceManager.class.getName(), NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
-
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.success();
-        tx.finish();
-
-        assertEquals( 1, monitor.getCommitCount() );
-        assertEquals( 0, monitor.getInjectOnePhaseCommitCount() );
-        assertEquals( 0, monitor.getInjectTwoPhaseCommitCount() );
-
-        db.shutdown();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        try
+        {
+            TransactionMonitor monitor = db.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+            int startedBefore = monitor.getNumberOfStartedTransactions();
+            long committedBefore = monitor.getNumberOfCommittedTransactions();
+            long rolledBackBefore = monitor.getNumberOfRolledbackTransactions();
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.createNode();
+                tx.success();
+            }
+            assertEquals( startedBefore+1, monitor.getNumberOfStartedTransactions() );
+            assertEquals( committedBefore+1, monitor.getNumberOfCommittedTransactions() );
+            assertEquals( rolledBackBefore, monitor.getNumberOfRolledbackTransactions() );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     @Test
     public void shouldNotCountRolledBackTransactions() throws Exception
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
-
-        Monitors monitors = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Monitors.class );
-        EideticTransactionMonitor monitor = new EideticTransactionMonitor();
-        monitors.addMonitorListener( monitor, XaResourceManager.class.getName(), NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
-
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.failure();
-        tx.finish();
-
-        assertEquals( 0, monitor.getCommitCount() );
-        assertEquals( 0, monitor.getInjectOnePhaseCommitCount() );
-        assertEquals( 0, monitor.getInjectTwoPhaseCommitCount() );
-
-        db.shutdown();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        try
+        {
+            TransactionMonitor monitor = db.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+            int startedBefore = monitor.getNumberOfStartedTransactions();
+            long committedBefore = monitor.getNumberOfCommittedTransactions();
+            long rolledBackBefore = monitor.getNumberOfRolledbackTransactions();
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.createNode();
+                tx.failure();
+            }
+            assertEquals( startedBefore+1, monitor.getNumberOfStartedTransactions() );
+            assertEquals( committedBefore, monitor.getNumberOfCommittedTransactions() );
+            assertEquals( rolledBackBefore+1, monitor.getNumberOfRolledbackTransactions() );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 }

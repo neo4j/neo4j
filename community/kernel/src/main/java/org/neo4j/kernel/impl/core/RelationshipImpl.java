@@ -24,8 +24,7 @@ import java.util.Iterator;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
-import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
+import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
 
 public class RelationshipImpl extends ArrayBasedPrimitive
 {
@@ -42,9 +41,8 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     private final int startNodeId;
     private final int endNodeId;
 
-    RelationshipImpl( long id, long startNodeId, long endNodeId, int typeId, boolean newRel )
+    public RelationshipImpl( long id, long startNodeId, long endNodeId, int typeId )
     {
-        super(  newRel );
         this.startNodeId = (int) startNodeId;
         this.endNodeId = (int) endNodeId;
         this.idAndMore = (((long)typeId) << 48) | ((startNodeId&0xF00000000L)<<12) | ((endNodeId&0xF00000000L)<<8) | id;
@@ -72,9 +70,11 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     }
 
     @Override
-    protected Iterator<DefinedProperty> loadProperties( NodeManager nodeManager )
+    protected Iterator<DefinedProperty> loadProperties( PropertyLoader loader )
     {
-        return nodeManager.loadProperties( this, false );
+        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
+        loader.relLoadProperties( getId(), receiver );
+        return receiver;
     }
 
     @Override
@@ -103,12 +103,6 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     {
         return "RelationshipImpl #" + this.getId() + " of type " + getTypeId()
             + " between Node[" + getStartNodeId() + "] and Node[" + getEndNodeId() + "]";
-    }
-
-    @Override
-    public CowEntityElement getEntityElement( PrimitiveElement element, boolean create )
-    {
-        return element.relationshipElement( getId(), create );
     }
 
     @Override

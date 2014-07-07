@@ -27,13 +27,13 @@ import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 
 class MultirelationalSocialNetworkTest extends DocumentingTestBase {
-  override def graphDescription = List("Joe FOLLOWS Sara", 
-            "Sara FOLLOWS Joe", 
+  override def graphDescription = List("Joe FOLLOWS Sara",
+            "Sara FOLLOWS Joe",
             "Joe LOVES Maria",
             "Maria LOVES Joe",
             "Joe FOLLOWS Maria",
             "Maria FOLLOWS Joe",
-            "Sara FOLLOWS Ben", 
+            "Sara FOLLOWS Ben",
             "Joe LIKES bikes",
             "Joe LIKES nature",
             "Sara LIKES bikes",
@@ -51,12 +51,12 @@ class MultirelationalSocialNetworkTest extends DocumentingTestBase {
   @Test def followBack() {
     testQuery(
       title = "Who FOLLOWS or LOVES me back",
-      text = """This example shows a multi-relational network between persons and things they like. 
+      text = """This example shows a multi-relational network between persons and things they like.
         A multi-relational graph is a graph with more than one kind of relationship between nodes.""",
       queryText = "MATCH (me {name: 'Joe'})-[r1:FOLLOWS|:LOVES]->(other)-[r2]->(me) WHERE type(r1)=type(r2) RETURN other.name, type(r1)",
       optionalResultExplanation = "The query returns people that +FOLLOWS+ or +LOVES+ +Joe+ back.",
-      (p) => assertEquals(List(Map("other.name" -> "Sara", "type(r1)" -> "FOLLOWS"),
+      (p) => assertEquals(Set(Map("other.name" -> "Sara", "type(r1)" -> "FOLLOWS"),
           Map("other.name" -> "Maria", "type(r1)" -> "FOLLOWS"),
-          Map("other.name" -> "Maria", "type(r1)" -> "LOVES")),p.toList))
-  } 
+          Map("other.name" -> "Maria", "type(r1)" -> "LOVES")),p.toSet))
+  }
 }

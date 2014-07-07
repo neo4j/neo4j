@@ -19,45 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import commands.True
-import org.neo4j.cypher.GraphDatabaseJUnitSuite
+import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.True
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.{ExpanderStep, SingleStep, VarLengthStep}
 import org.neo4j.graphdb.Direction
-import org.junit.{After, Test}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.{VarLengthStep, SingleStep, ExpanderStep}
 
-class VariableLengthExpanderStepExpandTest extends GraphDatabaseJUnitSuite {
-
-  private def step(id: Int,
-                   typ: Seq[String],
-                   direction: Direction,
-                   next: Option[ExpanderStep]) = SingleStep(id, typ, direction, next, True(), True())
-
-  private def varStep(id: Int,
-                      typ: Seq[String],
-                      direction: Direction,
-                      min: Int,
-                      max: Option[Int],
-                      next: Option[ExpanderStep]) = VarLengthStep(id, typ, direction, min, max, next, True(), True())
-
-  private def context = ExecutionContext()
-  var tx : org.neo4j.graphdb.Transaction = null
-
-  private def queryState = {
-    if(tx == null) tx = graph.beginTx()
-    QueryStateHelper.queryStateFrom(graph, tx)
-  }
-
-  @After
-  def cleanup()
-  {
-    if(tx != null) tx.close()
-  }
-
-  val A = "A"
-  val B = "B"
-  val C = "C"
-
-  @Test def not_reached_min_zero_with_matching_rels() {
+class VariableLengthExpanderStepExpandTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
+  test("not reached min zero with matching rels") {
     /*
     Given the pattern:
      ()-[:REL*1..2]->()
@@ -76,22 +44,25 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseJUnitSuite {
     /*
    When given the start node a
    */
-    val (relationships, next) = step.expand(a, context, queryState)
+    val (relationships, next) = withQueryState { queryState =>
+      val (rels, n) = step.expand(a, ExecutionContext.empty, queryState)
+      (rels.toSeq, n)
+    }
 
     /*should return r1 and next step: ()-[:A*0..1]->()*/
     val expectedNext = Some(varStep(0, Seq("REL"), Direction.OUTGOING, 0, Some(1), None))
 
-    assert(relationships.toSeq === Seq(r1))
-    assert(next === expectedNext)
+    relationships should equal(Seq(r1))
+    next should equal(expectedNext)
   }
 
-  @Test def reached_min_zero_with_matching_rels() {
+  test("reached min zero with matching rels") {
     /*
     Given the pattern:
      ()-[:A*0..]->()-[:B]->()
      */
-    val step2 = step(1, Seq(B), Direction.OUTGOING, None)
-    val step1 = varStep(0, Seq(A), Direction.OUTGOING, 0, None, Some(step2))
+    val step2 = step(1, Seq("B"), Direction.OUTGOING, None)
+    val step1 = varStep(0, Seq("A"), Direction.OUTGOING, 0, None, Some(step2))
 
     /*
     And the graph:
@@ -113,21 +84,23 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseJUnitSuite {
     /*
    When given the start node a
    */
-    val (relationships, next) = step1.expand(a, context, queryState)
+    val (relationships, next) = withQueryState { queryState =>
+      val (rels, n) = step1.expand(a, ExecutionContext.empty, queryState)
+      (rels.toSeq, n)    }
 
     /*should return both relationships and the same step again */
 
-    assert(relationships.toSeq === Seq(r1, r2))
-    assert(next === Some(step1))
+    relationships should equal(Seq(r1, r2))
+    next should equal(Some(step1))
   }
 
-  @Test def reached_min_zero_and_not_finding_matching_rels() {
+  test("reached min zero and not finding matching rels") {
     /*
     Given the pattern:
      ()-[:A*0..]->()-[:B]->()
      */
-    val step2 = step(1, Seq(B), Direction.OUTGOING, None)
-    val step1 = varStep(0, Seq(A), Direction.OUTGOING, 0, None, Some(step2))
+    val step2 = step(1, Seq("B"), Direction.OUTGOING, None)
+    val step1 = varStep(0, Seq("A"), Direction.OUTGOING, 0, None, Some(step2))
 
     /*
     And the graph:
@@ -140,20 +113,23 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseJUnitSuite {
     val r1 = relate(a, b, "B")
 
     /*When given the start node a*/
-    val (relationships, next) = step1.expand(a, context, queryState)
+    val (relationships, next) = withQueryState { queryState =>
+      val (rels, n) = step1.expand(a, ExecutionContext.empty, queryState)
+      (rels.toSeq, n)
+    }
 
     /*should return the single relationship and None as the next step*/
-    assert(relationships.toSeq === Seq(r1))
-    assert(next === None)
+    relationships should equal(Seq(r1))
+    next should equal(None)
   }
 
-  @Test def reached_max_0_should_return_next_step() {
+  test("reached max 0 should return next step") {
     /*
     Given the pattern:
      ()-[:A*1..1]->()-[:B]->()
      */
-    val step2 = step(1, Seq(B), Direction.OUTGOING, None)
-    val step1 = varStep(0, Seq(A), Direction.OUTGOING, 1, Some(1), Some(step2))
+    val step2 = step(1, Seq("B"), Direction.OUTGOING, None)
+    val step1 = varStep(0, Seq("A"), Direction.OUTGOING, 1, Some(1), Some(step2))
 
     /*
     And the graph:
@@ -165,20 +141,22 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseJUnitSuite {
     val r1 = relate(a, b, "A")
 
     /*When given the start node a*/
-    val (relationships, next) = step1.expand(a, context, queryState)
+    val (relationships, next) = withQueryState { queryState =>
+      val (rels, n) = step1.expand(a, ExecutionContext.empty, queryState)
+      (rels.toSeq, n)    }
 
     /*should return the single relationship and step2 as the next step*/
-    assert(relationships.toSeq === Seq(r1))
-    assert(next === Some(step2))
+    relationships should equal(Seq(r1))
+    next should equal(Some(step2))
   }
 
-  @Test def not_reached_min_0_and_no_matching_rels() {
+  test("not reached min 0 and no matching rels") {
     /*
     Given the pattern:
      ()-[:A*1..2]->()-[:B]->()
      */
-    val step2 = step(1, Seq(B), Direction.OUTGOING, None)
-    val step1 = varStep(0, Seq(A), Direction.OUTGOING, 1, Some(2), Some(step2))
+    val step2 = step(1, Seq("B"), Direction.OUTGOING, None)
+    val step1 = varStep(0, Seq("A"), Direction.OUTGOING, 1, Some(2), Some(step2))
 
     /*
     And the graph:
@@ -190,22 +168,24 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseJUnitSuite {
     relate(a, b, "B")
 
     /*When given the start node a*/
-    val (relationships, next) = step1.expand(a, context, queryState)
+    val (relationships, next) = withQueryState { queryState =>
+      val (rels, n) = step1.expand(a, ExecutionContext.empty, queryState)
+      (rels.toSeq, n)    }
 
     /*should return no relationships, and step 0, but with one less min step as the next step*/
-    val expectedNext = varStep(0, Seq(A), Direction.OUTGOING, 0, Some(1), Some(step2))
+    val expectedNext = varStep(0, Seq("A"), Direction.OUTGOING, 0, Some(1), Some(step2))
 
-    assert(relationships.toSeq === Seq())
-    assert(next === Some(expectedNext))
+    relationships should equal(Seq())
+    next should equal(Some(expectedNext))
   }
 
-  @Test def zero_step_should_return_the_start_node() {
+  test("zero step should return the start node") {
     /*
     Given the pattern:
      ()-[:A*0..1]->()
      */
-    val step2 = step(1, Seq(B), Direction.OUTGOING, None)
-    val step1 = varStep(0, Seq(A), Direction.OUTGOING, 1, Some(2), Some(step2))
+    val step2 = step(1, Seq("B"), Direction.OUTGOING, None)
+    val step1 = varStep(0, Seq("A"), Direction.OUTGOING, 1, Some(2), Some(step2))
 
     /*
     And the graph:
@@ -217,12 +197,27 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseJUnitSuite {
     relate(a, b, "B")
 
     /*When given the start node a*/
-    val (relationships, next) = step1.expand(a, context, queryState)
+    val (relationships, next) = withQueryState { queryState =>
+      val (rels, n) = step1.expand(a, ExecutionContext.empty, queryState)
+      (rels.toSeq, n)
+    }
 
     /*should return no relationships, and step 0, but with one less min step as the next step*/
-    val expectedNext = varStep(0, Seq(A), Direction.OUTGOING, 0, Some(1), Some(step2))
+    val expectedNext = varStep(0, Seq("A"), Direction.OUTGOING, 0, Some(1), Some(step2))
 
-    assert(relationships.toSeq === Seq())
-    assert(next === Some(expectedNext))
+    relationships should equal(Seq())
+    next should equal(Some(expectedNext))
   }
+
+  private def step(id: Int,
+                   typ: Seq[String],
+                   direction: Direction,
+                   next: Option[ExpanderStep]) = SingleStep(id, typ, direction, next, True(), True())
+
+  private def varStep(id: Int,
+                      typ: Seq[String],
+                      direction: Direction,
+                      min: Int,
+                      max: Option[Int],
+                      next: Option[ExpanderStep]) = VarLengthStep(id, typ, direction, min, max, next, True(), True())
 }

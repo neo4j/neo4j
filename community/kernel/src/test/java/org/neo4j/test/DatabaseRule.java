@@ -29,9 +29,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
 public abstract class DatabaseRule extends ExternalResource
 {
@@ -150,7 +149,7 @@ public abstract class DatabaseRule extends ExternalResource
     {
         return database;
     }
-    
+
     public static interface RestartAction
     {
         void run( FileSystemAbstraction fs, File storeDirectory );
@@ -182,6 +181,6 @@ public abstract class DatabaseRule extends ExternalResource
 
     public void clearCache()
     {
-        getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        // TODO 2.2-future find a way to clear the cache
     }
 }

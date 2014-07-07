@@ -25,9 +25,6 @@ Full license texts are found in LICENSES.txt.
 Third-party licenses
 --------------------
 
-Apache Software License, Version 2.0
-  JTA 1.1
-
 Eclipse Public License, Version 1.0
   Logback Classic Module
   Logback Core Module

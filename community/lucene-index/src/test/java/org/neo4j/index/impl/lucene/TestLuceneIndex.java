@@ -38,6 +38,7 @@ import org.apache.lucene.search.TermQuery;
 import org.hamcrest.CoreMatchers;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -56,12 +57,19 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
@@ -1017,7 +1025,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         float score2 = hits.currentScore();
         assertEquals( node2, hit1 );
         assertEquals( node1, hit2 );
-        assertTrue( score1 > score2 );
+        assertTrue( "Score 1 (" + score1 + ") should have been higher than score 2 (" + score2 + ")", score1 > score2 );
     }
 
     @Test
@@ -1741,12 +1749,12 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void failureToCreateAnIndexShouldNotLeaveConfiguratiobBehind() throws Exception
+    public void failureToCreateAnIndexShouldNotLeaveConfigurationBehind() throws Exception
     {
         // WHEN
         try
         {
-            // StandardAnalyzer is invalid since it has no publi no-arg constructor
+            // StandardAnalyzer is invalid since it has no public no-arg constructor
             nodeIndex( stringMap( "analyzer", StandardAnalyzer.class.getName() ) );
             fail( "Should have failed" );
         }
@@ -1757,7 +1765,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         // THEN - assert that there's no index config about this index left behind
         assertFalse( "There should be no index config for index '" + currentIndexName() + "' left behind",
-                ((GraphDatabaseAPI)graphDb).getDependencyResolver().resolveDependency( IndexStore.class ).has(
+                ((GraphDatabaseAPI)graphDb).getDependencyResolver().resolveDependency( IndexConfigStore.class ).has(
                         Node.class, currentIndexName() ) );
     }
 

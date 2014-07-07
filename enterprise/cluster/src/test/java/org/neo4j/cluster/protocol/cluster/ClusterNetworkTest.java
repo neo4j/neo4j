@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -55,8 +56,10 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -163,7 +166,8 @@ public class ClusterNetworkTest
         out.clear();
         in.clear();
 
-        LogbackService logbackService = new LogbackService( new Config( MapUtil.stringMap() ), new LoggerContext() );
+        LogbackService logbackService = new LogbackService( new Config( Collections.<String, String>emptyMap(),
+                InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ), new LoggerContext() );
 
         for ( int i = 0; i < nrOfServers; i++ )
         {
@@ -172,7 +176,8 @@ public class ClusterNetworkTest
             NetworkedServerFactory factory = new NetworkedServerFactory( life,
                     new MultiPaxosServerFactory( new Monitors(), new ClusterConfiguration( "default",
                             StringLogger.SYSTEM ),
-                            new LogbackService( null,
+                            new LogbackService( new Config( Collections.<String, String>emptyMap(),
+                                    InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ),
                                     (LoggerContext) LoggerFactory.getILoggerFactory() )
                     ),
                     new FixedTimeoutStrategy( 1000 ), new Monitors(),

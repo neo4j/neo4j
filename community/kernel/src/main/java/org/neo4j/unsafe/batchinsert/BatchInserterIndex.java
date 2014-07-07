@@ -31,7 +31,7 @@ import org.neo4j.graphdb.index.IndexHits;
  * {@link BatchInserterIndex} doesn't necessarily gets added to the actual index
  * immediately, but are instead forced to be written when the index is shut
  * down, {@link BatchInserterIndexProvider#shutdown()}.
- * 
+ *
  * To guarantee additions/updates are seen by {@link #updateOrAdd(long, Map)},
  * {@link #get(String, Object)}, {@link #query(String, Object)} and
  * {@link #query(Object)} a call to {@link #flush()} must be made prior to
@@ -47,14 +47,14 @@ public interface BatchInserterIndex
      * check if indexing for {@code entity} already exists or not. If you need
      * to update indexing for {@code entity} and it's ok with a slower indexing
      * process use {@link #updateOrAdd(long, Map)} instead.
-     * 
+     *
      * Entries added to the index aren't necessarily written to the index and to
      * disk until {@link BatchInserterIndexProvider#shutdown()} has been called.
      * Entries added to the index isn't necessarily seen by other methods:
      * {@link #updateOrAdd(long, Map)}, {@link #get(String, Object)},
      * {@link #query(String, Object)} and {@link #query(Object)} until a call to
      * {@link #flush()} has been made.
-     * 
+     *
      * @param entityId the entity (i.e id of {@link Node} or
      *            {@link Relationship}) to associate the key/value pairs with.
      * @param properties key/value pairs to index for {@code entity}.
@@ -68,7 +68,7 @@ public interface BatchInserterIndex
      * {@link #add(long, Map)} because it must check if there are properties
      * already indexed for {@code entity}. So if you know that there's no
      * previous indexing for {@code entity} use {@link #add(long, Map)} instead.
-     * 
+     *
      * Entries added to the index aren't necessarily written to the index and to
      * disk until {@link BatchInserterIndexProvider#shutdown()} has been called.
      * Entries added to the index isn't necessarily seen by other methods:
@@ -76,7 +76,7 @@ public interface BatchInserterIndex
      * {@link #query(String, Object)} and {@link #query(Object)} until a call to
      * {@link #flush()} has been made. So only entries added before the most
      * recent {@link #flush()} are guaranteed to be found by this method.
-     * 
+     *
      * @param entityId the entity (i.e id of {@link Node} or
      *            {@link Relationship}) to associate the key/value pairs with.
      * @param properties key/value pairs to index for {@code entity}.
@@ -87,7 +87,7 @@ public interface BatchInserterIndex
      * Returns exact matches from this index, given the key/value pair. Matches
      * will be for key/value pairs just as they were added by the
      * {@link #add(long, Map)} or {@link #updateOrAdd(long, Map)} method.
-     * 
+     *
      * Entries added to the index aren't necessarily written to the index and to
      * disk until {@link BatchInserterIndexProvider#shutdown()} has been called.
      * Entries added to the index isn't necessarily seen by other methods:
@@ -95,7 +95,7 @@ public interface BatchInserterIndex
      * {@link #query(String, Object)} and {@link #query(Object)} until a call to
      * {@link #flush()} has been made. So only entries added before the most
      * recent {@link #flush()} are guaranteed to be found by this method.
-     * 
+     *
      * @param key the key in the key/value pair to match.
      * @param value the value in the key/value pair to match.
      * @return the result wrapped in an {@link IndexHits} object. If the entire
@@ -103,12 +103,12 @@ public interface BatchInserterIndex
      *         be called before disposing of the result.
      */
     IndexHits<Long> get( String key, Object value );
-    
+
     /**
      * Returns matches from this index based on the supplied {@code key} and
      * query object, which can be a query string or an implementation-specific
      * query object.
-     * 
+     *
      * Entries added to the index aren't necessarily written to the index and
      * to disk until {@link BatchInserterIndexProvider#shutdown()} has been
      * called. Entries added to the index isn't necessarily seen by other
@@ -116,7 +116,7 @@ public interface BatchInserterIndex
      * {@link #query(String, Object)} and {@link #query(Object)} until a call
      * to {@link #flush()} has been made. So only entries added before the most
      * recent {@link #flush()} are guaranteed to be found by this method.
-     * 
+     *
      * @param key the key in this query.
      * @param queryOrQueryObject the query for the {@code key} to match.
      * @return the result wrapped in an {@link IndexHits} object. If the entire
@@ -124,11 +124,11 @@ public interface BatchInserterIndex
      * called before disposing of the result.
      */
     IndexHits<Long> query( String key, Object queryOrQueryObject );
-    
+
     /**
      * Returns matches from this index based on the supplied query object,
      * which can be a query string or an implementation-specific query object.
-     * 
+     *
      * Entries added to the index aren't necessarily written to the index and
      * to disk until {@link BatchInserterIndexProvider#shutdown()} has been
      * called. Entries added to the index isn't necessarily seen by other
@@ -136,14 +136,14 @@ public interface BatchInserterIndex
      * {@link #query(String, Object)} and {@link #query(Object)} until a call
      * to {@link #flush()} has been made. So only entries added before the most
      * recent {@link #flush()} are guaranteed to be found by this method.
-     * 
+     *
      * @param queryOrQueryObject the query to match.
      * @return the result wrapped in an {@link IndexHits} object. If the entire
      * result set isn't looped through, {@link IndexHits#close()} must be
      * called before disposing of the result.
      */
     IndexHits<Long> query( Object queryOrQueryObject );
-    
+
     /**
      * Makes sure additions/updates can be seen by {@link #get(String, Object)},
      * {@link #query(String, Object)} and {@link #query(Object)} so that they
@@ -152,16 +152,16 @@ public interface BatchInserterIndex
      * after a flush.
      */
     void flush();
-    
+
     /**
      * Sets the cache size for key/value pairs for the given {@code key}.
      * Caching values may increase {@link #get(String, Object)} lookups significantly,
      * but may at the same time slow down insertion of data some.
-     * 
+     *
      * Be sure to call this method to enable caching for keys that will be
      * used a lot in lookups. It's also best to call this method for your keys
      * right after the index has been created.
-     * 
+     *
      * @param key the key to set cache capacity for.
      * @param size the number of values to cache results for.
      */

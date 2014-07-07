@@ -21,46 +21,38 @@ package org.neo4j.kernel.ha.lock;
 
 import java.net.URI;
 
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.helpers.Factory;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 
 public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
 {
-    private final HaXaDataSourceManager xaDsm;
     private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
-    private final AbstractTransactionManager txManager;
-    private final RemoteTxHook remoteTxHook;
     private final AvailabilityGuard availabilityGuard;
     private final Config config;
+    private final TransactionCommittingResponseUnpacker unpacker;
     private final Factory<Locks> locksFactory;
 
     public LockManagerModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
-                                    DelegateInvocationHandler<Locks> delegate,
-                                    HaXaDataSourceManager xaDsm, DelegateInvocationHandler<Master> master,
-                                    RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
-                                    RemoteTxHook remoteTxHook, AvailabilityGuard availabilityGuard, Config config,
-                                    Factory<Locks> locksFactory)
+                                    DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
+                                    RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
+                                    Config config, TransactionCommittingResponseUnpacker unpacker, Factory<Locks> locksFactory )
     {
         super( stateMachine, delegate );
-        this.xaDsm = xaDsm;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.txManager = txManager;
-        this.remoteTxHook = remoteTxHook;
         this.availabilityGuard = availabilityGuard;
         this.config = config;
+        this.unpacker = unpacker;
         this.locksFactory = locksFactory;
     }
 
@@ -73,8 +65,8 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     @Override
     protected Locks getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(), xaDsm, txManager,
-                remoteTxHook, availabilityGuard, new SlaveLockManager.Configuration()
+        return new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
+                availabilityGuard, unpacker, new SlaveLockManager.Configuration()
         {
             @Override
             public long getAvailabilityTimeout()

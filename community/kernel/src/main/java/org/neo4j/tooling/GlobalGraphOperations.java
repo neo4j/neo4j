@@ -19,8 +19,6 @@
  */
 package org.neo4j.tooling;
 
-import java.util.Iterator;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.DependencyResolver;
@@ -32,16 +30,19 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.Token;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.cast;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
@@ -52,6 +53,7 @@ public class GlobalGraphOperations
 {
     private final NodeManager nodeManager;
     private final ThreadToStatementContextBridge statementCtxProvider;
+    private final RelationshipTypeTokenHolder relationshipTypes;
 
     private GlobalGraphOperations( GraphDatabaseService db )
     {
@@ -59,6 +61,7 @@ public class GlobalGraphOperations
         DependencyResolver resolver = dbApi.getDependencyResolver();
         this.nodeManager = resolver.resolveDependency( NodeManager.class );
         this.statementCtxProvider = resolver.resolveDependency( ThreadToStatementContextBridge.class );
+        this.relationshipTypes = resolver.resolveDependency( RelationshipTypeTokenHolder.class );
     }
 
     /**
@@ -77,15 +80,32 @@ public class GlobalGraphOperations
      *
      * @return all nodes in the graph.
      */
-    public Iterable<Node> getAllNodes()
+    public ResourceIterable<Node> getAllNodes()
     {
         assertInTransaction();
-        return new Iterable<Node>()
+        return new ResourceIterable<Node>()
         {
             @Override
-            public Iterator<Node> iterator()
+            public ResourceIterator<Node> iterator()
             {
-                return nodeManager.getAllNodes();
+                final Statement statement = statementCtxProvider.instance();
+                final PrimitiveLongIterator ids = statement.readOperations().nodesGetAll();
+                return new PrefetchingResourceIterator<Node>()
+                {
+                    @Override
+                    public void close()
+                    {
+                        statement.close();
+                    }
+
+                    @Override
+                    protected Node fetchNextOrNull()
+                    {
+                        assert ids != null : "ids null";
+                        assert nodeManager != null : "nodeManager null";
+                        return ids.hasNext() ? nodeManager.newNodeProxyById( ids.next() ) : null;
+                    }
+                };
             }
         };
     }
@@ -98,12 +118,27 @@ public class GlobalGraphOperations
     public Iterable<Relationship> getAllRelationships()
     {
         assertInTransaction();
-        return new Iterable<Relationship>()
+        return new ResourceIterable<Relationship>()
         {
             @Override
-            public Iterator<Relationship> iterator()
+            public ResourceIterator<Relationship> iterator()
             {
-                return nodeManager.getAllRelationships();
+                final Statement statement = statementCtxProvider.instance();
+                final PrimitiveLongIterator ids = statement.readOperations().relationshipsGetAll();
+                return new PrefetchingResourceIterator<Relationship>()
+                {
+                    @Override
+                    public void close()
+                    {
+                        statement.close();
+                    }
+
+                    @Override
+                    protected Relationship fetchNextOrNull()
+                    {
+                        return ids.hasNext() ? nodeManager.newRelationshipProxyById( ids.next() ) : null;
+                    }
+                };
             }
         };
     }
@@ -121,7 +156,7 @@ public class GlobalGraphOperations
     public Iterable<RelationshipType> getAllRelationshipTypes()
     {
         assertInTransaction();
-        return nodeManager.getRelationshipTypes();
+        return cast( relationshipTypes.getAllTokens() );
     }
 
     /**
@@ -226,7 +261,7 @@ public class GlobalGraphOperations
             @Override
             public Node apply( long nodeId )
             {
-                return nodeManager.getNodeById( nodeId );
+                return nodeManager.newNodeProxyById( nodeId );
             }
         }, nodeIds ) );
     }

@@ -116,7 +116,11 @@ footer img {
 }
 
 .highlight {
-  background-color: #c5d3c3;
+  background-color: #ffe48b;
+}
+
+.highlight.unhighlight {
+  background-color: inherit;
 }
 
 .highlightButton {

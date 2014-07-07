@@ -19,23 +19,16 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import static org.neo4j.helpers.collection.MapUtil.reverse;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readByte;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
-
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.CommandRecordVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
+
+import static org.neo4j.helpers.collection.MapUtil.reverse;
 
 /**
  * A command which have to be first in the transaction. It will map index names
@@ -43,37 +36,41 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
  * to ids instead of names. This reduced the number of bytes needed for commands
  * roughly 50% for transaction with more than a couple of commands in it,
  * depending on the size of the value.
- * 
+ *
  * After this command has been created it will act as a factory for other
  * commands so that it can spit out correct index name and key ids.
  */
-public class IndexDefineCommand extends XaCommand
+public class IndexDefineCommand extends Command
 {
     private final AtomicInteger nextIndexNameId = new AtomicInteger();
     private final AtomicInteger nextKeyId = new AtomicInteger();
-    private final Map<String, Byte> indexNameIdRange;
-    private final Map<String, Byte> keyIdRange;
-    private final Map<Byte, String> idToIndexName;
-    private final Map<Byte, String> idToKey;
+    private Map<String, Byte> indexNameIdRange;
+    private Map<String, Byte> keyIdRange;
+    private Map<Byte, String> idToIndexName;
+    private Map<Byte, String> idToKey;
 
     public IndexDefineCommand()
     {
-        indexNameIdRange = new HashMap<String, Byte>();
-        keyIdRange = new HashMap<String, Byte>();
-        idToIndexName = new HashMap<Byte, String>();
-        idToKey = new HashMap<Byte, String>();
+        setIndexNameIdRange( new HashMap<String, Byte>() );
+        setKeyIdRange( new HashMap<String, Byte>() );
+        idToIndexName = new HashMap<>();
+        idToKey = new HashMap<>();
     }
-    
-    public IndexDefineCommand( Map<String, Byte> indexNames, Map<String, Byte> keys )
+
+    public void init( Map<String, Byte> indexNames, Map<String, Byte> keys )
     {
-        this.indexNameIdRange = indexNames;
-        this.keyIdRange = keys;
+        this.setIndexNameIdRange( indexNames );
+        this.setKeyIdRange( keys );
         idToIndexName = reverse( indexNames );
         idToKey = reverse( keys );
     }
 
     private static String getFromMap( Map<Byte, String> map, byte id )
     {
+        if ( id == -1 )
+        {
+            return null;
+        }
         String result = map.get( id );
         if ( result == null )
         {
@@ -82,128 +79,60 @@ public class IndexDefineCommand extends XaCommand
         return result;
     }
 
-    public IndexCommand create( String indexName, Class<?> entityType, Map<String, String> config )
-    {
-        return new IndexCommand.CreateCommand( indexNameId( indexName ),
-                entityTypeId( entityType ), config );
-    }
-    
-    public IndexCommand add( String indexName, Class<?> entityType, long entityId, String key,
-            Object value )
-    {
-        return new IndexCommand.AddCommand( indexNameId( indexName ), entityTypeId( entityType ),
-                entityId, keyId( key ), value );
-    }
-    
-    public IndexCommand addRelationship( String indexName, Class<?> entityType, long entityId, String key,
-            Object value, long startNode, long endNode )
-    {
-        return new IndexCommand.AddRelationshipCommand( indexNameId( indexName ),
-                entityTypeId( entityType ), entityId, keyId( key ), value, startNode, endNode );
-    }
-    
-    public IndexCommand remove( String indexName, Class<?> entityType, long entityId,
-            String key, Object value )
-    {
-        return new IndexCommand.RemoveCommand( indexNameId( indexName ), entityTypeId( entityType ),
-                entityId, key != null ? keyId( key ) : 0, value );
-    }
-    
-    public IndexCommand delete( String indexName, Class<?> entityType )
-    {
-        return new IndexCommand.DeleteCommand( indexNameId( indexName ), entityTypeId( entityType ) );
-    }
-    
     public String getIndexName( byte id )
     {
         return getFromMap( idToIndexName, id );
     }
-    
+
     public String getKey( byte id )
     {
         return getFromMap( idToKey, id );
     }
 
-    public static byte entityTypeId( Class<?> entityType )
+    public byte getOrAssignIndexNameId( String indexName )
     {
-        return entityType.equals( Relationship.class ) ? IndexCommand.RELATIONSHIP : IndexCommand.NODE;
-    }
-    
-    public static Class<? extends PropertyContainer> entityType( byte id )
-    {
-        switch ( id )
-        {
-        case IndexCommand.NODE: return Node.class;
-        case IndexCommand.RELATIONSHIP: return Relationship.class;
-        default: throw new IllegalArgumentException( "" + id );
-        }
-    }
-    
-    private byte indexNameId( String indexName )
-    {
-        return id( indexName, indexNameIdRange, nextIndexNameId, idToIndexName );
-    }
-    
-    private byte keyId( String key )
-    {
-        return id( key, keyIdRange, nextKeyId, idToKey );
+        return getOrAssignId( indexNameIdRange, idToIndexName, nextIndexNameId, indexName );
     }
 
-    private byte id( String key, Map<String, Byte> idRange, AtomicInteger nextId,
-            Map<Byte, String> reverse )
+    public byte getOrAssignKeyId( String key )
     {
-        Byte id = idRange.get( key );
-        if ( id == null )
-        {
-            id = Byte.valueOf( (byte) nextId.incrementAndGet() );
-            idRange.put( key, id );
-            reverse.put( id, key );
-        }
-        return id;
+        return getOrAssignId( keyIdRange, idToKey, nextKeyId, key );
     }
 
-    public void writeToFile( LogBuffer buffer ) throws IOException
+    private byte getOrAssignId( Map<String, Byte> stringToId, Map<Byte, String> idToString,
+            AtomicInteger nextId, String string )
     {
-        buffer.put( (byte)(IndexCommand.DEFINE_COMMAND << 5) );
-        buffer.put( (byte)0 );
-        buffer.put( (byte)0 );
-        writeMap( indexNameIdRange, buffer );
-        writeMap( keyIdRange, buffer );
-    }
-    
-    static Map<String, Byte> readMap( ReadableByteChannel channel, ByteBuffer buffer )
-            throws IOException
-    {
-        Byte size = readByte( channel, buffer );
-        if ( size == null ) return null;
-        Map<String, Byte> result = new HashMap<String, Byte>();
-        for ( int i = 0; i < size; i++ )
+        if ( string == null )
         {
-            String key = read2bLengthAndString( channel, buffer );
-            Byte id = readByte( channel, buffer );
-            if ( key == null || id == null ) return null;
-            result.put( key, id );
+            return -1;
         }
-        return result;
+
+        Byte id = stringToId.get( string );
+        if ( id != null )
+        {
+            return id.byteValue();
+        }
+
+        int nextIdInt = nextId.incrementAndGet();
+        id = (byte) nextIdInt;
+        if ( nextIdInt != id )
+        {
+            throw new IllegalArgumentException( "Too many names " + nextIdInt );
+        }
+
+        stringToId.put( string, id );
+        idToString.put( id, string );
+        return id.byteValue();
     }
 
-    private static void writeMap( Map<String, Byte> map, LogBuffer buffer ) throws IOException
-    {
-        buffer.put( (byte)map.size() );
-        for ( Map.Entry<String, Byte> entry : map.entrySet() )
-        {
-            write2bLengthAndString( buffer, entry.getKey() );
-            buffer.put( entry.getValue() );
-        }
-    }
 
     @Override
     public int hashCode()
     {
         int result = nextIndexNameId != null ? nextIndexNameId.hashCode() : 0;
         result = 31 * result + (nextKeyId != null ? nextKeyId.hashCode() : 0);
-        result = 31 * result + (indexNameIdRange != null ? indexNameIdRange.hashCode() : 0);
-        result = 31 * result + (keyIdRange != null ? keyIdRange.hashCode() : 0);
+        result = 31 * result + (getIndexNameIdRange() != null ? getIndexNameIdRange().hashCode() : 0);
+        result = 31 * result + (getKeyIdRange() != null ? getKeyIdRange().hashCode() : 0);
         result = 31 * result + (idToIndexName != null ? idToIndexName.hashCode() : 0);
         result = 31 * result + (idToKey != null ? idToKey.hashCode() : 0);
         return result;
@@ -213,7 +142,45 @@ public class IndexDefineCommand extends XaCommand
     public boolean equals( Object obj )
     {
         IndexDefineCommand other = (IndexDefineCommand) obj;
-        return indexNameIdRange.equals( other.indexNameIdRange ) &&
-                keyIdRange.equals( other.keyIdRange );
+        return getIndexNameIdRange().equals( other.getIndexNameIdRange() ) &&
+                getKeyIdRange().equals( other.getKeyIdRange() );
+    }
+
+    @Override
+    public void accept( CommandRecordVisitor visitor )
+    {
+        // no op
+    }
+
+    @Override
+    public boolean handle( NeoCommandHandler visitor ) throws IOException
+    {
+        return visitor.visitIndexDefineCommand( this );
+    }
+
+    public Map<String, Byte> getIndexNameIdRange()
+    {
+        return indexNameIdRange;
+    }
+
+    public void setIndexNameIdRange( Map<String, Byte> indexNameIdRange )
+    {
+        this.indexNameIdRange = indexNameIdRange;
+    }
+
+    public Map<String, Byte> getKeyIdRange()
+    {
+        return keyIdRange;
+    }
+
+    public void setKeyIdRange( Map<String, Byte> keyIdRange )
+    {
+        this.keyIdRange = keyIdRange;
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[names:" + indexNameIdRange + ", keys:" + keyIdRange + "]";
     }
 }

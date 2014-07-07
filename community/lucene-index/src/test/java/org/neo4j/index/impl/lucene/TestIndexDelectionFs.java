@@ -21,53 +21,53 @@ package org.neo4j.index.impl.lucene;
 
 import java.io.File;
 import java.io.IOException;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.index.IndexEntityType;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class TestIndexDelectionFs
 {
-    private static GraphDatabaseService db;
-    
+    private static GraphDatabaseAPI db;
+
     @BeforeClass
     public static void doBefore() throws IOException
     {
         FileUtils.deleteRecursively( new File( "target/test-data/deletion" ) );
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( "target/test-data/deletion" );
+        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( "target/test-data/deletion" );
     }
-    
+
     @AfterClass
     public static void doAfter()
     {
         db.shutdown();
     }
-    
+
     @Test
     public void indexDeleteShouldDeleteDirectory()
     {
         String indexName = "index";
         String otherIndexName = "other-index";
 
-        StringBuffer tempPath = new StringBuffer( ((GraphDatabaseAPI)db).getStoreDir())
-                .append(File.separator).append("index").append(File.separator)
-                .append("lucene").append(File.separator).append("node")
-                .append(File.separator);
+        File indexBaseDir = new File( db.getStoreDir(), "index" );
+        File pathToLuceneIndex = LuceneDataSource.getFileDirectory( indexBaseDir,
+                new IndexIdentifier( IndexEntityType.Node, indexName ) );
+        File pathToOtherLuceneIndex = LuceneDataSource.getFileDirectory( indexBaseDir,
+                new IndexIdentifier( IndexEntityType.Node, otherIndexName ) );
 
-        File pathToLuceneIndex = new File( tempPath.toString() + indexName );
-        File pathToOtherLuceneIndex = new File( tempPath.toString() + otherIndexName );
-
-        Transaction tx = db.beginTx();
         Index<Node> index;
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             index = db.index().forNodes( indexName );
             Index<Node> otherIndex = db.index().forNodes( otherIndexName );
@@ -78,26 +78,17 @@ public class TestIndexDelectionFs
             assertFalse( pathToOtherLuceneIndex.exists() );
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
 
         // Here "index" and "other-index" indexes should exist
 
         assertTrue( pathToLuceneIndex.exists() );
         assertTrue( pathToOtherLuceneIndex.exists() );
-        tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             index.delete();
             assertTrue( pathToLuceneIndex.exists() );
             assertTrue( pathToOtherLuceneIndex.exists() );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         // Here only "other-index" should exist

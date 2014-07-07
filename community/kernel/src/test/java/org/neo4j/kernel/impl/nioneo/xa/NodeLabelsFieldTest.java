@@ -37,7 +37,6 @@ import org.junit.Test;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -454,19 +453,19 @@ public class NodeLabelsFieldTest
     @Before
     public void startUp()
     {
+        File storeDir = new File( "dir" );
+        fs.get().mkdirs( storeDir );
         Monitors monitors = new Monitors();
-        Config config = new Config();
+        Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
         StoreFactory storeFactory = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs.get(), config ),
                 fs.get(),
                 StringLogger.DEV_NULL,
-                new DefaultTxHook(),
                 monitors );
-        File storeFile = new File( "store" );
-        storeFactory.createNodeStore( storeFile );
-        nodeStore = storeFactory.newNodeStore( storeFile );
+        storeFactory.createNodeStore();
+        nodeStore = storeFactory.newNodeStore();
     }
 
     @After

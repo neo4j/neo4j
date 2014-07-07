@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.TargetDirectory;
 
@@ -37,7 +37,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class UniquenessConstraintCreationIT extends KernelIntegrationTest
@@ -57,14 +56,19 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             // name is not unique for Foo in the existing data
-            Node node = db.createNode( label( "Foo" ) );
-            node1 = node.getId();
-            node.setProperty( "name", "foo" );
-            node = db.createNode( label( "Foo" ) );
-            node2 = node.getId();
-            node.setProperty( "name", "foo" );
-            foo = statement.labelGetForName( "Foo" );
-            name = statement.propertyKeyGetForName( "name" );
+
+            foo = statement.labelGetOrCreateForName( "Foo" );
+            name = statement.propertyKeyGetOrCreateForName( "name" );
+
+            long node = statement.nodeCreate();
+            node1 = node;
+            statement.nodeAddLabel( node, foo );
+            statement.nodeSetProperty( node, Property.stringProperty( name, "foo" ) );
+
+            node = statement.nodeCreate();
+            statement.nodeAddLabel( node, foo );
+            node2 = node;
+            statement.nodeSetProperty( node, Property.stringProperty( name, "foo" ) );
             commit();
         }
 

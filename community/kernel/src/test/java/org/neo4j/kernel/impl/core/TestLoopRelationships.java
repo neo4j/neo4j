@@ -19,18 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.MyRelTypes.TEST;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -38,6 +33,14 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 public class TestLoopRelationships extends AbstractNeo4jTestCase
 {
@@ -76,7 +79,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
 
         commit();
     }
-    
+
     private void txCreateRel( Node node )
     {
         node.createRelationshipTo( getGraphDb().createNode(), TEST );
@@ -97,7 +100,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
 
         newTransaction();
 
-        getNodeManager().clearCache();
+        clearCache();
 
         for ( Direction dir : Direction.values() )
         {
@@ -170,7 +173,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         testAddAndRemoveLoopRelationshipAndOtherRelationships( 3 );
         testAddAndRemoveLoopRelationshipAndOtherRelationships( 5 );
     }
-    
+
     @Test
     public void getSingleRelationshipOnNodeWithOneLoopOnly() throws Exception
     {
@@ -187,7 +190,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.BOTH ) );
         finish();
     }
-    
+
     @Test
     public void cannotDeleteNodeWithLoopStillAttached() throws Exception
     {
@@ -204,13 +207,13 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         { // Good
         }
     }
-    
+
     @Test
     public void getOtherNodeFunctionsCorrectly() throws Exception
     {
         Node node = getGraphDb().createNode();
         Relationship relationship = node.createRelationshipTo( node, TEST );
-        
+
         // This loop messes up the readability of the test case, but avoids duplicated
         // assertion code. Same assertions withing the transaction as after it has committed.
         for ( int i = 0; i < 2; i++ )
@@ -228,7 +231,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
             newTransaction();
         }
     }
-    
+
     @Test
     public void getNewlyCreatedLoopRelationshipFromCache() throws Exception
     {
@@ -270,7 +273,9 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     {
         StringBuilder b = new StringBuilder();
         for ( Relationship rel : relationships )
+        {
             b.append( rel.getStartNode() + "--" + rel + "->" + rel.getEndNode() );
+        }
         return b.toString();
     }
 
@@ -279,6 +284,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         final int max = 1 << size;
         return new Iterable<boolean[]>()
         {
+            @Override
             public Iterator<boolean[]> iterator()
             {
                 return new PrefetchingIterator<boolean[]>()
@@ -346,7 +352,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     private void verifyRelationships( String message, Node root,
             boolean[] loop, Relationship... relationships )
     {
-        getNodeManager().clearCache();
+        clearCache();
 
         for ( Direction dir : Direction.values() )
         {

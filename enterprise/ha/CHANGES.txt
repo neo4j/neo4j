@@ -16,6 +16,11 @@ o Clarify the error message for when releasing locks claim prior to a master-swi
 o Reduce network overhead of locking in HA
 o Fix of issue with state bookkeeping for reporting instance role
 
+2.0.4
+-----
+o Slaves will now fall back to a full store copy if the master misses
+  logs old enough to serve incremental updates on join
+
 2.0.2
 -----
 o Fixes potential deadlock when concurrently shutting down the database and role switching
@@ -39,11 +44,21 @@ o Introduces monitoring for remote calls between cluster instances
 2.0.0-RC1
 ---------
 o The GCResistantCache is now called the HighPerformanceCache. The configuration for enabling it has changed from
-  'gcr' to 'hpc', although the old setting will remaing functional until the next major release.
+  'gcr' to 'hpc', although the old setting will remain functional until the next major release.
 
 2.0.0.M06
 ---------
 o Constraints can now be created in a running HA cluster
+
+1.9.8
+-----
+o Slaves will now fall back to a full store copy if the master misses
+ logs old enough to serve incremental updates on join
+
+1.9.7
+-----
+o Fixes potential deadlock when concurrently shutting down the database and role switching
+o Fixes issue where cluster would become unresponsive if a message would get lost
 
 1.9.5 (2013-11-11)
 ------------------

@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
  * A class for holding cache objects so that reuse between sessions is possible
  * if the configuration stays the same. This helps when there's a cache which is
  * very expensive to create.
- * 
+ *
  * @author Mattias Persson
  */
 public interface Caches
@@ -35,8 +35,12 @@ public interface Caches
     void configure( CacheProvider cacheProvider, Config config );
 
     Cache<NodeImpl> node();
-    
+
     Cache<RelationshipImpl> relationship();
-    
+
     void invalidate();
+
+    void clear();
+
+    CacheProvider getProvider();
 }

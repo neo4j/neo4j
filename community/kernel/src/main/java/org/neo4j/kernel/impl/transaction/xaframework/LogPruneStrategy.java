@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
-
 public interface LogPruneStrategy
 {
-    void prune( LogLoader source );
+    void prune();
 }

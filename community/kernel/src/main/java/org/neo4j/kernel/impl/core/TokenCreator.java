@@ -19,12 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-
 public interface TokenCreator
 {
-    int getOrCreate( AbstractTransactionManager txManager, EntityIdGenerator idGenerator,
-            PersistenceManager persistence, String name );
+    int getOrCreate( String name );
 }

@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import commands.True
-import pipes.matching.{VariableLengthStepTrail, SingleStepTrail, EndPoint}
+import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.PathImpl
-import org.neo4j.cypher.GraphDatabaseJUnitSuite
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.commands.True
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.{EndPoint, SingleStepTrail, VariableLengthStepTrail}
 import org.neo4j.graphdb.Direction
 
-class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
-  @Test def decompose_simple_path() {
+class TrailDecomposeTest extends GraphDatabaseFunSuite {
+  test("decompose_simple_path") {
     val nodeA = createNode("A")
     val nodeB = createNode("B")
     val rel = relate(nodeA, nodeB, "LINK_T")
@@ -36,10 +35,10 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
     val path = SingleStepTrail(EndPoint("b"), Direction.OUTGOING, "link", Seq("LINK_T"), "a", True(), True(), null, Seq())
 
     val resultMap = path.decompose(kernPath).toList
-    assert(resultMap === List(Map("a" -> nodeA, "b" -> nodeB, "link" -> rel)))
+    resultMap should equal(List(Map("a" -> nodeA, "b" -> nodeB, "link" -> rel)))
   }
 
-  @Test def decompose_little_longer_path() {
+  test("decompose_little_longer_path") {
     //a-[link2]->b-[link1]->c
 
     val nodeA = createNode("A")
@@ -56,10 +55,12 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
 
     val resultMap = cToB.decompose(kernPath).toList
 
-    assert(resultMap === List(Map("a" -> nodeA, "b" -> nodeB, "c" -> nodeC, "link1" -> rel1, "link2" -> rel2)))
+    resultMap should equal(List(
+      Map("a" -> nodeA, "b" -> nodeB, "c" -> nodeC, "link1" -> rel1, "link2" -> rel2)
+    ))
   }
 
-  @Test def should_not_return_maps_that_have_contradicting_values_in_pattern_points_endpoint() {
+  test("should_not_return_maps_that_have_contradicting_values_in_pattern_points_endpoint") {
     // When a pattern has the same pattern node in multiple places in the pattern,
     // we need to exclude it from the results
 
@@ -84,10 +85,10 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
 
     val resultMap = aToB.decompose(kernPath).toList
 
-    assert(resultMap === List())
+    resultMap shouldBe empty
   }
 
-  @Test def should_not_return_maps_that_have_contradicting_values_in_pattern_points_single() {
+  test("should_not_return_maps_that_have_contradicting_values_in_pattern_points_single") {
     // When a pattern has the same pattern node in multiple places in the pattern,
     // we need to exclude it from the results
 
@@ -114,10 +115,10 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
 
     val resultMap = aToB.decompose(kernPath).toList
 
-    assert(resultMap === List())
+    resultMap shouldBe empty
   }
 
-  @Test def decompose_single_varlength_step() {
+  test("decompose_single_varlength_step") {
     //Given:
     //Pattern: a-[:A*1..2]->b
     //   Path: 0-[:A]->1
@@ -131,10 +132,14 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
       VariableLengthStepTrail(EndPoint("b"), Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
     //Then
-    assertInTx(path.decompose(kernPath).toList === List(Map("a" -> nodeA, "b" -> nodeB, "p" -> PathImpl(kernPath:_*))))
+    graph.inTx {
+      path.decompose(kernPath).toList should equal(List(
+        Map("a" -> nodeA, "b" -> nodeB, "p" -> PathImpl(kernPath: _*))
+      ))
+    }
   }
 
-  @Test def decompose_single_varlength_step_introducing_reliterator() {
+  test("decompose_single_varlength_step_introducing_reliterator") {
     //Given:
     //Pattern: a-[r:A*1..2]->b
     //   Path: 0-[:A]->1
@@ -148,10 +153,14 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
       VariableLengthStepTrail(EndPoint("b"), Direction.OUTGOING, Seq("A"), 1, Some(2), "p", Some("r"), "a", null)
 
     //Then
-    assertInTx(path.decompose(kernPath).toList === List(Map("a" -> nodeA, "b" -> nodeB, "p" -> PathImpl(kernPath:_*), "r"->Seq(rel0))))
+    graph.inTx {
+      path.decompose(kernPath).toList should equal(List(
+        Map("a" -> nodeA, "b" -> nodeB, "p" -> PathImpl(kernPath: _*), "r" -> Seq(rel0))
+      ))
+    }
   }
 
-  @Test def decompose_single_step_follow_with_varlength() {
+  test("decompose_single_step_follow_with_varlength") {
     //Given:
     //Pattern: x-[r1:B]->a-[:A*1..2]->b
     //   Path: 0-[:B]->1-[:A]->2
@@ -170,10 +179,14 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
     val firstStep = SingleStepTrail(lastStep, Direction.OUTGOING, "r1", Seq("B"), "x", True(), True(), null, Seq())
 
     //Then
-    assertInTx(firstStep.decompose(kernPath).toList === List(Map("x" -> node0, "a" -> node1, "b" -> node2, "r1" -> rel1, "p" -> expectedPath)))
+    graph.inTx {
+      firstStep.decompose(kernPath).toList should equal(List(
+        Map("x" -> node0, "a" -> node1, "b" -> node2, "r1" -> rel1, "p" -> expectedPath)
+      ))
+    }
   }
 
-  @Test def decompose_varlength_followed_by_single_step() {
+  test("decompose_varlength_followed_by_single_step") {
     //Given:
     //Pattern: a-[:A*1..2]->b<-[r1:B]-x
     //   Path: 0-[:A     ]->1<-[  :B]-2
@@ -191,10 +204,14 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
     val path = VariableLengthStepTrail(single, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
     //Then
-    assertInTx(path.decompose(kernPath).toList === List(Map("x" -> node2, "a" -> node0, "b" -> node1, "r1" -> rel1, "p" -> expectedPath)))
+    graph.inTx {
+      path.decompose(kernPath).toList should equal(List(
+        Map("x" -> node2, "a" -> node0, "b" -> node1, "r1" -> rel1, "p" -> expectedPath)
+      ))
+    }
   }
 
-  @Test def multi_step_variable_length_decompose() {
+  test("multi_step_variable_length_decompose") {
     //Given:
     //Pattern: a-[:A*1..2]->b<-[:*1..2]-x
     //   Path: 0-[:A]->1-[:A]->2
@@ -212,10 +229,14 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
     val path = VariableLengthStepTrail(bound, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
     //Then
-    assertInTx(path.decompose(input).toList === List(Map("a" -> node0, "b" -> node2, "p" -> PathImpl(expectedPath:_*))))
+    graph.inTx {
+      path.decompose(input).toList should equal(List(
+        Map("a" -> node0, "b" -> node2, "p" -> PathImpl(expectedPath: _*))
+      ))
+    }
   }
 
-  @Test def zero_length_trail_can_be_ignored() {
+  test("zero_length_trail_can_be_ignored") {
     //Given:
     //Pattern: a-[:A*0..1]->b<-[r1:B]-c
     //   Path: 0<-[:B]-1
@@ -232,10 +253,14 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
     val path = VariableLengthStepTrail(single, Direction.OUTGOING, Seq("A"), 0, Some(1), "p", None, "a", null)
 
     //Then
-    assertInTx(path.decompose(input).toList === List(Map("a" -> node0, "b" -> node0, "c" -> node1, "p" -> expectedPath, "r" -> rel0)))
+    graph.inTx {
+      path.decompose(input).toList should equal(List(
+        Map("a" -> node0, "b" -> node0, "c" -> node1, "p" -> expectedPath, "r" -> rel0)
+      ))
+    }
   }
 
-  @Test def linked_list_using_two_vartrails() {
+  test("linked_list_using_two_vartrails") {
     //Given:
     //Pattern: a-[:A*0..]->x-[:A*0..]->b
     //   Path: 0-[:A]->1-[:A]->2-[:A]->3-[:A]->4
@@ -258,12 +283,14 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
     val second = VariableLengthStepTrail(first, Direction.OUTGOING, Seq("A"), 0, None, "p1", None, "a", null)
 
     //Then
-    assertInTx(second.decompose(input).toList === List(
-      Map("a" -> node0, "x" -> node0, "b" -> node4, "p1" -> PathImpl(node0), "p2" -> PathImpl(node0, rel0, node1, rel1, node2, rel2, node3, rel3, node4)),
-      Map("a" -> node0, "x" -> node1, "b" -> node4, "p1" -> PathImpl(node0, rel0, node1), "p2" -> PathImpl(node1, rel1, node2, rel2, node3, rel3, node4)),
-      Map("a" -> node0, "x" -> node2, "b" -> node4, "p1" -> PathImpl(node0, rel0, node1, rel1, node2), "p2" -> PathImpl(node2, rel2, node3, rel3, node4)),
-      Map("a" -> node0, "x" -> node3, "b" -> node4, "p1" -> PathImpl(node0, rel0, node1, rel1, node2, rel2, node3), "p2" -> PathImpl(node3, rel3, node4)),
-      Map("a" -> node0, "x" -> node4, "b" -> node4, "p1" -> PathImpl(node0, rel0, node1, rel1, node2, rel2, node3, rel3, node4), "p2" -> PathImpl(node4))
-    ))
+    graph.inTx{
+      second.decompose(input).toList should equal(List(
+        Map("a" -> node0, "x" -> node0, "b" -> node4, "p1" -> PathImpl(node0), "p2" -> PathImpl(node0, rel0, node1, rel1, node2, rel2, node3, rel3, node4)),
+        Map("a" -> node0, "x" -> node1, "b" -> node4, "p1" -> PathImpl(node0, rel0, node1), "p2" -> PathImpl(node1, rel1, node2, rel2, node3, rel3, node4)),
+        Map("a" -> node0, "x" -> node2, "b" -> node4, "p1" -> PathImpl(node0, rel0, node1, rel1, node2), "p2" -> PathImpl(node2, rel2, node3, rel3, node4)),
+        Map("a" -> node0, "x" -> node3, "b" -> node4, "p1" -> PathImpl(node0, rel0, node1, rel1, node2, rel2, node3), "p2" -> PathImpl(node3, rel3, node4)),
+        Map("a" -> node0, "x" -> node4, "b" -> node4, "p1" -> PathImpl(node0, rel0, node1, rel1, node2, rel2, node3, rel3, node4), "p2" -> PathImpl(node4))
+      ))
+    }
   }
 }

@@ -24,7 +24,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -38,7 +37,6 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     {
         Config getConfig();
 
-        XaDataSourceManager xaDataSourceManager();
 
         GraphDatabaseAPI getGraphDatabaseAPI();
 
@@ -64,7 +62,6 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
         return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
-                dependencies.xaDataSourceManager(), dependencies.kpeg(), dependencies.logging(),
-                dependencies.monitors() );
+                dependencies.kpeg(), dependencies.logging(), dependencies.monitors() );
     }
 }

@@ -183,7 +183,7 @@ public class ExactTxData extends TxData
         Set<Object> keyOrphans = idCollection( key, null, false );
         Collection<Long> orphanLongs = orphans != null ? toLongs( orphans ) : null;
         Collection<Long> keyOrphanLongs = keyOrphans != null ? toLongs( keyOrphans ) : null;
-        return LuceneTransaction.merge( orphanLongs, keyOrphanLongs );
+        return LuceneTransactionState.merge( orphanLongs, keyOrphanLongs );
     }
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )

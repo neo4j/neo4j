@@ -19,6 +19,8 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import static org.neo4j.test.StreamConsumer.PRINT_FAILURES;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -26,8 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.test.ProcessStreamHandler;
-
-import static org.neo4j.test.StreamConsumer.PRINT_FAILURES;
 
 /**
  * TODO
@@ -46,7 +46,6 @@ public class MultiPaxosServerCluster
         throws IOException, InterruptedException
     {
         String processCommand = "java "+ MultiPaxosServer.class.getName();
-        System.out.println( processCommand );
         for (int i = 0; i < count; i++)
         {
             Process server = Runtime.getRuntime().exec( processCommand, new String[]{"CLASSPATH=\"" + System.getProperty( "java.class.path" )+"\""} );
@@ -124,7 +123,6 @@ public class MultiPaxosServerCluster
         public void command(String cmd)
             throws IOException
         {
-            System.out.println( "Send command:"+cmd );
             writer.write( cmd+"\n" );
             writer.flush();
         }

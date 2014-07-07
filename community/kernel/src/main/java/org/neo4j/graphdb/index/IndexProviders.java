@@ -25,7 +25,7 @@ package org.neo4j.graphdb.index;
  */
 public interface IndexProviders
 {
-    void registerIndexProvider( String name, IndexImplementation indexImplementation );
+    void registerIndexProvider( String name, IndexImplementation index );
 
     boolean unregisterIndexProvider( String name );
 }

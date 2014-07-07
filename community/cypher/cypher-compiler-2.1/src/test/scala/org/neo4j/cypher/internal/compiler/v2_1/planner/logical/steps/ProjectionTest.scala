@@ -45,7 +45,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result.plan should equal(Projection(startPlan.plan, projections))
-    result.solved.projection.projections should equal(projections)
+    result.solved.horizon.projection.projections should equal(projections)
   }
 
   test("does not add projection when not needed") {
@@ -58,7 +58,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result.plan should equal(startPlan.plan)
-    result.solved.projection.projections should equal(projections)
+    result.solved.horizon.projection.projections should equal(projections)
   }
 
   private def queryGraphWith(skip: Option[ast.Expression] = None,

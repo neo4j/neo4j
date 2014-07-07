@@ -20,34 +20,59 @@
 package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Lock;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Transaction;
 
 /**
  * @deprecated This will be moved to internal packages in the next major release.
  */
 @Deprecated
-public class PlaceboTransaction extends TopLevelTransaction
+public class PlaceboTransaction implements Transaction
 {
-    public final static Lock NO_LOCK = new Lock()
+    private final TopLevelTransaction parentTransaction;
+    private boolean success;
+
+    public PlaceboTransaction( TopLevelTransaction parentTransaction )
     {
-        @Override
-        public void release()
-        {
-        }
-    };
-    
-    public PlaceboTransaction( AbstractTransactionManager transactionManager, ThreadToStatementContextBridge bridge )
-    {
-        super( transactionManager, bridge );
+        this.parentTransaction = parentTransaction;
     }
 
     @Override
+    public void failure()
+    {
+    	parentTransaction.failure();
+    }
+    
+    @Override
+    public void success()
+    {
+        success = true;
+    }
+    
+    @Override
     public void close()
     {
-        if ( !transactionOutcome.successCalled() && !transactionOutcome.failureCalled() )
+    	if ( !success && !parentTransaction.getTransactionOutcome().failureCalled() )
         {
-            markAsRollbackOnly();
+            parentTransaction.failure();
         }
     }
+
+	@Override
+	public void finish()
+	{
+		close();
+	}
+
+	@Override
+	public Lock acquireWriteLock( PropertyContainer entity )
+	{
+		return parentTransaction.acquireWriteLock( entity );
+	}
+
+	@Override
+	public Lock acquireReadLock( PropertyContainer entity )
+	{
+		return parentTransaction.acquireReadLock( entity );
+	}
 }

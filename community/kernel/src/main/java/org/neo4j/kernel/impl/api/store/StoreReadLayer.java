@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
@@ -54,14 +55,20 @@ public interface StoreReadLayer
 
     PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
 
-    PrimitiveLongIterator nodeListRelationships( KernelStatement state, long nodeId, Direction direction) throws EntityNotFoundException;
+    PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction)
+            throws EntityNotFoundException;
 
-    PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction, int[] relTypes ) throws EntityNotFoundException;
+    PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction,
+            int[] relTypes ) throws EntityNotFoundException;
 
-    int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException;
-    int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException;
+    int nodeGetDegree( long nodeId, Direction direction )
+            throws EntityNotFoundException;
 
-    PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException;
+    int nodeGetDegree( long nodeId, Direction direction, int relType )
+            throws EntityNotFoundException;
+
+    PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId )
+            throws EntityNotFoundException;
 
     Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
 
@@ -74,7 +81,8 @@ public interface StoreReadLayer
     Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
             throws SchemaRuleNotFoundException;
 
-    long indexGetCommittedId( IndexDescriptor index, SchemaStorage.IndexRuleKind kind ) throws SchemaRuleNotFoundException;
+    long indexGetCommittedId( IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+            throws SchemaRuleNotFoundException;
 
     IndexRule indexRule( IndexDescriptor index, SchemaStorage.IndexRuleKind kind );
 
@@ -83,6 +91,8 @@ public interface StoreReadLayer
     Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
     Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException;
+
+    boolean relationshipExists( long relationshipId );
 
     PrimitiveLongIterator relationshipGetPropertyKeys( long relationshipId )
                     throws EntityNotFoundException;
@@ -145,12 +155,12 @@ public interface StoreReadLayer
 
     int relationshipTypeGetOrCreateForName( String relationshipTypeName );
 
-    void visit( long relationshipId, RelationshipVisitor relationshipVisitor ) throws EntityNotFoundException;
+    <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
+            RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION;
 
     long highestNodeIdInUse();
 
-    public interface RelationshipVisitor
-    {
-        void visit( long relId, long startNode, long endNode, int type );
-    }
+    PrimitiveLongIterator nodesGetAll();
+
+    PrimitiveLongIterator relationshipsGetAll();
 }

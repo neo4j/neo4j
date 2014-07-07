@@ -48,7 +48,7 @@ public class ProduceUncleanStore
             {
                 //noinspection deprecation
                 ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NodeManager.class )
-                        .getGraphProperties().setProperty( "prop", "Some value" );
+                        .newGraphProperties().setProperty( "prop", "Some value" );
             }
             tx.success();
         }

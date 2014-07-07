@@ -19,57 +19,57 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 
-public class RecoveryLogDeserializer implements LogReader<StoreChannel>
+// TODO 2.2-future check out how deserialization happens on recovery and transfer over anything useful
+public class RecoveryLogDeserializer implements LogReader<ReadableLogChannel>
 {
     private final LogEntryReader logEntryReader;
 
-    public RecoveryLogDeserializer( ByteBuffer scratch, XaCommandReaderFactory commandReaderFactory )
+    public RecoveryLogDeserializer( CommandReaderFactory commandReaderFactory )
     {
-        logEntryReader = new VersionAwareLogEntryReader( scratch, commandReaderFactory );
+        logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
     }
 
-    public Cursor<LogEntry, IOException> cursor( StoreChannel channel )
+    @Override
+    public Cursor<IOException> cursor( ReadableLogChannel channel, Visitor<LogEntry, IOException> visitor )
     {
-        return new RecoveryCursor( channel );
+        return new RecoveryCursor( channel, visitor );
     }
 
-    private class RecoveryCursor implements Cursor<LogEntry, IOException>
+    private class RecoveryCursor implements Cursor<IOException>
     {
-        private final StoreChannel channel;
+        private final ReadableLogChannel channel;
+        private final Visitor<LogEntry, IOException> visitor;
 
-        private RecoveryCursor( StoreChannel channel )
+        private RecoveryCursor( ReadableLogChannel channel, Visitor<LogEntry, IOException> visitor )
         {
             this.channel = channel;
+            this.visitor = visitor;
         }
 
         @Override
-        public boolean next( Consumer<LogEntry, IOException> consumer ) throws IOException
+        public boolean next(  ) throws IOException
         {
-            long position = channel.position();
-
             LogEntry entry = logEntryReader.readLogEntry( channel );
             if ( entry instanceof LogEntry.Start )
             {
-                ((LogEntry.Start) entry).setStartPosition( position );
+//                ((LogEntry.Start) entry).setStartPosition( position );
             }
             else if ( entry == null )
             {
                 return false;
             }
 
-            consumer.accept( entry );
+            visitor.visit( entry );
 
             return true;
         }

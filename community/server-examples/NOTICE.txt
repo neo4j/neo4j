@@ -30,7 +30,7 @@ Apache Software License, Version 2.0
   Commons BeanUtils
   Commons Digester
   Commons Lang
-  JTA 1.1
+  Commons Logging
 
 Common Development and Distribution License Version 1.1
   jersey-client

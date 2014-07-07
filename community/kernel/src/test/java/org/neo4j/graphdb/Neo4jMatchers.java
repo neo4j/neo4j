@@ -49,6 +49,12 @@ public class Neo4jMatchers
 {
     public static <T> Matcher<? super T> inTx( final GraphDatabaseService db, final Matcher<T> inner )
     {
+        return inTx( db, inner, false );
+    }
+
+    public static <T> Matcher<? super T> inTx( final GraphDatabaseService db, final Matcher<T> inner,
+            final boolean successful )
+    {
         return new DiagnosingMatcher<T>()
         {
             @Override
@@ -58,11 +64,19 @@ public class Neo4jMatchers
                 {
                     if ( inner.matches( item ) )
                     {
+                        if ( successful )
+                        {
+                            ignored.success();
+                        }
                         return true;
                     }
 
                     inner.describeMismatch( item, mismatchDescription );
 
+                    if ( successful )
+                    {
+                        ignored.success();
+                    }
                     return false;
                 }
             }

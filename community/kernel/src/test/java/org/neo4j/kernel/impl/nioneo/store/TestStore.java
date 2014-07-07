@@ -207,7 +207,6 @@ public class TestStore
                     pageCache,
                     FILE_SYSTEM,
                     StringLogger.DEV_NULL,
-                    null,
                     new Monitors() ).
                     createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ) );
             return new Store( fileName, pageCache );

@@ -25,7 +25,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 import org.junit.After;
-import org.junit.Test;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TargetDirectory;
@@ -70,7 +69,7 @@ public class DeletionTest
      * Slave pulls updates and tries to apply the transaction. The reason for the test to run transactions against the
      * Slave is because it makes guarantees for when the master has to apply the transaction.
      */
-    @Test
+//    @Test
     public void shouldDeleteRecords() throws Throwable
     {
         // given

@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 
 interface DataRead
 {
@@ -40,13 +41,23 @@ interface DataRead
     PrimitiveLongIterator nodesGetForLabel( int labelId );
 
     /**
-     * Returns an iterable with the matched nodes.
+     * Returns an iterator with the matched nodes.
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
      *          if no such index found.
      */
     PrimitiveLongIterator nodesGetFromIndexLookup( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
+
+    /**
+     * @return an iterator over all nodes in the database.
+     */
+    PrimitiveLongIterator nodesGetAll();
+
+    /**
+     * @return an iterator over all relationships in the database.
+     */
+    PrimitiveLongIterator relationshipsGetAll();
 
     PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction, int... relTypes ) throws EntityNotFoundException;
 
@@ -67,6 +78,10 @@ interface DataRead
     long nodeGetUniqueFromIndexLookup( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
             IndexBrokenKernelException;
 
+    boolean nodeExists(long nodeId);
+
+    boolean relationshipExists( long relId );
+
     /**
      * Checks if a node is labeled with a certain label or not. Returns
      * {@code true} if the node is labeled with the label, otherwise {@code false.}
@@ -74,6 +89,7 @@ interface DataRead
     boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException;
 
     int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException;
+
     int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException;
 
     /**
@@ -82,19 +98,11 @@ interface DataRead
      */
     PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
 
-    PrimitiveIntIterator nodeGetCommittedLabels( long nodeId ) throws EntityNotFoundException;
-
     PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException;
 
     Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
-    /** Get a property for a node, bypassing any transactional state. */
-    Property nodeGetCommittedProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
-
     Property relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
-
-    /** Get a property for a relationship, bypassing any transactional state. */
-    Property relationshipGetCommittedProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
 
     Property graphGetProperty( int propertyKeyId );
 
@@ -105,7 +113,6 @@ interface DataRead
 
     Iterator<DefinedProperty> graphGetAllProperties();
 
-    Iterator<DefinedProperty> nodeGetAllCommittedProperties( long nodeId ) throws EntityNotFoundException;
-
-    Iterator<DefinedProperty> relationshipGetAllCommittedProperties( long nodeId ) throws EntityNotFoundException;
+    <EXCEPTION extends Exception> void relationshipVisit( long relId, RelationshipVisitor<EXCEPTION> visitor )
+            throws EntityNotFoundException, EXCEPTION;
 }

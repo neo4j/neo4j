@@ -19,126 +19,87 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-
-import javax.transaction.xa.Xid;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigParam;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
-import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
-import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
-import org.neo4j.kernel.impl.util.Consumer;
-import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.String.format;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.DEFAULT;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
+import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 class RebuildFromLogs
 {
     private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
-    
-    /*
-     * TODO: This process can be sped up if the target db doesn't have to write tx logs.
-     */
-    private final NeoStoreXaDataSource nioneo;
+
     private final StoreAccess stores;
+    private final NeoStoreXaDataSource dataSource;
+    private final TransactionRepresentationStoreApplier storeApplier;
 
     RebuildFromLogs( GraphDatabaseAPI graphdb )
     {
-        this.nioneo = getDataSource( graphdb, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         this.stores = new StoreAccess( graphdb );
+        this.dataSource = graphdb.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource();
+        this.storeApplier = graphdb.getDependencyResolver().resolveDependency(
+                TransactionRepresentationStoreApplier.class );
     }
 
     RebuildFromLogs applyTransactionsFrom( ProgressListener progress, File sourceDir ) throws IOException
     {
-        LogExtractor extractor = null;
-        try
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( sourceDir, FS );
+        int startVersion = 0;
+        File logFile = logFiles.getVersionFileName( startVersion ); // assume we always start from version 0?
+        LogVersionBridge versionBridge = new ReaderLogVersionBridge( FS, logFiles );
+        ReadableLogChannel logChannel = new ReadAheadLogChannel(
+                new PhysicalLogVersionedStoreChannel( FS.open( logFile, "R" ), startVersion ),
+                versionBridge, DEFAULT_READ_AHEAD_SIZE );
+        Visitor<CommittedTransactionRepresentation, IOException> visitor = new Visitor<CommittedTransactionRepresentation, IOException>()
         {
-            extractor = LogExtractor.from( FS, XaCommandReaderFactory.DEFAULT,
-                    new XaCommandWriterFactory()
-                    {
-                        @Override
-                        public XaCommandWriter newInstance()
-                        {
-                            return new PhysicalLogNeoXaCommandWriter();
-                        }
-                    },
-                    new Monitors().newMonitor( ByteCounterMonitor.class ),
-                    new LogEntryWriterv1(),
-                    sourceDir );
-            for ( InMemoryLogBuffer buffer = new InMemoryLogBuffer(); ; buffer.reset() )
+            @Override
+            public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
             {
-                long txId = extractor.extractNext( buffer );
-                if ( txId == -1 )
-                {
-                    break;
-                }
-                applyTransaction( txId, buffer );
-                progress.set( txId );
+                storeApplier.apply( transaction.getTransactionRepresentation(),
+                        transaction.getCommitEntry().getTxId(), true );
+                return true;
             }
-        }
-        finally
-        {
-            if ( extractor != null )
-            {
-                extractor.close();
-            }
-            progress.done();
-        }
+        };
+        exhaustAndClose( new PhysicalTransactionCursor( logChannel,
+                new VersionAwareLogEntryReader( DEFAULT ), visitor ) );
         return this;
     }
 
-    public void applyTransaction( long txId, ReadableByteChannel txData ) throws IOException
-    {
-        nioneo.applyCommittedTransaction( txId, txData );
-    }
-
-    private static NeoStoreXaDataSource getDataSource( GraphDatabaseAPI graphdb, String name )
-    {
-        NeoStoreXaDataSource datasource = graphdb.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                .getNeoStoreDataSource();
-        if ( datasource == null )
-        {
-            throw new NullPointerException( "Could not access " + name );
-        }
-        return datasource;
-    }
-
-    public static void main( String[] args )
+    public static void main( String[] args ) throws Exception
     {
         if ( args == null )
         {
@@ -174,10 +135,7 @@ class RebuildFromLogs
                     System.exit( -1 );
                     return;
                 }
-                else
-                {
-                    System.err.println( "WARNING: the directory " + target + " already exists" );
-                }
+                System.err.println( "WARNING: the directory " + target + " already exists" );
             }
             else
             {
@@ -186,100 +144,54 @@ class RebuildFromLogs
                 return;
             }
         }
-        long maxFileId = findMaxLogFileId( source );
-        if ( maxFileId < 0 )
-        {
-            printUsage( "Inconsistent number of log files found in " + source );
-            System.exit( -1 );
-            return;
-        }
-        long txCount = findLastTransactionId( source, LOGICAL_LOG_DEFAULT_NAME + ".v" + maxFileId );
-        String txdifflog = params.get( "txdifflog", null, new File( target, "txdiff.log" ).getAbsolutePath() );
-        GraphDatabaseAPI graphdb = BackupService.startTemporaryDb( target.getAbsolutePath(),
-                new TxDiffLogConfig( full
-                        ? VerificationLevel.FULL_WITH_LOGGING
-                        : VerificationLevel.LOGGING, txdifflog ) );
 
-        ProgressMonitorFactory progress;
-        if ( txCount < 0 )
-        {
-            progress = ProgressMonitorFactory.NONE;
-            System.err.println( "Unable to report progress, cannot find highest txId, attempting rebuild anyhow." );
-        }
-        else
-        {
-            progress = ProgressMonitorFactory.textual( System.err );
-        }
+        GraphDatabaseAPI graphdb = BackupService.startTemporaryDb( target.getAbsolutePath() );
         try
         {
-            try
+            PhysicalLogFiles logFiles = new PhysicalLogFiles( source, FS );
+            long highestVersion = logFiles.getHighestLogVersion();
+            if ( highestVersion < 0 )
             {
-                ProgressListener listener = progress
-                        .singlePart( String.format( "Rebuilding store from %s transactions ", txCount ), txCount );
-                RebuildFromLogs rebuilder = new RebuildFromLogs( graphdb ).applyTransactionsFrom( listener, source );
-                // if we didn't run the full checker for each transaction, run it afterwards
-                if ( !full )
-                {
-                    rebuilder.checkConsistency();
-                }
+                printUsage( "Inconsistent number of log files found in " + source );
+                return;
             }
-            finally
+            long txCount = findLastTransactionId( logFiles, highestVersion );
+            ProgressMonitorFactory progress;
+            if ( txCount < 0 )
             {
-                graphdb.shutdown();
+                progress = ProgressMonitorFactory.NONE;
+                System.err.println( "Unable to report progress, cannot find highest txId, attempting rebuild anyhow." );
+            }
+            else
+            {
+                progress = ProgressMonitorFactory.textual( System.err );
+            }
+            ProgressListener listener = progress.singlePart(
+                    format( "Rebuilding store from %s transactions ", txCount ), txCount );
+            RebuildFromLogs rebuilder = new RebuildFromLogs( graphdb ).applyTransactionsFrom( listener, source );
+            // if we didn't run the full checker for each transaction, run it afterwards
+            if ( !full )
+            {
+                rebuilder.checkConsistency();
             }
         }
-        catch ( Exception e )
+        finally
         {
-            System.err.println();
-            e.printStackTrace( System.err );
-            System.exit( -1 );
+            graphdb.shutdown();
         }
     }
 
-    private static long findLastTransactionId( File storeDir, String logFileName )
+    private static long findLastTransactionId( PhysicalLogFiles logFiles, long highestVersion )
+            throws IOException
     {
-        final AtomicLong txId = new AtomicLong();
-        try
-        {
-            FileChannel channel = new RandomAccessFile( new File( storeDir, logFileName ), "r" ).getChannel();
-            try
-            {
-                ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
-                txId.set( VersionAwareLogEntryReader.readLogHeader( buffer, channel, true )[1] );
-
-                LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
-
-                Cursor<LogEntry, IOException> cursor = deserializer.cursor ( channel );
-
-
-                Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
-                {
-                    @Override
-                    public boolean accept( LogEntry entry ) throws IOException
-                    {
-                        if ( entry instanceof LogEntry.Commit )
-                        {
-                            txId.set( ((LogEntry.Commit) entry).getTxId() );
-                        }
-                        return true;
-                    }
-                };
-
-                while ( cursor.next( consumer ) );
-            }
-            finally
-            {
-                if ( channel != null )
-                {
-                    channel.close();
-                }
-            }
-        }
-        catch ( IOException e )
-        {
-            return -1;
-        }
-        return txId.get();
+        File logFile = logFiles.getVersionFileName( highestVersion );
+        ReadableLogChannel logChannel = new ReadAheadLogChannel(
+                new PhysicalLogVersionedStoreChannel( FS.open( logFile, "R" ), highestVersion ),
+                NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
+        TransactionIdSeeker transactionIdSeeker = new TransactionIdSeeker();
+        exhaustAndClose( new PhysicalTransactionCursor( logChannel,
+                new VersionAwareLogEntryReader( DEFAULT ), transactionIdSeeker ) );
+        return transactionIdSeeker.highestSeenTransactionId();
     }
 
     private void checkConsistency() throws ConsistencyCheckIncompleteException
@@ -287,7 +199,8 @@ class RebuildFromLogs
         Config tuningConfiguration = new Config( stringMap(),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
         new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ) )
-                .execute( new DirectStoreAccess( stores, nioneo.getLabelScanStore(), nioneo.getIndexProvider() ), StringLogger.SYSTEM );
+                .execute( new DirectStoreAccess( stores, dataSource.getLabelScanStore(), dataSource.getIndexProvider() ),
+                        StringLogger.SYSTEM );
     }
 
     private static void printUsage( String... msgLines )
@@ -303,33 +216,20 @@ class RebuildFromLogs
         System.err.println( "         -full     --  to run a full check over the entire store for each transaction" );
     }
 
-    private static long findMaxLogFileId( File source )
+    private static final class TransactionIdSeeker implements Visitor<CommittedTransactionRepresentation, IOException>
     {
-        return getHighestHistoryLogVersion( FS, source, LOGICAL_LOG_DEFAULT_NAME );
-    }
-
-    private static class TxDiffLogConfig implements ConfigParam
-    {
-        private final String targetFile;
-        private final VerificationLevel level;
-
-        TxDiffLogConfig( VerificationLevel level, String targetFile )
-        {
-            this.level = level;
-            this.targetFile = targetFile;
-        }
+        private long lastTransactionId = -1;
 
         @Override
-        public void configure( Map<String, String> config )
+        public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
         {
-            if ( targetFile != null )
-            {
-                level.configureWithDiffLog( config, targetFile );
-            }
-            else
-            {
-                level.configure( config );
-            }
+            lastTransactionId = transaction.getCommitEntry().getTxId();
+            return true;
+        }
+
+        public long highestSeenTransactionId()
+        {
+            return lastTransactionId;
         }
     }
 }

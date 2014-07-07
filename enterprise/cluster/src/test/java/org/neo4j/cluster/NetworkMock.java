@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -42,7 +43,10 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
@@ -75,7 +79,9 @@ public class NetworkMock
         this.tickDuration = tickDuration;
         this.strategy = strategy;
         this.timeoutStrategy = timeoutStrategy;
-        this.logging = new LogbackService( null, (LoggerContext) LoggerFactory.getILoggerFactory() );
+        this.logging = new LogbackService( new Config( Collections.<String, String>emptyMap(),
+                InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ),
+                (LoggerContext) LoggerFactory.getILoggerFactory() );
         logger = logging.getMessagesLog( NetworkMock.class );
         futureWaiter = new LinkedList<Pair<Future<?>, Runnable>>();
     }
@@ -107,7 +113,8 @@ public class NetworkMock
             throw new IllegalStateException( "Failed to configure logging", e );
         }
 
-        Logging logging = new LogbackService( null, loggerContext );
+        Logging logging = new LogbackService( new Config( Collections.<String, String>emptyMap(),
+                InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ), loggerContext );
 
         ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory( monitors,
                 new ClusterConfiguration( "default", StringLogger.SYSTEM ), logging );

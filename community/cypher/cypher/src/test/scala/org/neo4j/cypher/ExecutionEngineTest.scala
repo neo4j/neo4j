@@ -532,7 +532,7 @@ order by a.COL1""")
     val result = execute("cypher 1.9 start n = node(0) return n-->()")
       .columnAs[List[Path]]("n-->()").toList.flatMap(p => p.map(_.endNode()))
 
-    result should equal(List(b, c, d))
+    result should equal(List(d, c, b))
   }
 
   test("var_length_expression_on_1_9") {

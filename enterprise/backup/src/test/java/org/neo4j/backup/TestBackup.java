@@ -20,7 +20,7 @@
 package org.neo4j.backup;
 
 import java.io.File;
-import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -41,8 +42,10 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.NoSuchTransactionException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
@@ -53,6 +56,7 @@ import static java.lang.Integer.parseInt;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -142,12 +146,7 @@ public class TestBackup
             shutdownServer( server );
             server = null;
 
-            db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( backupPath.getPath() );
-            for ( XaDataSource ds : db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getAllRegisteredDataSources() )
-            {
-                ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
-            }
-            db.shutdown();
+            assertMetadataAboutLastTransactionExists( backupPath );
 
             addMoreData( serverPath );
             server = startServer( serverPath );
@@ -156,77 +155,7 @@ public class TestBackup
             shutdownServer( server );
             server = null;
 
-            db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( backupPath.getPath() );
-            for ( XaDataSource ds : db.getDependencyResolver().resolveDependency( XaDataSourceManager.class).getAllRegisteredDataSources() )
-            {
-                ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
-            }
-        }
-        finally
-        {
-            if ( db != null )
-            {
-                db.shutdown();
-            }
-            if ( server != null )
-            {
-                shutdownServer( server );
-            }
-        }
-    }
-
-    @Test
-    public void incrementalBackupLeavesOnlyLastTxInLog() throws Exception
-    {
-        GraphDatabaseAPI db = null;
-        ServerInterface server = null;
-        try
-        {
-            createInitialDataSet( serverPath );
-            server = startServer( serverPath );
-            OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
-            backup.full( backupPath.getPath() );
-            assertTrue( "Should be consistent", backup.isConsistent() );
-            shutdownServer( server );
-            server = null;
-
-            addMoreData( serverPath );
-            server = startServer( serverPath );
-            backup.incremental( backupPath.getPath() );
-            assertTrue( "Should be consistent", backup.isConsistent() );
-            shutdownServer( server );
-            server = null;
-
-            // do 2 rotations, add two empty logs
-            new GraphDatabaseFactory().newEmbeddedDatabase( backupPath.getPath() ).shutdown();
-            new GraphDatabaseFactory().newEmbeddedDatabase( backupPath.getPath() ).shutdown();
-
-            addMoreData( serverPath );
-            server = startServer( serverPath );
-            backup.incremental( backupPath.getPath() );
-            assertTrue( "Should be consistent", backup.isConsistent() );
-            shutdownServer( server );
-            server = null;
-
-            int logsFound = backupPath.listFiles( new FilenameFilter()
-            {
-                @Override
-                public boolean accept( File dir, String name )
-                {
-                    return name.startsWith( "nioneo_logical.log" )
-                           && !name.endsWith( "active" );
-                }
-            } ).length;
-
-            // 2 one the real and the other from the rotation of shutdown
-            assertEquals( 2, logsFound );
-
-            db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( backupPath.getPath() );
-
-            for ( XaDataSource ds : db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getAllRegisteredDataSources() )
-            {
-                ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
-            }
+            assertMetadataAboutLastTransactionExists( backupPath );
         }
         finally
         {
@@ -331,76 +260,6 @@ public class TestBackup
         shutdownServer( server );
     }
 
-    private ServerInterface startServer( File path ) throws Exception
-    {
-        ServerInterface server = new EmbeddedServer( path.getPath(), "127.0.0.1:6362" );
-        server.awaitStarted();
-        servers.add( server );
-        return server;
-    }
-
-    private void shutdownServer( ServerInterface server ) throws Exception
-    {
-        server.shutdown();
-        servers.remove( server );
-    }
-
-    private DbRepresentation addMoreData( File path )
-    {
-        GraphDatabaseService db = startGraphDatabase( path, false );
-        try
-        {
-            Transaction tx = db.beginTx();
-            Node node = db.createNode();
-            node.setProperty( "backup", "Is great" );
-            db.createNode().createRelationshipTo( node,
-                    DynamicRelationshipType.withName( "LOVES" ) );
-            tx.success();
-            tx.finish();
-            return DbRepresentation.of( db );
-        }
-        finally
-        {
-            db.shutdown();
-        }
-    }
-
-    private GraphDatabaseService startGraphDatabase( File path, boolean withOnlineBackup )
-    {
-        return new GraphDatabaseFactory().
-            newEmbeddedDatabaseBuilder( path.getPath() ).
-            setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) ).
-            setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
-            newGraphDatabase();
-    }
-
-    private DbRepresentation createInitialDataSet( File path )
-    {
-        GraphDatabaseService db = startGraphDatabase( path, false );
-        try
-        {
-            createInitialDataset( db );
-            return DbRepresentation.of( db );
-        }
-        finally
-        {
-            db.shutdown();
-        }
-    }
-
-    private void createInitialDataset( GraphDatabaseService db )
-    {
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        node.setProperty( "myKey", "myValue" );
-        Index<Node> nodeIndex = db.index().forNodes( "db-index" );
-        nodeIndex.add( node, "myKey", "myValue" );
-        db.createNode().createRelationshipTo( node,
-                DynamicRelationshipType.withName( "KNOWS" ) );
-        tx.success();
-        tx.finish();
-    }
-
     @Test
     public void multipleIncrementals() throws Exception
     {
@@ -411,28 +270,31 @@ public class TestBackup
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
                 newGraphDatabase();
 
-            Transaction tx = db.beginTx();
-            Index<Node> index = db.index().forNodes( "yo" );
-            index.add( db.createNode(), "justTo", "commitATx" );
-            tx.success();
-            tx.finish();
+            Index<Node> index;
+            try ( Transaction tx = db.beginTx() )
+            {
+                index = db.index().forNodes( "yo" );
+                index.add( db.createNode(), "justTo", "commitATx" );
+                db.createNode();
+                tx.success();
+            }
 
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
-            long lastCommittedTxForLucene = getLastCommittedTx( backupPath.getPath() );
+            long lastCommittedTx = getLastCommittedTx( backupPath.getPath() );
 
             for ( int i = 0; i < 5; i++ )
             {
-                tx = db.beginTx();
-                Node node = db.createNode();
-                index.add( node, "key", "value" + i );
-                tx.success();
-                tx.finish();
+                try ( Transaction tx = db.beginTx() )
+                {
+                    Node node = db.createNode();
+                    index.add( node, "key", "value" + i );
+                    tx.success();
+                }
                 backup = backup.incremental( backupPath.getPath() );
                 assertTrue( "Should be consistent", backup.isConsistent() );
-                assertEquals( lastCommittedTxForLucene + i + 1,
-                        getLastCommittedTx( backupPath.getPath() ) );
+                assertEquals( lastCommittedTx + i + 1, getLastCommittedTx( backupPath.getPath() ) );
             }
         }
         finally
@@ -454,15 +316,10 @@ public class TestBackup
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
                 newGraphDatabase();
 
-            Transaction transaction = db.beginTx();
-            try
+            try ( Transaction transaction = db.beginTx() )
             {
                 db.index().forNodes( "created-no-commits" );
                 transaction.success();
-            }
-            finally
-            {
-                transaction.finish();
             }
 
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
@@ -479,19 +336,9 @@ public class TestBackup
         }
     }
 
-    @SuppressWarnings("deprecation")
     private long getLastCommittedTx( String path )
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
-        try
-        {
-            XaDataSource ds = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
-            return ds.getLastCommittedTxId();
-        }
-        finally
-        {
-            db.shutdown();
-        }
+        return new NeoStoreUtil( new File( path ) ).getLastCommittedTx();
     }
 
     @Test
@@ -505,19 +352,14 @@ public class TestBackup
 
         try
         {
-            Transaction tx = db.beginTx();
             Index<Node> index;
             Node node;
-            try
+            try ( Transaction tx = db.beginTx() )
             {
                 index = db.index().forNodes( key );
                 node = db.createNode();
                 node.setProperty( key, value );
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
@@ -527,15 +369,10 @@ public class TestBackup
             assertTrue( "Should be consistent", backup.isConsistent() );
             assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
 
-            tx = db.beginTx();
-            try
+            try ( Transaction tx = db.beginTx() )
             {
                 index.add( node, key, value );
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
             FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
             backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
@@ -660,7 +497,7 @@ public class TestBackup
             }
             catch ( RuntimeException ex )
             {
-                if (ex.getCause().getCause() instanceof StoreLockException )
+                if ( ex.getCause().getCause() instanceof StoreLockException )
                 {
                     state = ex;
                     return;
@@ -677,5 +514,105 @@ public class TestBackup
     private static boolean checkLogFileExistence( String directory )
     {
         return new File( directory, StringLogger.DEFAULT_NAME ).exists();
+    }
+
+    private void assertMetadataAboutLastTransactionExists( File storeDir )
+    {
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
+        long lastCommittingTransactionId = -1;
+        try
+        {
+            DependencyResolver resolver = db.getDependencyResolver();
+            LogicalTransactionStore transactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
+            TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+            lastCommittingTransactionId = transactionIdStore.getLastCommittingTransactionId();
+            assertNotNull( transactionStore.getMetadataFor( lastCommittingTransactionId ) );
+            // Good, we got the metadata. If it's missing a NoSuchTransactionException should have been thrown
+            // the not-null check is just because it looks better.
+        }
+        catch ( NoSuchTransactionException e )
+        {
+            fail( "Transaction metadata for " + lastCommittingTransactionId + " not found: " + e );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private ServerInterface startServer( File path ) throws Exception
+    {
+        ServerInterface server = new EmbeddedServer( path.getPath(), "127.0.0.1:6362" );
+        server.awaitStarted();
+        servers.add( server );
+        return server;
+    }
+
+    private void shutdownServer( ServerInterface server ) throws Exception
+    {
+        server.shutdown();
+        servers.remove( server );
+    }
+
+    private DbRepresentation addMoreData( File path )
+    {
+        GraphDatabaseService db = startGraphDatabase( path, false );
+        DbRepresentation representation;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( "backup", "Is great" );
+            db.createNode().createRelationshipTo( node,
+                    DynamicRelationshipType.withName( "LOVES" ) );
+            tx.success();
+        }
+        finally
+        {
+            representation = DbRepresentation.of( db );
+            db.shutdown();
+        }
+        return representation;
+    }
+
+    private GraphDatabaseService startGraphDatabase( File path, boolean withOnlineBackup )
+    {
+        return new GraphDatabaseFactory().
+            newEmbeddedDatabaseBuilder( path.getPath() ).
+            setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) ).
+            setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
+            newGraphDatabase();
+    }
+
+    private DbRepresentation createInitialDataSet( File path )
+    {
+        GraphDatabaseService db = startGraphDatabase( path, false );
+        try
+        {
+            createInitialDataset( db );
+            return DbRepresentation.of( db );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private void createInitialDataset( GraphDatabaseService db )
+    {
+        // 4 transactions: THE transaction, "mykey" property key, "db-index" index, "KNOWS" rel type.
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( "myKey", "myValue" );
+            Index<Node> nodeIndex = db.index().forNodes( "db-index" );
+            nodeIndex.add( node, "myKey", "myValue" );
+            db.createNode().createRelationshipTo( node,
+                    DynamicRelationshipType.withName( "KNOWS" ) );
+            tx.success();
+        }
     }
 }

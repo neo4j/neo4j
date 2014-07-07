@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.heuristics.StatisticsData;
 
 /**
@@ -37,9 +37,20 @@ public interface KernelAPI
      * Creates and returns a new {@link KernelTransaction} capable of modifying the
      * underlying graph.
      */
-    KernelTransaction newTransaction();
+    KernelTransaction newTransaction() throws TransactionFailureException;
 
+    /**
+     * Registers a {@link TransactionHook} that will receive notifications about committing transactions
+     * and the changes they commit.
+     * @param hook {@link TransactionHook} for receiving notifications about transactions to commit.
+     */
     void registerTransactionHook( TransactionHook hook );
+
+    /**
+     * Unregisters an already registered {@link TransactionHook} so that it will no longer receive notifications
+     * about transactions.
+     * @param hook {@link TransactionHook} to unregister.
+     */
     void unregisterTransactionHook( TransactionHook hook );
 
     /** Access live updated statistics for the data the kernel manages. */

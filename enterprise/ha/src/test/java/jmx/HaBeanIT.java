@@ -19,24 +19,31 @@
  */
 package jmx;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.test.ha.ClusterManager.RepairKit;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterSeesMembers;
+
 import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.com.ServerUtil;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
@@ -53,17 +60,6 @@ import org.neo4j.management.Neo4jManager;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
-import org.neo4j.test.ha.ClusterManager.RepairKit;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterSeesMembers;
 
 public class HaBeanIT
 {
@@ -154,7 +150,6 @@ public class HaBeanIT
         HighAvailability slaveBean = ha( slave );
         DateFormat format = new SimpleDateFormat( "yyyy-MM-DD kk:mm:ss.SSSZZZZ" );
         // To begin with, no updates
-        assertEquals( "N/A", slaveBean.getLastUpdateTime() );
         slaveBean.update();
         long timeUpdated = format.parse( slaveBean.getLastUpdateTime() ).getTime();
         assertTrue( timeUpdated > 0 );
@@ -233,7 +228,10 @@ public class HaBeanIT
                         info.isAvailable() );
                 for ( String role : info.getRoles() )
                 {
-                    if (role.equals( HighAvailabilityModeSwitcher.MASTER )) mastersFound++;
+                    if (role.equals( HighAvailabilityModeSwitcher.MASTER ))
+                    {
+                        mastersFound++;
+                    }
                 }
             }
             assertEquals( 1, mastersFound );
@@ -248,46 +246,6 @@ public class HaBeanIT
         assertNotNull( "could not get branched store bean", bs );
         assertEquals( "no branched stores for new db", 0,
                 bs.getBranchedStores().length );
-    }
-
-    @Test
-    @Ignore //Temporary ignore since this doesn't work well on Linux 2011-04-08
-    public void canGetInstanceConnectionInformation() throws Throwable
-    {
-        startCluster( 1 );
-        ClusterMemberInfo[] clusterMembers = ha( cluster.getMaster() ).getInstancesInCluster();
-        assertNotNull( clusterMembers );
-        assertEquals( 1, clusterMembers.length );
-        ClusterMemberInfo clusterMember = clusterMembers[0];
-        assertNotNull( clusterMember );
-//        String address = clusterMember.getAddress();
-//        assertNotNull( "No JMX address for instance", address );
-        String id = clusterMember.getInstanceId();
-        assertNotNull( "No instance id", id );
-    }
-
-    @Test
-    @Ignore //Temporary ignore since this doesn't work well on Linux 2011-04-08
-    public void canConnectToInstance() throws Throwable
-    {
-        startCluster( 1 );
-        ClusterMemberInfo[] clusterMembers = ha( cluster.getMaster() ).getInstancesInCluster();
-        assertNotNull( clusterMembers );
-        assertEquals( 1, clusterMembers.length );
-        ClusterMemberInfo clusterMember = clusterMembers[0];
-        assertNotNull( clusterMember );
-        Pair<Neo4jManager, HighAvailability> proc = clusterMember.connect();
-        assertNotNull( "could not connect", proc );
-        Neo4jManager neo4j = proc.first();
-        HighAvailability ha = proc.other();
-        assertNotNull( neo4j );
-        assertNotNull( ha );
-
-        clusterMembers = ha.getInstancesInCluster();
-        assertNotNull( clusterMembers );
-        assertEquals( 1, clusterMembers.length );
-//        assertEquals( clusterMember.getAddress(), clusterMembers[0].getAddress() );
-        assertEquals( clusterMember.getInstanceId(), clusterMembers[0].getInstanceId() );
     }
 
     @Test
@@ -338,10 +296,22 @@ public class HaBeanIT
         }
     }
 
+    public static URI getUriForScheme( final String scheme, Iterable<URI> uris )
+    {
+        return first( filter( new Predicate<URI>()
+        {
+            @Override
+            public boolean accept( URI item )
+            {
+                return item.getScheme().equals( scheme );
+            }
+        }, uris ) );
+    }
+
     private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception
     {
         ClusterMemberInfo master = member( instancesInCluster, 1 );
-        assertEquals( 1137, ServerUtil.getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
+        assertEquals( 1137, getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
         {
             @Override
             public URI apply( String from )
@@ -352,7 +322,7 @@ public class HaBeanIT
         assertEquals( HighAvailabilityModeSwitcher.MASTER, master.getHaRole() );
 
         ClusterMemberInfo slave = member( instancesInCluster, 2 );
-        assertEquals( 1138, ServerUtil.getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
+        assertEquals( 1138, getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
         {
             @Override
             public URI apply( String from )

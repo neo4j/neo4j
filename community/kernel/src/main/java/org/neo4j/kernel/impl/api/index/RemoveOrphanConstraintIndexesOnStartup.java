@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Iterator;
 
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
@@ -37,38 +37,30 @@ import org.neo4j.kernel.logging.Logging;
 public class RemoveOrphanConstraintIndexesOnStartup
 {
     private final StringLogger log;
-    private final Transactor transactor;
+    private final KernelAPI kernel;
 
-    public RemoveOrphanConstraintIndexesOnStartup( Transactor transactor, Logging logging )
+    public RemoveOrphanConstraintIndexesOnStartup( KernelAPI kernel, Logging logging )
     {
-        this.transactor = transactor;
+        this.kernel = kernel;
         this.log = logging.getMessagesLog( getClass() );
     }
 
     public void perform()
     {
-        try
+        try ( KernelTransaction transaction = kernel.newTransaction();
+              Statement statement = transaction.acquireStatement() )
         {
-            transactor.execute( new Transactor.Work<Void, KernelException>()
+            for ( Iterator<IndexDescriptor> indexes = statement.readOperations().uniqueIndexesGetAll();
+                  indexes.hasNext(); )
             {
-                @Override
-                public Void perform( Statement state )
-                        throws KernelException
+                IndexDescriptor index = indexes.next();
+                if ( statement.readOperations().indexGetOwningUniquenessConstraintId( index ) == null )
                 {
-                    for ( Iterator<IndexDescriptor> indexes = state.readOperations().uniqueIndexesGetAll();
-                          indexes.hasNext(); )
-                    {
-                        IndexDescriptor index = indexes.next();
-                        if ( state.readOperations().indexGetOwningUniquenessConstraintId( index ) == null )
-                        {
-                            state.schemaWriteOperations().uniqueIndexDrop( index );
-                        }
-                    }
-                    return null;
+                    statement.schemaWriteOperations().uniqueIndexDrop( index );
                 }
-            } );
+            }
         }
-        catch ( KernelException | TransactionalException e )
+        catch ( KernelException e )
         {
             log.error( "Failed to execute orphan index checking transaction.", e );
         }

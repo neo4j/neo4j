@@ -19,27 +19,27 @@
  */
 package org.neo4j.server.rrd.sampler;
 
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.server.rrd.Sampleable;
 import org.rrd4j.DsType;
 
 public abstract class DatabasePrimitivesSampleableBase implements Sampleable
 {
-    private final NodeManager nodeManager;
+    private final NeoStore neoStore;
 
-    public DatabasePrimitivesSampleableBase( NodeManager nodeManager )
+    public DatabasePrimitivesSampleableBase( NeoStore neoStore )
     {
-        if(nodeManager == null)
+        if( neoStore == null )
         {
             throw new RuntimeException( "Database sampler needs a node manager to work, was given null." );
         }
-        this.nodeManager = nodeManager;
+        this.neoStore = neoStore;
 
     }
 
-    protected NodeManager getNodeManager()
+    protected NeoStore getNeoStore()
     {
-        return nodeManager;
+        return neoStore;
     }
 
     @Override

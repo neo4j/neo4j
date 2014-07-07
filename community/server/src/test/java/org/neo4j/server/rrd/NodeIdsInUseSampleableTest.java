@@ -22,10 +22,11 @@ package org.neo4j.server.rrd;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -67,7 +68,7 @@ public class NodeIdsInUseSampleableTest
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         DependencyResolver dependencyResolver = db.getDependencyResolver();
-        sampleable = new NodeIdsInUseSampleable( dependencyResolver.resolveDependency( NodeManager.class ) );
+        sampleable = new NodeIdsInUseSampleable( dependencyResolver.resolveDependency( NeoStoreProvider.class ).evaluate() );
     }
 
     @After

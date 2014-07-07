@@ -22,14 +22,15 @@ package org.neo4j.index.impl.lucene;
 import java.util.Collection;
 
 import org.apache.lucene.document.Document;
+
 import org.neo4j.graphdb.index.IndexHits;
 
-public class DocToIdIterator extends AbstractIndexHits<Long>
+public class DocToIdIterator extends AbstractLegacyIndexHits
 {
     private final Collection<Long> exclude;
     private IndexReference searcherOrNull;
     private final IndexHits<Document> source;
-    
+
     public DocToIdIterator( IndexHits<Document> source, Collection<Long> exclude, IndexReference searcherOrNull )
     {
         this.source = source;
@@ -42,31 +43,26 @@ public class DocToIdIterator extends AbstractIndexHits<Long>
     }
 
     @Override
-    protected Long fetchNextOrNull()
+    protected boolean fetchNext()
     {
-        Long result = null;
-        while ( result == null )
+        while ( source.hasNext() )
         {
-            if ( !source.hasNext() )
-            {
-                endReached();
-                break;
-            }
             Document doc = source.next();
-            Long id = Long.valueOf( doc.get( LuceneIndex.KEY_DOC_ID ) );
+            long id = Long.parseLong( doc.get( LuceneIndex.KEY_DOC_ID ) );
             if ( !exclude.contains( id ) )
             {
-                result = id;
+                return next( id );
             }
         }
-        return result;
+        return endReached();
     }
 
-    protected void endReached()
+    protected boolean endReached()
     {
         close();
+        return false;
     }
-    
+
     @Override
     public void close()
     {
@@ -98,7 +94,7 @@ public class DocToIdIterator extends AbstractIndexHits<Long>
     {
         return source.currentScore();
     }
-    
+
     @Override
     protected void finalize() throws Throwable
     {

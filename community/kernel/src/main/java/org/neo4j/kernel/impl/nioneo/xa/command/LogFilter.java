@@ -52,27 +52,9 @@ public class LogFilter implements LogHandler
     }
 
     @Override
-    public void prepareEntry( LogEntry.Prepare prepareEntry )
-    {
-        logEntries.add( prepareEntry );
-    }
-
-    @Override
     public void onePhaseCommitEntry( LogEntry.OnePhaseCommit onePhaseCommitEntry )
     {
         logEntries.add( onePhaseCommitEntry );
-    }
-
-    @Override
-    public void twoPhaseCommitEntry( LogEntry.TwoPhaseCommit twoPhaseCommitEntry )
-    {
-        logEntries.add( twoPhaseCommitEntry );
-    }
-
-    @Override
-    public void doneEntry( LogEntry.Done doneEntry )
-    {
-        logEntries.add( doneEntry );
     }
 
     @Override

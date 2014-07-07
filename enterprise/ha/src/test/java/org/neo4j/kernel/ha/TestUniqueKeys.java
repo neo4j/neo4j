@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -26,7 +29,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Before;
-import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -39,12 +41,9 @@ import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-
 public class TestUniqueKeys extends AbstractClusterTest
 {
-    @Test
+//    @Test
     public void bruteForceCreateSameRelationshipTypeOnDifferentSlaveAtTheSameTimeShouldYieldSameId() throws Exception
     {
         // Get a hold of all the slaves in there
@@ -116,7 +115,7 @@ public class TestUniqueKeys extends AbstractClusterTest
         }
     }
     
-    @Test
+//    @Test
     public void bruteForceCreateSamePropertyKeyOnDifferentSlaveAtTheSameTimeShouldYieldSameId() throws Exception
     {
         // Get a hold of all the slaves in there

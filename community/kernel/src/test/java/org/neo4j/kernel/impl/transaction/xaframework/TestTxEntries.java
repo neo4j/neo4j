@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
+
+import java.io.File;
 import java.util.Random;
 
 import javax.transaction.xa.Xid;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -36,11 +41,6 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
-
 public class TestTxEntries
 {
     private final Random random = new Random();
@@ -49,7 +49,7 @@ public class TestTxEntries
     private final int refMaster = 1;
     private final int refMe = 1;
     private final long startPosition = 1000;
-    private final String storeDir = "dir";
+    private final String storeDir = new File("dir").getAbsolutePath();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     /*
@@ -79,27 +79,32 @@ public class TestTxEntries
 
     private void assertCorrectChecksumEquality( Xid refXid )
     {
-        Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime, 0l );
-        assertChecksumsEquals( ref, new Start( refXid, refId, refMaster, refMe, startPosition, refTime, 0l ) );
+        /*
+         * public Start( int masterId, int myId, long timeWritten,
+                      long lastCommittedTxWhenTransactionStarted, byte[] additionalHeader,
+                      LogPosition startPosition )
+         */
+        Start ref = new Start( refMaster, refMe,refTime, 0l, refXid.getBranchQualifier(), mock( LogPosition.class) );
+        assertChecksumsEquals( ref, new Start( refMaster, refMe,refTime, 0l, refXid.getBranchQualifier(), mock( LogPosition.class) ) );
 
         // Different Xids
-        assertChecksumsNotEqual( ref, new Start( randomXid( null ), refId, refMaster, refMe, startPosition, refTime, 0l ) );
+        assertChecksumsNotEqual( ref, new Start( refMaster, refMe, refTime, 0l, randomXid( null ).getBranchQualifier(), mock( LogPosition.class) ) );
 
         // Different master
-        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster+1, refMe, startPosition, refTime, 0l ) );
+        assertChecksumsNotEqual( ref, new Start( refMaster+1, refMe, refTime, 0l, randomXid( null ).getBranchQualifier(), mock( LogPosition.class) ) );
 
         // Different me
-        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster, refMe+1, startPosition, refTime, 0l ) );
+        assertChecksumsNotEqual( ref, new Start( refMaster, refMe+1, refTime, 0l, randomXid( null ).getBranchQualifier(), mock( LogPosition.class) ) );
     }
 
     private void assertChecksumsNotEqual( Start ref, Start other )
     {
-        assertFalse( ref.getChecksum() == other.getChecksum() );
+        assertFalse( LogEntry.Start.checksum( ref ) == LogEntry.Start.checksum( other ) );
     }
 
     private void assertChecksumsEquals( Start ref, Start other )
     {
-        assertEquals( ref.getChecksum(), other.getChecksum() );
+        assertEquals( LogEntry.Start.checksum( ref ), LogEntry.Start.checksum( other ) );
     }
 
     private Xid randomXid( Boolean trueForPositive )

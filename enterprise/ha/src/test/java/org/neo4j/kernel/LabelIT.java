@@ -19,15 +19,20 @@
  */
 package org.neo4j.kernel;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.cluster.ClusterSettings.default_timeout;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
 
 import org.junit.After;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -37,15 +42,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.cluster.ClusterSettings.default_timeout;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-
+// TODO 2.2-future this needs to be rewritten without relying on suspend/resume
 public class LabelIT
 {
     @Test
@@ -86,7 +83,6 @@ public class LabelIT
     }
 
     private TransactionContinuation createNodeAndKeepTxOpen( HighlyAvailableGraphDatabase db, Label label )
-            throws SystemException
     {
         TransactionContinuation txc = new TransactionContinuation( db );
         txc.begin();
@@ -125,28 +121,28 @@ public class LabelIT
     private static class TransactionContinuation
     {
         private final HighlyAvailableGraphDatabase db;
-        private final TransactionManager txManager;
-        private Transaction graphDbTx;
-        private javax.transaction.Transaction jtaTx;
+        private TopLevelTransaction graphDbTx;
+        private final ThreadToStatementContextBridge bridge;
 
         private TransactionContinuation( HighlyAvailableGraphDatabase db ) {
             this.db = db;
-            txManager = db.getDependencyResolver().resolveDependency( TransactionManager.class );
+            this.bridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         }
 
         public void begin()
         {
-            graphDbTx = db.beginTx();
+            graphDbTx = (TopLevelTransaction) db.beginTx();
         }
 
-        public void suspend() throws SystemException
+        public void suspend()
         {
-            jtaTx = txManager.suspend();
+            graphDbTx = bridge.getTopLevelTransactionBoundToThisThread( true );
+            bridge.unbindTransactionFromCurrentThread();
         }
 
         public void resume() throws Exception
         {
-            txManager.resume( jtaTx );
+            bridge.bindTransactionToCurrentThread( graphDbTx );
         }
 
         public void commit()

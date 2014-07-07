@@ -53,7 +53,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.StoreLocker;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -82,7 +81,7 @@ import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -165,7 +164,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private final LifeSupport life;
     private final NeoStore neoStore;
-    private final IndexStore indexStore;
+    private final IndexConfigStore indexStore;
     private final File storeDir;
     private final BatchTokenHolder propertyKeyTokens;
     private final BatchTokenHolder relationshipTypeTokens;
@@ -217,9 +216,9 @@ public class BatchInserterImpl implements BatchInserter
         rejectAutoUpgrade( stringParams );
         Map<String, String> params = getDefaultParams();
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), Settings.FALSE );
-        params.put( InternalAbstractGraphDatabase.Configuration.store_dir.name(), storeDir );
         params.putAll( stringParams );
-        config = new Config( params, GraphDatabaseSettings.class );
+        config = StoreFactory.configForStoreDir( new Config( params, GraphDatabaseSettings.class ),
+                new File( storeDir ) );
 
         life = new LifeSupport();
         this.fileSystem = fileSystem;
@@ -243,17 +242,14 @@ public class BatchInserterImpl implements BatchInserter
                 pageCache,
                 fileSystem,
                 msgLog,
-                null,
                 monitors );
-
-        File store = fixPath( this.storeDir, sf );
 
         if ( dump )
         {
             dumpConfiguration( params );
         }
         msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
-        neoStore = sf.newNeoStore( store );
+        neoStore = sf.newNeoStore( true );
         if ( !neoStore.isStoreOk() )
         {
             throw new IllegalStateException( storeDir + " store is not cleanly shutdown." );
@@ -264,7 +260,7 @@ public class BatchInserterImpl implements BatchInserter
         labelTokens = new BatchTokenHolder( neoStore.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
         Token[] types = getRelationshipTypeStore().getTokens( Integer.MAX_VALUE );
         relationshipTypeTokens = new BatchTokenHolder( types );
-        indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
+        indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( neoStore.getSchemaStore() );
 
         KernelExtensions extensions = life
@@ -493,7 +489,7 @@ public class BatchInserterImpl implements BatchInserter
                 this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
                 constraintRuleId );
         UniquenessConstraintRule constraintRule = UniquenessConstraintRule.uniquenessConstraintRule(
-                schemaStore.nextId(), constraint.label(), constraint.propertyKeyId(), indexRuleId );
+                constraintRuleId, constraint.label(), constraint.propertyKeyId(), indexRuleId );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( constraintRule ) )
         {
@@ -928,7 +924,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private RelationshipTypeTokenStore getRelationshipTypeStore()
     {
-        return neoStore.getRelationshipTypeStore();
+        return neoStore.getRelationshipTypeTokenStore();
     }
 
     private SchemaStore getSchemaStore()
@@ -954,27 +950,6 @@ public class BatchInserterImpl implements BatchInserter
         return recordAccess.getRelRecords().getOrLoad( id, null );
     }
 
-    private File fixPath( File dir, StoreFactory sf )
-    {
-        try
-        {
-            fileSystem.mkdirs( dir );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException(
-                    "Unable to create directory path["
-                    + storeDir + "] for Neo4j kernel store." );
-        }
-
-        File store = new File( dir, NeoStore.DEFAULT_NAME );
-        if ( !fileSystem.fileExists( store ) )
-        {
-            sf.createNeoStore( store ).close();
-        }
-        return store;
-    }
-
     @Override
     public String getStoreDir()
     {
@@ -982,7 +957,7 @@ public class BatchInserterImpl implements BatchInserter
     }
 
     // needed by lucene-index
-    public IndexStore getIndexStore()
+    public IndexConfigStore getIndexStore()
     {
         return this.indexStore;
     }
@@ -999,6 +974,7 @@ public class BatchInserterImpl implements BatchInserter
             Object value = config.get( key );
             if ( value != null )
             {
+                // TODO no, No, NO NO NO!!! No. Pass in the PrintStream instead.
                 System.out.println( key + "=" + value );
             }
         }

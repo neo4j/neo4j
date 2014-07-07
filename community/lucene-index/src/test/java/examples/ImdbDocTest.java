@@ -53,7 +53,6 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
-import org.neo4j.index.impl.lucene.LuceneIndex;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
@@ -80,7 +79,7 @@ public class ImdbDocTest
 {
     private static GraphDatabaseService graphDb;
     private Transaction tx;
-    
+
     /*
      * Since this is a doc test, the code in here will be publically visible in e.g. a manual.
      * This test desires to print something to System.out and there's no point in this test,
@@ -619,14 +618,14 @@ public class ImdbDocTest
         assertEquals( theMatrixReloaded, found );
     }
 
-    @Test
-    public void cacheSettings()
-    {
-        // START SNIPPET: cache
-        Index<Node> index = graphDb.index().forNodes( "actors" );
-        ((LuceneIndex<Node>) index).setCacheCapacity( "name", 300000 );
-        // END SNIPPET: cache
-    }
+//    @Test
+//    public void cacheSettings()
+//    {
+//        // START SNIPPET: cache
+//        Index<Node> index = graphDb.index().forNodes( "actors" );
+//        ((LuceneIndex<Node>) index).setCacheCapacity( "name", 300000 );
+//        // END SNIPPET: cache
+//    }
 
     @Test
     public void batchInsert()

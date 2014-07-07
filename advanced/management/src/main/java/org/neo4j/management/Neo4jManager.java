@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
@@ -258,11 +259,6 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         return getBean( TransactionManager.class );
     }
 
-    public XaManager getXaManagerBean()
-    {
-        return getBean( XaManager.class );
-    }
-
     public HighAvailability getHighAvailabilityBean()
     {
         return getBean( HighAvailability.class );
@@ -335,41 +331,49 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         return beans;
     }
 
+    @Override
     public Date getKernelStartTime()
     {
         return proxy.getKernelStartTime();
     }
 
+    @Override
     public String getKernelVersion()
     {
         return proxy.getKernelVersion();
     }
 
+    @Override
     public ObjectName getMBeanQuery()
     {
         return proxy.getMBeanQuery();
     }
 
+    @Override
     public Date getStoreCreationDate()
     {
         return proxy.getStoreCreationDate();
     }
 
+    @Override
     public String getStoreDirectory()
     {
         return proxy.getStoreDirectory();
     }
 
+    @Override
     public String getStoreId()
     {
         return proxy.getStoreId();
     }
 
+    @Override
     public long getStoreLogVersion()
     {
         return proxy.getStoreLogVersion();
     }
 
+    @Override
     public boolean isReadOnly()
     {
         return proxy.isReadOnly();

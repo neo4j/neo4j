@@ -85,7 +85,7 @@ neo4j-graphviz::
   The graphviz module is a library that allows visualization of Neo4j graph data 
   using http://www.graphviz.org[graphviz].
   For more information about its usage, 
-  see http://blog.neo4j.org/2012/05/graph-this-rendering-your-graph-with.html[this blogpost]
+  see http://neo4j.com/blog/graph-this-rendering-your-graph-with[this blogpost]
   by Peter Neubauer.
 
 neo4j-jmx::

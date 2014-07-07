@@ -28,20 +28,23 @@ import java.util.concurrent.TimeoutException;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.core.AllOf.allOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -225,7 +228,7 @@ public class RelationshipIT extends KernelIntegrationTest
         }
 
         // Given the cache is empty
-        this.db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        this.db.getDependencyResolver().resolveDependency( Caches.class ).clear();
 
         {
             ReadOperations stmt = readOperationsInNewTransaction();
@@ -271,7 +274,7 @@ public class RelationshipIT extends KernelIntegrationTest
         }
 
         // Given the cache is empty
-        this.db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        this.db.getDependencyResolver().resolveDependency( Caches.class ).clear();
 
         {
             ReadOperations stmt = readOperationsInNewTransaction();

@@ -94,6 +94,10 @@ public class StatisticsCollectorTest
         // When
         collector.run();
         collector.run();
+        collector.run();
+        collector.run();
+        collector.run();
+        collector.run();
 
         // Then
         assertThat( collector.collectedData().liveNodesRatio(), closeTo( 0.6, 0.1 ) );

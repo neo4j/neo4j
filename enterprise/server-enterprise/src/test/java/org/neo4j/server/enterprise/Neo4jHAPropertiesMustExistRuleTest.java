@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.enterprise;
 
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.logging.ConsoleLogger.DEV_NULL;
+import static org.neo4j.server.configuration.validation.Validator.NO_VALIDATION;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -26,21 +30,16 @@ import org.apache.commons.configuration.Configuration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
-
-import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.logging.ConsoleLogger.DEV_NULL;
-import static org.neo4j.server.configuration.validation.Validator.NO_VALIDATION;
 
 public class Neo4jHAPropertiesMustExistRuleTest
 {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder(  );
 
+    // TODO 2.2-future what are these settings?
     public static final String CONFIG_KEY_OLD_SERVER_ID = "ha.machine_id";
     public static final String CONFIG_KEY_OLD_COORDINATORS = "ha.zoo_keeper_servers";
 

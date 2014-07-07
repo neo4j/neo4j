@@ -598,6 +598,6 @@ public class TestRelationshipCount
 
     private void clearCache()
     {
-        dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 }

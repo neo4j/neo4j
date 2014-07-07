@@ -33,7 +33,6 @@ import org.neo4j.management.HighAvailability;
 import org.neo4j.management.LockManager;
 import org.neo4j.management.MemoryMapping;
 import org.neo4j.management.TransactionManager;
-import org.neo4j.management.XaManager;
 
 import static org.junit.Assert.assertEquals;
 
@@ -84,7 +83,6 @@ public class CodeDuplicationValidationTest
         assertEqualBeanName( MemoryMapping.class );
         assertEqualBeanName( StoreFile.class );
         assertEqualBeanName( TransactionManager.class );
-        assertEqualBeanName( XaManager.class );
     }
 
     private void assertEqualBeanName( Class<?> beanClass )

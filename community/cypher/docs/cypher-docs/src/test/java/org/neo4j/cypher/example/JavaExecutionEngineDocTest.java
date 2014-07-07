@@ -236,6 +236,20 @@ public class JavaExecutionEngineDocTest
     }
 
     @Test
+    public void exampleWithShortSyntaxStringLiteralAsParameter() throws Exception
+    {
+        // START SNIPPET: exampleWithShortSyntaxStringLiteralAsParameter
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put( "name", "Johan" );
+        String query = "MATCH (n {name: {name}}) RETURN n";
+        ExecutionResult result = engine.execute( query, params );
+        // END SNIPPET: exampleWithShortSyntaxStringLiteralAsParameter
+
+        assertEquals( asList( johanNode ), this.<Node>toList( result, "n" ) );
+        dumpToFile( "exampleWithShortSyntaxStringLiteralAsParameter", query, params );
+    }
+
+    @Test
     public void exampleWithParameterForIndexValue() throws Exception
     {
         try ( Transaction ignored = db.beginTx() )

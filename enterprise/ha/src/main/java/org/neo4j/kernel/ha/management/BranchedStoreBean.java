@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha.management;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -34,10 +33,6 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.management.BranchedStore;
 import org.neo4j.management.BranchedStoreInfo;
 
@@ -79,79 +74,18 @@ public final class BranchedStoreBean extends ManagementBeanProvider
     private static class BranchedStoreImpl extends Neo4jMBean implements
             BranchedStore
     {
+        // TODO 2.2-future need to discover the store path. access to the DS would be a decent way
         private File storePath;
 
         protected BranchedStoreImpl( final ManagementData management )
                 throws NotCompliantMBeanException
         {
             super( management );
-
-            XaDataSourceManager xadsm = management.getKernelData().graphDatabase().getDependencyResolver()
-                    .resolveDependency( XaDataSourceManager.class );
-            xadsm.addDataSourceRegistrationListener( new DataSourceRegistrationListener()
-            {
-                @Override
-                public void registeredDataSource( XaDataSource ds )
-                {
-                    if ( ds instanceof NeoStoreXaDataSource )
-                    {
-                        storePath = extractStorePath( management );
-                    }
-                }
-
-                @Override
-                public void unregisteredDataSource( XaDataSource ds )
-                {
-                    if ( ds instanceof NeoStoreXaDataSource )
-                    {
-                        storePath = null;
-                    }
-                }
-            } );
         }
 
         protected BranchedStoreImpl( final ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
-
-            XaDataSourceManager xadsm = management.getKernelData().graphDatabase().getDependencyResolver()
-                    .resolveDependency( XaDataSourceManager.class );
-            xadsm.addDataSourceRegistrationListener( new DataSourceRegistrationListener()
-            {
-                @Override
-                public void registeredDataSource( XaDataSource ds )
-                {
-                    if ( ds instanceof NeoStoreXaDataSource )
-                    {
-                        storePath = extractStorePath( management );
-                    }
-                }
-
-                @Override
-                public void unregisteredDataSource( XaDataSource ds )
-                {
-                    if ( ds instanceof NeoStoreXaDataSource )
-                    {
-                        storePath = null;
-                    }
-                }
-            } );
-        }
-
-        private File extractStorePath( ManagementData management )
-        {
-            NeoStoreXaDataSource nioneodb = management.getKernelData().graphDatabase().getDependencyResolver()
-                    .resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
-            File path;
-            try
-            {
-                path = new File( nioneodb.getStoreDir() ).getCanonicalFile().getAbsoluteFile();
-            }
-            catch ( IOException e )
-            {
-                path = new File( nioneodb.getStoreDir() ).getAbsoluteFile();
-            }
-            return path;
         }
 
         @Override

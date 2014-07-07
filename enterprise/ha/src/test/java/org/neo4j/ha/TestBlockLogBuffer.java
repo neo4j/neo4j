@@ -19,9 +19,6 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -32,10 +29,14 @@ import org.hamcrest.Description;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.junit.Test;
+
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.BlockLogReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class TestBlockLogBuffer
 {
@@ -53,18 +54,16 @@ public class TestBlockLogBuffer
         float floatValue = 304985.5f;
         double doubleValue = 48493.22d;
         final byte[] bytesValue = new byte[] { 1, 5, 2, 6, 3 };
-        final char[] charsValue = "This is chars".toCharArray();
         buffer.put( byteValue );
         buffer.putInt( intValue );
         buffer.putLong( longValue );
         buffer.putFloat( floatValue );
         buffer.putDouble( doubleValue );
-        buffer.put( bytesValue );
-        buffer.put( charsValue );
-        buffer.done();
+        buffer.put( bytesValue, bytesValue.length );
+        buffer.close();
 
         ByteBuffer verificationBuffer = ByteBuffer.wrap( bytes );
-        assertEquals( 56, verificationBuffer.get() );
+        assertEquals( 30, verificationBuffer.get() );
         assertEquals( byteValue, verificationBuffer.get() );
         assertEquals( intValue, verificationBuffer.getInt() );
         assertEquals( longValue, verificationBuffer.getLong() );
@@ -73,11 +72,8 @@ public class TestBlockLogBuffer
         byte[] actualBytes = new byte[bytesValue.length];
         verificationBuffer.get( actualBytes );
         assertThat( actualBytes, new ArrayMatches<byte[]>( bytesValue ) );
-        char[] actualChars = new char[charsValue.length];
-        verificationBuffer.asCharBuffer().get( actualChars );
-        assertThat( actualChars, new ArrayMatches<char[]>( charsValue ) );
     }
-    
+
     @Test
     public void readSmallPortions() throws IOException
     {
@@ -85,15 +81,15 @@ public class TestBlockLogBuffer
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
         BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
-        
+
         byte byteValue = 5;
         int intValue = 1234;
         long longValue = 574853;
         buffer.put( byteValue );
         buffer.putInt( intValue );
         buffer.putLong( longValue );
-        buffer.done();
-        
+        buffer.close();
+
         ReadableByteChannel reader = new BlockLogReader( wrappedBuffer );
         ByteBuffer verificationBuffer = ByteBuffer.wrap( new byte[1] );
         reader.read( verificationBuffer );
@@ -123,15 +119,13 @@ public class TestBlockLogBuffer
         float floatValue = 304985.5f;
         double doubleValue = 48493.22d;
         final byte[] bytesValue = new byte[] { 1, 5, 2, 6, 3 };
-        final char[] charsValue = "This is chars".toCharArray();
         buffer.put( byteValue );
         buffer.putInt( intValue );
         buffer.putLong( longValue );
         buffer.putFloat( floatValue );
         buffer.putDouble( doubleValue );
-        buffer.put( bytesValue );
-        buffer.put( charsValue );
-        buffer.done();
+        buffer.put( bytesValue, bytesValue.length );
+        buffer.close();
 
         ReadableByteChannel reader = new BlockLogReader( wrappedBuffer );
         ByteBuffer verificationBuffer = ByteBuffer.wrap( new byte[1000] );
@@ -145,11 +139,8 @@ public class TestBlockLogBuffer
         byte[] actualBytes = new byte[bytesValue.length];
         verificationBuffer.get( actualBytes );
         assertThat( actualBytes, new ArrayMatches<byte[]>( bytesValue ) );
-        char[] actualChars = new char[charsValue.length];
-        verificationBuffer.asCharBuffer().get( actualChars );
-        assertThat( actualChars, new ArrayMatches<char[]>( charsValue ) );
     }
-    
+
     @Test
     public void onlyOneFullBlock() throws Exception
     {
@@ -161,8 +152,8 @@ public class TestBlockLogBuffer
         byte[] bytesValue = new byte[255];
         bytesValue[0] = 1;
         bytesValue[254] = -1;
-        buffer.put( bytesValue );
-        buffer.done();
+        buffer.put( bytesValue, bytesValue.length );
+        buffer.close();
 
         ByteBuffer verificationBuffer = ByteBuffer.wrap( bytes );
         assertEquals( (byte) 255, verificationBuffer.get() );
@@ -182,8 +173,8 @@ public class TestBlockLogBuffer
         byte[] bytesValue = new byte[255];
         bytesValue[0] = 1;
         bytesValue[254] = -1;
-        buffer.put( bytesValue );
-        buffer.done();
+        buffer.put( bytesValue, bytesValue.length );
+        buffer.close();
 
         ReadableByteChannel reader = new BlockLogReader( wrappedBuffer );
         ByteBuffer verificationBuffer = ByteBuffer.wrap( new byte[1000] );
@@ -193,7 +184,7 @@ public class TestBlockLogBuffer
         verificationBuffer.get( actualBytes );
         assertThat( actualBytes, new ArrayMatches<byte[]>( bytesValue ) );
     }
-    
+
     @Test
     public void canWriteLargestAtomAfterFillingBuffer() throws Exception
     {
@@ -206,9 +197,9 @@ public class TestBlockLogBuffer
         bytesValue[0] = 1;
         bytesValue[254] = -1;
         long longValue = 123456;
-        buffer.put( bytesValue );
+        buffer.put( bytesValue, bytesValue.length );
         buffer.putLong( longValue );
-        buffer.done();
+        buffer.close();
 
         ByteBuffer verificationBuffer = ByteBuffer.wrap( bytes );
         assertEquals( (byte) 0, verificationBuffer.get() );
@@ -235,8 +226,8 @@ public class TestBlockLogBuffer
         bytesValue[399] = 5;
         bytesValue[499] = 6;
         bytesValue[599] = 7;
-        buffer.put( bytesValue );
-        buffer.done();
+        buffer.put( bytesValue, bytesValue.length );
+        buffer.close();
 
         byte[] actual;
         ByteBuffer verificationBuffer = ByteBuffer.wrap( bytes );
@@ -270,8 +261,8 @@ public class TestBlockLogBuffer
         bytesValue[399] = 5;
         bytesValue[499] = 6;
         bytesValue[599] = 7;
-        buffer.put( bytesValue );
-        buffer.done();
+        buffer.put( bytesValue, bytesValue.length );
+        buffer.close();
 
         byte[] actual;
         BlockLogReader reader = new BlockLogReader( wrappedBuffer );
@@ -288,7 +279,7 @@ public class TestBlockLogBuffer
         verificationBuffer.get( actual );
         assertThat( actual, new ArrayMatches<byte[]>( Arrays.copyOfRange( bytesValue, 510, 600 ) ) );
     }
-    
+
     private class ArrayMatches<T> extends BaseMatcher<T>
     {
         private final T expected;
@@ -299,6 +290,7 @@ public class TestBlockLogBuffer
             this.expected = expected;
         }
 
+        @Override
         public boolean matches( Object actual )
         {
             this.actual = actual;
@@ -313,6 +305,7 @@ public class TestBlockLogBuffer
             return false;
         }
 
+        @Override
         public void describeTo( Description descr )
         {
             descr.appendText( String.format( "expected %s, got %s", toString( expected ),

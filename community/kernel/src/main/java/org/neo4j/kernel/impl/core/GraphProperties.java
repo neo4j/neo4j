@@ -23,5 +23,4 @@ import org.neo4j.graphdb.PropertyContainer;
 
 public interface GraphProperties extends PropertyContainer
 {
-    NodeManager getNodeManager();
 }

@@ -19,18 +19,23 @@
  */
 package org.neo4j.server.webadmin.rest;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -44,12 +49,6 @@ import org.neo4j.server.webadmin.rest.console.ConsoleService;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
-
 public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
 {
     private static final String LN = System.getProperty( "line.separator" );
@@ -60,7 +59,7 @@ public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
     @Before
     public void setUp() throws Exception
     {
-        this.database = new WrappedDatabase( (AbstractGraphDatabase) new TestGraphDatabaseFactory().
+        this.database = new WrappedDatabase( (InternalAbstractGraphDatabase) new TestGraphDatabaseFactory().
                 newImpermanentDatabaseBuilder().
                 setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE ).
                 newGraphDatabase() );

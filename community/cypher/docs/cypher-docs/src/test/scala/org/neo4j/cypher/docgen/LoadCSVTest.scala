@@ -55,7 +55,7 @@ class LoadCSVTest extends DocumentingTestBase with QueryStatisticsTestSupport {
     Seq("4", "The Cardigans", "1992")
   )
 
-  private val artistsWithEscapeChar = new CsvFile("artists-with-escape-char.csv").withContentsF(
+  private val artistsWithEscapeChar = new CsvFile("artists-with-escaped-char.csv").withContentsF(
     Seq("1", """"The \"Symbol\""""", "1992")
   )
 
@@ -158,11 +158,21 @@ For more information, see <<query-periodic-commit>>.
 
   @Test def should_import_data_from_a_csv_file_which_uses_the_escape_char() {
     testQuery(
-      title = "Import data containing escape characters",
-      text = "",
-      queryText = s"LOAD CSV FROM '%ARTIST_WITH_ESCAPE_CHAR%' AS line CREATE (a:Artist {name: line[1], year: toInt(line[2])}) return a.name as name",
-      optionalResultExplanation = "",
-      assertions = (p) => assertEquals(List(Map("name" -> """"The "Symbol""""")), p.toList)
+      title = "Import data containing escaped characters",
+      text = """
+In this example, we both have additional quotes around the values, as well as escaped quotes inside one value.
+
+.artists-with-escaped-char.csv
+[source]
+----
+include::csv-files/artists-with-escaped-char.csv[]
+----
+""",
+      queryText = s"LOAD CSV FROM '%ARTIST_WITH_ESCAPE_CHAR%' AS line CREATE (a:Artist {name: line[1], year: toInt(line[2])}) return a.name as name, a.year as year, length(a.name) as length",
+      optionalResultExplanation = """
+Note that strings are wrapped in quotes in the output here.
+You can see that when comparing to the length of the string in this case!""",
+      assertions = (p) => assertEquals(List(Map("name" -> """"The "Symbol""""", "year" -> 1992, "length" -> 14)), p.toList)
     )
   }
 }

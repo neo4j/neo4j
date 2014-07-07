@@ -19,23 +19,24 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.graphdb.Label;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.helpers.Provider;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator
 {
-    public DefaultLabelIdCreator( Logging logging )
+    public DefaultLabelIdCreator( Provider<KernelAPI> kernelProvider, IdGeneratorFactory idGeneratorFactory )
     {
-        super( logging );
+        super( kernelProvider, idGeneratorFactory );
     }
 
     @Override
-    protected int createKey( EntityIdGenerator idGenerator, PersistenceManager persistence, String name )
+    protected int createKey( TransactionRecordState transactionRecordState, String name )
     {
-        int id = (int) idGenerator.nextId( Label.class );
-        persistence.createLabelId( name, id );
+        int id = (int) idGeneratorFactory.get( IdType.LABEL_TOKEN ).nextId();
+        transactionRecordState.createLabelToken( name, id );
         return id;
     }
 }

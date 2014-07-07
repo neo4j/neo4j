@@ -19,17 +19,19 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.io.Closeable;
 import java.util.Collection;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+
 import org.neo4j.index.lucene.QueryContext;
 
-class TxDataHolder
+class TxDataHolder implements Closeable
 {
     final LuceneIndex index;
     private TxData data;
-    
+
     TxDataHolder( LuceneIndex index, TxData initialData )
     {
         this.index = index;
@@ -40,7 +42,7 @@ class TxDataHolder
     {
         this.data.add( this, entityId, key, value );
     }
-    
+
     void remove( Object entityId, String key, Object value )
     {
         this.data.remove( this, entityId, key, value );
@@ -55,13 +57,14 @@ class TxDataHolder
     {
         return this.data.get( this, key, value );
     }
-    
+
     Collection<Long> getOrphans( String key )
     {
         return this.data.getOrphans( key );
     }
-    
-    void close()
+
+    @Override
+    public void close()
     {
         this.data.close();
     }

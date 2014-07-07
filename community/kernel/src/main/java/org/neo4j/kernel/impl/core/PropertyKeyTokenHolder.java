@@ -19,17 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-
 public class PropertyKeyTokenHolder extends TokenHolder<Token>
 {
-    public PropertyKeyTokenHolder( AbstractTransactionManager transactionManager,
-                             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-                             TokenCreator tokenCreator )
+    public PropertyKeyTokenHolder( TokenCreator tokenCreator )
     {
-        super( transactionManager, persistenceManager, idGenerator, tokenCreator );
+        super( tokenCreator );
     }
 
     @Override

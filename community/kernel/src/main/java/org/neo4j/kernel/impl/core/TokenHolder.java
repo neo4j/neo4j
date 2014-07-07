@@ -22,59 +22,62 @@ package org.neo4j.kernel.impl.core;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+/**
+ *
+ * Exists:
+ *   get from map
+ *
+ * Previously when it doesn't exist:
+ *   tokenCreator.create
+ *     record changes
+ *       command execution
+ *
+ * Doesn't exist:
+ *   tokenCreator.create( name, id )
+ *     new kernel transaction
+ *       change in statement
+ *         commit
+ *           record changes
+ *             command execution
+ *               add to holder
+ */
 public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
 {
     public static final int NO_ID = -1;
-    private final Map<String,Integer> nameToId = new CopyOnWriteHashMap<String, Integer>();
-    private final Map<Integer, TOKEN> idToToken = new CopyOnWriteHashMap<Integer, TOKEN>();
-
-    private final AbstractTransactionManager transactionManager;
-    protected final PersistenceManager persistenceManager;
-    private final EntityIdGenerator idGenerator;
+    private final Map<String,Integer> nameToId = new CopyOnWriteHashMap<>();
+    private final Map<Integer, TOKEN> idToToken = new CopyOnWriteHashMap<>();
     private final TokenCreator tokenCreator;
 
-    public TokenHolder( AbstractTransactionManager transactionManager,
-                        PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-                        TokenCreator tokenCreator )
+    public TokenHolder( TokenCreator tokenCreator )
     {
-        this.transactionManager = transactionManager;
-        this.persistenceManager = persistenceManager;
-        this.idGenerator = idGenerator;
         this.tokenCreator = tokenCreator;
     }
 
-    void addTokens( Token... tokens )
+    public void addTokens( Token... tokens )
     {
-        Map<String, Integer> newNameToId = new HashMap<String, Integer>();
-        Map<Integer, TOKEN> newIdToToken = new HashMap<Integer, TOKEN>();
+        Map<String, Integer> newNameToId = new HashMap<>();
+        Map<Integer, TOKEN> newIdToToken = new HashMap<>();
 
         for ( Token token : tokens )
         {
             addToken( token.name(), token.id(), newNameToId, newIdToToken );
-            notifyMeOfTokensAdded( token.name(), token.id() );
         }
 
         nameToId.putAll( newNameToId );
         idToToken.putAll( newIdToToken );
     }
 
-    /**
-     * Overload this if you want to know of tokens being added
-     */
-    protected void notifyMeOfTokensAdded( String name, int id )
-    {
-    }
-
-    void addToken( String name, int id )
+    public void addToken( String name, int id )
     {
         addToken( name, id, nameToId, idToToken );
-        notifyMeOfTokensAdded( name, id );
+    }
+
+    public void addToken( Token token )
+    {
+        addToken( token.name(), token.id() );
     }
 
     void addToken( String name, int id, Map<String, Integer> nameToIdMap, Map<Integer, TOKEN> idToTokenMap )
@@ -84,7 +87,7 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         idToTokenMap.put( id, token );
     }
 
-    void removeToken( int id )
+    public void removeToken( int id )
     {
         TOKEN token = idToToken.remove( id );
         nameToId.remove( token.name() );
@@ -111,8 +114,7 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
             return id;
         }
 
-        id = tokenCreator.getOrCreate( transactionManager, idGenerator,
-                persistenceManager, name );
+        id = tokenCreator.getOrCreate( name );
         addToken( name, id );
         return id;
     }
@@ -153,21 +155,23 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         }
         return id;
     }
-    
+
     public TOKEN getTokenByName( String name ) throws TokenNotFoundException
     {
         Integer id = nameToId.get( name );
         if ( id == null )
+        {
             throw new TokenNotFoundException( name );
+        }
         return idToToken.get( id );
     }
-    
+
     public TOKEN getTokenByNameOrNull( String name )
     {
         Integer id = nameToId.get( name );
         return id != null ? idToToken.get( id ) : null;
     }
-    
+
     public Iterable<TOKEN> getAllTokens()
     {
         return idToToken.values();

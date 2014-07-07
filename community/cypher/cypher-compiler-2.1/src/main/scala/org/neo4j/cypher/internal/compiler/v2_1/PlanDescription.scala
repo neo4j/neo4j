@@ -141,9 +141,9 @@ final case class PlanDescriptionImpl(pipe: Pipe,
     "%s%n%n%s".format(treeString, details)
   }
 
-  def render(builder: StringBuilder, separator: String, levelSuffix: String) = ???
+  override def render( builder: StringBuilder, separator: String, levelSuffix: String ): Unit = ???
 
-  def render(builder: StringBuilder) = ???
+  override def render( builder: StringBuilder ): Unit = ???
 }
 
 final case class NullPlanDescription(pipe: Pipe) extends PlanDescription {

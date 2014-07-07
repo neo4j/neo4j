@@ -19,36 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import commands.True
-import pipes._
-import org.neo4j.cypher.GraphDatabaseJUnitSuite
-import org.neo4j.graphdb.{Direction, Node, Path}
+import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.True
+import org.neo4j.cypher.internal.compiler.v2_1.pipes._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.{BidirectionalTraversalMatcher, MonoDirectionalTraversalMatcher, SingleStep}
 import org.neo4j.graphdb.Direction.OUTGOING
-import org.junit.{After, Test}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.{MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher, SingleStep}
+import org.neo4j.graphdb.{Direction, Node, Path}
 
-class TraversalMatcherTest extends GraphDatabaseJUnitSuite {
+class TraversalMatcherTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
 
-  val A = "A"
-  val B = "B"
+  private val A = "A"
+  private val B = "B"
 
-  val pr2 = SingleStep(1, Seq(B), OUTGOING, None, True(), True())
-  val pr1 = SingleStep(0, Seq(A), OUTGOING, Some(pr2), True(), True())
+  private val pr2 = SingleStep(1, Seq(B), OUTGOING, None, True(), True())
+  private val pr1 = SingleStep(0, Seq(A), OUTGOING, Some(pr2), True(), True())
 
-  var tx : org.neo4j.graphdb.Transaction = null
-
-  private def queryState = {
-    if(tx == null) tx = graph.beginTx()
-    QueryStateHelper.queryStateFrom(graph, tx)
-  }
-
-  @After
-  def cleanup()
-  {
-    if(tx != null) tx.close()
-  }
-
-  @Test def basic() {
+  test("basic") {
     //Data nodes and rels
     val a = createNode("a")
     val b = createNode("b")
@@ -61,19 +47,17 @@ class TraversalMatcherTest extends GraphDatabaseJUnitSuite {
 
     val matcher = new BidirectionalTraversalMatcher(pr1, start, end)
 
-    val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext()).toSeq
+    val result = withQueryState { queryState =>
+      matcher.findMatchingPaths(queryState, ExecutionContext()).toSeq
+    }
 
-    assert(result.size === 1)
-    assert(result.head.startNode() === a)
-    assert(result.head.endNode() === c)
-    assert(result.head.lastRelationship() === r2)
+    result should have size 1
+    result.head.startNode() should equal(a)
+    result.head.endNode() should equal(c)
+    result.head.lastRelationship() should equal(r2)
   }
 
-  private def createStartPointIterator(x: Node*) = EntityProducer[Node]("Produce", mock[Argument]) {
-    (_: ExecutionContext, _: QueryState) => x.iterator
-  }
-
-  @Test def tree() {
+  test("tree") {
     /*Data nodes and rels
      *
      *     ->(b2)-->(c2)
@@ -102,15 +86,16 @@ class TraversalMatcherTest extends GraphDatabaseJUnitSuite {
 
     val matcher = new BidirectionalTraversalMatcher(pr1, start, end)
 
-    val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext()).toSeq
+    val result =  withQueryState { queryState =>
+      matcher.findMatchingPaths(queryState, ExecutionContext()).toList
+    }
 
-    assert(result.size === 3)
-
-    assert(result.head.startNode() === a)
-    assert(result.head.endNode() === c)
+    result should have size 3
+    result.head.startNode() should equal(a)
+    result.head.endNode() should equal(c)
   }
 
-  @Test def fullUndirected2NodeGraph() {
+  test("full undirected 2 node graph") {
     val nodeA = createNode("a")
     val nodeB = createNode("b")
 
@@ -122,18 +107,19 @@ class TraversalMatcherTest extends GraphDatabaseJUnitSuite {
     val pr = SingleStep(0, Seq("LINK"), Direction.BOTH, None, True(), True())
     val matcher = new BidirectionalTraversalMatcher(pr, start, end)
 
-    val result: Set[(Long, Long)] =
+    val result = withQueryState { queryState =>
       matcher
         .findMatchingPaths(queryState, ExecutionContext()).map((p: Path) => (p.startNode().getId, p.endNode().getId))
         .toSet
+    }
 
     val a = nodeA.getId
     val b = nodeB.getId
 
-    assert( Set((a, b), (b, a)) === result )
+    result should equal(Set((a, b), (b, a)))
   }
 
-  @Test def fullUndirected3NodeGraph() {
+  test("full undirected 3 node graph") {
     val nodeA = createNode("a")
     val nodeB = createNode("b")
     val nodeC = createNode("c")
@@ -148,20 +134,20 @@ class TraversalMatcherTest extends GraphDatabaseJUnitSuite {
     val pr = SingleStep(0, Seq("LINK"), Direction.BOTH, None, True(), True())
     val matcher = new BidirectionalTraversalMatcher(pr, start, end)
 
-    val result: Set[(Long, Long)] =
+    val result = withQueryState { queryState =>
       matcher
         .findMatchingPaths(queryState, ExecutionContext()).map((p: Path) => (p.startNode().getId, p.endNode().getId))
         .toSet
-
+    }
 
     val a = nodeA.getId
     val b = nodeB.getId
     val c = nodeC.getId
 
-    assert(Set((a, b), (a, c), (b, a), (b, c), (c, a), (c, b)) === result)
+    result should equal(Set((a, b), (a, c), (b, a), (b, c), (c, a), (c, b)))
   }
 
-  @Test def should_not_return_paths_that_traverse_the_same_graph_relationship_multiple_times() {
+  test("should not return paths that traverse the same graph relationship multiple times") {
     // Given MATCH a-->b-->c-->d
     val pr3 = SingleStep(id = 3, typ = Seq.empty, direction = OUTGOING, next = None, relPredicate = True(), nodePredicate = True())
     val pr2 = SingleStep(id = 2, typ = Seq.empty, direction = OUTGOING, next = Some(pr3), relPredicate = True(), nodePredicate = True())
@@ -178,12 +164,18 @@ class TraversalMatcherTest extends GraphDatabaseJUnitSuite {
 
     // When
     val matcher = new MonoDirectionalTraversalMatcher(pr0, start)
-    val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext()).toSeq
+    val result =  withQueryState { queryState =>
+      matcher.findMatchingPaths(queryState, ExecutionContext()).toSeq
+    }
 
     // Then
     // If there were no uniqueness constraint then this path would match the pattern:
     //   (n0)-[r0]->(n1)-[r1]->(n0)-[r0]->(n1)
     // but this traverses r0 twice, so it should be excluded.
-    assert(result.size === 0)
+    result shouldBe empty
+  }
+
+  private def createStartPointIterator(x: Node*) = EntityProducer[Node]("Produce", mock[Argument]) {
+    (_: ExecutionContext, _: QueryState) => x.iterator
   }
 }

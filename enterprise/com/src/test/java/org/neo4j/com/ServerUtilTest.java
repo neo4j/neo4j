@@ -26,8 +26,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,39 +33,21 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import org.junit.Rule;
-import org.junit.Test;
 
-import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.function.Function;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.AbstractStoreChannel;
 import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
-import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class ServerUtilTest
 {
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
+    /*
     @Test
     public void shouldIgnoreLogicalLogsWhenCopyingFilesForBackup() throws IOException
     {
@@ -239,7 +219,7 @@ public class ServerUtilTest
             assertEquals( java.io.FileNotFoundException.class, e.getCause().getClass() );
         }
     }
-
+*/
     private static class FileResourceIterator implements ResourceIterator<File>
     {
         private final FileSystemAbstraction fs;
@@ -432,8 +412,8 @@ public class ServerUtilTest
         }
 
         @Override
-        public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz, Function<Class<K>,
-                K> creator )
+        public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
+                Class<K> clazz, Function<Class<K>,K> creator )
         {
             return null;
         }

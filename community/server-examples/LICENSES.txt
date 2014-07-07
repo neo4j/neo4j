@@ -7,7 +7,7 @@ Apache Software License, Version 2.0
   Commons BeanUtils
   Commons Digester
   Commons Lang
-  JTA 1.1
+  Commons Logging
 ------------------------------------------------------------------------------
 
                                  Apache License

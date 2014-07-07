@@ -19,6 +19,8 @@
  */
 package org.neo4j.ha.correctness;
 
+import static org.neo4j.graphdb.DynamicLabel.label;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -32,8 +34,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileUtils;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class ProofDatabase
 {
@@ -66,12 +66,6 @@ public class ProofDatabase
         try( Transaction tx = gds.beginTx() )
         {
             Node stateNode = stateNodes.get( originalState );
-
-            if(stateNode == null)
-            {
-                System.out.println(originalState);
-            }
-
 
             Node subStateNode = newState( transition.other() );
 

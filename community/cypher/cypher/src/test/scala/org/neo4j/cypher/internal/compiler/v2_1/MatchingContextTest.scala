@@ -19,50 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.graphdb.Transaction
-import commands._
-import commands.expressions.{Identifier, Literal, Property}
-import commands.values.TokenType.PropertyKey
-import executionplan.builders.PatternGraphBuilder
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.GraphDatabaseJUnitSuite
-import org.neo4j.graphdb.{Node, Direction}
-import org.junit.{After, Before, Test}
-import collection.Map
+import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.MatchingContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.graphdb.Direction
 
-class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuilder {
-  var a: Node = null
-  var b: Node = null
-  var c: Node = null
-  var d: Node = null
+import scala.collection.Map
 
-  var state: QueryState = null
-  var matchingContext: MatchingContext = null
-  var tx: Transaction = null
-
-  private def ctx(x: (String, Any)*) = {
-    if(tx == null) tx = graph.beginTx()
-    state = QueryStateHelper.queryStateFrom(graph, tx)
-    ExecutionContext().newWith(x.toMap)
-  }
-
-  @Before
-  def init() {
-    a = createNode("a")
-    b = createNode("b")
-    c = createNode("c")
-    d = createNode("d")
-  }
-
-  @After
-  def cleanup()
-  {
-    if(tx != null) tx.close()
-  }
-
-  @Test def singleHopSingleMatch() {
+class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder with QueryStateTestSupport {
+  test("singleHopSingleMatch") {
+    val a = createNode("a")
+    val b = createNode("b")
     val r = relate(a, b, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING))
@@ -71,9 +42,9 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     assertMatches(getMatches("a" -> a), 1, Map("a" -> a, "b" -> b, "r" -> r))
   }
 
-  private def getMatches(params: (String, Any)*) = matchingContext.getMatches(ctx(params:_*), state)
-
-  @Test def singleDirectedRel() {
+  test("singleDirectedRel") {
+    val a = createNode("a")
+    val b = createNode("b")
     val r = relate(a, b, "rel", "r")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING))
@@ -82,7 +53,9 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     assertMatches(getMatches("r" -> r), 1, Map("a" -> a, "b" -> b, "r" -> r))
   }
 
-  @Test def singleDirectedRelTurnedTheWrongWay() {
+  test("singleDirectedRelTurnedTheWrongWay") {
+    val a = createNode("a")
+    val b = createNode("b")
     val r = relate(a, b, "rel", "r")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.INCOMING))
@@ -91,7 +64,9 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     assertMatches(getMatches("r" -> r), 1, Map("a" -> b, "b" -> a, "r" -> r))
   }
 
-  @Test def singleUndirectedRel() {
+  test("singleUndirectedRel") {
+    val a = createNode("a")
+    val b = createNode("b")
     val r = relate(a, b, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.BOTH))
@@ -102,7 +77,10 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
       Map("a" -> b, "b" -> a, "r" -> r))
   }
 
-  @Test def twoUndirectedRel() {
+  test("twoUndirectedRel") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
     val r1 = relate(a, b, "rel", "r1")
     val r2 = relate(b, c, "rel", "r2")
 
@@ -116,31 +94,36 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     assertMatches(getMatches("r1" -> r1, "r2" -> r2), 1)
   }
 
-  @Test def singleHopDoubleMatch() {
+  test("singleHopDoubleMatch") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
     val r1 = relate(a, b, "rel", "r1")
     val r2 = relate(a, c, "rel", "r2")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("pA", "pB", "pR", "rel", Direction.OUTGOING))
     createMatchingContextWithNodes(patterns, Seq("pA"))
 
-
     assertMatches(getMatches("pA" -> a), 2,
       Map("pA" -> a, "pB" -> b, "pR" -> r1),
       Map("pA" -> a, "pB" -> c, "pR" -> r2))
   }
 
-  @Test def twoBoundNodesShouldWork() {
+  test("twoBoundNodesShouldWork") {
+    val a = createNode("a")
+    val b = createNode("b")
     val r1 = relate(a, b, "rel", "r1")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("pA", "pB", "pR", "rel", Direction.OUTGOING))
     createMatchingContextWithNodes(patterns, Seq("pA", "pB"))
 
-
     assertMatches(getMatches("pA" -> a, "pB" -> b), 1,
       Map("pA" -> a, "pB" -> b, "pR" -> r1))
   }
 
-  @Test def boundNodeAndRel() {
+  test("boundNodeAndRel") {
+    val a = createNode("a")
+    val b = createNode("b")
     val r1 = relate(a, b, "rel", "r1")
     relate(a, b, "rel", "r2")
 
@@ -152,7 +135,10 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
       Map("pA" -> a, "pB" -> b, "pR" -> r1))
   }
 
-  @Test def doubleHopDoubleMatch() {
+  test("doubleHopDoubleMatch") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
     val r1 = relate(a, b, "rel")
     val r2 = relate(a, c, "rel")
 
@@ -162,13 +148,16 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     )
     createMatchingContextWithNodes(patterns, Seq("a"))
 
-    val traversable = getMatches("a" -> a)
-    assertMatches(traversable, 2,
+    assertMatches(getMatches("a" -> a), 2,
       Map("a" -> a, "b" -> c, "c" -> b, "r1" -> r2, "r2" -> r1),
       Map("a" -> a, "b" -> b, "c" -> c, "r1" -> r1, "r2" -> r2))
   }
 
-  @Test def theDreadedDiamondTest() {
+  test("theDreadedDiamondTest") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     val r1 = relate(a, b, "x", "r1")
     val r2 = relate(a, c, "x", "r2")
     val r3 = relate(b, d, "x", "r3")
@@ -188,7 +177,9 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
       Map("A" -> a, "B" -> c, "C" -> b, "D" -> d, "pr1" -> r2, "pr2" -> r1, "pr3" -> r4, "pr4" -> r3))
   }
 
-  private def createDiamondWithExtraLoop(start: Node): Node = {
+
+  test("should_be_able_to_handle_double_loops") {
+    val a = createNode("a")
     val b = createNode()
     val c = createNode()
     val d = createNode()
@@ -201,12 +192,6 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     relate(b, e, "IN", "r4")
     relate(c, e, "IN", "r4")
 
-    e
-  }
-
-  @Test def should_be_able_to_handle_double_loops() {
-    val e = createDiamondWithExtraLoop(a)
-
     val patterns: Seq[Pattern] = Seq(
       RelatedTo(SingleNode("A"), SingleNode("B"), "pr1", Seq(), Direction.OUTGOING, Map.empty),
       RelatedTo(SingleNode("A"), SingleNode("C"), "pr2", Seq(), Direction.OUTGOING, Map.empty),
@@ -218,12 +203,13 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
 
     createMatchingContextWithNodes(patterns, Seq("A", "E"))
 
-    val matches = getMatches("A" -> a, "E" -> e)
-
-    assertMatches(matches, 2)
+    assertMatches(getMatches("A" -> a, "E" -> e), 2)
   }
 
-  @Test def pinnedNodeMakesNoMatchesInDisjunctGraph() {
+  test("pinnedNodeMakesNoMatchesInDisjunctGraph") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
     relate(a, b, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "c", "r", "rel", Direction.OUTGOING))
@@ -232,7 +218,11 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     assertMatches(getMatches("a" -> a, "c" -> c), 0)
   }
 
-  @Test def pinnedNodeMakesNoMatches() {
+  test("pinnedNodeMakesNoMatches") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     val r1 = relate(a, b, "x")
     val r2 = relate(a, c, "x")
     val r3 = relate(b, d, "x")
@@ -250,7 +240,10 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
       Map("a" -> a, "b" -> b, "c" -> c, "d" -> d, "r1" -> r1, "r2" -> r2, "r3" -> r3, "r4" -> r4))
   }
 
-  @Test def directionConstraintFiltersMatches() {
+  test("directionConstraintFiltersMatches") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
     val r1 = relate(a, b, "rel")
     val r2 = relate(c, a, "rel")
 
@@ -263,7 +256,9 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     assertMatches(getMatches("b" -> a), 1, Map("b" -> a, "a" -> c, "r" -> r2))
   }
 
-  @Test def typeConstraintFiltersMatches() {
+  test("typeConstraintFiltersMatches") {
+    val a = createNode("a")
+    val b = createNode("b")
     val r1 = relate(a, b, "t1")
     relate(a, b, "t2")
 
@@ -273,8 +268,10 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     assertMatches(getMatches("a" -> a), 1, Map("a" -> a, "b" -> b, "r" -> r1))
   }
 
-
-  @Test def variableLengthPath() {
+  test("variableLengthPath") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
     relate(a, b, "rel")
     relate(b, c, "rel")
 
@@ -284,7 +281,11 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     assertMatches(getMatches("a" -> a), 2, Map("a" -> a, "c" -> b), Map("a" -> a, "c" -> c))
   }
 
-  @Test def variableLengthPathWithOneHopBefore() {
+  test("variableLengthPathWithOneHopBefore") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     val r1 = relate(a, b, "rel")
     relate(b, c, "rel")
     relate(c, d, "rel")
@@ -297,7 +298,11 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     assertMatches(getMatches("a" -> a), 2, Map("a" -> a, "r1" -> r1, "b" -> b, "c" -> c), Map("a" -> a, "r1" -> r1, "b" -> b, "c" -> d))
   }
 
-  @Test def variableLengthPathWithOneHopBeforeWithDifferentType() {
+  test("variableLengthPathWithOneHopBeforeWithDifferentType") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     val r1 = relate(a, b, "t1")
     relate(b, c, "t1")
     relate(c, d, "t2")
@@ -310,7 +315,11 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     assertMatches(getMatches("a" -> a), 1, Map("a" -> a, "r1" -> r1, "b" -> b, "c" -> c))
   }
 
-  @Test def variableLengthPathWithBranch() {
+  test("variableLengthPathWithBranch") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     relate(a, b, "t1")
     relate(b, c, "t1")
     relate(b, d, "t1")
@@ -325,7 +334,11 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
       Map("a" -> a, "x" -> d))
   }
 
-  @Test def variableLengthPathWithPinnedEndNode() {
+  test("variableLengthPathWithPinnedEndNode") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     relate(a, b, "t1")
     relate(b, c, "t1")
     relate(b, d, "t1")
@@ -337,7 +350,11 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     assertMatches(getMatches("a" -> a, "x" -> d), 1, Map("a" -> a, "x" -> d))
   }
 
-  @Test def varLengthPathWithTwoPaths() {
+  test("varLengthPathWithTwoPaths") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     relate(a, b, "t1")
     relate(a, c, "t1")
     relate(b, c, "t1")
@@ -350,7 +367,7 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     assertMatches(getMatches("A" -> a, "X" -> d), 2)
   }
 
-  @Test def variableLengthPathInDiamond() {
+  test("variableLengthPathInDiamond") {
     /*
     Graph:
               a
@@ -371,7 +388,10 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
     Should match two subgraphs, one where p is b-c, and one where it is b-d-c
      */
 
-
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     val r1 = relate(a, b, "rel", "r1")
     val r2 = relate(a, c, "rel", "r2")
     relate(b, d, "rel", "r3")
@@ -390,36 +410,42 @@ class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuild
       Map("pA" -> a, "pR1" -> r1, "pB" -> b, "pC" -> c, "pR2" -> r2))
   }
 
-  @Test def predicateConcerningRelationship() {
-    val r = relate(a, b, "rel", Map("age" -> 15))
-    val r2 = relate(a, b, "rel", Map("age" -> 5))
+  test("predicateConcerningRelationship") {
+    val a = createNode("a")
+    val b = createNode("b")
+    val r = relate(a, b, "rel", Map("age" -> 5))
+    relate(a, b, "rel", Map("age" -> 15))
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING))
 
     createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property(Identifier("r"), PropertyKey("age")), Literal(5))))
 
-    assertMatches(getMatches("a" -> a), 1, Map("a" -> a, "b" -> b, "r" -> r2))
+    assertMatches(getMatches("a" -> a), 1, Map("a" -> a, "b" -> b, "r" -> r))
   }
 
-  @Test def predicateConcerningNode() {
+  test("predicateConcerningNode") {
     val a = createNode(Map("prop" -> "value"))
+    val b = createNode("b")
     relate(a, b, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING))
     createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property(Identifier("a"), PropertyKey("prop")), Literal("not value"))))
 
-    assert(getMatches("a" -> a).size === 0)
+    getMatches("a" -> a) shouldBe empty
   }
 
+  private var matchingContext: MatchingContext = null
 
-  private def assertMatches(matches: Traversable[Map[String, Any]], expectedSize: Int, expected: Map[String, Any]*) {
-    val matchesList = matches.toList
-    assert(matchesList.size === expectedSize)
+  private def getMatches(params: (String, Any)*) = withQueryState { queryState =>
+    val ctx = ExecutionContext().newWith(params.toMap)
+    matchingContext.getMatches(ctx, queryState).toList
+  }
 
+  private def assertMatches(matches: List[Map[String, Any]], expectedSize: Int, expected: Map[String, Any]*) {
+    matches should have size expectedSize
     expected.foreach(expectation => {
-      if (!matches.exists(compare(_, expectation))) {
-
-        fail("Didn't find the expected row: " + expectation + "\r\nActual: " + matches.toList)
+      withClue("Didn't find the expected row: ") {
+        matches.exists(compare(_, expectation)) should be(true)
       }
     })
   }

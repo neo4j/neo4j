@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
+import org.neo4j.com.Response;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -32,7 +35,6 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -41,36 +43,34 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class UpdatePuller implements Lifecycle
 {
     private final HighAvailabilityMemberStateMachine memberStateMachine;
-    private final HaXaDataSourceManager xaDataSourceManager;
     private final Master master;
     private final RequestContextFactory requestContextFactory;
-    private final AbstractTransactionManager txManager;
     private final AvailabilityGuard availabilityGuard;
     private final LastUpdateTime lastUpdateTime;
     private final Config config;
     private final JobScheduler scheduler;
     private final StringLogger logger;
     private final CappedOperation<Pair<String, ? extends Exception>> cappedLogger;
+    private final TransactionCommittingResponseUnpacker unpacker;
     private volatile boolean pullUpdates = false;
     private final UpdatePullerHighAvailabilityMemberListener listener;
 
-    public UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine, HaXaDataSourceManager xaDataSourceManager, Master master,
-                         RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
-                         AvailabilityGuard availabilityGuard, LastUpdateTime lastUpdateTime, Config config,
-                         JobScheduler scheduler, final StringLogger logger )
+    public UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine, Master master,
+                         RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
+                         LastUpdateTime lastUpdateTime, Config config, JobScheduler scheduler,
+                         final StringLogger logger, TransactionCommittingResponseUnpacker unpacker )
     {
         this.memberStateMachine = memberStateMachine;
-        this.xaDataSourceManager = xaDataSourceManager;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.txManager = txManager;
         this.availabilityGuard = availabilityGuard;
         this.lastUpdateTime = lastUpdateTime;
         this.config = config;
         this.scheduler = scheduler;
         this.logger = logger;
+        this.unpacker = unpacker;
         this.cappedLogger = new CappedOperation<Pair<String, ? extends Exception>>(
-                CappedOperation.count( 10 ))
+                CappedOperation.count( 10 ) )
         {
             @Override
             protected void triggered( Pair<String, ? extends Exception> event )
@@ -80,16 +80,18 @@ public class UpdatePuller implements Lifecycle
         };
 
         listener = new UpdatePullerHighAvailabilityMemberListener( config.get( ClusterSettings.server_id ) );
+
     }
 
-    public void pullUpdates()
+    public void pullUpdates() throws IOException
     {
         if ( availabilityGuard.isAvailable( 5000 ) )
         {
-            xaDataSourceManager.applyTransactions(
-                    master.pullUpdates( requestContextFactory.newRequestContext( txManager.getEventIdentifier() ) ) );
+            Response<Void> response = master.pullUpdates( requestContextFactory.newRequestContext( -3 ) );
+
+            unpacker.unpackResponse( response );
+            lastUpdateTime.setLastUpdateTime( System.currentTimeMillis() );
         }
-        lastUpdateTime.setLastUpdateTime( System.currentTimeMillis() );
     }
 
     @Override

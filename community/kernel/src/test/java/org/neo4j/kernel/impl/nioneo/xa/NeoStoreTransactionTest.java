@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,8 +27,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
@@ -37,33 +39,33 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.CommandApplierFacade;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -81,13 +83,18 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionIndexApplier;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -129,8 +136,8 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
 import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
-import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class NeoStoreTransactionTest
@@ -141,7 +148,7 @@ public class NeoStoreTransactionTest
     public void shouldValidateConstraintIndexAsPartOfPrepare() throws Exception
     {
         // GIVEN
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
 
         final long indexId = neoStore.getSchemaStore().nextId();
         final long constraintId = neoStore.getSchemaStore().nextId();
@@ -149,7 +156,7 @@ public class NeoStoreTransactionTest
         writeTransaction.createSchemaRule( uniquenessConstraintRule( constraintId, 1, 1, indexId ) );
 
         // WHEN
-        writeTransaction.prepare();
+        writeTransaction.extractCommands( new ArrayList<Command>() );
 
         // THEN
         verify( mockIndexing ).validateIndex( indexId );
@@ -159,16 +166,24 @@ public class NeoStoreTransactionTest
     public void shouldAddSchemaRuleToCacheWhenApplyingTransactionThatCreatesOne() throws Exception
     {
         // GIVEN
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
 
         // WHEN
         final long ruleId = neoStore.getSchemaStore().nextId();
         IndexRule schemaRule = indexRule( ruleId, 10, 8, PROVIDER_DESCRIPTOR );
         writeTransaction.createSchemaRule( schemaRule );
-        prepareAndCommit( writeTransaction );
+        commitProcess().commit( transactionRepresentationOf( writeTransaction ) );
 
         // THEN
         verify( cacheAccessBackDoor ).addSchemaRule( schemaRule );
+    }
+
+    private PhysicalTransactionRepresentation transactionRepresentationOf( TransactionRecordState writeTransaction )
+            throws TransactionFailureException
+    {
+        List<Command> commands = new ArrayList<>();
+        writeTransaction.extractCommands( commands );
+        return new PhysicalTransactionRepresentation( commands );
     }
 
     @Test
@@ -184,11 +199,11 @@ public class NeoStoreTransactionTest
             schemaStore.updateRecord( record );
         }
         long ruleId = first( records ).getId();
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
 
         // WHEN
         writeTransaction.dropSchemaRule( rule );
-        prepareAndCommit( writeTransaction );
+        commitProcess().commit( transactionRepresentationOf( writeTransaction ) );
 
         // THEN
         verify( cacheAccessBackDoor ).removeSchemaRuleFromCache( ruleId );
@@ -201,7 +216,7 @@ public class NeoStoreTransactionTest
         final long nodeId = neoStore.getNodeStore().nextId();
 
         // A transaction that creates labels that just barely fit to be inlined
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
         writeTransaction.nodeCreate( nodeId );
 
         writeTransaction.addLabelToNode( 7, nodeId );
@@ -212,37 +227,39 @@ public class NeoStoreTransactionTest
         writeTransaction.addLabelToNode( 27, nodeId );
         writeTransaction.addLabelToNode( 50, nodeId );
 
-        prepareAndCommit( writeTransaction );
+        PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess().commit(transactionCommands);
 
-        // And given that I now start recording the commands in the log
-        CommandCapturingVisitor commandCapture = new CommandCapturingVisitor();
 
         // WHEN
         // I then remove multiple labels
-        writeTransaction = newWriteTransaction( mockIndexing, commandCapture ).first();
+        writeTransaction = newWriteTransaction().first();
 
         writeTransaction.removeLabelFromNode( 11, nodeId );
         writeTransaction.removeLabelFromNode( 23, nodeId );
 
-        prepareAndCommit( writeTransaction );
+        transactionCommands = transactionRepresentationOf( writeTransaction );
+
+        commitProcess().commit( transactionCommands );
 
         // THEN
         // The dynamic label record should be part of what is logged, and it should be set to not in use anymore.
-        commandCapture.visitCapturedCommands( new Visitor<XaCommand, RuntimeException>()
+        final AtomicBoolean nodeCommandsExist = new AtomicBoolean(false);
+
+        transactionCommands.accept( new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
         {
             @Override
-            public boolean visit( XaCommand element ) throws RuntimeException
+            public boolean visitNodeCommand( NodeCommand command ) throws IOException
             {
-                if( element instanceof Command.NodeCommand )
-                {
-                    Command.NodeCommand cmd = (Command.NodeCommand)element;
-                    Collection<DynamicRecord> beforeDynLabels = cmd.getAfter().getDynamicLabelRecords();
-                    assertThat( beforeDynLabels.size(), equalTo(1) );
-                    assertThat( beforeDynLabels.iterator().next().inUse(), equalTo(false) );
-                }
+                nodeCommandsExist.set( true );
+                Collection<DynamicRecord> beforeDynLabels = command.getAfter().getDynamicLabelRecords();
+                assertThat( beforeDynLabels.size(), equalTo( 1 ) );
+                assertThat( beforeDynLabels.iterator().next().inUse(), equalTo( false ) );
                 return true;
             }
-        });
+        } ));
+
+        assertTrue( "No node commands found", nodeCommandsExist.get() );
     }
 
     @Test
@@ -252,7 +269,7 @@ public class NeoStoreTransactionTest
         final long nodeId = neoStore.getNodeStore().nextId();
 
         // A transaction that creates labels that just barely fit to be inlined
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
         writeTransaction.nodeCreate( nodeId );
 
         writeTransaction.addLabelToNode( 16, nodeId );
@@ -265,14 +282,12 @@ public class NeoStoreTransactionTest
         writeTransaction.addLabelToNode( 51, nodeId );
         writeTransaction.addLabelToNode( 52, nodeId );
 
-        prepareAndCommit( writeTransaction );
-
-        // And given that I now start recording the commands in the log
-        CommandCapturingVisitor commandCapture = new CommandCapturingVisitor();
+        PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess().commit(transactionCommands);
 
         // WHEN
         // I remove enough labels to inline them, but then add enough new labels to expand it back to dynamic
-        writeTransaction = newWriteTransaction( mockIndexing, commandCapture).first();
+        writeTransaction = newWriteTransaction().first();
 
         writeTransaction.removeLabelFromNode( 50, nodeId );
         writeTransaction.removeLabelFromNode( 51, nodeId );
@@ -281,40 +296,42 @@ public class NeoStoreTransactionTest
         writeTransaction.addLabelToNode( 61, nodeId );
         writeTransaction.addLabelToNode( 62, nodeId );
 
-        prepareAndCommit( writeTransaction );
+        transactionCommands = transactionRepresentationOf( writeTransaction );
 
-        // THEN
-        // The dynamic label record in before should be the same id as in after, and should be in use
-        commandCapture.visitCapturedCommands( new Visitor<XaCommand, RuntimeException>()
+        commitProcess().commit( transactionCommands );
+
+        final AtomicBoolean nodeCommandsExist = new AtomicBoolean(false);
+
+        transactionCommands.accept( new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
         {
             @Override
-            public boolean visit( XaCommand element ) throws RuntimeException
+            public boolean visitNodeCommand( NodeCommand command ) throws IOException
             {
-                if( element instanceof Command.NodeCommand )
-                {
-                    Command.NodeCommand cmd = (Command.NodeCommand) element;
-                    DynamicRecord before = cmd.getBefore().getDynamicLabelRecords().iterator().next();
-                    DynamicRecord after = cmd.getAfter().getDynamicLabelRecords().iterator().next();
+                nodeCommandsExist.set( true );
+                DynamicRecord before = command.getBefore().getDynamicLabelRecords().iterator().next();
+                DynamicRecord after = command.getAfter().getDynamicLabelRecords().iterator().next();
 
-                    assertThat( before.getId(), equalTo(after.getId()) );
-                    assertThat( after.inUse(), equalTo(true) );
-                }
+                assertThat( before.getId(), equalTo( after.getId() ) );
+                assertThat( after.inUse(), equalTo( true ) );
+
                 return true;
             }
-        });
+        } ));
+
+        assertTrue( "No node commands found", nodeCommandsExist.get() );
     }
 
     @Test
     public void shouldRemoveSchemaRuleWhenRollingBackTransaction() throws Exception
     {
         // GIVEN
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
 
         // WHEN
         final long ruleId = neoStore.getSchemaStore().nextId();
         writeTransaction.createSchemaRule( indexRule( ruleId, 10, 7, PROVIDER_DESCRIPTOR ) );
-        writeTransaction.prepare();
-        writeTransaction.rollback();
+        transactionRepresentationOf( writeTransaction );
+        // rollback simply means do not commit
 
         // THEN
         verifyNoMoreInteractions( cacheAccessBackDoor );
@@ -324,10 +341,10 @@ public class NeoStoreTransactionTest
     public void shouldWriteProperBeforeAndAfterPropertyRecordsWhenAddingProperty() throws Exception
     {
         // THEN
-        Visitor<XaCommand, RuntimeException> verifier = new Visitor<XaCommand, RuntimeException>()
+        Visitor<Command, RuntimeException> verifier = new Visitor<Command, RuntimeException>()
         {
             @Override
-            public boolean visit( XaCommand element )
+            public boolean visit( Command element )
             {
                 if ( element instanceof PropertyCommand )
                 {
@@ -344,16 +361,16 @@ public class NeoStoreTransactionTest
         };
 
         // GIVEN
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing, verifier ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
         int nodeId = 1;
-        writeTransaction.setCommitTxId( nodeId );
+//        writeTransaction.setCommitTxId( nodeId );
         writeTransaction.nodeCreate( nodeId );
         int propertyKey = 1;
         Object value = 5;
 
         // WHEN
         writeTransaction.nodeAddProperty( nodeId, propertyKey, value );
-        writeTransaction.doPrepare();
+        transactionRepresentationOf( writeTransaction );
     }
 
     // TODO change property record
@@ -365,7 +382,7 @@ public class NeoStoreTransactionTest
         // GIVEN
         long nodeId = 0;
         CapturingIndexingService indexingService = new CapturingIndexingService();
-        NeoStoreTransaction writeTransaction = newWriteTransaction( indexingService ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction( indexingService ).first();
         int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
 
@@ -373,7 +390,8 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
-        prepareAndCommit( writeTransaction );
+        PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess( indexingService ).commit(transactionCommands);
 
         // THEN
         assertEquals( asSet(
@@ -388,13 +406,14 @@ public class NeoStoreTransactionTest
     {
         // GIVEN
         int nodeId = 0;
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
         int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
         DefinedProperty property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         DefinedProperty property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
-        prepareAndCommit( writeTransaction );
+        PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess().commit(transactionCommands);
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
@@ -402,7 +421,8 @@ public class NeoStoreTransactionTest
         writeTransaction = newWriteTransaction( indexingService ).first();
         writeTransaction.nodeChangeProperty( nodeId, property1.propertyKeyId(), newValue1 );
         writeTransaction.nodeChangeProperty( nodeId, property2.propertyKeyId(), newValue2 );
-        prepareAndCommit( writeTransaction );
+        transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess( indexingService ).commit(transactionCommands);
 
         // THEN
         assertEquals( asSet(
@@ -417,20 +437,22 @@ public class NeoStoreTransactionTest
     {
         // GIVEN
         int nodeId = 0;
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
         int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
         DefinedProperty property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         DefinedProperty property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
-        prepareAndCommit( writeTransaction );
+        PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess().commit(transactionCommands);
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService ).first();
         writeTransaction.nodeRemoveProperty( nodeId, property1.propertyKeyId() );
         writeTransaction.nodeRemoveProperty( nodeId, property2.propertyKeyId() );
-        prepareAndCommit( writeTransaction );
+        transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess( indexingService ).commit(transactionCommands);
 
         // THEN
         assertEquals( asSet(
@@ -445,20 +467,22 @@ public class NeoStoreTransactionTest
     {
         // GIVEN
         long nodeId = 0;
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
         int propertyKey1 = 1, propertyKey2 = 2, labelId = 3;
         long[] labelIds = new long[] {labelId};
         Object value1 = LONG_STRING, value2 = LONG_STRING.getBytes();
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
-        prepareAndCommit( writeTransaction );
+        PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess().commit(transactionCommands);
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService ).first();
         writeTransaction.addLabelToNode( labelId, nodeId );
-        prepareAndCommit( writeTransaction );
+        transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess( indexingService ).commit(transactionCommands);
 
         // THEN
         assertEquals( asSet(
@@ -473,20 +497,22 @@ public class NeoStoreTransactionTest
     {
         // GIVEN
         long nodeId = 0;
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
         int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.addLabelToNode( labelId1, nodeId );
-        prepareAndCommit( writeTransaction );
+        PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess().commit( transactionCommands );
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService ).first();
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.addLabelToNode( labelId2, nodeId );
-        prepareAndCommit( writeTransaction );
+        transactionCommands = transactionRepresentationOf( writeTransaction );
+	 	commitProcess( indexingService ).commit( transactionCommands );
 
         // THEN
         assertEquals( asSet(
@@ -502,7 +528,7 @@ public class NeoStoreTransactionTest
     {
         // GIVEN
         long nodeId = 0;
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
         int propertyKey1 = 1, propertyKey2 = 2, labelId = 3;
         long[] labelIds = new long[] {labelId};
         Object value1 = "first", value2 = 4;
@@ -510,13 +536,15 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.addLabelToNode( labelId, nodeId );
-        prepareAndCommit( writeTransaction );
+        PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess().commit(transactionCommands);
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService ).first();
         writeTransaction.removeLabelFromNode( labelId, nodeId );
-        prepareAndCommit( writeTransaction );
+        transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess( indexingService ).commit(transactionCommands);
 
         // THEN
         assertEquals( asSet(
@@ -531,7 +559,7 @@ public class NeoStoreTransactionTest
     {
         // GIVEN
         long nodeId = 0;
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
         int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
@@ -539,14 +567,16 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.addLabelToNode( labelId1, nodeId );
         writeTransaction.addLabelToNode( labelId2, nodeId );
-        prepareAndCommit( writeTransaction );
+        PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess().commit(transactionCommands);
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService ).first();
         writeTransaction.nodeRemoveProperty( nodeId, property1.propertyKeyId() );
         writeTransaction.removeLabelFromNode( labelId2, nodeId );
-        prepareAndCommit( writeTransaction );
+        transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess( indexingService ).commit(transactionCommands);
 
         // THEN
         assertEquals( asSet(
@@ -561,21 +591,23 @@ public class NeoStoreTransactionTest
     {
         // GIVEN
         long nodeId = 0;
-        NeoStoreTransaction writeTransaction = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
         int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.addLabelToNode( labelId1, nodeId );
         writeTransaction.addLabelToNode( labelId2, nodeId );
-        prepareAndCommit( writeTransaction );
+        PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess().commit(transactionCommands);
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService ).first();
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.removeLabelFromNode( labelId2, nodeId );
-        prepareAndCommit( writeTransaction );
+        transactionCommands = transactionRepresentationOf( writeTransaction );
+		commitProcess( indexingService ).commit(transactionCommands);
 
         // THEN
         assertEquals( asSet(
@@ -590,7 +622,7 @@ public class NeoStoreTransactionTest
     public void shouldUpdateHighIdsOnRecoveredTransaction() throws Exception
     {
         // GIVEN
-        NeoStoreTransaction tx = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState tx = newWriteTransaction().first();
         int nodeId = 5, relId = 10, relationshipType = 3, propertyKeyId = 4, ruleId = 8;
 
         // WHEN
@@ -607,14 +639,19 @@ public class NeoStoreTransactionTest
             tx.addLabelToNode( 10000 + i, nodeId );
         }
         tx.createSchemaRule( indexRule( ruleId, 100, propertyKeyId, PROVIDER_DESCRIPTOR ) );
-        prepareAndCommitRecovered( tx );
+
+        PhysicalTransactionRepresentation toCommit = transactionRepresentationOf( tx );
+        RecoveryCreatingCopyingNeoCommandHandler recoverer = new RecoveryCreatingCopyingNeoCommandHandler();
+        toCommit.accept( recoverer );
+
+        commitRecovered( recoverer.getAsRecovered(), 3 );
 
         // THEN
         assertEquals( "NodeStore", nodeId+1, neoStore.getNodeStore().getHighId() );
         assertEquals( "DynamicNodeLabelStore", 2, neoStore.getNodeStore().getDynamicLabelStore().getHighId() );
         assertEquals( "RelationshipStore", relId+1, neoStore.getRelationshipStore().getHighId() );
-        assertEquals( "RelationshipTypeStore", relationshipType+1, neoStore.getRelationshipTypeStore().getHighId() );
-        assertEquals( "RelationshipType NameStore", 2, neoStore.getRelationshipTypeStore().getNameStore().getHighId() );
+        assertEquals( "RelationshipTypeStore", relationshipType+1, neoStore.getRelationshipTypeTokenStore().getHighId() );
+        assertEquals( "RelationshipType NameStore", 2, neoStore.getRelationshipTypeTokenStore().getNameStore().getHighId() );
         assertEquals( "PropertyStore", 2, neoStore.getPropertyStore().getHighId() );
         assertEquals( "PropertyStore DynamicStringStore", 2, neoStore.getPropertyStore().getStringStore().getHighId() );
         assertEquals( "PropertyStore DynamicArrayStore", 2, neoStore.getPropertyStore().getArrayStore().getHighId() );
@@ -626,18 +663,28 @@ public class NeoStoreTransactionTest
     @Test
     public void createdSchemaRuleRecordMustBeWrittenHeavy() throws Exception
     {
-        // THEN
-        Visitor<XaCommand, RuntimeException> verifier = heavySchemaRuleVerifier();
-
         // GIVEN
-        NeoStoreTransaction tx = newWriteTransaction( mockIndexing, verifier ).first();
+        TransactionRecordState tx = newWriteTransaction().first();
         long ruleId = 0;
         int labelId = 5, propertyKeyId = 7;
         SchemaRule rule = indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
 
         // WHEN
         tx.createSchemaRule( rule );
-        prepareAndCommit( tx );
+        PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( tx );
+
+        transactionCommands.accept( new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
+        {
+            @Override
+            public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
+            {
+                for ( DynamicRecord record : command.getRecordsAfter() )
+                {
+                    assertFalse( record + " should have been heavy", record.isLight() );
+                }
+                return true;
+            }
+        } ));
     }
 
     @Test
@@ -659,28 +706,23 @@ public class NeoStoreTransactionTest
          */
 
         // GIVEN
-        NeoStoreTransaction tx = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState tx = newWriteTransaction().first();
         int nodeId = 0;
         tx.nodeCreate( nodeId );
         int index = 0;
         tx.nodeAddProperty( nodeId, index, string( 70 ) ); // will require a block of size 1
-        prepareAndCommit( tx );
+        commitProcess().commit( transactionRepresentationOf( tx ) );
 
         // WHEN
-        Visitor<XaCommand, RuntimeException> verifier = new Visitor<XaCommand, RuntimeException>()
+        Visitor<Command, IOException> verifier = new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
         {
             @Override
-            public boolean visit( XaCommand element )
+            public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
             {
-                if ( element instanceof PropertyCommand )
-                {
-                    // THEN
-                    PropertyCommand propertyCommand = (PropertyCommand) element;
-                    verifyPropertyRecord( propertyCommand.getBefore() );
-                    verifyPropertyRecord( propertyCommand.getAfter() );
-                    return true;
-                }
-                return false;
+                // THEN
+                verifyPropertyRecord( command.getBefore() );
+                verifyPropertyRecord( command.getAfter() );
+                return true;
             }
 
             private void verifyPropertyRecord( PropertyRecord record )
@@ -693,11 +735,13 @@ public class NeoStoreTransactionTest
                     }
                 }
             }
-        };
-        tx = newWriteTransaction( mockIndexing, verifier ).first();
+        });
+        tx = newWriteTransaction( mockIndexing).first();
         int index2 = 1;
         tx.nodeAddProperty( nodeId, index2, string( 40 ) ); // will require a block of size 4
-        prepareAndCommit( tx );
+        PhysicalTransactionRepresentation representation = transactionRepresentationOf( tx );
+        representation.accept( verifier );
+        commitProcess().commit( representation );
     }
 
     @Test
@@ -713,34 +757,33 @@ public class NeoStoreTransactionTest
 
         // -- an index
         long ruleId = 0;
-        NeoStoreTransaction tx = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState tx = newWriteTransaction().first();
         SchemaRule rule = indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
         tx.createSchemaRule( rule );
-        prepareAndCommit( tx );
+        commitProcess().commit(transactionRepresentationOf( tx ));
 
         // -- and a tx creating a node with that label and property key
-        IndexingService index = mock( IndexingService.class );
         IteratorCollector<NodePropertyUpdate> indexUpdates = new IteratorCollector<>( 0 );
-        doAnswer( indexUpdates ).when( index ).updateIndexes( any( IndexUpdates.class ) );
-        CommandCapturingVisitor commandCapturingVisitor = new CommandCapturingVisitor();
-        tx = newWriteTransaction( index, commandCapturingVisitor ).first();
+        doAnswer( indexUpdates ).when( mockIndexing ).updateIndexes( any( IndexUpdates.class ) );
+        tx = newWriteTransaction().first();
         tx.nodeCreate( nodeId );
         tx.addLabelToNode( labelId, nodeId );
         tx.nodeAddProperty( nodeId, propertyKeyId, "Neo" );
-        prepareAndCommit( tx );
-        verify( index, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
+        PhysicalTransactionRepresentation representation = transactionRepresentationOf( tx );
+        RecoveryCreatingCopyingNeoCommandHandler recoverer = new RecoveryCreatingCopyingNeoCommandHandler();
+        representation.accept( recoverer );
+        commitProcess().commit( representation );
+        verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
         indexUpdates.assertContent( expectedUpdate );
 
-        reset( index );
+        reset( mockIndexing );
         indexUpdates = new IteratorCollector<>( 0 );
-        doAnswer( indexUpdates ).when( index ).updateIndexes( any( IndexUpdates.class ) );
+        doAnswer( indexUpdates ).when( mockIndexing ).updateIndexes( any( IndexUpdates.class ) );
 
         // WHEN
         // -- later recovering that tx, there should be only one update
-        tx = newWriteTransaction( index ).first();
-        commandCapturingVisitor.injectInto( tx );
-        prepareAndCommitRecovered( tx );
-        verify( index, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
+        commitRecovered( recoverer.getAsRecovered(), 2 );
+        verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
         indexUpdates.assertContent( expectedUpdate );
     }
 
@@ -760,19 +803,19 @@ public class NeoStoreTransactionTest
         };
         // create the node records that we will modify in our main tx.
         {
-            NeoStoreTransaction tx = newWriteTransaction( mockIndexing ).first();
+            TransactionRecordState tx = newWriteTransaction().first();
             for ( int i = 1; i < nodes.length - 1; i++ )
             {
                 tx.nodeCreate( nodes[i] );
             }
             tx.nodeAddProperty( nodes[3], 0, "old" );
             tx.nodeAddProperty( nodes[4], 0, "old" );
-            prepareAndCommit( tx );
+            commitProcess().commit(transactionRepresentationOf( tx ));
             reset( locks ); // reset the lock counts
         }
 
         // These are the changes we want to assert locking on
-        NeoStoreTransaction tx = newWriteTransaction( mockIndexing ).first();
+        TransactionRecordState tx = newWriteTransaction().first();
         tx.nodeCreate( nodes[0] );
         tx.addLabelToNode( 0, nodes[1] );
         tx.nodeAddProperty( nodes[2], 0, "value" );
@@ -785,7 +828,7 @@ public class NeoStoreTransactionTest
         tx.nodeAddProperty( nodes[6], 0, "value" );
 
         // when
-        prepareAndCommit( tx );
+        commitProcess().commit(transactionRepresentationOf( tx ));
 
         // then
         // create node, NodeCommand == 1 update
@@ -809,11 +852,12 @@ public class NeoStoreTransactionTest
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         instantiateNeoStore( 50 );
-        Pair<NeoStoreTransaction, NeoStoreTransactionContext> transactionContextPair =
+        Pair<TransactionRecordState, NeoStoreTransactionContext> transactionContextPair =
                 newWriteTransaction();
-        NeoStoreTransaction tx = transactionContextPair.first();
+        TransactionRecordState tx = transactionContextPair.first();
         NeoStoreTransactionContext txCtx = transactionContextPair.other();
-        int nodeId = (int) nextId( NODE ), typeA = 0, typeB = 1, typeC = 2;
+        long nodeId = nextId( NODE );
+        int typeA = 0, typeB = 1, typeC = 2;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( typeA, "A" );
         createRelationships( tx, nodeId, typeA, OUTGOING, 6 );
@@ -827,13 +871,13 @@ public class NeoStoreTransactionTest
         createRelationships( tx, nodeId, typeC, OUTGOING, 10 );
         createRelationships( tx, nodeId, typeC, INCOMING, 10 );
         // here we're at the edge
-        assertFalse( tx.nodeLoadLight( nodeId ).isDense() );
+        assertFalse( txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData().isDense() );
 
         // WHEN creating the relationship that pushes us over the threshold
         createRelationships( tx, nodeId, typeC, INCOMING, 1 );
 
         // THEN the node should have been converted into a dense node
-        assertTrue( tx.nodeLoadLight( nodeId ).isDense() );
+        assertTrue( txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData().isDense() );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeA, 6, 7 );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeB, 8, 9 );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 10, 11 );
@@ -845,24 +889,25 @@ public class NeoStoreTransactionTest
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         instantiateNeoStore( 49 );
-        Pair<NeoStoreTransaction, NeoStoreTransactionContext> transactionContextPair =
+        Pair<TransactionRecordState, NeoStoreTransactionContext> transactionContextPair =
                 newWriteTransaction();
-        NeoStoreTransaction tx = transactionContextPair.first();
+        TransactionRecordState tx = transactionContextPair.first();
         NeoStoreTransactionContext txCtx = transactionContextPair.other();
-        int nodeId = (int) nextId( NODE ), typeA = 0;
+        long nodeId = nextId( NODE );
+        int typeA = 0;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( typeA, "A" );
         createRelationships( tx, nodeId, typeA, OUTGOING, 24 );
         createRelationships( tx, nodeId, typeA, INCOMING, 25 );
 
         // here we're at the edge
-        assertFalse( tx.nodeLoadLight( nodeId ).isDense() );
+        assertFalse( txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData().isDense() );
 
         // WHEN creating the relationship that pushes us over the threshold
         createRelationships( tx, nodeId, typeA, INCOMING, 1 );
 
         // THEN the node should have been converted into a dense node
-        assertTrue( tx.nodeLoadLight( nodeId ).isDense() );
+        assertTrue( txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData().isDense() );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeA, 24, 26 );
     }
 
@@ -872,23 +917,24 @@ public class NeoStoreTransactionTest
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         instantiateNeoStore( 8 );
-        Pair<NeoStoreTransaction, NeoStoreTransactionContext> transactionContextPair =
+        Pair<TransactionRecordState, NeoStoreTransactionContext> transactionContextPair =
                 newWriteTransaction();
-        NeoStoreTransaction tx = transactionContextPair.first();
+        TransactionRecordState tx = transactionContextPair.first();
         NeoStoreTransactionContext txCtx = transactionContextPair.other();
-        int nodeId = (int) nextId( NODE ), typeA = 0;
+        long nodeId = nextId( NODE );
+        int typeA = 0;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( typeA, "A" );
         createRelationships( tx, nodeId, typeA, OUTGOING, 8 );
 
         // here we're at the edge
-        assertFalse( tx.nodeLoadLight( nodeId ).isDense() );
+        assertFalse( txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData().isDense() );
 
         // WHEN creating the relationship that pushes us over the threshold
         createRelationships( tx, nodeId, typeA, OUTGOING, 1 );
 
         // THEN the node should have been converted into a dense node
-        assertTrue( tx.nodeLoadLight( nodeId ).isDense() );
+        assertTrue( txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData().isDense() );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeA, 9, 0 );
     }
 
@@ -897,9 +943,9 @@ public class NeoStoreTransactionTest
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         instantiateNeoStore( 13 );
-        Pair<NeoStoreTransaction, NeoStoreTransactionContext> transactionContextPair =
+        Pair<TransactionRecordState, NeoStoreTransactionContext> transactionContextPair =
                 newWriteTransaction();
-        NeoStoreTransaction tx = transactionContextPair.first();
+        TransactionRecordState tx = transactionContextPair.first();
         NeoStoreTransactionContext txCtx = transactionContextPair.other();
         int nodeId = (int) nextId( NODE ), typeA = 0;
         tx.nodeCreate( nodeId );
@@ -918,11 +964,12 @@ public class NeoStoreTransactionTest
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         instantiateNeoStore( 1 );
-        Pair<NeoStoreTransaction, NeoStoreTransactionContext> transactionAndContextPair =
+        Pair<TransactionRecordState, NeoStoreTransactionContext> transactionAndContextPair =
                 newWriteTransaction();
-        NeoStoreTransaction tx = transactionAndContextPair.first();
+        TransactionRecordState tx = transactionAndContextPair.first();
         NeoStoreTransactionContext txCtx = transactionAndContextPair.other();
-        int nodeId = (int) nextId( NODE ), typeA = 0, typeB = 12, typeC = 600;
+        long nodeId = nextId( NODE );
+        int typeA = 0, typeB = 12, typeC = 600;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( typeA, "A" );
         long[] relationshipsCreatedAIncoming = createRelationships( tx, nodeId, typeA, INCOMING, 1 );
@@ -948,7 +995,7 @@ public class NeoStoreTransactionTest
         deleteRelationship( tx, relationshipsCreatedAOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeB, 1, 1 );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 1 );
 
@@ -956,7 +1003,7 @@ public class NeoStoreTransactionTest
         deleteRelationship( tx, relationshipsCreatedBIncoming[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeB, 1, 0 );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 1 );
 
@@ -964,25 +1011,25 @@ public class NeoStoreTransactionTest
         deleteRelationship( tx, relationshipsCreatedBOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeA );
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeB );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeB );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 1 );
 
         // WHEN
         deleteRelationship( tx, relationshipsCreatedCIncoming[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeA );
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeB );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeB );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 0 );
 
         // WHEN
         deleteRelationship( tx, relationshipsCreatedCOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeA );
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeB );
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeC );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeB );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeC );
     }
 
     @Test
@@ -992,21 +1039,19 @@ public class NeoStoreTransactionTest
         instantiateNeoStore( 10 );
         final long nodeId = neoStore.getNodeStore().nextId();
 
-        NeoStoreTransaction writeTransaction = newWriteTransaction().first();
+        TransactionRecordState writeTransaction = newWriteTransaction().first();
         writeTransaction.nodeCreate( nodeId );
 
-        int typeA = 0;
+        int typeA = (int) neoStore.getRelationshipTypeTokenStore().nextId();
         writeTransaction.createRelationshipTypeToken( typeA, "A" );
         createRelationships( writeTransaction, nodeId, typeA, INCOMING, 20 );
 
-        prepareAndCommit( writeTransaction );
+        commitProcess().commit(transactionRepresentationOf( writeTransaction ));
+        writeTransaction = newWriteTransaction().first();
 
         int typeB = 1;
         writeTransaction.createRelationshipTypeToken( typeB, "B" );
 
-        // And given that I now start recording the commands in the log
-        CommandCapturingVisitor commandCapture = new CommandCapturingVisitor();
-        writeTransaction = newWriteTransaction( mockIndexing, commandCapture ).first();
 
         // WHEN
         // i remove enough relationships to become dense and remove enough to become not dense
@@ -1016,18 +1061,20 @@ public class NeoStoreTransactionTest
             deleteRelationship( writeTransaction, relationshipToDelete );
         }
 
-        prepareAndCommit( writeTransaction );
+        PhysicalTransactionRepresentation tx = transactionRepresentationOf( writeTransaction );
+        commitProcess().commit(tx);
 
         // THEN
         // The dynamic label record in before should be the same id as in after, and should be in use
         final AtomicBoolean foundRelationshipGroupInUse = new AtomicBoolean();
-        commandCapture.visitCapturedCommands( new Visitor<XaCommand, RuntimeException>()
+
+        tx.accept( new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
         {
             @Override
-            public boolean visit( XaCommand element ) throws RuntimeException
+            public boolean visitRelationshipGroupCommand(
+                    RelationshipGroupCommand command ) throws IOException
             {
-                if( element instanceof Command.RelationshipGroupCommand &&
-                        ( (Command.RelationshipGroupCommand) element).getRecord().inUse() )
+                if ( command.getRecord().inUse() )
                 {
                     if ( !foundRelationshipGroupInUse.get() )
                     {
@@ -1040,7 +1087,8 @@ public class NeoStoreTransactionTest
                 }
                 return true;
             }
-        });
+        } ));
+
         assertTrue( "Did not create relationship group command", foundRelationshipGroupInUse.get() );
     }
 
@@ -1051,16 +1099,16 @@ public class NeoStoreTransactionTest
         instantiateNeoStore( 1 );
         int type5 = 5, type10 = 10, type15 = 15;
         {
-            NeoStoreTransaction tx = newWriteTransaction().first();
-            neoStore.getRelationshipTypeStore().setHighId( 16 );
+            TransactionRecordState tx = newWriteTransaction().first();
+            neoStore.getRelationshipTypeTokenStore().setHighId( 16 );
             tx.createRelationshipTypeToken( type5, "5" );
             tx.createRelationshipTypeToken( type10, "10" );
             tx.createRelationshipTypeToken( type15, "15" );
-            prepareAndCommit( tx );
+            commitProcess().commit(transactionRepresentationOf( tx ));
         }
         long nodeId = neoStore.getNodeStore().nextId();
         {
-            NeoStoreTransaction tx = newWriteTransaction().first();
+            TransactionRecordState tx = newWriteTransaction().first();
             long otherNode1Id = neoStore.getNodeStore().nextId();
             long otherNode2Id = neoStore.getNodeStore().nextId();
             tx.nodeCreate( nodeId );
@@ -1069,18 +1117,18 @@ public class NeoStoreTransactionTest
             tx.relationshipCreate( neoStore.getRelationshipStore().nextId(), type10, nodeId, otherNode1Id );
             // This relationship will cause the switch to dense
             tx.relationshipCreate( neoStore.getRelationshipStore().nextId(), type10, nodeId, otherNode2Id );
-            prepareAndCommit( tx );
+            commitProcess().commit(transactionRepresentationOf( tx ));
             // Just a little validation of assumptions
             assertRelationshipGroupsInOrder( nodeId, type10 );
         }
 
         // WHEN inserting a relationship of type 5
         {
-            NeoStoreTransaction tx = newWriteTransaction().first();
+            TransactionRecordState tx = newWriteTransaction().first();
             long otherNodeId = neoStore.getNodeStore().nextId();
             tx.nodeCreate( otherNodeId );
             tx.relationshipCreate( neoStore.getRelationshipStore().nextId(), type5, nodeId, otherNodeId );
-            prepareAndCommit( tx );
+            commitProcess().commit(transactionRepresentationOf( tx ));
         }
 
         // THEN that group should end up first in the chain
@@ -1088,11 +1136,11 @@ public class NeoStoreTransactionTest
 
         // WHEN inserting a relationship of type 15
         {
-            NeoStoreTransaction tx = newWriteTransaction().first();
+            TransactionRecordState tx = newWriteTransaction().first();
             long otherNodeId = neoStore.getNodeStore().nextId();
             tx.nodeCreate( otherNodeId );
             tx.relationshipCreate( neoStore.getRelationshipStore().nextId(), type15, nodeId, otherNodeId );
-            prepareAndCommit( tx );
+            commitProcess().commit(transactionRepresentationOf( tx ));
         }
 
         // THEN that group should end up last in the chain
@@ -1121,41 +1169,43 @@ public class NeoStoreTransactionTest
         assertNull( txCtx.getRelationshipGroup( node, type ) );
     }
 
-    private static void assertDenseRelationshipCounts( NeoStoreTransaction tx, NeoStoreTransactionContext txCtx,
+    private static void assertDenseRelationshipCounts( TransactionRecordState tx, NeoStoreTransactionContext txCtx,
                                                        long nodeId, int type, int outCount, int inCount )
     {
-        RelationshipGroupRecord group = txCtx.getRelationshipGroup( tx.nodeLoadLight( nodeId ), type ).forReadingData();
+        RelationshipGroupRecord group = txCtx.getRelationshipGroup(
+                txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), type ).forReadingData();
         assertNotNull( group );
 
         RelationshipRecord rel;
         long relId = group.getFirstOut();
         if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            rel = tx.relLoadLight( relId );
+            rel = txCtx.getRelRecords().getOrLoad( relId, null ).forReadingData();
             // count is stored in the back pointer of the first relationship in the chain
             assertEquals( "Stored relationship count for OUTGOING differs", outCount, rel.getFirstPrevRel() );
             assertEquals( "Manually counted relationships for OUTGOING differs", outCount,
-                    manuallyCountRelationships( tx, nodeId, relId ) );
+                    manuallyCountRelationships( txCtx, nodeId, relId ) );
         }
 
         relId = group.getFirstIn();
         if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            rel = tx.relLoadLight( relId );
+            rel = txCtx.getRelRecords().getOrLoad( relId, null ).forReadingData();
             assertEquals( "Stored relationship count for INCOMING differs", inCount, rel.getSecondPrevRel() );
             assertEquals( "Manually counted relationships for INCOMING differs", inCount,
-                    manuallyCountRelationships( tx, nodeId, relId ) );
+                    manuallyCountRelationships( txCtx, nodeId, relId ) );
         }
     }
 
-    private static int manuallyCountRelationships( NeoStoreTransaction tx, long nodeId, long firstRelId )
+    private static int manuallyCountRelationships( NeoStoreTransactionContext txCtx, long nodeId,
+            long firstRelId )
     {
         int count = 0;
         long relId = firstRelId;
         while ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             count++;
-            RelationshipRecord record = tx.relLoadLight( relId );
+            RelationshipRecord record = txCtx.getRelRecords().getOrLoad( relId, null ).forReadingData();
             relId = record.getFirstNode() == nodeId ? record.getFirstNextRel() : record.getSecondNextRel();
         }
         return count;
@@ -1166,7 +1216,7 @@ public class NeoStoreTransactionTest
         return idGeneratorFactory.get( type ).nextId();
     }
 
-    private long[] createRelationships( NeoStoreTransaction tx, long nodeId, int type, Direction direction, int count )
+    private long[] createRelationships( TransactionRecordState tx, long nodeId, int type, Direction direction, int count )
     {
         long[] result = new long[ count ];
         for ( int i = 0; i < count; i++ )
@@ -1182,7 +1232,7 @@ public class NeoStoreTransactionTest
         return result;
     }
 
-    private void deleteRelationship( NeoStoreTransaction tx, long relId )
+    private void deleteRelationship( TransactionRecordState tx, long relId )
     {
         tx.relDelete( relId );
     }
@@ -1201,7 +1251,6 @@ public class NeoStoreTransactionTest
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final TransactionState transactionState = mock( TransactionState.class );
     private Config config;
     @SuppressWarnings("deprecation")
     private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
@@ -1210,13 +1259,16 @@ public class NeoStoreTransactionTest
     private CacheAccessBackDoor cacheAccessBackDoor;
     private final List<Lock> lockMocks = new ArrayList<>();
 
+    private IndexingService mockIndexing;
+    private PropertyLoader propertyLoader;
+
     @Before
     public void before() throws Exception
     {
         instantiateNeoStore( parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) );
     }
 
-    private void instantiateNeoStore( int denseNodeThreshold )
+    private void instantiateNeoStore( int denseNodeThreshold ) throws Exception
     {
         if ( neoStore != null )
         {
@@ -1226,6 +1278,8 @@ public class NeoStoreTransactionTest
         config = new Config( stringMap(
                 GraphDatabaseSettings.dense_node_threshold.name(), "" + denseNodeThreshold ) );
 
+        File storeDir = new File( "dir" );
+        config = configForStoreDir( config, storeDir );
         PageCache pageCache = pageCacheRule.getPageCache( fs.get(), config );
         StoreFactory storeFactory = new StoreFactory(
                 config,
@@ -1233,9 +1287,8 @@ public class NeoStoreTransactionTest
                 pageCache,
                 fs.get(),
                 DEV_NULL,
-                new DefaultTxHook(),
                 new Monitors() );
-        neoStore = storeFactory.createNeoStore( new File( "neostore" ) );
+        neoStore = storeFactory.createNeoStore();
         lockMocks.clear();
         locks = mock( LockService.class, new Answer()
         {
@@ -1262,7 +1315,37 @@ public class NeoStoreTransactionTest
                 }
             }
         } );
+
         cacheAccessBackDoor = mock( CacheAccessBackDoor.class );
+        mockIndexing = mock( IndexingService.class );
+	}
+
+    private TransactionRepresentationCommitProcess commitProcess() throws InterruptedException, ExecutionException, IOException
+    {
+    	return commitProcess( mockIndexing );
+    }
+
+    private long nextTxId = 1;
+
+    private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws InterruptedException, ExecutionException, IOException
+    {
+    	TransactionAppender appenderMock = mock( TransactionAppender.class );
+        Future<Long> futureMock = mock( Future.class );
+        when( futureMock.get() ).thenReturn( nextTxId++ );
+        when( appenderMock.append( Matchers.<TransactionRepresentation>any()) ).thenReturn( futureMock );
+        LogicalTransactionStore txStoreMock = mock ( LogicalTransactionStore.class );
+        when( txStoreMock.getAppender() ).thenReturn(appenderMock);
+        LabelScanStore labelScanStore = mock( LabelScanStore.class );
+        when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );
+        TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
+                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null );
+
+        // Call this just to make sure the counters have been initialized.
+        // This is only a problem in a mocked environment like this.
+        neoStore.nextCommittingTransactionId();
+
+        return new TransactionRepresentationCommitProcess( txStoreMock, mock( KernelHealth.class ),
+                neoStore, applier, false );
     }
 
     @After
@@ -1274,81 +1357,19 @@ public class NeoStoreTransactionTest
         }
     }
 
-    private static class VerifyingXaLogicalLog extends XaLogicalLog
-    {
-        private final Visitor<XaCommand, RuntimeException> verifier;
-
-        public VerifyingXaLogicalLog( FileSystemAbstraction fs, Visitor<XaCommand, RuntimeException> verifier )
-        {
-            super( new File( "log" ), null, mock( XaCommandReaderFactory.class ), mock( XaCommandWriterFactory.class ),
-                    null, fs, new Monitors(), new SingleLoggingService( DEV_NULL ),
-                    LogPruneStrategies.NO_PRUNING, null, mock( KernelHealth.class ), 25*1024*1024, ALLOW_ALL,
-                    Functions.<List<LogEntry>>identity(), Functions.<List<LogEntry>>identity() );
-            this.verifier = verifier;
-        }
-
-        @Override
-        public synchronized void writeCommand( XaCommand command, int identifier ) throws IOException
-        {
-            this.verifier.visit( command );
-        }
-    }
-
-    private static class CommandCapturingVisitor implements Visitor<XaCommand,RuntimeException>
-    {
-        private final Collection<XaCommand> commands = new ArrayList<>();
-
-        @Override
-        public boolean visit( XaCommand element ) throws RuntimeException
-        {
-            commands.add( element );
-            return true;
-        }
-
-        public void injectInto( NeoStoreTransaction tx )
-        {
-            for ( XaCommand command : commands )
-            {
-                tx.injectCommand( command );
-            }
-        }
-
-        public void visitCapturedCommands( Visitor<XaCommand, RuntimeException> visitor )
-        {
-            for ( XaCommand command : commands )
-            {
-                visitor.visit( command );
-            }
-
-        }
-    }
-
-    private final IndexingService mockIndexing = mock( IndexingService.class );
-    private final KernelTransactionImplementation kernelTransaction = mock( KernelTransactionImplementation.class );
-
-    private Pair<NeoStoreTransaction, NeoStoreTransactionContext> newWriteTransaction()
+    private Pair<TransactionRecordState, NeoStoreTransactionContext> newWriteTransaction()
     {
         return newWriteTransaction( mockIndexing );
     }
 
-    private Pair<NeoStoreTransaction, NeoStoreTransactionContext> newWriteTransaction( IndexingService indexing )
+    private Pair<TransactionRecordState, NeoStoreTransactionContext> newWriteTransaction( IndexingService indexing )
     {
-        return newWriteTransaction( indexing, nullVisitor );
-    }
-
-    private Pair<NeoStoreTransaction, NeoStoreTransactionContext> newWriteTransaction( IndexingService indexing, Visitor<XaCommand,
-            RuntimeException> verifier )
-    {
-        VerifyingXaLogicalLog log = new VerifyingXaLogicalLog( fs.get(), verifier );
         NeoStoreTransactionContext context =
                 new NeoStoreTransactionContext( mock( NeoStoreTransactionContextSupplier.class ), neoStore );
-        when(transactionState.locks()).thenReturn( mock(Locks.Client.class) );
-        context.bind( transactionState );
-        NeoStoreTransaction result = new NeoStoreTransaction( 0l, log, neoStore,
-                cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE, new IntegrityValidator( neoStore, indexing ),
-                kernelTransaction, locks, context );
-        result.setIdentifier( 0 );
-        result.setCommitTxId( neoStore.getLastCommittedTx()+1 );
+        context.bind( mock( Locks.Client.class ) );
+        TransactionRecordState result = new TransactionRecordState( 0l, neoStore,
+                new IntegrityValidator( neoStore, indexing ), context );
+
         return Pair.of( result, context );
     }
 
@@ -1362,7 +1383,7 @@ public class NeoStoreTransactionTest
                     new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ),
                     new NeoStoreIndexStoreView( locks, neoStore ),
                     null,
-                    new KernelSchemaStateStore(),
+                    new KernelSchemaStateStore(), Collections.<IndexRule>emptyList(),
                     new SingleLoggingService( DEV_NULL ), IndexingService.NO_MONITOR
                 );
         }
@@ -1376,41 +1397,22 @@ public class NeoStoreTransactionTest
 
     private static final long[] none = new long[0];
 
-    private static final Visitor<XaCommand, RuntimeException> nullVisitor = new Visitor<XaCommand, RuntimeException>()
+    private void commitRecovered( TransactionRepresentation recoveredTx, long txId ) throws Exception
     {
-        @Override
-        public boolean visit( XaCommand element )
+
+        NeoTransactionStoreApplier storeApplier = new NeoTransactionStoreApplier(
+                neoStore, mockIndexing, cacheAccessBackDoor, locks, txId, true );
+
+        LabelScanStore labelScanStore = mock( LabelScanStore.class );
+        when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );
+        NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( mockIndexing,
+                labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(),
+                cacheAccessBackDoor, propertyLoader );
+        try ( CommandApplierFacade applier = new CommandApplierFacade( storeApplier, indexApplier,
+                mock( NeoCommandHandler.class ) ) )
         {
-            return true;
+            recoveredTx.accept( applier );
         }
-    };
-
-    private Visitor<XaCommand, RuntimeException> heavySchemaRuleVerifier()
-    {
-        return new Visitor<XaCommand, RuntimeException>()
-        {
-            @Override
-            public boolean visit( XaCommand element )
-            {
-                for ( DynamicRecord record : ((SchemaRuleCommand) element).getRecordsAfter() )
-                {
-                    assertFalse( record + " should have been heavy", record.isLight() );
-                }
-                return true;
-            }
-        };
-    }
-
-    private void prepareAndCommitRecovered( NeoStoreTransaction tx ) throws Exception
-    {
-        tx.setRecovered();
-        prepareAndCommit( tx );
-    }
-
-    private void prepareAndCommit( NeoStoreTransaction tx ) throws Exception
-    {
-        tx.doPrepare();
-        tx.doCommit();
     }
 
     public static final LabelScanStore NO_LABEL_SCAN_STORE = new LabelScanStore()
@@ -1509,5 +1511,22 @@ public class NeoStoreTransactionTest
                 elements.add( iterator.next() );
             }
         }
+    }
+
+    public static class RecoveryCreatingCopyingNeoCommandHandler implements Visitor<Command, IOException>
+    {
+    	private final List<Command> commands = new LinkedList<Command>();
+
+        @Override
+        public boolean visit( Command element ) throws IOException
+        {
+            commands.add(element);
+            return true;
+        }
+
+		public TransactionRepresentation getAsRecovered()
+		{
+			return new PhysicalTransactionRepresentation( commands );
+		}
     }
 }

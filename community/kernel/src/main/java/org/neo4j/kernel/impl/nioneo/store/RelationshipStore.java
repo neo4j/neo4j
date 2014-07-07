@@ -93,12 +93,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     @Override
     public RelationshipRecord getRecord( long id )
     {
-        return getRecord( id, new RelationshipRecord( id ) );
-    }
-
-    public RelationshipRecord getRecord( long id, RelationshipRecord target )
-    {
-        return getRecord( id, target, RecordLoad.NORMAL );
+        return getRecord( id, new RelationshipRecord( id ), RecordLoad.NORMAL );
     }
 
     @Override
@@ -141,7 +136,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         return getRecord( id, new RelationshipRecord( id ), RecordLoad.CHECK );
     }
 
-    private RelationshipRecord getRecord( long id, RelationshipRecord target, RecordLoad loadMode )
+    public RelationshipRecord getRecord( long id, RelationshipRecord target, RecordLoad loadMode )
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {

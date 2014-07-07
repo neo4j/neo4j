@@ -41,7 +41,7 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
 {
     /**
      * Find node by query from an automatic index.
-     * 
+     *
      * See Find node by query for the actual query syntax.
      */
     @Documented
@@ -122,10 +122,12 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
     public void items_can_not_be_added_manually_to_an_AutoIndex() throws Exception
     {
         data.get();
-        String indexName = graphdb().index()
-                .getNodeAutoIndexer()
-                .getAutoIndex()
-                .getName();
+        String indexName;
+        try ( Transaction tx = graphdb().beginTx() )
+        {
+            indexName = graphdb().index().getNodeAutoIndexer().getAutoIndex().getName();
+            tx.success();
+        }
 
         gen.get()
                 .noGraph()
@@ -152,10 +154,12 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
     public void items_can_not_be_added_manually_to_a_Relationship_AutoIndex() throws Exception
     {
         data.get();
-        String indexName = graphdb().index()
-                .getRelationshipAutoIndexer()
-                .getAutoIndex()
-                .getName();
+        String indexName;
+        try ( Transaction tx = graphdb().beginTx() )
+        {
+            indexName = graphdb().index().getRelationshipAutoIndexer().getAutoIndex().getName();
+            tx.success();
+        }
         try ( Transaction tx = graphdb().beginTx() )
         {
             gen.get()
@@ -183,10 +187,12 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
         long id = data.get()
                 .get( "I" )
                 .getId();
-        String indexName = graphdb().index()
-                .getNodeAutoIndexer()
-                .getAutoIndex()
-                .getName();
+        String indexName;
+        try ( Transaction tx = graphdb().beginTx() )
+        {
+            indexName = graphdb().index().getNodeAutoIndexer().getAutoIndex().getName();
+            tx.success();
+        }
         gen.get()
                 .noGraph()
                 .expectedStatus( 405 )
@@ -213,6 +219,12 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
     @Title( "Automatically indexed relationships cannot be removed from the index manually" )
     public void autoindexed_relationships_cannot_be_removed_manually()
     {
+        try ( Transaction tx = graphdb().beginTx() )
+        {
+            data.get();
+            tx.success();
+        }
+
         try ( Transaction tx = graphdb().beginTx() )
         {
             long id = data.get()
@@ -276,7 +288,7 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
                 .get( relationshipAutoIndexUri() + "since/today/" )
                 .entity() );
     }
-    
+
     /**
      * Get current status for autoindexing on nodes.
      */
@@ -316,9 +328,9 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
     public void listAutoIndexingPropertiesForNodes() throws JsonParseException {
         String propName = "some-property";
         server().getDatabase().getGraph().index().getNodeAutoIndexer().startAutoIndexingProperty(propName);
-        
+
         List<String> properties = getAutoIndexedPropertiesForType("node");
-        
+
         assertEquals(1, properties.size());
         assertEquals(propName, properties.get(0));
     }
@@ -359,7 +371,7 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
     {
         return getDataUri() + "index/auto/relationship/";
     }
-    
+
     private void addRemoveAutoIndexedPropertyForType(String uriPartForType) throws JsonParseException {
 //      List<String> properties = getAutoIndexedPropertiesForType(uriPartForType);
 //      assertTrue(properties.isEmpty());

@@ -25,11 +25,12 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.cache.EntityWithSizeObject;
-import org.neo4j.kernel.impl.util.ArrayMap;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
@@ -47,11 +48,6 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
 {
     private volatile DefinedProperty[] properties;
     private volatile int registeredSize;
-
-    ArrayBasedPrimitive( boolean newPrimitive )
-    {
-        super( newPrimitive );
-    }
 
     @Override
     public void setRegisteredSize( int size )
@@ -199,9 +195,8 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
     }
 
     @Override
-    protected void commitPropertyMaps(
-            ArrayMap<Integer, DefinedProperty> cowPropertyAddMap,
-            ArrayMap<Integer, DefinedProperty> cowPropertyRemoveMap, long firstProp )
+    public void commitPropertyMaps(
+            PrimitiveIntObjectMap<DefinedProperty> cowPropertyAddMap, Iterator<Integer> removed )
     {
         synchronized ( this )
         {
@@ -241,14 +236,15 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
                 newArray = newArray.clone();
             }
 
-            if ( cowPropertyRemoveMap != null )
+            if ( removed != null )
             {
-                for ( Integer keyIndex : cowPropertyRemoveMap.keySet() )
+                while ( removed.hasNext() )
                 {
+                    int key = removed.next();
                     for ( int i = 0; i < newArraySize; i++ )
                     {
                         Property existingProperty = newArray[i];
-                        if ( existingProperty.propertyKeyId() == keyIndex )
+                        if ( existingProperty.propertyKeyId() == key )
                         {
                             int swapWith = --newArraySize;
                             newArray[i] = newArray[swapWith];
@@ -261,8 +257,11 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
 
             if ( cowPropertyAddMap != null )
             {
-                for ( DefinedProperty addedProperty : cowPropertyAddMap.values() )
+                PrimitiveIntIterator keyIterator = cowPropertyAddMap.iterator();
+                while ( keyIterator.hasNext() )
                 {
+                    int key = keyIterator.next();
+                    DefinedProperty addedProperty = cowPropertyAddMap.get( key );
                     for ( int i = 0; i < newArray.length; i++ )
                     {
                         Property existingProperty = newArray[i];

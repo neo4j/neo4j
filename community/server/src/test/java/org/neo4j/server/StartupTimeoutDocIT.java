@@ -27,7 +27,6 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -254,16 +253,6 @@ public class StartupTimeoutDocIT
             server.stop();
             server = null;
         }
-    }
-
-    @Before
-    public void printTestName()
-    {
-        // MP: Historically this test class has provided pretty flaky tests, mostly only reproducible on CI systems.
-        // to be able to know in which order tests executed might give hints about problems (while we're debugging
-        // the flakiness).
-        System.out.println( "=== Executing: " +
-                StartupTimeoutDocIT.class.getSimpleName() + "#" + testName.getMethodName() );
     }
 
     private void clearAll()

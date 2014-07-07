@@ -23,6 +23,8 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
+import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
@@ -38,6 +40,8 @@ public class StatementOperationParts
     private final SchemaWriteOperations schemaWriteOperations;
     private final SchemaStateOperations schemaStateOperations;
     private final LockOperations lockingStatementOperations;
+    private final LegacyIndexReadOperations legacyIndexReadOperations;
+    private final LegacyIndexWriteOperations legacyIndexWriteOperations;
 
     public StatementOperationParts(
             KeyReadOperations keyReadOperations,
@@ -47,7 +51,9 @@ public class StatementOperationParts
             SchemaReadOperations schemaReadOperations,
             SchemaWriteOperations schemaWriteOperations,
             SchemaStateOperations schemaStateOperations,
-            LockOperations lockingStatementOperations )
+            LockOperations lockingStatementOperations,
+            LegacyIndexReadOperations legacyIndexReadOperations,
+            LegacyIndexWriteOperations legacyIndexWriteOperations )
     {
         this.keyReadOperations = keyReadOperations;
         this.keyWriteOperations = keyWriteOperations;
@@ -57,6 +63,8 @@ public class StatementOperationParts
         this.schemaWriteOperations = schemaWriteOperations;
         this.schemaStateOperations = schemaStateOperations;
         this.lockingStatementOperations = lockingStatementOperations;
+        this.legacyIndexReadOperations = legacyIndexReadOperations;
+        this.legacyIndexWriteOperations = legacyIndexWriteOperations;
     }
 
     public KeyReadOperations keyReadOperations()
@@ -99,7 +107,16 @@ public class StatementOperationParts
         return checkNotNull( lockingStatementOperations, LockOperations.class );
     }
 
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
+    public LegacyIndexReadOperations legacyIndexReadOperations()
+    {
+        return checkNotNull( legacyIndexReadOperations, LegacyIndexReadOperations.class );
+    }
+
+    public LegacyIndexWriteOperations legacyIndexWriteOperations()
+    {
+        return checkNotNull( legacyIndexWriteOperations, LegacyIndexWriteOperations.class );
+    }
+
     public StatementOperationParts override(
             KeyReadOperations keyReadOperations,
             KeyWriteOperations keyWriteOperations,
@@ -108,7 +125,9 @@ public class StatementOperationParts
             SchemaReadOperations schemaReadOperations,
             SchemaWriteOperations schemaWriteOperations,
             SchemaStateOperations schemaStateOperations,
-            LockOperations lockingStatementOperations )
+            LockOperations lockingStatementOperations,
+            LegacyIndexReadOperations legacyIndexReadOperations,
+            LegacyIndexWriteOperations legacyIndexWriteOperations )
     {
         return new StatementOperationParts(
             eitherOr( keyReadOperations, this.keyReadOperations, KeyReadOperations.class ),
@@ -118,9 +137,11 @@ public class StatementOperationParts
             eitherOr( schemaReadOperations, this.schemaReadOperations, SchemaReadOperations.class ),
             eitherOr( schemaWriteOperations, this.schemaWriteOperations, SchemaWriteOperations.class ),
             eitherOr( schemaStateOperations, this.schemaStateOperations, SchemaStateOperations.class ),
-            eitherOr( lockingStatementOperations, this.lockingStatementOperations, LockOperations.class ));
+            eitherOr( lockingStatementOperations, this.lockingStatementOperations, LockOperations.class ),
+            eitherOr( legacyIndexReadOperations, this.legacyIndexReadOperations, LegacyIndexReadOperations.class ),
+            eitherOr( legacyIndexWriteOperations, this.legacyIndexWriteOperations, LegacyIndexWriteOperations.class ) );
     }
-    
+
     private <T> T checkNotNull( T object, Class<T> cls )
     {
         if ( object == null )

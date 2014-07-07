@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel;
 
-import javax.transaction.RollbackException;
-
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 /**
  * @deprecated This will be moved to internal packages in the next major release.
@@ -59,7 +57,7 @@ public class TopLevelTransaction implements Transaction
         {
             return success;
         }
-        
+
         public boolean failureCalled()
         {
             return failure;
@@ -67,15 +65,14 @@ public class TopLevelTransaction implements Transaction
     }
 
     private final static PropertyContainerLocker locker = new PropertyContainerLocker();
-
-    private final AbstractTransactionManager transactionManager;
     private final ThreadToStatementContextBridge stmtProvider;
-    protected final TransactionOutcome transactionOutcome = new TransactionOutcome();
+    private final TransactionOutcome transactionOutcome = new TransactionOutcome();
+    private final KernelTransaction transaction;
 
-    public TopLevelTransaction( AbstractTransactionManager transactionManager,
+    public TopLevelTransaction( KernelTransaction transaction,
                                 ThreadToStatementContextBridge stmtProvider )
     {
-        this.transactionManager = transactionManager;
+        this.transaction = transaction;
         this.stmtProvider = stmtProvider;
     }
 
@@ -83,26 +80,14 @@ public class TopLevelTransaction implements Transaction
     public void failure()
     {
         transactionOutcome.failed();
-        markAsRollbackOnly();
-    }
-
-    protected void markAsRollbackOnly()
-    {
-        try
-        {
-            transactionManager.getTransaction().setRollbackOnly();
-        }
-        catch ( Exception e )
-        {
-            throw new TransactionFailureException(
-                "Failed to mark transaction as rollback only.", e );
-        }
+        transaction.failure();
     }
 
     @Override
     public void success()
     {
-        transactionOutcome.success();
+    	transactionOutcome.success();
+        transaction.success();
     }
 
     @Override
@@ -110,42 +95,35 @@ public class TopLevelTransaction implements Transaction
     {
         close();
     }
-    
+
     @Override
     public void close()
     {
         try
         {
-            javax.transaction.Transaction transaction = transactionManager.getTransaction();
-            if ( transaction != null )
+            if (transaction.isOpen())
             {
-                if ( transactionOutcome.canCommit()  )
-                {
-                    transaction.commit();
-                }
-                else
-                {
-                    transaction.rollback();
-                }
+                transaction.close();
             }
-        }
-        catch ( RollbackException e )
-        {
-            throw new TransactionFailureException( "Unable to commit transaction", e );
         }
         catch ( Exception e )
         {
             if ( transactionOutcome.successCalled() )
             {
-                throw new TransactionFailureException( "Unable to commit transaction", e );
+                throw new TransactionFailureException( "Transaction was marked as successful, " +
+                        "but unable to commit transaction so rolled back.", e );
             }
             else
             {
                 throw new TransactionFailureException( "Unable to rollback transaction", e );
             }
         }
+        finally
+        {
+            stmtProvider.unbindTransactionFromCurrentThread();
+        }
     }
-    
+
     @Override
     public Lock acquireWriteLock( PropertyContainer entity )
     {
@@ -157,4 +135,15 @@ public class TopLevelTransaction implements Transaction
     {
         return locker.sharedLock( stmtProvider, entity );
     }
+
+    @Deprecated
+    public KernelTransaction getTransaction()
+    {
+        return transaction;
+    }
+
+	TransactionOutcome getTransactionOutcome()
+	{
+		return transactionOutcome;
+	}
 }

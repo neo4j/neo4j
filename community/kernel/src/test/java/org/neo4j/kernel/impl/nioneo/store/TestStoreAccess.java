@@ -21,18 +21,17 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
+import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
@@ -40,8 +39,8 @@ import static org.junit.Assert.assertTrue;
 
 public class TestStoreAccess
 {
-    @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Test
     public void openingThroughStoreAccessShouldNotTriggerRecovery() throws Exception
@@ -50,18 +49,28 @@ public class TestStoreAccess
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
         File messages = new File( storeDir, "messages.log" );
         snapshot.deleteFile( messages );
-        
-        new StoreAccess( snapshot, pageCacheRule.getPageCache( snapshot, new Config() ), storeDir.getPath() ).close();
-        assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+
+        PageCache pageCache = new StandardPageCache( snapshot, 1000, 1024*4 );
+        try
+        {
+            new StoreAccess( snapshot, pageCache, storeDir.getPath() ).close();
+            assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+        }
+        finally
+        {
+            pageCache.close();
+        }
     }
-    
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final File storeDir = new File( "dir" );
-    
+
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() )
                 .newImpermanentDatabase( storeDir.getPath() );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
         EphemeralFileSystemAbstraction snapshot = fs.get().snapshot();
         db.shutdown();
         return snapshot;
@@ -69,23 +78,6 @@ public class TestStoreAccess
 
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws IOException
     {
-        char chr = activeLog( fileSystem, storeDir );
-        return chr == '1' || chr == '2';
-    }
-
-    private char activeLog( FileSystemAbstraction fileSystem, File directory ) throws IOException
-    {
-        StoreChannel file = fileSystem.open( new File( directory, "nioneo_logical.log.active" ), "r" );
-        try
-        {
-            ByteBuffer buffer = ByteBuffer.wrap( new byte[2] );
-            file.read( buffer );
-            buffer.flip();
-            return buffer.getChar();
-        }
-        finally
-        {
-            file.close();
-        }
+        return new StoreRecoverer( fileSystem ).recoveryNeededAt( storeDir );
     }
 }
