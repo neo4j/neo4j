@@ -196,10 +196,9 @@ public class StoreMigratorIT
             XaLogicalLog logicalLog = xaContainer.getLogicalLog();
             // The dataset has been specifically constructed such that these two transactions are
             // contained in the last transaction log:
-            try (LogExtractor logExtractor = logicalLog.getLogExtractor( 5, 6 ))
+            InMemoryLogBuffer buf = new InMemoryLogBuffer();
+            try ( LogExtractor logExtractor = logicalLog.getLogExtractor( 5, 6 ) )
             {
-                InMemoryLogBuffer buf = new InMemoryLogBuffer();
-
                 // The first transaction must have the correct checksum
                 assertThat( logExtractor.extractNext( buf ), is( 5L ) );
                 assertThat( logExtractor.getLastTxChecksum(), is( -161474256273L ) );
@@ -214,8 +213,6 @@ public class StoreMigratorIT
 
                 // And then we reach the end of the file
                 assertThat( logExtractor.extractNext( buf ), is( -1L ) );
-
-                logExtractor.close();
             }
         }
         finally
@@ -225,11 +222,11 @@ public class StoreMigratorIT
     }
 
     @Test
-    public void shouldMigrateStoresThatHaveNoTransactionLogs() throws Exception
+    public void shouldMigrateStoresThatHaveNoLogs() throws Exception
     {
         // GIVEN
         // A store that has data, but somehow no transaction logs.
-        File unzippedStore = Unzip.unzip( LegacyStore.class, "legacy-store-without-transaction-logs.zip" );
+        File unzippedStore = Unzip.unzip( LegacyStore.class, "legacy-store-without-logs.zip" );
         File legacyStoreDir = new File( unzippedStore, "legacystore" );
         LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreDir, NeoStore.DEFAULT_NAME ) );
         NeoStore neoStore = storeFactory.createNeoStore( storeFileName );

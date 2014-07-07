@@ -92,6 +92,7 @@ public class StoreMigrator
             migrateNodes( neoStore.getNodeStore() );
             migratePropertyIndexes( neoStore.getPropertyStore() );
             migrateLastTransactionLog();
+            migrateLastLuceneLog();
 
             // Close
             neoStore.close();
@@ -135,6 +136,31 @@ public class StoreMigrator
             }
             logBuffer.force();
             newLogChannel.close();
+        }
+
+        private void migrateLastLuceneLog() throws IOException
+        {
+            StoreChannel newLogChannel = legacyStore.beginTranslatingLastLuceneLog( neoStore );
+            if ( newLogChannel == null )
+            {
+                // There are no lucene legacy index transactions for us to translate, so we skip this step.
+                return;
+            }
+
+            try
+            {
+                LogBuffer logBuffer = new DirectMappedLogBuffer( newLogChannel, ByteCounterMonitor.NULL );
+
+                for ( LogEntry entry : loop( legacyStore.iterateLastLuceneLogEntries( logBuffer ) ) )
+                {
+                    LogIoUtils.writeLogEntry( entry, logBuffer );
+                }
+                logBuffer.force();
+            }
+            finally
+            {
+                newLogChannel.close();
+            }
         }
 
         private void migrateNeoStore( NeoStore neoStore ) throws IOException

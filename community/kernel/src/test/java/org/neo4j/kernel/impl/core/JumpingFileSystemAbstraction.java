@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -154,6 +155,12 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
     public File[] listFiles( File directory )
     {
         return actualFileSystem.listFiles( directory );
+    }
+
+    @Override
+    public File[] listFiles( File directory, FilenameFilter filter )
+    {
+        return actualFileSystem.listFiles( directory, filter );
     }
     
     @Override

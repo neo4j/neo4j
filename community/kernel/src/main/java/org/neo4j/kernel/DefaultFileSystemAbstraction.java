@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -150,6 +151,12 @@ public class DefaultFileSystemAbstraction
     public File[] listFiles( File directory )
     {
         return directory.listFiles();
+    }
+
+    @Override
+    public File[] listFiles( File directory, FilenameFilter filter )
+    {
+        return directory.listFiles( filter );
     }
     
     @Override

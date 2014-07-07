@@ -102,7 +102,6 @@
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
       </includes>
       <excludes>
-        <exclude>*:javadoc:*</exclude>
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j-community:jar</exclude>
       </excludes>

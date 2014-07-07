@@ -145,17 +145,17 @@ public class MigrationTestUtils
         return true;
     }
 
-    public static boolean containsAnyLogicalLogs( FileSystemAbstraction fileSystem, File directory )
+    public static int countLogicalLogs( FileSystemAbstraction fileSystem, File directory )
     {
-        boolean containsLogicalLog = false;
+        int count = 0;
         for ( File workingFile : fileSystem.listFiles( directory ) )
         {
             if ( workingFile.getName().contains( "nioneo_logical" ))
             {
-                containsLogicalLog = true;
+                count++;
             }
         }
-        return containsLogicalLog;
+        return count;
     }
 
     public static boolean containsAnyStoreFiles( FileSystemAbstraction fileSystem, File directory )

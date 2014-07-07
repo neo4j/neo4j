@@ -22,30 +22,30 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class LogFiles
 {
-    private static final class LogicalLogFilenameFilter implements
-            FilenameFilter
+    private static final String LOG_FNAME_PATTERN = "(active_tx_log)" +
+            "|(nioneo_logical\\.log.*)" + // covers current log, active log marker and backups
+            "|(tm_tx_log\\..*)";
+    private static final String INDEX_LOG_FNAME_PATTERN = "lucene\\.log\\..*";
+
+    private static final class RegexFilenameFilter implements FilenameFilter
     {
-        private static final String[] logFilenamePatterns = { "active_tx_log",
-                "nioneo_logical\\.log.*", /* covers current log, active log marker
-                                            and backups */
-                "tm_tx_log\\..*" };
+        private final Pattern pattern;
+
+        private RegexFilenameFilter( String pattern )
+        {
+            this.pattern = Pattern.compile( pattern );
+        }
 
         @Override
         public boolean accept( File dir, String name )
         {
-            for ( String pattern : logFilenamePatterns )
-            {
-                if ( name.matches( pattern ) )
-                {
-                    return true;
-                }
-            }
-            return false;
+            return pattern.matcher( name ).find();
         }
     }
 
@@ -64,11 +64,26 @@ public class LogFiles
         assert fs.isDirectory( fromDirectory );
         assert fs.isDirectory( toDirectory );
 
-        FilenameFilter filter = new LogicalLogFilenameFilter();
-        for ( File logFile : fs.listFiles( fromDirectory ) )
+        // Move the neo store log files
+        FilenameFilter filter = new RegexFilenameFilter( LOG_FNAME_PATTERN );
+        for ( File logFile : fs.listFiles( fromDirectory, filter ) )
         {
-            if ( filter.accept( fromDirectory, logFile.getName() ) )
+            StoreFile.moveFile( fs, logFile.getName(), fromDirectory, toDirectory );
+        }
+
+        // Move the lucene legacy transaction log files
+        fromDirectory = new File( fromDirectory, "index" );
+        toDirectory = new File( toDirectory, "index" );
+
+        if ( fromDirectory.exists() )
+        {
+            toDirectory.mkdirs();
+
+            filter = new RegexFilenameFilter( INDEX_LOG_FNAME_PATTERN );
+            for ( File logFile : fs.listFiles( fromDirectory, filter ) )
+            {
                 StoreFile.moveFile( fs, logFile.getName(), fromDirectory, toDirectory );
+            }
         }
     }
 }

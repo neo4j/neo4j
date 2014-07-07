@@ -63,6 +63,12 @@ public class LegacyStore implements Closeable
 {
     public static final String LEGACY_VERSION = "v0.A.0";
 
+    // We are going to blindly assume that people never configure their
+    // transaction log filenames off the default. If they do, then they're
+    // in trouble.
+    private static final String NIONEO_LOGICAL_LOG_PATTERN = "nioneo_logical\\.log\\.v.*";
+    private static final String LUCENE_LOGICAL_LOG_PATTERN = "lucene\\.log\\.v.*";
+
     private final File storageFileName;
     private final Collection<Closeable> allStoreReaders = new ArrayList<>();
     private LegacyNodeStoreReader nodeStoreReader;
@@ -229,24 +235,45 @@ public class LegacyStore implements Closeable
      */
     public StoreChannel beginTranslatingLastTransactionLog( NeoStore neoStore ) throws IOException
     {
-        // We are going to blindly assume that people never configure their
-        // transaction log filenames off the default. If they do, then they're
-        // in trouble.
-        File lastLegacyTransactionLog = findLastTransactionLog();
-        if ( lastLegacyTransactionLog == null )
+        File legacyDirectory = storageFileName.getParentFile();
+        File migratedDirectory = neoStore.getStorageFileName().getParentFile();
+        String logFilenamePattern = NIONEO_LOGICAL_LOG_PATTERN;
+
+        return prepareLogTranslation( legacyDirectory, migratedDirectory, logFilenamePattern );
+    }
+
+    /**
+     * Prepare a StoreChannel for writing a translated version of the last legacy lucene index
+     * log to the correct location, or return null if the legacy store has no legacy lucene
+     * index transaction logs that can be translated.
+     */
+    public StoreChannel beginTranslatingLastLuceneLog( NeoStore neoStore ) throws IOException
+    {
+        File legacyDirectory = new File( storageFileName.getParentFile(), "index" );
+        File migratedDirectory = new File( neoStore.getStorageFileName().getParentFile(), "index" );
+        fs.mkdirs( migratedDirectory );
+        String logFilenamePattern = LUCENE_LOGICAL_LOG_PATTERN;
+
+        return prepareLogTranslation( legacyDirectory, migratedDirectory, logFilenamePattern );
+    }
+
+    private StoreChannel prepareLogTranslation(
+            File legacyDirectory,
+            File migratedDirectory,
+            String logFilenamePattern ) throws IOException
+    {
+        File lastLegacyLog = findMostRecentLog( legacyDirectory, logFilenamePattern );
+        if ( lastLegacyLog == null )
         {
             return null;
         }
-        File newTransactionLog = new File(
-                neoStore.getStorageFileName().getParent(),
-                lastLegacyTransactionLog.getName() );
-        return fs.open( newTransactionLog, "rw" );
+        File translatedLogFile = new File( migratedDirectory, lastLegacyLog.getName() );
+        return fs.open( translatedLogFile, "rw" );
     }
 
-    private File findLastTransactionLog()
+    private File findMostRecentLog( File directory, String logFilenamePattern )
     {
-        File legacyDirectory = storageFileName.getParentFile();
-        final Pattern logFileName = Pattern.compile( "nioneo_logical\\.log\\.v.*" );
+        final Pattern logFileName = Pattern.compile( logFilenamePattern );
         FilenameFilter logFiles = new FilenameFilter()
         {
             @Override
@@ -255,7 +282,8 @@ public class LegacyStore implements Closeable
                 return logFileName.matcher( name ).find();
             }
         };
-        File[] files = legacyDirectory.listFiles( logFiles );
+
+        File[] files = fs.listFiles( directory, logFiles );
         // 'files' will be 'null' if an IO error occurs.
         if ( files != null && files.length > 0 )
         {
@@ -268,8 +296,31 @@ public class LegacyStore implements Closeable
     public ResourceIterator<LogEntry> iterateLastTransactionLogEntries(
             LogBuffer logBuffer ) throws IOException
     {
-        File legacyTransactionLog = findLastTransactionLog();
-        final StoreChannel channel = fs.open( legacyTransactionLog, "r" );
+        File legacyDirectory = storageFileName.getParentFile();
+        String logFilenamePattern = NIONEO_LOGICAL_LOG_PATTERN;
+        final LegacyLogCommandReader commandReader = new LegacyLogicalLogCommandReader();
+
+        return iterateLogEntries( logBuffer, legacyDirectory, logFilenamePattern, commandReader );
+    }
+
+    public ResourceIterator<LogEntry> iterateLastLuceneLogEntries(
+            LogBuffer logBuffer ) throws IOException
+    {
+        File legacyDirectory = new File( storageFileName.getParentFile(), "index" );
+        String logFilenamePattern = LUCENE_LOGICAL_LOG_PATTERN;
+        final LegacyLogCommandReader commandReader = new LegacyLuceneLogCommandReader();
+
+        return iterateLogEntries( logBuffer, legacyDirectory, logFilenamePattern, commandReader );
+    }
+
+    private ResourceIterator<LogEntry> iterateLogEntries(
+            LogBuffer logBuffer,
+            File legacyDirectory,
+            String logFilenamePattern,
+            final LegacyLogCommandReader commandReader ) throws IOException
+    {
+        File lastLegacyLog = findMostRecentLog( legacyDirectory, logFilenamePattern );
+        final StoreChannel channel = fs.open( lastLegacyLog, "r" );
         final ByteBuffer buffer = ByteBuffer.allocate( 100000 );
 
         long[] header = LegacyLogIoUtil.readLogHeader( buffer, channel, false );
@@ -280,21 +331,7 @@ public class LegacyStore implements Closeable
             logBuffer.put( headerBuf.array() );
         }
 
-        Resource resource = new Resource()
-        {
-            @Override
-            public void close()
-            {
-                try
-                {
-                    channel.close();
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( "Failed to close legacy log channel", e );
-                }
-            }
-        };
+        Resource resource = channelAsResource( channel );
         return newResourceIterator( resource, new PrefetchingIterator<LogEntry>()
         {
             @Override
@@ -302,7 +339,7 @@ public class LegacyStore implements Closeable
             {
                 try
                 {
-                    return LegacyLogIoUtil.readEntry( buffer, channel );
+                    return LegacyLogIoUtil.readEntry( buffer, channel, commandReader );
                 }
                 catch ( IOException e )
                 {
@@ -310,5 +347,24 @@ public class LegacyStore implements Closeable
                 }
             }
         } );
+    }
+
+    private Resource channelAsResource( final StoreChannel channel )
+    {
+        return new Resource()
+            {
+                @Override
+                public void close()
+                {
+                    try
+                    {
+                        channel.close();
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new RuntimeException( "Failed to close legacy log channel", e );
+                    }
+                }
+            };
     }
 }

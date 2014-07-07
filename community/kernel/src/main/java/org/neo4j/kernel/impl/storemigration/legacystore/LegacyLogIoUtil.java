@@ -77,11 +77,14 @@ public class LegacyLogIoUtil
         return new long[] { version, previousCommittedTx };
     }
 
-    public static LogEntry readEntry( ByteBuffer buffer, ReadableByteChannel channel ) throws IOException
+    public static LogEntry readEntry(
+            ByteBuffer buffer,
+            ReadableByteChannel channel,
+            LegacyLogCommandReader commandReader ) throws IOException
     {
         try
         {
-            return readLogEntry( buffer, channel );
+            return readLogEntry( buffer, channel, commandReader );
         }
         catch ( ReadPastEndException e )
         {
@@ -89,7 +92,10 @@ public class LegacyLogIoUtil
         }
     }
 
-    public static LogEntry readLogEntry( ByteBuffer buffer, ReadableByteChannel channel )
+    public static LogEntry readLogEntry(
+            ByteBuffer buffer,
+            ReadableByteChannel channel,
+            LegacyLogCommandReader commandReader )
             throws IOException, ReadPastEndException
     {
         byte entry = readNextByte( buffer, channel );
@@ -104,7 +110,7 @@ public class LegacyLogIoUtil
             case LogEntry.TX_2P_COMMIT:
                 return readTxTwoPhaseCommitEntry( buffer, channel );
             case LogEntry.COMMAND:
-                return readTxCommandEntry( buffer, channel );
+                return readTxCommandEntry( buffer, channel, commandReader );
             case LogEntry.DONE:
                 return readTxDoneEntry( buffer, channel );
             case LogEntry.EMPTY:
@@ -161,11 +167,13 @@ public class LegacyLogIoUtil
     }
 
     private static LogEntry.Command readTxCommandEntry(
-            ByteBuffer buf, ReadableByteChannel channel )
+            ByteBuffer buf,
+            ReadableByteChannel channel,
+            LegacyLogCommandReader commandReader )
             throws IOException, ReadPastEndException
     {
         int identifier = readNextInt( buf, channel );
-        XaCommand command = LegacyCommandReader.readCommand( channel, buf );
+        XaCommand command = commandReader.readCommand( channel, buf );
         if ( command == null )
         {
             return null;
