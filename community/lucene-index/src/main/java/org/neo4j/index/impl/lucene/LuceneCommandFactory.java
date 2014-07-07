@@ -26,6 +26,9 @@ import java.nio.channels.ReadableByteChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 
+/**
+ * A command factory used for reading lucene specific commands out of an XaLogicalLog.
+ */
 public class LuceneCommandFactory extends XaCommandFactory
 {
     private LuceneDataSource luceneDataSource;

@@ -33,6 +33,13 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
+/**
+ * Reads commands from the 1.9 Lucene XaLogicalLog (the logs for the legacy indexes) and
+ * produces LuceneCommands from them, that can be written back in the current format.
+ *
+ * The Kernel uses this class for writing the current-formatted commands as well, such that
+ * it does not need to depend on the lucene-index artifact for doing a store migration.
+ */
 public class LegacyLuceneLogCommandReader implements LegacyLogCommandReader
 {
     private static final byte ADD_COMMAND = (byte) 1;

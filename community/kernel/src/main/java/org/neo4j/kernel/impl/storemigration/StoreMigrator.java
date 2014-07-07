@@ -147,14 +147,20 @@ public class StoreMigrator
                 return;
             }
 
-            LogBuffer logBuffer = new DirectMappedLogBuffer( newLogChannel, ByteCounterMonitor.NULL );
-
-            for ( LogEntry entry : loop( legacyStore.iterateLastLuceneLogEntries( logBuffer ) ) )
+            try
             {
-                LogIoUtils.writeLogEntry( entry, logBuffer );
+                LogBuffer logBuffer = new DirectMappedLogBuffer( newLogChannel, ByteCounterMonitor.NULL );
+
+                for ( LogEntry entry : loop( legacyStore.iterateLastLuceneLogEntries( logBuffer ) ) )
+                {
+                    LogIoUtils.writeLogEntry( entry, logBuffer );
+                }
+                logBuffer.force();
             }
-            logBuffer.force();
-            newLogChannel.close();
+            finally
+            {
+                newLogChannel.close();
+            }
         }
 
         private void migrateNeoStore( NeoStore neoStore ) throws IOException

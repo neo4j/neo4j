@@ -25,6 +25,14 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
+/**
+ * Reads XaCommands out of the given ReadableByteChannel, with the help of the given
+ * ByteBuffer.
+ *
+ * Very similar to an {@link org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory},
+ * but for legacy commands. That is, effectively an XaCommandFactory from a previous version of
+ * Neo4j.
+ */
 public interface LegacyLogCommandReader
 {
     XaCommand readCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException;
