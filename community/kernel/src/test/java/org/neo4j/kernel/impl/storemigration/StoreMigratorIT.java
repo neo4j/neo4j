@@ -196,23 +196,27 @@ public class StoreMigratorIT
             XaLogicalLog logicalLog = xaContainer.getLogicalLog();
             // The dataset has been specifically constructed such that these two transactions are
             // contained in the last transaction log:
-            LogExtractor logExtractor = logicalLog.getLogExtractor( 5, 6 );
-            InMemoryLogBuffer buf = new InMemoryLogBuffer();
+            try (LogExtractor logExtractor = logicalLog.getLogExtractor( 5, 6 ))
+            {
+                InMemoryLogBuffer buf = new InMemoryLogBuffer();
 
-            // The first transaction must have the correct checksum
-            assertThat( logExtractor.extractNext( buf ), is( 5L ) );
-            assertThat( logExtractor.getLastTxChecksum(), is( -161474256273L ) );
+                // The first transaction must have the correct checksum
+                assertThat( logExtractor.extractNext( buf ), is( 5L ) );
+                assertThat( logExtractor.getLastTxChecksum(), is( -161474256273L ) );
 
-            // The second transaction must have the correct checksum
-            // As it happens, our checksum generation is woefully bad, so these two transactions
-            // end up with the same checksum. Well... all we care about here is that we somehow
-            // compute the same number as we did in the previous version. Not cool, but it's a
-            // fight for another day.
-            assertThat( logExtractor.extractNext( buf ), is( 6L ) );
-            assertThat( logExtractor.getLastTxChecksum(), is( -161474256273L ) );
+                // The second transaction must have the correct checksum
+                // As it happens, our checksum generation is woefully bad, so these two transactions
+                // end up with the same checksum. Well... all we care about here is that we somehow
+                // compute the same number as we did in the previous version. Not cool, but it's a
+                // fight for another day.
+                assertThat( logExtractor.extractNext( buf ), is( 6L ) );
+                assertThat( logExtractor.getLastTxChecksum(), is( -161474256273L ) );
 
-            // And then we reach the end of the file
-            assertThat( logExtractor.extractNext( buf ), is( -1L ) );
+                // And then we reach the end of the file
+                assertThat( logExtractor.extractNext( buf ), is( -1L ) );
+
+                logExtractor.close();
+            }
         }
         finally
         {
