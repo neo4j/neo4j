@@ -29,9 +29,15 @@ public class MandatoryTransactionsForGlobalGraphOperations
     extends AbstractMandatoryTransactionsTest<GlobalGraphOperations>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsConstraintCreators() throws Exception
+    public void shouldRequireTransactionsWhenCallingGlobalGraphOperations() throws Exception
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_GLOBAL_GRAPH_OPERATIONS_FACADE_METHODS );
+    }
+
+    @Test
+    public void shouldInterruptWhenCallingGlobalGraphOperations() throws Exception
+    {
+        assertFacadeMethodsThrowAfterInterrupt( ALL_GLOBAL_GRAPH_OPERATIONS_FACADE_METHODS );
     }
 
     @Override

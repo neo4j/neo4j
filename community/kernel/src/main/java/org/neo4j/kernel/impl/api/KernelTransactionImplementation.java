@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.lang.System.currentTimeMillis;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -59,6 +57,8 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 
+import static java.lang.System.currentTimeMillis;
+
 /**
  * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
@@ -84,7 +84,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TxStateImpl txState;
     private TransactionHooks.TransactionHooksState hooksState;
     private final TransactionRecordState recordState;
-    private boolean success, failure;
+    private boolean failure, success;
+    private volatile boolean terminated;
 
     // For committing
     private final TransactionHeaderInformation headerInformation;
@@ -141,7 +142,21 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public void failure()
     {
-        this.failure = true;
+        failure = true;
+    }
+
+    @Override
+    public boolean shouldBeTerminated()
+    {
+        return terminated;
+    }
+
+    @Override
+    public void markForTermination()
+    {
+        failure = true;
+        terminated = true;
+        transactionMonitor.transactionTerminated();
     }
 
     private void release()

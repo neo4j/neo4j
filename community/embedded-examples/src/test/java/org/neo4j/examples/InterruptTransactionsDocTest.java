@@ -20,39 +20,28 @@ package org.neo4j.examples;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertFalse;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.test.JavaDocsGenerator;
-import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-public class EmbeddedNeo4jDocTest
+import org.neo4j.test.JavaDocsGenerator;
+
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
+
+public class InterruptTransactionsDocTest
 {
-    private static EmbeddedNeo4j hello;
-    private static JavaDocsGenerator gen;
+    private static InterruptTransactions interruptTransactions;
+    private static JavaDocsGenerator gen = new JavaDocsGenerator( "interrupt-tx-java", "dev" );
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception
     {
-        hello = new EmbeddedNeo4j();
-        gen = new JavaDocsGenerator( "hello-world-java", "dev" );
+        interruptTransactions = new InterruptTransactions();
     }
 
     @Test
     public void test() throws IOException
     {
-        hello.createDb();
-        String graph = AsciidocHelper.createGraphVizDeletingReferenceNode(
-                "Hello World Graph",
-                hello.graphDb, "java" );
-        assertFalse( graph.isEmpty() );
-        gen.saveToFile( "graph", graph );
-
-        assertFalse( hello.greeting.isEmpty() );
-        gen.saveToFile( "output", hello.greeting + "\n\n" );
-
-        hello.removeData();
-        hello.shutDown();
+        String result = interruptTransactions.run();
+        gen.saveToFile( "result", createOutputSnippet( result ) );
     }
 }

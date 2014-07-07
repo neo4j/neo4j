@@ -33,6 +33,12 @@ public class MandatoryTransactionsForSchemaTests extends AbstractMandatoryTransa
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_SCHEMA_FACADE_METHODS );
     }
 
+    @Test
+    public void shouldInterruptWhenCallingMethodsOnSchema() throws Exception
+    {
+        assertFacadeMethodsThrowAfterInterrupt( ALL_SCHEMA_FACADE_METHODS );
+    }
+
     @Override
     protected Schema obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {

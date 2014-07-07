@@ -30,8 +30,10 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.test.DoubleLatch;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -104,6 +106,185 @@ public class KernelTransactionImplementationTest
         // THEN
         assertTrue( exceptionReceived );
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldRollbackOnClosingInterruptedTransaction() throws Exception
+    {
+        // GIVEN
+        boolean exceptionReceived = false;
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.success();
+            transaction.markForTermination();
+        }
+        catch ( TransactionFailureException e )
+        {
+            // Expected.
+            exceptionReceived = true;
+        }
+
+        // THEN
+        assertTrue( exceptionReceived );
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldRollbackOnClosingSuccessfulButInterruptedTransaction() throws Exception
+    {
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.markForTermination();
+            assertTrue( transaction.shouldBeTerminated() );
+        }
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldRollbackOnClosingInterruptedButSuccessfulTransaction() throws Exception
+    {
+        // GIVEN
+        boolean exceptionReceived = false;
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.markForTermination();
+            transaction.success();
+            assertTrue( transaction.shouldBeTerminated() );
+        }
+        catch ( TransactionFailureException e )
+        {
+            // Expected.
+            exceptionReceived = true;
+        }
+
+        // THEN
+        assertTrue( exceptionReceived );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldNotDowngradeFailureState() throws Exception
+    {
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.markForTermination();
+            transaction.failure();
+            assertTrue( transaction.shouldBeTerminated() );
+        }
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldIgnoreInterruptAfterCommit() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        transaction.success();
+        transaction.close();
+        transaction.markForTermination();
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldIgnoreInterruptAfterRollback() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        transaction.close();
+        transaction.markForTermination();
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldThrowOnInterruptInCommit() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        transaction.success();
+        transaction.markForTermination();
+        try
+        {
+            transaction.close();
+            fail("Expected TransactionFailureException to be thrown");
+        }
+        catch (TransactionFailureException ignored)
+        {
+            // yay
+        }
+    }
+
+    @Test
+    public void shouldIgnoreInterruptDuringRollback() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        transaction.markForTermination();
+        transaction.close();
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldAllowInterruptingFromADifferentThread() throws Exception
+    {
+        // GIVEN
+        final DoubleLatch latch = new DoubleLatch( 1 );
+        final KernelTransaction transaction = newTransaction();
+        Thread thread = new Thread( new Runnable () {
+            @Override
+            public void run()
+            {
+                latch.awaitStart();
+                transaction.markForTermination();
+                latch.finish();
+            }
+        });
+
+        // WHEN
+        thread.start();
+        transaction.success();
+        latch.startAndAwaitFinish();
+
+        boolean exceptionReceived = false;
+        try
+        {
+            transaction.close();
+        } catch ( TransactionFailureException e )
+        {
+            // Expected.
+            exceptionReceived = true;
+        }
+
+        // THEN
+        assertTrue( exceptionReceived );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 

@@ -17,26 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.transactional;
+package org.neo4j.shell;
 
-import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
+import java.io.Closeable;
 
-/**
- * Stores transaction contexts for the server, including handling concurrency safe ways to acquire
- * transaction contexts back, as well as timing out and closing transaction contexts that have been
- * left unused.
- */
-public interface TransactionRegistry
+public interface CtrlCHandler
 {
-    public long begin( TransactionHandle handle );
-
-    public long release( long id, TransactionHandle transactionHandle );
-
-    public TransactionHandle acquire( long id ) throws TransactionLifecycleException;
-
-    public TransactionTerminationHandle terminationHandle( long id ) throws TransactionLifecycleException;
-
-    public void forget( long id );
-
-    public void rollbackAllSuspendedTransactions();
+    Closeable install( Runnable action );
 }

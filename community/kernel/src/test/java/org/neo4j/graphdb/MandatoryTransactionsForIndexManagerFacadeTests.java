@@ -32,6 +32,12 @@ public class MandatoryTransactionsForIndexManagerFacadeTests extends AbstractMan
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_MANAGER_FACADE_METHODS );
     }
 
+    @Test
+    public void shouldInterruptWhenCallingMethodsOnIndexManagerFacade() throws Exception
+    {
+        assertFacadeMethodsThrowAfterInterrupt( ALL_INDEX_MANAGER_FACADE_METHODS );
+    }
+
     @Override
     protected IndexManager obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {

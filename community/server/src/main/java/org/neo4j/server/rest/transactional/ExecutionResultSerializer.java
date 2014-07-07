@@ -32,6 +32,7 @@ import org.codehaus.jackson.JsonGenerator;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.QueryStatistics;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
@@ -282,7 +283,7 @@ public class ExecutionResultSerializer
         }
     }
 
-    private void writeRows( Iterable<String> columns, Iterator<Map<String, Object>> data,
+    private void writeRows( Iterable<String> columns, ResourceIterator<Map<String, Object>> data,
                             ResultDataContentWriter writer ) throws IOException
     {
         out.writeArrayFieldStart( "data" );
@@ -305,6 +306,7 @@ public class ExecutionResultSerializer
         finally
         {
             out.writeEndArray(); // </data>
+            data.close(); // free associated resources as early a possible
         }
     }
 

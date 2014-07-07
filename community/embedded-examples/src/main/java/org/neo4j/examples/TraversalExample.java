@@ -20,9 +20,8 @@
 // START SNIPPET: _sampleDocumentation
 package org.neo4j.examples;
 
-import static java.lang.System.out;
-
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
@@ -37,6 +36,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.io.fs.FileUtils;
+
+import static java.lang.System.out;
 
 public class TraversalExample
 {
@@ -45,9 +47,9 @@ public class TraversalExample
 
     private static final String DB_PATH = "target/neo4j-traversal-example";
 
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
-        deleteFileOrDirectory( new File( DB_PATH ) );
+        FileUtils.deleteRecursively( new File( DB_PATH ) );
         GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         TraversalExample example = new TraversalExample( database );
         Node joe = example.createData();
@@ -64,7 +66,7 @@ public class TraversalExample
                 .uniqueness( Uniqueness.RELATIONSHIP_GLOBAL );
         // END SNIPPET: basetraverser
     }
-    
+
     private Node createData()
     {
         ExecutionEngine engine = new ExecutionEngine( db );
@@ -73,8 +75,8 @@ public class TraversalExample
                        + "(lars {name: 'Lars'}), (ed {name: 'Ed'}),"
            + "(joe)-[:KNOWS]->(sara), (lisa)-[:LIKES]->(joe), "
            + "(peter)-[:KNOWS]->(sara), (dirk)-[:KNOWS]->(peter), "
-           + "(lars)-[:KNOWS]->(drk), (ed)-[:KNOWS]->(lars), " 
-           + "(lisa)-[:KNOWS]->(lars) " 
+           + "(lars)-[:KNOWS]->(drk), (ed)-[:KNOWS]->(lars), "
+           + "(lisa)-[:KNOWS]->(lars) "
            + "RETURN joe";
         ExecutionResult result = engine.execute( query );
         Object joe = result.columnAs( "joe" ).next();
@@ -193,19 +195,4 @@ public class TraversalExample
         LIKES, KNOWS
     }
     // END SNIPPET: sourceRels
-
-    private static void deleteFileOrDirectory( File file )
-    {
-        if ( file.exists() )
-        {
-            if ( file.isDirectory() )
-            {
-                for ( File child : file.listFiles() )
-                {
-                    deleteFileOrDirectory( child );
-                }
-            }
-            file.delete();
-        }
-    }
 }

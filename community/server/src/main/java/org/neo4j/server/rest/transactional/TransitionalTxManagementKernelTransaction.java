@@ -26,12 +26,14 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 class TransitionalTxManagementKernelTransaction
 {
+    private final TransactionTerminator txInterruptor;
     private final ThreadToStatementContextBridge bridge;
 
     private TopLevelTransaction suspendedTransaction;
 
-    TransitionalTxManagementKernelTransaction( ThreadToStatementContextBridge bridge )
+    TransitionalTxManagementKernelTransaction( TransactionTerminator txInterruptor, ThreadToStatementContextBridge bridge )
     {
+        this.txInterruptor = txInterruptor;
         this.bridge = bridge;
     }
 
@@ -47,6 +49,10 @@ class TransitionalTxManagementKernelTransaction
         assert suspendedTransaction != null : "Can't suspend the transaction if it has not first been suspended.";
         bridge.bindTransactionToCurrentThread( suspendedTransaction );
         suspendedTransaction = null;
+    }
+
+    public void interrupt() {
+        txInterruptor.interrupt();
     }
 
     public void rollback()

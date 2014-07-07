@@ -19,13 +19,41 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
-import static org.hamcrest.CoreMatchers.containsString;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.io.Reader;
+import java.net.Socket;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.test.server.HTTP;
+import org.neo4j.test.server.HTTP.Response;
+import org.neo4j.tooling.GlobalGraphOperations;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.hasErrors;
@@ -33,21 +61,6 @@ import static org.neo4j.server.rest.transactional.integration.TransactionMatcher
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.matches;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
-
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
-import org.neo4j.test.server.HTTP;
-import org.neo4j.test.server.HTTP.Response;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 public class TransactionIT extends AbstractRestFunctionalTestBase
 {
@@ -62,11 +75,11 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         Response begin = http.POST( "/db/data/transaction" );
 
         assertThat( begin.status(), equalTo( 201 ) );
-        assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
+        assertHasTxLocation( begin );
+        assertHasTxInterruptHeader( begin );
 
         String commitResource = begin.stringFromContent( "commit" );
-        assertThat( commitResource, matches( "http://localhost:\\d+/db/data/transaction/\\d" +
-                "+/commit" ) );
+        assertThat( commitResource, matches( "http://localhost:\\d+/db/data/transaction/\\d/commit" ) );
         assertThat( begin.get("transaction").get("expires").asText(), isValidRFCTimestamp());
 
         // execute
@@ -74,12 +87,14 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
         assertThat( execute.status(), equalTo( 200 ) );
         assertThat( execute.get("transaction").get("expires").asText(), isValidRFCTimestamp());
+        assertHasNoTxInterruptHeader( execute );
 
         // commit
         Response commit = http.POST( commitResource );
 
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
+        assertHasNoTxInterruptHeader( commit );
     }
 
     @Test
@@ -91,16 +106,19 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         Response begin = http.POST( "/db/data/transaction" );
 
         assertThat( begin.status(), equalTo( 201 ) );
-        assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
+        assertHasTxLocation( begin );
+        assertHasTxInterruptHeader( begin );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        Response execute = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        assertHasNoTxInterruptHeader( execute );
 
         // rollback
         Response commit = http.DELETE( begin.location() );
 
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
+        assertHasNoTxInterruptHeader( commit );
     }
 
     @Test
@@ -112,16 +130,18 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         Response begin = http.POST( "/db/data/transaction" );
 
         assertThat( begin.status(), equalTo( 201 ) );
-        assertThat( begin.location(), containsString( "/db/data/transaction" ) );
+        assertHasTxLocation( begin );
+        assertHasTxInterruptHeader( begin );
 
         String commitResource = begin.stringFromContent( "commit" );
         assertThat( commitResource, equalTo( begin.location() + "/commit" ) );
 
         // execute and commit
         Response commit = http.POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
-        assertThat( commit, containsNoErrors());
 
+        assertThat( commit, containsNoErrors());
         assertThat( commit.status(), equalTo( 200 ) );
+        assertHasNoTxInterruptHeader( commit );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
     }
 
@@ -131,8 +151,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin and execute
-        Response begin = http.POST( "/db/data/transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' " +
-                "} ] }" ) );
+        Response begin = http.POST( "/db/data/transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        assertHasTxInterruptHeader( begin );
 
         String commitResource = begin.stringFromContent( "commit" );
 
@@ -140,6 +160,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         Response commit = http.POST( commitResource );
 
         assertThat( commit.status(), equalTo( 200 ) );
+        assertHasNoTxInterruptHeader( commit );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
     }
 
@@ -148,20 +169,23 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     {
         // begin
         Response begin = http.POST( "/db/data/transaction" );
+        assertHasTxInterruptHeader( begin );
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        Response execute1 = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        assertHasNoTxInterruptHeader( execute1 );
 
         // commit
-        http.POST( commitResource );
+        Response commit = http.POST( commitResource );
+        assertHasNoTxInterruptHeader( commit );
 
         // execute
-        Response execute =
-            http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        Response execute2 = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
-        assertThat( execute.status(), equalTo( 404 ) );
-        assertThat( execute, hasErrors( Status.Transaction.UnknownId ) );
+        assertThat( execute2.status(), equalTo( 404 ) );
+        assertThat( execute2, hasErrors( Status.Transaction.UnknownId ) );
+        assertHasNoTxInterruptHeader( execute2 );
     }
 
     @Test
@@ -172,6 +196,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         // begin and execute and commit
         Response begin = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
+        assertHasTxInterruptHeader( begin );
         assertThat( begin.status(), equalTo( 200 ) );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
     }
@@ -255,6 +280,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         assertThat( response.status(), equalTo( 200 ) );
         assertThat( response, hasErrors(Status.Statement.InvalidSyntax) );
+        assertHasTxInterruptHeader( response );
     }
 
     @Test
@@ -321,15 +347,18 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // begin
         Response begin = http.POST( "/db/data/transaction" );
+        assertHasTxInterruptHeader( begin );
 
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' }, { 'statement': 'CREATE n' } ] }" ) );
+        Response execute = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' }, { 'statement': 'CREATE n' } ] }" ) );
+        assertHasNoTxInterruptHeader( execute );
 
         // commit
-        assertThat( http.POST( commitResource ), containsNoErrors() );
-
+        Response commit = http.POST( commitResource );
+        assertThat( commit, containsNoErrors() );
+        assertHasNoTxInterruptHeader( commit );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 2 ) );
     }
 
@@ -340,18 +369,22 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // begin
         Response begin = http.POST( "/db/data/transaction" );
+        assertHasTxInterruptHeader( begin );
 
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        Response execute1= http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        assertHasNoTxInterruptHeader( execute1 );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        Response execute2 = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        assertHasNoTxInterruptHeader( execute2 );
 
         // commit
-        http.POST( commitResource );
+        Response commit = http.POST( commitResource );
 
+        assertHasNoTxInterruptHeader( commit );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 2 ) );
     }
 
@@ -379,6 +412,171 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction+1 ) );
     }
 
+    @Test
+    public void begin__interrupt__commit() throws Exception
+    {
+        // begin
+        Response begin = http.POST( "/db/data/transaction" );
+
+        assertThat( begin.status(), equalTo( 201 ) );
+        assertHasTxLocation( begin );
+        assertHasTxInterruptHeader( begin );
+        String commitResource = begin.stringFromContent( "commit" );
+
+        // terminate
+        String interruptResource = begin.firstXHeader( "Transaction-Interrupt" );
+        Response interrupt = http.POST( interruptResource, quotedJson( "{}" ) );
+        assertThat( interrupt.status(), equalTo( 200 ) );
+
+        // commit
+        Response commit = http.POST( commitResource );
+
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( commit, hasErrors( Status.Transaction.CouldNotCommit ) );
+        assertHasNoTxInterruptHeader( commit );
+    }
+
+    @Test
+    public void begin__interrupt__execute() throws Exception
+    {
+        // begin
+        Response begin = http.POST( "/db/data/transaction" );
+
+        assertThat( begin.status(), equalTo( 201 ) );
+        assertHasTxLocation( begin );
+        assertHasTxInterruptHeader( begin );
+
+        // terminate
+        String interruptResource = begin.firstXHeader( "Transaction-Interrupt" );
+        Response interrupt = http.POST( interruptResource, quotedJson( "{}" ) );
+        assertThat( interrupt.status(), equalTo( 200 ) );
+
+        // execute
+        Response execute =
+            http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        assertHasNoTxInterruptHeader( execute );
+
+        assertThat( execute.status(), equalTo( 200 ) );
+        assertThat( execute, hasErrors( Status.Statement.ExecutionFailure ) );
+        assertHasNoTxInterruptHeader( execute );
+    }
+
+    @Test
+    public void begin_execute_and_commit__interrupt() throws Exception
+    {
+        // commit tx
+        Response commit = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertHasTxInterruptHeader( commit );
+
+        // terminate
+        String interruptResource = commit.firstXHeader( "Transaction-Interrupt" );
+        Response interrupt = http.POST( interruptResource, quotedJson( "{}" ) );
+        assertThat( interrupt.status(), equalTo( 404 ) );
+    }
+
+    @Test
+    public void begin__execute__interrupt_concurrently() throws Exception
+    {
+        // begin
+        Response begin = http.POST( "/db/data/transaction" );
+        assertThat( begin.status(), equalTo( 201 ) );
+        assertHasTxLocation( begin );
+        assertHasTxInterruptHeader( begin );
+
+        // execute
+        final String executeResource = begin.location();
+        final String statement =
+            "WITH range(0, 100000) AS r UNWIND r AS i CREATE (n {number: i}) RETURN count(n)";
+
+        final Future<Response> executeFuture = Executors.newSingleThreadExecutor().submit( new Callable<Response>()
+        {
+            public Response call()
+            {
+                Response response = http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" + statement + "' } ] }" ) );
+                assertThat( response.status(), equalTo( 200 ) );
+                return response;
+
+            }
+        });
+
+        // terminate
+        final String interruptResource = begin.firstXHeader( "Transaction-Interrupt" );
+        final Future<Response> interruptFuture = Executors.newSingleThreadExecutor().submit( new Callable<Response>() {
+            public Response call()
+            {
+                try
+                {
+                    Thread.sleep( 1000L );
+                }
+                catch ( InterruptedException ignored )
+                {
+                    // go
+                }
+                Response response = http.POST( interruptResource, quotedJson( "{}" ) );
+                assertThat( response.status(), equalTo( 200 ) );
+                return response;
+            }
+        });
+
+        interruptFuture.get();
+        Response execute = executeFuture.get();
+        assertThat( execute, hasErrors( Status.Statement.ExecutionFailure ) );
+        assertHasNoTxInterruptHeader( execute );
+    }
+
+    @Test
+    public void executing_single_statement_in_new_transaction_and_failing_to_read_the_output_should_interrupt() throws Exception
+    {
+        // given
+        cleanDatabase();
+        TransactionMonitor txMonitor = ((GraphDatabaseAPI) graphdb()).getDependencyResolver().resolveDependency( TransactionMonitor.class );
+        long initialInterrupts = txMonitor.getNumberOfTransactionTerminations();
+
+        // when sending a request and aborting in the middle of receiving the result
+        Socket socket = new Socket( "localhost", 7474 );
+        PrintStream out = new PrintStream(  socket.getOutputStream() );
+
+        String output = quotedJson(
+            "{ 'statements': [ { 'statement': 'WITH * UNWIND range(0, 9999) AS i CREATE (n {i: i}) RETURN n' } ] }" ).get();
+        out.print( "POST /db/data/transaction/commit HTTP/1.1\r\n" );
+        out.print( "Host: localhost:7474\r\n" );
+        out.print( "Content-type: application/json; charset=utf-8\r\n" );
+        out.print( "Content-length: " + output.getBytes().length + "\r\n" );
+        out.print("\r\n");
+        out.print(output);
+        out.print( "\r\n" );
+
+        InputStream inputStream = socket.getInputStream();
+        Reader reader = new InputStreamReader( inputStream );
+
+        int numRead = 0;
+        while (numRead < 300)
+        {
+           numRead += reader.read( new char[300] );
+        }
+        socket.close();
+
+        // then
+        try (Transaction tx = graphdb().beginTx()) {
+            long numNodes = count( GlobalGraphOperations.at( graphdb() ).getAllNodes().iterator() );
+            assertEquals( 0, numNodes );
+        }
+
+        long numInterrupts = txMonitor.getNumberOfTransactionTerminations() - initialInterrupts;
+        assertEquals( 1, numInterrupts );
+    }
+
+    /*
+
+     try ( tx ) {
+        ...
+        tx.op();
+     }
+     finally {
+        tx.close();
+     }
+     */
     @Test
     public void should_include_graph_format_when_requested() throws Exception
     {
@@ -489,5 +687,22 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             transaction.failure();
             return count;
         }
+    }
+
+    private void assertHasTxLocation( Response begin )
+    {
+        assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
+    }
+
+    private void assertHasTxInterruptHeader( Response begin )
+    {
+        assertThat(
+                begin.firstXHeader( "Transaction-Interrupt" ),
+                matches( "http://localhost:\\d+/db/data/transaction/\\d+/interrupt" ) );
+    }
+
+    private void assertHasNoTxInterruptHeader( Response response )
+    {
+        assertNull( response.firstXHeader( "Transaction-Interrupt" ) );
     }
 }

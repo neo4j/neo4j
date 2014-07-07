@@ -34,6 +34,12 @@ public class MandatoryTransactionsForIndexCreatorTests
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_CREATOR_FACADE_METHODS );
     }
 
+    @Test
+    public void shouldInterruptWhenCallingMethodsOnIndexCreators() throws Exception
+    {
+        assertFacadeMethodsThrowAfterInterrupt( ALL_INDEX_CREATOR_FACADE_METHODS );
+    }
+
     @Override
     protected IndexCreator obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {

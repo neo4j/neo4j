@@ -55,7 +55,7 @@ public abstract class AbstractShellTest
 {
     protected GraphDatabaseAPI db;
     protected ShellServer shellServer;
-    private ShellClient shellClient;
+    protected ShellClient shellClient;
     private Integer remotelyAvailableOnPort;
     protected static final RelationshipType RELATIONSHIP_TYPE = withName( "TYPE" );
 
@@ -80,7 +80,7 @@ public abstract class AbstractShellTest
     protected SameJvmClient newShellClient( ShellServer server, Map<String, Serializable> session )
             throws ShellException, RemoteException
     {
-        return new SameJvmClient( session, server, new CollectingOutput() );
+        return new SameJvmClient( session, server, new CollectingOutput(), InterruptSignalHandler.getHandler() );
     }
     
     protected GraphDatabaseAPI newDb()
@@ -124,7 +124,7 @@ public abstract class AbstractShellTest
     protected ShellClient newRemoteClient( Map<String, Serializable> initialSession ) throws Exception
     {
         return new RemoteClient( initialSession, remoteLocation( remotelyAvailableOnPort ),
-                new CollectingOutput() );
+                new CollectingOutput(), InterruptSignalHandler.getHandler() );
     }
 
     protected void makeServerRemotelyAvailable() throws RemoteException

@@ -40,6 +40,7 @@ import javax.ws.rs.core.UriInfo;
 import org.neo4j.server.rest.transactional.ExecutionResultSerializer;
 import org.neo4j.server.rest.transactional.TransactionFacade;
 import org.neo4j.server.rest.transactional.TransactionHandle;
+import org.neo4j.server.rest.transactional.TransactionTerminationHandle;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 
@@ -129,7 +130,8 @@ public class TransactionalService
         {
             return invalidTransaction( e );
         }
-        return okResponse( executeStatementsAndCommit( input, transactionHandle, true ) );
+        final StreamingOutput streamingResults = executeStatementsAndCommit( input, transactionHandle, true );
+        return okResponseWithTxInfo( transactionHandle, streamingResults );
     }
 
     @DELETE
@@ -137,16 +139,16 @@ public class TransactionalService
     @Consumes({MediaType.APPLICATION_JSON})
     public Response rollbackTransaction( @PathParam("id") final long id )
     {
-        final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = facade.findTransactionHandle( id );
+            TransactionTerminationHandle interruptHandle = facade.findTransactionInterruptHandle( id );
+            interruptHandle.terminate();
         }
         catch ( TransactionLifecycleException e )
         {
             return invalidTransaction( e );
         }
-        return okResponse( rollback( transactionHandle ) );
+        return Response.ok().build();
     }
 
     private Response invalidTransaction( TransactionLifecycleException e )
@@ -158,7 +160,20 @@ public class TransactionalService
 
     private Response createdResponse( TransactionHandle transactionHandle, StreamingOutput streamingResults )
     {
-        return Response.created( transactionHandle.uri() )
+
+        URI txURI = transactionHandle.uri();
+        return Response
+                .created( txURI )
+                .header( "X-Transaction-Interrupt", txURI.resolve( txURI.getPath() + "/interrupt" ) )
+                .entity( streamingResults )
+                .build();
+    }
+
+    private Response okResponseWithTxInfo( TransactionHandle transactionHandle, StreamingOutput streamingResults )
+    {
+        URI txURI = transactionHandle.uri();
+        return Response.ok()
+                .header( "X-Transaction-Interrupt", txURI.resolve( txURI.getPath() + "/interrupt" ) )
                 .entity( streamingResults )
                 .build();
     }
@@ -182,7 +197,7 @@ public class TransactionalService
         };
     }
 
-    private StreamingOutput executeStatementsAndCommit( final InputStream input, 
+    private StreamingOutput executeStatementsAndCommit( final InputStream input,
                                                         final TransactionHandle transactionHandle,
                                                         final boolean pristine )
     {
@@ -191,7 +206,8 @@ public class TransactionalService
             @Override
             public void write( OutputStream output ) throws IOException, WebApplicationException
             {
-                transactionHandle.commit( facade.deserializer( input ), facade.serializer( output ), pristine );
+                OutputStream wrappedOutput = pristine ? new InterruptingOutputStream( output, transactionHandle ) : output;
+                transactionHandle.commit( facade.deserializer( input ), facade.serializer( wrappedOutput ), pristine );
             }
         };
     }
@@ -246,6 +262,92 @@ public class TransactionalService
         private UriBuilder builder( long id )
         {
             return uriInfo.getBaseUriBuilder().path( TransactionalService.class ).path( "/" + id );
+        }
+    }
+
+    private class InterruptingOutputStream extends OutputStream {
+        private final OutputStream delegate;
+        private final TransactionTerminationHandle interruptHandle;
+
+        private InterruptingOutputStream( OutputStream delegate, TransactionTerminationHandle interruptHandle )
+        {
+            this.delegate = delegate;
+            this.interruptHandle = interruptHandle;
+        }
+
+        @Override
+        public void write( byte[] b ) throws IOException
+        {
+            try
+            {
+                delegate.write( b );
+            }
+            catch (IOException e)
+            {
+                interrupt();
+                throw e;
+            }
+        }
+
+        @Override
+        public void write( byte[] b, int off, int len ) throws IOException
+        {
+            try
+            {
+                delegate.write( b, off, len );
+            }
+            catch (IOException e)
+            {
+                interrupt();
+                throw e;
+            }
+        }
+
+        @Override
+        public void flush() throws IOException
+        {
+            try
+            {
+                delegate.flush();
+            }
+            catch (IOException e)
+            {
+                interrupt();
+                throw e;
+            }
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            try
+            {
+                delegate.close();
+            }
+            catch (IOException e)
+            {
+                interrupt();
+                throw e;
+            }
+        }
+
+        @Override
+        public void write( int b ) throws IOException
+        {
+            try
+            {
+                delegate.write( b );
+            }
+            catch (IOException e)
+            {
+                interrupt();
+                throw e;
+            }
+        }
+
+        private void interrupt()
+        {
+            interruptHandle.terminate();
         }
     }
 }

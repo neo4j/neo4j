@@ -1,3 +1,9 @@
+2.2.0-SNAPSHOT
+--------------
+o Added a new endpoint, `transactions/{txid}/interrupt` that can be POSTED to to interrupt
+  a transaction. Consult community/kernel/CHANGES.txt and the manual for more details
+  on the new transaction interrupt API.
+
 2.1.2
 -----
 o Ensures transactional endpoint responds with an https location

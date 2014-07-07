@@ -124,9 +124,9 @@ public class StartupTimeoutDocIT
             {
                 /* Create an InterruptThreadTimer that won't start its count down until server modules have
                  * started to load (and in the case of these tests wait long enough for the timer to trigger.
-                 * This makes it deterministic precisely where in the startup sequence the interrupt happens.
+                 * This makes it deterministic precisely where in the startup sequence the terminate happens.
                  * Whereas this is a bit too deterministic compared to the real world, this is a test that must
-                 * complete in the same way every time. Another test should verify that an interrupt happening
+                 * complete in the same way every time. Another test should verify that an terminate happening
                  * anywhere in the startup sequence still aborts the startup and cleans up properly. */
 
                 InterruptThreadTimer realTimer = super.createInterruptStartupTimer();

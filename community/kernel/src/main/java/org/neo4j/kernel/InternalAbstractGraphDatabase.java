@@ -1021,7 +1021,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( format( "Node %d not found", id ) );
         }
-        threadToTransactionBridge.assertInTransaction();
+        threadToTransactionBridge.assertInUninterruptedTransaction();
         try (Statement statement = threadToTransactionBridge.instance())
         {
             if ( !statement.readOperations().nodeExists( id ) )
@@ -1040,7 +1040,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( format( "Relationship %d not found", id));
         }
-        threadToTransactionBridge.assertInTransaction();
+        threadToTransactionBridge.assertInUninterruptedTransaction();
         try (Statement statement = threadToTransactionBridge.instance())
         {
             if ( !statement.readOperations().relationshipExists( id ) )
@@ -1055,14 +1055,14 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public IndexManager index()
     {
-        // TODO: txManager.assertInTransaction();
+        // TODO: txManager.assertInUninterruptedTransaction();
         return indexManager;
     }
 
     @Override
     public Schema schema()
     {
-        threadToTransactionBridge.assertInTransaction();
+        threadToTransactionBridge.assertInUninterruptedTransaction();
         return schema;
     }
 

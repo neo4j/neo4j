@@ -31,6 +31,12 @@ public class MandatoryTransactionsForNodeTests extends AbstractMandatoryTransact
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_FACADE_METHODS );
     }
 
+    @Test
+    public void shouldInterruptWhenCallingMethodsOnNode() throws Exception
+    {
+        assertFacadeMethodsThrowAfterInterrupt( ALL_NODE_FACADE_METHODS );
+    }
+
     @Override
     protected Node obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {

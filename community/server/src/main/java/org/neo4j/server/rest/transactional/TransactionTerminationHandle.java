@@ -19,24 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
-
-/**
- * Stores transaction contexts for the server, including handling concurrency safe ways to acquire
- * transaction contexts back, as well as timing out and closing transaction contexts that have been
- * left unused.
- */
-public interface TransactionRegistry
+public interface TransactionTerminationHandle
 {
-    public long begin( TransactionHandle handle );
-
-    public long release( long id, TransactionHandle transactionHandle );
-
-    public TransactionHandle acquire( long id ) throws TransactionLifecycleException;
-
-    public TransactionTerminationHandle terminationHandle( long id ) throws TransactionLifecycleException;
-
-    public void forget( long id );
-
-    public void rollbackAllSuspendedTransactions();
+    void terminate();
 }
