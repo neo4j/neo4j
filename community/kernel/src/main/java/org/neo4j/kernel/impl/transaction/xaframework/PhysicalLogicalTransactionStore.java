@@ -124,13 +124,13 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         return transactionMetadata;
     }
 
-    private static class TransactionPositionLocator implements LogFile.LogFileVisitor
+    public static class TransactionPositionLocator implements LogFile.LogFileVisitor
     {
         private final long startTransactionId;
         private final LogEntryReader<ReadableLogChannel> logEntryReader;
         private LogEntry.Start startEntryForFoundTransaction;
 
-        TransactionPositionLocator( long startTransactionId, LogEntryReader<ReadableLogChannel> logEntryReader )
+        public TransactionPositionLocator( long startTransactionId, LogEntryReader<ReadableLogChannel> logEntryReader )
         {
             this.startTransactionId = startTransactionId;
             this.logEntryReader = logEntryReader;
@@ -162,18 +162,20 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
             return true;
         }
 
-        public LogPosition getAndCacheFoundLogPosition(
-                TransactionMetadataCache transactionMetadataCache ) throws NoSuchTransactionException
+        public LogPosition getAndCacheFoundLogPosition( TransactionMetadataCache transactionMetadataCache )
+                throws NoSuchTransactionException
         {
             if ( startEntryForFoundTransaction == null )
             {
                 throw new NoSuchTransactionException( startTransactionId );
             }
-            transactionMetadataCache.cacheTransactionMetadata( startTransactionId,
+            transactionMetadataCache.cacheTransactionMetadata(
+                    startTransactionId,
                     startEntryForFoundTransaction.getStartPosition(),
                     startEntryForFoundTransaction.getMasterId(),
                     startEntryForFoundTransaction.getLocalId(),
-                    LogEntry.Start.checksum( startEntryForFoundTransaction ) );
+                    LogEntry.Start.checksum( startEntryForFoundTransaction )
+            );
             return startEntryForFoundTransaction.getStartPosition();
         }
     }
