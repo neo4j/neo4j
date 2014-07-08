@@ -1,9 +1,13 @@
+2.0.5
+-----
+o Adds support for Octal literals (using a preceding 0, e.g. 03517)
+o Add `exists(...)` predicate function for checking patterns and properties
+
 2.0.4
 -----
 o Adds UNWIND
 o Fixes problem where predicates are evaluated wrongly in NOT
 o Fixes problem when WITH introduces a symbol that shadows an existing identifier
-o Adds support for Octal literals (using a preceding 0, e.g. 03517)
 
 2.0.3
 -----

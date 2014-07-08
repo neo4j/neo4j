@@ -392,6 +392,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineJUnitSuite {
     )
   }
 
+  @Test def shouldFailOnNonPropOrPatternToExists() {
+    test(
+      "MATCH (n) RETURN exists(n.prop + 1)",
+      "Argument to exists(...) is not a property or pattern (line 1, column 32)"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       val result = execute(query)
