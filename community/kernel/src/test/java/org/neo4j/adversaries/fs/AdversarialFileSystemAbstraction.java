@@ -21,6 +21,7 @@ package org.neo4j.adversaries.fs;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -90,6 +91,12 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     {
         adversary.injectFailure( SecurityException.class );
         return delegate.listFiles( directory );
+    }
+
+    public File[] listFiles( File directory, FilenameFilter filter )
+    {
+        adversary.injectFailure( SecurityException.class );
+        return delegate.listFiles( directory, filter );
     }
 
     public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException

@@ -12,6 +12,17 @@ o Fixes potential leak of transaction state in entity locks that could
 o Fixes "illegal position" errors from persistence window pool
 o Fixes potential race in XaLogicalLog that could lead to duplicate
   entries in the log
+o Fixes a memory leak in DiskLayer that could happen through heavy
+  properties on datasource restarts
+o Index transactional state now properly distinguishes between indexes
+  that refer to the same label but different properties. Previously
+  it was possible to erroneously retrieve indexes that have not been
+  committed yet if asking by label.
+o Properly close IndexReaders, preventing potential file descriptor leaks.
+o Fixes a bug that could cause locks to improperly clean up state
+o Store upgrades will now migrate some transaction logs along with the
+  store, allowing extraction of transactions without requiring
+  new transactions to happen
 
 2.1.0-RC2
 ---------

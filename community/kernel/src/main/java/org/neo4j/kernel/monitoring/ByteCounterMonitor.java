@@ -21,6 +21,19 @@ package org.neo4j.kernel.monitoring;
 
 public interface ByteCounterMonitor
 {
+    public static final ByteCounterMonitor NULL = new ByteCounterMonitor()
+    {
+        @Override
+        public void bytesWritten( long numberOfBytes )
+        {
+        }
+
+        @Override
+        public void bytesRead( long numberOfBytes )
+        {
+        }
+    };
+
     void bytesWritten( long numberOfBytes );
 
     void bytesRead( long numberOfBytes );

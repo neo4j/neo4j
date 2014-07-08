@@ -21,6 +21,7 @@ package org.neo4j.com;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -403,6 +404,12 @@ public class ServerUtilTest
 
         @Override
         public File[] listFiles( File directory )
+        {
+            return new File[0];
+        }
+
+        @Override
+        public File[] listFiles( File directory, FilenameFilter filter )
         {
             return new File[0];
         }

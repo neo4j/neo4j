@@ -22,6 +22,7 @@ package org.neo4j.test.impl;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -349,6 +350,31 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             List<String> fileNamePathItems = splitPath( fileName );
             if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
                 found.add( constructPath( fileNamePathItems, directoryPathItems.size()+1 ) );
+        }
+        return found.toArray( new File[found.size()] );
+    }
+
+    @Override
+    public File[] listFiles( File directory, FilenameFilter filter )
+    {
+        if ( files.containsKey( directory ) )
+            // This means that you're trying to list files on a file, not a directory.
+            return null;
+
+        List<String> directoryPathItems = splitPath( directory );
+        List<File> found = new ArrayList<>();
+        for ( Map.Entry<File, EphemeralFileData> file : files.entrySet() )
+        {
+            File fileName = file.getKey();
+            List<String> fileNamePathItems = splitPath( fileName );
+            if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
+            {
+                File path = constructPath( fileNamePathItems, directoryPathItems.size() + 1 );
+                if ( filter.accept( path.getParentFile(), path.getName() ) )
+                {
+                    found.add( path );
+                }
+            }
         }
         return found.toArray( new File[found.size()] );
     }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -252,6 +253,12 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
 
     @Override
     public File[] listFiles( File directory )
+    {
+        return new File[0];
+    }
+
+    @Override
+    public File[] listFiles( File directory, FilenameFilter filter )
     {
         return new File[0];
     }
