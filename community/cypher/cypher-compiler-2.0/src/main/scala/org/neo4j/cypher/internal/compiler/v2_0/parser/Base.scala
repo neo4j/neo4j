@@ -33,6 +33,9 @@ trait Base extends Parser {
   def RegularDecimalReal = rule { (optional("-") ~ zeroOrMore("0" - "9") ~ "." ~ DigitString).memoMismatches }
   def ExponentDecimalReal = rule { (optional("-") ~ oneOrMore("0" - "9" | ".") ~ "E" ~ optional("-") ~ DigitString).memoMismatches }
   def DigitString = rule("'0'-'9'") { oneOrMore(IdentifierPart) ~ !IdentifierPart }
+  def OctalInteger = rule { (optional("-") ~ UnsignedOctalInteger).memoMismatches }
+  def UnsignedOctalInteger = rule { ("0" ~ OctalString).memoMismatches }
+  def OctalString = rule("'0'-'7'") { oneOrMore(IdentifierPart) ~ !IdentifierPart }
   def HexInteger = rule { (optional("-") ~ UnsignedHexInteger).memoMismatches }
   def UnsignedHexInteger = rule { ("0x" ~ HexString).memoMismatches }
   def HexString = rule("'0'-'9', 'a'-'f'") { oneOrMore(IdentifierPart) ~ !IdentifierPart }

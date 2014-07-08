@@ -59,6 +59,26 @@ sealed abstract class DecimalIntegerLiteral(stringVal: String) extends IntegerLi
 case class SignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with SignedIntegerLiteral
 case class UnsignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with UnsignedIntegerLiteral
 
+sealed abstract class OctalIntegerLiteral(stringVal: String) extends IntegerLiteral with SimpleTyping {
+  lazy val value: java.lang.Long = java.lang.Long.parseLong(stringVal, 8)
+
+  protected def possibleTypes = CTInteger
+
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    when(!(try {
+      value.isInstanceOf[Any]
+    } catch {
+      case e:java.lang.NumberFormatException => false
+    })) {
+      if (stringVal matches "^-?0[0-7]+$")
+        SemanticError("integer is too large", position)
+      else
+        SemanticError("invalid literal number", position)
+    } then super.semanticCheck(ctx)
+}
+
+case class SignedOctalIntegerLiteral(stringVal: String)(val position: InputPosition) extends OctalIntegerLiteral(stringVal) with SignedIntegerLiteral
+
 sealed abstract class HexIntegerLiteral(stringVal: String) extends IntegerLiteral with SimpleTyping {
   lazy val value: java.lang.Long =
     if (stringVal.charAt(0) == '-')
