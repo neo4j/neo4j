@@ -20,12 +20,15 @@
 package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import static java.lang.System.currentTimeMillis;
 
-public class ProducerStep<T> extends AbstractStep<Iterator<T>>
+/**
+ * {@link Step} that is the start of the line of steps in a {@link Stage}. It produces batches of data
+ * and sends downstream.
+ */
+public abstract class ProducerStep<T> extends AbstractStep<Void>
 {
     private final int batchSize;
 
@@ -35,8 +38,10 @@ public class ProducerStep<T> extends AbstractStep<Iterator<T>>
         this.batchSize = batchSize;
     }
 
+    protected abstract T nextOrNull();
+
     @Override
-    public long receive( long ticket, final Iterator<T> input )
+    public long receive( long ticket, Void nothing )
     {
         new Thread()
         {
@@ -46,7 +51,7 @@ public class ProducerStep<T> extends AbstractStep<Iterator<T>>
                 assertHealthy();
                 try
                 {
-                    process( input );
+                    process();
                     endOfUpstream();
                 }
                 catch ( Throwable e )
@@ -58,14 +63,15 @@ public class ProducerStep<T> extends AbstractStep<Iterator<T>>
         return 0;
     }
 
-    protected void process( Iterator<T> input )
+    protected void process()
     {
         List<T> batch = new ArrayList<>( batchSize );
         int size = 0;
         long startTime = currentTimeMillis();
-        while ( input.hasNext() )
+        T next = null;
+        while ( (next = nextOrNull()) != null )
         {
-            batch.add( input.next() );
+            batch.add( next );
             if ( ++size == batchSize )
             {   // Full batch
                 totalProcessingTime.addAndGet( currentTimeMillis()-startTime );

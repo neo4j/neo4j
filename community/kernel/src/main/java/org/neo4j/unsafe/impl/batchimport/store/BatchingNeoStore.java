@@ -161,7 +161,7 @@ public class BatchingNeoStore implements AutoCloseable
         return neoStore.getRelationshipGroupStore();
     }
 
-    public void switchNodeAndRelationshipStoresToReverseUpdatingMode()
+    public void switchNodeAndRelationshipStoresToUpdateMode()
     {
         // Close token repositories, not needed beyond this point.
         propertyKeyRepository.close();

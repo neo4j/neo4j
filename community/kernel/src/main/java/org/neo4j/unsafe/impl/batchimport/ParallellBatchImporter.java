@@ -38,7 +38,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLinkImpl;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
-import org.neo4j.unsafe.impl.batchimport.staging.ProducerStep;
+import org.neo4j.unsafe.impl.batchimport.staging.IteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.StageExecution;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
@@ -108,7 +108,7 @@ public class ParallellBatchImporter implements BatchImporter
                     neoStore, nodeRelationshipLink ) );
 
             // Switch to reverse updating mode
-            neoStore.switchNodeAndRelationshipStoresToReverseUpdatingMode();
+            neoStore.switchNodeAndRelationshipStoresToUpdateMode();
 
             // Stage 4 -- set node nextRel fields
             executeStages( new NodeFirstRelationshipStage( neoStore, nodeRelationshipLink ) );
@@ -132,7 +132,7 @@ public class ParallellBatchImporter implements BatchImporter
         }
     }
 
-    private synchronized void executeStages( Stage<?>... stages ) throws Exception
+    private synchronized void executeStages( Stage... stages ) throws Exception
     {
         StageExecution[] executions = new StageExecution[stages.length];
         for ( int i = 0; i < stages.length; i++ )
@@ -151,12 +151,12 @@ public class ParallellBatchImporter implements BatchImporter
         logger.log( "Successfully shut down [TODO store stats?]" );
     }
 
-    public class NodeStage extends Stage<Iterator<InputNode>>
+    public class NodeStage extends Stage
     {
         public NodeStage( Iterator<InputNode> input, BatchingNeoStore neoStore )
         {
             super( logging, "Nodes", config );
-            input( new ProducerStep<InputNode>( control(), "INPUT", config.batchSize() ), input );
+            input( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );
 
             NodeStore nodeStore = neoStore.getNodeStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
@@ -166,25 +166,25 @@ public class ParallellBatchImporter implements BatchImporter
         }
     }
 
-    public class CalculateDenseNodesStage extends Stage<Iterator<InputRelationship>>
+    public class CalculateDenseNodesStage extends Stage
     {
         public CalculateDenseNodesStage( Iterator<InputRelationship> input,
                 BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Calculate dense nodes", config );
-            input( new ProducerStep<InputRelationship>( control(), "INPUT", config.batchSize() ), input );
+            input( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );
 
             add( new CalculateDenseNodesStep( control(), config.workAheadSize(), nodeRelationshipLink ) );
         }
     }
 
-    public class RelationshipStage extends Stage<Iterator<InputRelationship>>
+    public class RelationshipStage extends Stage
     {
         public RelationshipStage( Iterator<InputRelationship> input, BatchingNeoStore neoStore,
                 NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Relationships", config );
-            input( new ProducerStep<InputRelationship>( control(), "INPUT", config.batchSize() ), input );
+            input( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
@@ -195,23 +195,23 @@ public class ParallellBatchImporter implements BatchImporter
         }
     }
 
-    public class NodeFirstRelationshipStage extends Stage<Void>
+    public class NodeFirstRelationshipStage extends Stage
     {
         public NodeFirstRelationshipStage( BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Node first rel", config );
             input( new NodeFirstRelationshipStep( control(), config.batchSize(),
-                    neoStore.getNodeStore(), neoStore.getRelationshipGroupStore(), nodeRelationshipLink ), null );
+                    neoStore.getNodeStore(), neoStore.getRelationshipGroupStore(), nodeRelationshipLink ) );
         }
     }
 
-    public class RelationshipLinkbackStage extends Stage<Void>
+    public class RelationshipLinkbackStage extends Stage
     {
         public RelationshipLinkbackStage( BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Relationship back link", config );
             input( new RelationshipLinkbackStep( control(), config.batchSize(),
-                    neoStore.getRelationshipStore(), nodeRelationshipLink ), null );
+                    neoStore.getRelationshipStore(), nodeRelationshipLink ) );
         }
     }
 }
