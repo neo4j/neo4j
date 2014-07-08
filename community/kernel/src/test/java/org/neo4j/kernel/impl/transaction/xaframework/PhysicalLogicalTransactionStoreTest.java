@@ -91,7 +91,6 @@ public class PhysicalLogicalTransactionStoreTest
         }
     }
 
-    @Ignore
     @Test
     public void shouldOpenAndRecoverExistingData() throws Exception
     {

@@ -67,8 +67,8 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         // look up in position cache
         try
         {
-            TransactionMetadataCache.TransactionMetadata transactionMetadata = transactionMetadataCache
-                    .getTransactionMetadata( transactionIdToStartFrom );
+            TransactionMetadataCache.TransactionMetadata transactionMetadata =
+                    transactionMetadataCache.getTransactionMetadata( transactionIdToStartFrom );
             if ( transactionMetadata != null )
             {
                 // we're good

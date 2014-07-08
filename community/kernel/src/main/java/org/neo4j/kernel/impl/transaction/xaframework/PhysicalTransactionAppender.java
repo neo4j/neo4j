@@ -48,8 +48,7 @@ public class PhysicalTransactionAppender implements TransactionAppender
         this.transactionLogWriter = new TransactionLogWriter( logEntryWriter );
     }
 
-    private void append( TransactionRepresentation transaction,
-            long transactionId ) throws IOException
+    private void append( TransactionRepresentation transaction, long transactionId ) throws IOException
     {
         channel.getCurrentPosition( positionMarker );
         LogPosition logPosition = positionMarker.newPosition();

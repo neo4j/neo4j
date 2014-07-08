@@ -51,15 +51,17 @@ public class PhysicalTransactionCursor implements IOCursor<CommittedTransactionR
     @Override
     public boolean next() throws IOException
     {
-        List<Command> entries = commandList();
         LogEntry entry = entryReader.readLogEntry( channel );
         if ( entry == null )
         {
             return false;
         }
+
         assert entry instanceof LogEntry.Start : "Expected Start entry, read " + entry + " instead";
         LogEntry.Start startEntry = (LogEntry.Start) entry;
         LogEntry.Commit commitEntry;
+
+        List<Command> entries = commandList();
         while ( true )
         {
             entry = entryReader.readLogEntry( channel );

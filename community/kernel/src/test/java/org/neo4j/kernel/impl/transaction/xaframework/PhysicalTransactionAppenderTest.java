@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -31,6 +32,7 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -56,6 +58,7 @@ public class PhysicalTransactionAppenderTest
         final int masterId = 2, authorId = 1;
         final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
         transaction.setHeader( additionalHeader, masterId, authorId, timeWritten, latestCommittedTxWhenStarted );
+
         appender.append( transaction );
 
         // THEN
@@ -69,6 +72,94 @@ public class PhysicalTransactionAppenderTest
             assertEquals( timeWritten, tx.getTimeWritten() );
             assertEquals( latestCommittedTxWhenStarted, tx.getLatestCommittedTxWhenStarted() );
         }
+    }
+
+    @Test
+    public void shouldAppendCommittedTransactions() throws Exception
+    {
+        // GIVEN
+        LogFile logFile = mock( LogFile.class );
+        InMemoryLogChannel channel = new InMemoryLogChannel();
+        when( logFile.getWriter() ).thenReturn( channel );
+        TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
+        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        TransactionAppender appender = new PhysicalTransactionAppender(
+                logFile, txIdGenerator, positionCache, transactionIdStore );
+
+
+        // WHEN
+        final byte[] additionalHeader = new byte[]{1, 2, 5};
+        final int masterId = 2, authorId = 1;
+        final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
+        PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
+                singleCreateNodeCommand() );
+        transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeWritten,
+                latestCommittedTxWhenStarted );
+
+        when( transactionIdStore.getLastCommittingTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
+
+        LogEntry.Start start = new LogEntry.Start( 0, 0, 0l, latestCommittedTxWhenStarted, null,
+                LogPosition.UNSPECIFIED );
+        LogEntry.Commit commit = new LogEntry.OnePhaseCommit( latestCommittedTxWhenStarted + 1, 0l );
+        CommittedTransactionRepresentation transaction =
+                new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
+
+        appender.append( transaction );
+
+        // THEN
+        PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader(
+                CommandReaderFactory.DEFAULT ) );
+        reader.next();
+        TransactionRepresentation result = reader.get().getTransactionRepresentation();
+        assertArrayEquals( additionalHeader, result.additionalHeader() );
+        assertEquals( masterId, result.getMasterId() );
+        assertEquals( authorId, result.getAuthorId() );
+        assertEquals( timeWritten, result.getTimeWritten() );
+        assertEquals( latestCommittedTxWhenStarted, result.getLatestCommittedTxWhenStarted() );
+    }
+
+    @Test
+    public void shouldNotAppendCommittedTransactionsWhenTooFarAhead() throws Exception
+    {
+        // GIVEN
+        LogFile logFile = mock( LogFile.class );
+        InMemoryLogChannel channel = new InMemoryLogChannel();
+        when( logFile.getWriter() ).thenReturn( channel );
+        TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
+        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        TransactionAppender appender = new PhysicalTransactionAppender(
+                logFile, txIdGenerator, positionCache, transactionIdStore );
+
+        // WHEN
+        final byte[] additionalHeader = new byte[]{1, 2, 5};
+        final int masterId = 2, authorId = 1;
+        final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
+        PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
+                singleCreateNodeCommand() );
+        transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeWritten,
+                latestCommittedTxWhenStarted );
+
+        when( transactionIdStore.getLastCommittingTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
+
+        LogEntry.Start start = new LogEntry.Start( 0, 0, 0l, latestCommittedTxWhenStarted, null,
+                LogPosition.UNSPECIFIED );
+        LogEntry.Commit commit = new LogEntry.OnePhaseCommit( latestCommittedTxWhenStarted + 2, 0l );
+        CommittedTransactionRepresentation transaction =
+                new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
+
+        try
+        {
+            appender.append( transaction );
+            fail( "should have thrown" );
+        }
+        catch ( IOException e )
+        {
+            assertEquals( "Tried to apply transaction with txId=" + (latestCommittedTxWhenStarted + 2) +
+                    " but last committed txId=" + latestCommittedTxWhenStarted, e.getMessage() );
+        }
+
     }
 
     private Collection<Command> singleCreateNodeCommand()

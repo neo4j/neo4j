@@ -65,4 +65,43 @@ public class CommittedTransactionRepresentation
         return getClass().getSimpleName() +
                 "[" + startEntry + ", " + transactionRepresentation + ", " + commitEntry + "]";
     }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        CommittedTransactionRepresentation that = (CommittedTransactionRepresentation) o;
+
+        if ( !commitEntry.equals( that.commitEntry ) )
+        {
+            return false;
+        }
+        if ( !startEntry.equals( that.startEntry ) )
+        {
+            return false;
+        }
+        if ( !transactionRepresentation.equals( that.transactionRepresentation ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = startEntry.hashCode();
+        result = 31 * result + transactionRepresentation.hashCode();
+        result = 31 * result + commitEntry.hashCode();
+        return result;
+    }
 }
