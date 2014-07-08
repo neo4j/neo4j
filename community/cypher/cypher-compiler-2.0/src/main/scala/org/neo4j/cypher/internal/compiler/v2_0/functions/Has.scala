@@ -32,12 +32,16 @@ case object Has extends Function {
       invocation.arguments(0).expectType(CTAny.covariant) then
       (invocation.arguments(0) match {
         case _: ast.Property => None
-        case e => Some(SemanticError(s"Argument to ${invocation.name} is not a property", e.position, invocation.position))
+        case _: ast.PatternExpression => None
+        case e => Some(SemanticError(s"Argument to ${invocation.name}(...) is not a property or pattern", e.position, invocation.position))
       })
     } then invocation.specifyType(CTBoolean)
 
-  def asCommandExpression(invocation: ast.FunctionInvocation) = {
-    val property = invocation.arguments(0).asInstanceOf[ast.Property]
-    commands.Has(property.map.asCommandExpression, PropertyKey(property.identifier.name))
-  }
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
+    invocation.arguments(0) match {
+      case property: ast.Property =>
+        commands.HasProperty( property.map.asCommandExpression, PropertyKey( property.identifier.name ) )
+      case expression: ast.PatternExpression =>
+        expression.asCommandPredicate
+    }
 }

@@ -392,6 +392,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineJUnitSuite {
     )
   }
 
+  @Test def shouldFailOnNonPropOrPatternToHas() {
+    test(
+      "MATCH (n) RETURN has(n.prop + 1)",
+      "Argument to has(...) is not a property or pattern (line 1, column 29)"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       val result = execute(query)

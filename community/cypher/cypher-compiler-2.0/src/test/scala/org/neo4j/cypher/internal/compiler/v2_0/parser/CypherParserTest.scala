@@ -1273,6 +1273,23 @@ class CypherParserTest extends CypherFunSuite {
         where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq(), Direction.OUTGOING, Map.empty))))).
         returns (ReturnItem(Identifier("a"), "a"))
     )
+
+    expectQuery(
+      """start a=node(0), b=node(1) where has((a)-->(b)) return a""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED40", Seq(), Direction.OUTGOING, Map.empty))))).
+        returns (ReturnItem(Identifier("a"), "a"))
+    )
+  }
+
+  test("supportsHasRelationshipInTheReturnClause") {
+    expectQuery(
+      """start a=node(0), b=node(1) return has((a)-->(b)) AS result""",
+      Query.
+        start( NodeById( "a", 0 ), NodeById( "b", 1 ) ).
+        returns( ReturnItem( NonEmpty( PathExpression( Seq( RelatedTo( SingleNode( "a" ), SingleNode( "b" ), "  UNNAMED41", Seq( ), Direction.OUTGOING, Map.empty ) ) ) ), "result", true ) )
+    )
   }
 
   test("supportsNotHasRelationshipInTheWhereClause") {
