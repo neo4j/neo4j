@@ -178,12 +178,12 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         }
     }
 
-    private static final class LogVersionLocator implements LogHeaderVisitor
+    public static final class LogVersionLocator implements LogHeaderVisitor
     {
         private final long transactionId;
         private LogPosition foundPosition;
 
-        private LogVersionLocator( long transactionId )
+        public LogVersionLocator( long transactionId )
         {
             this.transactionId = transactionId;
         }
