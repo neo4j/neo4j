@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
@@ -46,6 +47,10 @@ public class LogFileRecoverer implements Visitor<ReadableLogChannel, IOException
         // I dislike this exception to the rule though.
         PhysicalTransactionCursor physicalTransactionCursor = new PhysicalTransactionCursor( channel, logEntryReader );
         while (physicalTransactionCursor.next() && visitor.visit( physicalTransactionCursor.get() ) );
+        if ( visitor instanceof Closeable )
+        {
+            ((Closeable) visitor).close();
+        }
         return true;
     }
 }

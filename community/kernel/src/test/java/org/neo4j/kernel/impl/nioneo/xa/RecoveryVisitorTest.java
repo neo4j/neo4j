@@ -1,0 +1,85 @@
+/**
+ * Copyright (c) 2002-2014 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.nioneo.xa;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.Test;
+
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+public class RecoveryVisitorTest
+{
+    private final TransactionIdStore store = mock( TransactionIdStore.class );
+    private final TransactionRepresentationStoreApplier storeApplier =
+            mock( TransactionRepresentationStoreApplier.class );
+
+    private final AtomicInteger recoveredCount = new AtomicInteger();
+    private final LogEntry.Start startEntry = null;
+    private final LogEntry.Commit commitEntry = new LogEntry.OnePhaseCommit( 42, 0 );
+
+    @Test
+    public void shouldNotSetLastCommittingAndClosedTransactionIdWhenNoRecoveryHappened() throws IOException
+    {
+        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, recoveredCount );
+
+        visitor.close();
+
+        verify( store, never() ).setLastCommittingAndClosedTransactionId( anyLong() );
+    }
+
+    @Test
+    public void shouldApplyVisitedTransactionToTheStoreAndSetLastCommittingAndClosedTransactionId() throws IOException
+    {
+        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, recoveredCount );
+
+        final TransactionRepresentation representation =
+                new PhysicalTransactionRepresentation( Collections.<Command>emptySet() );
+
+        final CommittedTransactionRepresentation transaction =
+                new CommittedTransactionRepresentation( startEntry, representation, commitEntry );
+
+        final boolean result = visitor.visit( transaction );
+
+        assertTrue( result );
+        verify( storeApplier, times( 1 ) ).apply( representation, commitEntry.getTxId(), true );
+        assertEquals( 1l, recoveredCount.get() );
+
+        visitor.close();
+
+        verify( store, times( 1 ) ).setLastCommittingAndClosedTransactionId( commitEntry.getTxId() );
+    }
+}
