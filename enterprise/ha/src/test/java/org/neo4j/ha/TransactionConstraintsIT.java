@@ -19,13 +19,27 @@
  */
 package org.neo4j.ha;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -36,27 +50,36 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class TransactionConstraintsIT extends AbstractClusterTest
 {
+
+    private static final String PROPERTY_KEY = "name";
+    private static final String PROPERTY_VALUE = "yo";
+    private static final String LABEL = "Person";
+
     @Before
     public void stableCluster()
     {
         // Ensure a stable cluster before starting tests
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+        cluster.await( allSeesAllAsAvailable() );
     }
 
     @Test
-    public void start_tx_as_slave_and_finish_it_after_having_switched_to_master_should_not_succeed() throws Exception
+    public void startTxAsSlaveAndFinishItAfterHavingSwitchedToMasterShouldNotSucceed() throws Exception
     {
         // GIVEN
         GraphDatabaseService db = cluster.getAnySlave();
@@ -85,7 +108,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
     }
 
     @Test
-    public void start_tx_as_slave_and_finish_it_after_another_master_being_available_should_not_succeed() throws Exception
+    public void startTxAsSlaveAndFinishItAfterAnotherMasterBeingAvailableShouldNotSucceed() throws Exception
     {
         // GIVEN
         HighlyAvailableGraphDatabase db = cluster.getAnySlave();
@@ -117,7 +140,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
     }
 
     @Test
-    public void slave_should_not_be_able_to_produce_an_invalid_transaction() throws Exception
+    public void slaveShouldNotBeAbleToProduceAnInvalidTransaction() throws Exception
     {
         // GIVEN
         HighlyAvailableGraphDatabase aSlave = cluster.getAnySlave();
@@ -139,7 +162,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
     }
 
     @Test
-    public void master_should_not_be_able_to_produce_an_invalid_transaction() throws Exception
+    public void masterShouldNotBeAbleToProduceAnInvalidTransaction() throws Exception
     {
         // GIVEN
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -161,7 +184,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
     }
 
     @Test
-    public void write_operation_on_slave_has_to_be_performed_within_a_transaction() throws Exception
+    public void writeOperationOnSlaveHasToBePerformedWithinTransaction() throws Exception
     {
         // GIVEN
         HighlyAvailableGraphDatabase aSlave = cluster.getAnySlave();
@@ -179,7 +202,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
     }
 
     @Test
-    public void write_operation_on_master_has_to_be_performed_within_a_transaction() throws Exception
+    public void writeOperationOnMasterHasToBePerformedWithinTransaction() throws Exception
     {
         // GIVEN
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -197,7 +220,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
     }
 
     @Test
-    public void slave_should_not_be_able_to_modify_node_deleted_on_master() throws Exception
+    public void slaveShouldNotBeAbleToModifyNodeDeletedOnMaster() throws Exception
     {
         // GIVEN
         // -- node created on slave
@@ -225,14 +248,14 @@ public class TransactionConstraintsIT extends AbstractClusterTest
     }
 
     @Test
-    public void deadlock_detection_involving_two_slaves() throws Exception
+    public void deadlockDetectionInvolvingTwoSlaves() throws Exception
     {
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
         deadlockDetectionBetween( slave1, cluster.getAnySlave( slave1 ) );
     }
 
     @Test
-    public void deadlock_detection_involving_slave_and_master() throws Exception
+    public void deadlockDetectionInvolvingSlaveAndMaster() throws Exception
     {
         deadlockDetectionBetween( cluster.getAnySlave(), cluster.getMaster() );
     }
@@ -290,9 +313,57 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         thread2.close();
     }
 
+    @Test
+    public void createdSchemaConstraintsMustBeRetainedAcrossModeSwitches() throws Throwable
+    {
+        // GIVEN
+        // -- a node with a label and a property, and a constraint on those
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        createConstraint( master, LABEL, PROPERTY_KEY );
+        createNode( master, LABEL ).getId();
+
+        // WHEN
+        cluster.sync();
+        ClusterManager.RepairKit repairKit = cluster.fail( master );
+        cluster.await( masterAvailable( master ) );
+        takeTheLeadInAnEventualMasterSwitch( cluster.getMaster() );
+        cluster.sync();
+
+        // TODO There is a bug, where the master does not notice that its followers have vanished.
+        // We have to do this sleep here to make sure that it times them out properly.
+        // See https://trello.com/c/hcTvl0bv
+        Thread.sleep( 30000 );
+
+        repairKit.repair();
+        cluster.await( allSeesAllAsAvailable() );
+        cluster.sync();
+        cluster.stop();
+
+        // THEN
+        // -- these fiddlings with the stores must not throw
+        for ( HighlyAvailableGraphDatabase instance : cluster.getAllMembers() )
+        {
+            GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( instance.getStoreDir() );
+            Label label = DynamicLabel.label( LABEL );
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( label );
+                node.setProperty( PROPERTY_KEY, PROPERTY_VALUE + "1" );
+                tx.success();
+            }
+            try ( Transaction tx = db.beginTx() )
+            {
+                ConstraintDefinition constraint = single( db.schema().getConstraints( label ) );
+                constraint.drop();
+                tx.success();
+            }
+            db.shutdown();
+        }
+    }
+
     @Ignore( "Known issue where locks acquired from Transaction#acquireXXXLock() methods doesn't get properly released when calling Lock#release() method" )
     @Test
-    public void manually_acquire_and_release_transaction_lock() throws Exception
+    public void manuallyAcquireAndReleaseTransactionLock() throws Exception
     {
         // GIVEN
         // -- a slave acquiring a lock on an ubiquitous node
@@ -334,26 +405,33 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         createNode( db );
     }
 
-    private Node createNode( GraphDatabaseService db )
+    private Node createNode( GraphDatabaseService db, String... labels )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
-            node.setProperty( "name", "yo" );
+            for ( String label : labels )
+            {
+                node.addLabel( DynamicLabel.label( label ) );
+            }
+            node.setProperty( PROPERTY_KEY, PROPERTY_VALUE );
             tx.success();
             return node;
         }
-        finally
+    }
+
+    private void createConstraint( HighlyAvailableGraphDatabase db, String label, String propertyName )
+    {
+        try ( Transaction tx = db.beginTx() )
         {
-            tx.finish();
+            db.schema().constraintFor( DynamicLabel.label( label ) ).assertPropertyIsUnique( propertyName ).create();
+            tx.success();
         }
     }
 
     private Node createMiniTree( GraphDatabaseService db )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node root = db.createNode();
             root.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
@@ -361,23 +439,14 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             tx.success();
             return root;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     private void deleteNode( HighlyAvailableGraphDatabase db, long id )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( id ).delete();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -463,14 +532,9 @@ public class TransactionConstraintsIT extends AbstractClusterTest
 
     private void doABogusTransaction( GraphDatabaseService db ) throws Exception
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction ignore = db.beginTx() )
         {
             db.createNode();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

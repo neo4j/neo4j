@@ -181,11 +181,17 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public void start() throws Throwable
     {
+        loadSchemaCache();
+        statisticsService.start();
+    }
+
+    public void loadSchemaCache()
+    {
+        schemaCache.clear();
         for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAllSchemaRules() ) )
         {
             schemaCache.addSchemaRule( schemaRule );
         }
-        statisticsService.start();
     }
 
     @Override

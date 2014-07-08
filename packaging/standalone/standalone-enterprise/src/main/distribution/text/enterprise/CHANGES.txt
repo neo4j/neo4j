@@ -36,14 +36,33 @@ o Fixes potential leak of transaction state in entity locks that could
 o Fixes "illegal position" errors from persistence window pool
 o Fixes potential race in XaLogicalLog that could lead to duplicate
   entries in the log
+o Fixes a memory leak in DiskLayer that could happen through heavy
+  properties on datasource restarts
+o Index transactional state now properly distinguishes between indexes
+  that refer to the same label but different properties. Previously
+  it was possible to erroneously retrieve indexes that have not been
+  committed yet if asking by label.
+o Properly close IndexReaders, preventing potential file descriptor leaks.
+o Fixes a bug that could cause locks to improperly clean up state
+o Store upgrades will now migrate some transaction logs along with the
+  store, allowing extraction of transactions without requiring
+  new transactions to happen
 
-HA:
-o Slaves will now fall back to a full store copy if the master misses
-  logs old enough to serve inremental updates on join
+Server:
+o Ensure transactional endpoint responds with an https location for https
+  calls.
+
+Graph Algo:
+o Ability to return paths with diminishing cost from Dijkstra/Traversal AStar
+
+Cypher:
+o Adds UNWIND
+o Fixes problem where predicates are evaluated wrongly in NOT
+o Fixes problem when WITH introduces a symbol that shadows an existing identifier
 
 Cluster:
 o Adds version marking in election results, solving problems with
-  incorrect election outcomes and instances failiing to join the cluster
+  incorrect election outcomes and instances failing to join the cluster
 o Slave only instances will not become coordinators under any
   circumstances
 
@@ -146,6 +165,10 @@ o Solves issue with join denied when restarting a failed instance before it time
 o Instances will now not form clusters on startup unless they managed to contact
   every other instance in initial_hosts setting.
 
+=======
+HA:
+o Slaves will now fall back to a full store copy if the master misses
+  logs old enough to serve inremental updates on join
 
 2.0.3
 -----
