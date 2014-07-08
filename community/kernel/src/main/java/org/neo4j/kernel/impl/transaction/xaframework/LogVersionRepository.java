@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
-
 /*
  * TODO 2.2-future This should not be required. Please remove - log versions is a knowledge best shared by as
  * few as possible
@@ -36,11 +34,5 @@ public interface LogVersionRepository
      * Increments and returns the latest log version for this repository. It does so
      * atomically and can potentially block.
      */
-    long incrementAndGetVersion() throws IOException;
-
-    /**
-     * Increments the log version. Useful when just shutting down.
-     */
-    // TODO wat? we have incrementAndGet above. Also, note how this method does not throw IOException. So, like i said, wat?
-    void incrementVersion();
+    long incrementAndGetVersion();
 }
