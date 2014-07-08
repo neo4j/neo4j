@@ -43,7 +43,6 @@ import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
-//@Ignore
 public class ParallellBatchImporterTest
 {
     private static final long seed = 12345L;

@@ -21,8 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.neo4j.graphdb.Direction;
 
-import static java.lang.Math.max;
-
 /**
  * The default and straight forward implementation of {@link NodeRelationshipLink}.
  * Supports relationship group information in addition to node information.
@@ -35,12 +33,13 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
     private final int denseNodeThreshold;
     private final RelGroupCache relGroupCache;
 
-    public NodeRelationshipLinkImpl( LongArrayFactory arrayFactory, long nodeCount, int denseNodeThreshold )
+    public NodeRelationshipLinkImpl( LongArrayFactory arrayFactory, int denseNodeThreshold )
     {
-        this.array = arrayFactory.newLongArray( nodeCount );
+        int chunkSize = 1_000_000;
+        this.array = arrayFactory.newDynamicLongArray( chunkSize );
         this.array.setAll( IdFieldManipulator.emptyField() );
         this.denseNodeThreshold = denseNodeThreshold;
-        this.relGroupCache = new RelGroupCache( arrayFactory, max( 1024, nodeCount / 30 ) );
+        this.relGroupCache = new RelGroupCache( arrayFactory, chunkSize );
     }
 
     @Override

@@ -17,20 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store;
+package org.neo4j.unsafe.impl.batchimport.store.io;
 
-/**
- * Monitoring bytes written to a channel.
- */
-public interface Monitor
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.Writer;
+
+class WriteJob
 {
-    void dataWritten( int bytes );
+    private final ByteBuffer byteBuffer;
+    private final long position;
+    private final Writer writer;
+    private final Ring<ByteBuffer> ringToFreeBufferIn;
 
-    public static final Monitor NO_MONITOR = new Monitor()
+    WriteJob( Writer writer, ByteBuffer byteBuffer, long position, Ring<ByteBuffer> ringToFreeBufferIn )
     {
-        @Override
-        public void dataWritten( int bytes )
-        {   // Do nothing
-        }
-    };
+        this.writer = writer;
+        this.byteBuffer = byteBuffer;
+        this.position = position;
+        this.ringToFreeBufferIn = ringToFreeBufferIn;
+    }
+
+    public void execute() throws IOException
+    {
+        writer.write( byteBuffer, position, ringToFreeBufferIn );
+    }
 }
