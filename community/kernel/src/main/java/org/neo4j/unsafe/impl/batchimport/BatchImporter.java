@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
 
-import org.neo4j.unsafe.impl.batchimport.cache.NodeIdMapping;
+import org.neo4j.unsafe.impl.batchimport.cache.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
@@ -30,8 +30,8 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
  */
 public interface BatchImporter
 {
-    void doImport( Iterable<InputNode> nodes, Iterable<InputRelationship> relationships,
-            NodeIdMapping nodeIdMapping ) throws IOException;
+    void doImport( Iterable<InputNode> nodes, Iterable<InputRelationship> relationships, IdMapper idMapper )
+            throws IOException;
 
     void shutdown();
 }

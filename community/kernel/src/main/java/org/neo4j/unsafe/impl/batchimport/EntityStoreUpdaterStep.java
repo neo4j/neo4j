@@ -54,9 +54,11 @@ public class EntityStoreUpdaterStep<T extends PrimitiveRecord> extends ExecutorS
     @Override
     protected Object process( long ticket, RecordBatch<T> batch )
     {
-        for ( T node : batch.getEntityRecords() )
+        for ( T entityRecord : batch.getEntityRecords() )
         {
-            entityStore.updateRecord( node );
+            // +1 since "high id" is the next id to return, i.e. "high id" is "highest id in use"+1
+            entityStore.setHighId( entityRecord.getId()+1 );
+            entityStore.updateRecord( entityRecord );
         }
         for ( PropertyRecord propertyRecord : batch.getPropertyRecords() )
         {

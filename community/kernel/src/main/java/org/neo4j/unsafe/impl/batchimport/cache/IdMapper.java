@@ -19,23 +19,18 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import java.util.Iterator;
+
+import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
 /**
- * How does the ids in the input (.csv) files relate to actual node ids in the store? With {@link NodeIdMapping}
- * that indirection can be controlled.
+ * Maps ids from {@link InputEntity input entities} into ids used in the store.
  */
-public enum NodeIdMapping
+public interface IdMapper
 {
-    actual
-    {
-        @Override
-        public NodeIdMapper mapper( NodeStore nodeStore )
-        {
-            return new ActualNodeIdMapper( nodeStore );
-        }
-    };
-    // TODO add one for internal here
+    Iterator<InputNode> wrapNodes( Iterator<InputNode> nodes );
 
-    public abstract NodeIdMapper mapper( NodeStore nodeStore );
+    Iterator<InputRelationship> wrapRelationships( Iterator<InputRelationship> relationships );
 }

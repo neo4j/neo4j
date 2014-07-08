@@ -31,9 +31,8 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.unsafe.impl.batchimport.cache.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeIdMapper;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeIdMapping;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLinkImpl;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
@@ -86,7 +85,7 @@ public class ParallellBatchImporter implements BatchImporter
 
     @Override
     public void doImport( Iterable<InputNode> nodes, Iterable<InputRelationship> relationships,
-            NodeIdMapping nodeIdMapping ) throws IOException
+            IdMapper idMapper ) throws IOException
     {
         // TODO log about import starting
 
@@ -94,10 +93,8 @@ public class ParallellBatchImporter implements BatchImporter
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
                 writeMonitor, logging, writerFactory ) )
         {
-            NodeIdMapper nodeIdMapper = nodeIdMapping.mapper( neoStore.getNodeStore() );
-
             // Stage 1 -- nodes, properties, labels
-            NodeStage nodeStage = new NodeStage( nodeIdMapper.wrapNodes( nodes.iterator() ), neoStore );
+            NodeStage nodeStage = new NodeStage( idMapper.wrapNodes( nodes.iterator() ), neoStore );
 
             // Stage 2 -- calculate dense node threshold
             NodeRelationshipLink nodeRelationshipLink = new NodeRelationshipLinkImpl(
@@ -107,7 +104,8 @@ public class ParallellBatchImporter implements BatchImporter
             executeStages( nodeStage, calculateDenseNodesStage );
 
             // Stage 3 -- relationships, properties
-            executeStages( new RelationshipStage( relationships, neoStore, nodeRelationshipLink ) );
+            executeStages( new RelationshipStage( idMapper.wrapRelationships( relationships.iterator() ),
+                    neoStore, nodeRelationshipLink ) );
 
             // Switch to reverse updating mode
             neoStore.switchNodeAndRelationshipStoresToReverseUpdatingMode();
@@ -182,11 +180,11 @@ public class ParallellBatchImporter implements BatchImporter
 
     public class RelationshipStage extends Stage<Iterator<InputRelationship>>
     {
-        public RelationshipStage( Iterable<InputRelationship> input, BatchingNeoStore neoStore,
+        public RelationshipStage( Iterator<InputRelationship> input, BatchingNeoStore neoStore,
                 NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Relationships", config );
-            input( new ProducerStep<InputRelationship>( control(), "INPUT", config.batchSize() ), input.iterator() );
+            input( new ProducerStep<InputRelationship>( control(), "INPUT", config.batchSize() ), input );
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();

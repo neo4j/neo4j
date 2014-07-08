@@ -34,7 +34,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeIdMapping;
+import org.neo4j.unsafe.impl.batchimport.cache.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.DetailedExecutionMonitor;
@@ -68,7 +68,7 @@ public class ParallellBatchImporterTest
         // WHEN
         int nodeCount = 100_000;
         int relationshipCount = nodeCount*10;
-        inserter.doImport( nodes( nodeCount ), relationships( relationshipCount, nodeCount ), NodeIdMapping.actual );
+        inserter.doImport( nodes( nodeCount ), relationships( relationshipCount, nodeCount ), IdMappers.actualIds() );
         inserter.shutdown();
 
         // THEN
