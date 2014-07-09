@@ -66,7 +66,7 @@ public class ServerClientInteractionTest
         db = new ImpermanentGraphDatabase(  );
         server = new GraphDatabaseShellServer( db );
         out = new SilentLocalOutput();
-        client = new SameJvmClient( MapUtil.<String,Serializable>genericMap(), server, out );
+        client = new SameJvmClient( MapUtil.<String,Serializable>genericMap(), server, out, InterruptSignalHandler.getHandler() );
     }
 
     @After

@@ -19,22 +19,9 @@
  */
 package org.neo4j.shell;
 
-import java.io.Serializable;
-import java.util.HashMap;
+import java.io.Closeable;
 
-import org.neo4j.shell.impl.SameJvmClient;
-import org.neo4j.shell.impl.SystemOutput;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-
-public class DontShutdownClient
+public interface CtrlCHandler
 {
-    public static void main( String[] args ) throws Exception
-    {
-        GraphDatabaseShellServer server = new GraphDatabaseShellServer( args[0], false, null );
-        new SameJvmClient( new HashMap<String, Serializable>(), server,
-            /* Temporary, switch back to SilentOutput once flaky test is resolved. */ new SystemOutput(),
-                InterruptSignalHandler.getHandler() );
-        server.shutdown();
-        // Intentionally don't shutdown the client
-    }
+    Closeable install( Runnable action );
 }

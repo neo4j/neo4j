@@ -43,7 +43,7 @@ public class TestConfiguration
                 .newImpermanentDatabaseBuilder()
                 .newGraphDatabase();
         server = new GraphDatabaseShellServer( db );
-        client = ShellLobby.newClient( server );
+        client = ShellLobby.newClient( server, InterruptSignalHandler.getHandler() );
     }
 
     @After

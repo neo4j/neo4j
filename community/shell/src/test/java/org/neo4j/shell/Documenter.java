@@ -111,7 +111,7 @@ public class Documenter
         try
         {
             this.client = new SameJvmClient( new HashMap<String, Serializable>(), server,
-                    new CollectingOutput() );
+                    new CollectingOutput(), InterruptSignalHandler.getHandler() );
         }
         catch ( Exception e )
         {
