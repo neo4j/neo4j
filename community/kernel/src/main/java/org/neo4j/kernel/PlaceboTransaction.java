@@ -38,6 +38,12 @@ public class PlaceboTransaction implements Transaction
     }
 
     @Override
+    public void terminate()
+    {
+        parentTransaction.terminate();
+    }
+
+    @Override
     public void failure()
     {
     	parentTransaction.failure();

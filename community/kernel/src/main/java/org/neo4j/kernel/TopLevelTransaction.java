@@ -97,6 +97,12 @@ public class TopLevelTransaction implements Transaction
     }
 
     @Override
+    public final void terminate()
+    {
+        this.transaction.markForTerminate();
+    }
+
+    @Override
     public void close()
     {
         try
@@ -133,7 +139,7 @@ public class TopLevelTransaction implements Transaction
     @Override
     public Lock acquireReadLock( PropertyContainer entity )
     {
-        return locker.sharedLock( stmtProvider, entity );
+        return locker.sharedLock(stmtProvider, entity);
     }
 
     @Deprecated

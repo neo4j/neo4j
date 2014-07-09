@@ -205,6 +205,16 @@ public class ConstraintIndexCreatorTest
                     return true;
                 }
 
+                public boolean shouldBeTerminateed()
+                {
+                    return false;
+                }
+
+                @Override
+                public void markForTerminate()
+                {
+                }
+
                 @Override
                 public LegacyIndexTransactionState getLegacyIndexTransactionState()
                 {

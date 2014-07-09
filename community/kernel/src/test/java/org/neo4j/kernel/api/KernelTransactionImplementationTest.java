@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.test.DoubleLatch;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -96,6 +97,148 @@ public class KernelTransactionImplementationTest
             transaction.success();
         }
         catch ( TransactionFailureException e )
+        {
+            // Expected.
+            exceptionReceived = true;
+        }
+
+        // THEN
+        assertTrue( exceptionReceived );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldRollbackOnClosingTerminateedTransaction() throws Exception
+    {
+        // GIVEN
+        boolean exceptionReceived = false;
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.success();
+            transaction.markForTerminate();
+        }
+        catch ( TransactionFailureException e )
+        {
+            // Expected.
+            exceptionReceived = true;
+        }
+
+        // THEN
+        assertTrue( exceptionReceived );
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldRollbackOnClosingSuccessfulButTerminateedTransaction() throws Exception
+    {
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.markForTerminate();
+            assertTrue( transaction.shouldBeTerminateed() );
+        }
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldRollbackOnClosingTerminateedButSuccessfulTransaction() throws Exception
+    {
+        // GIVEN
+        boolean exceptionReceived = false;
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.markForTerminate();
+            transaction.success();
+            assertTrue( transaction.shouldBeTerminateed() );
+        }
+        catch ( TransactionFailureException e )
+        {
+            // Expected.
+            exceptionReceived = true;
+        }
+
+        // THEN
+        assertTrue( exceptionReceived );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldNotDowngradeFailureState() throws Exception
+    {
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.markForTerminate();
+            transaction.failure();
+            assertTrue( transaction.shouldBeTerminateed() );
+        }
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldIgnoreTerminateAfterCommit() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        transaction.success();
+        transaction.close();
+        transaction.markForTerminate();
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldIgnoreTerminateAfterRollback() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        transaction.close();
+        transaction.markForTerminate();
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldAllowTerminateingFromADifferentThread() throws Exception
+    {
+        // GIVEN
+        final DoubleLatch latch = new DoubleLatch( 1 );
+        final KernelTransaction transaction = newTransaction();
+        Thread thread = new Thread( new Runnable () {
+            @Override
+            public void run()
+            {
+                latch.awaitStart();
+                transaction.markForTerminate();
+                latch.finish();
+            }
+        });
+
+        // WHEN
+        thread.start();
+        transaction.success();
+        latch.startAndAwaitFinish();
+
+        boolean exceptionReceived = false;
+        try
+        {
+            transaction.close();
+        } catch ( TransactionFailureException e )
         {
             // Expected.
             exceptionReceived = true;

@@ -25,11 +25,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
+
+import org.neo4j.kernel.TransactionTerminateException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-@Ignore("JH: Working on this, part of the 1.9 merge for tuesday 12th")
+import static org.junit.Assert.fail;
+
 public class GraphDatabaseServiceTest
 {
     @Test
@@ -44,7 +46,7 @@ public class GraphDatabaseServiceTest
         try
         {
             Transaction tx = db.beginTx();
-            Assert.fail();
+            fail();
         }
         catch ( Exception e )
         {
@@ -67,7 +69,7 @@ public class GraphDatabaseServiceTest
             @Override
             public void run()
             {
-                try(Transaction tx = db.beginTx())
+                try ( Transaction tx = db.beginTx() )
                 {
                     started.countDown();
 
@@ -82,17 +84,82 @@ public class GraphDatabaseServiceTest
 
                     db.createNode();
                     tx.success();
-                } catch(Throwable e)
+                }
+                catch ( Throwable e )
                 {
                     e.printStackTrace();
                 }
             }
-        });
+        } );
 
         started.await();
         db.shutdown();
+    }
 
+    @Test
+    public void terminateTransactionThrowsExceptionOnNextOperation() throws Exception
+    {
+        // Given
+        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
 
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.terminate();
+            try
+            {
+                db.createNode();
+                fail( "Failed to throw TransactionTerminateException" );
+            }
+            catch ( TransactionTerminateException ignored )
+            {
+            }
+        }
+    }
+
+    @Test
+    public void terminateNestedTransactionThrowsExceptionOnNextOperation() throws Exception
+    {
+        // Given
+        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( Transaction nested = db.beginTx() )
+            {
+                tx.terminate();
+            }
+            try
+            {
+                db.createNode();
+                fail( "Failed to throw TransactionTerminateException" );
+            }
+            catch ( TransactionTerminateException ignored )
+            {
+            }
+        }
+    }
+
+    @Test
+    public void terminateNestedTransactionThrowsExceptionOnNextNestedOperation() throws Exception
+    {
+        // Given
+        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( Transaction nested = db.beginTx() )
+            {
+                tx.terminate();
+                try
+                {
+                    db.createNode();
+                    fail( "Failed to throw TransactionTerminateException" );
+                }
+                catch ( TransactionTerminateException ignored )
+                {
+                }
+            }
+        }
     }
 
     @Test
@@ -109,7 +176,7 @@ public class GraphDatabaseServiceTest
             @Override
             public void run()
             {
-                try(Transaction tx = db.beginTx())
+                try ( Transaction tx = db.beginTx() )
                 {
                     shutdown.countDown();
 
@@ -144,15 +211,15 @@ public class GraphDatabaseServiceTest
                             {
                                 result.notifyAll();
                             }
-                         }
-                    });
+                        }
+                    } );
                 }
-                catch(Throwable e)
+                catch ( Throwable e )
                 {
                     e.printStackTrace();
                 }
             }
-        });
+        } );
 
         shutdown.await();
         db.shutdown();
