@@ -174,10 +174,9 @@ public abstract class LogEntry
         @Override
         public String toString( TimeZone timeZone )
         {
-            // TODO 2.2-future include additionalHeader in toString?
             return "Start[master=" + masterId + ",me=" + authorId + ",time=" +
                     timestamp( timeWritten, timeZone ) + ",lastCommittedTxWhenTransactionStarted="+
-                    lastCommittedTxWhenTransactionStarted+"]";
+                    lastCommittedTxWhenTransactionStarted + ", additionalHeader.length=" + additionalHeader.length +"]";
         }
     }
 

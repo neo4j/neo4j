@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
@@ -51,9 +50,14 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
 
     @Override
     public long incrementAndGetVersion()
-    {
-        long version = getCurrentLogVersion();
+    {   // We can expect a call to this during shutting down, if we have a LogFile using us.
+        // So it's sort of OK.
+        if ( incrementVersionCalled )
+        {
+            throw new IllegalStateException( "Read-only log version repository only allows " +
+                    "to call incrementVersion once, during shutdown" );
+        }
         incrementVersionCalled = true;
-        return version;
+        return logVersion;
     }
 }
