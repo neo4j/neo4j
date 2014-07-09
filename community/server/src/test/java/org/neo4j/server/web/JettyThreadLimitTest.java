@@ -50,7 +50,6 @@ public class JettyThreadLimitTest
             int configuredMaxThreads = maxThreads * 4;
             loadThreadPool( threadPool, configuredMaxThreads + 1);
 	        int threads = threadPool.getThreads();
-	        System.out.println( threads + " " + maxThreads );
 	        assertTrue( threads <= maxThreads );
         }
         finally
