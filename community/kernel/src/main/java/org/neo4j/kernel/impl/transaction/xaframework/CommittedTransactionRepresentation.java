@@ -26,9 +26,10 @@ package org.neo4j.kernel.impl.transaction.xaframework;
  * itself, a Start and Commit entry. This is the thing that {@link LogicalTransactionStore} returns when
  * asked for a transaction via a cursor.
  */
-// TODO 2.2-future make this visitable in the same way TransactionRepresentation is, if necessary
-// TODO The way it is setup now, it means that the TransactionRepresentation has to be wholly in memory before
-// TODO acting on it, which precludes the ability to stream the thing. This may not be good short term.
+
+// TODO 2.2-future This class should not be used for transferring transactions around. HA communication should
+// TODO 2.2-future happen via channel.transferTo() calls. This class should be used only for local iteration
+// TODO 2.2-future over the log, which theoretically should be only recovery and LogPosition discovery
 public class CommittedTransactionRepresentation
 {
     private final LogEntry.Start startEntry;
