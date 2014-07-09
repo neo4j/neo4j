@@ -173,4 +173,38 @@ public class PhysicalLogVersionedStoreChannel implements VersionedStoreChannel
     {
         positionMarker.mark( version, position() );
     }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        PhysicalLogVersionedStoreChannel that = (PhysicalLogVersionedStoreChannel) o;
+
+        if ( version != that.version )
+        {
+            return false;
+        }
+        if ( !delegateChannel.equals( that.delegateChannel ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = delegateChannel.hashCode();
+        result = 31 * result + (int) (version ^ (version >>> 32));
+        return result;
+    }
 }

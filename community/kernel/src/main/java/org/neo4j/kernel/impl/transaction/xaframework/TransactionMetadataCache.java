@@ -23,7 +23,7 @@ import org.neo4j.kernel.impl.cache.LruCache;
 
 public class TransactionMetadataCache
 {
-    private final LruCache<Long, TransactionMetadata> txStartPositionCache;
+    private final LruCache<Long /*tx id*/, TransactionMetadata> txStartPositionCache;
     private final LruCache<Long /*log version*/, Long /*last committed tx*/> logHeaderCache;
 
     public TransactionMetadataCache( int headerCacheSize, int transactionCacheSize )
@@ -46,7 +46,7 @@ public class TransactionMetadataCache
     public long getLogHeader( long logVersion )
     {
         Long value = logHeaderCache.get( logVersion );
-        return value == null ? -1 : value.longValue();
+        return value == null ? -1 : value;
     }
 
     public TransactionMetadata getTransactionMetadata( long txId )
