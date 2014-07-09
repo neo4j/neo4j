@@ -55,6 +55,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
             return;
         }
 
+        threshold.init();
         long upper = currentLogVersion-1;
         boolean exceeded = false;
         while ( upper >= 0 )

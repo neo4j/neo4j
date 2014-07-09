@@ -19,19 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.File;
+
+import org.junit.Test;
+import org.mockito.Matchers;
+
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.Threshold;
+import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.ThresholdBasedPruneStrategy;
+
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.io.File;
-
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.Threshold;
-import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.ThresholdBasedPruneStrategy;
 
 public class ThresholdBasedPruneStrategyTest
 {
@@ -78,7 +79,8 @@ public class ThresholdBasedPruneStrategyTest
         strategy.prune();
 
         // Then
-        verify( fileSystem, times(0) ).deleteFile( Matchers.<File>any() );
+        verify( threshold, times( 1 ) ).init();
+        verify( fileSystem, times( 0 ) ).deleteFile( Matchers.<File>any() );
     }
 
     @Test
@@ -128,6 +130,7 @@ public class ThresholdBasedPruneStrategyTest
         strategy.prune();
 
         // Then
+        verify( threshold, times( 1 ) ).init();
         verify( fileSystem, times( 1 ) ).deleteFile( fileName1 );
         verify( fileSystem, times( 1 ) ).deleteFile( fileName2 );
         verify( fileSystem, times( 1 ) ).deleteFile( fileName3 );

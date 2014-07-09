@@ -25,23 +25,30 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 
 public final class FileCountThreshold implements Threshold
 {
-    private int nonEmptyLogCount = 0;
-    private final int maxNonEmptyLogCount;
+    private final int maxNonEmptyLogs;
 
-    FileCountThreshold( int maxNonEmptyLogCount )
+    private int nonEmptyLogCount;
+
+    FileCountThreshold( int maxNonEmptyLogs )
     {
-        this.maxNonEmptyLogCount = maxNonEmptyLogCount;
+        this.maxNonEmptyLogs = maxNonEmptyLogs;
+    }
+
+    @Override
+    public void init()
+    {
+        nonEmptyLogCount = 0;
     }
 
     @Override
     public boolean reached( File file, long version, LogFileInformation source )
     {
-        return ++nonEmptyLogCount >= maxNonEmptyLogCount;
+        return ++nonEmptyLogCount >= maxNonEmptyLogs;
     }
 
     @Override
     public String toString()
     {
-        return "[max:" + maxNonEmptyLogCount + "]";
+        return "[max:" + maxNonEmptyLogs + "]";
     }
 }
