@@ -88,4 +88,38 @@ public class LogPosition
             return "UNSPECIFIED";
         }
     };
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        LogPosition that = (LogPosition) o;
+
+        if ( byteOffset != that.byteOffset )
+        {
+            return false;
+        }
+        if ( logVersion != that.logVersion )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = (int) (logVersion ^ (logVersion >>> 32));
+        result = 31 * result + (int) (byteOffset ^ (byteOffset >>> 32));
+        return result;
+    }
 }

@@ -174,9 +174,67 @@ public abstract class LogEntry
         @Override
         public String toString( TimeZone timeZone )
         {
-            return "Start[master=" + masterId + ",me=" + authorId + ",time=" +
-                    timestamp( timeWritten, timeZone ) + ",lastCommittedTxWhenTransactionStarted="+
-                    lastCommittedTxWhenTransactionStarted + ", additionalHeader.length=" + additionalHeader.length +"]";
+            return "Start[" +
+                    "master=" + masterId + "," +
+                    "me=" + authorId + "," +
+                    "time=" + timestamp( timeWritten, timeZone ) + "," +
+                    "lastCommittedTxWhenTransactionStarted=" + lastCommittedTxWhenTransactionStarted + "," +
+                    "additionalHeaderLength=" + (additionalHeader == null ? -1 : additionalHeader.length) +
+                    "]";
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            Start start = (Start) o;
+
+            if ( authorId != start.authorId )
+            {
+                return false;
+            }
+            if ( lastCommittedTxWhenTransactionStarted != start.lastCommittedTxWhenTransactionStarted )
+            {
+                return false;
+            }
+            if ( masterId != start.masterId )
+            {
+                return false;
+            }
+            if ( timeWritten != start.timeWritten )
+            {
+                return false;
+            }
+            if ( !Arrays.equals( additionalHeader, start.additionalHeader ) )
+            {
+                return false;
+            }
+            if ( !startPosition.equals( start.startPosition ) )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = masterId;
+            result = 31 * result + authorId;
+            result = 31 * result + (int) (timeWritten ^ (timeWritten >>> 32));
+            result = 31 * result + (int) (lastCommittedTxWhenTransactionStarted ^ (lastCommittedTxWhenTransactionStarted >>> 32));
+            result = 31 * result + (additionalHeader != null ? Arrays.hashCode( additionalHeader ) : 0);
+            result = 31 * result + startPosition.hashCode();
+            return result;
         }
     }
 
@@ -214,6 +272,45 @@ public abstract class LogEntry
         public String toString( TimeZone timeZone )
         {
             return name + "[txId=" + getTxId() + ", " + timestamp( getTimeWritten(), timeZone ) + "]";
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            Commit commit = (Commit) o;
+
+            if ( timeWritten != commit.timeWritten )
+            {
+                return false;
+            }
+            if ( txId != commit.txId )
+            {
+                return false;
+            }
+            if ( !name.equals( commit.name ) )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = (int) (txId ^ (txId >>> 32));
+            result = 31 * result + (int) (timeWritten ^ (timeWritten >>> 32));
+            result = 31 * result + name.hashCode();
+            return result;
         }
     }
 
@@ -266,6 +363,34 @@ public abstract class LogEntry
         public void accept( LogHandler handler ) throws IOException
         {
             handler.commandEntry( this );
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            Command command1 = (Command) o;
+
+            if ( !command.equals( command1.command ) )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return command.hashCode();
         }
     }
 
