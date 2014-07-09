@@ -25,38 +25,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 
-final case class QueryHorizon(unwinds: Map[String, Expression] = Map.empty,
-                              projection: QueryProjection = QueryProjection.empty)
-  extends internalDocBuilder.AsPrettyToString {
+sealed trait QueryHorizon
 
-  def ++(other: QueryHorizon) =
-    QueryHorizon(
-      unwinds ++ other.unwinds,
-      QueryProjection.combine(projection, other.projection)
-    )
-
-  def updateProjection(f: QueryProjection => QueryProjection) = withProjection(f(projection))
-
-  def withUnwinds(unwinds: Map[String, Expression]) = copy(unwinds = unwinds)
-
-  def withProjection(projection: QueryProjection) = copy(projection = projection)
-}
-
-object QueryHorizon {
-  val empty = QueryHorizon()
-}
-
-sealed abstract class QueryProjection extends internalDocBuilder.AsPrettyToString {
+sealed abstract class QueryProjection extends QueryHorizon with internalDocBuilder.AsPrettyToString {
   def projections: Map[String, Expression]
-
   def shuffle: QueryShuffle
-
   def keySet: Set[String]
-
   def updateShuffle(f: QueryShuffle => QueryShuffle) = withShuffle(f(shuffle))
-
   def withProjections(projections: Map[String, Expression]): QueryProjection
-
   def withShuffle(shuffle: QueryShuffle): QueryProjection
 }
 
@@ -141,3 +117,5 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
 }
+
+case class UnwindProjection(identifier: IdName, exp: Expression) extends QueryHorizon

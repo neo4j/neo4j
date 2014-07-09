@@ -19,34 +19,44 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{AscSortItem, DescSortItem, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.perty._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{AggregatingQueryProjection, QueryProjection}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{AggregatingQueryProjection, QueryProjection, QueryShuffle, UnwindProjection}
 
 case class queryProjectionDocBuilder(prefix: String = "WITH") extends CachingDocBuilder[Any] {
 
-  import Doc._
+  import org.neo4j.cypher.internal.compiler.v2_1.perty.Doc._
 
   override protected def newNestedDocGenerator = {
     case queryProjection: AggregatingQueryProjection =>
       val distinct = if (queryProjection.aggregationExpressions.isEmpty) "DISTINCT" else ""
-      generateDoc(queryProjection, queryProjection.projections ++ queryProjection.aggregationExpressions, distinct)
+      generateDoc(queryProjection.projections ++ queryProjection.aggregationExpressions, queryProjection.shuffle, distinct, prefix)
 
     case queryProjection: QueryProjection =>
-      generateDoc(queryProjection, queryProjection.projections)
+      generateDoc(queryProjection.projections, queryProjection.shuffle, "", prefix)
+
+    case queryProjection: UnwindProjection =>
+      generateDoc(Map(queryProjection.identifier.name -> queryProjection.exp), QueryShuffle.empty, "", "UNWIND")
   }
 
-  private def generateDoc(queryProjection: QueryProjection,
-                          projectionsMap: Map[String, Expression],
-                          initialString: String = ""): DocGenerator[Any] => Doc =
-  { (inner: DocGenerator[Any]) =>
+  private def generateDoc(projections: Map[String, Expression], queryShuffle: QueryShuffle, initialString: String, prefix: String): DocGenerator[Any] => Doc = {
+    (inner: DocGenerator[Any]) =>
 
-      val projectionMapDoc = projectionsMap.collect {
+      val projectionMapDoc = projections.collect {
         case (k, v) => group(inner(v) :/: "AS " :: s"`$k`")
       }
 
       val projectionDoc = if (projectionMapDoc.isEmpty) text("*") else group(sepList(projectionMapDoc))
-      val shuffleDoc = inner(queryProjection.shuffle)
+      val shuffleDoc = inner(queryShuffle)
+
+      val sortItemDocs = queryShuffle.sortItems.collect {
+        case AscSortItem(expr)  => inner(expr)
+        case DescSortItem(expr) => inner(expr) :/: "DESC"
+      }
+      val sortItems = if (sortItemDocs.isEmpty) nil else group("ORDER BY" :/: sepList(sortItemDocs))
+
+      val skip = queryShuffle.skip.fold(nil)(skip => group("SKIP" :/: inner(skip)))
+      val limit = queryShuffle.limit.fold(nil)(limit => group("LIMIT" :/: inner(limit)))
 
       section(prefix, projectionDoc :+: shuffleDoc)
   }

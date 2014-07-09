@@ -17,24 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.perty.{Doc, CachingDocBuilder}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryHorizon
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-object queryHorizonDocBuilder extends CachingDocBuilder[Any] {
+case class UnwindPlan(left: LogicalPlan, identifier: IdName, expression: Expression) extends LogicalPlan {
+  val lhs = Some(left)
+  def rhs = None
 
-  import Doc._
-
-  override protected def newNestedDocGenerator = {
-    case horizon: QueryHorizon => (inner) =>
-      val unwindsMapDoc = horizon.unwinds.collect {
-        case (k, v) => section("UNWIND", group(inner(v) :/: "AS " :: s"`$k`"))
-      }
-
-      val unwindsDoc = if (unwindsMapDoc.isEmpty) nil else group(breakList(unwindsMapDoc))
-      val projectionDoc = inner(horizon.projection)
-
-      unwindsDoc :+: projectionDoc
-  }
+  def availableSymbols: Set[IdName] = left.availableSymbols
 }
