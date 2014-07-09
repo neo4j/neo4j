@@ -33,6 +33,7 @@ import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.fs.FileUtils;
 
 public class Matrix
 {
@@ -56,9 +57,9 @@ public class Matrix
         matrix.shutdown();
     }
 
-    public void setUp()
+    public void setUp() throws IOException
     {
-        deleteFileOrDirectory( new File( MATRIX_DB ) );
+        FileUtils.deleteRecursively( new File( MATRIX_DB ) );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( MATRIX_DB );
         registerShutdownHook();
         createNodespace();
@@ -120,7 +121,7 @@ public class Matrix
 
     /**
      * Get the Neo node. (a.k.a. Thomas Anderson node)
-     * 
+     *
      * @return the Neo node
      */
     private Node getNeoNode()
@@ -216,20 +217,5 @@ public class Matrix
                 graphDb.shutdown();
             }
         } );
-    }
-
-    private static void deleteFileOrDirectory( File file )
-    {
-        if ( file.exists() )
-        {
-            if ( file.isDirectory() )
-            {
-                for ( File child : file.listFiles() )
-                {
-                    deleteFileOrDirectory( child );
-                }
-            }
-            file.delete();
-        }
     }
 }
