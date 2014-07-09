@@ -40,18 +40,17 @@ public class JettyThreadLimitTest
     public void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
     {
     	Jetty9WebServer server = new Jetty9WebServer( DevNullLoggingService.DEV_NULL );
-        final int maxThreads = 7;
+        int maxThreads = 13; // 12 is the new min maxThreads value
         server.setMaxThreads( maxThreads );
         server.setPort( 7480 );
         try {
 	        server.start();
 	        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty().getThreadPool();
 	        threadPool.start();
-            // TODO This test fails on machines with >= 8 cores. 
-//            int configuredMaxThreads = maxThreads * Runtime.getRuntime().availableProcessors();
             int configuredMaxThreads = maxThreads * 4;
             loadThreadPool( threadPool, configuredMaxThreads + 1);
 	        int threads = threadPool.getThreads();
+	        System.out.println( threads + " " + maxThreads );
 	        assertTrue( threads <= maxThreads );
         }
         finally

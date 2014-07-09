@@ -30,29 +30,29 @@ public class JettyThreadCalculatorTest
         JettyThreadCalculator jtc = new JettyThreadCalculator(1);
         assertEquals("Wrong acceptor value for 1 core", 1, jtc.getAcceptors());
         assertEquals("Wrong selector value for 1 core", 1, jtc.getSelectors());
-        assertEquals("Wrong maxThreads value for 1 core", 8, jtc.getMaxThreads());
-        assertEquals("Wrong minThreads value for 1 core", 2, jtc.getMinThreads());
+        assertEquals("Wrong maxThreads value for 1 core", 12, jtc.getMaxThreads());
+        assertEquals("Wrong minThreads value for 1 core", 6, jtc.getMinThreads());
         assertEquals("Wrong capacity value for 1 core", 480000, jtc.getMaxCapacity());
 
         jtc = new JettyThreadCalculator(4);
         assertEquals("Wrong acceptor value for 4 cores", 1, jtc.getAcceptors());
         assertEquals("Wrong selector value for 4 cores", 2, jtc.getSelectors());
-        assertEquals("Wrong maxThreads value for 4 cores", 8, jtc.getMaxThreads());
-        assertEquals("Wrong minThreads value for 4 cores", 2, jtc.getMinThreads());
+        assertEquals("Wrong maxThreads value for 4 cores", 14, jtc.getMaxThreads());
+        assertEquals("Wrong minThreads value for 4 cores", 8, jtc.getMinThreads());
         assertEquals("Wrong capacity value for 4 cores", 480000, jtc.getMaxCapacity());
 
         jtc = new JettyThreadCalculator(16);
         assertEquals("Wrong acceptor value for 16 cores", 2, jtc.getAcceptors());
         assertEquals("Wrong selector value for 16 cores", 3, jtc.getSelectors());
-        assertEquals("Wrong maxThreads value for 16 cores", 11, jtc.getMaxThreads());
-        assertEquals("Wrong minThreads value for 16 cores", 4, jtc.getMinThreads());
+        assertEquals("Wrong maxThreads value for 16 cores", 21, jtc.getMaxThreads());
+        assertEquals("Wrong minThreads value for 16 cores", 14, jtc.getMinThreads());
         assertEquals("Wrong capacity value for 16 cores", 660000, jtc.getMaxCapacity());
 
         jtc = new JettyThreadCalculator(64);
         assertEquals("Wrong acceptor value for 64 cores", 4, jtc.getAcceptors());
         assertEquals("Wrong selector value for 64 cores", 8, jtc.getSelectors());
-        assertEquals("Wrong maxThreads value for 64 cores", 52, jtc.getMaxThreads());
-        assertEquals("Wrong minThreads value for 64 cores", 12, jtc.getMinThreads());
+        assertEquals("Wrong maxThreads value for 64 cores", 76, jtc.getMaxThreads());
+        assertEquals("Wrong minThreads value for 64 cores", 36, jtc.getMinThreads());
         assertEquals("Wrong capacity value for 64 cores", 3120000, jtc.getMaxCapacity());
     }
 }
