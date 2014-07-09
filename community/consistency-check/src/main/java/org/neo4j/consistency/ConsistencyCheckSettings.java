@@ -38,11 +38,12 @@ import static org.neo4j.helpers.Settings.setting;
 /**
  * Settings for consistency checker
  */
+@Description( "Consistency check configuration settings" )
 public class ConsistencyCheckSettings
 {
     @Description("Perform optional additional checking on property ownership. " +
             "This can detect a theoretical inconsistency where a property could be owned by multiple entities. " +
-            "However, but the check is very expensive in time and memory, so it is skipped by default.")
+            "However, the check is very expensive in time and memory, so it is skipped by default.")
     public static final Setting<Boolean> consistency_check_property_owners = setting( "consistency_check_property_owners", BOOLEAN, FALSE );
 
     @Description("Perform checks on the label scan store. Checking this store is more expensive than " +

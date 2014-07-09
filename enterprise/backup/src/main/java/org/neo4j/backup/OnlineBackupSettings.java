@@ -31,6 +31,7 @@ import org.neo4j.helpers.HostnamePort;
 /**
  * Settings for online backup
  */
+@Description( "Online backup configuration settings" )
 public class OnlineBackupSettings
 {
 

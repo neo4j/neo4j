@@ -81,6 +81,25 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
       <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-source-based-documentation</id>
+            <phase>${generate-config-docs-phase}</phase>
+            <configuration>
+              <target>
+                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
+                      classpathref="maven.compile.classpath" failonerror="true">
+                  <arg value="org.neo4j.shell.ShellSettings" />
+                  <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
+                </java>
+              </target>
+            </configuration>
+            <goals><goal>run</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>docs-maven-plugin</artifactId>
         <configuration>

@@ -20,106 +20,190 @@
 package org.neo4j.kernel.configuration;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.factory.SettingsResourceBundle;
+import org.neo4j.helpers.Triplet;
 
 /**
- * Generates Asciidoc by using subclasses of {@link org.neo4j.graphdb.factory.SettingsResourceBundle},
- * to pick up localized documentation of the documentation.
- * 
- * Format
- * <pre>
- * .Title
- * [configsetting]
- * ----
- * key: default_value
- * description
- * value1: (description1)
- * value2: (description2)
- * ----
- * </pre>
+ * Generates AsciiDoc by using subclasses of {@link org.neo4j.graphdb.factory.SettingsResourceBundle},
+ * to pick up localized versions of the documentation.
  */
-public class ConfigAsciiDocGenerator {
+public class ConfigAsciiDocGenerator
+{
+    private static final Pattern CONFIG_SETTING_PATTERN = Pattern.compile( "[a-z0-9]+((\\.|_)[a-z0-9]+)+" );
 
-	public String generateDocsFor(Class<? extends SettingsResourceBundle> settingsResource)
-	{
-		return generateDocsFor(settingsResource.getName());
-	}
-	
-	public String generateDocsFor(String settingsResource)
-	{
-		ResourceBundle bundle = ResourceBundle.getBundle( settingsResource );
-		
-		StringBuilder sb = new StringBuilder();
-		
-		List<String> keys = new ArrayList<String>(bundle.keySet());
-		Collections.sort(keys);
-		
-        for( String property : keys )
+    public String generateDocsFor(
+            Class<? extends SettingsResourceBundle> settingsResource )
+    {
+        return generateDocsFor( settingsResource.getName() );
+    }
+
+    public String generateDocsFor( String settingsResource )
+    {
+        ResourceBundle bundle;
+        try
         {
-            if (property.endsWith( ".description" ))
+            bundle = new SettingsResourceBundle(
+                    Class.forName( settingsResource ) );
+        }
+        catch ( ClassNotFoundException e )
+        {
+            throw new RuntimeException( "Couldn't load settings class: ", e );
+        }
+        System.out.println( "Generating docs for: " + settingsResource );
+
+        String settingsResourceId = "config-" + settingsResource;
+        String bundleDescription = "List of configuration settings";
+        if ( bundle.containsKey( SettingsResourceBundle.CLASS_DESCRIPTION ) )
+        {
+            bundleDescription = bundle.getString( SettingsResourceBundle.CLASS_DESCRIPTION );
+        }
+
+        StringBuilder details = new StringBuilder();
+        List<Triplet<String, String, String>> beanList = new ArrayList<>();
+        List<Triplet<String, String, String>> deprecatedBeansList = new ArrayList<>();
+
+        AsciiDocListGenerator listGenerator = new AsciiDocListGenerator( settingsResourceId, bundleDescription, true );
+        AsciiDocListGenerator deprecatedBeanslistGenerator = 
+                new AsciiDocListGenerator( settingsResourceId + "-deprecated", "Deprecated settings", true );
+
+        List<String> keys = new ArrayList<String>( bundle.keySet() );
+        Collections.sort( keys );
+
+        for ( String property : keys )
+        {
+            if ( property.endsWith( SettingsResourceBundle.DESCRIPTION ) )
             {
                 String name = property.substring( 0, property.lastIndexOf( "." ) );
-                sb.append("."+bundle.getString( name+".title" )+"\n");
+                String monospacedName = "+" + name + "+";
+                String internalKey = name + SettingsResourceBundle.INTERNAL;
+                if ( bundle.containsKey( internalKey ) )
+                {
+                    continue;
+                }
+                String id = "config_" + name;
+                details.append( "[[" )
+                        .append( id )
+                        .append( "]]\n" )
+                        .append( '.' )
+                        .append( name )
+                        .append( '\n' )
+                        .append( "[cols=\"<1h,<4\"]\n" )
+                        .append( "|===\n" );
+
+                String defaultKey = name + SettingsResourceBundle.DEFAULT;
+                String description = linkifyConfigSettings( bundle.getString( property ) );
+                details.append( "|Description a|" );
+                addWithDotAtEndAsNeeeded( details, description );
                 
-                String minmax = "";
-                if (bundle.containsKey( name+".min" ) && bundle.containsKey( name+".max" ))
-                    minmax=",\"minmax\"";
-                else if (bundle.containsKey( name+".min" ))
-                    minmax=",\"min\"";
-                else if (bundle.containsKey( name+".max" ))
-                    minmax=",\"max\"";
-
-                sb.append( "[\"configsetting\""+minmax+"]\n");
-                sb.append( "----\n" );
-
-                String defaultKey = name + ".default";
-                if (bundle.containsKey( defaultKey ))
+                String validationKey = name + SettingsResourceBundle.VALIDATIONMESSAGE;
+                if ( bundle.containsKey( validationKey ) )
                 {
-                	sb.append( name+": "+bundle.getString( defaultKey )+"\n");
-                } else
-                {
-                	sb.append( name+"\n");
+                    String validation = bundle.getString( validationKey );
+                    validation = validation.replace( name, monospacedName );
+                    details.append( "|Valid values a|" );
+                    addWithDotAtEndAsNeeeded( details, linkifyConfigSettings( validation, name ) );
                 }
 
-                sb.append( bundle.getString( property )+"\n");
-                
-                // Output optional options
-                String optionsKey = name+".options";
-                if (bundle.containsKey( optionsKey ))
+                if ( bundle.containsKey( defaultKey ) )
                 {
-                    String[] options = bundle.getString( optionsKey ).split( "," );
-                    if (bundle.containsKey( name+".option."+options[0] ))
+                    String defaultValue = bundle.getString( defaultKey );
+                    if ( !defaultValue.equals( "__DEFAULT__" ) )
                     {
-                        for( String option : options )
-                        {
-                            String description = bundle.getString( name + ".option." + option );
-                            char[] spaces = new char[ option.length() + 2 ];
-                            Arrays.fill( spaces,' ' );
-                            description = description.replace( "\n", " ");
-                            sb.append(option+": "+ description+"\n");
-                        }
-                    } else
-                    {
-                    	sb.append(bundle.getString( optionsKey ).replace( ","," \n" )+"\n");
+                        details.append( "|Default value m|" )
+                          .append( defaultValue )
+                          .append( '\n' );
                     }
                 }
+                
+                String mandatorykey = name + SettingsResourceBundle.MANDATORY;
+                if ( bundle.containsKey( mandatorykey ) )
+                {
+                    details.append( "|Mandatory a|" );
+                    addWithDotAtEndAsNeeeded( details, bundle.getString( mandatorykey ).replace( name, monospacedName ) );
+                }
 
-                if (bundle.containsKey( name+".min" ))
-                	sb.append(bundle.getString( name+".min" )+"\n");
-                if (bundle.containsKey( name+".max" ))
-                	sb.append(bundle.getString( name+".max" )+"\n");
+                Triplet<String, String, String> beanSummary = Triplet.of( id, name, description );
 
-                sb.append( "----\n" );
-                sb.append( "\n" );
+                String deprecatedKey = name + SettingsResourceBundle.DEPRECATED;
+                String obsoletedKey = name + SettingsResourceBundle.OBSOLETED;
+                if ( bundle.containsKey( deprecatedKey ) || bundle.containsKey( obsoletedKey ) )
+                {
+                    details.append( "|Deprecated a|" );
+                    if ( bundle.containsKey( obsoletedKey ) )
+                    {
+                        addWithDotAtEndAsNeeeded( details, linkifyConfigSettings( bundle.getString( obsoletedKey ) ) );
+                    }
+                    else
+                    {
+                        addWithDotAtEndAsNeeeded( details, linkifyConfigSettings( bundle.getString( deprecatedKey ) ) );
+                    }
+                    deprecatedBeansList.add( beanSummary );
+                }
+                else
+                {
+                    beanList.add( beanSummary );
+                }
+
+                details.append( "|===\n\n" );
             }
         }
-        
-        return sb.toString();
-	}
-	
+        return listGenerator.generateListAndTableCombo( beanList )
+               + ( deprecatedBeansList.isEmpty() ? ""
+                       : deprecatedBeanslistGenerator.generateListAndTableCombo( deprecatedBeansList ) )
+               + details.toString();
+    }
+    
+    private void addWithDotAtEndAsNeeeded( StringBuilder sb, String message )
+    {
+        sb.append( message );
+        if ( !message.endsWith( "." ) && !message.endsWith( ". " ) )
+        {
+            sb.append( '.' );
+        }
+        sb.append( '\n' );
+    }
+
+    private String linkifyConfigSettings( String text, String nameToNotLink )
+    {
+        Matcher matcher = CONFIG_SETTING_PATTERN.matcher( text );
+        StringBuffer result = new StringBuffer( 256 );
+        while ( matcher.find() )
+        {
+            String match = matcher.group();
+            if ( match.endsWith( ".log" ) )
+            {
+                // a filenamne
+                match = "_" + match + "_";
+            }
+            else if ( match.equals( nameToNotLink ) )
+            {
+                // don't link to the settings we're describing
+                match = "`" + match + "`";
+            }
+            else
+            {
+                // replace setting name with link to setting
+                match = makeConfigXref( match );
+            }
+            matcher.appendReplacement( result, match );
+        }
+        matcher.appendTail( result );
+        return result.toString();
+    }
+
+    private String linkifyConfigSettings( String text )
+    {
+        return linkifyConfigSettings( text, null );
+    }
+
+    private String makeConfigXref( String settingName )
+    {
+        return "+<<config_" + settingName + "," + settingName + ">>+";
+    }
 }

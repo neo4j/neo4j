@@ -27,7 +27,7 @@
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <docs.resources>${docs.tools}/main/resources</docs.resources>
     <neo4j.version>${project.version}</neo4j.version>
-    <doctools.version>21</doctools.version>
+    <doctools.version>23</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
   </properties>
 
@@ -116,6 +116,20 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-backup</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-consistency-check</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cluster</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
@@ -448,15 +462,16 @@
             </configuration>
           </execution>
           <execution>
-            <id>execute-xml-lint</id>
+            <id>validate-xml</id>
             <phase>verify</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
+            <goals><goal>java</goal></goals>
             <configuration>
-              <executable>make</executable>
+              <mainClass>org.neo4j.doc.docbook.Validate</mainClass>
+              <includePluginDependencies>true</includePluginDependencies>
+              <includeProjectDependencies>false</includeProjectDependencies>
               <arguments>
-                <argument>lint</argument>
+                <argument>file://${docs.resources}/docbook-schema/docbook.xsd</argument>
+                <argument>file://${project.build.directory}/neo4j-manual-html.xml</argument>
               </arguments>
             </configuration>
           </execution>
@@ -466,6 +481,11 @@
             <groupId>org.neo4j.doc</groupId>
             <artifactId>neo4j-graphgist</artifactId>
             <version>${neo4j.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.neo4j.build.plugins</groupId>
+            <artifactId>neo4j-doctools</artifactId>
+            <version>${doctools.version}</version>
           </dependency>
         </dependencies>
       </plugin>

@@ -1,9 +1,21 @@
-[[kernel-configuration]]
-Kernel configuration
-====================
+[[configuration-settings]]
+= Configuration Settings
 
-These are the configuration options you can pass to the neo4j kernel. They
-can either be passed as a map when using the embedded database, or in the
-_conf/neo4j.properties_ file when using the Neo4j Server.
+On this page you'll find the main configuration settings you can use with Neo4j.
+They can be set in the _conf/neo4j.properties_ file when using the Neo4j Server (see <<server-configuration>>).
+If you use the embedded database, you can pass them in as a map (see <<tutorials-java-embedded-setup-config>>).
+
+For additional configuration settings, see:
+
+* <<server-configuration>>
+* <<config-org.neo4j.shell.ShellSettings>>
+* <<config-org.neo4j.kernel.impl.cache.HighPerformanceCacheSettings>>
+* <<config-org.neo4j.kernel.ha.HaSettings>>
+* <<config-org.neo4j.cluster.ClusterSettings>>
+* <<config-org.neo4j.backup.OnlineBackupSettings>>
+* <<config-org.neo4j.consistency.ConsistencyCheckSettings>>
+* <<config-org.neo4j.ext.udc.UdcSettings>>
+
 
 include::configuration-attributes.asciidoc[]
+

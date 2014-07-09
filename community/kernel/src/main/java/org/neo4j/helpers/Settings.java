@@ -25,6 +25,7 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -52,6 +53,8 @@ import org.neo4j.kernel.configuration.Config;
  */
 public final class Settings
 {
+    private static final String MATCHES_PATTERN_MESSAGE = "matches the pattern `%s`";
+
     private interface SettingHelper<T>
             extends Setting<T>
     {
@@ -71,6 +74,16 @@ public final class Settings
 
     public static final String DURATION_FORMAT = "\\d+(ms|s|m)";
     public static final String SIZE_FORMAT = "\\d+[kmgKMG]?";
+
+    private static final String DURATION_UNITS = DURATION_FORMAT.substring(
+            DURATION_FORMAT.indexOf( '(' ) + 1, DURATION_FORMAT.indexOf( ')' ) )
+            .replace( "|", ", " );
+    private static final String SIZE_UNITS = Arrays.toString(
+            SIZE_FORMAT.substring( SIZE_FORMAT.indexOf( '[' ) + 1,
+                    SIZE_FORMAT.indexOf( ']' ) )
+                    .toCharArray() )
+            .replace( "[", "" )
+            .replace( "]", "" );
 
     public static final String ANY = ".+";
 
@@ -323,7 +336,7 @@ public final class Settings
         @Override
         public String toString()
         {
-            return "a duration";
+            return "a duration (valid units are `" + DURATION_UNITS.replace( ", ", "`, `" ) + "`)";
         }
     };
 
@@ -364,7 +377,7 @@ public final class Settings
         @Override
         public String toString()
         {
-            return "a byte size";
+            return "a byte size (valid multipliers are `" + SIZE_UNITS.replace( ", ", "`, `" ) + "`)";
         }
     };
 
@@ -462,7 +475,7 @@ public final class Settings
         @Override
         public String toString()
         {
-            return "a byte size, such as '4G' for 4 giga-bytes, or a percentage of the max direct memory or total RAM (whichever is smallest), for instance '50%'";
+            return "a byte size, such as `4G` for 4 giga-bytes, or a percentage of the max direct memory or total RAM (whichever is smallest), for instance `50%`";
         }
     }
 
@@ -556,13 +569,14 @@ public final class Settings
             public String toString()
             {
                 StringBuilder builder = new StringBuilder(  );
-                builder.append( "one of " );
+                builder.append( "one of `" );
                 String comma = "";
                 for ( T optionValue : optionValues )
                 {
                     builder.append( comma ).append( optionValue.toString() );
-                    comma = ", ";
+                    comma = "`, `";
                 }
+                builder.append( "`" );
                 return builder.toString();
             }
         };
@@ -590,7 +604,7 @@ public final class Settings
             @Override
             public String toString()
             {
-                return "a list separated by '"+separator+"' where items are "+itemParser.toString();
+                return "a list separated by \"" + separator + "\" where items are " + itemParser.toString();
             }
         };
     }
@@ -612,6 +626,12 @@ public final class Settings
 
                 return value;
             }
+
+            @Override
+            public String toString()
+            {
+                return String.format( MATCHES_PATTERN_MESSAGE, regex );
+            }
         };
     }
 
@@ -627,6 +647,12 @@ public final class Settings
                     throw new IllegalArgumentException( String.format( "minimum allowed value is: %s", min ) );
                 }
                 return value;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "is minimum `" + min + "`";
             }
         };
     }
@@ -644,16 +670,35 @@ public final class Settings
                 }
                 return value;
             }
+
+            @Override
+            public String toString()
+            {
+                return "is maximum `" + max + "`";
+            }
         };
     }
 
     public static <T extends Comparable<T>> Function2<T, Function<String, String>, T> range( final T min, final T max )
     {
-        return Functions.<T, Function<String, String>>compose2().apply( min( min ), max( max ) );
+        return new Function2<T, Function<String, String>, T>()
+        {
+            @Override
+            public T apply( T from1, Function<String, String> from2 )
+            {
+                return min(min).apply( max(max).apply( from1, from2 ), from2 );
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format( "is in the range `%s` to `%s`", min, max );
+            }
+        };
     }
 
     public static final Function2<Integer, Function<String, String>, Integer> port =
-            illegalValueMessage( "must be a valid port number(1-65535)", range( 1, 65535 ) );
+            illegalValueMessage( "must be a valid port number", range( 1, 65535 ) );
 
     public static <T> Function2<T, Function<String, String>, T> illegalValueMessage( final String message,
                                                                                      final Function2<T,
@@ -674,6 +719,19 @@ public final class Settings
                 {
                     throw new IllegalArgumentException( message );
                 }
+            }
+
+            @Override
+            public String toString()
+            {
+                String description = message;
+                if ( valueFunction != null
+                     && !String.format( MATCHES_PATTERN_MESSAGE, ANY ).equals(
+                             valueFunction.toString() ) )
+                {
+                    description += " (" + valueFunction.toString() + ")";
+                }
+                return description;
             }
         };
     }
@@ -719,7 +777,7 @@ public final class Settings
             @Override
             public String toString()
             {
-                return "relative to '"+baseSetting.name()+"'";
+                return "is relative to " + baseSetting.name();
             }
         };
     }

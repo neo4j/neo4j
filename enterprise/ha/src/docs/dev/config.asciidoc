@@ -36,36 +36,9 @@ HA configuration parameters should be supplied alongside general Neo4j parameter
 There are many configurable parameters, most in most cases it isn't necessary to modify the default values.
 The only parameters that need to be specified are +ha.server_id+ and +ha.initial_hosts+.
 
-.HA database configuration parameters
-[options="header", cols="<33m,<35,<20m,<12"]
-|========================================================================================
-| Parameter Name        | Description                                     | Example value  | Required?
-| ha.server_id          | Id for a cluster instance. Must be unique within the cluster. | 1 | yes
-| ha.initial_hosts      | A comma-separated list of other members of the cluster to join. | server1:5001,server2:5001 | yes
-| ha.cluster_server     | Host & port to bind the cluster management communication. | server1:5001 | no
-| ha.allow_init_cluster | Whether to allow this instance to create a cluster if unable to join. | true | no
-| ha.default_timeout    | Default timeout used for clustering timeouts. Override specific timeout settings with proper values if necessary. This value is the default value for settings ha.heartbeat_interval, ha.paxos_timeout and ha.learn_timeout. | 5s | no
-| ha.heartbeat_interval | How often heartbeat messages should be sent. Defaults to ha.default_timeout. | 5s | no
-| ha.heartbeat_timeout  | Timeout for heartbeats between cluster members. Should be at least twice that of ha.heartbeat_interval. | 11s | no
-| ha.broadcast_timeout  | Timeout for broadcasting values in cluster. Must consider end-to-end duration of Paxos algorithm. This value is the default value for settings ha.join_timeout and ha.leave_timeout. | 30s | no
-| ha.join_timeout       | Timeout for joining a cluster. Defaults to ha.broadcast_timeout. | 30s | no
-| ha.configuration_timeout | Timeout for waiting for configuration from an existing cluster member during cluster join. | 1s | no
-| ha.leave_timeout      | Timeout for waiting for cluster leave to finish. Defaults to ha.broadcast_timeout. | 30s | no
-| ha.paxos_timeout      | Default timeout for all Paxos timeouts. Defaults to ha.default_timeout. This value is the default value for settings ha.phase1_timeout, ha.phase2_timeout and ha.election_timeout. | 5s | no
-| ha.phase1_timeout     | Timeout for Paxos phase 1. Defaults to ha.paxos_timeout. | 5s | no
-| ha.phase2_timeout     | Timeout for Paxos phase 2. Defaults to ha.paxos_timeout. | 5s | no
-| ha.learn_timeout      | Timeout for learning values. Defaults to ha.default_timeout. | 5s | no
-| ha.election_timeout   | Timeout for waiting for other members to finish a role election. Defaults to ha.paxos_timeout. | 5s | no
-| ha.read_timeout       | How long a slave will wait for response from master before giving up. | 20s | no
-| ha.state_switch_timeout | Timeout for waiting for instance to become master or slave. | 20s | no
-| ha.lock_read_timeout  | Timeout for taking remote (write) locks on slaves. Defaults to ha.read_timeout. | 20s | no
-| ha.max_concurrent_channels_per_slave | Maximum number of connections a slave can have to the master. | 20 | no
-| ha.server             | Hostname and port to bind the HA server. | my-domain.com:6001 | no
-| ha.slave_only         | Whether this instance should only participate as slave in cluster. If set to true, it will never be elected as master. | false | no
-| ha.branched_data_policy | Policy for how to handle branched data. | keep_last or keep_all or keep_none | no
-| ha.com_chunk_size     | Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase throughput, but may be more sensitive to variations in bandwidth, whereas lower size increases tolerance for bandwidth variations. | 2M | no
-| ha.pull_interval      | Interval of pulling updates from master. | 10s | no
-| ha.tx_push_factor     | The amount of slaves the master will ask to replicate a committed transaction. | 1 | no
-| ha.tx_push_strategy   | Push strategy of a transaction to a slave during commit. | fixed or round_robin | no
-|========================================================================================
+include::{importdir}/neo4j-ha-docs-jar/ops/ha-configuration-attributes.asciidoc[]
+
+include::{importdir}/neo4j-cluster-docs-jar/ops/configuration-attributes.asciidoc[]
+
+
 

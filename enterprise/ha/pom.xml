@@ -59,6 +59,39 @@
         </configuration>
       </plugin>
       <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-source-based-documentation-ha</id>
+            <phase>${generate-config-docs-phase}</phase>
+            <configuration>
+              <target>
+                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
+                      classpathref="maven.compile.classpath" failonerror="true">
+                  <arg value="org.neo4j.kernel.ha.HaSettings" />
+                  <arg value="${project.build.directory}/docs/ops/ha-configuration-attributes.asciidoc" />
+                </java>
+              </target>
+            </configuration>
+            <goals><goal>run</goal></goals>
+          </execution>
+          <execution>
+            <id>generate-source-based-documentation-gcr</id>
+            <phase>${generate-config-docs-phase}</phase>
+            <configuration>
+              <target>
+                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
+                      classpathref="maven.compile.classpath" failonerror="true">
+                  <arg value="org.neo4j.kernel.impl.cache.HighPerformanceCacheSettings" />
+                  <arg value="${project.build.directory}/docs/ops/hpc-configuration-attributes.asciidoc" />
+                </java>
+              </target>
+            </configuration>
+            <goals><goal>run</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>

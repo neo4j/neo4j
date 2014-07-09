@@ -20,7 +20,7 @@
     <neo4j.version>${project.version}</neo4j.version>
     <bundle.namespace>org.neo4j.consistency</bundle.namespace>
     <short-name>consistency-check</short-name>
-    <docs-plugin.skip>true</docs-plugin.skip>
+    <docs-plugin.skip>false</docs-plugin.skip>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
@@ -95,4 +95,28 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-source-based-documentation</id>
+            <phase>${generate-config-docs-phase}</phase>
+            <configuration>
+              <target>
+                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
+                      classpathref="maven.compile.classpath" failonerror="true">
+                  <arg value="org.neo4j.consistency.ConsistencyCheckSettings" />
+                  <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
+                </java>
+              </target>
+            </configuration>
+            <goals><goal>run</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

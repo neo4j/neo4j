@@ -144,11 +144,11 @@ the relevant Commercial Agreement.
         <executions>
           <execution>
             <id>generate-source-based-documentation</id>
-            <phase>process-classes</phase>
+            <phase>${generate-config-docs-phase}</phase>
             <configuration>
               <target>
-                <java classname="org.neo4j.tooling.GenerateConfigDocumentation" classpathref="maven.compile.classpath" failonerror="true">
-                  <arg value="org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle" />
+                <java classname="org.neo4j.tooling.GenerateConfigDocumentation" classpathref="maven.test.classpath" failonerror="true">
+                  <arg value="org.neo4j.graphdb.factory.GraphDatabaseSettings" />
                   <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
                 </java>
               </target>

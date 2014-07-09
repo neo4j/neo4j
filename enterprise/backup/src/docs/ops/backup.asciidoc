@@ -24,6 +24,16 @@ also be configured to listen on all interfaces by setting
 Performing a backup requires specifying the target host, an optional port, and
 the backup location. The backup tool will automatically select a full or incremental backup, based on whether an existing backup is present at that location.
 
+The relevant configuration settings are found below.
+
+include::{importdir}/neo4j-backup-docs-jar/ops/configuration-attributes.asciidoc[]
+
+include::{importdir}/neo4j-consistency-check-docs-jar/ops/configuration-attributes.asciidoc[]
+
+
+[[backup-embedded-and-server]]
+== Server and Embedded ==
+
 [source,shell]
 ----
 # Performing a full backup: create a blank directory and run the backup tool
