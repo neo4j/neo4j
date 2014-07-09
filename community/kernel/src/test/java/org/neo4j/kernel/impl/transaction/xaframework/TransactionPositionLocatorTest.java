@@ -24,6 +24,11 @@ import java.io.IOException;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.OnePhaseCommit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -43,9 +48,9 @@ public class TransactionPositionLocatorTest
     private final long txId = 42;
     private final LogPosition startPosition = new LogPosition( 1, 128 );
 
-    private final LogEntry.Start start = new LogEntry.Start( 0, 0, 0, 0, null, startPosition );
-    private final LogEntry.Command command = new LogEntry.Command( new Command.NodeCommand() );
-    private final LogEntry.Commit commit = new LogEntry.OnePhaseCommit( txId, 0 );
+    private final LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, null, startPosition );
+    private final LogEntryCommand command = new LogEntryCommand( new Command.NodeCommand() );
+    private final LogEntryCommit commit = new OnePhaseCommit( txId, 0 );
 
     @Test
     public void shouldFindTransactionLogPosition() throws IOException
@@ -68,7 +73,7 @@ public class TransactionPositionLocatorTest
                 startPosition,
                 start.getMasterId(),
                 start.getLocalId(),
-                LogEntry.Start.checksum( start )
+                LogEntryStart.checksum( start )
         );
     }
 

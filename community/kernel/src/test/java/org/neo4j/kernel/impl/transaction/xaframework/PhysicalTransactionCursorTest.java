@@ -25,6 +25,12 @@ import java.util.Arrays;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.OnePhaseCommit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -41,9 +47,9 @@ public class PhysicalTransactionCursorTest
     private final LogEntryReader<ReadableLogChannel> entryReader = mock( LogEntryReader.class );
 
     private static final LogEntry NULL_ENTRY = null;
-    private static final LogEntry.Start A_START_ENTRY = new LogEntry.Start( 0, 0, 0l, 0l, null, LogPosition.UNSPECIFIED );
-    private static final LogEntry.Commit A_COMMIT_ENTRY = new LogEntry.OnePhaseCommit( 42, 0 );
-    private static final LogEntry.Command A_COMMAND_ENTRY = new LogEntry.Command( new Command.NodeCommand() );
+    private static final LogEntryStart A_START_ENTRY = new LogEntryStart( 0, 0, 0l, 0l, null, LogPosition.UNSPECIFIED );
+    private static final LogEntryCommit A_COMMIT_ENTRY = new OnePhaseCommit( 42, 0 );
+    private static final LogEntryCommand A_COMMAND_ENTRY = new LogEntryCommand( new Command.NodeCommand() );
 
     @Test
     public void shouldCloseTheUnderlyingChannel() throws IOException

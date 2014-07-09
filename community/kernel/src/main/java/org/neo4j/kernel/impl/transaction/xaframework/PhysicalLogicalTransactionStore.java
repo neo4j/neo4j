@@ -23,9 +23,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
 
 public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
 {
@@ -115,7 +119,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
                     CommittedTransactionRepresentation tx = cursor.get();
                     transactionMetadataCache.cacheTransactionMetadata( tx.getCommitEntry().getTxId(),
                             tx.getStartEntry().getStartPosition(), tx.getStartEntry().getMasterId(),
-                            tx.getStartEntry().getLocalId(), LogEntry.Start.checksum( tx.getStartEntry() ) );
+                            tx.getStartEntry().getLocalId(), LogEntryStart.checksum( tx.getStartEntry() ) );
 
                 };
             }
@@ -128,7 +132,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     {
         private final long startTransactionId;
         private final LogEntryReader<ReadableLogChannel> logEntryReader;
-        private LogEntry.Start startEntryForFoundTransaction;
+        private LogEntryStart startEntryForFoundTransaction;
 
         public TransactionPositionLocator( long startTransactionId, LogEntryReader<ReadableLogChannel> logEntryReader )
         {
@@ -140,16 +144,16 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         public boolean visit( LogPosition position, ReadableLogChannel channel ) throws IOException
         {
             LogEntry logEntry;
-            LogEntry.Start startEntry = null;
+            LogEntryStart startEntry = null;
             while ( (logEntry = logEntryReader.readLogEntry( channel ) ) != null )
             {
                 switch ( logEntry.getType() )
                 {
                     case LogEntry.TX_START:
-                        startEntry = (LogEntry.Start) logEntry;
+                        startEntry = (LogEntryStart) logEntry;
                         break;
                     case LogEntry.TX_1P_COMMIT:
-                        LogEntry.Commit commit = (LogEntry.Commit) logEntry;
+                        LogEntryCommit commit = (LogEntryCommit) logEntry;
                         if ( commit.getTxId() == startTransactionId )
                         {
                             startEntryForFoundTransaction = startEntry;
@@ -174,7 +178,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
                     startEntryForFoundTransaction.getStartPosition(),
                     startEntryForFoundTransaction.getMasterId(),
                     startEntryForFoundTransaction.getLocalId(),
-                    LogEntry.Start.checksum( startEntryForFoundTransaction )
+                    LogEntryStart.checksum( startEntryForFoundTransaction )
             );
             return startEntryForFoundTransaction.getStartPosition();
         }

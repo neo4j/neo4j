@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReaderLogVersionBridge;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.String.format;

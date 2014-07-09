@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,10 +32,12 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandType;
+import org.neo4j.kernel.impl.transaction.xaframework.IllegalLogFormatException;
+import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -44,11 +46,11 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.decodeLogVersion;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.encodeLogVersion;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.decodeLogVersion;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.encodeLogVersion;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.writeLogHeader;
 
 public class VersionAwareLogEntryReaderTest
 {
@@ -61,7 +63,7 @@ public class VersionAwareLogEntryReaderTest
         // given
         final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
 
-        final LogEntry.Start start = new LogEntry.Start( version, 1, 2, 3, 4, new byte[]{5}, new LogPosition( 0, 31 ) );
+        final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, 4, new byte[]{5}, new LogPosition( 0, 31 ) );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 
         channel.put( version ); // version
@@ -86,7 +88,7 @@ public class VersionAwareLogEntryReaderTest
         // given
         final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
 
-        final LogEntry.Commit commit = new LogEntry.OnePhaseCommit( version, 42, 21 );
+        final LogEntryCommit commit = new OnePhaseCommit( version, 42, 21 );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 
         channel.put( version );
@@ -108,7 +110,7 @@ public class VersionAwareLogEntryReaderTest
         final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
 
         Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        final LogEntry.Command command = new LogEntry.Command( version, nodeCommand );
+        final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 
         channel.put( version );

@@ -24,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
 public class ReaderLogVersionBridge implements LogVersionBridge
 {

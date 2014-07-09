@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +29,11 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.IllegalLogFormatException;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadPastEndException;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
 /**
  * Version aware implementation of LogEntryReader
@@ -152,7 +157,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         }
     }
 
-    private LogEntry.Start readTxStartEntry( byte version, ReadableLogChannel channel, LogPosition position )
+    private LogEntryStart readTxStartEntry( byte version, ReadableLogChannel channel, LogPosition position )
             throws IOException
     {
         int masterId = channel.getInt();
@@ -162,19 +167,19 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         int additionalHeaderLength = channel.getInt();
         byte[] additionalHeader = new byte[additionalHeaderLength];
         channel.get( additionalHeader, additionalHeaderLength );
-        return new LogEntry.Start( version, masterId, authorId, timeWritten, latestCommittedTxWhenStarted,
+        return new LogEntryStart( version, masterId, authorId, timeWritten, latestCommittedTxWhenStarted,
                 additionalHeader, position );
     }
 
-    private LogEntry.OnePhaseCommit readTxOnePhaseCommitEntry( byte version, ReadableLogChannel channel )
+    private OnePhaseCommit readTxOnePhaseCommitEntry( byte version, ReadableLogChannel channel )
             throws IOException
     {
         long txId = channel.getLong();
         long timeWritten = channel.getLong();
-        return new LogEntry.OnePhaseCommit( version, txId, timeWritten );
+        return new OnePhaseCommit( version, txId, timeWritten );
     }
 
-    private LogEntry.Command readTxCommandEntry( byte version, ReadableLogChannel channel )
+    private LogEntryCommand readTxCommandEntry( byte version, ReadableLogChannel channel )
             throws IOException
     {
         CommandReader commandReader = commandReaderFactory.newInstance( version );
@@ -183,6 +188,6 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         {
             return null;
         }
-        return new LogEntry.Command( version, command );
+        return new LogEntryCommand( version, command );
     }
 }

@@ -28,7 +28,6 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -36,7 +36,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.transaction.XidImpl;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -84,27 +84,27 @@ public class TestTxEntries
                       long lastCommittedTxWhenTransactionStarted, byte[] additionalHeader,
                       LogPosition startPosition )
          */
-        Start ref = new Start( refMaster, refMe,refTime, 0l, refXid.getBranchQualifier(), mock( LogPosition.class) );
-        assertChecksumsEquals( ref, new Start( refMaster, refMe,refTime, 0l, refXid.getBranchQualifier(), mock( LogPosition.class) ) );
+        LogEntryStart ref = new LogEntryStart( refMaster, refMe,refTime, 0l, refXid.getBranchQualifier(), mock( LogPosition.class) );
+        assertChecksumsEquals( ref, new LogEntryStart( refMaster, refMe,refTime, 0l, refXid.getBranchQualifier(), mock( LogPosition.class) ) );
 
         // Different Xids
-        assertChecksumsNotEqual( ref, new Start( refMaster, refMe, refTime, 0l, randomXid( null ).getBranchQualifier(), mock( LogPosition.class) ) );
+        assertChecksumsNotEqual( ref, new LogEntryStart( refMaster, refMe, refTime, 0l, randomXid( null ).getBranchQualifier(), mock( LogPosition.class) ) );
 
         // Different master
-        assertChecksumsNotEqual( ref, new Start( refMaster+1, refMe, refTime, 0l, randomXid( null ).getBranchQualifier(), mock( LogPosition.class) ) );
+        assertChecksumsNotEqual( ref, new LogEntryStart( refMaster+1, refMe, refTime, 0l, randomXid( null ).getBranchQualifier(), mock( LogPosition.class) ) );
 
         // Different me
-        assertChecksumsNotEqual( ref, new Start( refMaster, refMe+1, refTime, 0l, randomXid( null ).getBranchQualifier(), mock( LogPosition.class) ) );
+        assertChecksumsNotEqual( ref, new LogEntryStart( refMaster, refMe+1, refTime, 0l, randomXid( null ).getBranchQualifier(), mock( LogPosition.class) ) );
     }
 
-    private void assertChecksumsNotEqual( Start ref, Start other )
+    private void assertChecksumsNotEqual( LogEntryStart ref, LogEntryStart other )
     {
-        assertFalse( LogEntry.Start.checksum( ref ) == LogEntry.Start.checksum( other ) );
+        assertFalse( LogEntryStart.checksum( ref ) == LogEntryStart.checksum( other ) );
     }
 
-    private void assertChecksumsEquals( Start ref, Start other )
+    private void assertChecksumsEquals( LogEntryStart ref, LogEntryStart other )
     {
-        assertEquals( LogEntry.Start.checksum( ref ), LogEntry.Start.checksum( other ) );
+        assertEquals( LogEntryStart.checksum( ref ), LogEntryStart.checksum( other ) );
     }
 
     private Xid randomXid( Boolean trueForPositive )

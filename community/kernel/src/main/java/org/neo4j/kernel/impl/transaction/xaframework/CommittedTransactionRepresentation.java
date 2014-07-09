@@ -20,6 +20,9 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+
 /**
  * This class represents the concept of a TransactionRepresentation that has been
  * committed to the TransactionStore. It contains, in addition to the TransactionRepresentation
@@ -32,19 +35,19 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 // TODO 2.2-future over the log, which theoretically should be only recovery and LogPosition discovery
 public class CommittedTransactionRepresentation
 {
-    private final LogEntry.Start startEntry;
+    private final LogEntryStart startEntry;
     private final TransactionRepresentation transactionRepresentation;
-    private final LogEntry.Commit commitEntry;
+    private final LogEntryCommit commitEntry;
 
-    public CommittedTransactionRepresentation( LogEntry.Start startEntry, TransactionRepresentation
-            transactionRepresentation, LogEntry.Commit commitEntry )
+    public CommittedTransactionRepresentation( LogEntryStart startEntry, TransactionRepresentation
+            transactionRepresentation, LogEntryCommit commitEntry )
     {
         this.startEntry = startEntry;
         this.transactionRepresentation = transactionRepresentation;
         this.commitEntry = commitEntry;
     }
 
-    public LogEntry.Start getStartEntry()
+    public LogEntryStart getStartEntry()
     {
         return startEntry;
     }
@@ -54,7 +57,7 @@ public class CommittedTransactionRepresentation
         return transactionRepresentation;
     }
 
-    public LogEntry.Commit getCommitEntry()
+    public LogEntryCommit getCommitEntry()
     {
         return commitEntry;
     }

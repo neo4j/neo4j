@@ -17,19 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 
 public class LogEntryWriterv1 implements LogEntryWriter
 {
-    private static final short CURRENT_FORMAT_VERSION = (LogEntry.CURRENT_LOG_VERSION) & 0xFF;
-    static final int LOG_HEADER_SIZE = 16;
     private final WritableLogChannel channel;
     private final NeoCommandHandler commandWriter;
 
@@ -37,15 +36,6 @@ public class LogEntryWriterv1 implements LogEntryWriter
     {
         this.channel = channel;
         this.commandWriter = commandWriter;
-    }
-
-    public static ByteBuffer writeLogHeader( ByteBuffer buffer, long logVersion, long previousCommittedTxId )
-    {
-        buffer.clear();
-        buffer.putLong( logVersion | (((long) CURRENT_FORMAT_VERSION) << 56) );
-        buffer.putLong( previousCommittedTxId );
-        buffer.flip();
-        return buffer;
     }
 
     private void writeLogEntryHeader( byte type ) throws IOException

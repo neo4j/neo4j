@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
 import org.junit.Test;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -37,10 +38,10 @@ public class LogEntryConsumerTest
         // GIVEN
         TranslatingEntryVisitor consumer = new TranslatingEntryVisitor( mock(Function.class) );
         LogHandler handler = mock( LogHandler.class );
-        consumer.bind( 0, handler );
+        consumer.bind( handler );
 
         // WHEN
-        LogEntry.Start start = new LogEntry.Start( 1, 2, 3, 4, new byte[1], mock( LogPosition.class ) );
+        LogEntryStart start = new LogEntryStart( 1, 2, 3, 4, new byte[1], mock( LogPosition.class ) );
         consumer.visit( start );
 
         // THEN
@@ -48,7 +49,7 @@ public class LogEntryConsumerTest
         verifyNoMoreInteractions( handler );
 
         // WHEN
-        LogEntry.Command command = new LogEntry.Command( null );
+        LogEntryCommand command = new LogEntryCommand( null );
         consumer.visit( command );
 
         // THEN
@@ -56,7 +57,7 @@ public class LogEntryConsumerTest
         verifyNoMoreInteractions( handler );
 
         // WHEN
-        LogEntry.OnePhaseCommit onePC = new LogEntry.OnePhaseCommit( 1, 2 );
+        OnePhaseCommit onePC = new OnePhaseCommit( 1, 2 );
         consumer.visit( onePC );
 
         // THEN

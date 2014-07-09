@@ -29,6 +29,10 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -99,9 +103,9 @@ public class PhysicalTransactionAppenderTest
 
         when( transactionIdStore.getLastCommittingTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
 
-        LogEntry.Start start = new LogEntry.Start( 0, 0, 0l, latestCommittedTxWhenStarted, null,
+        LogEntryStart start = new LogEntryStart( 0, 0, 0l, latestCommittedTxWhenStarted, null,
                 LogPosition.UNSPECIFIED );
-        LogEntry.Commit commit = new LogEntry.OnePhaseCommit( latestCommittedTxWhenStarted + 1, 0l );
+        LogEntryCommit commit = new OnePhaseCommit( latestCommittedTxWhenStarted + 1, 0l );
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
 
@@ -143,9 +147,9 @@ public class PhysicalTransactionAppenderTest
 
         when( transactionIdStore.getLastCommittingTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
 
-        LogEntry.Start start = new LogEntry.Start( 0, 0, 0l, latestCommittedTxWhenStarted, null,
+        LogEntryStart start = new LogEntryStart( 0, 0, 0l, latestCommittedTxWhenStarted, null,
                 LogPosition.UNSPECIFIED );
-        LogEntry.Commit commit = new LogEntry.OnePhaseCommit( latestCommittedTxWhenStarted + 2, 0l );
+        LogEntryCommit commit = new OnePhaseCommit( latestCommittedTxWhenStarted + 2, 0l );
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
 

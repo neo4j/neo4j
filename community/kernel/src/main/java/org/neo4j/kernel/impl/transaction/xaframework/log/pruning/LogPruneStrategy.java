@@ -17,28 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.pruning;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
-
-public class EntryReusingPhysicalTransactionCursor extends PhysicalTransactionCursor
+public interface LogPruneStrategy
 {
-    private final List<Command> entries = new ArrayList<>();
-
-    public EntryReusingPhysicalTransactionCursor( ReadableLogChannel channel,
-            LogEntryReader<ReadableLogChannel> entryReader)
-    {
-        super( channel, entryReader);
-    }
-
-    @Override
-    protected List<Command> commandList()
-    {
-        entries.clear();
-        return entries;
-    }
+    void prune();
 }

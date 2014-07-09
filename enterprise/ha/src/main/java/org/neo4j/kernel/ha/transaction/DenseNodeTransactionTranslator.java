@@ -45,13 +45,14 @@ import org.neo4j.kernel.impl.nioneo.xa.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipLocker;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
 
 public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, List<LogEntry>>
 {
     private final NeoStore neoStore;
     private RecordChangeSet recordChangeSet;
-    private final List<LogEntry.Command> commands = new LinkedList<>();
+    private final List<LogEntryCommand> commands = new LinkedList<>();
     private final RelationshipGroupGetter groupGetter;
     private final RelationshipCreator relationshipCreator;
     private final RelationshipDeleter deleter;
@@ -110,9 +111,9 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
                 case LogEntry.COMMAND:
                     try
                     {
-                        if ( !handleCommand( (LogEntry.Command) logEntry ) )
+                        if ( !handleCommand( (LogEntryCommand) logEntry ) )
                         {
-                            commands.add( (LogEntry.Command) logEntry );
+                            commands.add( (LogEntryCommand) logEntry );
                         }
                     }
                     catch ( IOException e )
@@ -140,13 +141,13 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         return result;
     }
 
-    private void translateRecordChangeSetToEntries( List<LogEntry> result, List<LogEntry.Command> commands )
+    private void translateRecordChangeSetToEntries( List<LogEntry> result, List<LogEntryCommand> commands )
     {
         for ( RecordChanges.RecordChange<Long, NodeRecord, Void> nodeChange : recordChangeSet.getNodeRecords().changes() )
         {
             Command.NodeCommand newCommand = new Command.NodeCommand();
             newCommand.init( nodeChange.getBefore(), nodeChange.forChangingData() );
-            result.add( new LogEntry.Command( newCommand ) );
+            result.add( new LogEntryCommand( newCommand ) );
         }
 
         for ( RecordChanges.RecordChange<Long, RelationshipRecord, Void> relChange :
@@ -154,7 +155,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         {
             Command.RelationshipCommand newCommand = new Command.RelationshipCommand();
             newCommand.init( relChange.forChangingData() );
-            result.add( new LogEntry.Command( newCommand ) );
+            result.add( new LogEntryCommand( newCommand ) );
         }
 
         for ( RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> relGroupChange :
@@ -162,7 +163,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         {
             Command.RelationshipGroupCommand newCommand = new Command.RelationshipGroupCommand();
             newCommand.init( relGroupChange.forChangingData() );
-            result.add( new LogEntry.Command( newCommand ) );
+            result.add( new LogEntryCommand( newCommand ) );
         }
 
         for ( RecordChanges.RecordChange<Long, PropertyRecord, PrimitiveRecord> propChange :
@@ -170,10 +171,10 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         {
             Command.PropertyCommand newCommand = new Command.PropertyCommand();
             newCommand.init( propChange.getBefore(), propChange.forChangingData() );
-            result.add( new LogEntry.Command( newCommand ) );
+            result.add( new LogEntryCommand( newCommand ) );
         }
 
-        for ( LogEntry.Command commandEntry : commands )
+        for ( LogEntryCommand commandEntry : commands )
         {
             Command command = (Command) commandEntry.getXaCommand();
             if ( command instanceof Command.RelationshipCommand )
@@ -199,7 +200,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         }
     }
 
-    private boolean handleCommand( LogEntry.Command commandEntry ) throws IOException
+    private boolean handleCommand( LogEntryCommand commandEntry ) throws IOException
     {
         Command command = (Command) commandEntry.getXaCommand();
         return command.handle( commandVisitor );

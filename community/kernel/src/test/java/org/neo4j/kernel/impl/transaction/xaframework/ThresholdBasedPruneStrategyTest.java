@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.mockito.Matchers;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.Threshold;
 import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.ThresholdBasedPruneStrategy;
 

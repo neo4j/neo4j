@@ -39,14 +39,16 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Cursors;
 
 /**
@@ -278,9 +280,9 @@ public class Protocol
 
             channel.get( header, headerLength );
 
-            LogEntry.Command entryRead;
+            LogEntryCommand entryRead;
             List<Command> commands = new LinkedList<>();
-            while (  (entryRead = (LogEntry.Command) reader.readLogEntry( channel )) != null )
+            while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
             {
                 commands.add( entryRead.getXaCommand() );
             }
@@ -320,12 +322,12 @@ public class Protocol
             LogEntryWriterv1 writer = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
             for ( CommittedTransactionRepresentation tx : txs )
             {
-                LogEntry.Start startEntry = tx.getStartEntry();
+                LogEntryStart startEntry = tx.getStartEntry();
                 writer.writeStartEntry( startEntry.getMasterId(), startEntry.getLocalId(),
                         startEntry.getTimeWritten(), startEntry.getLastCommittedTxWhenTransactionStarted(),
                         startEntry.getAdditionalHeader() );
                 writer.serialize( tx.getTransactionRepresentation() );
-                LogEntry.Commit commitEntry = tx.getCommitEntry();
+                LogEntryCommit commitEntry = tx.getCommitEntry();
                 writer.writeCommitEntry( commitEntry.getTxId(), commitEntry.getTimeWritten() );
             }
         }

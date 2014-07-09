@@ -21,13 +21,14 @@ package org.neo4j.consistency;
 
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.kernel.impl.nioneo.store.DataInconsistencyError;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 
 public class ConsistencyCheckingError extends DataInconsistencyError
 {
     private final ConsistencySummaryStatistics summary;
 
-    public ConsistencyCheckingError( LogEntry.Start startEntry, LogEntry.Commit commitEntry,
+    public ConsistencyCheckingError( LogEntryStart startEntry, LogEntryCommit commitEntry,
                                      ConsistencySummaryStatistics summary )
     {
         super( String.format( "Inconsistencies in transaction:\n\t%s\n\t%s\n\t%s",

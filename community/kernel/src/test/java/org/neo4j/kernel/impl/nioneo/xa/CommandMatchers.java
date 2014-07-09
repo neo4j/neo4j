@@ -23,16 +23,17 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 
 public class CommandMatchers
 {
     public static Matcher<? extends LogEntry> nodeCommandEntry( final int identifier, final int nodeId)
     {
-        return new TypeSafeMatcher<LogEntry.Command>() {
+        return new TypeSafeMatcher<LogEntryCommand>() {
 
             @Override
-            public boolean matchesSafely( LogEntry.Command entry )
+            public boolean matchesSafely( LogEntryCommand entry )
             {
                 if( entry != null
                         && entry.getXaCommand() != null

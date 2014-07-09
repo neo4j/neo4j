@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
 import static java.lang.Math.max;
 

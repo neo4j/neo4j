@@ -17,9 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
 import java.io.IOException;
+
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 
 public interface LogEntryReader<S>
 {

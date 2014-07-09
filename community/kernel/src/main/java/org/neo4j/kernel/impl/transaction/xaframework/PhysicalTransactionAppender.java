@@ -24,6 +24,8 @@ import java.util.concurrent.Future;
 
 import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
 
 public class PhysicalTransactionAppender implements TransactionAppender
 {
@@ -56,7 +58,7 @@ public class PhysicalTransactionAppender implements TransactionAppender
         transactionLogWriter.append( transaction, transactionId );
 
         transactionMetadataCache.cacheTransactionMetadata( transactionId, logPosition, transaction.getMasterId(),
-                transaction.getAuthorId(), LogEntry.Start.checksum( transaction.additionalHeader(),
+                transaction.getAuthorId(), LogEntryStart.checksum( transaction.additionalHeader(),
                         transaction.getMasterId(), transaction.getAuthorId() ) );
 
         channel.force();

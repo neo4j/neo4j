@@ -113,12 +113,13 @@ import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategy;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
@@ -130,7 +131,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformatio
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -465,9 +466,9 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                         LogEntry entry;
                                         while ( (entry = reader.readLogEntry( channel )) != null )
                                         {
-                                            if ( entry instanceof LogEntry.Start )
+                                            if ( entry instanceof LogEntryStart )
                                             {
-                                                return ((LogEntry.Start) entry).getTimeWritten();
+                                                return ((LogEntryStart) entry).getTimeWritten();
                                             }
                                         }
                                     }
