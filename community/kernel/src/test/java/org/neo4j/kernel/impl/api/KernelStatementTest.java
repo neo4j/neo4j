@@ -21,13 +21,15 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.TransactionTerminateException;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class KernelStatementTest
 {
@@ -63,22 +65,17 @@ public class KernelStatementTest
         verifyNoMoreInteractions( scanReader );
     }
 
-    @Test
-    public void shouldThrowTerminateExceptionWhenTransactionTerminateed() throws Exception
+    @Test(expected = TransactionTerminatedException.class)
+    public void shouldThrowTerminateExceptionWhenTransactionTerminated() throws Exception
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        when( transaction.shouldBeTerminateed() ).thenReturn( true );
+        when( transaction.shouldBeTerminated() ).thenReturn( true );
 
         KernelStatement statement = new KernelStatement(
             transaction, mock( IndexReaderFactory.class ),
                 mock( LabelScanStore.class ), null, null, null, null, null
         );
 
-        try {
-            statement.readOperations().nodeExists( 0 );
-            fail("Did not throw a TransactionTerminateException");
-        } catch (TransactionTerminateException ignored) {
-            // ignore
-        }
+        statement.readOperations().nodeExists( 0 );
     }
 }

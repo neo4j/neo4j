@@ -44,7 +44,10 @@ public class Session
         return id;
     }
 
-    public InterruptSignalHandler getSignalHandler() { return signalHandler; }
+    public InterruptSignalHandler getSignalHandler()
+    {
+        return signalHandler;
+    }
 
 	/**
 	 * Sets a session value.

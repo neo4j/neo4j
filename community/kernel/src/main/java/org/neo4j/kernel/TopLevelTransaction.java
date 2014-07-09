@@ -99,7 +99,7 @@ public class TopLevelTransaction implements Transaction
     @Override
     public final void terminate()
     {
-        this.transaction.markForTerminate();
+        this.transaction.markForTermination();
     }
 
     @Override

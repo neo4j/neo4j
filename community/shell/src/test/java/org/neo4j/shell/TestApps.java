@@ -1009,6 +1009,6 @@ public class TestApps extends AbstractShellTest
         });
         thread.start();
 
-        executeCommandExpectingException("CYPHER 2.1 FOREACH(i IN range(0, 10000) | CREATE ());", "has been terminateed" );
+        executeCommandExpectingException("CYPHER 2.1 FOREACH(i IN range(0, 10000) | CREATE ());", "has been terminated" );
     }
 }

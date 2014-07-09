@@ -17,12 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb;
 
-public class TransactionTerminateException extends RuntimeException
+/**
+ * Signals that the transaction within which the failed operations ran
+ * has been terminated with {@link Transaction#terminate()}.
+ */
+public class TransactionTerminatedException extends TransactionFailureException
 {
-    public TransactionTerminateException()
+    public TransactionTerminatedException()
     {
-        super( "The transaction has been terminateed." );
+        super( "The transaction has been terminated." );
     }
 }

@@ -217,17 +217,12 @@ public abstract class TransactionProvidingApp extends AbstractApp
     public Continuation execute( AppCommandParser parser, Session session,
         Output out ) throws Exception
     {
-        Transaction tx = getServer().getDb().beginTx();
-        try
+        try (Transaction tx = getServer().getDb().beginTx())
         {
             getServer().registerTopLevelTransactionInProgress( session.getId() );
             Continuation result = this.exec( parser, session, out );
             tx.success();
             return result;
-        }
-        finally
-        {
-            tx.close();
         }
     }
 

@@ -36,8 +36,8 @@ import org.neo4j.shell.ShellServer;
  */
 public class SameJvmClient extends AbstractClient
 {
-	private Output out;
-	private ShellServer server;
+    private Output out;
+    private ShellServer server;
 
     public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server,
                           CtrlCHandler ctrlcHandler ) throws ShellException
@@ -50,21 +50,22 @@ public class SameJvmClient extends AbstractClient
         this( initialSession, server, new SystemOutput() );
     }
 
-    public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server, Output out ) throws ShellException
+    public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server,
+                          Output out ) throws ShellException
     {
         this( initialSession, server, out, InterruptSignalHandler.getHandler() );
     }
 
-	/**
-	 * @param server the server to communicate with.
-	 */
+    /**
+     * @param server the server to communicate with.
+     */
     public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server, Output out,
                           CtrlCHandler ctrlcHandler ) throws ShellException
     {
         super( initialSession, ctrlcHandler );
         this.out = out;
-		this.server = server;
-		try
+        this.server = server;
+        try
         {
             sayHi( server );
         }
@@ -72,18 +73,18 @@ public class SameJvmClient extends AbstractClient
         {
             throw new RuntimeException( "Will not happen since this is in the same JVM", e );
         }
-		
-		init();
-	    updateTimeForMostRecentConnection();
-	}
-	
-	public Output getOutput()
-	{
-		return this.out;
-	}
 
-	public ShellServer getServer()
-	{
-		return this.server;
-	}
+        init();
+        updateTimeForMostRecentConnection();
+    }
+
+    public Output getOutput()
+    {
+        return this.out;
+    }
+
+    public ShellServer getServer()
+    {
+        return this.server;
+    }
 }

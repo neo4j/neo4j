@@ -85,7 +85,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionHooks.TransactionHooksState hooksState;
     private final TransactionRecordState recordState;
     private boolean failure, success;
-    private volatile boolean terminateed;
+    private volatile boolean terminated;
 
     // For committing
     private final TransactionHeaderInformation headerInformation;
@@ -146,16 +146,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public boolean shouldBeTerminateed()
+    public boolean shouldBeTerminated()
     {
-        return terminateed;
+        return terminated;
     }
 
     @Override
-    public void markForTerminate()
+    public void markForTermination()
     {
         failure = true;
-        terminateed = true;
+        terminated = true;
     }
 
     private void release()

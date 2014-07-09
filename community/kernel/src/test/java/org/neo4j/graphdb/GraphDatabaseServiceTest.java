@@ -27,7 +27,6 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 
-import org.neo4j.kernel.TransactionTerminateException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.fail;
@@ -110,7 +109,7 @@ public class GraphDatabaseServiceTest
                 db.createNode();
                 fail( "Failed to throw TransactionTerminateException" );
             }
-            catch ( TransactionTerminateException ignored )
+            catch ( TransactionTerminatedException ignored )
             {
             }
         }
@@ -133,7 +132,7 @@ public class GraphDatabaseServiceTest
                 db.createNode();
                 fail( "Failed to throw TransactionTerminateException" );
             }
-            catch ( TransactionTerminateException ignored )
+            catch ( TransactionTerminatedException ignored )
             {
             }
         }
@@ -155,7 +154,7 @@ public class GraphDatabaseServiceTest
                     db.createNode();
                     fail( "Failed to throw TransactionTerminateException" );
                 }
-                catch ( TransactionTerminateException ignored )
+                catch ( TransactionTerminatedException ignored )
                 {
                 }
             }

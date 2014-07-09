@@ -109,7 +109,7 @@ public class KernelTransactionImplementationTest
     }
 
     @Test
-    public void shouldRollbackOnClosingTerminateedTransaction() throws Exception
+    public void shouldRollbackOnClosingTerminatedTransaction() throws Exception
     {
         // GIVEN
         boolean exceptionReceived = false;
@@ -117,7 +117,7 @@ public class KernelTransactionImplementationTest
         {
             // WHEN
             transaction.success();
-            transaction.markForTerminate();
+            transaction.markForTermination();
         }
         catch ( TransactionFailureException e )
         {
@@ -134,13 +134,13 @@ public class KernelTransactionImplementationTest
     }
 
     @Test
-    public void shouldRollbackOnClosingSuccessfulButTerminateedTransaction() throws Exception
+    public void shouldRollbackOnClosingSuccessfulButTerminatedTransaction() throws Exception
     {
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
-            transaction.markForTerminate();
-            assertTrue( transaction.shouldBeTerminateed() );
+            transaction.markForTermination();
+            assertTrue( transaction.shouldBeTerminated() );
         }
 
         // THEN
@@ -149,16 +149,16 @@ public class KernelTransactionImplementationTest
     }
 
     @Test
-    public void shouldRollbackOnClosingTerminateedButSuccessfulTransaction() throws Exception
+    public void shouldRollbackOnClosingTerminatedButSuccessfulTransaction() throws Exception
     {
         // GIVEN
         boolean exceptionReceived = false;
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
-            transaction.markForTerminate();
+            transaction.markForTermination();
             transaction.success();
-            assertTrue( transaction.shouldBeTerminateed() );
+            assertTrue( transaction.shouldBeTerminated() );
         }
         catch ( TransactionFailureException e )
         {
@@ -178,9 +178,9 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
-            transaction.markForTerminate();
+            transaction.markForTermination();
             transaction.failure();
-            assertTrue( transaction.shouldBeTerminateed() );
+            assertTrue( transaction.shouldBeTerminated() );
         }
 
         // THEN
@@ -194,7 +194,7 @@ public class KernelTransactionImplementationTest
         KernelTransaction transaction = newTransaction();
         transaction.success();
         transaction.close();
-        transaction.markForTerminate();
+        transaction.markForTermination();
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
@@ -206,7 +206,7 @@ public class KernelTransactionImplementationTest
     {
         KernelTransaction transaction = newTransaction();
         transaction.close();
-        transaction.markForTerminate();
+        transaction.markForTermination();
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
@@ -224,7 +224,7 @@ public class KernelTransactionImplementationTest
             public void run()
             {
                 latch.awaitStart();
-                transaction.markForTerminate();
+                transaction.markForTermination();
                 latch.finish();
             }
         });

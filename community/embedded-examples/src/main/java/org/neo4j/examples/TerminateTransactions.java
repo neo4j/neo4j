@@ -31,7 +31,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.TransactionTerminateException;
+import org.neo4j.graphdb.TransactionTerminatedException;
 
 public class TerminateTransactions
 {
@@ -80,7 +80,7 @@ public class TerminateTransactions
                 }
             }
         }
-        catch ( TransactionTerminateException ignored )
+        catch ( TransactionTerminatedException ignored )
         {
             return String.format( "Created tree up to depth %s in 1 sec", depth );
         }

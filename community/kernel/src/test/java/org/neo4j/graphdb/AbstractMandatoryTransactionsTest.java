@@ -22,7 +22,6 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 
 import org.neo4j.function.Function;
-import org.neo4j.kernel.TransactionTerminateException;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.fail;
@@ -45,7 +44,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
         }
     }
 
-    public <R> R obtainEntityInTerminateedTransaction(Function<T, R> f)
+    public <R> R obtainEntityInTerminatedTransaction(Function<T, R> f)
     {
         GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
 
@@ -81,7 +80,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
     {
         for ( final FacadeMethod<T> method : methods )
         {
-            obtainEntityInTerminateedTransaction(  new Function<T, Void>()
+            obtainEntityInTerminatedTransaction(  new Function<T, Void>()
             {
                 @Override
                 public Void apply( T entity )
@@ -90,9 +89,9 @@ public abstract class AbstractMandatoryTransactionsTest<T>
                     {
                         method.call( entity );
 
-                        fail( "Transaction was terminateed, yet not exception thrown in: " + method );
+                        fail( "Transaction was terminated, yet not exception thrown in: " + method );
                     }
-                    catch ( TransactionTerminateException e )
+                    catch ( TransactionTerminatedException e )
                     {
                         // awesome
                     }

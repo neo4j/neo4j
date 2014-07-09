@@ -114,7 +114,7 @@ public interface KernelTransaction extends AutoCloseable
 
     boolean isOpen();
 
-    boolean shouldBeTerminateed();
+    boolean shouldBeTerminated();
 
-    void markForTerminate();
+    void markForTermination();
 }

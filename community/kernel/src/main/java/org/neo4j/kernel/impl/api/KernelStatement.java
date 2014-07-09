@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.TransactionTerminateException;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -145,9 +145,9 @@ public class KernelStatement implements TxState.Holder, Statement
         {
             throw new NotInTransactionException( "The statement has been closed." );
         }
-        if ( transaction.shouldBeTerminateed() )
+        if ( transaction.shouldBeTerminated() )
         {
-            throw new TransactionTerminateException();
+            throw new TransactionTerminatedException();
         }
     }
 
