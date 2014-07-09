@@ -155,7 +155,7 @@ case class True() extends Predicate {
   def symbolTableDependencies = Set()
 }
 
-case class Has(identifier: Expression, propertyKey: KeyToken) extends Predicate {
+case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = identifier(m) match {
     case pc: Node         => Some(propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc.getId, _)))
     case pc: Relationship => Some(propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc.getId, _)))
@@ -167,7 +167,7 @@ case class Has(identifier: Expression, propertyKey: KeyToken) extends Predicate 
 
   def containsIsNull = false
 
-  def rewrite(f: (Expression) => Expression) = f(Has(identifier.rewrite(f), propertyKey.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(PropertyExists(identifier.rewrite(f), propertyKey.rewrite(f)))
 
   def arguments = Seq(identifier)
 

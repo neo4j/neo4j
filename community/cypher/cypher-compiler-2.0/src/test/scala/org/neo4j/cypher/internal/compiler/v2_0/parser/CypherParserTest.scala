@@ -1265,13 +1265,30 @@ class CypherParserTest extends CypherFunSuite {
   }
 
 
-  test("supportsHasRelationshipInTheWhereClause") {
+  test("supportsPatternExistsInTheWhereClause") {
     expectQuery(
       """start a=node(0), b=node(1) where a-->b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq(), Direction.OUTGOING, Map.empty))))).
         returns (ReturnItem(Identifier("a"), "a"))
+    )
+
+    expectQuery(
+      """start a=node(0), b=node(1) where exists((a)-->(b)) return a""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED43", Seq(), Direction.OUTGOING, Map.empty))))).
+        returns (ReturnItem(Identifier("a"), "a"))
+    )
+  }
+
+  test("supportsPatternExistsInTheReturnClause") {
+    expectQuery(
+      """start a=node(0), b=node(1) return exists((a)-->(b)) AS result""",
+      Query.
+        start( NodeById( "a", 0 ), NodeById( "b", 1 ) ).
+        returns( ReturnItem( NonEmpty( PathExpression( Seq( RelatedTo( SingleNode( "a" ), SingleNode( "b" ), "  UNNAMED44", Seq( ), Direction.OUTGOING, Map.empty ) ) ) ), "result", true ) )
     )
   }
 
