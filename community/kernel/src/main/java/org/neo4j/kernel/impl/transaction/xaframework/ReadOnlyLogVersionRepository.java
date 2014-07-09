@@ -39,6 +39,8 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
     @Override
     public long getCurrentLogVersion()
     {
+        // We can expect a call to this during shutting down, if we have a LogFile using us.
+        // So it's sort of OK.
         if ( incrementVersionCalled )
         {
             throw new IllegalStateException( "Read-only log version repository has observed a call to " +
@@ -48,20 +50,10 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
     }
 
     @Override
-    public long incrementAndGetVersion() throws IOException
+    public long incrementAndGetVersion()
     {
-        throw new UnsupportedOperationException( "Read-only log version repository" );
-    }
-
-    @Override
-    public void incrementVersion()
-    {   // We can expect a call to this during shutting down, if we have a LogFile using us.
-        // So it's sort of OK.
-        if ( incrementVersionCalled )
-        {
-            throw new IllegalStateException( "Read-only log version repository only allows " +
-                    "to call incrementVersion once, during shutdown" );
-        }
+        long version = getCurrentLogVersion();
         incrementVersionCalled = true;
+        return version;
     }
 }

@@ -98,7 +98,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
          *  next startup. Not necessary, simply speeds up the startup
          *  process.
          */
-        logVersionRepository.incrementVersion();
+        logVersionRepository.incrementAndGetVersion();
     }
 
     @Override
