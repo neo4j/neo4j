@@ -49,7 +49,7 @@ public class StartWithConfigurationDocTest
         // START SNIPPET: startDbWithMapConfig
         GraphDatabaseService graphDb = new GraphDatabaseFactory()
             .newEmbeddedDatabaseBuilder( storeDir )
-            .setConfig( GraphDatabaseSettings.nodestore_mapped_memory_size, "10M" )
+            .setConfig( GraphDatabaseSettings.mapped_memory_total_size, "512M" )
             .setConfig( GraphDatabaseSettings.string_block_size, "60" )
             .setConfig( GraphDatabaseSettings.array_block_size, "300" )
             .newGraphDatabase();

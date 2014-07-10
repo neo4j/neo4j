@@ -13,16 +13,17 @@ The object cache caches the nodes, relationships and properties in a format that
 
 .Quick info
 ***********
-* The file buffer cache is sometimes called _low level cache_ or _file system cache_.
+* The file buffer cache is sometimes called _low level cache_, _file system cache_ or _the page cache_.
 * It caches the Neo4j data as stored on the durable media.
 * It uses the operating system memory mapping features when possible.
-* Neo4j will configure the cache automatically as long as the heap size of the JVM is configured properly.
+* Neo4j will configure the cache automatically, but you might want to tune it yourself to get the most out of the available memory.
 ***********
 
 The file buffer cache caches the Neo4j data in the same format as it is represented on the durable storage media.
 The purpose of this cache layer is to improve both read and write performance.
 The file buffer cache improves write performance by writing to the cache and deferring durable write until the logical log is rotated.
 This behavior is safe since all transactions are always durably written to the logical log, which can be used to recover the store files in the event of a crash.
+It also improves write performance by batching up many small writes into fewer page-sized writes.
 
 Since the operation of the cache is tightly related to the data it stores, a short description of the Neo4j durable representation format is necessary background.
 Neo4j stores data in multiple files and relies on the underlying file system to handle this efficiently.
@@ -48,28 +49,14 @@ IMPORTANT: Note that the block sizes can only be configured at store creation ti
 [options="header",cols="<35m,<30,<35"]
 |========================================================
 | Parameter                 | Possible values   | Effect
-| use_memory_mapped_buffers | `true` or `false` |
-  If set to `true` Neo4j will use the operating systems memory mapping functionality for the file buffer cache windows.
-  If set to `false` Neo4j will use its own buffer implementation.
-  In this case the buffers will reside in the JVM heap which needs to be increased accordingly.
-  The default value for this parameter is `true`, except on Windows.
-| neostore.nodestore.db.mapped_memory             .7+^.^|
-  The maximum amount of memory to use for memory mapped buffers for this file buffer cache.
-  The default unit is `MiB`, for other units use any of the following suffixes: `B`, `k`, `M` or `G`.
-  |
-  The maximum amount of memory to use for the file buffer cache of the node storage file.
-| neostore.relationshipstore.db.mapped_memory           |
-  The maximum amount of memory to use for the file buffer cache of the relationship store file.
-| neostore.propertystore.db.index.keys.mapped_memory    |
-  The maximum amount of memory to use for the file buffer cache of the something-something file.
-| neostore.propertystore.db.index.mapped_memory         |
-  The maximum amount of memory to use for the file buffer cache of the something-something file.
-| neostore.propertystore.db.mapped_memory               |
-  The maximum amount of memory to use for the file buffer cache of the property storage file.
-| neostore.propertystore.db.strings.mapped_memory       |
-  The maximum amount of memory to use for the file buffer cache of the string property storage file.
-| neostore.propertystore.db.arrays.mapped_memory        |
-  The maximum amount of memory to use for the file buffer cache of the array property storage file.
+| mapped_memory_total_size  |
+  The maximum amount of memory to use for the file buffer cache, either in bytes
+  (or greater byte-like units, such as `100M` for 100 mega-bytes, or `4G` for 4 giga-bytes)
+  or a percentage of the available amount of memory. |
+  The amount of memory to use for mapping the store files, either in bytes or as a percentage of available memory. This will be clipped at the amount of free memory observed when the database starts, and automatically be rounded down to the nearest whole page. For example, if `500MB` is configured, but only 450MB of memory is free when the database starts, then the database will map at most 450MB. If `50%` is configured, and the system has a capacity of 4GB, then at most 2GB of memory will be mapped, unless the database observes that less than 2GB of memory is free when it starts.
+| mapped_memory_page_size | The number of bytes per page. Preferably a power-of-two that is close to the native sector size or page size of the durable medium. |
+  The size of the pages, in bytes, that the database will use for mapping the store files into memory.
+  Don't change this without carefully measuring the performance implications.
 | string_block_size .2+^.^| The number of bytes per block. |
   Specifies the block size for storing strings.
   This parameter is only honored when the store is created, otherwise it is ignored.
@@ -83,11 +70,11 @@ IMPORTANT: Note that the block sizes can only be configured at store creation ti
 | dump_configuration | `true` or `false` | If set to `true` the current configuration settings will be written to the default system output, mostly the console or the logfiles.
 |========================================================
 
-When memory mapped buffers are used (`use_memory_mapped_buffers = true`) the heap size of the JVM must be smaller than the total available memory of the computer, minus the total amount of memory used for the buffers.
-When heap buffers are used (`use_memory_mapped_buffers = false`) the heap size of the JVM must be large enough to contain all the buffers, plus the runtime heap memory requirements of the application and the object cache.
+When configuring the amount of memory allowed for the file buffers and the JVM heap, make sure to also leave room for the operating systems page cache, and other programs and services the system might want to run.
+It is important to configure the memory usage, such that the Neo4j JVM process won't need to use any swap memory, as this will cause a significant drag on the performance of the system.
 
 When reading the configuration parameters on startup Neo4j will automatically configure the parameters that are not specified.
-The cache sizes will be configured based on the available memory on the computer, how much is used by the JVM heap, and how large the storage files are.
+The cache sizes will be configured based on the available memory on the computer.
 
 == Object cache ==
 

@@ -34,15 +34,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_total_size;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
 import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
@@ -86,19 +86,13 @@ public class BigJumpingStoreIT
     public void doBefore()
     {
         deleteFileOrDirectory( PATH );
-        db = new TestDatabase( PATH, configForNoMemoryMapping() );
+        db = new TestDatabase( PATH, config() );
     }
 
-    private Map<String, String> configForNoMemoryMapping()
+    private Map<String, String> config()
     {
         return stringMap(
-                use_memory_mapped_buffers.name(), "false",
-                "neostore.nodestore.db.mapped_memory", "0M",
-                "neostore.relationshipstore.db.mapped_memory", "0M",
-                "neostore.relationshipgroupstore.db.mapped_memory", "0M",
-                "neostore.propertystore.db.mapped_memory", "0M",
-                "neostore.propertystore.db.strings.mapped_memory", "0M",
-                "neostore.propertystore.db.arrays.mapped_memory", "0M" );
+                mapped_memory_total_size.name(), "10M");
     }
 
     @After

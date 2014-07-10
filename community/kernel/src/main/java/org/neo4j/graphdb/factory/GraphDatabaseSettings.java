@@ -170,14 +170,25 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> rebuild_idgenerators_fast = setting("rebuild_idgenerators_fast", BOOLEAN, TRUE );
 
     // NeoStore memory settings
+    /**
+     * @deprecated This configuration has been obsoleted. Neo4j no longer relies on the memory-mapping capabilities of the operating system.
+     */
+    @Deprecated
     @Description("Tell Neo4j to use memory mapped buffers for accessing the native storage layer.")
     public static final Setting<Boolean> use_memory_mapped_buffers = setting( "use_memory_mapped_buffers", BOOLEAN, Boolean.toString(!Settings.osIsWindows()));
 
     @Description("Target size for pages of mapped memory.")
     public static final Setting<Long> mapped_memory_page_size = setting("mapped_memory_page_size", BYTES, "8192" );
 
-    @Description("The size to allocate for the memory mapping pool used by the database. Defaults to a low value, you will want to change this to a higher value if your database is running on a dedicated machine.")
-    public static final Setting<Long> all_stores_total_mapped_memory_size = setting("all_stores_total_mapped_memory_size", directMemoryUsage(), "5%" );
+    @Description("The amount of memory to use for mapping the store files, either in bytes or\n" +
+            " as a percentage of available memory. This will be clipped at the amount of\n" +
+            " free memory observed when the database starts, and automatically be rounded\n" +
+            " down to the nearest whole page. For example, if \"500MB\" is configured, but\n" +
+            " only 450MB of memory is free when the database starts, then the database will\n" +
+            " map at most 450MB. If \"50%\" is configured, and the system has a capacity of\n" +
+            " 4GB, then at most 2GB of memory will be mapped, unless the database observes\n" +
+            " that less than 2GB of memory is free when it starts.")
+    public static final Setting<Long> mapped_memory_total_size = setting("mapped_memory_total_size", directMemoryUsage(), "50%" );
 
     @Description("Tell Neo4j to regularly log memory mapping statistics.")
     public static final Setting<Boolean> log_mapped_memory_stats = setting("log_mapped_memory_stats", BOOLEAN, FALSE );
@@ -188,30 +199,51 @@ public abstract class GraphDatabaseSettings
     @Description("The number of records to be loaded between regular logging of memory mapping statistics.")
     public static final Setting<Integer> log_mapped_memory_stats_interval = setting("log_mapped_memory_stats_interval", INTEGER, "1000000");
 
+    /**
+     * @deprecated Replaced by the mapped_memory_total_size setting.
+     */
     @Deprecated
     @Description("The size to allocate for memory mapping the node store.")
     public static final Setting<Long> nodestore_mapped_memory_size = setting("neostore.nodestore.db.mapped_memory", BYTES, NO_DEFAULT );
 
+    /**
+     * @deprecated Replaced by the mapped_memory_total_size setting.
+     */
     @Deprecated
     @Description("The size to allocate for memory mapping the property value store.")
     public static final Setting<Long> nodestore_propertystore_mapped_memory_size = setting("neostore.propertystore.db.mapped_memory", BYTES, NO_DEFAULT );
 
+    /**
+     * @deprecated Replaced by the mapped_memory_total_size setting.
+     */
     @Deprecated
     @Description("The size to allocate for memory mapping the store for property key indexes.")
     public static final Setting<Long> nodestore_propertystore_index_mapped_memory_size = setting("neostore.propertystore.db.index.mapped_memory", BYTES, NO_DEFAULT );
 
+    /**
+     * @deprecated Replaced by the mapped_memory_total_size setting.
+     */
     @Deprecated
     @Description("The size to allocate for memory mapping the store for property key strings.")
     public static final Setting<Long> nodestore_propertystore_index_keys_mapped_memory_size = setting("neostore.propertystore.db.index.keys.mapped_memory", BYTES, NO_DEFAULT );
 
+    /**
+     * @deprecated Replaced by the mapped_memory_total_size setting.
+     */
     @Deprecated
     @Description("The size to allocate for memory mapping the string property store.")
     public static final Setting<Long> strings_mapped_memory_size = setting("neostore.propertystore.db.strings.mapped_memory", BYTES, NO_DEFAULT );
 
+    /**
+     * @deprecated Replaced by the mapped_memory_total_size setting.
+     */
     @Deprecated
     @Description("The size to allocate for memory mapping the array property store.")
     public static final Setting<Long> arrays_mapped_memory_size = setting("neostore.propertystore.db.arrays.mapped_memory", BYTES, NO_DEFAULT );
 
+    /**
+     * @deprecated Replaced by the mapped_memory_total_size setting.
+     */
     @Deprecated
     @Description("The size to allocate for memory mapping the relationship store.")
     public static final Setting<Long> relationshipstore_mapped_memory_size = setting("neostore.relationshipstore.db.mapped_memory", BYTES, NO_DEFAULT );

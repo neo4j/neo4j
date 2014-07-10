@@ -63,7 +63,6 @@ public abstract class CommonAbstractStore implements IdSequence
 
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
         public static final Setting<Boolean> backup_slave = GraphDatabaseSettings.backup_slave;
-        public static final Setting<Boolean> use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
     }
 
     public static final String ALL_STORES_VERSION = "v0.A.3";
