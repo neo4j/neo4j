@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.lang.Math.max;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -64,12 +71,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.lang.Math.max;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -294,7 +295,7 @@ public class XaLogicalLog implements LogLoader
             determineLogVersionFromArchivedFiles();
 
             long lastTxId = xaTf.getLastCommittedTx();
-            VersionAwareLogEntryReader.writeLogHeader( sharedBuffer, logVersion, lastTxId );
+            writeLogHeader( sharedBuffer, logVersion, lastTxId );
             previousLogLastCommittedTx = lastTxId;
             positionCache.putHeader( logVersion, previousLogLastCommittedTx );
             fileChannel.writeAll( sharedBuffer );
@@ -697,7 +698,7 @@ public class XaLogicalLog implements LogLoader
         if(header[0] != logVersion)
         {
             ByteBuffer buff = ByteBuffer.allocate( 64 );
-            VersionAwareLogEntryReader.writeLogHeader( buff, logVersion, header[1] );
+            writeLogHeader( buff, logVersion, header[1] );
             fileChannel.writeAll( buff, 0 );
         }
 
@@ -1028,7 +1029,7 @@ public class XaLogicalLog implements LogLoader
                 File activeLogFile = new XaLogicalLogFiles( logBasePath.apply( config ), fileSystem ).getLog1FileName();
                 StoreChannel channel = fileSystem.create( activeLogFile );
                 ByteBuffer scratch = ByteBuffer.allocateDirect( 128 );
-                VersionAwareLogEntryReader.writeLogHeader( scratch, 0, prevCommittedId );
+                writeLogHeader( scratch, 0, prevCommittedId );
                 while(scratch.hasRemaining())
                 {
                     channel.writeAll( scratch );
@@ -1189,7 +1190,7 @@ public class XaLogicalLog implements LogLoader
         writeBuffer.force();
         StoreChannel newLog = fileSystem.open( newLogFile, "rw" );
         long lastTx = xaTf.getLastCommittedTx();
-        VersionAwareLogEntryReader.writeLogHeader( sharedBuffer, currentVersion + 1, lastTx );
+        writeLogHeader( sharedBuffer, currentVersion + 1, lastTx );
         previousLogLastCommittedTx = lastTx;
         if ( newLog.write( sharedBuffer ) != 16 )
         {
