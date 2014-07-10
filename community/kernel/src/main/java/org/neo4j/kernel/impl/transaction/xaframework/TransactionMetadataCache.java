@@ -54,8 +54,8 @@ public class TransactionMetadataCache
         return txStartPositionCache.get( txId );
     }
 
-    public synchronized TransactionMetadata cacheTransactionMetadata( long txId, LogPosition position, int masterId,
-                                                                      int authorId, long checksum )
+    public TransactionMetadata cacheTransactionMetadata( long txId, LogPosition position, int masterId,
+                                                         int authorId, long checksum )
     {
         if ( position.getByteOffset() == -1 )
         {
