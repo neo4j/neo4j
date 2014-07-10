@@ -17,21 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
 
-class UnsignedDecimalIntegerLiteralTest extends CypherFunSuite {
+class SignedDecimalIntegerLiteralTest extends CypherFunSuite {
   test("correctly parses decimal numbers") {
-    assert(UnsignedDecimalIntegerLiteral("22")(DummyPosition(0)).value === 22)
-    assert(UnsignedDecimalIntegerLiteral("0")(DummyPosition(0)).value === 0)
+    assert(SignedDecimalIntegerLiteral("22")(DummyPosition(0)).value === 22)
+    assert(SignedDecimalIntegerLiteral("0")(DummyPosition(0)).value === 0)
+    assert(SignedDecimalIntegerLiteral("-0")(DummyPosition(0)).value === 0)
+    assert(SignedDecimalIntegerLiteral("-432")(DummyPosition(0)).value === -432)
   }
 
   test("throws error for invalid decimal numbers") {
     assertSemanticError("12g3", "invalid literal number")
     assertSemanticError("923_23", "invalid literal number")
+    assertSemanticError("-92f3", "invalid literal number")
   }
 
   test("throws error for too large decimal numbers") {
@@ -39,7 +42,7 @@ class UnsignedDecimalIntegerLiteralTest extends CypherFunSuite {
   }
 
   private def assertSemanticError(stringValue: String, errorMessage: String) {
-    val literal = UnsignedDecimalIntegerLiteral(stringValue)(DummyPosition(4))
+    val literal = SignedDecimalIntegerLiteral(stringValue)(DummyPosition(4))
     val result = literal.semanticCheck(SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(errorMessage, DummyPosition(4))))
   }

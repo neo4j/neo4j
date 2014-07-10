@@ -17,32 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
 
-class SignedDecimalIntegerLiteralTest extends CypherFunSuite {
-  test("correctly parses decimal numbers") {
-    assert(SignedDecimalIntegerLiteral("22")(DummyPosition(0)).value === 22)
-    assert(SignedDecimalIntegerLiteral("0")(DummyPosition(0)).value === 0)
-    assert(SignedDecimalIntegerLiteral("-0")(DummyPosition(0)).value === 0)
-    assert(SignedDecimalIntegerLiteral("-432")(DummyPosition(0)).value === -432)
+class OctalIntegerLiteralTest extends CypherFunSuite {
+  test("correctly parses octal numbers") {
+    assert(SignedOctalIntegerLiteral("022")(DummyPosition(0)).value === 022)
+    assert(SignedOctalIntegerLiteral("00")(DummyPosition(0)).value === 00)
+    assert(SignedOctalIntegerLiteral("0734")(DummyPosition(0)).value === 0734)
+    assert(SignedOctalIntegerLiteral("0034")(DummyPosition(0)).value === 0034)
   }
 
-  test("throws error for invalid decimal numbers") {
-    assertSemanticError("12g3", "invalid literal number")
-    assertSemanticError("923_23", "invalid literal number")
-    assertSemanticError("-92f3", "invalid literal number")
+  test("throws error for invalid octal numbers") {
+    assertSemanticError("0393", "invalid literal number")
+    assertSemanticError("03f4", "invalid literal number")
+    assertSemanticError("-0934", "invalid literal number")
   }
 
-  test("throws error for too large decimal numbers") {
-    assertSemanticError("999999999999999999999999999", "integer is too large")
+  test("throws error for too large octal numbers") {
+    assertSemanticError("077777777777777777777777777777", "integer is too large")
   }
 
   private def assertSemanticError(stringValue: String, errorMessage: String) {
-    val literal = SignedDecimalIntegerLiteral(stringValue)(DummyPosition(4))
+    val literal = SignedOctalIntegerLiteral(stringValue)(DummyPosition(4))
     val result = literal.semanticCheck(SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(errorMessage, DummyPosition(4))))
   }
