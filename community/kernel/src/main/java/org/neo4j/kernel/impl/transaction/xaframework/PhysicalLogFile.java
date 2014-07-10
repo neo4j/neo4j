@@ -111,7 +111,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
 
     private PhysicalLogVersionedStoreChannel openLogChannelForVersion( long forVersion ) throws IOException
     {
-        File toOpen = logFiles.getVersionFileName( forVersion );
+        File toOpen = logFiles.getLogFileForVersion( forVersion );
         PhysicalLogVersionedStoreChannel channel = openFileChannel( toOpen, "rw" );
         long[] header = readLogHeader( headerBuffer, channel, false );
         if ( header == null )
@@ -197,7 +197,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     private PhysicalLogVersionedStoreChannel openLogChannel( LogPosition position ) throws IOException
     {
         long version = position.getLogVersion();
-        File fileToOpen = logFiles.getVersionFileName( version );
+        File fileToOpen = logFiles.getLogFileForVersion( version );
         PhysicalLogVersionedStoreChannel channel = openFileChannel( fileToOpen, "r", version );
         channel.position( position.getByteOffset() );
         return channel;
@@ -276,7 +276,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
             long previousLogLastTxId = transactionMetadataCache.getLogHeader( logVersion );
             if ( previousLogLastTxId == -1 )
             {
-                long[] header = readLogHeader( fileSystem, logFiles.getVersionFileName( logVersion ) );
+                long[] header = readLogHeader( fileSystem, logFiles.getLogFileForVersion( logVersion ) );
                 transactionMetadataCache.putHeader( header[0], header[1] );
                 previousLogLastTxId = header[1];
             }

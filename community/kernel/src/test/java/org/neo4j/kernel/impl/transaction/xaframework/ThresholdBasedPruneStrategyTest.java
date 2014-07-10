@@ -56,12 +56,12 @@ public class ThresholdBasedPruneStrategyTest
         File fileName5 = new File( "logical.log.v5" );
         File fileName6 = new File( "logical.log.v6" );
 
-        when( files.getVersionFileName( 6 ) ).thenReturn( fileName6 );
-        when( files.getVersionFileName( 5 ) ).thenReturn( fileName5 );
-        when( files.getVersionFileName( 4 ) ).thenReturn( fileName4 );
-        when( files.getVersionFileName( 3 ) ).thenReturn( fileName3 );
-        when( files.getVersionFileName( 2 ) ).thenReturn( fileName2 );
-        when( files.getVersionFileName( 1 ) ).thenReturn( fileName1 );
+        when( files.getLogFileForVersion( 6 ) ).thenReturn( fileName6 );
+        when( files.getLogFileForVersion( 5 ) ).thenReturn( fileName5 );
+        when( files.getLogFileForVersion( 4 ) ).thenReturn( fileName4 );
+        when( files.getLogFileForVersion( 3 ) ).thenReturn( fileName3 );
+        when( files.getLogFileForVersion( 2 ) ).thenReturn( fileName2 );
+        when( files.getLogFileForVersion( 1 ) ).thenReturn( fileName1 );
 
         when( fileSystem.fileExists( fileName6 ) ).thenReturn( true );
         when( fileSystem.fileExists( fileName5 ) ).thenReturn( true );
@@ -104,12 +104,12 @@ public class ThresholdBasedPruneStrategyTest
         File fileName5 = new File( "logical.log.v5" );
         File fileName6 = new File( "logical.log.v6" );
 
-        when( files.getVersionFileName( 6 ) ).thenReturn( fileName6 );
-        when( files.getVersionFileName( 5 ) ).thenReturn( fileName5 );
-        when( files.getVersionFileName( 4 ) ).thenReturn( fileName4 );
-        when( files.getVersionFileName( 3 ) ).thenReturn( fileName3 );
-        when( files.getVersionFileName( 2 ) ).thenReturn( fileName2 );
-        when( files.getVersionFileName( 1 ) ).thenReturn( fileName1 );
+        when( files.getLogFileForVersion( 6 ) ).thenReturn( fileName6 );
+        when( files.getLogFileForVersion( 5 ) ).thenReturn( fileName5 );
+        when( files.getLogFileForVersion( 4 ) ).thenReturn( fileName4 );
+        when( files.getLogFileForVersion( 3 ) ).thenReturn( fileName3 );
+        when( files.getLogFileForVersion( 2 ) ).thenReturn( fileName2 );
+        when( files.getLogFileForVersion( 1 ) ).thenReturn( fileName1 );
 
         when( fileSystem.fileExists( fileName6 ) ).thenReturn( true );
         when( fileSystem.fileExists( fileName5 ) ).thenReturn( true );

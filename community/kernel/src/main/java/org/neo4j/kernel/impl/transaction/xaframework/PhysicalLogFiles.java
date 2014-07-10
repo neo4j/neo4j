@@ -24,9 +24,11 @@ import java.io.IOException;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
 import static java.lang.Math.max;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.readLogHeader;
 
 /**
  * Used to figure out what logical log file to open when the database
@@ -39,7 +41,7 @@ public class PhysicalLogFiles
         void visit( File file, long logVersion );
     }
 
-    public class HighestLogVersionVisitor implements LogVersionVisitor
+    private static class HighestLogVersionVisitor implements LogVersionVisitor
     {
         private long highest = -1;
 
@@ -51,11 +53,13 @@ public class PhysicalLogFiles
     }
 
     private final File logBaseName;
+    private final Pattern logFilePattern;
     private final FileSystemAbstraction fileSystem;
 
     public PhysicalLogFiles( File directory, String name, FileSystemAbstraction fileSystem )
     {
         this.logBaseName = new File( directory, name );
+        this.logFilePattern = Pattern.compile( name + "\\.v\\d+" );
         this.fileSystem = fileSystem;
     }
 
@@ -64,26 +68,24 @@ public class PhysicalLogFiles
         this( directory, PhysicalLogFile.DEFAULT_NAME, fileSystem );
     }
 
-    private Pattern getVersionFileNamePattern()
-    {
-        return Pattern.compile( logBaseName.getName() + "\\.v\\d+" );
-    }
-
-    public File getVersionFileName( long version )
+    public File getLogFileForVersion( long version )
     {
         return new File( logBaseName.getPath() + ".v" + version );
     }
 
-    public long getLogVersion( File historyLogFile )
-    { // Get version based on the name
-        String name = historyLogFile.getName();
-        String toFind = ".v";
-        int index = name.lastIndexOf( toFind );
-        if ( index == -1 )
-        {
-            throw new RuntimeException( "Invalid log file '" + historyLogFile + "'" );
-        }
-        return Integer.parseInt( name.substring( index + toFind.length() ) );
+    public boolean versionExists( long version )
+    {
+        return fileSystem.fileExists( getLogFileForVersion( version ) );
+    }
+
+    public long[] extractHeader( long version ) throws IOException
+    {
+        return readLogHeader( fileSystem, getLogFileForVersion( version ) );
+    }
+
+    public boolean hasAnyTransaction( long version )
+    {
+        return fileSystem.getFileSize( getLogFileForVersion( version ) ) > LOG_HEADER_SIZE;
     }
 
     public long getHighestLogVersion()
@@ -93,24 +95,8 @@ public class PhysicalLogFiles
         return visitor.highest;
     }
 
-    public boolean versionExists( long version )
-    {
-        return fileSystem.fileExists( getVersionFileName( version ) );
-    }
-
-    public long[] extractHeader( long version ) throws IOException
-    {
-        return VersionAwareLogEntryReader.readLogHeader( fileSystem, getVersionFileName( version ) );
-    }
-
-    public boolean hasAnyTransaction( long version )
-    {
-        return fileSystem.getFileSize( getVersionFileName( version ) ) > VersionAwareLogEntryReader.LOG_HEADER_SIZE;
-    }
-
     public void accept( LogVersionVisitor visitor )
     {
-        Pattern logFilePattern = getVersionFileNamePattern();
         for ( File file : fileSystem.listFiles( logBaseName.getParentFile() ) )
         {
             if ( logFilePattern.matcher( file.getName() ).matches() )
@@ -118,5 +104,18 @@ public class PhysicalLogFiles
                 visitor.visit( file, getLogVersion( file ) );
             }
         }
+    }
+
+    public static long getLogVersion( File historyLogFile )
+    {
+        // Get version based on the name
+        String name = historyLogFile.getName();
+        String toFind = ".v";
+        int index = name.lastIndexOf( toFind );
+        if ( index == -1 )
+        {
+            throw new RuntimeException( "Invalid log file '" + historyLogFile + "'" );
+        }
+        return Integer.parseInt( name.substring( index + toFind.length() ) );
     }
 }

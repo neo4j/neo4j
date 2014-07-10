@@ -163,7 +163,7 @@ public class StoreCopyClient
             // And since we write this manually we need to set the correct transaction id in the
             // header of the log that we just wrote.
             writeLogHeader( fs,
-                    logFiles.getVersionFileName( logVersionRepository.getCurrentLogVersion() ),
+                    logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ),
                     logVersionRepository.getCurrentLogVersion(), firstTxId.get() != -1 ? firstTxId.get()-1 : 0 );
 
             if ( firstTxId == null )

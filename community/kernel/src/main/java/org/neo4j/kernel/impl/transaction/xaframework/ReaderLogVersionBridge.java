@@ -59,7 +59,7 @@ public class ReaderLogVersionBridge implements LogVersionBridge
     private PhysicalLogVersionedStoreChannel openLogChannel( LogPosition position ) throws IOException
     {
         long version = position.getLogVersion();
-        final File fileToOpen = logFiles.getVersionFileName( version );
+        final File fileToOpen = logFiles.getLogFileForVersion( version );
         final StoreChannel rawChannel = fileSystem.open( fileToOpen, "r" );
         final PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel( rawChannel, version );
         channel.position( position.getByteOffset() );

@@ -62,7 +62,7 @@ public class PhysicalLogFileTest
         life.shutdown();
 
         // THEN
-        File file = new PhysicalLogFiles( directory.directory(), name, fs ).getVersionFileName( 1L );
+        File file = new PhysicalLogFiles( directory.directory(), name, fs ).getLogFileForVersion( 1L );
         long[] header = VersionAwareLogEntryReader.readLogHeader( fs, file );
         assertEquals( 1L, header[0] );
         assertEquals( 5L, header[1] );

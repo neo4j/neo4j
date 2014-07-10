@@ -52,7 +52,7 @@ public class ReaderLogVersionBridgeTest
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( fs, logFiles );
 
         when( channel.getVersion() ).thenReturn( version );
-        when( logFiles.getVersionFileName( version + 1 ) ).thenReturn( file );
+        when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
         when( fs.open( file, "r" ) ).thenReturn( newStoreChannel );
 
         // when
@@ -70,7 +70,7 @@ public class ReaderLogVersionBridgeTest
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( fs, logFiles );
 
         when( channel.getVersion() ).thenReturn( version );
-        when( logFiles.getVersionFileName( version + 1 ) ).thenReturn( file );
+        when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
         when( fs.open( file, "r" ) ).thenThrow( new FileNotFoundException() );
 
         // when

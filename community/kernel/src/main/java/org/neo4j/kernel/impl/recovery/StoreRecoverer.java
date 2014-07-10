@@ -71,7 +71,7 @@ public class StoreRecoverer
         }
 
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
-        File log = logFiles.getVersionFileName( currentLogVersion );
+        File log = logFiles.getLogFileForVersion( currentLogVersion );
 
         if ( !fs.fileExists( log ) )
         {
