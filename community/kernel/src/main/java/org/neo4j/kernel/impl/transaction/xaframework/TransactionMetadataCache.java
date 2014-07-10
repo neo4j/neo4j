@@ -112,5 +112,49 @@ public class TransactionMetadataCache
                     ", checksum=" + checksum +
                     ']';
         }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            TransactionMetadata that = (TransactionMetadata) o;
+
+            if ( authorId != that.authorId )
+            {
+                return false;
+            }
+            if ( checksum != that.checksum )
+            {
+                return false;
+            }
+            if ( masterId != that.masterId )
+            {
+                return false;
+            }
+            if ( !startPosition.equals( that.startPosition ) )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = masterId;
+            result = 31 * result + authorId;
+            result = 31 * result + startPosition.hashCode();
+            result = 31 * result + (int) (checksum ^ (checksum >>> 32));
+            return result;
+        }
     }
 }
