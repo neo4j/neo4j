@@ -40,6 +40,7 @@ object Function {
     functions.Degrees,
     functions.E,
     functions.EndNode,
+    functions.Exists,
     functions.Exp,
     functions.Floor,
     functions.Has,
