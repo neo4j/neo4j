@@ -1,3 +1,8 @@
+2.1.3
+-----
+o Adds support for Octal literals (using a preceding 0, e.g. 03517)
+o Add `exists(...)` predicate function for checking patterns and properties
+
 2.1.2
 -----
 o Allow Cypher to use indexes to solve IN queries
@@ -31,17 +36,11 @@ o Fix problem where LOAD CSV stops indexes from being used
 o Add LOAD CSV
 o Add USING PERIODIC COMMIT
 
-2.0.5
------
-o Fixes problem where predicates are evaluated wrongly in NOT
-o Fixes problem when WITH introduces a symbol that shadows an existing identifier
-
 2.0.4
 -----
 o Adds UNWIND
 o Fixes problem where predicates are evaluated wrongly in NOT
 o Fixes problem when WITH introduces a symbol that shadows an existing identifier
-o Adds support for Octal literals (using a preceding 0, e.g. 03517)
 
 2.0.3
 -----
