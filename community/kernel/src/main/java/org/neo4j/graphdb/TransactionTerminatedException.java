@@ -19,29 +19,14 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Test;
-
-import org.neo4j.graphdb.schema.Schema;
-
-import static org.neo4j.graphdb.SchemaFacadeMethods.ALL_SCHEMA_FACADE_METHODS;
-
-public class MandatoryTransactionsForSchemaTests extends AbstractMandatoryTransactionsTest<Schema>
+/**
+ * Signals that the transaction within which the failed operations ran
+ * has been terminated with {@link Transaction#terminate()}.
+ */
+public class TransactionTerminatedException extends TransactionFailureException
 {
-    @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnSchema() throws Exception
+    public TransactionTerminatedException()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_SCHEMA_FACADE_METHODS );
-    }
-
-    @Test
-    public void shouldTerminateWhenCallingMethodsOnSchema() throws Exception
-    {
-        assertFacadeMethodsThrowAfterTerminate( ALL_SCHEMA_FACADE_METHODS );
-    }
-
-    @Override
-    protected Schema obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
-    {
-        return graphDatabaseService.schema();
+        super( "The transaction has been terminated." );
     }
 }

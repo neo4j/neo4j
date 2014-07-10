@@ -121,7 +121,7 @@ public abstract class SimpleAppServer implements ShellServer
     private Session newSession( Serializable id, Map<String, Serializable> initialSession ) throws ShellException
     {
 	    Session session = new Session( id );
-	    initialPopulateSession( session );
+        initialPopulateSession( session );
 	    for ( Map.Entry<String, Serializable> entry : initialSession.entrySet() )
         {
             session.set( entry.getKey(), entry.getValue() );

@@ -24,36 +24,24 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.neo4j.test.JavaDocsGenerator;
-import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-import static org.junit.Assert.assertFalse;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
-public class EmbeddedNeo4jDocTest
+public class TerminateTransactionsDocTest
 {
-    private static EmbeddedNeo4j hello;
-    private static JavaDocsGenerator gen;
+    private static TerminateTransactions terminateTransactions;
+    private static JavaDocsGenerator gen = new JavaDocsGenerator( "terminate-tx-java", "dev" );
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception
     {
-        hello = new EmbeddedNeo4j();
-        gen = new JavaDocsGenerator( "hello-world-java", "dev" );
+        terminateTransactions = new TerminateTransactions();
     }
 
     @Test
     public void test() throws IOException
     {
-        hello.createDb();
-        String graph = AsciidocHelper.createGraphVizDeletingReferenceNode(
-                "Hello World Graph",
-                hello.graphDb, "java" );
-        assertFalse( graph.isEmpty() );
-        gen.saveToFile( "graph", graph );
-
-        assertFalse( hello.greeting.isEmpty() );
-        gen.saveToFile( "output", hello.greeting + "\n\n" );
-
-        hello.removeData();
-        hello.shutDown();
+        String result = terminateTransactions.run();
+        gen.saveToFile( "result", createOutputSnippet( result ) );
     }
 }

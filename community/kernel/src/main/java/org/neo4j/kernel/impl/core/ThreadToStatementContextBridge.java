@@ -23,6 +23,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
@@ -69,6 +70,10 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         if ( transaction == null )
         {
             throw new NotInTransactionException();
+        }
+        if ( transaction.getTransaction().shouldBeTerminated() )
+        {
+            throw new TransactionTerminatedException();
         }
     }
 

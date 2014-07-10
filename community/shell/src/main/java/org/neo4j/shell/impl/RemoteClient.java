@@ -23,6 +23,8 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Map;
 
+import org.neo4j.shell.CtrlCHandler;
+import org.neo4j.shell.InterruptSignalHandler;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
@@ -38,18 +40,23 @@ public class RemoteClient extends AbstractClient
 	private final RmiLocation serverLocation;
 	private final Output out;
 
-    public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation ) throws ShellException
+    public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation, CtrlCHandler ctrlcHandler ) throws ShellException
     {
-        this( initialSession, serverLocation, RemoteOutput.newOutput() );
+        this( initialSession, serverLocation, RemoteOutput.newOutput(), ctrlcHandler );
     }
-    
+
+    public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation, Output output ) throws ShellException
+    {
+        this( initialSession, serverLocation, output, InterruptSignalHandler.getHandler() );
+    }
+
 	/**
 	 * @param serverLocation the RMI location of the server to connect to.
 	 * @throws ShellException if no server was found at the RMI location.
 	 */
-	public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation, Output out ) throws ShellException
+	public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation, Output out, CtrlCHandler ctrlcHandler ) throws ShellException
 	{
-	    super( initialSession );
+	    super( initialSession, ctrlcHandler );
 		this.serverLocation = serverLocation;
 		this.out = out;
 		this.server = findRemoteServer();

@@ -19,6 +19,7 @@
 package org.neo4j.examples;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -31,15 +32,16 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.io.fs.FileUtils;
 
 public class EmbeddedNeo4jWithNewIndexing
 {
     private static final String DB_PATH = "target/neo4j-store-with-new-indexing";
 
-    public static void main( final String[] args )
+    public static void main( final String[] args ) throws IOException
     {
         System.out.println( "Starting database ..." );
-        deleteFileOrDirectory( new File( DB_PATH ) );
+        FileUtils.deleteRecursively( new File( DB_PATH ) );
 
         // START SNIPPET: startDb
         GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
@@ -184,20 +186,5 @@ public class EmbeddedNeo4jWithNewIndexing
         // START SNIPPET: shutdownDb
         graphDb.shutdown();
         // END SNIPPET: shutdownDb
-    }
-
-    private static void deleteFileOrDirectory( File file )
-    {
-        if ( file.exists() )
-        {
-            if ( file.isDirectory() )
-            {
-                for ( File child : file.listFiles() )
-                {
-                    deleteFileOrDirectory( child );
-                }
-            }
-            file.delete();
-        }
     }
 }

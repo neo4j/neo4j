@@ -32,7 +32,8 @@ public class DontShutdownClient
     {
         GraphDatabaseShellServer server = new GraphDatabaseShellServer( args[0], false, null );
         new SameJvmClient( new HashMap<String, Serializable>(), server,
-            /* Temporary, switch back to SilentOutput once flaky test is resolved. */ new SystemOutput() );
+            /* Temporary, switch back to SilentOutput once flaky test is resolved. */ new SystemOutput(),
+                InterruptSignalHandler.getHandler() );
         server.shutdown();
         // Intentionally don't shutdown the client
     }
