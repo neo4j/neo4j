@@ -1,3 +1,9 @@
+2.2.0-SNAPSHOT
+--------------
+o Changed the DELETE verb on a transaction to also mark it as terminated even if there
+  are concurrent requests that use the transaction. Consult community/kernel/CHANGES.txt and
+  the manual for more details on the new transaction termination API.
+
 2.1.2
 -----
 o Ensures transactional endpoint responds with an https location

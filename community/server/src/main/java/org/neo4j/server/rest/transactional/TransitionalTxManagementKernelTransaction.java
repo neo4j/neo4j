@@ -26,12 +26,14 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 class TransitionalTxManagementKernelTransaction
 {
+    private final TransactionTerminator txTerminator;
     private final ThreadToStatementContextBridge bridge;
 
     private TopLevelTransaction suspendedTransaction;
 
-    TransitionalTxManagementKernelTransaction( ThreadToStatementContextBridge bridge )
+    TransitionalTxManagementKernelTransaction( TransactionTerminator txTerminator, ThreadToStatementContextBridge bridge )
     {
+        this.txTerminator = txTerminator;
         this.bridge = bridge;
     }
 
@@ -49,11 +51,16 @@ class TransitionalTxManagementKernelTransaction
         suspendedTransaction = null;
     }
 
+    public void terminate()
+    {
+        txTerminator.terminate();
+    }
+
     public void rollback()
     {
         try
         {
-            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( false );
             kernelTransactionBoundToThisThread.failure();
             kernelTransactionBoundToThisThread.close();
         }

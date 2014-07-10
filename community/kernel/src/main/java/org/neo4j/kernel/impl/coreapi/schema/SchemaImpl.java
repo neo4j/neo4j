@@ -87,7 +87,7 @@ public class SchemaImpl implements Schema
     @Override
     public IndexCreator indexFor( Label label )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
 
         return new IndexCreatorImpl( actions, label );
     }
@@ -95,7 +95,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<IndexDefinition> getIndexes( final Label label )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
 
         try ( Statement statement = statementContextProvider.instance() )
         {
@@ -114,7 +114,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<IndexDefinition> getIndexes()
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
 
         try ( Statement statement = statementContextProvider.instance() )
         {
@@ -150,7 +150,7 @@ public class SchemaImpl implements Schema
     @Override
     public void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
 
         long timeout = System.currentTimeMillis() + unit.toMillis( duration );
         do
@@ -179,7 +179,7 @@ public class SchemaImpl implements Schema
     @Override
     public void awaitIndexesOnline( long duration, TimeUnit unit )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
 
         long millisLeft = TimeUnit.MILLISECONDS.convert( duration, unit );
         Collection<IndexDefinition> onlineIndexes = new ArrayList<>();
@@ -205,7 +205,7 @@ public class SchemaImpl implements Schema
     @Override
     public IndexState getIndexState( final IndexDefinition index )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
 
         String propertyKey = single( index.getPropertyKeys() );
         try ( Statement statement = statementContextProvider.instance() )
@@ -248,7 +248,7 @@ public class SchemaImpl implements Schema
     @Override
     public String getIndexFailure( IndexDefinition index )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
 
         String propertyKey = single( index.getPropertyKeys() );
         try ( Statement statement = statementContextProvider.instance() )
@@ -279,7 +279,7 @@ public class SchemaImpl implements Schema
     @Override
     public ConstraintCreator constraintFor( Label label )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
 
         return new BaseConstraintCreator( actions, label );
     }
@@ -287,7 +287,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints()
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
 
         try ( Statement statement = statementContextProvider.instance() )
         {
@@ -299,7 +299,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints( final Label label )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
 
         try ( Statement statement = statementContextProvider.instance() )
         {
@@ -516,14 +516,14 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public void assertInTransaction()
+        public void assertInUnterminatedTransaction()
         {
-            ctxProvider.assertInTransaction();
+            ctxProvider.assertInUnterminatedTransaction();
         }
 
     }
-    private void assertInTransaction()
+    private void assertInUnterminatedTransaction()
     {
-        statementContextProvider.assertInTransaction();
+        statementContextProvider.assertInUnterminatedTransaction();
     }
 }

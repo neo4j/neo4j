@@ -99,7 +99,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public Node[] getNodes()
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         RelationshipData data = relationshipLookups.getRelationshipData( relId );
         return new Node[] {
                 relationshipLookups.newNodeProxy( data.getStartNode() ),
@@ -109,7 +109,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public Node getOtherNode( Node node )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         RelationshipData data = relationshipLookups.getRelationshipData( relId );
         if ( data.getStartNode() == node.getId() )
         {
@@ -126,21 +126,21 @@ public class RelationshipProxy implements Relationship
     @Override
     public Node getStartNode()
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         return relationshipLookups.newNodeProxy( relationshipLookups.getRelationshipData( relId ).getStartNode() );
     }
 
     @Override
     public Node getEndNode()
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         return relationshipLookups.newNodeProxy( relationshipLookups.getRelationshipData( relId ).getEndNode() );
     }
 
     @Override
     public RelationshipType getType()
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         int type = relationshipLookups.getRelationshipData( relId ).getType();
         return relationshipLookups.getRelationshipTypeById( type );
     }
@@ -298,7 +298,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public boolean isType( RelationshipType type )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         int typeId = relationshipLookups.getRelationshipData( relId ).getType();
         return relationshipLookups.getRelationshipTypeById( typeId ).name().equals( type.name() );
     }
@@ -340,8 +340,8 @@ public class RelationshipProxy implements Relationship
         return "Relationship[" + this.getId() + "]";
     }
 
-    private void assertInTransaction()
+    private void assertInUnterminatedTransaction()
     {
-        statementContextProvider.assertInTransaction();
+        statementContextProvider.assertInUnterminatedTransaction();
     }
 }

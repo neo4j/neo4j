@@ -4,6 +4,10 @@ o Deprecated Function and Function2 interfaces, as they are internal utility API
   Users may still use the new org.neo4j.function.Function interface, but these are no
   longer considered official API. Users are expected to choose a utility library like
   Guava or apache commons for their utility needs.
+o Extends the Transaction interface with a new method `terminate()` that makes it possible
+  to mark the transaction as terminated, which means it will be both marked for rollback
+  as well as all further operations carried out within that transaction will throw
+  a `TransactionTerminatedException` exception.
 
 2.1.2
 -----

@@ -130,6 +130,7 @@ public class KernelTransactionImplementationTest
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -145,6 +146,7 @@ public class KernelTransactionImplementationTest
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -169,6 +171,7 @@ public class KernelTransactionImplementationTest
         // THEN
         assertTrue( exceptionReceived );
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -185,6 +188,7 @@ public class KernelTransactionImplementationTest
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -198,6 +202,7 @@ public class KernelTransactionImplementationTest
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -210,35 +215,79 @@ public class KernelTransactionImplementationTest
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
+    @Test(expected = TransactionFailureException.class)
+    public void shouldThrowOnTerminationInCommit() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        transaction.success();
+        transaction.markForTermination();
+
+        transaction.close();
+    }
+
     @Test
-    public void shouldAllowTerminateingFromADifferentThread() throws Exception
+    public void shouldIgnoreTerminationDuringRollback() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        transaction.markForTermination();
+        transaction.close();
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    class ChildException
+    {
+        public Exception exception = null;
+    }
+
+    @Test
+    public void shouldAllowTerminatingFromADifferentThread() throws Exception
     {
         // GIVEN
+        final ChildException childException = new ChildException();
         final DoubleLatch latch = new DoubleLatch( 1 );
         final KernelTransaction transaction = newTransaction();
-        Thread thread = new Thread( new Runnable () {
+        Thread thread = new Thread( new Runnable()
+        {
             @Override
             public void run()
             {
-                latch.awaitStart();
-                transaction.markForTermination();
-                latch.finish();
+                try
+                {
+                    latch.awaitStart();
+                    transaction.markForTermination();
+                    latch.finish();
+                }
+                catch ( Exception e )
+                {
+                    childException.exception = e;
+                }
             }
-        });
+        } );
 
         // WHEN
         thread.start();
         transaction.success();
         latch.startAndAwaitFinish();
 
+        if ( childException.exception != null )
+        {
+            throw childException.exception;
+        }
+
         boolean exceptionReceived = false;
         try
         {
             transaction.close();
-        } catch ( TransactionFailureException e )
+        }
+        catch ( TransactionFailureException e )
         {
             // Expected.
             exceptionReceived = true;
@@ -247,6 +296,7 @@ public class KernelTransactionImplementationTest
         // THEN
         assertTrue( exceptionReceived );
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 

@@ -65,7 +65,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         return getKernelTransactionBoundToThisThread( true ).acquireStatement();
     }
 
-    private void assertInTransaction( TopLevelTransaction transaction )
+    private void assertInUnterminatedTransaction( TopLevelTransaction transaction )
     {
         if ( transaction == null )
         {
@@ -77,10 +77,10 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         }
     }
 
-    public void assertInTransaction()
+    public void assertInUnterminatedTransaction()
     {
         checkIfShutdown();
-        assertInTransaction( threadToTransactionMap.get() );
+        assertInUnterminatedTransaction( threadToTransactionMap.get() );
     }
 
     @Override
@@ -102,7 +102,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         TopLevelTransaction transaction = threadToTransactionMap.get();
         if ( strict )
         {
-            assertInTransaction( transaction );
+            assertInUnterminatedTransaction( transaction );
         }
         return transaction;
     }

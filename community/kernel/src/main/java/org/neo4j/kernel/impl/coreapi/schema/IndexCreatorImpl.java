@@ -49,13 +49,13 @@ public class IndexCreatorImpl implements IndexCreator
         this.label = label;
         this.propertyKeys = propertyKeys;
 
-        assertInTransaction();
+        assertInUnterminatedTransaction();
     }
     
     @Override
     public IndexCreator on( String propertyKey )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
 
         if ( !propertyKeys.isEmpty() )
             throw new UnsupportedOperationException(
@@ -68,7 +68,7 @@ public class IndexCreatorImpl implements IndexCreator
     @Override
     public IndexDefinition create() throws ConstraintViolationException
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
 
         if ( propertyKeys.isEmpty() )
             throw new ConstraintViolationException( "An index needs at least one property key to index" );
@@ -76,8 +76,8 @@ public class IndexCreatorImpl implements IndexCreator
         return actions.createIndexDefinition( label, single( propertyKeys ) );
     }
 
-    protected void assertInTransaction()
+    protected void assertInUnterminatedTransaction()
     {
-        actions.assertInTransaction();
+        actions.assertInUnterminatedTransaction();
     }
 }
