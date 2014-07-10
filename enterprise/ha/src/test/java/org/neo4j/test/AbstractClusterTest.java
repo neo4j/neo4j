@@ -19,17 +19,13 @@
  */
 package org.neo4j.test;
 
-import static org.neo4j.cluster.ClusterSettings.default_timeout;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-
 import java.io.File;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -38,11 +34,16 @@ import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterManager.Provider;
 
+import static org.neo4j.cluster.ClusterSettings.default_timeout;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+
 public abstract class AbstractClusterTest
 {
     public @Rule TestName testName = new TestName();
     private File dir;
-    protected LifeSupport life = new LifeSupport();
+    protected LifeSupport life;
     private final Provider provider;
     protected ClusterManager clusterManager;
     protected ManagedCluster cluster;
@@ -60,6 +61,7 @@ public abstract class AbstractClusterTest
     @Before
     public void before() throws Exception
     {
+        life = new LifeSupport();
         dir = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
         clusterManager = life.add( new ClusterManager( provider, dir, stringMap( default_timeout.name(), "1s" ) )
         {
