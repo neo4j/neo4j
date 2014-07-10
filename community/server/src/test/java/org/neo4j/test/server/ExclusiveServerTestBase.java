@@ -19,21 +19,24 @@
  */
 package org.neo4j.test.server;
 
+import static org.neo4j.test.Mute.muteAll;
+
 import java.util.concurrent.Callable;
 
 import org.junit.BeforeClass;
 import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestName;
 import org.neo4j.test.Mute;
-
-import static org.neo4j.test.Mute.muteAll;
+import org.neo4j.test.TargetDirectory;
 
 public class ExclusiveServerTestBase
 {
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    public TargetDirectory folder = TargetDirectory.forTest( getClass() );
+
     @Rule
     public Mute mute = muteAll();
+    @Rule
+    public TestName name = new TestName();
 
     @BeforeClass
     public static final void ensureServerNotRunning() throws Exception

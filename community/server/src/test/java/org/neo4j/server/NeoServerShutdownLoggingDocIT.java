@@ -42,7 +42,7 @@ public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
     public void setupServer() throws IOException
     {
         logging = new BufferingLogging();
-        server = ServerHelper.createPersistentServer(folder.getRoot(), logging);
+        server = ServerHelper.createPersistentServer(folder.cleanDirectory( name.getMethodName() ), logging);
         ServerHelper.cleanTheDatabase( server );
     }
 

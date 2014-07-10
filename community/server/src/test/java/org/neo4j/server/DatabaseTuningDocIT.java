@@ -19,20 +19,19 @@
  */
 package org.neo4j.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.util.Map;
 
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class DatabaseTuningDocIT extends ExclusiveServerTestBase
 {
@@ -41,7 +40,7 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
     public void shouldLoadAKnownGoodPropertyFile() throws IOException
     {
         CommunityNeoServer server = CommunityServerBuilder.server()
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .withDefaultDatabaseTuning()
                 .build();
         server.start();
@@ -69,7 +68,7 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
     {
         Logging logging = new BufferingLogging();
         NeoServer server = CommunityServerBuilder.server()
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .withNonResolvableTuningFile()
                 .withLogging( logging )
                 .build();
