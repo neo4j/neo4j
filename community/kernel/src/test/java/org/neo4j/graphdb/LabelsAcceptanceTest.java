@@ -272,6 +272,58 @@ public class LabelsAcceptanceTest
     }
 
     @Test
+    public void removingCommittedLabel2() throws Exception
+    {
+        // Given
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        Label label = Labels.MY_LABEL;
+
+        Transaction tx = beansAPI.beginTx();
+        Node myNode;
+        try
+        {
+            Node node = beansAPI.createNode( label );
+            tx.success();
+            myNode = node;
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // When
+        tx = beansAPI.beginTx();
+        try
+        {
+            myNode.removeLabel( label );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // Then
+        tx = beansAPI.beginTx();
+        try
+        {
+            for ( Node node : beansAPI.findNodesByLabelAndProperty( label, "foo", "bar" ) )
+            {
+                System.out.println(node);
+            }
+
+            for ( Label label1 : myNode.getLabels() )
+            {
+                System.out.println(label1);
+            }
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    @Test
     public void createNodeWithLabels() throws Exception
     {
         // GIVEN
