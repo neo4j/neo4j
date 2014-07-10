@@ -54,7 +54,7 @@ public class PhysicalTransactionCursor implements IOCursor
         {
             return false;
         }
-        assert entry instanceof LogEntry.Start;
+        assert entry instanceof LogEntry.Start : "Expected Start entry, read " + entry + " instead";
         LogEntry.Start startEntry = (LogEntry.Start) entry;
         LogEntry.Commit commitEntry;
         while ( true )
