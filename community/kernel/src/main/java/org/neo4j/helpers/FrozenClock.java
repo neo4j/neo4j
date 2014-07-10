@@ -17,36 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework.log.pruning;
+package org.neo4j.helpers;
 
-import java.io.File;
-
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
-
-final class FileSizeThreshold implements Threshold
+public class FrozenClock implements Clock
 {
-    private final FileSystemAbstraction fileSystem;
-    private final long maxSize;
+    private final long millis;
 
-    private long currentSize;
-
-    FileSizeThreshold( FileSystemAbstraction fileSystem, long maxSize )
+    public FrozenClock( long millis )
     {
-        this.fileSystem = fileSystem;
-        this.maxSize = maxSize;
+        this.millis = millis;
     }
 
     @Override
-    public void init()
+    public long currentTimeMillis()
     {
-        currentSize = 0;
-    }
-
-    @Override
-    public boolean reached( File file, long version, LogFileInformation source )
-    {
-        currentSize += fileSystem.getFileSize( file );
-        return currentSize >= maxSize;
+        return millis;
     }
 }

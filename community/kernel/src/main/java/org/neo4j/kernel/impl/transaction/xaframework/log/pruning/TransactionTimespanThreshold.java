@@ -23,18 +23,27 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.transaction.xaframework.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 
 public final class TransactionTimespanThreshold implements Threshold
 {
-    private final TimeUnit timeUnit;
-    private final int timeToKeep;
+    private final long timeToKeepInMillis;
+    private final Clock clock;
 
-    TransactionTimespanThreshold( TimeUnit timeUnit, int timeToKeep )
+    private long lowerLimit;
+
+    TransactionTimespanThreshold( Clock clock, TimeUnit timeUnit, long timeToKeep )
     {
-        this.timeUnit = timeUnit;
-        this.timeToKeep = timeToKeep;
+        this.clock = clock;
+        this.timeToKeepInMillis = timeUnit.toMillis( timeToKeep );
+    }
+
+    @Override
+    public void init()
+    {
+        lowerLimit = clock.currentTimeMillis() - timeToKeepInMillis;
     }
 
     @Override
@@ -42,10 +51,8 @@ public final class TransactionTimespanThreshold implements Threshold
     {
         try
         {
-            long lowerLimit = System.currentTimeMillis() - timeUnit.toMillis( timeToKeep );
             long firstStartRecordTimestamp = source.getFirstStartRecordTimestamp( version );
-            return firstStartRecordTimestamp >= 0 &&
-                   firstStartRecordTimestamp < lowerLimit;
+            return firstStartRecordTimestamp >= 0 && firstStartRecordTimestamp < lowerLimit;
         }
         catch(IllegalLogFormatException e)
         {
