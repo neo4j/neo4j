@@ -46,7 +46,7 @@ public class ParallellCentralityCalculation<ShortestPathCostType>
 {
     protected SingleSourceShortestPath<ShortestPathCostType> singleSourceShortestPath;
     protected Set<Node> nodeSet;
-    List<ShortestPathBasedCentrality<?,ShortestPathCostType>> calculations = new LinkedList<ShortestPathBasedCentrality<?,ShortestPathCostType>>();
+    protected List<ShortestPathBasedCentrality<?,ShortestPathCostType>> calculations = new LinkedList<ShortestPathBasedCentrality<?,ShortestPathCostType>>();
     protected boolean doneCalculation = false;
 
     /**
@@ -80,7 +80,7 @@ public class ParallellCentralityCalculation<ShortestPathCostType>
                 "Trying to add a centrality calculation to a parallell computation that has already been done." );
         }
         calculations.add( shortestPathBasedCentrality );
-        shortestPathBasedCentrality.doneCalculation = true;
+        shortestPathBasedCentrality.skipCalculation();
     }
 
     /**
