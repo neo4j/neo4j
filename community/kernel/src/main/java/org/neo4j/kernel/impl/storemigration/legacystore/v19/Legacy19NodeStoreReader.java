@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 
-public class LegacyNodeStoreReader implements Closeable
+public class Legacy19NodeStoreReader implements Closeable
 {
     public static final String FROM_VERSION = "NodeStore " + Legacy20Store.LEGACY_VERSION;
     public static final int RECORD_SIZE = 9;
@@ -46,7 +46,7 @@ public class LegacyNodeStoreReader implements Closeable
     private final StoreChannel fileChannel;
     private final long maxId;
 
-    public LegacyNodeStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
+    public Legacy19NodeStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
     {
         fileChannel = fs.open( fileName, "r" );
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;

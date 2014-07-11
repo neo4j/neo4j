@@ -310,10 +310,10 @@ public class StoreUpgraderTestIT
 
     public static void truncateAllFiles( FileSystemAbstraction fileSystem, File workingDirectory ) throws IOException
     {
-        for ( StoreFile storeFile : StoreFile.legacyStoreFiles() )
+        for ( StoreFile20 storeFile : StoreFile20.legacyStoreFiles() )
         {
             truncateFile( fileSystem, new File( workingDirectory, storeFile.storeFileName() ),
-                    storeFile.latestLegacyVersion() );
+                    storeFile.legacyVersion() );
         }
     }
 

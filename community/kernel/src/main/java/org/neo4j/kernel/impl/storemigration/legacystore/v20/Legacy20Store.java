@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
+import org.neo4j.kernel.impl.storemigration.StoreFile20;
 
 /**
  * Reader for a database in an older store format version.
@@ -110,9 +110,9 @@ public class Legacy20Store implements Closeable
     }
 
     public static void ensureStoreVersionTrailer( FileSystemAbstraction fs,
-            File storeDir, Iterable<StoreFile> files ) throws IOException
+            File storeDir, Iterable<StoreFile20> files ) throws IOException
     {
-        for ( StoreFile file : files )
+        for ( StoreFile20 file : files )
         {
             setStoreVersionTrailer( fs, new File( storeDir, file.storeFileName() ),
                     buildTypeDescriptorAndVersion( file.typeDescriptor() ) );

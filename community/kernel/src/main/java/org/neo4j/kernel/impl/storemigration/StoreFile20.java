@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 
-public enum StoreFile
+public enum StoreFile20
 {
     NODE_STORE( NodeStore.TYPE_DESCRIPTOR, StoreFactory.NODE_STORE_NAME ),
     NODE_LABEL_STORE( DynamicArrayStore.TYPE_DESCRIPTOR, StoreFactory.NODE_LABELS_STORE_NAME ),
@@ -70,26 +70,21 @@ public enum StoreFile
     private final String storeFileNamePart;
     private final boolean existsInBoth;
 
-    private StoreFile( String typeDescriptor, String storeFileNamePart )
+    private StoreFile20( String typeDescriptor, String storeFileNamePart )
     {
         this( typeDescriptor, storeFileNamePart, true );
     }
 
-    private StoreFile( String typeDescriptor, String storeFileNamePart, boolean existsInBoth )
+    private StoreFile20( String typeDescriptor, String storeFileNamePart, boolean existsInBoth )
     {
         this.typeDescriptor = typeDescriptor;
         this.storeFileNamePart = storeFileNamePart;
         this.existsInBoth = existsInBoth;
     }
 
-    public String latestLegacyVersion()
+    public String legacyVersion()
     {
-        return legacyVersionFor( Legacy20Store.LEGACY_VERSION );
-    }
-
-    public String legacyVersionFor( String legacyStoreVersion )
-    {
-        return typeDescriptor + " " + legacyStoreVersion;
+        return typeDescriptor + " " + Legacy20Store.LEGACY_VERSION;
     }
 
     /**
@@ -115,21 +110,21 @@ public enum StoreFile
         return fileName( StoreFileType.ID );
     }
 
-    public static Iterable<StoreFile> legacyStoreFiles()
+    public static Iterable<StoreFile20> legacyStoreFiles()
     {
-        Predicate<StoreFile> predicate = new Predicate<StoreFile>()
+        Predicate<StoreFile20> predicate = new Predicate<StoreFile20>()
         {
             @Override
-            public boolean accept( StoreFile item )
+            public boolean accept( StoreFile20 item )
             {
                 return item.existsInBoth;
             }
         };
-        Iterable<StoreFile> storeFiles = currentStoreFiles();
+        Iterable<StoreFile20> storeFiles = currentStoreFiles();
         return Iterables.filter( predicate, storeFiles );
     }
 
-    public static Iterable<StoreFile> currentStoreFiles()
+    public static Iterable<StoreFile20> currentStoreFiles()
     {
         return Iterables.iterable( values() );
     }
@@ -144,11 +139,11 @@ public enum StoreFile
      * @throws IOException If any of the move operations fail for any reason.
      */
     public static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory,
-            Iterable<StoreFile> files, boolean allowSkipNonExistentFiles, boolean allowOverwriteTarget,
+            Iterable<StoreFile20> files, boolean allowSkipNonExistentFiles, boolean allowOverwriteTarget,
             StoreFileType... types ) throws IOException
     {
         // TODO: change the order that files are moved to handle failure conditions properly
-        for ( StoreFile storeFile : files )
+        for ( StoreFile20 storeFile : files )
         {
             for ( StoreFileType type : types )
             {
@@ -189,15 +184,15 @@ public enum StoreFile
     }
 
     public static void ensureStoreVersion( FileSystemAbstraction fs,
-            File storeDir, Iterable<StoreFile> files ) throws IOException
+            File storeDir, Iterable<StoreFile20> files ) throws IOException
     {
         ensureStoreVersion( fs, storeDir, files, ALL_STORES_VERSION );
     }
 
     public static void ensureStoreVersion( FileSystemAbstraction fs,
-            File storeDir, Iterable<StoreFile> files, String version ) throws IOException
+            File storeDir, Iterable<StoreFile20> files, String version ) throws IOException
     {
-        for ( StoreFile file : files )
+        for ( StoreFile20 file : files )
         {
             setStoreVersionTrailer( fs, new File( storeDir, file.storeFileName() ),
                     buildTypeDescriptorAndVersion( file.typeDescriptor(), version ) );
@@ -223,17 +218,17 @@ public enum StoreFile
         }
     }
 
-    public static void deleteIdFile( FileSystemAbstraction fs, File directory, StoreFile... stores )
+    public static void deleteIdFile( FileSystemAbstraction fs, File directory, StoreFile20... stores )
     {
-        for ( StoreFile store : stores )
+        for ( StoreFile20 store : stores )
         {
             fs.deleteFile( new File( directory, store.idFileName() ) );
         }
     }
 
-    public static void deleteStoreFile( FileSystemAbstraction fs, File directory, StoreFile... stores )
+    public static void deleteStoreFile( FileSystemAbstraction fs, File directory, StoreFile20... stores )
     {
-        for ( StoreFile store : stores )
+        for ( StoreFile20 store : stores )
         {
             fs.deleteFile( new File( directory, store.storeFileName() ) );
         }
