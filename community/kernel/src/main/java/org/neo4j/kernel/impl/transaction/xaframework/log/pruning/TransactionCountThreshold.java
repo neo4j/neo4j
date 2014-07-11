@@ -36,6 +36,12 @@ public final class TransactionCountThreshold implements Threshold
     }
 
     @Override
+    public void init()
+    {
+        // nothing to do here
+    }
+
+    @Override
     public boolean reached( File ignored, long version, LogFileInformation source )
     {
         try

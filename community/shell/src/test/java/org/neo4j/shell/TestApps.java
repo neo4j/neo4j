@@ -986,4 +986,29 @@ public class TestApps extends AbstractShellTest
     {
         executeCommand( "dbinfo -g Configuration", "\"ephemeral\": \"true\"" );
     }
+
+    @Test
+    public void canTerminateAnActiveCommand() throws Exception
+    {
+        final ShellServer server = this.shellServer;
+        final Serializable clientId = this.shellClient.getId();
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    Thread.sleep(100);
+                    server.terminate( clientId );
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        });
+        thread.start();
+
+        executeCommandExpectingException("CYPHER 2.1 FOREACH(i IN range(0, 10000) | CREATE ());", "has been terminated" );
+    }
 }

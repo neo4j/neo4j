@@ -34,6 +34,12 @@ public class MandatoryTransactionsForIndexDefinitionTests
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_DEFINITION_FACADE_METHODS );
     }
 
+    @Test
+    public void shouldTerminateWhenCallingMethodsOnIndexDefinitions() throws Exception
+    {
+        assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_DEFINITION_FACADE_METHODS );
+    }
+
     @Override
     protected IndexDefinition obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {

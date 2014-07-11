@@ -32,6 +32,7 @@ public class Session
     private final Serializable id;
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private final Map<String, String> aliases = new HashMap<String, String>();
+    private final InterruptSignalHandler signalHandler = InterruptSignalHandler.getHandler();
     
     public Session( Serializable id )
     {
@@ -42,7 +43,12 @@ public class Session
     {
         return id;
     }
-    
+
+    public InterruptSignalHandler getSignalHandler()
+    {
+        return signalHandler;
+    }
+
 	/**
 	 * Sets a session value.
 	 * @param key the session key.

@@ -19,14 +19,12 @@
  */
 package org.neo4j.shell;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.Args;
-import org.neo4j.shell.impl.RmiLocation;
-import org.neo4j.shell.impl.ShellBootstrap;
-import org.neo4j.shell.impl.SimpleAppServer;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
@@ -35,8 +33,15 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.Args;
+import org.neo4j.shell.impl.RmiLocation;
+import org.neo4j.shell.impl.ShellBootstrap;
+import org.neo4j.shell.impl.SimpleAppServer;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+
 import static org.neo4j.io.fs.FileUtils.newBufferedFileReader;
+import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
 
 /**
  * Can start clients, either remotely to another JVM running a server
@@ -103,9 +108,7 @@ public class StartClient
      */
     public static final String ARG_CONFIG = "config";
 
-    private StartClient()
-    {
-    }
+    private StartClient() { }
 
     /**
      * Starts a shell client. Remote or local depending on the arguments.
@@ -117,10 +120,11 @@ public class StartClient
      */
     public static void main( String[] arguments )
     {
-        new StartClient().start( arguments );
+        InterruptSignalHandler signalHandler = InterruptSignalHandler.getHandler();
+        new StartClient().start( arguments, signalHandler );
     }
 
-    private void start( String[] arguments )
+    private void start( String[] arguments, CtrlCHandler signalHandler )
     {
         Args args = new Args( arguments );
         if ( args.has( "?" ) || args.has( "h" ) || args.has( "help" ) || args.has( "usage" ) )
@@ -155,7 +159,7 @@ public class StartClient
             {
                 handleException( e, args );
             }
-            startLocal( args );
+            startLocal( args, signalHandler );
         }
         // Remote
         else
@@ -172,7 +176,7 @@ public class StartClient
             {
                 startServer( pid, args );
             }
-            startRemote( args );
+            startRemote( args, signalHandler );
         }
     }
 
@@ -207,7 +211,7 @@ public class StartClient
         }
     }
 
-    private void startLocal( Args args )
+    private void startLocal( Args args, CtrlCHandler signalHandler )
     {
         String dbPath = args.get( ARG_PATH, null );
         if ( dbPath == null )
@@ -223,7 +227,7 @@ public class StartClient
         try
         {
             boolean readOnly = args.getBoolean( ARG_READONLY, false, true );
-            tryStartLocalServerAndClient( dbPath, readOnly, args );
+            tryStartLocalServerAndClient( dbPath, readOnly, args, signalHandler );
         }
         catch ( Exception e )
         {
@@ -232,8 +236,8 @@ public class StartClient
         System.exit( 0 );
     }
 
-    private void tryStartLocalServerAndClient( String dbPath,
-                                               boolean readOnly, Args args ) throws Exception
+    private void tryStartLocalServerAndClient( String dbPath, boolean readOnly, Args args,
+                                               CtrlCHandler signalHandler ) throws Exception
     {
         String configFile = args.get( ARG_CONFIG, null );
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( dbPath, readOnly, configFile );
@@ -250,8 +254,9 @@ public class StartClient
         {
             System.out.println( "NOTE: Local Neo4j graph database service at '" + dbPath + "'" );
         }
-        ShellClient client = ShellLobby.newClient( server, getSessionVariablesFromArgs( args ) );
+        ShellClient client = ShellLobby.newClient( server, getSessionVariablesFromArgs( args ), signalHandler );
         grabPromptOrJustExecuteCommand( client, args );
+
         shutdownIfNecessary( server );
     }
 
@@ -287,7 +292,7 @@ public class StartClient
         }
     }
 
-    private static void startRemote( Args args )
+    private void startRemote( Args args, CtrlCHandler signalHandler )
     {
         try
         {
@@ -295,7 +300,7 @@ public class StartClient
             int port = args.getNumber( ARG_PORT, SimpleAppServer.DEFAULT_PORT ).intValue();
             String name = args.get( ARG_NAME, SimpleAppServer.DEFAULT_NAME );
             ShellClient client = ShellLobby.newClient( RmiLocation.location( host, port, name ),
-                    getSessionVariablesFromArgs( args ) );
+                    getSessionVariablesFromArgs( args ), signalHandler );
             if ( !isCommandLine( args ) )
             {
                 System.out.println( "NOTE: Remote Neo4j graph database service '" + name + "' at port " + port );
@@ -314,7 +319,7 @@ public class StartClient
                args.get( ARG_FILE, null ) != null;
     }
 
-    private static void grabPromptOrJustExecuteCommand( ShellClient client, Args args ) throws Exception
+    private void grabPromptOrJustExecuteCommand( ShellClient client, Args args ) throws Exception
     {
         String command = args.get( ARG_COMMAND, null );
         if ( command != null )
@@ -353,7 +358,6 @@ public class StartClient
             }
             return;
         }
-
         client.grabPrompt();
     }
 

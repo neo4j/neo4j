@@ -17,31 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.helpers;
 
-import org.junit.Test;
-
-import org.neo4j.graphdb.schema.Schema;
-
-import static org.neo4j.graphdb.SchemaFacadeMethods.ALL_SCHEMA_FACADE_METHODS;
-
-public class MandatoryTransactionsForSchemaTests extends AbstractMandatoryTransactionsTest<Schema>
+public class FrozenClock implements Clock
 {
-    @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnSchema() throws Exception
-    {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_SCHEMA_FACADE_METHODS );
-    }
+    private final long millis;
 
-    @Test
-    public void shouldTerminateWhenCallingMethodsOnSchema() throws Exception
+    public FrozenClock( long millis )
     {
-        assertFacadeMethodsThrowAfterTerminate( ALL_SCHEMA_FACADE_METHODS );
+        this.millis = millis;
     }
 
     @Override
-    protected Schema obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    public long currentTimeMillis()
     {
-        return graphDatabaseService.schema();
+        return millis;
     }
 }

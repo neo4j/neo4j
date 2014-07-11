@@ -113,4 +113,8 @@ public interface KernelTransaction extends AutoCloseable
     LegacyIndexTransactionState getLegacyIndexTransactionState();
 
     boolean isOpen();
+
+    boolean shouldBeTerminated();
+
+    void markForTermination();
 }

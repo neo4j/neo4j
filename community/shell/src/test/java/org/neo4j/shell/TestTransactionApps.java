@@ -19,11 +19,6 @@
  */
 package org.neo4j.shell;
 
-import static java.util.regex.Pattern.compile;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.HashMap;
@@ -32,12 +27,20 @@ import java.util.regex.Pattern;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.omg.CORBA.SystemException;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.omg.CORBA.SystemException;
+
+import static java.util.regex.Pattern.compile;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 public class TestTransactionApps
 {
@@ -189,6 +192,6 @@ class FakeShellServer extends GraphDatabaseShellServer {
 
     public int getActiveTransactionCount()
     {
-        return transactions.size();
+        return clients.size();
     }
 }

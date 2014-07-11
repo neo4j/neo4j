@@ -32,6 +32,12 @@ public class MandatoryTransactionsForRelationshipTests extends AbstractMandatory
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_RELATIONSHIP_FACADE_METHODS );
     }
 
+    @Test
+    public void shouldTerminateWhenCallingMethodsOnRelationshipFacade() throws Exception
+    {
+        assertFacadeMethodsThrowAfterTerminate( ALL_RELATIONSHIP_FACADE_METHODS );
+    }
+
     @Override
     protected Relationship obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {

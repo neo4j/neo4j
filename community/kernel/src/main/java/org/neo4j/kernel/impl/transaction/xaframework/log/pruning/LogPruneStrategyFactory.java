@@ -24,6 +24,7 @@ import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
@@ -125,11 +126,11 @@ public class LogPruneStrategyFactory
         }
         else if ( type.equals( types[typeIndex++] ) )
         {
-            thresholdToUse = new TransactionTimespanThreshold( TimeUnit.HOURS, number );
+            thresholdToUse = new TransactionTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.HOURS, number );
         }
         else if ( type.equals( types[typeIndex++] ) )
         {
-            thresholdToUse = new TransactionTimespanThreshold( TimeUnit.DAYS, number );
+            thresholdToUse = new TransactionTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.DAYS, number );
         }
         else
         {

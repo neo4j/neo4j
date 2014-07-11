@@ -236,7 +236,8 @@ public class TransactionSoakIT
             this.name = name;
             try
             {
-                client = new SameJvmClient( new HashMap<String, Serializable>(), server, new SilentLocalOutput() );
+                client = new SameJvmClient( new HashMap<String, Serializable>(), server,
+                                            new SilentLocalOutput(), InterruptSignalHandler.getHandler() );
             }
             catch ( ShellException e )
             {

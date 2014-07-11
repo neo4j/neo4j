@@ -35,6 +35,12 @@ public class MandatoryTransactionsForConstraintDefinitionTests
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
 
+    @Test
+    public void shouldTerminateWhenCallingMethodsOnIndexDefinitions() throws Exception
+    {
+        assertFacadeMethodsThrowAfterTerminate( ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
+    }
+
     @Override
     protected ConstraintDefinition obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {

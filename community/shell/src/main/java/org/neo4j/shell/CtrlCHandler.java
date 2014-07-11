@@ -17,30 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.shell;
 
-import org.junit.Test;
+import java.io.Closeable;
 
-import static org.neo4j.graphdb.NodeFacadeMethods.ALL_NODE_FACADE_METHODS;
-
-public class MandatoryTransactionsForNodeTests extends AbstractMandatoryTransactionsTest<Node>
+public interface CtrlCHandler
 {
-    @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnNode() throws Exception
-    {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_FACADE_METHODS );
-    }
-
-    @Test
-    public void shouldTerminateWhenCallingMethodsOnNode() throws Exception
-    {
-        assertFacadeMethodsThrowAfterTerminate( ALL_NODE_FACADE_METHODS );
-    }
-
-    @Override
-    protected Node obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
-    {
-        return graphDatabaseService.createNode();
-    }
+    Closeable install( Runnable action );
 }
-
