@@ -19,10 +19,12 @@
  */
 package org.neo4j.server.web;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.test.Mute.muteAll;
 
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -39,28 +41,31 @@ public class JettyThreadLimitTest
     @Test
     public void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
     {
-    	Jetty9WebServer server = new Jetty9WebServer( DevNullLoggingService.DEV_NULL );
-        int maxThreads = 13; // 12 is the new min maxThreads value
-        server.setMaxThreads( maxThreads );
+        Jetty9WebServer server = new Jetty9WebServer( DevNullLoggingService.DEV_NULL );
+        int numCores = 1;
+        int configuredMaxThreads = 12; // 12 is the new min max Threads value, for one core
+        server.setMaxThreads( numCores );
         server.setPort( 7480 );
-        try {
-	        server.start();
-	        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty().getThreadPool();
-	        threadPool.start();
-            int configuredMaxThreads = maxThreads * 4;
-            loadThreadPool( threadPool, configuredMaxThreads + 1);
-	        int threads = threadPool.getThreads();
-	        assertTrue( threads <= maxThreads );
+        try
+        {
+            server.start();
+            QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty().getThreadPool();
+            threadPool.start();
+            CountDownLatch cb = loadThreadPool( threadPool, configuredMaxThreads + 1 );
+            Thread.sleep( 10 ); // Wait for threadPool to create threads 
+            int threads = threadPool.getThreads();
+            assertEquals( "Wrong number of threads in pool", configuredMaxThreads, threads );
+            cb.countDown();
         }
         finally
         {
-        	server.stop();
+            server.stop();
         }
     }
 
-    private void loadThreadPool(QueuedThreadPool threadPool, int tasksToSubmit)
+    private CountDownLatch loadThreadPool( QueuedThreadPool threadPool, int tasksToSubmit )
     {
-        final CyclicBarrier cb = new CyclicBarrier(tasksToSubmit);
+        final CountDownLatch cb = new CountDownLatch( 1 );
         for ( int i = 0; i < tasksToSubmit; i++ )
         {
             threadPool.dispatch( new Runnable()
@@ -76,12 +81,9 @@ public class JettyThreadLimitTest
                     {
                         e.printStackTrace();
                     }
-                    catch ( BrokenBarrierException e )
-                    {
-                        e.printStackTrace();
-                    }
                 }
             } );
         }
+        return cb;
     }
 }
