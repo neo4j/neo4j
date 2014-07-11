@@ -20,12 +20,9 @@
 package org.neo4j.server.web;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.test.Mute.muteAll;
 
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
 
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Rule;
@@ -52,7 +49,7 @@ public class JettyThreadLimitTest
             QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty().getThreadPool();
             threadPool.start();
             CountDownLatch cb = loadThreadPool( threadPool, configuredMaxThreads + 1 );
-            Thread.sleep( 10 ); // Wait for threadPool to create threads 
+            Thread.sleep( 10 ); // Wait for threadPool to create threads
             int threads = threadPool.getThreads();
             assertEquals( "Wrong number of threads in pool", configuredMaxThreads, threads );
             cb.countDown();
