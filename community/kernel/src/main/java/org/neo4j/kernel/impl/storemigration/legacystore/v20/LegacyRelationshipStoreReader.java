@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
 import java.io.Closeable;
 import java.io.File;
@@ -126,7 +126,7 @@ public class LegacyRelationshipStoreReader implements Closeable
         }
     }
 
-    public static final String FROM_VERSION = "RelationshipStore " + LegacyStore.LEGACY_VERSION;
+    public static final String FROM_VERSION = "RelationshipStore " + Legacy20Store.LEGACY_VERSION;
     public static final int RECORD_SIZE = 33;
 
     private final StoreChannel fileChannel;
@@ -248,10 +248,10 @@ public class LegacyRelationshipStoreReader implements Closeable
         boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
         if ( inUse )
         {
-            long firstNode = LegacyStore.getUnsignedInt( buffer );
+            long firstNode = Legacy20Store.getUnsignedInt( buffer );
             long firstNodeMod = (inUseByte & 0xEL) << 31;
 
-            long secondNode = LegacyStore.getUnsignedInt( buffer );
+            long secondNode = Legacy20Store.getUnsignedInt( buffer );
 
             // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
             // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
@@ -263,28 +263,28 @@ public class LegacyRelationshipStoreReader implements Closeable
             long secondNodeMod = (typeInt & 0x70000000L) << 4;
             int type = (int) (typeInt & 0xFFFF);
 
-            firstNode = LegacyStore.longFromIntAndMod( firstNode, firstNodeMod );
-            secondNode = LegacyStore.longFromIntAndMod( secondNode, secondNodeMod );
+            firstNode = Legacy20Store.longFromIntAndMod( firstNode, firstNodeMod );
+            secondNode = Legacy20Store.longFromIntAndMod( secondNode, secondNodeMod );
 
-            long firstPrevRel = LegacyStore.getUnsignedInt( buffer );
+            long firstPrevRel = Legacy20Store.getUnsignedInt( buffer );
             long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
-            firstPrevRel =  LegacyStore.longFromIntAndMod( firstPrevRel, firstPrevRelMod );
+            firstPrevRel =  Legacy20Store.longFromIntAndMod( firstPrevRel, firstPrevRelMod );
 
-            long firstNextRel = LegacyStore.getUnsignedInt( buffer );
+            long firstNextRel = Legacy20Store.getUnsignedInt( buffer );
             long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
-            firstNextRel = LegacyStore.longFromIntAndMod( firstNextRel, firstNextRelMod );
+            firstNextRel = Legacy20Store.longFromIntAndMod( firstNextRel, firstNextRelMod );
 
-            long secondPrevRel = LegacyStore.getUnsignedInt( buffer );
+            long secondPrevRel = Legacy20Store.getUnsignedInt( buffer );
             long secondPrevRelMod = (typeInt & 0x380000L) << 13;
-            secondPrevRel = LegacyStore.longFromIntAndMod( secondPrevRel, secondPrevRelMod );
+            secondPrevRel = Legacy20Store.longFromIntAndMod( secondPrevRel, secondPrevRelMod );
 
-            long secondNextRel = LegacyStore.getUnsignedInt( buffer );
+            long secondNextRel = Legacy20Store.getUnsignedInt( buffer );
             long secondNextRelMod = (typeInt & 0x70000L) << 16;
-            secondNextRel = LegacyStore.longFromIntAndMod( secondNextRel, secondNextRelMod );
+            secondNextRel = Legacy20Store.longFromIntAndMod( secondNextRel, secondNextRelMod );
 
-            long nextProp = LegacyStore.getUnsignedInt( buffer );
+            long nextProp = Legacy20Store.getUnsignedInt( buffer );
             long nextPropMod = (inUseByte & 0xF0L) << 28;
-            nextProp = LegacyStore.longFromIntAndMod( nextProp, nextPropMod );
+            nextProp = Legacy20Store.longFromIntAndMod( nextProp, nextPropMod );
 
             rel.reset( id, true, firstNode, secondNode, type,
                        firstPrevRel, firstNextRel, secondNextRel, secondPrevRel, nextProp );

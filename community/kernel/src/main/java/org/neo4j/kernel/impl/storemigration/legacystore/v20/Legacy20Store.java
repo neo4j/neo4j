@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 
@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.storemigration.StoreFile;
  *
  * {@link #LEGACY_VERSION} marks which version it's able to read.
  */
-public class LegacyStore implements Closeable
+public class Legacy20Store implements Closeable
 {
     public static final String LEGACY_VERSION = "v0.A.1";
 
@@ -56,7 +56,7 @@ public class LegacyStore implements Closeable
 
     private final FileSystemAbstraction fs;
 
-    public LegacyStore( FileSystemAbstraction fs, File storageFileName ) throws IOException
+    public Legacy20Store( FileSystemAbstraction fs, File storageFileName ) throws IOException
     {
         this.fs = fs;
         this.storageFileName = storageFileName;

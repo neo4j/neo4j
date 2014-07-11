@@ -59,7 +59,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
  *
  * {@link #LEGACY_VERSION} marks which version it's able to read.
  */
-public class LegacyStore implements Closeable
+public class Legacy19Store implements Closeable
 {
     public static final String LEGACY_VERSION = "v0.A.0";
 
@@ -71,7 +71,7 @@ public class LegacyStore implements Closeable
 
     private final FileSystemAbstraction fs;
 
-    public LegacyStore( FileSystemAbstraction fs, File storageFileName ) throws IOException
+    public Legacy19Store( FileSystemAbstraction fs, File storageFileName ) throws IOException
     {
         this.fs = fs;
         this.storageFileName = storageFileName;

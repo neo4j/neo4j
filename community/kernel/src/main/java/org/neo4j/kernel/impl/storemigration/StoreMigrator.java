@@ -38,9 +38,9 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyNodeStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -106,7 +106,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     public void migrate( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
             DependencyResolver dependencyResolver ) throws IOException
     {
-        LegacyStore legacyStore = new LegacyStore( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+        Legacy20Store legacyStore = new Legacy20Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
 
         ExecutionMonitor executionMonitor = new CoarseBoundedProgressExecutionMonitor(
                 legacyStore.getNodeStoreReader().getMaxId(), legacyStore.getRelStoreReader().getMaxId() )
@@ -141,7 +141,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         return result.toArray( new StoreFile[result.size()] );
     }
 
-    private Iterable<InputRelationship> legacyRelationshipsAsInput( LegacyStore legacyStore )
+    private Iterable<InputRelationship> legacyRelationshipsAsInput( Legacy20Store legacyStore )
     {
         final LegacyRelationshipStoreReader reader = legacyStore.getRelStoreReader();
         return new Iterable<InputRelationship>()
@@ -172,7 +172,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         };
     }
 
-    private Iterable<InputNode> legacyNodesAsInput( LegacyStore legacyStore )
+    private Iterable<InputNode> legacyNodesAsInput( Legacy20Store legacyStore )
     {
         final LegacyNodeStoreReader reader = legacyStore.getNodeStoreReader();
         final String[] NO_LABELS = new String[0];

@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.storemigration.legacystore.v19;
 
 import static java.nio.ByteBuffer.allocateDirect;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.LegacyStore.getUnsignedInt;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.LegacyStore.longFromIntAndMod;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.LegacyStore.readIntoBuffer;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.getUnsignedInt;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.longFromIntAndMod;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.readIntoBuffer;
 
 import java.io.Closeable;
 import java.io.File;
@@ -37,11 +37,11 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 
 public class LegacyPropertyStoreReader implements Closeable
 {
-    public static final String FROM_VERSION = "PropertyStore " + LegacyStore.LEGACY_VERSION;
+    public static final String FROM_VERSION = "PropertyStore " + Legacy20Store.LEGACY_VERSION;
     public static final int RECORD_SIZE =
             1/*next and prev high bits*/ + 4/*next*/ + 4/*prev*/ + 32 /*property blocks*/; // = 41
     private final StoreChannel fileChannel;

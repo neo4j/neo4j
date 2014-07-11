@@ -64,7 +64,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.CleanupRule;
@@ -128,7 +128,7 @@ public class StoreMigratorFrom19IT
         // a store that contains two nodes with property "name" of which there are two key tokens
         // that should be merged in the store migration
         // WHEN
-        Unzip.unzip( LegacyStore.class, "propkeydupdb.zip", storeDir );
+        Unzip.unzip( Legacy20Store.class, "propkeydupdb.zip", storeDir );
         upgrader( new StoreMigrator( monitor, fs ) ).migrateIfNeeded( storeDir );
 
         // THEN

@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 
 public enum StoreFile
 {
@@ -84,7 +84,7 @@ public enum StoreFile
 
     public String latestLegacyVersion()
     {
-        return legacyVersionFor( LegacyStore.LEGACY_VERSION );
+        return legacyVersionFor( Legacy20Store.LEGACY_VERSION );
     }
 
     public String legacyVersionFor( String legacyStoreVersion )

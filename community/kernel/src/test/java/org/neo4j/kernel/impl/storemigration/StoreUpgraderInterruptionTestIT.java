@@ -41,7 +41,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.LEGACY_VERSION;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.LEGACY_VERSION;
 
 public class StoreUpgraderInterruptionTestIT
 {

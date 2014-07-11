@@ -23,6 +23,8 @@ import java.io.File;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Outcome;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 
 /**
  * Logic to check whether a database version is upgradable to the current version. It looks at the
@@ -52,12 +54,18 @@ public class UpgradableDatabase
 
     public void checkUpgradeable( File storeDirectory )
     {
+        checkUpgradeableForVersion( storeDirectory, Legacy19Store.LEGACY_VERSION, false );
+        checkUpgradeableForVersion( storeDirectory, Legacy20Store.LEGACY_VERSION, true );
+    }
+
+    private void checkUpgradeableForVersion( File storeDirectory, String version, boolean failIfMismatching )
+    {
         for ( StoreFile store : StoreFile.legacyStoreFiles() )
         {
-            String expectedVersion = store.latestLegacyVersion();
+            String expectedVersion = store.legacyVersionFor( version );
             File storeFile = new File( storeDirectory, store.storeFileName() );
             Pair<Outcome, String> outcome = storeVersionCheck.hasVersion( storeFile, expectedVersion );
-            if ( !outcome.first().isSuccessful() )
+            if ( !outcome.first().isSuccessful() && failIfMismatching )
             {
                 switch ( outcome.first() )
                 {

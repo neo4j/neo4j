@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,9 +29,9 @@ import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.getUnsignedInt;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.longFromIntAndMod;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.readIntoBuffer;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.getUnsignedInt;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.longFromIntAndMod;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.readIntoBuffer;
 
 public class LegacyDynamicStringStoreReader
 {
