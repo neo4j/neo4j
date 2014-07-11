@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.storemigration.legacystore.v19;
 
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.KEYS_PART;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.LegacyStore.readIntoBuffer;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.readIntoBuffer;
 
 import java.io.Closeable;
 import java.io.File;
@@ -35,12 +35,12 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicStringStoreReader;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyDynamicStringStoreReader;
 
 public class LegacyPropertyIndexStoreReader implements Closeable
 {
-    public static final String FROM_VERSION = "PropertyIndexStore " + LegacyStore.LEGACY_VERSION;
+    public static final String FROM_VERSION = "PropertyIndexStore " + Legacy20Store.LEGACY_VERSION;
     public static final int RECORD_SIZE = 9;
     private final StoreChannel fileChannel;
     private final LegacyDynamicStringStoreReader nameStoreReader;

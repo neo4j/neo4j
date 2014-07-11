@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.assertLegacyAndCurrentVersionHaveSameLength;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.assertLegacyAndCurrentVersionHaveSameLength;
 
 import org.junit.Test;
 
-public class LegacyStoreTest
+public class Legacy20StoreTest
 {
     @Test
     public void shouldFailIfEncodedVersionLengthDiffers() throws Exception

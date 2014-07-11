@@ -52,7 +52,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
@@ -64,7 +64,7 @@ public class StoreUpgraderTestIT
     @Test
     public void shouldUpgradeAnOldFormatStore() throws IOException
     {
-        assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, LegacyStore.LEGACY_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, Legacy20Store.LEGACY_VERSION ) );
 
         newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
                 .migrateIfNeeded( dbDirectory );

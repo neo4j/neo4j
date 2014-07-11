@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v19;
 
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.LegacyStore.getUnsignedInt;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.LegacyStore.longFromIntAndMod;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.LegacyStore.readIntoBuffer;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.getUnsignedInt;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.longFromIntAndMod;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.readIntoBuffer;
 
 import java.io.File;
 import java.io.IOException;

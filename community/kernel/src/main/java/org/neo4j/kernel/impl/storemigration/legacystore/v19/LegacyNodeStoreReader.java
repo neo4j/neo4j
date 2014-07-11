@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.storemigration.legacystore.v19;
 
 import static java.nio.ByteBuffer.allocateDirect;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.LegacyStore.getUnsignedInt;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.LegacyStore.longFromIntAndMod;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.LegacyStore.readIntoBuffer;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.getUnsignedInt;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.longFromIntAndMod;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.readIntoBuffer;
 
 import java.io.Closeable;
 import java.io.File;
@@ -36,11 +36,11 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 
 public class LegacyNodeStoreReader implements Closeable
 {
-    public static final String FROM_VERSION = "NodeStore " + org.neo4j.kernel.impl.storemigration.legacystore
-            .LegacyStore.LEGACY_VERSION;
+    public static final String FROM_VERSION = "NodeStore " + Legacy20Store.LEGACY_VERSION;
     public static final int RECORD_SIZE = 9;
 
     private final StoreChannel fileChannel;

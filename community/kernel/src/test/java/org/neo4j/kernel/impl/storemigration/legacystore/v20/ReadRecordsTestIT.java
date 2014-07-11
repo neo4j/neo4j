@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,12 +40,12 @@ public class ReadRecordsTestIT
     public void shouldReadNodeRecords() throws IOException
     {
         File storeDir = unzip( getClass(), "exampledb.zip" );
-        LegacyNodeStoreReader nodeStoreReader = new LegacyNodeStoreReader( fs,
+        org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyNodeStoreReader nodeStoreReader = new org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyNodeStoreReader( fs,
                 new File( storeDir, "neostore.nodestore.db" ) );
         assertEquals( 1003, nodeStoreReader.getMaxId() );
 
         final AtomicInteger nodeCount = new AtomicInteger( 0 );
-        nodeStoreReader.accept( new LegacyNodeStoreReader.Visitor()
+        nodeStoreReader.accept( new org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyNodeStoreReader.Visitor()
         {
             @Override
             public void visit( NodeRecord record )

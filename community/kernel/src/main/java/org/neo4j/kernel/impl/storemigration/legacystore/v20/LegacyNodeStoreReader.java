@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
 import java.io.Closeable;
 import java.io.File;
@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 import static java.nio.ByteBuffer.allocateDirect;
 
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.longFromIntAndMod;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.longFromIntAndMod;
 
 public class LegacyNodeStoreReader implements Closeable
 {
@@ -48,7 +48,7 @@ public class LegacyNodeStoreReader implements Closeable
         void visit(NodeRecord record);
     }
 
-    public static final String FROM_VERSION = "NodeStore " + LegacyStore.LEGACY_VERSION;
+    public static final String FROM_VERSION = "NodeStore " + Legacy20Store.LEGACY_VERSION;
     public static final int RECORD_SIZE = 14;
 
     private final StoreChannel fileChannel;
@@ -161,11 +161,11 @@ public class LegacyNodeStoreReader implements Closeable
         boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
         if ( inUse )
         {
-            long nextRel = LegacyStore.getUnsignedInt( buffer );
+            long nextRel = Legacy20Store.getUnsignedInt( buffer );
             long relModifier = (inUseByte & 0xEL) << 31;
-            long nextProp = LegacyStore.getUnsignedInt( buffer );
+            long nextProp = Legacy20Store.getUnsignedInt( buffer );
             long propModifier = (inUseByte & 0xF0L) << 28;
-            long lsbLabels = LegacyStore.getUnsignedInt( buffer );
+            long lsbLabels = Legacy20Store.getUnsignedInt( buffer );
             long hsbLabels = buffer.get() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
             long labels = lsbLabels | (hsbLabels << 32);
             nodeRecord = new NodeRecord( id, false, longFromIntAndMod( nextRel, relModifier ),
@@ -202,11 +202,11 @@ public class LegacyNodeStoreReader implements Closeable
         boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
         if ( inUse )
         {
-            long nextRel = LegacyStore.getUnsignedInt( buffer );
+            long nextRel = Legacy20Store.getUnsignedInt( buffer );
             long relModifier = (inUseByte & 0xEL) << 31;
-            long nextProp = LegacyStore.getUnsignedInt( buffer );
+            long nextProp = Legacy20Store.getUnsignedInt( buffer );
             long propModifier = (inUseByte & 0xF0L) << 28;
-            long lsbLabels = LegacyStore.getUnsignedInt( buffer );
+            long lsbLabels = Legacy20Store.getUnsignedInt( buffer );
             long hsbLabels = buffer.get() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
             long labels = lsbLabels | (hsbLabels << 32);
             nodeRecord = new NodeRecord( id, false, longFromIntAndMod( nextRel, relModifier ),
