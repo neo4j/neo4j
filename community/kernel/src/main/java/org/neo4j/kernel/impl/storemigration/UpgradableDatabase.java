@@ -54,22 +54,22 @@ public class UpgradableDatabase
     {
         for ( StoreFile store : StoreFile.legacyStoreFiles() )
         {
-            String expectedVersion = store.legacyVersion();
+            String expectedVersion = store.latestLegacyVersion();
             File storeFile = new File( storeDirectory, store.storeFileName() );
             Pair<Outcome, String> outcome = storeVersionCheck.hasVersion( storeFile, expectedVersion );
             if ( !outcome.first().isSuccessful() )
             {
                 switch ( outcome.first() )
                 {
-                case missingStoreFile:
-                    throw new StoreUpgrader.UpgradeMissingStoreFilesException( storeFile.getName() );
-                case storeVersionNotFound:
-                    throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( storeFile.getName() );
-                case unexpectedUpgradingStoreVersion:
-                    throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
-                            storeFile.getName(), expectedVersion, outcome.other() );
-                default:
-                    throw new IllegalArgumentException( outcome.first().name() );
+                    case missingStoreFile:
+                        throw new StoreUpgrader.UpgradeMissingStoreFilesException( storeFile.getName() );
+                    case storeVersionNotFound:
+                        throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( storeFile.getName() );
+                    case unexpectedUpgradingStoreVersion:
+                        throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
+                                storeFile.getName(), expectedVersion, outcome.other() );
+                    default:
+                        throw new IllegalArgumentException( outcome.first().name() );
                 }
             }
         }
