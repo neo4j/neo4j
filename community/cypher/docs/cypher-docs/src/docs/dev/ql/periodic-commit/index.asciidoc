@@ -4,8 +4,10 @@ Using Periodic Commit
 
 NOTE: See <<cypherdoc-importing-csv-files-with-cypher>> on how to import data from CSV files.
 
-Updating very large amounts of data (e.g. when importing) with a single Cypher query may fail due to memory constraints.
-For these situations *only*, Cypher provides the global +USING PERIODIC COMMIT+ query hint for updating queries.
+Updating very large amounts of data (e.g. when importing) with a single Cypher query may fail due to memory constraints. This will manifest
+itself as an +OutOfMemoryError+.
+
+For this situation *only*, Cypher provides the global +USING PERIODIC COMMIT+ query hint for updating queries.
 
 Periodic Commit will process the rows until the number of rows reaches a limit.
 Then the current transaction will be committed and replaced with a newly opened transaction.
