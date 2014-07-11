@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,11 +39,6 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.Unzip;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class MigrationTestUtils
 {
@@ -121,6 +120,11 @@ public class MigrationTestUtils
     public static File findOldFormatStoreDirectory() throws IOException
     {
         return Unzip.unzip( LegacyStore.class, "exampledb.zip" );
+    }
+
+    public static File find19FormatStoreDirectory() throws IOException
+    {
+        return Unzip.unzip( LegacyStore.class, "upgradeTest19Db.zip" );
     }
 
     public static File findOldFormatStoreDirectory( File unzipTarget ) throws IOException
