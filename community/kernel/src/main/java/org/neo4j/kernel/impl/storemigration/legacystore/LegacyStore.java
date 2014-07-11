@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -34,8 +36,6 @@ import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
-
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 
 /**
  * Reader for a database in an older store format version.

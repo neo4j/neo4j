@@ -49,8 +49,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
@@ -314,7 +312,8 @@ public class StoreUpgraderTestIT
     {
         for ( StoreFile storeFile : StoreFile.legacyStoreFiles() )
         {
-            truncateFile( fileSystem, new File( workingDirectory, storeFile.storeFileName() ), storeFile.legacyVersion() );
+            truncateFile( fileSystem, new File( workingDirectory, storeFile.storeFileName() ),
+                    storeFile.latestLegacyVersion() );
         }
     }
 
@@ -322,7 +321,6 @@ public class StoreUpgraderTestIT
     private File dbDirectory;
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     @SuppressWarnings( "deprecation" )
-    private final IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator )
     {
