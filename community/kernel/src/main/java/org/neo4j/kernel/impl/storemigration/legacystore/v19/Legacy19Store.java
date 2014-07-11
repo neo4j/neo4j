@@ -65,7 +65,7 @@ public class Legacy19Store implements Closeable
 
     private final File storageFileName;
     private final Collection<Closeable> allStoreReaders = new ArrayList<>();
-    private LegacyNodeStoreReader nodeStoreReader;
+    private Legacy19NodeStoreReader nodeStoreReader;
     private LegacyPropertyIndexStoreReader propertyIndexReader;
     private LegacyPropertyStoreReader propertyStoreReader;
 
@@ -94,7 +94,7 @@ public class Legacy19Store implements Closeable
 
     protected void initStorage() throws IOException
     {
-        allStoreReaders.add( nodeStoreReader = new LegacyNodeStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
+        allStoreReaders.add( nodeStoreReader = new Legacy19NodeStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
         allStoreReaders.add( propertyIndexReader = new LegacyPropertyIndexStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ) ) );
         allStoreReaders.add( propertyStoreReader = new LegacyPropertyStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STORE_NAME ) ) );
     }
@@ -181,7 +181,7 @@ public class Legacy19Store implements Closeable
                 buildTypeDescriptorAndVersion( DynamicArrayStore.TYPE_DESCRIPTOR ) );
     }
 
-    public LegacyNodeStoreReader getNodeStoreReader()
+    public Legacy19NodeStoreReader getNodeStoreReader()
     {
         return nodeStoreReader;
     }

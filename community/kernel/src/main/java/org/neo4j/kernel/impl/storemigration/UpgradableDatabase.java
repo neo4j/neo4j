@@ -22,9 +22,10 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Outcome;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 
 /**
  * Logic to check whether a database version is upgradable to the current version. It looks at the
@@ -52,34 +53,73 @@ public class UpgradableDatabase
         }
     }
 
-    public void checkUpgradeable( File storeDirectory )
+    public String checkUpgradeable( File storeDirectory )
     {
-        checkUpgradeableForVersion( storeDirectory, Legacy19Store.LEGACY_VERSION, false );
-        checkUpgradeableForVersion( storeDirectory, Legacy20Store.LEGACY_VERSION, true );
-    }
+        Triplet<Outcome, String, String> outcome = checkUpgradeableFor19( storeDirectory );
 
-    private void checkUpgradeableForVersion( File storeDirectory, String version, boolean failIfMismatching )
-    {
-        for ( StoreFile store : StoreFile.legacyStoreFiles() )
+        if ( outcome.first().isSuccessful() )
         {
-            String expectedVersion = store.legacyVersionFor( version );
-            File storeFile = new File( storeDirectory, store.storeFileName() );
-            Pair<Outcome, String> outcome = storeVersionCheck.hasVersion( storeFile, expectedVersion );
-            if ( !outcome.first().isSuccessful() && failIfMismatching )
+            return Legacy19Store.LEGACY_VERSION;
+        }
+        else
+        {
+            outcome = checkUpgradeableFor20( storeDirectory );
+            if ( !outcome.first().isSuccessful() )
             {
+                String foundVersion = outcome.second();
+                String storeFileName = outcome.third();
                 switch ( outcome.first() )
                 {
                     case missingStoreFile:
-                        throw new StoreUpgrader.UpgradeMissingStoreFilesException( storeFile.getName() );
+                        throw new StoreUpgrader.UpgradeMissingStoreFilesException( storeFileName );
                     case storeVersionNotFound:
-                        throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( storeFile.getName() );
+                        throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( storeFileName );
                     case unexpectedUpgradingStoreVersion:
                         throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
-                                storeFile.getName(), expectedVersion, outcome.other() );
+                                storeFileName, Legacy20Store.LEGACY_VERSION, foundVersion );
                     default:
                         throw new IllegalArgumentException( outcome.first().name() );
                 }
             }
+            else
+            {
+                return Legacy20Store.LEGACY_VERSION;
+            }
         }
+    }
+
+    private Triplet<Outcome, String, String> checkUpgradeableFor20( File storeDirectory )
+    {
+        Triplet<Outcome, String, String> outcome = null;
+        for ( StoreFile20 store : StoreFile20.legacyStoreFiles() )
+        {
+            String expectedVersion = store.legacyVersion();
+            File storeFile = new File( storeDirectory, store.storeFileName() );
+            Pair<Outcome, String> check = storeVersionCheck.hasVersion( storeFile, expectedVersion );
+            outcome = Triplet.of( check.first(), check.other(), storeFile.getName() );
+            if ( !check.first().isSuccessful() )
+            {
+                break;
+            }
+        }
+        return outcome;
+    }
+
+
+    private Triplet<Outcome, String, String> checkUpgradeableFor19( File storeDirectory )
+    {
+        Triplet<Outcome, String, String> outcome = null;
+        for ( StoreFile19 store : StoreFile19.legacyStoreFiles() )
+        {
+            String expectedVersion = store.legacyVersion();
+            File storeFile = new File( storeDirectory, store.storeFileName() );
+            Pair<Outcome, String> check = storeVersionCheck.hasVersion( storeFile, expectedVersion );
+            outcome = Triplet.of( check.first(), check.other(), storeFile.getName() );
+            if ( !check.first().isSuccessful() )
+            {
+                break;
+            }
+        }
+        return outcome;
     }
 }

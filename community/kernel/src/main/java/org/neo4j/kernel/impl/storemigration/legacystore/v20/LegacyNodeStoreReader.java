@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
+import static java.nio.ByteBuffer.allocateDirect;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.longFromIntAndMod;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -36,10 +39,6 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-
-import static java.nio.ByteBuffer.allocateDirect;
-
-import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.longFromIntAndMod;
 
 public class LegacyNodeStoreReader implements Closeable
 {

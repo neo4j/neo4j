@@ -30,18 +30,23 @@ import java.util.List;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallellBatchImporter;
@@ -130,15 +135,15 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         legacyStore.close();
     }
 
-    private StoreFile[] allExcept( StoreFile... exceptions )
+    private StoreFile20[] allExcept( StoreFile20... exceptions )
     {
-        List<StoreFile> result = new ArrayList<>();
-        result.addAll( Arrays.asList( StoreFile.values() ) );
-        for ( StoreFile except : exceptions )
+        List<StoreFile20> result = new ArrayList<>();
+        result.addAll( Arrays.asList( StoreFile20.values() ) );
+        for ( StoreFile20 except : exceptions )
         {
             result.remove( except );
         }
-        return result.toArray( new StoreFile[result.size()] );
+        return result.toArray( new StoreFile20[result.size()] );
     }
 
     private Iterable<InputRelationship> legacyRelationshipsAsInput( Legacy20Store legacyStore )
@@ -210,28 +215,28 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     {
         // The batch importer will create a whole store. so TODO delete everything except nodestore, relstore, relgroupstore here
         // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
-        StoreFile.deleteIdFile( fileSystem, migrationDir, allExcept( StoreFile.RELATIONSHIP_GROUP_STORE ) );
-        StoreFile.deleteStoreFile( fileSystem, migrationDir, allExcept( StoreFile.NODE_STORE,
-                StoreFile.RELATIONSHIP_STORE, StoreFile.RELATIONSHIP_GROUP_STORE ) );
+        StoreFile20.deleteIdFile( fileSystem, migrationDir, allExcept( StoreFile20.RELATIONSHIP_GROUP_STORE ) );
+        StoreFile20.deleteStoreFile( fileSystem, migrationDir, allExcept( StoreFile20.NODE_STORE,
+                StoreFile20.RELATIONSHIP_STORE, StoreFile20.RELATIONSHIP_GROUP_STORE ) );
 
         // Move the current ones into the leftovers directory
-        StoreFile.move( fileSystem, storeDir, leftOversDir,
-                IteratorUtil.<StoreFile>asIterable( StoreFile.NODE_STORE, StoreFile.RELATIONSHIP_STORE ),
+        StoreFile20.move( fileSystem, storeDir, leftOversDir,
+                IteratorUtil.<StoreFile20>asIterable( StoreFile20.NODE_STORE, StoreFile20.RELATIONSHIP_STORE ),
                 false, false, StoreFileType.STORE );
 
         // Move the migrated ones into the store directory
-        StoreFile.move( fileSystem, migrationDir, storeDir, StoreFile.currentStoreFiles(),
+        StoreFile20.move( fileSystem, migrationDir, storeDir, StoreFile20.currentStoreFiles(),
                 true,   // allow skip non existent source files
                 true,   // allow overwrite target files
                 StoreFileType.values() );
-        StoreFile.ensureStoreVersion( fileSystem, storeDir, StoreFile.currentStoreFiles() );
+        StoreFile20.ensureStoreVersion( fileSystem, storeDir, StoreFile20.currentStoreFiles() );
 //        LogFiles.move( fileSystem, storeDir, leftOversDir );
     }
 
     @Override
     public void cleanup( FileSystemAbstraction fileSystem, File migrationDir ) throws IOException
     {
-        for ( StoreFile storeFile : StoreFile.values() )
+        for ( StoreFile20 storeFile : StoreFile20.values() )
         {
             fileSystem.deleteFile( new File( migrationDir, storeFile.storeFileName() ) );
             fileSystem.deleteFile( new File( migrationDir, storeFile.idFileName() ) );

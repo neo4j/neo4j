@@ -135,7 +135,7 @@ public class MigrationTestUtils
     public static boolean allStoreFilesHaveVersion( FileSystemAbstraction fileSystem, File workingDirectory,
             String version ) throws IOException
     {
-        for ( StoreFile storeFile : StoreFile.legacyStoreFiles() )
+        for ( StoreFile20 storeFile : StoreFile20.legacyStoreFiles() )
         {
             StoreChannel channel = fileSystem.open( new File( workingDirectory, storeFile.storeFileName() ), "r" );
             int length = UTF8.encode( version ).length;
@@ -169,7 +169,7 @@ public class MigrationTestUtils
 
     public static boolean containsAnyStoreFiles( FileSystemAbstraction fileSystem, File directory )
     {
-        for ( StoreFile file : StoreFile.values() )
+        for ( StoreFile20 file : StoreFile20.values() )
         {
             if ( fileSystem.fileExists( new File( directory, file.storeFileName() ) ) )
             {

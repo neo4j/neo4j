@@ -50,7 +50,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
+import org.neo4j.kernel.impl.storemigration.StoreFile20;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.logging.DevNullLoggingService;
@@ -139,7 +139,7 @@ public class BackupServiceIT
         // then
         File[] files = fileSystem.listFiles( backupDir );
 
-        for ( final StoreFile storeFile : StoreFile.values() )
+        for ( final StoreFile20 storeFile : StoreFile20.values() )
         {
             assertThat( files, hasFile( storeFile.storeFileName() ) );
         }
