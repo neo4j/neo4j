@@ -30,23 +30,19 @@ import java.util.List;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyNodeStoreReader;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallellBatchImporter;
@@ -111,7 +107,19 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     public void migrate( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
             DependencyResolver dependencyResolver ) throws IOException
     {
-        Legacy20Store legacyStore = new Legacy20Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+        String versionToUpgradeFrom = upgradableDatabase.checkUpgradeable( storeDir );
+
+        progressMonitor.started();
+
+        LegacyStore legacyStore;
+        if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
+        {
+            legacyStore = new Legacy19Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+        }
+        else
+        {
+            legacyStore = new Legacy20Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+        }
 
         ExecutionMonitor executionMonitor = new CoarseBoundedProgressExecutionMonitor(
                 legacyStore.getNodeStoreReader().getMaxId(), legacyStore.getRelStoreReader().getMaxId() )
@@ -125,9 +133,9 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         BatchImporter importer = new ParallellBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
                 new Configuration.OverrideFromConfig( config ), Collections.<KernelExtensionFactory<?>>emptyList(),
                 executionMonitor );
-        progressMonitor.started();
         importer.doImport( legacyNodesAsInput( legacyStore ), legacyRelationshipsAsInput( legacyStore ),
                 NodeIdMapping.actual );
+
         progressMonitor.finished();
 
         // Close
@@ -146,9 +154,9 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         return result.toArray( new StoreFile20[result.size()] );
     }
 
-    private Iterable<InputRelationship> legacyRelationshipsAsInput( Legacy20Store legacyStore )
+    private Iterable<InputRelationship> legacyRelationshipsAsInput( LegacyStore legacyStore )
     {
-        final LegacyRelationshipStoreReader reader = legacyStore.getRelStoreReader();
+        final org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader reader = legacyStore.getRelStoreReader();
         return new Iterable<InputRelationship>()
         {
             @Override
@@ -177,7 +185,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         };
     }
 
-    private Iterable<InputNode> legacyNodesAsInput( Legacy20Store legacyStore )
+    private Iterable<InputNode> legacyNodesAsInput( LegacyStore legacyStore )
     {
         final LegacyNodeStoreReader reader = legacyStore.getNodeStoreReader();
         final String[] NO_LABELS = new String[0];
@@ -213,11 +221,12 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir,
             File storeDir, File leftOversDir ) throws IOException
     {
-        // The batch importer will create a whole store. so TODO delete everything except nodestore, relstore, relgroupstore here
+        // The batch importer will create a whole store. so
         // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
         StoreFile20.deleteIdFile( fileSystem, migrationDir, allExcept( StoreFile20.RELATIONSHIP_GROUP_STORE ) );
         StoreFile20.deleteStoreFile( fileSystem, migrationDir, allExcept( StoreFile20.NODE_STORE,
-                StoreFile20.RELATIONSHIP_STORE, StoreFile20.RELATIONSHIP_GROUP_STORE ) );
+                StoreFile20.RELATIONSHIP_STORE, StoreFile20.RELATIONSHIP_GROUP_STORE, StoreFile20.LABEL_TOKEN_STORE,
+                StoreFile20.NODE_LABEL_STORE, StoreFile20.LABEL_TOKEN_NAMES_STORE, StoreFile20.SCHEMA_STORE ) );
 
         // Move the current ones into the leftovers directory
         StoreFile20.move( fileSystem, storeDir, leftOversDir,

@@ -213,6 +213,7 @@ public enum StoreFile20
         }
         catch ( IllegalArgumentException e )
         {
+            e.printStackTrace();
             throw new IllegalArgumentException( "size:" + fileSize + ", trailer:" + trailer.length +
                     " for " + targetStoreFileName );
         }

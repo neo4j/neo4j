@@ -19,12 +19,19 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
+import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.LEGACY_VERSION;
+
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -33,15 +40,6 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
-import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.LEGACY_VERSION;
 
 public class StoreUpgraderInterruptionTestIT
 {

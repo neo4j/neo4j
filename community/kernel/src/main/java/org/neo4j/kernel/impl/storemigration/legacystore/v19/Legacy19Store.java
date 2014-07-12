@@ -48,6 +48,9 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyRelationship20StoreReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 
@@ -59,15 +62,16 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
  *
  * {@link #LEGACY_VERSION} marks which version it's able to read.
  */
-public class Legacy19Store implements Closeable
+public class Legacy19Store implements LegacyStore
 {
     public static final String LEGACY_VERSION = "v0.A.0";
 
     private final File storageFileName;
     private final Collection<Closeable> allStoreReaders = new ArrayList<>();
     private Legacy19NodeStoreReader nodeStoreReader;
-    private LegacyPropertyIndexStoreReader propertyIndexReader;
+    private Legacy19PropertyIndexStoreReader propertyIndexReader;
     private LegacyPropertyStoreReader propertyStoreReader;
+    private org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader relStoreReader;
 
     private final FileSystemAbstraction fs;
 
@@ -95,8 +99,9 @@ public class Legacy19Store implements Closeable
     protected void initStorage() throws IOException
     {
         allStoreReaders.add( nodeStoreReader = new Legacy19NodeStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
-        allStoreReaders.add( propertyIndexReader = new LegacyPropertyIndexStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ) ) );
+        allStoreReaders.add( propertyIndexReader = new Legacy19PropertyIndexStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ) ) );
         allStoreReaders.add( propertyStoreReader = new LegacyPropertyStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STORE_NAME ) ) );
+        allStoreReaders.add( relStoreReader = new LegacyRelationship20StoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME) ) );
     }
 
     public File getStorageFileName()
@@ -181,12 +186,18 @@ public class Legacy19Store implements Closeable
                 buildTypeDescriptorAndVersion( DynamicArrayStore.TYPE_DESCRIPTOR ) );
     }
 
-    public Legacy19NodeStoreReader getNodeStoreReader()
+    public LegacyNodeStoreReader getNodeStoreReader()
     {
         return nodeStoreReader;
     }
 
-    public LegacyPropertyIndexStoreReader getPropertyIndexReader()
+    @Override
+    public org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader getRelStoreReader()
+    {
+        return relStoreReader;
+    }
+
+    public Legacy19PropertyIndexStoreReader getPropertyIndexReader()
     {
         return propertyIndexReader;
     }

@@ -67,9 +67,7 @@ public class StoreMigrator19
 
     public void migrate( Legacy19Store legacyStore, NeoStore neoStore ) throws IOException
     {
-        progressMonitor.started();
         new Migration( legacyStore, neoStore ).migrate();
-        progressMonitor.finished();
     }
 
     protected class Migration
@@ -95,6 +93,7 @@ public class StoreMigrator19
             migrateLastTransactionLog();
 
             // Close
+            neoStore.close();
             legacyStore.close();
 
             // Just copy unchanged stores that doesn't need migration
@@ -202,12 +201,8 @@ public class StoreMigrator19
 
         private void migrateNodes( NodeStore nodeStore ) throws IOException
         {
-            for ( NodeRecord nodeRecord : loop( legacyStore.getNodeStoreReader().readNodeStore() ) )
+            for ( NodeRecord nodeRecord : loop( legacyStore.getNodeStoreReader().iterator() ) )
             {
-                if ( nodeRecord.getId() == 109991l )
-                {
-                    System.out.println("processing " + nodeRecord );
-                }
                 reportProgress( nodeRecord.getId() );
                 nodeStore.setHighId( nodeRecord.getId() + 1 );
                 if ( nodeRecord.inUse() )

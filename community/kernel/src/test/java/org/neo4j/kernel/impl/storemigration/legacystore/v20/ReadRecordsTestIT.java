@@ -19,20 +19,18 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.test.Unzip.unzip;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
-
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
-
-import static org.neo4j.test.Unzip.unzip;
 
 public class ReadRecordsTestIT
 {
@@ -40,12 +38,12 @@ public class ReadRecordsTestIT
     public void shouldReadNodeRecords() throws IOException
     {
         File storeDir = unzip( getClass(), "exampledb.zip" );
-        org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyNodeStoreReader nodeStoreReader = new org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyNodeStoreReader( fs,
+        Legacy20NodeStoreReader nodeStoreReader = new Legacy20NodeStoreReader( fs,
                 new File( storeDir, "neostore.nodestore.db" ) );
         assertEquals( 1003, nodeStoreReader.getMaxId() );
 
         final AtomicInteger nodeCount = new AtomicInteger( 0 );
-        nodeStoreReader.accept( new org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyNodeStoreReader.Visitor()
+        nodeStoreReader.accept( new org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader.Visitor()
         {
             @Override
             public void visit( NodeRecord record )

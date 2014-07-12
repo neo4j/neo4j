@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.StoreFile20;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 
 /**
  * Reader for a database in an older store format version.
@@ -45,14 +46,14 @@ import org.neo4j.kernel.impl.storemigration.StoreFile20;
  *
  * {@link #LEGACY_VERSION} marks which version it's able to read.
  */
-public class Legacy20Store implements Closeable
+public class Legacy20Store implements LegacyStore
 {
     public static final String LEGACY_VERSION = "v0.A.1";
 
     private final File storageFileName;
     private final Collection<Closeable> allStoreReaders = new ArrayList<>();
-    private LegacyNodeStoreReader nodeStoreReader;
-    private LegacyRelationshipStoreReader relStoreReader;
+    private org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader nodeStoreReader;
+    private org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader relStoreReader;
 
     private final FileSystemAbstraction fs;
 
@@ -79,12 +80,13 @@ public class Legacy20Store implements Closeable
 
     protected void initStorage() throws IOException
     {
-        allStoreReaders.add( nodeStoreReader = new LegacyNodeStoreReader( fs,
+        allStoreReaders.add( nodeStoreReader = new Legacy20NodeStoreReader( fs,
                 new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
-        allStoreReaders.add( relStoreReader = new LegacyRelationshipStoreReader( fs,
+        allStoreReaders.add( relStoreReader = new LegacyRelationship20StoreReader( fs,
                 new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME ) ) );
     }
 
+    @Override
     public File getStorageFileName()
     {
         return storageFileName;
@@ -137,12 +139,14 @@ public class Legacy20Store implements Closeable
         }
     }
 
-    public LegacyNodeStoreReader getNodeStoreReader()
+    @Override
+    public org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader getNodeStoreReader()
     {
         return nodeStoreReader;
     }
 
-    public LegacyRelationshipStoreReader getRelStoreReader()
+    @Override
+    public org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader getRelStoreReader()
     {
         return relStoreReader;
     }
@@ -175,6 +179,7 @@ public class Legacy20Store implements Closeable
         buffer.flip();
     }
 
+    @Override
     public void copyLegacyIndexStoreFile( File toDirectory ) throws IOException
     {
         File legacyDirectory = storageFileName.getParentFile();

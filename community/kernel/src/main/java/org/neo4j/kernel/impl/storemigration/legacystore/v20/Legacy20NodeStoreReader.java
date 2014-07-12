@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.longFromIntAndMod;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -39,13 +38,10 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 
-public class LegacyNodeStoreReader implements Closeable
+public class Legacy20NodeStoreReader implements LegacyNodeStoreReader
 {
-    public interface Visitor
-    {
-        void visit(NodeRecord record);
-    }
 
     public static final String FROM_VERSION = "NodeStore " + Legacy20Store.LEGACY_VERSION;
     public static final int RECORD_SIZE = 14;
@@ -53,13 +49,14 @@ public class LegacyNodeStoreReader implements Closeable
     private final StoreChannel fileChannel;
     private final long maxId;
 
-    public LegacyNodeStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
+    public Legacy20NodeStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
     {
         fileChannel = fs.open( fileName, "r" );
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
         maxId = (fileChannel.size() - endHeaderSize) / RECORD_SIZE;
     }
 
+    @Override
     public long getMaxId()
     {
         return maxId;
@@ -90,6 +87,7 @@ public class LegacyNodeStoreReader implements Closeable
         }
     }
 
+    @Override
     public Iterator<NodeRecord> iterator() throws IOException
     {
         final ByteBuffer buffer = ByteBuffer.allocateDirect( 4 * 1024 * RECORD_SIZE );
@@ -187,6 +185,7 @@ public class LegacyNodeStoreReader implements Closeable
         fileChannel.close();
     }
 
+//    @Override
     public NodeRecord readNodeStore( long id ) throws IOException
     {
         ByteBuffer buffer = allocateDirect( RECORD_SIZE );
