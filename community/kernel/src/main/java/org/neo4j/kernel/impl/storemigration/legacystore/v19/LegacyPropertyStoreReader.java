@@ -37,11 +37,10 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 
 public class LegacyPropertyStoreReader implements Closeable
 {
-    public static final String FROM_VERSION = "PropertyStore " + Legacy20Store.LEGACY_VERSION;
+    public static final String FROM_VERSION = "PropertyStore " + Legacy19Store.LEGACY_VERSION;
     public static final int RECORD_SIZE =
             1/*next and prev high bits*/ + 4/*next*/ + 4/*prev*/ + 32 /*property blocks*/; // = 41
     private final StoreChannel fileChannel;

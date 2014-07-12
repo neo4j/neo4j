@@ -35,110 +35,25 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 
-public class LegacyRelationshipStoreReader implements Closeable
+public class LegacyRelationship20StoreReader implements Closeable, LegacyRelationshipStoreReader
+
 {
-    public static class ReusableRelationship
-    {
-        private long recordId;
-        private boolean inUse;
-        private long firstNode;
-        private long secondNode;
-        private int type;
-        private long firstPrevRel;
-        private long firstNextRel;
-        private long secondNextRel;
-        private long secondPrevRel;
-        private long nextProp;
-
-        private RelationshipRecord record;
-
-        public void reset(long id, boolean inUse, long firstNode, long secondNode, int type, long firstPrevRel,
-                          long firstNextRel, long secondNextRel, long secondPrevRel, long nextProp)
-        {
-            this.record = null;
-            this.recordId = id;
-            this.inUse = inUse;
-            this.firstNode = firstNode;
-            this.secondNode = secondNode;
-            this.type = type;
-            this.firstPrevRel = firstPrevRel;
-            this.firstNextRel = firstNextRel;
-            this.secondNextRel = secondNextRel;
-            this.secondPrevRel = secondPrevRel;
-            this.nextProp = nextProp;
-        }
-
-        public boolean inUse()
-        {
-            return inUse;
-        }
-
-        public long getFirstNode()
-        {
-            return firstNode;
-        }
-
-        public long getFirstNextRel()
-        {
-            return firstNextRel;
-        }
-
-        public long getSecondNode()
-        {
-            return secondNode;
-        }
-
-        public long getFirstPrevRel()
-        {
-            return firstPrevRel;
-        }
-
-        public long getSecondPrevRel()
-        {
-            return secondPrevRel;
-        }
-
-        public long getSecondNextRel()
-        {
-            return secondNextRel;
-        }
-
-        public long id()
-        {
-            return recordId;
-        }
-
-        public RelationshipRecord createRecord()
-        {
-            if( record == null)
-            {
-                record = new RelationshipRecord( recordId, firstNode, secondNode, type );
-                record.setInUse( inUse );
-                record.setFirstPrevRel( firstPrevRel );
-                record.setFirstNextRel( firstNextRel );
-                record.setSecondPrevRel( secondPrevRel );
-                record.setSecondNextRel( secondNextRel );
-                record.setNextProp( nextProp );
-
-            }
-            return record;
-        }
-    }
-
     public static final String FROM_VERSION = "RelationshipStore " + Legacy20Store.LEGACY_VERSION;
     public static final int RECORD_SIZE = 33;
 
     private final StoreChannel fileChannel;
     private final long maxId;
 
-    public LegacyRelationshipStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
+    public LegacyRelationship20StoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
     {
         fileChannel = fs.open( fileName, "r" );
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
         maxId = (fileChannel.size() - endHeaderSize) / RECORD_SIZE;
     }
 
+    @Override
     public long getMaxId()
     {
         return maxId;
@@ -147,6 +62,7 @@ public class LegacyRelationshipStoreReader implements Closeable
     /**
      * @param approximateStartId the scan will start at the beginning of the page this id is located in.
      */
+    @Override
     public void accept( long approximateStartId, Visitor<ReusableRelationship, RuntimeException> visitor ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect( 4 * 1024 * RECORD_SIZE );
@@ -180,6 +96,7 @@ public class LegacyRelationshipStoreReader implements Closeable
         }
     }
 
+    @Override
     public Iterator<RelationshipRecord> iterator( final long approximateStartId ) throws IOException
     {
         final ReusableRelationship rel = new ReusableRelationship();

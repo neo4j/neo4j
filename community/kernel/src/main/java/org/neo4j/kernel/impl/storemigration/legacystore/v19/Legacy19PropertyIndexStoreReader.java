@@ -35,18 +35,17 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyDynamicStringStoreReader;
 
-public class LegacyPropertyIndexStoreReader implements Closeable
+public class Legacy19PropertyIndexStoreReader implements Closeable
 {
-    public static final String FROM_VERSION = "PropertyIndexStore " + Legacy20Store.LEGACY_VERSION;
+    public static final String FROM_VERSION = "PropertyIndexStore " + Legacy19Store.LEGACY_VERSION;
     public static final int RECORD_SIZE = 9;
     private final StoreChannel fileChannel;
     private final LegacyDynamicStringStoreReader nameStoreReader;
     private final long maxId;
     
-    public LegacyPropertyIndexStoreReader( FileSystemAbstraction fs, File file ) throws IOException
+    public Legacy19PropertyIndexStoreReader( FileSystemAbstraction fs, File file ) throws IOException
     {
         fileChannel = fs.open( file, "r" );
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
