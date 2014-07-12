@@ -390,6 +390,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("should Fail On Non Prop Or Pattern To Exists") {
+    executeAndEnsureError(
+      "MATCH (n) RETURN exists(n.prop + 1)",
+      "Argument to exists(...) is not a property or pattern (line 1, column 32)"
+    )
+  }
+
+
   def executeAndEnsureError(query: String, message: String) {
     try {
       execute(query).toList
