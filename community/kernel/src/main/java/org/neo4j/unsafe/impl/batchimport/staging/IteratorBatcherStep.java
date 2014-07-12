@@ -17,21 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
+package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.io.IOException;
-
-import org.neo4j.unsafe.impl.batchimport.cache.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import java.util.Iterator;
 
 /**
- * Imports graph data, nodes with their properties and labels separated from relationship with their properties.
+ * Takes an Iterator and chops it up into batches downstream.
  */
-public interface BatchImporter
+public class IteratorBatcherStep<T> extends ProducerStep<T>
 {
-    void doImport( Iterable<InputNode> nodes, Iterable<InputRelationship> relationships, IdMapper idMapper )
-            throws IOException;
+    private final Iterator<T> data;
 
-    void shutdown();
+    public IteratorBatcherStep( StageControl control, String name, int batchSize, Iterator<T> data )
+    {
+        super( control, name, batchSize );
+        this.data = data;
+    }
+
+    @Override
+    protected T nextOrNull()
+    {
+        return data.hasNext() ? data.next() : null;
+    }
 }

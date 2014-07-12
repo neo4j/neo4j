@@ -69,6 +69,11 @@ public class OtherThreadRule<STATE> implements TestRule
 
     public static Matcher<OtherThreadRule> isWaiting()
     {
+        return isThreadState( Thread.State.WAITING, Thread.State.TIMED_WAITING );
+    }
+
+    public static Matcher<OtherThreadRule> isThreadState( final Thread.State... eitherOfStates )
+    {
         return new TypeSafeMatcher<OtherThreadRule>()
         {
             @Override
@@ -76,7 +81,7 @@ public class OtherThreadRule<STATE> implements TestRule
             {
                 try
                 {
-                    rule.executor.waitUntilThreadState( Thread.State.WAITING, Thread.State.TIMED_WAITING );
+                    rule.executor.waitUntilThreadState( eitherOfStates );
                     return true;
                 }
                 catch ( TimeoutException e )

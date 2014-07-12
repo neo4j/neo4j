@@ -30,7 +30,7 @@ import static java.lang.System.currentTimeMillis;
 /**
  * Default implementation of {@link StageControl}
  */
-class StageExecution implements StageControl
+public class StageExecution implements StageControl
 {
     private final String stageName;
     private final Configuration config;
