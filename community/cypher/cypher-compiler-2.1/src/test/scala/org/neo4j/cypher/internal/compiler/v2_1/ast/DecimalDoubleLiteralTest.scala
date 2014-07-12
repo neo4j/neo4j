@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_1.{SemanticState, SemanticError, DummyPosition}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
 
 class DecimalDoubleLiteralTest extends CypherFunSuite {
   test("correctly parses decimal numbers") {
