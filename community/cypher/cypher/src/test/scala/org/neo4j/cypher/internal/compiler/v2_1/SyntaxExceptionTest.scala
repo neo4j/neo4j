@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, CypherException}
+import org.neo4j.cypher.{CypherException, ExecutionEngineFunSuite}
+
+import scala.util.matching.Regex
 
 class SyntaxExceptionTest extends ExecutionEngineFunSuite {
   test("shouldRaiseErrorWhenMissingIndexValue") {
@@ -199,15 +201,46 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("shouldRaiseErrorForInvalidHexLiteral") {
+    test(
+      "return 0x23G34",
+      "invalid literal number (line 1, column 8)"
+    )
+    test(
+      "return 0x23j",
+      "invalid literal number (line 1, column 8)"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       execute(query)
       fail(s"Did not get the expected syntax error, expected: $message")
     } catch {
+//<<<<<<< HEAD:community/cypher/cypher/src/test/scala/org/neo4j/cypher/internal/compiler/v2_1/SyntaxExceptionTest.scala
       case x: CypherException => {
         val actual = x.getMessage.lines.next.trim
         actual should equal(message)
       }
+//=======
+//      case x: CypherException =>
+//        val actual = x.getMessage.lines.next().trim
+//        assertThat(actual, equalTo(message))
+    }
+  }
+
+  def test(query: String, messageRegex: Regex) {
+    try {
+      execute(query)
+      fail(s"Did not get the expected syntax error, expected matching: '$messageRegex'")
+    } catch {
+      case x: CypherException =>
+        val actual = x.getMessage.lines.next().trim
+        messageRegex findFirstIn actual match {
+          case None => fail(s"Expected matching '$messageRegex', but was '$actual'")
+          case Some(_) => ()
+        }
+//>>>>>>> upstream/2.0-maint:community/cypher/cypher/src/test/scala/org/neo4j/cypher/internal/compiler/v2_0/SyntaxExceptionTest.scala
     }
   }
 }

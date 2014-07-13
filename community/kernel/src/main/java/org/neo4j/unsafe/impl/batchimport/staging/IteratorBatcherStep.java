@@ -17,24 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
+package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.neo4j.cypher.internal.compiler.v2_1.perty.{Doc, CachingDocBuilder}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryHorizon
+import java.util.Iterator;
 
-object queryHorizonDocBuilder extends CachingDocBuilder[Any] {
+/**
+ * Takes an Iterator and chops it up into batches downstream.
+ */
+public class IteratorBatcherStep<T> extends ProducerStep<T>
+{
+    private final Iterator<T> data;
 
-  import Doc._
+    public IteratorBatcherStep( StageControl control, String name, int batchSize, Iterator<T> data )
+    {
+        super( control, name, batchSize );
+        this.data = data;
+    }
 
-  override protected def newNestedDocGenerator = {
-    case horizon: QueryHorizon => (inner) =>
-      val unwindsMapDoc = horizon.unwinds.collect {
-        case (k, v) => section("UNWIND", group(inner(v) :/: "AS " :: s"`$k`"))
-      }
-
-      val unwindsDoc = if (unwindsMapDoc.isEmpty) nil else group(breakList(unwindsMapDoc))
-      val projectionDoc = inner(horizon.projection)
-
-      unwindsDoc :+: projectionDoc
-  }
+    @Override
+    protected T nextOrNull()
+    {
+        return data.hasNext() ? data.next() : null;
+    }
 }

@@ -31,11 +31,10 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
  *
  * @param <INPUT> type of input data to the first {@link Step}.
  */
-public class Stage<INPUT>
+public class Stage
 {
     private final List<Step<?>> pipeline = new ArrayList<>();
-    private INPUT input;
-    private Step<INPUT> inputStep;
+    private Step<?> inputStep;
     private final StageExecution execution;
 
     public Stage( Logging logging, String name, Configuration config )
@@ -43,10 +42,9 @@ public class Stage<INPUT>
         this.execution = new StageExecution( logging, name, config, pipeline );
     }
 
-    public void input( Step<INPUT> inputStep, INPUT input )
+    public void input( Step<?> inputStep )
     {
         this.inputStep = inputStep;
-        this.input = input;
         add( inputStep );
     }
 
@@ -63,7 +61,7 @@ public class Stage<INPUT>
     public StageExecution execute() throws Exception
     {
         linkSteps();
-        inputStep.receive( 1 /*a ticket, ignored anyway*/, input );
+        inputStep.receive( 1 /*a ticket, ignored anyway*/, null /*serves only as a start signal anyway*/ );
         execution.start();
         return execution;
     }

@@ -39,34 +39,47 @@ public abstract class PollingExecutionMonitor implements ExecutionMonitor
     }
 
     @Override
-    public void monitor( StageExecution execution )
+    public void monitor( StageExecution... executions )
     {
         long startTime = currentTimeMillis();
-        start( execution );
-        while ( execution.stillExecuting() )
+        start( executions );
+
+        while ( anyStillExecuting( executions ) )
         {
-            poll( execution );
-            finishAwareSleep( execution );
+            poll( executions );
+            finishAwareSleep( executions );
         }
-        end( execution, currentTimeMillis()-startTime );
+        end( executions, currentTimeMillis()-startTime );
     }
 
-    protected void end( StageExecution execution, long totalTimeMillis )
+    private boolean anyStillExecuting( StageExecution[] executions )
+    {
+        for ( StageExecution execution : executions )
+        {
+            if ( execution.stillExecuting() )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected void end( StageExecution[] executions, long totalTimeMillis )
     {   // Nothing by default
     }
 
-    protected void start( StageExecution execution )
+    protected void start( StageExecution[] executions )
     {   // Nothing by default
     }
 
-    protected abstract void poll( StageExecution execution );
+    protected abstract void poll( StageExecution[] executions );
 
-    private void finishAwareSleep( StageExecution execution )
+    private void finishAwareSleep( StageExecution[] executions )
     {
         long endTime = currentTimeMillis()+interval;
         while ( currentTimeMillis() < endTime )
         {
-            if ( !execution.stillExecuting() )
+            if ( !anyStillExecuting( executions ) )
             {
                 break;
             }
@@ -77,7 +90,10 @@ public abstract class PollingExecutionMonitor implements ExecutionMonitor
             }
             catch ( InterruptedException e )
             {
-                execution.panic( e );
+                for ( StageExecution execution : executions )
+                {
+                    execution.panic( e );
+                }
                 break;
             }
         }

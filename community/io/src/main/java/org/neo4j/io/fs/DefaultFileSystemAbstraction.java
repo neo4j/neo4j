@@ -22,6 +22,7 @@ package org.neo4j.io.fs;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -53,25 +54,25 @@ public class DefaultFileSystemAbstraction
         FileChannel channel = new RandomAccessFile( fileName, mode ).getChannel();
         return new StoreFileChannel( channel );
     }
-    
+
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
         return new FileOutputStream( fileName, append );
     }
-    
+
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
         return new FileInputStream( fileName );
     }
-    
+
     @Override
     public Reader openAsReader( File fileName, String encoding ) throws IOException
     {
         return new InputStreamReader( new FileInputStream( fileName ), encoding );
     }
-    
+
     @Override
     public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
     {
@@ -89,21 +90,27 @@ public class DefaultFileSystemAbstraction
     {
         return open( fileName, "rw" );
     }
-    
+
     @Override
     public boolean mkdir( File fileName )
     {
         return fileName.mkdir();
     }
-    
+
     @Override
     public void mkdirs( File path ) throws IOException
     {
-        if (path.exists()) return;
+        if (path.exists())
+        {
+            return;
+        }
 
         boolean directoriesWereCreated = path.mkdirs();
 
-        if (directoriesWereCreated) return;
+        if (directoriesWereCreated)
+        {
+            return;
+        }
 
         throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) );
     }
@@ -125,7 +132,7 @@ public class DefaultFileSystemAbstraction
     {
         return FileUtils.deleteFile( fileName );
     }
-    
+
     @Override
     public void deleteRecursively( File directory ) throws IOException
     {
@@ -143,25 +150,31 @@ public class DefaultFileSystemAbstraction
     {
         return directory.listFiles();
     }
-    
+
+    @Override
+    public File[] listFiles( File directory, FilenameFilter filter )
+    {
+        return directory.listFiles( filter );
+    }
+
     @Override
     public boolean isDirectory( File file )
     {
         return file.isDirectory();
     }
-    
+
     @Override
     public void moveToDirectory( File file, File toDirectory ) throws IOException
     {
         FileUtils.moveFileToDirectory( file, toDirectory );
     }
-    
+
     @Override
     public void copyFile( File from, File to ) throws IOException
     {
         FileUtils.copyFile( from, to );
     }
-    
+
     @Override
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {

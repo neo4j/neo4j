@@ -27,14 +27,13 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Hint
 case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean)
 
 case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
-                        horizon: QueryHorizon = QueryHorizon.empty,
+                        horizon: QueryHorizon = QueryProjection.empty,
                         tail: Option[PlannerQuery] = None) extends internalDocBuilder.AsPrettyToString {
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
     case None => copy(tail = Some(newTail))
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
-  def withProjection(projection: QueryProjection): PlannerQuery = copy(horizon = QueryHorizon(projection = projection))
   def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)
   def withGraph(graph: QueryGraph): PlannerQuery = copy(graph = graph)
 
@@ -52,6 +51,12 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
 
   def updateGraph(f: QueryGraph => QueryGraph): PlannerQuery = withGraph(f(graph))
   def updateHorizon(f: QueryHorizon => QueryHorizon): PlannerQuery = withHorizon(f(horizon))
+
+  def updateQueryProjection(f: QueryProjection => QueryProjection): PlannerQuery = horizon match {
+    case projection: QueryProjection => withHorizon(f(projection))
+    case _ => throw new InternalException("Tried updating projection when there was no projection there")
+  }
+
   def updateTail(f: PlannerQuery => PlannerQuery) = tail match {
     case None            => this
     case Some(tailQuery) => copy(tail = Some(f(tailQuery)))
@@ -65,13 +70,17 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
   def exists(f: PlannerQuery => Boolean): Boolean =
     f(this) || tail.exists(_.exists(f))
 
-  def ++(other: PlannerQuery): PlannerQuery =
-    PlannerQuery(
-      graph = graph ++ other.graph,
-      horizon = horizon ++ other.horizon,
-      tail = either(tail, other.tail)
-    )
+  def ++(other: PlannerQuery): PlannerQuery = {
+    (this.horizon, other.horizon) match {
+      case (a: RegularQueryProjection, b: RegularQueryProjection) =>
+        PlannerQuery(
+          horizon = a ++ b,
+          graph = graph ++ other.graph,
+          tail = either(tail, other.tail)
+        )
+    }
 
+  }
   private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
     case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
     case (s@Some(_), None) => s

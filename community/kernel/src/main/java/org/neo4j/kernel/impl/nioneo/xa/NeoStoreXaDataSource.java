@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -121,7 +119,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
-import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
@@ -135,6 +132,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -145,6 +143,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
@@ -541,12 +541,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 {
                     startupStatistics.setNumberOfRecoveredTransactions( recoveredCount.get() );
                     recoveredCount.set( 0 );
-
-                    // Add schema rules
-                    for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAllSchemaRules() ) )
-                    {
-                        schemaCache.addSchemaRule( schemaRule );
-                    }
+                    loadSchemaCache();
                 }
             } );
             life.add( statisticsService );
@@ -590,6 +585,15 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 msgLog.logMessage( "Couldn't close neostore after startup failure" );
             }
             throw Exceptions.launderedException( e );
+        }
+    }
+
+    private void loadSchemaCache()
+    {
+        schemaCache.clear();
+        for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAllSchemaRules() ) )
+        {
+            schemaCache.addSchemaRule( schemaRule );
         }
     }
 
@@ -891,5 +895,13 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     {
         IndexImplementation removed = indexProviders.remove( name );
         return removed != null;
+    }
+
+    /**
+     * This must only be called when the database is otherwise inaccessible.
+     */
+    public void reloadSchemaCache()
+    {
+        loadSchemaCache();
     }
 }

@@ -40,7 +40,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
-import static org.neo4j.unsafe.impl.batchimport.store.Monitor.NO_MONITOR;
+import static org.neo4j.unsafe.impl.batchimport.store.io.Monitor.NO_MONITOR;
 
 public class BatchingPageCacheTest
 {
@@ -113,7 +113,7 @@ public class BatchingPageCacheTest
         {
             ByteBuffer buffer = ByteBuffer.allocate( 255 );
             int read = channel.read( buffer );
-            System.out.println( read );
+            assertEquals( buffer.capacity(), read );
             buffer.flip();
             int counter = 0;
             for ( int i = 0; i <= 1; i++ )

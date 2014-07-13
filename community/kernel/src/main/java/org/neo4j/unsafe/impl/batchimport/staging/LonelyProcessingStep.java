@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import static java.lang.System.currentTimeMillis;
 
 /**
- * {@link Step} that doesn't receive batches, not sends batches downstream, but just processes data.
+ * {@link Step} that doesn't receive batches, doesn't send batches downstream; just processes data.
  */
 public abstract class LonelyProcessingStep extends AbstractStep<Void>
 {
@@ -69,21 +69,13 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
     {
         if ( ++batch == batchSize )
         {
+            // Also increments received batches here just to satisfy the default stillWorking() implementation.
+            receivedBatches.incrementAndGet();
             doneBatches.incrementAndGet();
             batch = 0;
             long time = currentTimeMillis();
             totalProcessingTime.addAndGet( time - lastProcessingTimestamp );
             lastProcessingTimestamp = time;
         }
-    }
-
-    @Override
-    public boolean stillWorking()
-    {
-        if ( !super.stillWorking() )
-        {
-            return false;
-        }
-        return !endOfUpstream;
     }
 }

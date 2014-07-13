@@ -51,12 +51,36 @@ sealed abstract class DecimalIntegerLiteral(stringVal: String) extends IntegerLi
     } catch {
       case e:java.lang.NumberFormatException => false
     })) {
-      SemanticError("integer is too large", position)
+      if (stringVal matches "^-?[1-9][0-9]*$")
+        SemanticError("integer is too large", position)
+      else
+        SemanticError("invalid literal number", position)
     } chain super.semanticCheck(ctx)
+
 }
 
 case class SignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with SignedIntegerLiteral
 case class UnsignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with UnsignedIntegerLiteral
+
+sealed abstract class OctalIntegerLiteral(stringVal: String) extends IntegerLiteral with SimpleTyping {
+  lazy val value: java.lang.Long = java.lang.Long.parseLong(stringVal, 8)
+
+  protected def possibleTypes = CTInteger
+
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    when(!(try {
+      value.isInstanceOf[Any]
+    } catch {
+      case e:java.lang.NumberFormatException => false
+    })) {
+      if (stringVal matches "^-?0[0-7]+$")
+        SemanticError("integer is too large", position)
+      else
+        SemanticError("invalid literal number", position)
+    } chain super.semanticCheck(ctx)
+}
+
+case class SignedOctalIntegerLiteral(stringVal: String)(val position: InputPosition) extends OctalIntegerLiteral(stringVal) with SignedIntegerLiteral
 
 sealed abstract class HexIntegerLiteral(stringVal: String) extends IntegerLiteral with SimpleTyping {
   lazy val value: java.lang.Long =
@@ -73,7 +97,10 @@ sealed abstract class HexIntegerLiteral(stringVal: String) extends IntegerLitera
     } catch {
       case e:java.lang.NumberFormatException => false
     })) {
-      SemanticError("integer is too large", position)
+      if (stringVal matches "^-?0x[0-9a-fA-F]+$")
+        SemanticError("integer is too large", position)
+      else
+        SemanticError("invalid literal number", position)
     } chain super.semanticCheck(ctx)
 }
 
@@ -85,12 +112,18 @@ sealed trait DoubleLiteral extends NumberLiteral {
 }
 
 case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) extends DoubleLiteral with SimpleTyping {
-  val value: java.lang.Double = stringVal.toDouble
+  lazy val value: java.lang.Double = java.lang.Double.parseDouble(stringVal)
 
   protected def possibleTypes = CTFloat
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    when(value.isInfinite) {
+    when(!(try {
+      value.isInstanceOf[Any]
+    } catch {
+      case e:java.lang.NumberFormatException => false
+    })) {
+      SemanticError("invalid literal number", position)
+    } ifOkChain when(value.isInfinite) {
       SemanticError("floating point number is too large", position)
     } chain super.semanticCheck(ctx)
 }

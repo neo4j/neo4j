@@ -25,11 +25,14 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.helpers.Factory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
+import org.neo4j.unsafe.impl.batchimport.store.io.Ring;
 
 import static java.lang.Math.min;
 
@@ -51,22 +54,28 @@ public class BatchingPageCache implements PageCache
      */
     public interface Writer
     {
-        void write( ByteBuffer byteBuffer, long position ) throws IOException;
+        void write( ByteBuffer byteBuffer, long position, Ring<ByteBuffer> ring ) throws IOException;
     }
 
     public static final WriterFactory SYNCHRONOUS = new WriterFactory()
     {
         @Override
-        public Writer create( File file, final StoreChannel channel, final Monitor monitor )
+        public Writer create( final File file, final StoreChannel channel, final Monitor monitor )
         {
             return new Writer()
             {
                 @Override
-                public void write( ByteBuffer data, long position ) throws IOException
+                public void write( ByteBuffer data, long position, Ring<ByteBuffer> ring ) throws IOException
                 {
-                    channel.position( position );
-                    int written = channel.write( data );
-                    monitor.dataWritten( written );
+                    try
+                    {
+                        int written = channel.write( data, position );
+                        monitor.dataWritten( written );
+                    }
+                    finally
+                    {
+                        ring.free( data );
+                    }
                 }
             };
         }
@@ -77,21 +86,21 @@ public class BatchingPageCache implements PageCache
         APPEND_ONLY
         {
             @Override
-            boolean canReadFrom( long windowIndex )
+            boolean canReadFrom( long pageId )
             {
-                return windowIndex == 0;
+                return pageId == 0;
             }
         },
         UPDATE
         {
             @Override
-            boolean canReadFrom( long windowIndex )
+            boolean canReadFrom( long pageId )
             {
                 return true;
             }
         };
 
-        abstract boolean canReadFrom( long windowIndex );
+        abstract boolean canReadFrom( long pageId );
     }
 
     private final int pageSize;
@@ -178,7 +187,7 @@ public class BatchingPageCache implements PageCache
             singleCursor.ensurePagePlacedOver( pageId );
             // Do this so that the first call to next() will have the cursor "placed" there
             // and consecutive calls move the cursor forwards.
-            singleCursor.pinned = false;
+            singleCursor.unpin();
             return singleCursor;
         }
 
@@ -218,23 +227,32 @@ public class BatchingPageCache implements PageCache
 
     static class BatchingPageCursor implements PageCursor
     {
-        private final ByteBuffer singleBuffer;
+        private final Ring<ByteBuffer> bufferRing;
+        private ByteBuffer currentBuffer;
         private final StoreChannel channel;
-        private final File file;
         private final Writer writer;
         private long currentPageId = -1;
         private final Mode mode;
         private final int pageSize;
         private boolean pinned;
+        private final File file;
 
-        BatchingPageCursor( StoreChannel channel, File file, Writer writer, int pageSize, Mode mode )
+        BatchingPageCursor( StoreChannel channel, File file, Writer writer, final int pageSize, Mode mode )
         {
             this.channel = channel;
             this.file = file;
             this.writer = writer;
             this.pageSize = pageSize;
             this.mode = mode;
-            this.singleBuffer = ByteBuffer.allocateDirect( pageSize );
+            this.bufferRing = new Ring<>( 2, new Factory<ByteBuffer>()
+            {
+                @Override
+                public ByteBuffer newInstance()
+                {
+                    return ByteBuffer.allocateDirect( pageSize );
+                }
+            } );
+            this.currentBuffer = bufferRing.next();
         }
 
         private void unpin()
@@ -245,37 +263,37 @@ public class BatchingPageCache implements PageCache
         @Override
         public byte getByte()
         {
-            return singleBuffer.get();
+            return currentBuffer.get();
         }
 
         @Override
         public void putByte( byte value )
         {
-            singleBuffer.put( value );
+            currentBuffer.put( value );
         }
 
         @Override
         public long getLong()
         {
-            return singleBuffer.getLong();
+            return currentBuffer.getLong();
         }
 
         @Override
         public void putLong( long value )
         {
-            singleBuffer.putLong( value );
+            currentBuffer.putLong( value );
         }
 
         @Override
         public int getInt()
         {
-            return singleBuffer.getInt();
+            return currentBuffer.getInt();
         }
 
         @Override
         public void putInt( int value )
         {
-            singleBuffer.putInt( value );
+            currentBuffer.putInt( value );
         }
 
         @Override
@@ -287,37 +305,37 @@ public class BatchingPageCache implements PageCache
         @Override
         public void getBytes( byte[] data )
         {
-            singleBuffer.get( data );
+            currentBuffer.get( data );
         }
 
         @Override
         public void putBytes( byte[] data )
         {
-            singleBuffer.put( data );
+            currentBuffer.put( data );
         }
 
         @Override
         public short getShort()
         {
-            return singleBuffer.getShort();
+            return currentBuffer.getShort();
         }
 
         @Override
         public void putShort( short value )
         {
-            singleBuffer.putShort( value );
+            currentBuffer.putShort( value );
         }
 
         @Override
         public void setOffset( int offset )
         {
-            singleBuffer.position( offset );
+            currentBuffer.position( offset );
         }
 
         @Override
         public int getOffset()
         {
-            return singleBuffer.position();
+            return currentBuffer.position();
         }
 
         @Override
@@ -370,10 +388,7 @@ public class BatchingPageCache implements PageCache
                 return;
             }
 
-            if ( currentPageId != -1 )
-            {
-                flush();
-            }
+            flush();
 
             // If we're not in append-only mode, i.e. if we're in update mode
             // OR if this is the first window index we read the contents.
@@ -386,18 +401,17 @@ public class BatchingPageCache implements PageCache
             }
             else
             {
-                zeroBuffer( singleBuffer );
+                zeroBuffer( currentBuffer );
             }
             // buffer position after we placed the window is irrelevant since every future access
             // will set offset explicitly before use.
             currentPageId = pageId;
-            prepared( singleBuffer );
+            prepared( currentBuffer );
         }
 
         private void readFromChannelIntoBuffer( long pageId ) throws IOException
         {
-            channel.position( pageId*pageSize );
-            channel.read( prepared( singleBuffer ) );
+            channel.read( prepared( currentBuffer ), pageId*pageSize );
         }
 
         private void flush() throws IOException
@@ -407,8 +421,10 @@ public class BatchingPageCache implements PageCache
                 return;
             }
 
-            writer.write( prepared( singleBuffer ), currentPageId*pageSize );
-            singleBuffer.clear();
+            writer.write( prepared( currentBuffer ), currentPageId*pageSize, bufferRing );
+            currentBuffer = bufferRing.next();
+            currentBuffer.clear();
+            currentPageId = -1;
         }
 
         private ByteBuffer prepared( ByteBuffer buffer )

@@ -37,16 +37,17 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Mode;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
+import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
 import static java.lang.String.valueOf;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
 /**
  * Creator and accessor of {@link NeoStore} with some logic to provide very batch friendly services to the
@@ -65,13 +66,16 @@ public class BatchingNeoStore implements AutoCloseable
     private final Config neo4jConfig;
     private final Configuration config;
     private final Monitor writeMonitor;
+    private final WriterFactory writerFactory;
 
     public BatchingNeoStore( FileSystemAbstraction fileSystem, String storeDir,
-                                  Configuration config, Logging logging, Monitors monitors, Monitor writeMonitor )
+                                  Configuration config, Monitor writeMonitor, Logging logging,
+                                  WriterFactory writerFactory, Monitors monitors )
     {
         this.config = config;
-        this.monitors = monitors;
         this.writeMonitor = writeMonitor;
+        this.writerFactory = writerFactory;
+        this.monitors = monitors;
         this.fileSystem = life.add( new ChannelReusingFileSystemAbstraction( fileSystem ) );
 
         this.logger = logging.getMessagesLog( getClass() );
@@ -103,13 +107,12 @@ public class BatchingNeoStore implements AutoCloseable
     private BatchingPageCache batchingPageCache( Mode mode )
     {
         return new BatchingPageCache( fileSystem, config.fileChannelBufferSize(),
-                SYNCHRONOUS, writeMonitor, mode );
+                writerFactory, writeMonitor, mode );
     }
 
     private NeoStore newReverseUpdatingNeoStore()
     {
         TailoredPageCache factory = new TailoredPageCache( batchingPageCache( Mode.APPEND_ONLY ) );
-
         PageCache batchUpdatingFactory = batchingPageCache( Mode.UPDATE );
         factory.override( StoreFactory.NODE_STORE_NAME, batchUpdatingFactory );
         factory.override( StoreFactory.RELATIONSHIP_STORE_NAME, batchUpdatingFactory );
@@ -152,7 +155,7 @@ public class BatchingNeoStore implements AutoCloseable
         return neoStore.getRelationshipGroupStore();
     }
 
-    public void switchNodeAndRelationshipStoresToReverseUpdatingMode()
+    public void switchNodeAndRelationshipStoresToUpdateMode()
     {
         // Close token repositories, not needed beyond this point.
         propertyKeyRepository.close();

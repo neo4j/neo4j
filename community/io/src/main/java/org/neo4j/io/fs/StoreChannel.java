@@ -22,8 +22,12 @@ package org.neo4j.io.fs;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.*;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.GatheringByteChannel;
+import java.nio.channels.InterruptibleChannel;
+import java.nio.channels.ScatteringByteChannel;
+import java.nio.channels.SeekableByteChannel;
 
 public interface StoreChannel
         extends SeekableByteChannel, GatheringByteChannel, ScatteringByteChannel, InterruptibleChannel

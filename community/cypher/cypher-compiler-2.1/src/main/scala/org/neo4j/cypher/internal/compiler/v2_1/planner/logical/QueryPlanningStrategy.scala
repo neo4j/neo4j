@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Aggregation, Union, LogicalPlan, QueryPlan}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, AliasedReturnItem, PatternExpression}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
 
@@ -73,17 +75,22 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
     context.strategy.plan(query.graph)(context, subQueryLookupTable, leafPlan)
   }
 
-  private def planEventHorizon(query: PlannerQuery, plan: QueryPlan)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]) = {
+  private def planEventHorizon(query: PlannerQuery, plan: QueryPlan)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = {
     val selectedPlan = config.applySelections(plan, query.graph)
-    val queryHorizon = query.horizon
-    val projectedPlan = queryHorizon.projection match {
+    val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
         val aggregationPlan = aggregation(selectedPlan, aggregatingProjection)
         sortSkipAndLimit(aggregationPlan, query)
 
-      case queryProjection =>
+      case queryProjection: RegularQueryProjection =>
         val sortedAndLimited = sortSkipAndLimit(selectedPlan, query)
         projection(sortedAndLimited, queryProjection.projections)
+
+      case UnwindProjection(identifier, expression) =>
+        planUnwind(plan, identifier, expression)
+
+      case _ =>
+        throw new CantHandleQueryException
     }
 
     projectedPlan
