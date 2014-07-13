@@ -139,7 +139,8 @@ final case class PlanDescriptionImpl(pipe: Pipe,
   override def toString = {
     val treeString = renderAsTree(this)
     val details = renderDetails(this)
-    "%s%n%n%s".format(treeString, details)
+    val summary = renderSummary(this)
+    "%s%n%n%s%n%s".format(treeString, details, summary)
   }
 
   def render(builder: StringBuilder, separator: String, levelSuffix: String) = ???
