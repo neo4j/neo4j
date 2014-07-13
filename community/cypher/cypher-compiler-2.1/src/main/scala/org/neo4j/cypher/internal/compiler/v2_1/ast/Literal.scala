@@ -51,8 +51,12 @@ sealed abstract class DecimalIntegerLiteral(stringVal: String) extends IntegerLi
     } catch {
       case e:java.lang.NumberFormatException => false
     })) {
-      SemanticError("integer is too large", position)
+      if (stringVal matches "^-?[1-9][0-9]*$")
+        SemanticError("integer is too large", position)
+      else
+        SemanticError("invalid literal number", position)
     } chain super.semanticCheck(ctx)
+
 }
 
 case class SignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with SignedIntegerLiteral

@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.{SemanticState, SemanticError, DummyPosition}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
 
 class DecimalDoubleLiteralTest extends CypherFunSuite {

@@ -17,25 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.cache;
+package org.neo4j.unsafe.impl.batchimport.store.io;
 
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
-/**
- * How does the ids in the input (.csv) files relate to actual node ids in the store? With {@link NodeIdMapping}
- * that indirection can be controlled.
- */
-public enum NodeIdMapping
+import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.Writer;
+
+class WriteJob
 {
-    actual
-    {
-        @Override
-        public NodeIdMapper mapper( NodeStore nodeStore )
-        {
-            return new ActualNodeIdMapper( nodeStore );
-        }
-    };
-    // TODO add one for internal here
+    private final ByteBuffer byteBuffer;
+    private final long position;
+    private final Writer writer;
+    private final Ring<ByteBuffer> ringToFreeBufferIn;
 
-    public abstract NodeIdMapper mapper( NodeStore nodeStore );
+    WriteJob( Writer writer, ByteBuffer byteBuffer, long position, Ring<ByteBuffer> ringToFreeBufferIn )
+    {
+        this.writer = writer;
+        this.byteBuffer = byteBuffer;
+        this.position = position;
+        this.ringToFreeBufferIn = ringToFreeBufferIn;
+    }
+
+    public void execute() throws IOException
+    {
+        writer.write( byteBuffer, position, ringToFreeBufferIn );
+    }
 }

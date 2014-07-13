@@ -35,24 +35,26 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.Mode;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
+import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
 import static java.lang.String.valueOf;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.SYNCHRONOUS;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode.APPEND_ONLY;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode.UPDATE;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.SYNCHRONOUS;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.Mode.APPEND_ONLY;
 
 /**
  * Creator and accessor of {@link NeoStore} with some logic to provide very batch friendly services to the
  * {@link NeoStore} when instantiating it. Different services for specific purposes.
  */
-public class BatchFriendlyNeoStore implements AutoCloseable
+public class BatchingNeoStore implements AutoCloseable
 {
     private final LifeSupport life = new LifeSupport();
     private final ChannelReusingFileSystemAbstraction fileSystem;
@@ -64,16 +66,19 @@ public class BatchFriendlyNeoStore implements AutoCloseable
     private final BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
     private final StringLogger logger;
     private final Config neo4jConfig;
+    private final WriterFactory writerFactory;
     private final File neoStoreFileName;
 
-    public BatchFriendlyNeoStore( FileSystemAbstraction fileSystem, String storeDir,
-            Configuration config, Monitor writeMonitor, Logging logging )
+    public BatchingNeoStore( FileSystemAbstraction fileSystem, String storeDir,
+                                  Configuration config, Monitor writeMonitor, Logging logging,
+                                  WriterFactory writerFactory )
     {
+        this.config = config;
+        this.writeMonitor = writeMonitor;
+        this.writerFactory = writerFactory;
         this.fileSystem = life.add( new ChannelReusingFileSystemAbstraction( fileSystem ) );
         this.neoStoreFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
 
-        this.config = config;
-        this.writeMonitor = writeMonitor;
         this.logger = logging.getMessagesLog( getClass() );
         this.neo4jConfig = configForStoreDir(
                 new Config( stringMap( dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ) ) ),
@@ -100,17 +105,21 @@ public class BatchFriendlyNeoStore implements AutoCloseable
 
     private NeoStore newBatchWritingNeoStore()
     {
-        return newNeoStore( new BatchFriendlyWindowPoolFactory( config.fileChannelBufferSize(),
-                writeMonitor, APPEND_ONLY, SYNCHRONOUS ) );
+        return newNeoStore( batchingPageCache( Mode.APPEND_ONLY ) );
+    }
+
+    private WindowPoolFactory batchingPageCache( Mode mode )
+    {
+        return new BatchingWindowPoolFactory( config.fileChannelBufferSize(),
+                writeMonitor, mode, writerFactory );
     }
 
     private NeoStore newReverseUpdatingNeoStore()
     {
-        TailoredWindowPoolFactory factory = new TailoredWindowPoolFactory( new BatchFriendlyWindowPoolFactory(
+        TailoredWindowPoolFactory factory = new TailoredWindowPoolFactory( new BatchingWindowPoolFactory(
                 config.fileChannelBufferSize(), writeMonitor, APPEND_ONLY, SYNCHRONOUS ) );
 
-        WindowPoolFactory batchUpdatingFactory = new BatchFriendlyWindowPoolFactory(
-                config.fileChannelBufferSize(), writeMonitor, UPDATE, SYNCHRONOUS );
+        WindowPoolFactory batchUpdatingFactory = batchingPageCache( Mode.UPDATE );
         factory.override( StoreFactory.NODE_STORE_NAME, batchUpdatingFactory );
         factory.override( StoreFactory.RELATIONSHIP_STORE_NAME, batchUpdatingFactory );
 
@@ -152,7 +161,7 @@ public class BatchFriendlyNeoStore implements AutoCloseable
         return neoStore.getRelationshipGroupStore();
     }
 
-    public void switchNodeAndRelationshipStoresToReverseUpdatingMode()
+    public void switchNodeAndRelationshipStoresToUpdateMode()
     {
         // Close token repositories, not needed beyond this point.
         propertyKeyRepository.close();
