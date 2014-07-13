@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v19;
 
-import static java.nio.ByteBuffer.allocateDirect;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.getUnsignedInt;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.longFromIntAndMod;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.readIntoBuffer;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,6 +31,12 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
+
+import static java.nio.ByteBuffer.allocateDirect;
+
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.getUnsignedInt;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.longFromIntAndMod;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store.readIntoBuffer;
 
 public class Legacy19NodeStoreReader implements LegacyNodeStoreReader
 {
@@ -83,10 +84,12 @@ public class Legacy19NodeStoreReader implements LegacyNodeStoreReader
                         long propModifier = (inUseByte & 0xF0L) << 28;
                         nodeRecord = new NodeRecord( id, false, longFromIntAndMod( nextRel, relModifier ),
                                 longFromIntAndMod( nextProp, propModifier ) );
+                        nodeRecord.setInUse( inUse );
                     }
-                    else nodeRecord = new NodeRecord( id, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
-                            Record.NO_NEXT_PROPERTY.intValue() );
-                    nodeRecord.setInUse( inUse );
+                    else
+                    {
+                        nodeRecord = null;
+                    }
                     id++;
                 }
                 return nodeRecord;
