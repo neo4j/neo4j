@@ -52,6 +52,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -65,23 +66,23 @@ public class StoreMigratorFrom19IT
     public void shouldMigrate() throws IOException
     {
         // WHEN
-        File oldStoreDirectory = find19FormatStoreDirectory();
-        upgrader( new StoreMigrator( monitor, fs ) ).migrateIfNeeded( oldStoreDirectory );
+        upgrader( new StoreMigrator( monitor, fs ) ).migrateIfNeeded( find19FormatStoreDirectory( storeDir ) );
 
         // THEN
         assertEquals( 100, monitor.events.size() );
         assertTrue( monitor.started );
         assertTrue( monitor.finished );
         GraphDatabaseService database = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(
-                oldStoreDirectory.getAbsolutePath() ) );
+                storeDir.getAbsolutePath() ) );
 
         try
         {
+            System.out.println("Verifying at " + storeDir );
             DatabaseContentVerifier verifier = new DatabaseContentVerifier( database );
             verifier.verifyNodes();
             verifier.verifyRelationships();
-//            verifier.verifyNodeIdsReused();
-//            verifier.verifyRelationshipIdsReused();
+            verifier.verifyNodeIdsReused();
+            verifier.verifyRelationshipIdsReused();
         }
         finally
         {
@@ -89,9 +90,9 @@ public class StoreMigratorFrom19IT
             database.shutdown();
         }
 
-//        NeoStore neoStore = cleanup.add( storeFactory.newNeoStore( oldStoreDirectory ) );
-//        verifyNeoStore( neoStore );
-//        neoStore.close();
+        NeoStore neoStore = cleanup.add( storeFactory.newNeoStore( storeFileName ) );
+        verifyNeoStore( neoStore );
+        neoStore.close();
     }
 
     private StoreUpgrader upgrader( StoreMigrator storeMigrator )
@@ -118,11 +119,11 @@ public class StoreMigratorFrom19IT
 
     private void verifyNeoStore( NeoStore neoStore )
     {
-        assertEquals( 1317392957120L, neoStore.getCreationTime() );
-        assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
-        assertEquals( 3l, neoStore.getVersion() );
+        assertEquals( 1405267948320l, neoStore.getCreationTime() );
+        assertEquals( -460827792522586619l, neoStore.getRandomNumber() );
+        assertEquals( 15l, neoStore.getVersion() );
         assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1007l, neoStore.getLastCommittedTx() );
+        assertEquals( 1004l, neoStore.getLastCommittedTx() );
     }
 
     private static class DatabaseContentVerifier
@@ -144,10 +145,10 @@ public class StoreMigratorFrom19IT
                 for ( Relationship rel : GlobalGraphOperations.at( database ).getAllRelationships() )
                 {
                     traversalCount++;
-                    verifyRelationshipProperties( rel );
+                    verifyProperties( rel );
                 }
                 tx.success();
-                assertEquals( 100000, traversalCount );
+                assertEquals( 99900, traversalCount );
             }
         }
 
@@ -161,25 +162,27 @@ public class StoreMigratorFrom19IT
                     nodeCount++;
                     if ( node.getId() > 0 )
                     {
-                        verifyNodeProperties( node );
+                        verifyProperties( node );
                     }
                 }
                 tx.success();
             }
-            assertEquals( 110002, nodeCount );
+            assertEquals( 110001, nodeCount );
         }
 
-        private void verifyNodeProperties( PropertyContainer node )
+        private void verifyProperties( PropertyContainer node )
         {
-            if ( node.hasProperty( "someOtherKey" ) )
-            {
-                assertArrayEquals( new byte[] { 1,2,3 }, (byte[]) node.getProperty( "someOtherKey" ) );
-            }
-        }
-
-        private void verifyRelationshipProperties( PropertyContainer relationship )
-        {
-            assertEquals( "someValue", relationship.getProperty( "someKey" ) );
+            assertEquals( Integer.MAX_VALUE, node.getProperty( PropertyType.INT.name() ) );
+            assertEquals( longString, node.getProperty( PropertyType.STRING.name() ) );
+            assertEquals( true, node.getProperty( PropertyType.BOOL.name() ) );
+            assertEquals( Double.MAX_VALUE, node.getProperty( PropertyType.DOUBLE.name() ) );
+            assertEquals( Float.MAX_VALUE, node.getProperty( PropertyType.FLOAT.name() ) );
+            assertEquals( Long.MAX_VALUE, node.getProperty( PropertyType.LONG.name() ) );
+            assertEquals( Byte.MAX_VALUE, node.getProperty( PropertyType.BYTE.name() ) );
+            assertEquals( Character.MAX_VALUE, node.getProperty( PropertyType.CHAR.name() ) );
+            assertArrayEquals( longArray, (int[]) node.getProperty( PropertyType.ARRAY.name() ) );
+            assertEquals( Short.MAX_VALUE, node.getProperty( PropertyType.SHORT.name() ) );
+            assertEquals( "short", node.getProperty( PropertyType.SHORT_STRING.name() ) );
         }
 
         private void verifyNodeIdsReused()

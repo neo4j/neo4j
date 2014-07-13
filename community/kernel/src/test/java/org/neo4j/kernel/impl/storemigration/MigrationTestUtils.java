@@ -35,6 +35,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.Unzip;
@@ -122,9 +123,9 @@ public class MigrationTestUtils
         return Unzip.unzip( Legacy20Store.class, "exampledb.zip" );
     }
 
-    public static File find19FormatStoreDirectory() throws IOException
+    public static File find19FormatStoreDirectory( File unzipTarget ) throws IOException
     {
-        return Unzip.unzip( Legacy20Store.class, "upgradeTest19Db.zip" );
+        return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip", unzipTarget );
     }
 
     public static File findOldFormatStoreDirectory( File unzipTarget ) throws IOException
