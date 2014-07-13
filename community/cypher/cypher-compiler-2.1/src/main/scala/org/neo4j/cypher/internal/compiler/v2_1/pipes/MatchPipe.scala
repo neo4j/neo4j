@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import matching.{PatternGraph, MatchingContext}
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
 
 case class MatchPipe(source: Pipe,
                      predicates: Seq[Predicate],

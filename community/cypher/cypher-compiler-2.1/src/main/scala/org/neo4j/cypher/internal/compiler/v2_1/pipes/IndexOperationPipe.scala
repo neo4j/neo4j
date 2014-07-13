@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
 import symbols._
 import org.neo4j.cypher.SyntaxException
 
@@ -47,7 +48,7 @@ class IndexOperationPipe(indexOp: IndexOperation)(implicit val monitor: PipeMoni
   }
 
   private def single[T](s: Seq[T]): T = {
-    if (s.isEmpty || !s.tail.isEmpty)
+    if (s.isEmpty || s.tail.nonEmpty)
       throw new SyntaxException("Cypher support only one property key per index right now")
     s(0)
   }

@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.cypher.internal.compiler.v2_1.planDescription
+
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments._
 
 import scala.collection.mutable
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{IntroducedIdentifier, DbHits, Rows}
 
 object renderDetails extends (PlanDescription => String) {
 

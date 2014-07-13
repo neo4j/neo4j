@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.cypher.internal.compiler.v2_1.planDescription
 
-import pipes.Pipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.Pipe
 import org.neo4j.cypher
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v2_1.commands
 import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription, ProfilerStatistics}
 import java.util
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{Rows, DbHits}
 import org.neo4j.cypher.InternalException
 import collection.JavaConverters._
 

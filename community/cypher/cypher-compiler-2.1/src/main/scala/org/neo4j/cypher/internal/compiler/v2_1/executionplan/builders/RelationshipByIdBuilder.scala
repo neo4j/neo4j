@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.{RelationshipById, StartItem}
-import executionplan._
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, EntityProducer, QueryState, RelationshipStartPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{RelationshipById, StartItem}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.GetGraphElements.getElements
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{EntityProducer, PipeMonitor, QueryState, RelationshipStartPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.graphdb.Relationship
-import collection.Seq
-import GetGraphElements.getElements
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments
+
+import scala.collection.Seq
 
 class RelationshipByIdBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {

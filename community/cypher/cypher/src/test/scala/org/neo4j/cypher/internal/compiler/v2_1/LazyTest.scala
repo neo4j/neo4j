@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1
 
 import commands.expressions.{Literal, Identifier}
 import commands.{GreaterThan, True}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.Argument
 import pipes._
 import pipes.matching._
 import symbols.CTInteger

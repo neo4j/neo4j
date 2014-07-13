@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.Argument
 import pipes.{EntityProducer, QueryState}
 import org.neo4j.kernel.{Uniqueness, Traversal}
 import org.neo4j.graphdb.{Path, Node}
