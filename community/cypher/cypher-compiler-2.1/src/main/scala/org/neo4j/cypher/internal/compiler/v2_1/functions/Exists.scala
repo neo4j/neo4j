@@ -24,20 +24,24 @@ import ast.convert.ExpressionConverters._
 import commands.values.TokenType.PropertyKey
 import symbols._
 
-case object Has extends Function {
-  def name = "HAS"
+case object Exists extends Function {
+  def name = "EXISTS"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) ifOkChain {
       invocation.arguments(0).expectType(CTAny.covariant) chain
-      (invocation.arguments(0) match {
-        case _: ast.Property => None
-        case e => Some(SemanticError(s"Argument to ${invocation.name} is not a property", e.position, invocation.position))
-      })
+        (invocation.arguments(0) match {
+          case _: ast.Property => None
+          case _: ast.PatternExpression => None
+          case e => Some(SemanticError(s"Argument to ${invocation.name}(...) is not a property or pattern", e.position, invocation.position))
+        })
     } chain invocation.specifyType(CTBoolean)
 
-  def asCommandExpression(invocation: ast.FunctionInvocation) = {
-    val property = invocation.arguments(0).asInstanceOf[ast.Property]
-    commands.PropertyExists(property.map.asCommandExpression, PropertyKey(property.propertyKey.name))
-  }
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
+    invocation.arguments(0) match {
+      case property: ast.Property =>
+        commands.PropertyExists( property.map.asCommandExpression, PropertyKey( property.propertyKey.name ) )
+      case expression: ast.PatternExpression =>
+        expression.asCommandPredicate
+    }
 }

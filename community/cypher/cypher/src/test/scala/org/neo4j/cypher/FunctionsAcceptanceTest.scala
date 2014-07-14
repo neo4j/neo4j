@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 class FunctionsAcceptanceTest extends ExecutionEngineFunSuite {
 
-  test("split_should_work_as_expected") {
+  test("split should work as expected") {
     // When
     val result = executeScalar[Long](
       "FOREACH (y in split(\"one1two\",\"1\")| "  +
@@ -36,7 +36,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite {
     result should equal(2)
   }
 
-  test("toInt_should_work_as_expected") {
+  test("toInt should work as expected") {
     // When
     val result = executeScalar[Long](
       "CREATE (p:Person { age: \"42\" })" +
@@ -49,7 +49,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite {
     result should equal(42)
   }
 
-  test("toFloat_should_work_as_expected") {
+  test("toFloat should work as expected") {
     // When
     val result = executeScalar[Double](
       "CREATE (m:Movie { rating: 4 })" +
@@ -60,5 +60,18 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite {
 
     // Then
     result should equal(4.0)
+  }
+
+  test("toString should work as expected") {
+    // When
+    val result = executeScalar[String](
+      "CREATE (m:Movie { rating: 4 })" +
+        "WITH * " +
+        "MATCH (n) " +
+        "RETURN toString(n.rating)"
+    )
+
+    // Then
+    assert(result === "4")
   }
 }
