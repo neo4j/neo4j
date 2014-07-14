@@ -22,24 +22,21 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import javax.transaction.xa.Xid;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 
-import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
+import static org.neo4j.kernel.impl.util.Cursors.iterable;
 
 /**
  * A set of hamcrest matchers for asserting logical logs look in certain ways.
@@ -50,81 +47,63 @@ import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
  */
 public class LogMatchers
 {
-    public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, String logPath ) throws IOException
+    public static ResourceIterable<LogEntry> logEntries( FileSystemAbstraction fileSystem, String logPath ) throws IOException
     {
         StoreChannel fileChannel = fileSystem.open( new File( logPath ), "r" );
         ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
 
-        try
-        {
-            // Always a header
-            VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, true );
+        // Always a header
+        VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, true );
 
-            // Read all log entries
-            final List<LogEntry> entries = new ArrayList<>();
-            LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
+        // Read all log entries
+        LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
 
-            Visitor<LogEntry, IOException> consumer = new Visitor<LogEntry, IOException>()
-            {
-                @Override
-                public boolean visit( LogEntry entry ) throws IOException
-                {
-                    entries.add( entry );
-                    return true;
-                }
-            };
-
-            ReadableLogChannel logChannel = new ReadAheadLogChannel(
-                    new PhysicalLogVersionedStoreChannel( fileChannel ), LogVersionBridge.NO_MORE_CHANNELS, 4096 );
-            exhaustAndClose( deserializer.cursor( logChannel, consumer ) );
-
-            return entries;
-        }
-        finally
-        {
-            fileChannel.close();
-        }
+        ReadableLogChannel logChannel = new ReadAheadLogChannel(
+                new PhysicalLogVersionedStoreChannel( fileChannel ), LogVersionBridge.NO_MORE_CHANNELS, 4096 );
+        return iterable( deserializer.logEntries( logChannel ) );
     }
 
-    public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, File file ) throws IOException
+    public static ResourceIterable<LogEntry> logEntries( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
         return logEntries( fileSystem, file.getPath() );
     }
 
-    public static Matcher<Iterable<LogEntry>> containsExactly( final Matcher<? extends LogEntry>... matchers )
+    public static Matcher<ResourceIterable<LogEntry>> containsExactly( final Matcher<? extends LogEntry>... matchers )
     {
-        return new TypeSafeMatcher<Iterable<LogEntry>>()
+        return new TypeSafeMatcher<ResourceIterable<LogEntry>>()
         {
             @Override
-            public boolean matchesSafely( Iterable<LogEntry> item )
+            public boolean matchesSafely( ResourceIterable<LogEntry> item )
             {
-                Iterator<LogEntry> actualEntries = item.iterator();
-                for ( Matcher<? extends LogEntry> matcher : matchers )
+                try (ResourceIterator<LogEntry> actualEntries = item.iterator())
                 {
-                    if ( actualEntries.hasNext() )
+                    for ( Matcher<? extends LogEntry> matcher : matchers )
                     {
-                        LogEntry next = actualEntries.next();
-                        if ( !matcher.matches( next ) )
+                        if ( actualEntries.hasNext() )
                         {
-                            // Wrong!
+                            LogEntry next = actualEntries.next();
+                            if ( !matcher.matches( next ) )
+                            {
+                                // Wrong!
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            // Too few actual entries!
                             return false;
                         }
                     }
-                    else
+
+                    if ( actualEntries.hasNext() )
                     {
-                        // Too few actual entries!
+                        // Too many actual entries!
                         return false;
                     }
-                }
 
-                if ( actualEntries.hasNext() )
-                {
-                    // Too many actual entries!
-                    return false;
+                    // All good in the hood :)
+                    return true;
                 }
-
-                // All good in the hood :)
-                return true;
             }
 
             @Override

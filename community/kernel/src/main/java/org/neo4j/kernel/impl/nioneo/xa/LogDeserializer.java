@@ -21,13 +21,12 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
+import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.util.Cursor;
 
 public class LogDeserializer implements LogReader<ReadableLogChannel>
 {
@@ -39,33 +38,33 @@ public class LogDeserializer implements LogReader<ReadableLogChannel>
     }
 
     @Override
-    public Cursor<IOException> cursor( ReadableLogChannel channel, Visitor<LogEntry, IOException> visitor )
+    public IOCursor<LogEntry> logEntries( ReadableLogChannel channel )
     {
-        return new LogCursor( channel, visitor );
+        return new LogCursor( channel );
     }
 
-    private class LogCursor implements Cursor<IOException>
+    private class LogCursor implements IOCursor<LogEntry>
     {
         private final ReadableLogChannel channel;
-        private Visitor<LogEntry, IOException> visitor;
+        private LogEntry entry;
 
-        public LogCursor( ReadableLogChannel channel, Visitor<LogEntry, IOException> visitor )
+        public LogCursor( ReadableLogChannel channel )
         {
             this.channel = channel;
-            this.visitor = visitor;
+        }
+
+        @Override
+        public LogEntry get()
+        {
+            return entry;
         }
 
         @Override
         public boolean next( ) throws IOException
         {
-            LogEntry entry = logEntryReader.readLogEntry( channel );
+            entry = logEntryReader.readLogEntry( channel );
 
-            if ( entry == null )
-            {
-                return false;
-            }
-
-            return visitor.visit( entry );
+            return entry != null;
         }
 
         @Override

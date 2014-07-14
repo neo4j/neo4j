@@ -19,8 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -32,6 +30,7 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresen
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.util.Cursors;
 
 /**
  * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
@@ -98,7 +98,11 @@ public class Protocol
             {
                 LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
                 NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
-                exhaustAndClose( new PhysicalTransactionCursor( channel, reader, visitor ) );
+
+                try (PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, reader ))
+                {
+                    while (cursor.next() && visitor.visit( cursor.get() ));
+                }
             }
         };
         return new Response<PAYLOAD>( response, storeId, transactions, channelReleaser );
@@ -296,9 +300,7 @@ public class Protocol
         {
             LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
             NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
-            AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>();
-            exhaustAndClose( new PhysicalTransactionCursor( channel, reader, accumulator ) );
-            return accumulator.getAccumulator();
+            return Cursors.iterable( new PhysicalTransactionCursor( channel, reader ) );
         }
     };
 

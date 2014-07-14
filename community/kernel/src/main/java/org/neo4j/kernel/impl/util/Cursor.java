@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.util;
 
-public interface Cursor<E extends Exception> extends AutoCloseable
+import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
+
+public interface Cursor<T> extends IOCursor<T>
 {
-    boolean next() throws E;
+    boolean next();
 
     @Override
-    void close() throws E;
+    void close();
 }

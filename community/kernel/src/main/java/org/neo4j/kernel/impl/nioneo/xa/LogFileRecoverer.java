@@ -27,8 +27,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 
-import static org.neo4j.kernel.impl.util.Cursors.exhaust;
-
 public class LogFileRecoverer implements Visitor<ReadableLogChannel, IOException>
 {
     private final VersionAwareLogEntryReader logEntryReader;
@@ -46,7 +44,8 @@ public class LogFileRecoverer implements Visitor<ReadableLogChannel, IOException
     {
         // Intentionally don't close the cursor here since after recovery the channel is still used.
         // I dislike this exception to the rule though.
-        exhaust( new PhysicalTransactionCursor( channel, logEntryReader, visitor ) );
+        PhysicalTransactionCursor physicalTransactionCursor = new PhysicalTransactionCursor( channel, logEntryReader );
+        while (physicalTransactionCursor.next() && visitor.visit( physicalTransactionCursor.get() ) );
         return true;
     }
 }

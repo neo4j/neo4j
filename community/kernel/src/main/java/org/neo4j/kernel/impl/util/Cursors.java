@@ -19,27 +19,151 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Iterator;
+
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
+
 public class Cursors
 {
-    public static <E extends Exception> int exhaustAndClose( Cursor<E> cursor ) throws E
+    public static <T> ResourceIterable<T> iterable(final IOCursor<T> cursor)
     {
-        try
+        return new ResourceIterable<T>()
         {
-            return exhaust( cursor );
-        }
-        finally
-        {
-            cursor.close();
-        }
+            @Override
+            public ResourceIterator<T> iterator()
+            {
+                try
+                {
+                    if (cursor.next())
+                    {
+                        final T first = cursor.get();
+
+                        return new ResourceIterator<T>()
+                        {
+                            T instance = first;
+
+                            @Override
+                            public boolean hasNext()
+                            {
+                                return instance != null;
+                            }
+
+                            @Override
+                            public T next()
+                            {
+                                try
+                                {
+                                    return instance;
+                                }
+                                finally
+                                {
+                                    try
+                                    {
+                                        if (cursor.next())
+                                        {
+                                            instance = cursor.get();
+                                        } else
+                                        {
+                                            cursor.close();
+                                            instance = null;
+                                        }
+                                    }
+                                    catch ( IOException e )
+                                    {
+                                        instance = null;
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void remove()
+                            {
+                                throw new UnsupportedOperationException(  );
+                            }
+
+                            @Override
+                            public void close()
+                            {
+                                try
+                                {
+                                    cursor.close();
+                                }
+                                catch ( IOException e )
+                                {
+                                    // Ignore
+                                }
+                            }
+                        };
+                    } else
+                    {
+                        cursor.close();
+                        return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator());
+                    }
+                }
+                catch ( IOException e )
+                {
+                    return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator());
+                }
+            }
+        };
     }
 
-    public static <E extends Exception> int exhaust( Cursor<E> cursor ) throws E
+    public static <T> Iterable<T> iterable(final Cursor<T> cursor)
     {
-        int count = 0;
-        while ( cursor.next() )
+        return new Iterable<T>()
         {
-            count++;
-        }
-        return count;
+            @Override
+            public Iterator<T> iterator()
+            {
+                if (cursor.next())
+                {
+                    final T first = cursor.get();
+
+                    return new Iterator<T>()
+                    {
+                        T instance = first;
+
+                        @Override
+                        public boolean hasNext()
+                        {
+                            return instance != null;
+                        }
+
+                        @Override
+                        public T next()
+                        {
+                            try
+                            {
+                                return instance;
+                            }
+                            finally
+                            {
+                                if (cursor.next())
+                                {
+                                    instance = cursor.get();
+                                } else
+                                {
+                                    instance = null;
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void remove()
+                        {
+                            throw new UnsupportedOperationException(  );
+                        }
+                    };
+                } else
+                {
+                    return Collections.emptyIterator();
+                }
+            }
+        };
     }
 }
