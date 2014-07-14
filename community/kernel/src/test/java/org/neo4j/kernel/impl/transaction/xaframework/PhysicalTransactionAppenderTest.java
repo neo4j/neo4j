@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
@@ -62,27 +59,16 @@ public class PhysicalTransactionAppenderTest
         appender.append( transaction );
 
         // THEN
-        final AtomicInteger visited = new AtomicInteger();
-        Visitor<CommittedTransactionRepresentation, IOException> visitor =
-                new Visitor<CommittedTransactionRepresentation, IOException>()
+        try(PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader(CommandReaderFactory.DEFAULT)))
         {
-            @Override
-            public boolean visit( CommittedTransactionRepresentation committedTx ) throws IOException
-            {
-                TransactionRepresentation transaction = committedTx.getTransactionRepresentation();
-                assertArrayEquals( additionalHeader, transaction.additionalHeader() );
-                assertEquals( masterId, transaction.getMasterId() );
-                assertEquals( authorId, transaction.getAuthorId() );
-                assertEquals( timeWritten, transaction.getTimeWritten() );
-                assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
-                visited.incrementAndGet();
-                return true;
-            }
-        };
-        IOCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader(
-                CommandReaderFactory.DEFAULT), visitor  );
-        reader.next();
-        assertEquals( 1, visited.get() );
+            reader.next();
+            TransactionRepresentation tx = reader.get().getTransactionRepresentation();
+            assertArrayEquals( additionalHeader, tx.additionalHeader() );
+            assertEquals( masterId, tx.getMasterId() );
+            assertEquals( authorId, tx.getAuthorId() );
+            assertEquals( timeWritten, tx.getTimeWritten() );
+            assertEquals( latestCommittedTxWhenStarted, tx.getLatestCommittedTxWhenStarted() );
+        }
     }
 
     private Collection<Command> singleCreateNodeCommand()

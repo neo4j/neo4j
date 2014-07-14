@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
@@ -68,7 +69,6 @@ import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
 import static org.neo4j.io.fs.FileUtils.relativePath;
-import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 public class RemoteStoreCopierTest
 {
@@ -145,7 +145,11 @@ public class RemoteStoreCopierTest
                     {
 //                        long highTransactionId = transactionIdStore.getLastCommittingTransactionId();
                         LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
-                        exhaustAndClose( txStore.getCursor( transactionIdWhenStartingCopy + 1, visitor ) );
+
+                        try (IOCursor<CommittedTransactionRepresentation> cursor = txStore.getTransactions( transactionIdWhenStartingCopy + 1 ) )
+                        {
+                            while (cursor.next() && visitor.visit( cursor.get() ));
+                        }
                     }
                 };
                 return response = spy( new Response<>( null, original.storeId(), transactions, NO_OP ) );

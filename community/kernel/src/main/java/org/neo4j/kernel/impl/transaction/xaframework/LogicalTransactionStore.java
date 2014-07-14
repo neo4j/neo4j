@@ -21,15 +21,13 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface LogicalTransactionStore extends Lifecycle
 {
     TransactionAppender getAppender();
 
-    IOCursor getCursor( long transactionIdToStartFrom,
-            Visitor<CommittedTransactionRepresentation, IOException> visitor )
+    IOCursor<CommittedTransactionRepresentation> getTransactions( long transactionIdToStartFrom )
             throws NoSuchTransactionException, IOException;
 
     TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId )
