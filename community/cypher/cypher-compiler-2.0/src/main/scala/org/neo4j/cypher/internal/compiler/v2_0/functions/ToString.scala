@@ -24,13 +24,15 @@ import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
 import symbols._
 
-case object ToStr extends Function with SimpleTypedFunction {
+case object ToString extends Function with SimpleTypedFunction {
   def name = "toString"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTAny), outputType = CTString)
+    Signature(argumentTypes = Vector(CTFloat), outputType = CTString),
+    Signature(argumentTypes = Vector(CTInteger), outputType = CTString),
+    Signature(argumentTypes = Vector(CTString), outputType = CTString)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
-    commandexpressions.StrFunction(invocation.arguments(0).asCommandExpression)
+    commandexpressions.ToStringFunction(invocation.arguments(0).asCommandExpression)
 }

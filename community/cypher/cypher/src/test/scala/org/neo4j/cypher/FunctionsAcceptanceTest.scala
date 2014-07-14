@@ -68,4 +68,18 @@ class FunctionsAcceptanceTest extends ExecutionEngineJUnitSuite {
     assert(result === 4.0)
   }
 
+  @Test
+  def toString_should_work_as_expected() {
+    // When
+    val result = executeScalar[String](
+      "CREATE (m:Movie { rating: 4 })" +
+        "WITH * " +
+        "MATCH (n) " +
+        "RETURN toString(n.rating)"
+    )
+
+    // Then
+    assert(result === "4")
+  }
+
 }
