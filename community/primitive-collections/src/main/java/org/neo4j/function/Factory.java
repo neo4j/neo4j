@@ -17,26 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.xa;
+package org.neo4j.function;
 
-import org.neo4j.collection.pool.LinkedQueuePool;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-
-public class NeoStoreTransactionContextSupplier extends LinkedQueuePool<NeoStoreTransactionContext>
+public interface Factory<T>
 {
-    private final NeoStore neoStore;
-
-    public NeoStoreTransactionContextSupplier( NeoStore neoStore )
-    {
-        super( Runtime.getRuntime().availableProcessors() * 2, null,
-                new CheckStrategy.TimeoutCheckStrategy( 1000 ),
-                new Monitor.Adapter<>() );
-        this.neoStore = neoStore;
-    }
-
-    @Override
-    protected NeoStoreTransactionContext create()
-    {
-        return new NeoStoreTransactionContext( this, neoStore );
-    }
+    T newInstance();
 }

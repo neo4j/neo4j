@@ -17,11 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+package org.neo4j.collection.pool;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -32,18 +28,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
-import org.neo4j.helpers.FakeClock;
+import org.neo4j.function.Factory;
+import org.neo4j.function.primitive.LongSupplier;
 
-public class FlyweightPoolTest
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.*;
+
+public class LinkedQueuePoolTest
 {
     @Test
     public void shouldTimeoutGracefully() throws InterruptedException
     {
         FakeClock clock = new FakeClock();
 
-        FlyweightPool.CheckStrategy timeStrategy = new FlyweightPool.CheckStrategy.TimeoutCheckStrategy( 100, clock );
+        LinkedQueuePool.CheckStrategy timeStrategy = new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock );
 
-        while ( clock.currentTimeMillis() <= 100 )
+        while ( clock.getAsLong() <= 100 )
         {
             assertFalse( timeStrategy.shouldCheck() );
             clock.forward( 10, TimeUnit.MILLISECONDS );
@@ -61,7 +61,7 @@ public class FlyweightPoolTest
         // GIVEN
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
-        final FlyweightPool<Object> pool = getFlyweightPool( stateMonitor, clock, 5 );
+        final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, 5 );
 
         // WHEN
         acquireFromPool( pool, 5 );
@@ -78,7 +78,7 @@ public class FlyweightPoolTest
         // GIVEN
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
-        final FlyweightPool<Object> pool = getFlyweightPool( stateMonitor, clock, 5 );
+        final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, 5 );
 
         // WHEN
         acquireFromPool( pool, 15 );
@@ -99,7 +99,7 @@ public class FlyweightPoolTest
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
-        final FlyweightPool<Object> pool = getFlyweightPool( stateMonitor, clock, MIN_SIZE );
+        final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
 
         // when
         List<FlyweightHolder<Object>> holders = acquireFromPool( pool, MAX_SIZE );
@@ -125,7 +125,7 @@ public class FlyweightPoolTest
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
-        final FlyweightPool<Object> pool = getFlyweightPool( stateMonitor, clock, MIN_SIZE );
+        final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
 
         // when
         for ( int i = 0; i < 200; i++ )
@@ -154,7 +154,7 @@ public class FlyweightPoolTest
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
-        final FlyweightPool<Object> pool = getFlyweightPool( stateMonitor, clock, MIN_SIZE );
+        final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
         List<FlyweightHolder<Object>> holders = new LinkedList<>();
 
         buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
@@ -188,7 +188,7 @@ public class FlyweightPoolTest
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
-        final FlyweightPool<Object> pool = getFlyweightPool( stateMonitor, clock, MIN_SIZE );
+        final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
         List<FlyweightHolder<Object>> holders = new LinkedList<>();
 
         buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
@@ -231,7 +231,7 @@ public class FlyweightPoolTest
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
-        final FlyweightPool<Object> pool = getFlyweightPool( stateMonitor, clock, MIN_SIZE );
+        final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
         List<FlyweightHolder<Object>> holders = new LinkedList<>();
 
         buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
@@ -276,7 +276,7 @@ public class FlyweightPoolTest
     }
 
     private void buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( int MAX_SIZE, FakeClock clock,
-                                                                              FlyweightPool<Object>
+                                                                              LinkedQueuePool<Object>
                                                                                       pool,
                                                                               List<FlyweightHolder<Object>> holders ) throws
             InterruptedException
@@ -294,22 +294,22 @@ public class FlyweightPoolTest
         }
     }
 
-    private FlyweightPool<Object> getFlyweightPool( StatefulMonitor stateMonitor,
+    private LinkedQueuePool<Object> getLinkedQueuePool( StatefulMonitor stateMonitor,
                                                      FakeClock clock,
                                                      int minSize )
     {
-        return new FlyweightPool<Object>( minSize,
-                new FlyweightPool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor )
-        {
-            @Override
-            protected Object create()
+        return new LinkedQueuePool<>( minSize, new Factory<Object>()
             {
-                return new Object();
-            }
-        };
+                @Override
+                public Object newInstance()
+                {
+                    return new Object();
+                }
+            },
+            new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor );
     }
 
-    private <R> List<FlyweightHolder<R>>  acquireFromPool( final FlyweightPool<R> pool, int times ) throws InterruptedException
+    private <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times ) throws InterruptedException
     {
         List<FlyweightHolder<R>> acquirers = new LinkedList<>();
         final CountDownLatch latch = new CountDownLatch( times );
@@ -329,10 +329,10 @@ public class FlyweightPoolTest
         private final Semaphore latch = new Semaphore( 0 );
         private final CountDownLatch released = new CountDownLatch( 1 );
         private final CountDownLatch onAcquire;
-        private final FlyweightPool<R> pool;
+        private final LinkedQueuePool<R> pool;
         private final AtomicBoolean release = new AtomicBoolean(  );
 
-        private FlyweightHolder( FlyweightPool<R> pool, CountDownLatch onAcquire )
+        private FlyweightHolder( LinkedQueuePool<R> pool, CountDownLatch onAcquire )
         {
             this.pool = pool;
             this.onAcquire = onAcquire;
@@ -392,7 +392,7 @@ public class FlyweightPoolTest
         }
     }
 
-    private class StatefulMonitor implements FlyweightPool.Monitor<Object>
+    private class StatefulMonitor implements LinkedQueuePool.Monitor<Object>
     {
         public AtomicInteger currentPeakSize = new AtomicInteger(-1);
         public AtomicInteger targetSize = new AtomicInteger( -1 );
@@ -428,6 +428,22 @@ public class FlyweightPoolTest
         public void disposed( Object Object )
         {
             this.disposed.incrementAndGet();
+        }
+    }
+
+    private static class FakeClock implements LongSupplier
+    {
+        @Override
+        public long getAsLong()
+        {
+            return time;
+        }
+
+        private long time = 0;
+
+        public void forward( long amount, TimeUnit timeUnit)
+        {
+            time = time + timeUnit.toMillis( amount );
         }
     }
 }

@@ -23,11 +23,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
+import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.util.FlyweightPool;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
 
@@ -43,7 +43,7 @@ public class ForsetiClient implements Locks.Client
     private final WaitStrategy<AcquireLockTimeoutException>[] waitStrategies;
 
     /** Handle to return client to pool when closed. */
-    private final FlyweightPool<ForsetiClient> clientPool;
+    private final LinkedQueuePool<ForsetiClient> clientPool;
 
     // TODO We should really look into some kind of primitive maps here.
     // TODO As a stop-gap, we could start out by using AtomicInteger values, and thereby remove a lot
@@ -63,7 +63,7 @@ public class ForsetiClient implements Locks.Client
     public ForsetiClient( int id,
                           ConcurrentMap[] lockMaps,
                           WaitStrategy[] waitStrategies,
-                          FlyweightPool<ForsetiClient> clientPool )
+                          LinkedQueuePool<ForsetiClient> clientPool )
     {
         this.myId                = id;
         this.lockMaps            = lockMaps;

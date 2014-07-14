@@ -26,8 +26,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.collection.pool.LinkedQueuePool;
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.util.FlyweightPool;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -68,7 +69,7 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
     private final ResourceType[] resourceTypes;
 
     /** Pool forseti clients. */
-    private final FlyweightPool<ForsetiClient> clientPool;
+    private final Pool<ForsetiClient> clientPool;
 
     public ForsetiLockManager( ResourceType... resourceTypes )
     {
@@ -124,7 +125,7 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
         return max + 1;
     }
 
-    private static class ForsetiClientFlyweightPool extends FlyweightPool<ForsetiClient>
+    private static class ForsetiClientFlyweightPool extends LinkedQueuePool<ForsetiClient>
     {
         /** Client id counter **/
         private final AtomicInteger clientIds = new AtomicInteger( 0 );
@@ -137,7 +138,7 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
 
         public ForsetiClientFlyweightPool( ConcurrentMap[] lockMaps, WaitStrategy[] waitStrategies )
         {
-            super( 128 );
+            super( 128, null);
             this.lockMaps = lockMaps;
             this.waitStrategies = waitStrategies;
         }

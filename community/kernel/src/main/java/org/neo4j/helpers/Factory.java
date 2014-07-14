@@ -19,7 +19,10 @@
  */
 package org.neo4j.helpers;
 
-public interface Factory<T>
+/**
+ * @deprecated Use {@link org.neo4j.function.Factory} instead.
+ */
+@Deprecated
+public interface Factory<T> extends org.neo4j.function.Factory<T>
 {
-    T newInstance();
 }
