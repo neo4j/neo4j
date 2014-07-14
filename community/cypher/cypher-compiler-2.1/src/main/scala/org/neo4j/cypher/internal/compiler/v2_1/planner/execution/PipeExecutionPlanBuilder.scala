@@ -171,6 +171,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case Union(lhs, rhs) =>
           NewUnionPipe(buildPipe(lhs), buildPipe(rhs))
 
+        case UnwindPlan(lhs, identifier, collection) =>
+          UnwindPipe(buildPipe(lhs), collection.asCommandExpression, identifier.name)
+
         case _ =>
           throw new CantHandleQueryException
       }

@@ -19,96 +19,98 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.graphdb.Node
 
-class UnwindAcceptanceTest extends ExecutionEngineFunSuite {
+
+class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("unwind collection returns individual values") {
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       "UNWIND [1,2,3] as x return x"
     )
-    result.columnAs[Int]("x").toList should equal (List(1,2,3))
+    result.columnAs[Int]("x").toList should equal(List(1, 2, 3))
   }
 
   test("unwind a range") {
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       "UNWIND RANGE(1,3) as x return x"
     )
-    result.columnAs[Int]("x").toList should equal (List(1,2,3))
+    result.columnAs[Int]("x").toList should equal(List(1, 2, 3))
   }
   test("unwind a concatenation of collections") {
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       "WITH [1,2,3] AS first, [4,5,6] AS second UNWIND (first + second) as x return x"
     )
-    result.columnAs[Int]("x").toList should equal (List(1,2,3,4,5,6))
+    result.columnAs[Int]("x").toList should equal(List(1, 2, 3, 4, 5, 6))
   }
 
   test("unwind a collected unwound expression") {
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       "UNWIND RANGE(1,2) AS row WITH collect(row) as rows UNWIND rows as x return x"
     )
-    result.columnAs[Int]("x").toList should equal (List(1,2))
+    result.columnAs[Int]("x").toList should equal(List(1, 2))
   }
 
   test("unwind a collected expression") {
-    createLabeledNode(Map("id"->1))
-    createLabeledNode(Map("id"->2))
+    val a = createLabeledNode(Map("id" -> 1))
+    val b = createLabeledNode(Map("id" -> 2))
 
-    val result = execute(
-      "MATCH (row) WITH collect(row) AS rows UNWIND rows AS node RETURN node.id as x order by x"
+    val result = executeWithNewPlanner(
+      "MATCH (row) WITH collect(row) AS rows UNWIND rows AS node RETURN node"
     )
-    result.columnAs[Int]("x").toList should equal (List(1,2))
+    result.columnAs[Node]("node").toList should equal(List(a, b))
   }
 
   test("create nodes from a collection parameter") {
-    createLabeledNode(Map("year"->2014),"Year")
+    createLabeledNode(Map("year" -> 2014), "Year")
 
     val result = execute(
       "UNWIND {events} as event MATCH (y:Year {year:event.year}) MERGE (y)<-[:IN]-(e:Event {id:event.id}) RETURN e.id as x order by x",
       "events" -> List(Map("year" -> 2014, "id" -> 1), Map("year" -> 2014, "id" -> 2))
     )
-    result.columnAs[Int]("x").toList should equal (List(1,2))
+    result.columnAs[Int]("x").toList should equal(List(1, 2))
   }
 
   test("double unwinding a collection of collections returns one row per item") {
-    val result = execute(
+    val result = executeWithNewPlanner(
       "WITH [[1,2,3], [4,5,6]] AS coc UNWIND coc AS x UNWIND x AS y RETURN y"
     )
-    result.columnAs[Int]("y").toList should equal (List(1,2,3,4,5,6))
+    result.columnAs[Int]("y").toList should equal(List(1, 2, 3, 4, 5, 6))
   }
 
   test("no rows for unwinding an empty collection") {
-    val result = execute(
+    val result = executeWithNewPlanner(
       "UNWIND [] AS empty RETURN empty"
     )
-    result.columnAs[Int]("empty").toList should equal (List())
+    result.columnAs[Int]("empty").toList should equal(List())
   }
 
   test("no rows for unwinding null") {
-    val result = execute(
+    val result = executeWithNewPlanner(
       "UNWIND null AS empty RETURN empty"
     )
-    result.columnAs[Int]("empty").toList should equal (List())
+    result.columnAs[Int]("empty").toList should equal(List())
   }
 
   test("one row per item of a collection even with duplicates") {
-    val result = execute(
+    val result = executeWithNewPlanner(
       "UNWIND [1,1,2,2,3,3,4,4,5,5] AS duplicate RETURN duplicate"
     )
-    result.columnAs[Int]("duplicate").toList should equal (List(1,1,2,2,3,3,4,4,5,5))
+    result.columnAs[Int]("duplicate").toList should equal(List(1, 1, 2, 2, 3, 3, 4, 4, 5, 5))
   }
 
   test("unwind does not remove anything from the context") {
-    val result = execute(
+    val result = executeWithNewPlanner(
       "WITH [1,2,3] as collection UNWIND collection AS x RETURN *"
     )
-    result.toList should equal (List(
-      Map("collection" -> List(1,2,3), "x" -> 1),
-      Map("collection" -> List(1,2,3), "x" -> 2),
-      Map("collection" -> List(1,2,3), "x" -> 3)
+    result.toList should equal(List(
+      Map("collection" -> List(1, 2, 3), "x" -> 1),
+      Map("collection" -> List(1, 2, 3), "x" -> 2),
+      Map("collection" -> List(1, 2, 3), "x" -> 3)
     ))
   }
 }

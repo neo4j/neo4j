@@ -89,7 +89,6 @@ case object plannerDocBuilder extends DocBuilderChain[Any] {
       forNestedSelections,
       queryGraphDocBuilder,
       logicalPlanDocBuilder,
-      queryHorizonDocBuilder,
       queryProjectionDocBuilder("WITH"),
       queryShuffleDocBuilder,
       plannerQueryDocBuilder

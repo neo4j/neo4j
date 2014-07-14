@@ -1,3 +1,7 @@
+2.0.4
+-----
+o Ability to return paths with diminishing cost from Dijkstra/Traversal AStar
+
 1.9.5 (2013-11-11)
 ------------------
 Graph Algorithms:

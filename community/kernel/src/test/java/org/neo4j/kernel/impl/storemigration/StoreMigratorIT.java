@@ -91,14 +91,20 @@ public class StoreMigratorIT
         GraphDatabaseService database = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(
                 storeDir.getAbsolutePath() ) );
 
-        DatabaseContentVerifier verifier = new DatabaseContentVerifier( database );
-        verifier.verifyNodes();
-        verifier.verifyRelationships();
-        verifier.verifyNodeIdsReused();
-        verifier.verifyRelationshipIdsReused();
-        verifier.verifyLegacyIndex();
-
-        database.shutdown();
+        try
+        {
+            DatabaseContentVerifier verifier = new DatabaseContentVerifier( database );
+            verifier.verifyNodes();
+            verifier.verifyRelationships();
+            verifier.verifyNodeIdsReused();
+            verifier.verifyRelationshipIdsReused();
+            verifier.verifyLegacyIndex();
+        }
+        finally
+        {
+            // CLEANUP
+            database.shutdown();
+        }
 
         NeoStore neoStore = cleanup.add( storeFactory.newNeoStore( false ) );
         verifyNeoStore( neoStore );
@@ -113,7 +119,7 @@ public class StoreMigratorIT
     }
 
     @Test
-    public void shouldDedupUniquePropertyIndexKeys() throws Exception
+    public void shouldDeduplicateUniquePropertyIndexKeys() throws Exception
     {
         // GIVEN
         // a store that contains two nodes with property "name" of which there are two key tokens
@@ -124,19 +130,25 @@ public class StoreMigratorIT
 
         // THEN
         // verify that the "name" property for both the involved nodes
-        GraphDatabaseService db = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(
-                storeDir.getAbsolutePath() ) );
-        Node nodeA = getNodeWithName( db, "A" );
-        assertThat( nodeA, inTx( db, hasProperty( "name" ).withValue( "A" ) ) );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( 
+                storeDir.getAbsolutePath() );
+        try
+        {
+            Node nodeA = getNodeWithName( db, "A" );
+            assertThat( nodeA, inTx( db, hasProperty( "name" ).withValue( "A" ) ) );
 
-        Node nodeB = getNodeWithName( db, "B" );
-        assertThat( nodeB, inTx( db, hasProperty( "name" ).withValue( "B" ) ) );
+            Node nodeB = getNodeWithName( db, "B" );
+            assertThat( nodeB, inTx( db, hasProperty( "name" ).withValue( "B" ) ) );
 
-        Node nodeC = getNodeWithName( db, "C" );
-        assertThat( nodeC, inTx( db, hasProperty( "name" ).withValue( "C" )  ) );
-        assertThat( nodeC, inTx( db, hasProperty( "other" ).withValue( "a value" ) ) );
-        assertThat( nodeC, inTx( db, hasProperty( "third" ).withValue( "something" ) ) );
-        db.shutdown();
+            Node nodeC = getNodeWithName( db, "C" );
+            assertThat( nodeC, inTx( db, hasProperty( "name" ).withValue( "C" )  ) );
+            assertThat( nodeC, inTx( db, hasProperty( "other" ).withValue( "a value" ) ) );
+            assertThat( nodeC, inTx( db, hasProperty( "third" ).withValue( "something" ) ) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
 
         // THEN
         // verify that there are no duplicate keys in the store
@@ -144,28 +156,12 @@ public class StoreMigratorIT
                 storeFactory.newPropertyKeyTokenStore() );
         Token[] tokens = tokenStore.getTokens( MAX_VALUE );
         tokenStore.close();
-        assertNuDuplicates( tokens );
+        assertNoDuplicates( tokens );
     }
 
-    @Test
-    public void shouldMigrateEmptyDb() throws Exception
+    private void assertNoDuplicates( Token[] tokens )
     {
-        // GIVEN a store that is merely created, no additional data at all
-        Unzip.unzip( LegacyStore.class, "emptydb.zip", storeDir );
-
-        // WHEN migrating that to the new version
-        upgrader( new StoreMigrator( monitor, fs ) ).migrateIfNeeded( storeDir );
-
-        // THEN it should result in an updated database with the new store format
-        GraphDatabaseService db = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(
-                storeDir.getAbsolutePath() ) );
-        // TODO assert stuff, no?
-        db.shutdown();
-    }
-
-    private void assertNuDuplicates( Token[] tokens )
-    {
-        Set<String> visited = new HashSet<>();
+        Set<String> visited = new HashSet<String>();
         for ( Token token : tokens )
         {
             assertTrue( visited.add( token.name() ) );

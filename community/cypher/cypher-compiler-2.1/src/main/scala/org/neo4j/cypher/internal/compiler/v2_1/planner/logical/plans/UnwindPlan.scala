@@ -17,25 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.cache;
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-/**
- * How does the ids in the input (.csv) files relate to actual node ids in the store? With {@link NodeIdMapping}
- * that indirection can be controlled.
- */
-public enum NodeIdMapping
-{
-    actual
-    {
-        @Override
-        public NodeIdMapper mapper( NodeStore nodeStore )
-        {
-            return new ActualNodeIdMapper( nodeStore );
-        }
-    };
-    // TODO add one for internal here
+case class UnwindPlan(left: LogicalPlan, identifier: IdName, expression: Expression) extends LogicalPlan {
+  val lhs = Some(left)
+  def rhs = None
 
-    public abstract NodeIdMapper mapper( NodeStore nodeStore );
+  def availableSymbols: Set[IdName] = left.availableSymbols
 }

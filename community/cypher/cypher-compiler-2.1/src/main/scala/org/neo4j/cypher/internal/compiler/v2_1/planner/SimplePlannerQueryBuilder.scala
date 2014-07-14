@@ -133,7 +133,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
           }
         }
         Predicate(newDeps, ors)
-      case p => p
+      case p                               => p
     }
 
     val subQueries = predicatesWithCorrectDeps.flatMap {
@@ -162,7 +162,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
       case _: PatternExpression      => false
       case Not(_: PatternExpression) => false
       case Ors(exprs)                => exprs.exists(containsNestedPatternExpressions)
-      case expr                      => expr.exists {case _: PatternExpression => true }
+      case expr                      => expr.exists { case _: PatternExpression => true}
     }
 
     val expressionsWithNestedPatternExpr = expressions.filter(containsNestedPatternExpressions)
@@ -177,7 +177,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         (acc, _) => acc :+ p
     }
 
-    patternExpressions.map { e => (e, extractQueryGraph(e)) }
+    patternExpressions.map { e => (e, extractQueryGraph(e))}
   }
 
   override def produce(parsedQuery: Query): QueryPlanInput = parsedQuery match {
@@ -211,14 +211,14 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
   case class SingleQueryPlanInput(q: PlannerQuery, patternExprTable: Map[PatternExpression, QueryGraph])
 
-  private def produceQueryGraphFromClauses(input: SingleQueryPlanInput, clauses: Seq[Clause]): SingleQueryPlanInput =
+  private def produceQueryGraphFromClauses(input: SingleQueryPlanInput, clauses: Seq[Clause]): SingleQueryPlanInput = {
     clauses match {
       case Return(distinct, ListedReturnItems(items), optOrderBy, skip, limit) :: tl =>
         val newPatternInExpressionTable = input.patternExprTable ++ getPatternInExpressionQueryGraphs(items.map(_.expression))
         val sortItems = produceSortItems(optOrderBy)
         val shuffle = QueryShuffle(sortItems, skip.map(_.expression), limit.map(_.expression))
         val projection = produceProjectionsMaps(items, distinct).withShuffle(shuffle)
-        val newQG = input.q.withHorizon(QueryHorizon(projection = projection))
+        val newQG = input.q.withHorizon(projection)
         val nextStep = input.copy(
           q = newQG,
           patternExprTable = newPatternInExpressionTable
@@ -296,7 +296,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
         val newQuery =
           input.q
-            .withHorizon(QueryHorizon(projection = projection))
+            .withHorizon(projection)
             .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
 
         input.copy(q = newQuery, tailPlannedOutput.patternExprTable)
@@ -317,17 +317,34 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
         val newQuery =
           input.q
-            .withHorizon(QueryHorizon(projection = projection))
+            .withHorizon(projection)
             .withTail(tail.q.updateGraph(_.withArgumentIds(argumentIds)))
 
         input.copy(q = newQuery, patternExprTable = tail.patternExprTable)
 
-      case Seq() =>
-          input
+      case Unwind(expression, identifier) :: tl =>
 
-        case _ =>
-          throw new CantHandleQueryException
-      }
+        val tailInput: SingleQueryPlanInput = SingleQueryPlanInput(PlannerQuery.empty, input.patternExprTable)
+        val tailPlannedOutput: SingleQueryPlanInput = produceQueryGraphFromClauses(tailInput, tl)
+        val tailQuery: PlannerQuery = tailPlannedOutput.q
+        val inputIds = input.q.graph.coveredIds
+        val argumentIds = inputIds intersect tailQuery.graph.coveredIds
+        val unwind = UnwindProjection(IdName(identifier.name), expression)
+
+        val newQuery =
+          input.q
+            .withHorizon(unwind)
+            .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
+
+        input.copy(q = newQuery, tailPlannedOutput.patternExprTable)
+
+      case Seq() =>
+        input
+
+      case _ =>
+        throw new CantHandleQueryException
+    }
+  }
 
   private def produceSortItems(optOrderBy: Option[OrderBy]) =
     optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)

@@ -102,7 +102,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     QueryPlan(
       newMockedLogicalPlan(ids: _*),
       PlannerQuery(
-        horizon = QueryHorizon(projection = projections),
+        horizon = projections,
         graph = QueryGraph.empty.addPatternNodes(ids.map(IdName).toSeq: _*)
       )
     )

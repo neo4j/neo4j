@@ -24,39 +24,42 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Descending, Ascending, SortDescription}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryProjection, QueryGraph, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 
   import QueryPlanProducer._
 
-  def apply(plan: QueryPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = {
-    val shuffle = query.horizon.projection.shuffle
+  def apply(plan: QueryPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = query.horizon match {
+    case p: QueryProjection =>
+    val shuffle = p.shuffle
 
-    val producedPlan = (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
-      case (Nil, s, l) =>
-        addLimit(l, addSkip(s, plan))
+      val producedPlan = (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
+        case (Nil, s, l) =>
+          addLimit(l, addSkip(s, plan))
 
-      case (sortItems, None, Some(l)) =>
-        planSortedLimit(plan, l, sortItems)
+        case (sortItems, None, Some(l)) =>
+          planSortedLimit(plan, l, sortItems)
 
-      case (sortItems, Some(s), Some(l)) =>
-        planSortedSkipAndLimit(plan, s, l, sortItems)
+        case (sortItems, Some(s), Some(l)) =>
+          planSortedSkipAndLimit(plan, s, l, sortItems)
 
-      case (sortItems, s, None) if sortItems.exists(notIdentifier) =>
-        val newPlan = ensureSortablePlan(sortItems, plan)
-        val sortDescriptions = sortItems.map(sortDescription)
-        val sortPlan = planSort(newPlan, sortDescriptions, sortItems)
-        addSkip(s, sortPlan)
+        case (sortItems, s, None) if sortItems.exists(notIdentifier) =>
+          val newPlan = ensureSortablePlan(sortItems, plan)
+          val sortDescriptions = sortItems.map(sortDescription)
+          val sortPlan = planSort(newPlan, sortDescriptions, sortItems)
+          addSkip(s, sortPlan)
 
-      case (sortItems, s, None) =>
-        val sortDescriptions = sortItems.map(sortDescription)
-        val sortPlan = planSort(plan, sortDescriptions, sortItems)
-        addSkip(s, sortPlan)
-    }
+        case (sortItems, s, None) =>
+          val sortDescriptions = sortItems.map(sortDescription)
+          val sortPlan = planSort(plan, sortDescriptions, sortItems)
+          addSkip(s, sortPlan)
+      }
 
-    producedPlan
+      producedPlan
+
+    case _ => plan
   }
 
   private def ensureSortablePlan(sort: List[ast.SortItem], plan: QueryPlan): QueryPlan = {

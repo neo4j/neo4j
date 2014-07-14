@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store;
+package org.neo4j.unsafe.impl.batchimport.cache;
+
+import java.util.Iterator;
+
+import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
 /**
- * Monitoring bytes written to a channel.
+ * Maps ids from {@link InputEntity input entities} into ids used in the store.
  */
-public interface Monitor
+public interface IdMapper
 {
-    void dataWritten( int bytes );
+    Iterator<InputNode> wrapNodes( Iterator<InputNode> nodes );
 
-    public static final Monitor NO_MONITOR = new Monitor()
-    {
-        @Override
-        public void dataWritten( int bytes )
-        {   // Do nothing
-        }
-    };
+    Iterator<InputRelationship> wrapRelationships( Iterator<InputRelationship> relationships );
 }

@@ -19,27 +19,29 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
 import java.io.File;
 import java.util.Iterator;
 import java.util.Random;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeIdMapping;
+import org.neo4j.unsafe.impl.batchimport.cache.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.DetailedExecutionMonitor;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class ParallellBatchImporterTest
 {
@@ -65,7 +67,7 @@ public class ParallellBatchImporterTest
         // WHEN
         int nodeCount = 100_000;
         int relationshipCount = nodeCount*10;
-        inserter.doImport( nodes( nodeCount ), relationships( relationshipCount, nodeCount ), NodeIdMapping.actual );
+        inserter.doImport( nodes( nodeCount ), relationships( relationshipCount, nodeCount ), IdMappers.actualIds() );
         inserter.shutdown();
 
         // THEN

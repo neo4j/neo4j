@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_1.{SingleChild, PlanDescriptionImpl, PlanDescription, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 
-class UnwindPipe(source: Pipe, collection: Expression, identifier: String)(implicit monitor: PipeMonitor) extends PipeWithSource(source, monitor) with CollectionSupport {
+case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)(implicit monitor: PipeMonitor)
+  extends PipeWithSource(source, monitor) with CollectionSupport {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.flatMap {
       context =>

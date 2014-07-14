@@ -18,8 +18,8 @@ o Fix of issue with state bookkeeping for reporting instance role
 
 2.0.4
 -----
-o Slaves will now fall back to a full store copy if the master misses
-  logs old enough to serve incremental updates on join
+o Slave only instances no longer attempt to become coordinators, even if
+  they instantiate the cluster.
 
 2.0.2
 -----
@@ -53,7 +53,7 @@ o Constraints can now be created in a running HA cluster
 1.9.8
 -----
 o Slaves will now fall back to a full store copy if the master misses
- logs old enough to serve incremental updates on join
+  logs old enough to serve incremental updates on join
 
 1.9.7
 -----
