@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{TwoChildren, PlanDescriptionImpl, PlanDescription, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{TwoChildren, PlanDescriptionImpl, PlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
 case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)(implicit pipeMonitor: PipeMonitor) extends Pipe {

@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.cypher.internal.compiler.v2_1.planDescription
 
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.ColumnsLeft
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments._
 
 object PlandescriptionArgumentSerializer {
   def serialize(arg: Argument): String = {

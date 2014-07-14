@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.expressions.Expression
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.LegacyExpression
 
 class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression])
                (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {

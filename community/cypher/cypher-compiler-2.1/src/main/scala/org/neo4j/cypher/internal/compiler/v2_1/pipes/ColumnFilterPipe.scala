@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
 import commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{SingleChild, PlanDescriptionImpl}
 import symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments
 
 class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {

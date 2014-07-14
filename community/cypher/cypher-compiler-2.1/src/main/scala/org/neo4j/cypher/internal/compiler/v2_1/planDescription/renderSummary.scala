@@ -17,18 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pipes
+package org.neo4j.cypher.internal.compiler.v2_1.planDescription
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.Predicate
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.DbHits
 
-case class FilterPipe(source: Pipe, predicate: Predicate)
-                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-  val symbols = source.symbols
+object renderSummary extends (PlanDescription => String) {
+  def apply(plan: PlanDescription): String =
+    "Total database accesses: " +
+    plan.toSeq.
+      map(extractDbHits).
+      reduce(optionallyAddTogether).
+      map(_.toString).
+      getOrElse("?")
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =
-    input.filter(ctx => predicate.isTrue(ctx)(state))
+  private def optionallyAddTogether(a: Option[Long], b: Option[Long]): Option[Long] = for (a0 <- a; b0 <- b) yield a0 + b0
 
-  def planDescription = source.planDescription.andThen(this, "Filter", LegacyExpression(predicate))
+  private def extractDbHits(pl: PlanDescription): Option[Long] = pl.arguments.collectFirst {
+    case DbHits(x) => x
+  }
 }

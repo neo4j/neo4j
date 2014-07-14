@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{LabelName, IntroducedIdentifier}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.{LabelName, IntroducedIdentifier}
 
 case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])(implicit pipeMonitor: PipeMonitor) extends Pipe {
 

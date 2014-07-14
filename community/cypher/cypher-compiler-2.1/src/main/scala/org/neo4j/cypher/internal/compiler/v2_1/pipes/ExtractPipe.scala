@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.expressions.{CachedExpression, Identifier, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{SingleChild, PlanDescriptionImpl}
 import symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.KeyNames
 
 object ExtractPipe {
   def apply(source: Pipe, expressions: Map[String, Expression])(implicit pipeMonitor: PipeMonitor): ExtractPipe = source match {

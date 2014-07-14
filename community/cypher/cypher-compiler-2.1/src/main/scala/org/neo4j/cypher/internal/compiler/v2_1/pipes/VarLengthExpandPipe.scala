@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import scala.collection.mutable
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
 
 case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction,
                                types: Seq[String], min: Int, max: Option[Int])(implicit pipeMonitor: PipeMonitor)

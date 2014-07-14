@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.commands
 
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_1.mutation._
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v2_1.Argument
 
 trait NodeStartItemIdentifiers extends StartItem {
   def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> CTNode)

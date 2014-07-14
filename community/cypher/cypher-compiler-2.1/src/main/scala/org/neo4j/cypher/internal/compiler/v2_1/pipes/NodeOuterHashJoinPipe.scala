@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
+import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescription, PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.graphdb.Node
-import org.neo4j.cypher.internal.compiler.v2_1
-import org.neo4j.cypher.internal.compiler.v2_1.{TwoChildren, PlanDescriptionImpl, PlanDescription, ExecutionContext}
-import v2_1.symbols._
+
 import scala.collection.mutable
 
 case class NodeOuterHashJoinPipe(node: String, source: Pipe, inner: Pipe, nullableIdentifiers: Set[String])

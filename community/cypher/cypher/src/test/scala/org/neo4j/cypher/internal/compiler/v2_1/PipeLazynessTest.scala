@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{CountStar, Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching._
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.graphdb._
 

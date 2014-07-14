@@ -24,6 +24,7 @@ import commands.{AllIdentifiers, Pattern, Query}
 import commands.expressions.Identifier
 import executionplan.{ExecutionPlanInProgress, Phase, PartiallySolvedQuery, PlanBuilder}
 import mutation._
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription
 import pipes._
 import spi.PlanContext
 import symbols._

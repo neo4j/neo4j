@@ -23,6 +23,7 @@ import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.True
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.{BidirectionalTraversalMatcher, MonoDirectionalTraversalMatcher, SingleStep}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.Argument
 import org.neo4j.graphdb.Direction.OUTGOING
 import org.neo4j.graphdb.{Direction, Node, Path}
 

@@ -23,7 +23,7 @@ import matching.{Trail, TraversalMatcher}
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.KeyNames
 
 class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail)
                         (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
