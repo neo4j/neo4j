@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import javax.transaction.Transaction;
-
 import org.neo4j.graphdb.Lock;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 
@@ -30,9 +29,9 @@ public class LockElement implements Lock
     private Object resource;
     private final LockType lockType;
     private final LockManager lockManager;
-    private final Transaction tx;
+    private final KernelTransaction tx;
 
-    public LockElement( Object resource, Transaction tx, LockType type, LockManager lockManager )
+    public LockElement( Object resource, KernelTransaction tx, LockType type, LockManager lockManager )
     {
         if ( resource == null )
             throw new IllegalArgumentException( "Null resource" );

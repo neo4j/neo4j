@@ -23,8 +23,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
-import javax.transaction.Transaction;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -33,6 +31,7 @@ import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
+
 import static org.neo4j.kernel.impl.transaction.LockType.READ;
 import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
 
@@ -66,9 +65,9 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
 {
     private final Object resource; // the resource this RWLock locks
     private final LinkedList<WaitElement> waitingThreadList = new LinkedList<>();
-    private final ArrayMap<Transaction,TxLockElement> txLockElementMap = new ArrayMap<>( (byte)5, false, true );
+    private final ArrayMap<Object,TxLockElement> txLockElementMap = new ArrayMap<>( (byte)5, false, true );
     private final RagManager ragManager;
-    
+
     // access to these is guarded by synchronized blocks
     private int totalReadCount;
     private int totalWriteCount;
@@ -83,18 +82,18 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
     // keeps track of a transactions read and write lock count on this RWLock
     private static class TxLockElement
     {
-        private final Transaction tx;
-        
+        private final Object tx;
+
         // access to these is guarded by synchronized blocks
         private int readCount;
         private int writeCount;
         private boolean movedOn;
 
-        TxLockElement( Transaction tx )
+        TxLockElement( Object tx )
         {
             this.tx = tx;
         }
-        
+
         boolean isFree()
         {
             return readCount == 0 && writeCount == 0;
@@ -144,7 +143,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
      * @throws DeadlockDetectedException
      *             if a deadlock is detected
      */
-    synchronized void acquireReadLock( Transaction tx ) throws DeadlockDetectedException
+    synchronized void acquireReadLock( Object tx ) throws DeadlockDetectedException
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
@@ -166,7 +165,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         }
     }
 
-    synchronized boolean tryAcquireReadLock( Transaction tx )
+    synchronized boolean tryAcquireReadLock( Object tx )
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
@@ -198,7 +197,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
 	 * transactions in the queue they will be interrupted if they can acquire
 	 * the lock.
 	 */
-    synchronized void releaseReadLock( Transaction tx ) throws LockNotFoundException
+    synchronized void releaseReadLock( Object tx ) throws LockNotFoundException
     {
         TxLockElement tle = getLockElement( tx );
 
@@ -307,7 +306,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
      * @throws DeadlockDetectedException
      *             if a deadlock is detected
      */
-    synchronized void acquireWriteLock( Transaction tx ) throws DeadlockDetectedException
+    synchronized void acquireWriteLock( Object tx ) throws DeadlockDetectedException
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
@@ -329,7 +328,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         }
     }
 
-    synchronized boolean tryAcquireWriteLock( Transaction tx )
+    synchronized boolean tryAcquireWriteLock( Object tx )
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
@@ -351,7 +350,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
             marked--;
         }
     }
-    
+
     /**
 	 * Releases the write lock held by the provided tx. If it is null then an
 	 * attempt to acquire the current transaction from the transaction manager
@@ -361,7 +360,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
 	 * transactions in the queue they will be interrupted if they can acquire
 	 * the lock.
 	 */
-    synchronized void releaseWriteLock( Transaction tx ) throws LockNotFoundException
+    synchronized void releaseWriteLock( Object tx ) throws LockNotFoundException
     {
         TxLockElement tle = getLockElement( tx );
 
@@ -502,21 +501,21 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         return "RWLock[" + resource + ", hash="+hashCode()+"]";
     }
 
-    private void registerReadLockAcquired( Transaction tx, TxLockElement tle )
+    private void registerReadLockAcquired( Object tx, TxLockElement tle )
     {
         registerLockAcquired( tx, tle );
         totalReadCount++;
         tle.readCount++;
     }
 
-    private void registerWriteLockAcquired( Transaction tx, TxLockElement tle )
+    private void registerWriteLockAcquired( Object tx, TxLockElement tle )
     {
         registerLockAcquired( tx, tle );
         totalWriteCount++;
         tle.writeCount++;
     }
 
-    private void registerLockAcquired( Transaction tx, TxLockElement tle )
+    private void registerLockAcquired( Object tx, TxLockElement tle )
     {
         if ( tle.isFree() )
         {
@@ -524,7 +523,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         }
     }
 
-    private TxLockElement getLockElement( Transaction tx )
+    private TxLockElement getLockElement( Object tx )
     {
         TxLockElement tle = txLockElementMap.get( tx );
         if ( tle == null )
@@ -534,7 +533,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         return tle;
     }
 
-    private void assertTransaction( Transaction tx )
+    private void assertTransaction( Object tx )
     {
         if ( tx == null )
         {
@@ -542,7 +541,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         }
     }
 
-    private void deadlockGuardedWait( Transaction tx, TxLockElement tle, LockType lockType )
+    private void deadlockGuardedWait( Object tx, TxLockElement tle, LockType lockType )
     {   // given: we must be in a synchronized block here
         ragManager.checkWaitOn( this, tx );
         waitingThreadList.addFirst( new WaitElement( tle, lockType, currentThread() ) );
@@ -557,7 +556,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         ragManager.stopWaitOn( this, tx );
     }
 
-    private TxLockElement getOrCreateLockElement( Transaction tx )
+    private TxLockElement getOrCreateLockElement( Object tx )
     {
         assertTransaction( tx );
         TxLockElement tle = txLockElementMap.get( tx );

@@ -44,6 +44,7 @@ public final class ServerManagement implements ServerManagementMBean
         };
         thread.setDaemon( false );
         thread.start();
+        // TODO What? sysout? Why?
         System.out.println("restarting server");
         try
         {

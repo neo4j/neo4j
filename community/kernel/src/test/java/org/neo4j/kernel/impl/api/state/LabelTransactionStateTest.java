@@ -37,7 +37,8 @@ import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -262,7 +263,6 @@ public class LabelTransactionStateTest
     private final long nodeId = 20;
 
     private StoreReadLayer store;
-    private OldTxStateBridge oldTxState;
     private TxState txState;
     private StateHandlingStatementOperations txContext;
 
@@ -278,13 +278,11 @@ public class LabelTransactionStateTest
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
 
-        oldTxState = mock( OldTxStateBridge.class );
-
-        txState = new TxStateImpl( oldTxState, mock( PersistenceManager.class ),
-                mock( TxState.IdGeneration.class ) );
+        txState = new TxStateImpl( mock( TransactionRecordState.class ),
+                mock( LegacyIndexTransactionState.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
-                mock( ConstraintIndexCreator.class ) );
+                mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
     }
 
     private static class Labels

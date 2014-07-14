@@ -19,27 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
-
-
-import org.neo4j.graphdb.Direction
+import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionBuilderContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
-import org.mockito.Mockito._
-import org.mockito.Matchers._
-import org.scalatest.mock.MockitoSugar
-import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionBuilderContext
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
+import org.neo4j.graphdb.Direction
 
-trait LogicalPlanningTestSupport
-  extends CypherTestSupport
-  with AstConstructionTestSupport {
-
-  self: CypherTestSuite with MockitoSugar =>
+trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport {
+  self: CypherFunSuite =>
 
   val kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
   val monitors = new Monitors(kernelMonitors)
@@ -104,11 +98,11 @@ trait LogicalPlanningTestSupport
   }
 
   def newMockedQueryPlanWithProjections(ids: String*)(implicit context: LogicalPlanningContext) = {
-    val projections = QueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
+    val projections = RegularQueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
     QueryPlan(
       newMockedLogicalPlan(ids: _*),
       PlannerQuery(
-        projection = projections,
+        horizon = QueryHorizon(projection = projections),
         graph = QueryGraph.empty.addPatternNodes(ids.map(IdName).toSeq: _*)
       )
     )
@@ -143,7 +137,7 @@ trait LogicalPlanningTestSupport
   def newPlanner(metricsFactory: MetricsFactory): Planner =
     new Planner(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor]())
 
-  def produceQueryPlan(queryText: String)(implicit planner: Planner, planContext: PlanContext): QueryPlan = {
+  def produceLogicalPlan(queryText: String)(implicit planner: Planner, planContext: PlanContext): LogicalPlan = {
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, _) = astRewriter.rewrite(queryText, parsedStatement)
@@ -157,9 +151,6 @@ trait LogicalPlanningTestSupport
         throw new IllegalArgumentException("produceLogicalPlan only supports ast.Query input")
     }
   }
-
-  def produceLogicalPlan(queryText: String)(implicit planner: Planner, planContext: PlanContext): LogicalPlan =
-    produceQueryPlan(queryText)(planner, planContext).plan
 
   implicit def idName(name: String): IdName = IdName(name)
 }

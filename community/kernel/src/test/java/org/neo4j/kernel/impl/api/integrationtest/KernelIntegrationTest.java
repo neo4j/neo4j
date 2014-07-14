@@ -21,23 +21,25 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.After;
 import org.junit.Before;
-import org.neo4j.graphdb.Transaction;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.test.TestGraphDatabaseBuilder;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 public abstract class KernelIntegrationTest
 {
@@ -45,53 +47,68 @@ public abstract class KernelIntegrationTest
     protected GraphDatabaseAPI db;
     protected ThreadToStatementContextBridge statementContextProvider;
     protected KernelAPI kernel;
+    protected IndexingService indexingService;
 
-    private Transaction beansTx;
+    private KernelTransaction transaction;
     private Statement statement;
     private EphemeralFileSystemAbstraction fs;
 
     protected TokenWriteOperations tokenWriteOperationsInNewTransaction() throws KernelException
     {
-        beansTx = db.beginTx();
-        statement = statementContextProvider.instance();
+        transaction = kernel.newTransaction();
+        statement = transaction.acquireStatement();
         return statement.tokenWriteOperations();
     }
 
     protected DataWriteOperations dataWriteOperationsInNewTransaction() throws KernelException
     {
-        beansTx = db.beginTx();
-        statement = statementContextProvider.instance();
+        transaction = kernel.newTransaction();
+        statement = transaction.acquireStatement();
         return statement.dataWriteOperations();
     }
 
     protected SchemaWriteOperations schemaWriteOperationsInNewTransaction() throws KernelException
     {
-        beansTx = db.beginTx();
-        statement = statementContextProvider.instance();
+        transaction = kernel.newTransaction();
+        statement = transaction.acquireStatement();
         return statement.schemaWriteOperations();
     }
 
-    protected ReadOperations readOperationsInNewTransaction()
+    protected ReadOperations readOperationsInNewTransaction() throws TransactionFailureException
     {
-        beansTx = db.beginTx();
-        statement = statementContextProvider.instance();
+        transaction = kernel.newTransaction();
+        statement = transaction.acquireStatement();
         return statement.readOperations();
     }
 
-    protected void commit()
+    protected void commit() throws TransactionFailureException
     {
         statement.close();
         statement = null;
-        beansTx.success();
-        beansTx.finish();
+        transaction.success();
+        try
+        {
+            transaction.close();
+        }
+        finally
+        {
+            transaction = null;
+        }
     }
 
-    protected void rollback()
+    protected void rollback() throws TransactionFailureException
     {
         statement.close();
         statement = null;
-        beansTx.failure();
-        beansTx.finish();
+        transaction.failure();
+        try
+        {
+            transaction.close();
+        }
+        finally
+        {
+            transaction = null;
+        }
     }
 
     @Before
@@ -114,27 +131,27 @@ public abstract class KernelIntegrationTest
 
         //noinspection deprecation
         db = (GraphDatabaseAPI) graphDatabaseFactory.setConfig(GraphDatabaseSettings.cache_type,cacheType).newGraphDatabase();
-        statementContextProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
+        statementContextProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    protected void dbWithNoCache()
+    protected void dbWithNoCache() throws TransactionFailureException
     {
         stopDb();
         startDb("none");
     }
 
-    protected void stopDb()
+    protected void stopDb() throws TransactionFailureException
     {
-        if ( beansTx != null )
+        if ( transaction != null )
         {
-            beansTx.finish();
+            transaction.close();
         }
         db.shutdown();
     }
 
-    protected void restartDb()
+    protected void restartDb() throws TransactionFailureException
     {
         stopDb();
         startDb("soft");
@@ -142,7 +159,6 @@ public abstract class KernelIntegrationTest
 
     protected NeoStore neoStore()
     {
-        return ((NeoStoreXaDataSource)db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getXaDataSource(
-                NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME )).getNeoStore();
+        return db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
     }
 }

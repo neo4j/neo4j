@@ -19,72 +19,72 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import commands._
-import commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, NullPipe}
-import executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
-import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
+import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.{BuilderTest, Solved, TraversalMatcherBuilder, Unsolved}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{NullPipe, PipeMonitor}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.graphdb.Transaction
-import org.junit.{After, Before, Test}
-import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.{Solved, Unsolved, TraversalMatcherBuilder, BuilderTest}
 import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundPlanContext
-import org.neo4j.cypher.GraphDatabaseJUnitSuite
-import ast.convert.StatementConverters._
+import org.neo4j.graphdb.Transaction
 
-class TraversalMatcherBuilderTest extends GraphDatabaseJUnitSuite with BuilderTest {
+class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest {
   var builder: TraversalMatcherBuilder = null
   var ctx: PlanContext = null
   var tx: Transaction = null
   private implicit val monitor = mock[PipeMonitor]
 
-  @Before def init() {
+  override def beforeEach() {
+    super.beforeEach()
     builder = new TraversalMatcherBuilder
     tx = graph.beginTx()
     ctx = new TransactionBoundPlanContext(statement, kernelAPI, graph)
   }
 
-  @After def cleanup() {
+  override def afterEach() {
     tx.finish()
+    super.afterEach()
   }
 
-  @Test def should_not_accept_queries_without_patterns() {
+  test("should_not_accept_queries_without_patterns") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndex("n", "index", Literal("key"), Literal("expression"))))
     )
 
-    assertFalse("This query should not be accepted", builder.canWorkWith(plan(NullPipe(), q), ctx))
+    builder.canWorkWith(plan(NullPipe(), q), ctx) should be(false)
   }
 
-  @Test def should_accept_variable_length_paths() {
+  test("should_accept_variable_length_paths") {
     val q = query("START me=node:node_auto_index(name = 'Jane') " +
                   "MATCH me-[:jane_knows*]->friend-[:has]->status " +
                   "RETURN me")
 
-    assertAcceptsQuery(q)
+    builder.canWorkWith(plan(NullPipe(), q), ctx) should be(true)
   }
 
-  @Test def should_not_accept_queries_with_varlength_paths() {
+  test("should_not_accept_queries_with_varlength_paths") {
     val q = query("START me=node:node_auto_index(name = 'Tarzan'), you=node:node_auto_index(name = 'Jane') " +
                   "MATCH me-[:LOVES*]->banana-[:LIKES*]->you " +
                   "RETURN me")
 
-    assertAcceptsQuery(q)
+    builder.canWorkWith(plan(NullPipe(), q), ctx) should be(true)
   }
 
-  @Test def should_handle_loops() {
+  test("should_handle_loops") {
     val q = query("START me=node:node_auto_index(name = 'Tarzan'), you=node:node_auto_index(name = 'Jane') " +
                   "MATCH me-[:LIKES]->(u1)<-[:LIKES]->you, me-[:HATES]->(u2)<-[:HATES]->you " +
                   "RETURN me")
 
-    assertAcceptsQuery(q)
+    builder.canWorkWith(plan(NullPipe(), q), ctx) should be(true)
   }
 
-  @Test def should_not_take_on_path_expression_predicates() {
+  test("should_not_take_on_path_expression_predicates") {
     val q = query("START a=node({self}) MATCH a-->b WHERE b-->() RETURN b")
 
-    assertAcceptsQuery(q)
+    builder.canWorkWith(plan(NullPipe(), q), ctx) should be(true)
 
     val testPlan = plan(NullPipe(), q)
     val newPlan = builder.apply(testPlan, ctx)
@@ -92,19 +92,15 @@ class TraversalMatcherBuilderTest extends GraphDatabaseJUnitSuite with BuilderTe
     assertQueryHasNotSolvedPathExpressions(newPlan)
   }
 
-  @Test def should_handle_global_queries() {
+  test("should_handle_global_queries") {
     val q = query("START a=node({self}), b = node(*) MATCH a-->b RETURN b")
 
     val testPlan = plan(NullPipe(), q)
-    assertTrue("This query should be accepted", builder.canWorkWith(testPlan, ctx))
+    builder.canWorkWith(testPlan, ctx) should be(true)
 
     val newPlan = builder.apply(testPlan, ctx)
 
-    assert(!newPlan.query.start.exists(_.unsolved), "Should have solved all start items")
-  }
-
-  private def assertAcceptsQuery(q:PartiallySolvedQuery) {
-    assertTrue("Should be able to build on this", builder.canWorkWith(plan(NullPipe(), q), ctx))
+    newPlan.query.start.exists(_.unsolved) should be(false)
   }
 
   def assertQueryHasNotSolvedPathExpressions(newPlan: ExecutionPlanInProgress) {
@@ -114,7 +110,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseJUnitSuite with BuilderTe
     }
   }
 
-  val parser = new CypherParser(mock[ParserMonitor])
+  private val parser = new CypherParser(mock[ParserMonitor])
 
   private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parse(text).asQuery.asInstanceOf[Query])
 }

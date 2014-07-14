@@ -24,7 +24,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class FunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Functions"
-  val css = "general c2-2 c3-2 c4-1 c5-4 c6-4"
+  val css = "general c2-2 c3-2 c4-2 c5-3 c6-4"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {

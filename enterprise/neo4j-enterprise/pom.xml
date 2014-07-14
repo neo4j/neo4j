@@ -148,6 +148,10 @@
                   <directory>${project.build.directory}/../../../community/cypher/cypher/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
+                <resource>
+                  <directory>${project.build.directory}/../../../community/cypher/cypher-commons/src/main/java/</directory>
+                  <filtering>false</filtering>
+                </resource>
              </resources>
             </configuration>
           </execution>
@@ -157,10 +161,16 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <executions>
           <execution>
+            <id>attach-javadoc</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
             <id>create-javadocs</id>
             <phase>${attach-javadoc-phase}</phase>
+            <goals><goal>jar</goal></goals>
             <configuration>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
+              <detectLinks>false</detectLinks>
               <header>${project.name}</header>
               <doctitle>${project.name} ${project.version} API</doctitle>
               <windowtitle>${project.name} ${project.version} API</windowtitle>

@@ -30,7 +30,8 @@ class IfElseIterator(input: Iterator[ExecutionContext],
                      elseClause: ExecutionContext => Iterator[ExecutionContext],
                      finallyClause: () => Unit = () => ())
   extends Iterator[ExecutionContext] {
-  var resultIterator: Iterator[ExecutionContext] = Iterator.empty
+
+  private var resultIterator: Iterator[ExecutionContext] = Iterator.empty
 
   def hasNext: Boolean = {
     if (resultIterator.isEmpty)
@@ -63,6 +64,4 @@ class IfElseIterator(input: Iterator[ExecutionContext],
       }
     }
   }
-
-  override def toString(): String = "apa"
 }

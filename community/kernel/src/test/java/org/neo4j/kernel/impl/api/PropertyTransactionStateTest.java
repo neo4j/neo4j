@@ -57,7 +57,7 @@ public class PropertyTransactionStateTest
             tx.success();
         }
 
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             for ( int i = 0; i < 100; i++ )
             {
@@ -82,7 +82,7 @@ public class PropertyTransactionStateTest
             tx.success();
         }
 
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             node.setProperty( key, "one" );
             node.setProperty( key, "two" );
@@ -93,12 +93,14 @@ public class PropertyTransactionStateTest
     @Test
     public void testSetDoubleArrayProperty() throws Exception
     {
-        db.beginTx();
-        Node node = db.createNode();
-        for ( int i = 0; i < 100; i++ )
+        try ( Transaction ignore = db.beginTx() )
         {
-            node.setProperty( "foo", new double[] { 0, 0, i, i } );
-            assertArrayEquals( new double[] { 0, 0, i, i }, (double[]) node.getProperty( "foo" ), 0.1D );
+            Node node = db.createNode();
+            for ( int i = 0; i < 100; i++ )
+            {
+                node.setProperty( "foo", new double[] { 0, 0, i, i } );
+                assertArrayEquals( new double[] { 0, 0, i, i }, (double[]) node.getProperty( "foo" ), 0.1D );
+            }
         }
     }
 }

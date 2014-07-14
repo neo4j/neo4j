@@ -19,19 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.Query
-import executionplan.{PlanBuilder, ExecutionPlanInProgress, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.Query
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
-import spi.PlanContext
-import symbols._
-import org.scalatest.Assertions
-import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.ExecutionPlanInProgress
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
-import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-trait BuilderTest extends Assertions with MockitoSugar {
+trait BuilderTest extends CypherFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
 
@@ -56,7 +51,7 @@ trait BuilderTest extends Assertions with MockitoSugar {
   def assertAccepts(p: Pipe, q: PartiallySolvedQuery): ExecutionPlanInProgress = assertAccepts(plan(p, q))
 
   def assertAccepts(planInProgress: ExecutionPlanInProgress): ExecutionPlanInProgress = {
-    assertTrue("Should be able to build on this", builder.canWorkWith(planInProgress, context))
+    withClue("Should be able to build on this")(builder.canWorkWith(planInProgress, context)) should equal(true)
     builder.apply(planInProgress, context)
   }
 
@@ -73,7 +68,7 @@ trait BuilderTest extends Assertions with MockitoSugar {
   }
 
   def assertRejects(planInProgress: ExecutionPlanInProgress) {
-    assertFalse("Should not accept this", builder.canWorkWith(planInProgress, context))
+    withClue("Should not accept this")(builder.canWorkWith(planInProgress, context)) should equal(false)
   }
 
   def builder: PlanBuilder

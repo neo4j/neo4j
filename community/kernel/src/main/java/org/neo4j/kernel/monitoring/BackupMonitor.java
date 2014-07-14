@@ -21,8 +21,8 @@ package org.neo4j.kernel.monitoring;
 
 import java.io.File;
 
-public interface BackupMonitor {
-
+public interface BackupMonitor
+{
     void startCopyingFiles();
 
     void finishedCopyingStoreFiles();
@@ -33,31 +33,33 @@ public interface BackupMonitor {
 
     void streamingFile( File storefile );
 
-    public static final BackupMonitor NONE = new BackupMonitor()
+    public static class Adapter implements BackupMonitor
     {
         @Override
-        public void streamingFile( File storefile )
-        {   // Do nothing
-        }
-
-        @Override
-        public void streamedFile( File storefile )
-        {   // Do nothing
-        }
-
-        @Override
         public void startCopyingFiles()
-        {   // Do nothing
-        }
-
-        @Override
-        public void finishedRotatingLogicalLogs()
-        {   // Do nothing
+        { // Do nothing
         }
 
         @Override
         public void finishedCopyingStoreFiles()
-        {   // Do nothing
+        { // Do nothing
         }
-    };
+
+        @Override
+        public void finishedRotatingLogicalLogs()
+        { // Do nothing
+        }
+
+        @Override
+        public void streamedFile( File storefile )
+        { // Do nothing
+        }
+
+        @Override
+        public void streamingFile( File storefile )
+        { // Do nothing
+        }
+    }
+
+    public static final BackupMonitor NONE = new Adapter();
 }

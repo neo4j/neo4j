@@ -23,5 +23,10 @@ import java.io.IOException;
 
 public interface LogEntryWriter
 {
-    void writeLogEntry( LogEntry entry, LogBuffer buffer ) throws IOException;
+    void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
+            byte[] additionalHeaderData ) throws IOException;
+
+    void serialize( TransactionRepresentation tx ) throws IOException;
+
+    void writeCommitEntry( long transactionId, long timeWritten ) throws IOException;
 }

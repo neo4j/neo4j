@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -171,7 +172,7 @@ public class TestConcurrentModificationOfRelationshipChains
         tx.success();
         tx.finish();
 
-        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        db.getDependencyResolver().resolveDependency( Caches.class ).clear();
         Transaction transaction = db.beginTx();
         Iterable<Relationship> relationships = toList( node1.getRelationships() );
         transaction.finish();

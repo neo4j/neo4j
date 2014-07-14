@@ -19,24 +19,21 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.io.File;
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.index.IndexCommandFactory;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProviders;
-import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.api.LegacyIndex;
+import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class DummyIndexExtensionFactory extends
@@ -89,224 +86,154 @@ public class DummyIndexExtensionFactory extends
     }
 
     @Override
-    public String getDataSourceName()
-    {
-        return NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
-    }
-
-    @Override
-    public Index<Node> nodeIndex( String indexName, Map<String, String> config )
-    {
-        return new DummyNodeIndex( indexName, db );
-    }
-
-    @Override
-    public RelationshipIndex relationshipIndex( String indexName, Map<String, String> config )
-    {
-        return new DummyRelationshipIndex( indexName, db );
-    }
-
-    @Override
     public Map<String, String> fillInDefaults( Map<String, String> config )
     {
         return config;
     }
 
     @Override
-    public boolean configMatches( Map<String, String> storedConfig, Map<String, String> config )
+    public boolean configMatches( Map<String, String> storedConfig, Map<String, String> suppliedConfig )
     {
         return true;
     }
 
-    private abstract class DummyIndex<T extends PropertyContainer> implements Index<T>
+    private static class EmptyHits extends PrimitiveLongBaseIterator implements LegacyIndexHits
     {
-        private final String name;
-        private final InternalAbstractGraphDatabase db;
-
-        public DummyIndex( String name, InternalAbstractGraphDatabase db )
-        {
-            this.name = name;
-            this.db = db;
-        }
-
         @Override
-        public String getName()
-        {
-            return name;
-        }
-
-        @Override
-        public IndexHits<T> get( String key, Object value )
-        {
-            return new IteratorIndexHits<>( Collections.<T>emptyList() );
-        }
-
-        @Override
-        public IndexHits<T> query( String key, Object queryOrQueryObject )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public IndexHits<T> query( Object queryOrQueryObject )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isWriteable()
-        {
-            return false;
-        }
-
-        @Override
-        public GraphDatabaseService getGraphDatabase()
-        {
-            return null;
-        }
-
-        @Override
-        public void add( T entity, String key, Object value )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void remove( T entity, String key, Object value )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void remove( T entity, String key )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void remove( T entity )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void delete()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public T putIfAbsent( T entity, String key, Object value )
-        {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    private class DummyNodeIndex extends DummyIndex<Node>
-    {
-        public DummyNodeIndex( String name, InternalAbstractGraphDatabase db )
-        {
-            super( name, db );
-        }
-
-        @Override
-        public Class<Node> getEntityType()
-        {
-            return Node.class;
-        }
-    }
-
-    private class DummyRelationshipIndex extends DummyIndex<Relationship> implements RelationshipIndex
-    {
-        public DummyRelationshipIndex( String name, InternalAbstractGraphDatabase db )
-        {
-            super( name, db );
-        }
-
-        @Override
-        public Class<Relationship> getEntityType()
-        {
-            return Relationship.class;
-        }
-
-        @Override
-        public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull,
-                                            Node endNodeOrNull )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull,
-                                              Node startNodeOrNull, Node endNodeOrNull )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull,
-                                              Node startNodeOrNull, Node endNodeOrNull )
-        {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    private static class IteratorIndexHits<T> implements IndexHits<T>
-    {
-        private final List<T> list;
-        private final Iterator<T> iterator;
-
-        IteratorIndexHits( List<T> list )
-        {
-            this.list = list;
-            this.iterator = list.iterator();
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return iterator.hasNext();
-        }
-
-        @Override
-        public T next()
-        {
-            return iterator.next();
-        }
-
-        @Override
-        public void remove()
-        {
-            iterator.remove();
-        }
-
-        @Override
-        public IndexHits<T> iterator()
-        {
-            return this;
+        public void close()
+        {   // Nothing to close
         }
 
         @Override
         public int size()
         {
-            return list.size();
-        }
-
-        @Override
-        public void close()
-        {
-        }
-
-        @Override
-        public T getSingle()
-        {
-            return IteratorUtil.singleOrNull( (Iterator<T>) this );
+            return 0;
         }
 
         @Override
         public float currentScore()
         {
-            return Float.NaN;
+            return 0;
         }
+
+        @Override
+        protected boolean fetchNext()
+        {
+            return false;
+        }
+    }
+
+    private static final LegacyIndexHits NO_HITS = new EmptyHits();
+
+    private static final LegacyIndex EMPTY_LEGACY_INDEX = new LegacyIndex()
+    {
+        @Override
+        public void remove( long entity )
+        {
+        }
+
+        @Override
+        public void remove( long entity, String key )
+        {
+        }
+
+        @Override
+        public void remove( long entity, String key, Object value )
+        {
+        }
+
+        @Override
+        public LegacyIndexHits query( Object queryOrQueryObject, long startNode, long endNode )
+        {
+            return NO_HITS;
+        }
+
+        @Override
+        public LegacyIndexHits query( String key, Object queryOrQueryObject, long startNode, long endNode )
+        {
+            return NO_HITS;
+        }
+
+        @Override
+        public LegacyIndexHits query( Object queryOrQueryObject )
+        {
+            return NO_HITS;
+        }
+
+        @Override
+        public LegacyIndexHits query( String key, Object queryOrQueryObject )
+        {
+            return NO_HITS;
+        }
+
+        @Override
+        public LegacyIndexHits get( String key, Object value, long startNode, long endNode )
+        {
+            return NO_HITS;
+        }
+
+        @Override
+        public LegacyIndexHits get( String key, Object value )
+        {
+            return NO_HITS;
+        }
+
+        @Override
+        public void drop()
+        {
+        }
+
+        @Override
+        public void addRelationship( long entity, String key, Object value, long startNode, long endNode )
+        {
+        }
+
+        @Override
+        public void addNode( long entity, String key, Object value )
+        {
+        }
+    };
+
+    @Override
+    public LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory )
+    {
+        return new LegacyIndexProviderTransaction()
+        {
+            @Override
+            public LegacyIndex relationshipIndex( String indexName, Map<String, String> configuration )
+            {
+                return EMPTY_LEGACY_INDEX;
+            }
+
+            @Override
+            public LegacyIndex nodeIndex( String indexName, Map<String, String> configuration )
+            {
+                return EMPTY_LEGACY_INDEX;
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
+    }
+
+    private static final NeoCommandHandler NO_APPLIER = new NeoCommandHandler.Adapter();
+
+    @Override
+    public NeoCommandHandler newApplier( boolean recovery )
+    {
+        return NO_APPLIER;
+    }
+
+    @Override
+    public void force()
+    {
+    }
+
+    @Override
+    public ResourceIterator<File> listStoreFiles()
+    {
+        return IteratorUtil.emptyIterator();
     }
 }

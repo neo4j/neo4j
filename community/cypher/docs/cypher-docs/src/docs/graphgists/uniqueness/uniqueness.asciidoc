@@ -1,7 +1,7 @@
 Uniqueness
 ==========
 
-While pattern matching, Cypher makes sure to not include matches where the same graph relationship is found multiple times in a single pattern.
+While pattern matching, Neo4j makes sure to not include matches where the same graph relationship is found multiple times in a single pattern.
 In most use cases, this is a sensible thing to do.
 
 Example: looking for a user's friends of friends should not return said user.
@@ -53,7 +53,6 @@ If the query should return the user, it is possible to spread the matching over 
 [source,cypher]
 ----
 MATCH (user:User {name: 'Adam'})-[r1:FRIEND]-(friend)
-WITH friend
 MATCH (friend)-[r2:FRIEND]-(friend_of_a_friend)
 RETURN friend_of_a_friend
 ----
@@ -65,3 +64,25 @@ Adam
 ////
 
 //table
+
+Note that while the following query looks similar to the previous one, it is actually equivalent to the one before.
+
+[source,cypher]
+----
+MATCH (user:User {name: 'Adam'})-[r1:FRIEND]-(friend),
+      (friend)-[r2:FRIEND]-(friend_of_a_friend)
+RETURN friend_of_a_friend
+----
+
+Here, the +MATCH+ clause has a single pattern with two paths, while the previous query has two distinct patterns.
+
+
+////
+David
+1 row
+////
+
+//table
+
+
+

@@ -141,7 +141,6 @@ public class TestDynamicStore
                 pageCache,
                 fs.get(),
                 StringLogger.DEV_NULL,
-                null,
                 monitors ).createDynamicArrayStore( fileName, blockSize );
     }
 

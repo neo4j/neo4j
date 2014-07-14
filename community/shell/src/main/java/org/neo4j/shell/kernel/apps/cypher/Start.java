@@ -23,7 +23,6 @@ import java.io.PrintWriter;
 import java.rmi.RemoteException;
 import java.text.MessageFormat;
 import java.util.Map;
-import javax.transaction.SystemException;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
@@ -72,7 +71,7 @@ public class Start extends TransactionProvidingApp
                 ExecutionResult result = getResult( trimQuery( query ), getParameters( session ) );
                 handleResult( out, result, startTime, session, parser );
             }
-            catch ( CypherException | SystemException e )
+            catch ( CypherException e )
             {
                 throw ShellException.wrapCause( e );
             }
@@ -85,7 +84,7 @@ public class Start extends TransactionProvidingApp
     }
 
     protected ExecutionResult getResult( String query, Map<String, Object> parameters ) throws ShellException,
-            RemoteException, SystemException
+            RemoteException
     {
         return getEngine().execute( query, parameters );
     }

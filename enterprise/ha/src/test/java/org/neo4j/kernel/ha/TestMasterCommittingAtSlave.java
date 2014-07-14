@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
-import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
-
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -35,6 +26,8 @@ import java.util.List;
 import java.util.Queue;
 
 import org.junit.Test;
+
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ComException;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
@@ -42,6 +35,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.Slave;
@@ -49,35 +43,33 @@ import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
-import org.neo4j.kernel.ha.transaction.MasterTxIdGenerator;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
-import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
-import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.LogMarker;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
+import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
+
 
 public class TestMasterCommittingAtSlave
 {
+    private static final int MasterServerId = 0;
+
     private Iterable<Slave> slaves;
-    private XaDataSource dataSource;
     private FakeStringLogger log;
 
     @Test
     public void commitSuccessfullyToTheFirstOne() throws Exception
     {
-        MasterTxIdGenerator generator = newGenerator( 3, 1, givenOrder() );
-        generator.committed( dataSource, 0, 2, null );
+        TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
+        propagator.committed( 2, MasterServerId );
         assertCalls( (FakeSlave) slaves.iterator().next(), 2l );
         assertNoFailureLogs();
     }
@@ -85,10 +77,10 @@ public class TestMasterCommittingAtSlave
     @Test
     public void commitACoupleOfTransactionsSuccessfully() throws Exception
     {
-        MasterTxIdGenerator generator = newGenerator( 3, 1, givenOrder() );
-        generator.committed( dataSource, 0, 2, null );
-        generator.committed( dataSource, 0, 3, null );
-        generator.committed( dataSource, 0, 4, null );
+        TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
+        propagator.committed( 2, MasterServerId );
+        propagator.committed( 3, MasterServerId );
+        propagator.committed( 4, MasterServerId );
         assertCalls( (FakeSlave) slaves.iterator().next(), 2, 3, 4 );
         assertNoFailureLogs();
     }
@@ -96,8 +88,8 @@ public class TestMasterCommittingAtSlave
     @Test
     public void commitFailureAtFirstOneShouldMoveOnToNext() throws Exception
     {
-        MasterTxIdGenerator generator = newGenerator( 3, 1, givenOrder(), true );
-        generator.committed( dataSource, 0, 2, null );
+        TransactionPropagator propagator = newPropagator( 3, 1, givenOrder(), true );
+        propagator.committed( 2, MasterServerId );
         Iterator<Slave> slaveIt = slaves.iterator();
         assertCalls( (FakeSlave) slaveIt.next() );
         assertCalls( (FakeSlave) slaveIt.next(), 2 );
@@ -107,16 +99,16 @@ public class TestMasterCommittingAtSlave
     @Test
     public void commitSuccessfullyAtThreeSlaves() throws Exception
     {
-        MasterTxIdGenerator generator = newGenerator( 5, 3, givenOrder() );
-        generator.committed( dataSource, 0, 2, null );
-        generator.committed( dataSource, 0, 3, 1 );
-        generator.committed( dataSource, 0, 4, 3 );
+        TransactionPropagator propagator = newPropagator( 5, 3, givenOrder() );
+        propagator.committed( 2, MasterServerId );
+        propagator.committed( 3, 1 );
+        propagator.committed( 4, 2 );
 
         Iterator<Slave> slaveIt = slaves.iterator();
 
-        assertCalls( (FakeSlave) slaveIt.next(), 2, 3, 4 );
         assertCalls( (FakeSlave) slaveIt.next(), 2, 4 );
         assertCalls( (FakeSlave) slaveIt.next(), 2, 3 );
+        assertCalls( (FakeSlave) slaveIt.next(), 2, 3, 4 );
         assertCalls( (FakeSlave) slaveIt.next() );
         assertCalls( (FakeSlave) slaveIt.next() );
 
@@ -126,8 +118,8 @@ public class TestMasterCommittingAtSlave
     @Test
     public void commitSuccessfullyOnSomeOfThreeSlaves() throws Exception
     {
-        MasterTxIdGenerator generator = newGenerator( 5, 3, givenOrder(), false, true, true );
-        generator.committed( dataSource, 0, 2, null );
+        TransactionPropagator propagator = newPropagator( 5, 3, givenOrder(), false, true, true );
+        propagator.committed( 2, MasterServerId );
         Iterator<Slave> slaveIt = slaves.iterator();
         assertCalls( (FakeSlave) slaveIt.next(), 2 );
         slaveIt.next();
@@ -140,10 +132,10 @@ public class TestMasterCommittingAtSlave
     @Test
     public void roundRobinSingleSlave() throws Exception
     {
-        MasterTxIdGenerator generator = newGenerator( 3, 1, roundRobin() );
+        TransactionPropagator propagator = newPropagator( 3, 1, roundRobin() );
         for ( long tx = 2; tx <= 6; tx++ )
         {
-            generator.committed( dataSource, 0, tx, null );
+            propagator.committed( tx, MasterServerId );
         }
         Iterator<Slave> slaveIt = slaves.iterator();
         assertCalls( (FakeSlave) slaveIt.next(), 2, 5 );
@@ -155,10 +147,10 @@ public class TestMasterCommittingAtSlave
     @Test
     public void roundRobinSomeFailing() throws Exception
     {
-        MasterTxIdGenerator generator = newGenerator( 4, 2, roundRobin(), false, true );
+        TransactionPropagator propagator = newPropagator( 4, 2, roundRobin(), false, true );
         for ( long tx = 2; tx <= 6; tx++ )
         {
-            generator.committed( dataSource, 0, tx, null );
+            propagator.committed( tx, MasterServerId );
         }
 
         /* SLAVE |    TX
@@ -167,6 +159,7 @@ public class TestMasterCommittingAtSlave
         *   2   | 2 3 4   6
         *   3   |   3 4 5
         */
+
         Iterator<Slave> slaveIt = slaves.iterator();
         assertCalls( (FakeSlave) slaveIt.next(), 2, 5, 6 );
         slaveIt.next();
@@ -178,8 +171,8 @@ public class TestMasterCommittingAtSlave
     @Test
     public void notEnoughSlavesSuccessful() throws Exception
     {
-        MasterTxIdGenerator generator = newGenerator( 3, 2, givenOrder(), true, true );
-        generator.committed( dataSource, 0, 2, null );
+        TransactionPropagator propagator = newPropagator( 3, 2, givenOrder(), true, true );
+        propagator.committed( 2, MasterServerId );
         Iterator<Slave> slaveIt = slaves.iterator();
         slaveIt.next();
         slaveIt.next();
@@ -224,17 +217,16 @@ public class TestMasterCommittingAtSlave
         assertFalse( slave.moreTxs() );
     }
 
-    private MasterTxIdGenerator newGenerator( int slaveCount, int replication, SlavePriority slavePriority,
-                                              boolean... failingSlaves ) throws Exception
+    private TransactionPropagator newPropagator( int slaveCount, int replication, SlavePriority slavePriority,
+                                                 boolean... failingSlaves ) throws Exception
     {
         slaves = instantiateSlaves( slaveCount, failingSlaves );
-        dataSource = new FakeDataSource();
 
         log = new FakeStringLogger();
         Config config = new Config( MapUtil.stringMap(
-                HaSettings.tx_push_factor.name(), "" + replication ) );
+                HaSettings.tx_push_factor.name(), "" + replication, ClusterSettings.server_id.name(), "" + MasterServerId ) );
         Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
-        MasterTxIdGenerator result = new MasterTxIdGenerator( MasterTxIdGenerator.from( config, slavePriority ),
+        TransactionPropagator result = new TransactionPropagator( TransactionPropagator.from( config, slavePriority ),
                 log, new Slaves()
         {
             @Override
@@ -264,68 +256,12 @@ public class TestMasterCommittingAtSlave
         List<Slave> slaves = new ArrayList<Slave>();
         for ( int i = 0; i < count; i++ )
         {
-            slaves.add( new FakeSlave( i < failingSlaves.length && failingSlaves[i], i ) );
+            slaves.add( new FakeSlave( i < failingSlaves.length && failingSlaves[i], i + MasterServerId + 1 ) );
         }
         return slaves;
     }
-    
+
     private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
-
-    private static class FakeDataSource extends XaDataSource
-    {
-        private static final byte[] BRANCH = new byte[]{0, 1, 2};
-        private static final String NAME = "fake";
-
-        private final File dir;
-
-        FakeDataSource()
-        {
-            super( BRANCH, NAME );
-            this.dir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
-        }
-
-        @Override
-        public XaConnection getXaConnection()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
-        {
-            return LogExtractor.from( FS, dir, XaCommandReaderFactory.DEFAULT,
-                    new XaCommandWriterFactory()
-                    {
-                        @Override
-                        public XaCommandWriter newInstance()
-                        {
-                            return new PhysicalLogNeoXaCommandWriter();
-                        }
-                    },
-                    new Monitors().newMonitor( ByteCounterMonitor.class ),
-                    new LogEntryWriterv1(), startTxId );
-        }
-
-        @Override
-        public void init() throws Throwable
-        {
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-        }
-    }
 
     private static class FakeSlave implements Slave
     {
@@ -340,7 +276,7 @@ public class TestMasterCommittingAtSlave
         }
 
         @Override
-        public Response<Void> pullUpdates( String resource, long txId )
+        public Response<Void> pullUpdates( long txId )
         {
             if ( failing )
             {
@@ -348,7 +284,7 @@ public class TestMasterCommittingAtSlave
             }
 
             calledWithTxId.add( txId );
-            return new Response<Void>( null, new StoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+            return new Response<>( null, new StoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
         }
 
         Long popCalledTx()

@@ -206,14 +206,14 @@ public class RelationshipDeleter
         if ( nodeId == firstRel.getFirstNode() )
         {
             firstRel.setFirstPrevRel( firstInChain ?
-                    RelationshipCounter.relCount( nodeId, rel )-1 : RelationshipCounter.relCount( nodeId, firstRel ) - 1 );
+                    RelationshipChainLoader.relCount( nodeId, rel )-1 : RelationshipChainLoader.relCount( nodeId, firstRel ) - 1 );
             firstRel.setFirstInFirstChain( true );
         }
         if ( nodeId == firstRel.getSecondNode() )
         {
             firstRel.setSecondPrevRel( firstInChain ?
-                    RelationshipCounter.relCount( nodeId, rel )-1 :
-                    RelationshipCounter.relCount( nodeId, firstRel )-1 );
+                    RelationshipChainLoader.relCount( nodeId, rel )-1 :
+                    RelationshipChainLoader.relCount( nodeId, firstRel )-1 );
             firstRel.setFirstInSecondChain( true );
         }
         return false;

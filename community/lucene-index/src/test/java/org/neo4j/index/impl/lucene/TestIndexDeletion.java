@@ -31,12 +31,13 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -155,22 +156,37 @@ public class TestIndexDeletion
         index.get( key, value );
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test
     public void shouldThrowIllegalStateForActionsAfterDeletedOnIndex()
     {
         restartTx();
         index.delete();
         restartTx();
-        index.query( key, "own" );
+        try
+        {
+            index.query( key, "own" );
+            fail( "Should fail" );
+        }
+        catch ( NotFoundException e )
+        {
+            assertThat( e.getMessage(), containsString( "doesn't exist" ) );
+        }
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test
     public void shouldThrowIllegalStateForActionsAfterDeletedOnIndex2()
     {
         restartTx();
         index.delete();
         restartTx();
-        index.add( node, key, value );
+        try
+        {
+            index.add( node, key, value );
+        }
+        catch ( NotFoundException e )
+        {
+            assertThat( e.getMessage(), containsString( "doesn't exist" ) );
+        }
     }
 
     @Test( expected = IllegalStateException.class )
@@ -224,7 +240,7 @@ public class TestIndexDeletion
         catch ( ExecutionException e )
         {
             assertThat( e.getCause(), instanceOf( IllegalStateException.class ) );
-            assertThat( e.getCause().getMessage(), is( "This index (Index[index,Node]) has been deleted" ) );
+            assertThat( e.getCause().getMessage(), containsString( "Unknown index" ) );
         }
 
         secondTx.rollback();
@@ -268,7 +284,10 @@ public class TestIndexDeletion
         restartTx();
 
         // iterate over all nodes indexed with the key to discover abandoned
-        for ( @SuppressWarnings( "unused" ) Node hit : nodeIndex.get( "key", "value" ) );
+        for ( @SuppressWarnings( "unused" ) Node hit : nodeIndex.get( "key", "value" ) )
+        {
+            ;
+        }
 
         nodeIndex.delete();
         restartTx();

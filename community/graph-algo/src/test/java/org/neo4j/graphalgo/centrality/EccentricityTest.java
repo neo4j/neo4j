@@ -19,9 +19,8 @@
  */
 package org.neo4j.graphalgo.centrality;
 
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Test;
+
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.centrality.Eccentricity;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
@@ -31,6 +30,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 
 import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertTrue;
 
 public class EccentricityTest extends Neo4jAlgoTestCase
 {
@@ -39,6 +39,7 @@ public class EccentricityTest extends Neo4jAlgoTestCase
         return new SingleSourceShortestPathDijkstra<Double>( 0.0, null,
             new CostEvaluator<Double>()
             {
+                @Override
                 public Double getCost( Relationship relationship,
                             Direction direction )
                 {

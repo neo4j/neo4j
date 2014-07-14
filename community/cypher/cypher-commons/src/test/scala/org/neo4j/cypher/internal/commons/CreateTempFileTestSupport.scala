@@ -24,7 +24,7 @@ import java.io.PrintWriter
 import scala.io.Codec
 
 trait CreateTempFileTestSupport extends CypherTestSupport {
-  self: CypherTestSuite =>
+  self: CypherFunSuite =>
 
   private var files: Seq[File] = Seq.empty
 

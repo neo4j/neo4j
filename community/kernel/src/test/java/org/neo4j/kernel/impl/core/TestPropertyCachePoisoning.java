@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -43,7 +44,7 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * Regression test for a data race between loading properties from the disk and modifying properties.
- *  
+ *
  * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
  */
 @ForeignBreakpoints( {
@@ -101,9 +102,9 @@ public class TestPropertyCachePoisoning
         clearCache();
         assertEquals( "other", second.getProperty( "key" ) );
     }
-    
+
     private static DebuggedThread readerThread, removerThread;
-    
+
     @BeforeDebuggedTest
     public static void resetThreadReferences()
     {
@@ -149,7 +150,7 @@ public class TestPropertyCachePoisoning
 
     private void clearCache()
     {
-        graphdb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        graphdb.getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 
     private abstract class TxThread
@@ -217,7 +218,10 @@ public class TestPropertyCachePoisoning
     {
         try
         {
-            if ( graphdb != null ) graphdb.shutdown();
+            if ( graphdb != null )
+            {
+                graphdb.shutdown();
+            }
         }
         finally
         {

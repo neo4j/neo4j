@@ -19,6 +19,15 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.Functions.identity;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,15 +36,10 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import javax.transaction.NotSupportedException;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
-
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -56,13 +60,18 @@ import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.*;
+import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Provider;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -83,7 +92,12 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
@@ -97,25 +111,31 @@ import org.neo4j.kernel.impl.core.DefaultCaches;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.NodeProxy.NodeLookup;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
-import org.neo4j.kernel.impl.core.ReadOnlyNodeManager;
+import org.neo4j.kernel.impl.core.RelationshipData;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipLookups;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.StartupStatistics;
+import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.impl.core.Transactor;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
+import org.neo4j.kernel.impl.coreapi.LegacyIndexProxy;
 import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -123,32 +143,28 @@ import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.nioneo.xa.CommitProcessFactory;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.ReadOnlyTxManager;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-import org.neo4j.kernel.impl.transaction.TransactionManagerProvider;
-import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.transaction.TxManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -168,19 +184,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static java.lang.String.format;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.Functions.identity;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
-
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
  * and lifecycle management of these.
@@ -189,7 +192,7 @@ import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_
  */
 @Deprecated
 public abstract class InternalAbstractGraphDatabase
-        extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
+        implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
 
     public interface Dependencies
@@ -206,8 +209,6 @@ public abstract class InternalAbstractGraphDatabase
         Iterable<KernelExtensionFactory<?>> kernelExtensions();
 
         Iterable<CacheProvider> cacheProviders();
-
-        Iterable<TransactionInterceptorProvider> transactionInterceptorProviders();
     }
 
     public static class Configuration
@@ -220,20 +221,19 @@ public abstract class InternalAbstractGraphDatabase
         public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
         public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
         public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
-        public static final Setting<File> logical_log = GraphDatabaseSettings.logical_log;
 
         // Kept here to have it not be publicly documented.
         public static final Setting<String> lock_manager = setting( "lock_manager", STRING, "" );
         public static final Setting<Boolean> statistics_enabled =
                 setting("statistics_enabled", Settings.BOOLEAN, Settings.FALSE);
+
+        public static final Setting<String> log_configuration_file = setting( "log.configuration", STRING,
+                "neo4j-logback.xml" );
     }
 
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
 
-    protected final TransactionInterceptorProviders transactionInterceptorProviders;
-
-    private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
     protected final KernelExtensions kernelExtensions;
 
     protected final DependencyResolver dependencyResolver = new DependencyResolverImpl();
@@ -248,26 +248,20 @@ public abstract class InternalAbstractGraphDatabase
     protected KernelEventHandlers kernelEventHandlers;
     protected TransactionEventHandlers transactionEventHandlers;
     protected RelationshipTypeTokenHolder relationshipTypeTokenHolder;
+    protected PropertyKeyTokenHolder propertyKeyTokenHolder;
+    protected LabelTokenHolder labelTokenHolder;
     protected NodeManager nodeManager;
     protected IndexManagerImpl indexManager;
     protected Schema schema;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
     protected KernelHealth kernelHealth;
-    protected RemoteTxHook txHook;
     protected FileSystemAbstraction fileSystem;
-    protected XaDataSourceManager xaDataSourceManager;
     protected Locks lockManager;
     protected IdGeneratorFactory idGeneratorFactory;
-    protected NioNeoDbPersistenceSource persistenceSource;
-    protected PersistenceManager persistenceManager;
-    protected PropertyKeyTokenHolder propertyKeyTokenHolder;
-    protected LabelTokenHolder labelTokenHolder;
-    protected IndexStore indexStore;
-    protected AbstractTransactionManager txManager;
+    protected IndexConfigStore indexStore;
     protected TxIdGenerator txIdGenerator;
     protected PageCache pageCache;
     protected StoreFactory storeFactory;
-    protected XaFactory xaFactory;
     protected DiagnosticsManager diagnosticsManager;
     protected NeoStoreXaDataSource neoDataSource;
     protected RecoveryVerifier recoveryVerifier;
@@ -276,20 +270,21 @@ public abstract class InternalAbstractGraphDatabase
     protected RelationshipAutoIndexerImpl relAutoIndexer;
     protected KernelData extensions;
     protected Caches caches;
-
-    protected TransactionStateFactory stateFactory;
-    protected ThreadToStatementContextBridge statementContextProvider;
+    protected ThreadToStatementContextBridge threadToTransactionBridge;
     protected BridgingCacheAccess cacheBridge;
     protected JobScheduler jobScheduler;
     protected UpdateableSchemaState updateableSchemaState;
-
     protected Monitors monitors;
-
+    protected TransactionMonitor transactionMonitor;
     protected final LifeSupport life = new LifeSupport();
     private final Map<String, CacheProvider> cacheProviders;
     protected AvailabilityGuard availabilityGuard;
     protected long accessTimeout;
     protected StoreUpgrader storeMigrationProcess;
+    protected TransactionHeaderInformation transactionHeaderInformation;
+    private DataSourceManager dataSourceManager;
+    private StartupStatisticsProvider startupStatistics;
+    private CacheProvider cacheProvider;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
     {
@@ -306,9 +301,6 @@ public abstract class InternalAbstractGraphDatabase
                 config,
                 getDependencyResolver(),
                 fail() );
-        this.transactionInterceptorProviders = new TransactionInterceptorProviders(
-                dependencies.transactionInterceptorProviders(),
-                dependencyResolver );
         this.storeDir = config.get( Configuration.store_dir );
         accessTimeout = 1 * 1000; // TODO make configurable
     }
@@ -325,44 +317,35 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void run()
     {
+        // TODO 2.2-future for the love of some divine concept, make sure this shutdown on error works AND prints the
+        // TODO 2.2-future error in a useful manner. Can't be that hard, can it?
         create();
-
+        boolean failed = false;
         try
         {
             registerRecovery();
 
             life.start();
-
-            Throwable recoveryError = txManager.getRecoveryError();
-            if ( recoveryError != null )
-            {
-                throw recoveryError;
-            }
         }
         catch ( final Throwable throwable )
         {
-            StringBuilder msg = new StringBuilder();
-            msg.append( "Startup failed" );
-            Throwable temporaryThrowable = throwable;
-            while ( temporaryThrowable != null )
-            {
-                msg.append( ": " ).append( temporaryThrowable.getMessage() );
-                temporaryThrowable = temporaryThrowable.getCause();
-            }
-
-            msgLog.error( msg.toString() );
-
-            shutdown();
-
+            failed = true;
             throw new RuntimeException( "Error starting " + getClass().getName() + ", " + storeDir.getAbsolutePath(),
                     throwable );
+        }
+        finally
+        {
+            if ( failed )
+            {
+                shutdown();
+            }
         }
     }
 
     protected void createDatabaseAvailability()
     {
         // This is how we lock the entire database to avoid threads using it during lifecycle events
-        life.add( new DatabaseAvailability( txManager, availabilityGuard ) );
+        life.add( new DatabaseAvailability( availabilityGuard, transactionMonitor ) );
     }
 
     protected void registerRecovery()
@@ -372,8 +355,6 @@ public abstract class InternalAbstractGraphDatabase
             @Override
             public void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to )
             {
-                // TODO do not explicitly depend on order of start() calls in txManager and XaDatasourceManager
-                // use two booleans instead
                 if ( instance instanceof KernelExtensions && to.equals( LifecycleStatus.STARTED ) )
                 {
                     InternalAbstractGraphDatabase.this.doAfterRecoveryAndStartup( true );
@@ -384,21 +365,11 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void doAfterRecoveryAndStartup( boolean isMaster )
     {
-        if ( txManager.getRecoveryError() != null )
-        {   // If recovery failed then there's no point in going any further here. The database startup will fail.
-            return;
-        }
-
-        if ( txManager instanceof TxManager )
+        storeId = neoDataSource.getStoreId();
+        KernelDiagnostics.register( diagnosticsManager, InternalAbstractGraphDatabase.this, neoDataSource );
+        if ( isMaster )
         {
-            NeoStoreXaDataSource neoStoreDataSource = xaDataSourceManager.getNeoStoreDataSource();
-            storeId = neoStoreDataSource.getStoreId();
-            KernelDiagnostics.register( diagnosticsManager, InternalAbstractGraphDatabase.this, neoStoreDataSource );
-            if ( isMaster )
-            {
-                new RemoveOrphanConstraintIndexesOnStartup( new Transactor( txManager, persistenceManager ), logging )
-                        .perform();
-            }
+            new RemoveOrphanConstraintIndexesOnStartup( neoDataSource.getKernel(), logging ).perform();
         }
     }
 
@@ -443,6 +414,7 @@ public abstract class InternalAbstractGraphDatabase
                 logging.getConsoleLog( AutoConfigurator.class ) );
         if (config.get( GraphDatabaseSettings.dump_configuration ))
         {
+            // TODO please, PLEASE pass in a PrintStream instead
             System.out.println( autoConfigurator.getNiceMemoryInformation() );
         }
         Map<String, String> configParams = config.getParams();
@@ -472,7 +444,7 @@ public abstract class InternalAbstractGraphDatabase
         boolean readOnly = config.get( Configuration.read_only );
 
         String cacheTypeName = config.get( Configuration.cache_type );
-        CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
+        cacheProvider = cacheProviders.get( cacheTypeName );
         if ( cacheProvider == null )
         {
             throw new IllegalArgumentException( "No provider for cache type '" + cacheTypeName + "'. " +
@@ -497,42 +469,18 @@ public abstract class InternalAbstractGraphDatabase
 
         kernelHealth = new KernelHealth( kernelPanicEventGenerator, logging );
 
-        xaDataSourceManager = life.add( createXaDataSourceManager() );
+        // TODO 2.2-future please fix the bad dependencies instead of doing this. Before the removal of JTA
+        // this was the place of the XaDataSourceManager. NeoStoreXaDataSource is create further down than
+        // (specifically) KernelExtensions, which creates an interesting out-of-order issue with #doAfterRecovery().
+        // Anyways please fix this.
+        dataSourceManager = life.add( new DataSourceManager() );
 
-        txHook = createTxHook();
+        createTxHook();
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
-
-        stateFactory = createTransactionStateFactory();
-
-        Factory<byte[]> xidGlobalIdFactory = createXidGlobalIdFactory();
+//        assert guard == null : "Guard not properly implemented for the time being";
 
         updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
-
-        if ( readOnly )
-        {
-            txManager = new ReadOnlyTxManager( xaDataSourceManager, xidGlobalIdFactory,
-                    logging.getMessagesLog( ReadOnlyTxManager.class ) );
-        }
-        else
-        {
-            String serviceName = config.get( GraphDatabaseSettings.tx_manager_impl );
-            if ( GraphDatabaseSettings.tx_manager_impl.getDefaultValue().equals( serviceName ) )
-            {
-                txManager = new TxManager( this.storeDir, xaDataSourceManager,
-                        logging.getMessagesLog( TxManager.class ), fileSystem, stateFactory,
-                        xidGlobalIdFactory, kernelHealth, monitors );
-            }
-            else
-            {
-                TransactionManagerProvider provider;
-                provider = Service.load( TransactionManagerProvider.class, serviceName );
-                txManager = provider.loadTransactionManager( this.storeDir.getPath(), xaDataSourceManager,
-                        kernelPanicEventGenerator, txHook, logging.getMessagesLog( AbstractTransactionManager.class ),
-                        fileSystem, stateFactory );
-            }
-        }
-        life.add( txManager );
 
         txIdGenerator = life.add( createTxIdGenerator() );
 
@@ -544,32 +492,22 @@ public abstract class InternalAbstractGraphDatabase
                 new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrator.class ), System.out ),
                 new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), config ) );
 
-        persistenceSource = life.add( new NioNeoDbPersistenceSource( xaDataSourceManager ) );
-
-        persistenceManager = new PersistenceManager( logging.getMessagesLog( PersistenceManager.class ), txManager,
-                persistenceSource );
-
-        propertyKeyTokenHolder = life.add( new PropertyKeyTokenHolder( txManager, persistenceManager, persistenceSource, createPropertyKeyCreator() ) );
-        labelTokenHolder = life.add( new LabelTokenHolder( txManager, persistenceManager, persistenceSource, createLabelIdCreator() ) );
-        relationshipTypeTokenHolder = life.add( new RelationshipTypeTokenHolder( txManager,
-                persistenceManager, persistenceSource, createRelationshipTypeCreator() ) );
+        propertyKeyTokenHolder = life.add( new PropertyKeyTokenHolder( createPropertyKeyCreator() ) );
+        labelTokenHolder = life.add( new LabelTokenHolder( createLabelIdCreator() ) );
+        relationshipTypeTokenHolder = life.add( new RelationshipTypeTokenHolder( createRelationshipTypeCreator() ) );
 
         caches.configure( cacheProvider, config );
         Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
         Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
 
-        statementContextProvider = life.add( new ThreadToStatementContextBridge( persistenceManager ) );
+        threadToTransactionBridge = life.add( new ThreadToStatementContextBridge() );
 
-        nodeManager = guard != null ?
-                createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
-                createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
+        nodeManager = createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
 
         transactionEventHandlers = new TransactionEventHandlers( createNodeLookup(), createRelationshipLookups(),
-                statementContextProvider  );
+                threadToTransactionBridge  );
 
-        stateFactory.setDependencies( lockManager, nodeManager, txHook, txIdGenerator );
-
-        indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
+        indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
 
         diagnosticsManager.prependProvider( config );
 
@@ -577,9 +515,10 @@ public abstract class InternalAbstractGraphDatabase
 
         life.add( kernelExtensions );
 
-        schema = new SchemaImpl( statementContextProvider );
+        schema = new SchemaImpl( threadToTransactionBridge );
 
-        indexManager = new IndexManagerImpl( config, indexStore, xaDataSourceManager, txManager, this );
+        LegacyIndexProxy.Lookup indexLookup = createIndexLookup();
+        indexManager = new IndexManagerImpl( indexLookup, threadToTransactionBridge );
         nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexManager, nodeManager ) );
         relAutoIndexer = life.add( new RelationshipAutoIndexerImpl( config, indexManager, nodeManager ) );
 
@@ -591,11 +530,11 @@ public abstract class InternalAbstractGraphDatabase
 
         // Factories for things that needs to be created later
         storeFactory = createStoreFactory();
-        String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
-        xaFactory = new XaFactory( config, txIdGenerator, txManager, fileSystem,
-                monitors, logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
-                fileSystem, keepLogicalLogsConfig ), kernelHealth );
 
+        startupStatistics = new StartupStatisticsProvider();
+
+        transactionHeaderInformation = createTransactionHeaderInformation();
+        transactionMonitor = new TransactionMonitorImpl();
         createNeoDataSource();
 
         life.add( new MonitorGc( config, msgLog ) );
@@ -611,21 +550,32 @@ public abstract class InternalAbstractGraphDatabase
         life.add( new ConfigurationChangedRestarter() );
     }
 
+    protected LegacyIndexProxy.Lookup createIndexLookup()
+    {
+        return new LegacyIndexProxy.Lookup()
+        {
+            @Override
+            public GraphDatabaseService getGraphDatabaseService()
+            {
+                return InternalAbstractGraphDatabase.this;
+            }
+
+            @Override
+            public EntityFactory getEntityFactory()
+            {
+                return nodeManager;
+            }
+        };
+    }
+
+    protected TransactionHeaderInformation createTransactionHeaderInformation()
+    {
+        return new TransactionHeaderInformation( -1, -1, new byte[0] );
+    }
+
     protected Monitors createMonitors()
     {
         return new Monitors();
-    }
-
-    protected Factory<byte[]> createXidGlobalIdFactory()
-    {
-        return new Factory<byte[]>()
-        {
-            @Override
-            public byte[] newInstance()
-            {
-                return getNewGlobalId( DEFAULT_SEED, MASTER_ID_REPRESENTING_NO_MASTER );
-            }
-        };
     }
 
     protected AvailabilityGuard createAvailabilityGuard()
@@ -642,16 +592,6 @@ public abstract class InternalAbstractGraphDatabase
         return new HashMap<>();
     }
 
-    protected TransactionStateFactory createTransactionStateFactory()
-    {
-        return new TransactionStateFactory( logging );
-    }
-
-    protected XaDataSourceManager createXaDataSourceManager()
-    {
-        return new XaDataSourceManager( logging.getMessagesLog( XaDataSourceManager.class ) );
-    }
-
     @Override
     public DependencyResolver getDependencyResolver()
     {
@@ -660,138 +600,27 @@ public abstract class InternalAbstractGraphDatabase
 
     protected TokenCreator createRelationshipTypeCreator()
     {
-        return new DefaultRelationshipTypeCreator( logging );
+        return new DefaultRelationshipTypeCreator( dataSourceManager, idGeneratorFactory );
     }
 
     protected TokenCreator createPropertyKeyCreator()
     {
-        return new DefaultPropertyTokenCreator( logging );
+        return new DefaultPropertyTokenCreator( dataSourceManager, idGeneratorFactory );
     }
 
     protected TokenCreator createLabelIdCreator()
     {
-        return new DefaultLabelIdCreator( logging );
+        return new DefaultLabelIdCreator( dataSourceManager, idGeneratorFactory );
     }
 
     private NodeManager createNodeManager( final boolean readOnly, final CacheProvider cacheType,
                                            Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
     {
-        if ( readOnly )
-        {
-            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
-                    persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
-                    createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
-                    statementContextProvider );
-        }
-
+        NodeLookup nodeLookup = createNodeLookup();
+        RelationshipLookups relationshipLookup = createRelationshipLookups();
         return new NodeManager(
-                logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
-                persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
-                createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
-                statementContextProvider );
-    }
-
-    private NodeManager createGuardedNodeManager( final boolean readOnly, final CacheProvider cacheType,
-                                                  Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
-    {
-        if ( readOnly )
-        {
-            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
-                    persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
-                    createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
-            {
-                @Override
-                public Node getNodeByIdOrNull( final long nodeId )
-                {
-                    guard.check();
-                    return super.getNodeByIdOrNull( nodeId );
-                }
-
-                @Override
-                public NodeImpl getNodeForProxy( final long nodeId )
-                {
-                    guard.check();
-                    return super.getNodeForProxy( nodeId );
-                }
-
-                @Override
-                public RelationshipImpl getRelationshipForProxy( final long relId )
-                {
-                    guard.check();
-                    return super.getRelationshipForProxy( relId );
-                }
-
-                @Override
-                protected Relationship getRelationshipByIdOrNull( final long relId )
-                {
-                    guard.check();
-                    return super.getRelationshipByIdOrNull( relId );
-                }
-
-                @Override
-                public long createNode()
-                {
-                    guard.check();
-                    return super.createNode();
-                }
-
-                @Override
-                public long createRelationship( Node startNodeProxy, NodeImpl startNode,
-                                                        Node endNode, long relationshipTypeId )
-                {
-                    guard.check();
-                    return super.createRelationship( startNodeProxy, startNode, endNode, relationshipTypeId );
-                }
-            };
-        }
-
-        return new NodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
-                persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
-                createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
-        {
-            @Override
-            public Node getNodeByIdOrNull( final long nodeId )
-            {
-                guard.check();
-                return super.getNodeByIdOrNull( nodeId );
-            }
-
-            @Override
-            public NodeImpl getNodeForProxy( final long nodeId )
-            {
-                guard.check();
-                return super.getNodeForProxy( nodeId );
-            }
-
-            @Override
-            public RelationshipImpl getRelationshipForProxy( final long relId )
-            {
-                guard.check();
-                return super.getRelationshipForProxy( relId );
-            }
-
-            @Override
-            protected Relationship getRelationshipByIdOrNull( final long relId )
-            {
-                guard.check();
-                return super.getRelationshipByIdOrNull( relId );
-            }
-
-            @Override
-            public long createNode()
-            {
-                guard.check();
-                return super.createNode();
-            }
-
-            @Override
-            public long createRelationship( Node startNodeProxy, NodeImpl startNode,
-                                                    Node endNode, long relationshipTypeId )
-            {
-                guard.check();
-                return super.createRelationship( startNodeProxy, startNode, endNode, relationshipTypeId );
-            }
-        };
+                logging.getMessagesLog( NodeManager.class ), nodeLookup, relationshipLookup,
+                threadToTransactionBridge );
     }
 
     @Override
@@ -820,7 +649,7 @@ public abstract class InternalAbstractGraphDatabase
     protected StoreFactory createStoreFactory()
     {
         return new StoreFactory( config, idGeneratorFactory, pageCache, fileSystem,
-                logging.getMessagesLog( StoreFactory.class ), txHook, monitors );
+                logging.getMessagesLog( StoreFactory.class ), monitors );
     }
 
     protected PageCache createPageCache()
@@ -840,7 +669,15 @@ public abstract class InternalAbstractGraphDatabase
 
     protected TxIdGenerator createTxIdGenerator()
     {
-        return TxIdGenerator.DEFAULT;
+        // TODO 2.2-future move to after neostore data source is created
+        return new DefaultTxIdGenerator( new Provider<TransactionIdStore>()
+        {
+            @Override
+            public TransactionIdStore instance()
+            {
+                return neoDataSource.evaluate();
+            }
+        } );
     }
 
     protected Caches createCaches()
@@ -852,12 +689,24 @@ public abstract class InternalAbstractGraphDatabase
     {
         return new RelationshipProxy.RelationshipLookups()
         {
-            @Override
-            public RelationshipImpl lookupRelationship( long relationshipId )
+            private final ThreadLocal<RelationshipData> relationshipData = new ThreadLocal<RelationshipData>()
             {
-                assertDatabaseRunning();
-                return nodeManager.getRelationshipForProxy( relationshipId );
-            }
+                @Override
+                protected RelationshipData initialValue()
+                {
+                    return new RelationshipData();
+                }
+            };
+
+            private final RelationshipVisitor<RuntimeException> visitor =
+                    new RelationshipVisitor<RuntimeException>()
+            {
+                @Override
+                public void visit( long relId, long startNode, long endNode, int type )
+                {
+                    relationshipData.get().set( startNode, endNode, type );
+                }
+            };
 
             @Override
             public GraphDatabaseService getGraphDatabaseService()
@@ -866,16 +715,37 @@ public abstract class InternalAbstractGraphDatabase
             }
 
             @Override
-            public NodeManager getNodeManager()
-            {
-                return nodeManager;
-            }
-
-            @Override
             public Node newNodeProxy( long nodeId )
             {
                 // only used by relationship already checked as valid in cache
                 return nodeManager.newNodeProxyById( nodeId );
+            }
+
+            @Override
+            public RelationshipData getRelationshipData( long relationshipId )
+            {
+                try ( Statement statement = threadToTransactionBridge.instance() )
+                {
+                    statement.readOperations().relationshipVisit( relationshipId, visitor );
+                    return relationshipData.get();
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    throw new NotFoundException( e );
+                }
+            }
+
+            @Override
+            public RelationshipType getRelationshipTypeById( int type )
+            {
+                try
+                {
+                    return relationshipTypeTokenHolder.getTokenById( type );
+                }
+                catch ( TokenNotFoundException e )
+                {
+                    throw new NotFoundException( e );
+                }
             }
         };
     }
@@ -896,29 +766,11 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return nodeManager;
             }
-
-            @Override
-            public NodeImpl lookup( long nodeId )
-            {
-                assertDatabaseRunning();
-                return nodeManager.getNodeForProxy( nodeId );
-            }
         };
     }
 
-    // This is here until we've moved all operations into the kernel, which handles this check on it's own.
-    private void assertDatabaseRunning()
+    protected void createTxHook()
     {
-        if( life.isRunning() )
-        {
-            return;
-        }
-        throw new DatabaseShutdownException();
-    }
-
-    protected RemoteTxHook createTxHook()
-    {
-        return new DefaultTxHook();
     }
 
     protected FileSystemAbstraction createFileSystemAbstraction()
@@ -970,29 +822,52 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void createNeoDataSource()
     {
-        // Create DataSource
         neoDataSource = new NeoStoreXaDataSource( config,
-                storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
-                xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
+                storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ), jobScheduler, logging,
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
-                dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
-                persistenceManager, lockManager, this, transactionEventHandlers,
-                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(), storeMigrationProcess );
-        xaDataSourceManager.registerDataSource( neoDataSource );
+                dependencyResolver, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
+                lockManager, this, transactionEventHandlers,
+                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
+                storeMigrationProcess, transactionMonitor, kernelHealth, txIdGenerator,
+                createHeaderInformationFactory(), startupStatistics, caches, nodeManager, guard, indexStore,
+                getCommitProcessFactory() );
+        dataSourceManager.register( neoDataSource );
+    }
+
+    protected CommitProcessFactory getCommitProcessFactory()
+    {
+        return defaultCommitProcessFactory;
+    }
+
+    public static CommitProcessFactory defaultCommitProcessFactory = new CommitProcessFactory()
+    {
+        @Override
+        public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
+                                                KernelHealth kernelHealth, NeoStore neoStore,
+                                                TransactionRepresentationStoreApplier storeApplier,
+                                                NeoStoreInjectedTransactionValidator validator,
+                                                boolean recovery )
+        {
+            return new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
+                    neoStore, storeApplier, recovery );
+        }
+    } ;
+
+    protected TransactionHeaderInformationFactory createHeaderInformationFactory()
+    {
+        return TransactionHeaderInformationFactory.DEFAULT;
     }
 
     protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
     {
-        return
-                new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
-                {
-                    @Override
-                    public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
-                    {
-                        return identity();
-                    }
-                };
-
+        return new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
+        {
+            @Override
+            public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
+            {
+                return identity();
+            }
+        };
     }
 
     @Override
@@ -1010,48 +885,30 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Transaction beginTx()
     {
-        return tx().begin();
-    }
-
-    protected Transaction beginTx( ForceMode forceMode )
-    {
         if ( !availabilityGuard.isAvailable( accessTimeout ) )
         {
             throw new TransactionFailureException( "Database is currently not available. "
                     + availabilityGuard.describeWhoIsBlocking() );
         }
 
+        KernelAPI kernel = neoDataSource.getKernel();
+        TopLevelTransaction topLevelTransaction =
+                threadToTransactionBridge.getTopLevelTransactionBoundToThisThread( false );
+        if ( topLevelTransaction != null )
+        {
+            return new PlaceboTransaction( topLevelTransaction );
+        }
+
         try
         {
-            if ( transactionRunning() )
-            {
-                return new PlaceboTransaction( txManager, statementContextProvider );
-            }
-
-            txManager.begin( forceMode );
-            return new TopLevelTransaction( txManager, statementContextProvider );
+            KernelTransaction transaction = kernel.newTransaction();
+            topLevelTransaction = new TopLevelTransaction( transaction, threadToTransactionBridge );
+            threadToTransactionBridge.bindTransactionToCurrentThread( topLevelTransaction );
+            return topLevelTransaction;
         }
-        catch ( SystemException e )
+        catch ( org.neo4j.kernel.api.exceptions.TransactionFailureException e )
         {
-            throw new TransactionFailureException( "Couldn't get transaction", e );
-        }
-        catch ( NotSupportedException e )
-        {
-            throw new TransactionFailureException( "Couldn't begin transaction", e );
-        }
-    }
-
-    @Override
-    public boolean transactionRunning()
-    {
-        try
-        {
-            return txManager.getTransaction() != null;
-        }
-        catch ( SystemException e )
-        {
-            throw new TransactionFailureException(
-                    "Unable to get transaction.", e );
+            throw new TransactionFailureException( "Failure to begin transaction", e );
         }
     }
 
@@ -1104,7 +961,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Node createNode()
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = threadToTransactionBridge.instance() )
         {
             return nodeManager.newNodeProxyById( statement.dataWriteOperations().nodeCreate() );
         }
@@ -1121,7 +978,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Node createNode( Label... labels )
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = threadToTransactionBridge.instance() )
         {
             long nodeId = statement.dataWriteOperations().nodeCreate();
             for ( Label label : labels )
@@ -1163,7 +1020,16 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( format( "Node %d not found", id ) );
         }
-        return nodeManager.getNodeById( id );
+        threadToTransactionBridge.assertInTransaction();
+        try (Statement statement = threadToTransactionBridge.instance())
+        {
+            if ( !statement.readOperations().nodeExists( id ) )
+            {
+                throw new NotFoundException(format( "Node %d not found", id ));
+            }
+
+            return nodeManager.newNodeProxyById( id );
+        }
     }
 
     @Override
@@ -1173,13 +1039,16 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( format( "Relationship %d not found", id));
         }
-        return nodeManager.getRelationshipById( id );
-    }
+        threadToTransactionBridge.assertInTransaction();
+        try (Statement statement = threadToTransactionBridge.instance())
+        {
+            if ( !statement.readOperations().relationshipExists( id ) )
+            {
+                throw new NotFoundException( format( "Relationship %d not found", id ) );
+            }
 
-    @Override
-    public TransactionBuilder tx()
-    {
-        return defaultTxBuilder;
+            return nodeManager.newRelationshipProxyById( id );
+        }
     }
 
     @Override
@@ -1192,7 +1061,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Schema schema()
     {
-        txManager.assertInTransaction();
+        threadToTransactionBridge.assertInTransaction();
         return schema;
     }
 
@@ -1310,10 +1179,6 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( InternalAbstractGraphDatabase.this );
             }
-            else if ( TransactionManager.class.isAssignableFrom( type ) && type.isInstance( txManager ) )
-            {
-                return type.cast( txManager );
-            }
             else if ( Locks.class.isAssignableFrom( type ) && type.isInstance( lockManager ) )
             {
                 // Locks used to ensure pessimistic concurrency control between transactions
@@ -1341,17 +1206,13 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( logging );
             }
-            else if ( IndexStore.class.isAssignableFrom( type ) && type.isInstance( indexStore ) )
+            else if ( IndexConfigStore.class.isAssignableFrom( type ) && type.isInstance( indexStore ) )
             {
                 return type.cast( indexStore );
             }
-            else if ( XaFactory.class.isAssignableFrom( type ) && type.isInstance( xaFactory ) )
+            else if ( DataSourceManager.class.isAssignableFrom( type ) && type.isInstance( dataSourceManager ) )
             {
-                return type.cast( xaFactory );
-            }
-            else if ( XaDataSourceManager.class.isAssignableFrom( type ) && type.isInstance( xaDataSourceManager ) )
-            {
-                return type.cast( xaDataSourceManager );
+                return type.cast( dataSourceManager );
             }
             else if ( FileSystemAbstraction.class.isAssignableFrom( type ) && type.isInstance( fileSystem ) )
             {
@@ -1365,18 +1226,13 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( guard );
             }
-            else if ( IndexProviders.class.isAssignableFrom( type ) && type.isInstance( indexManager ) )
+            else if ( IndexProviders.class.isAssignableFrom( type ) && type.isInstance( neoDataSource ) )
             {
-                return type.cast( indexManager );
+                return type.cast( neoDataSource );
             }
             else if ( KernelData.class.isAssignableFrom( type ) && type.isInstance( extensions ) )
             {
                 return type.cast( extensions );
-            }
-            else if ( TransactionInterceptorProviders.class.isAssignableFrom( type )
-                    && type.isInstance( transactionInterceptorProviders ) )
-            {
-                return type.cast( transactionInterceptorProviders );
             }
             else if ( KernelExtensions.class.isAssignableFrom( type ) && type.isInstance( kernelExtensions ) )
             {
@@ -1385,10 +1241,6 @@ public abstract class InternalAbstractGraphDatabase
             else if ( NodeManager.class.isAssignableFrom( type ) && type.isInstance( nodeManager ) )
             {
                 return type.cast( nodeManager );
-            }
-            else if ( TransactionStateFactory.class.isAssignableFrom( type ) && type.isInstance( stateFactory ) )
-            {
-                return type.cast( stateFactory );
             }
             else if ( TxIdGenerator.class.isAssignableFrom( type ) && type.isInstance( txIdGenerator ) )
             {
@@ -1422,14 +1274,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( monitors );
             }
-            else if ( PersistenceManager.class.isAssignableFrom( type ) && type.isInstance( persistenceManager ) )
-            {
-                return type.cast( persistenceManager );
-            }
             else if ( ThreadToStatementContextBridge.class.isAssignableFrom( type )
-                    && type.isInstance( statementContextProvider ) )
+                    && type.isInstance( threadToTransactionBridge ) )
             {
-                return type.cast( statementContextProvider );
+                return type.cast( threadToTransactionBridge );
             }
             else if ( CacheAccessBackDoor.class.isAssignableFrom( type ) && type.isInstance( cacheBridge ) )
             {
@@ -1473,10 +1321,6 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( monitors );
             }
-            else if ( RemoteTxHook.class.isAssignableFrom( type ) )
-            {
-                return type.cast( txHook );
-            }
             else if( TransactionEventHandlers.class.equals( type ))
             {
                 return type.cast( transactionEventHandlers );
@@ -1495,7 +1339,19 @@ public abstract class InternalAbstractGraphDatabase
             }
             else if ( AvailabilityGuard.class.isAssignableFrom( type ) )
             {
-                return (T) availabilityGuard;
+                return type.cast( availabilityGuard );
+            }
+            else if ( StartupStatistics.class.isAssignableFrom( type ) )
+            {
+                return type.cast( startupStatistics );
+            }
+            else if ( TransactionMonitor.class.isAssignableFrom( type ) )
+            {
+                return type.cast( transactionMonitor );
+            }
+            else if ( Caches.class.isAssignableFrom( type ) )
+            {
+                return type.cast( caches );
             }
             return null;
         }
@@ -1508,6 +1364,19 @@ public abstract class InternalAbstractGraphDatabase
             if ( result != null )
             {
                 return selector.select( type, Iterables.option( result ) );
+            }
+
+            // Try neostore datasource
+            try
+            {
+                result = neoDataSource.getDependencyResolver().resolveDependency( type, selector );
+                if ( result != null )
+                {
+                    return selector.select( type, Iterables.option( result ) );
+                }
+            }
+            catch ( IllegalArgumentException e )
+            {   // Nah, didn't find it
             }
 
             // Try with kernel extensions
@@ -1576,7 +1445,7 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
-        Statement statement = statementContextProvider.instance();
+        Statement statement = threadToTransactionBridge.instance();
 
         ReadOperations readOps = statement.readOperations();
         int propertyId = readOps.propertyKeyGetForName( key );
@@ -1717,12 +1586,12 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public TraversalDescription traversalDescription()
     {
-        return new MonoDirectionalTraversalDescription(statementContextProvider);
+        return new MonoDirectionalTraversalDescription(threadToTransactionBridge);
     }
 
     @Override
     public BidirectionalTraversalDescription bidirectionalTraversalDescription()
     {
-        return new BidirectionalTraversalDescriptionImpl(statementContextProvider);
+        return new BidirectionalTraversalDescriptionImpl(threadToTransactionBridge);
     }
 }

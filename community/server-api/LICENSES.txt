@@ -10,7 +10,6 @@ Apache Software License, Version 2.0
   Commons Digester
   Commons Lang
   Commons Logging
-  JTA 1.1
 ------------------------------------------------------------------------------
 
                                  Apache License

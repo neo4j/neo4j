@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
@@ -40,8 +41,8 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.Arrays.asList;
@@ -64,15 +65,12 @@ import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class IndexQueryTransactionStateTest
 {
-
     @Test
     public void shouldExcludeRemovedNodesFromIndexQuery() throws Exception
     {
         // Given
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
-        when( oldTxState.hasChanges() ).thenReturn( true );
 
         txContext.nodeDelete( state, 2l );
 
@@ -89,8 +87,6 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator( 1l ) );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
-        when( oldTxState.hasChanges() ).thenReturn( true );
 
         txContext.nodeDelete( state, 1l );
 
@@ -109,9 +105,8 @@ public class IndexQueryTransactionStateTest
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-                new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
-        when( oldTxState.hasChanges() ).thenReturn( true );
+        state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
+                Property.intProperty( propertyKeyId, 10 ) );
 
         // When
         PrimitiveLongIterator result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
@@ -127,9 +122,8 @@ public class IndexQueryTransactionStateTest
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-                new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
-        when( oldTxState.hasChanges() ).thenReturn( true );
+        state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
+                Property.intProperty( propertyKeyId, 10 ) );
 
         // When
         long result = txContext.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value );
@@ -173,9 +167,6 @@ public class IndexQueryTransactionStateTest
                 .<DefinedProperty>emptyIterator() );
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
 
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-                new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
-
         state.txState().nodeDoReplaceProperty( 1l, noNodeProperty( 1l, propertyKeyId ),
                                                    stringProperty( propertyKeyId, value ) );
         txContext.nodeAddLabel( state, 1l, labelId );
@@ -198,7 +189,6 @@ public class IndexQueryTransactionStateTest
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
         when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty );
         when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
         txContext.nodeAddLabel( state, 1l, labelId );
 
@@ -220,7 +210,6 @@ public class IndexQueryTransactionStateTest
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
         when( store.nodeGetProperty( 2l, propertyKeyId ) ).thenReturn( stringProperty );
         when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
         txContext.nodeAddLabel( state, 2l, labelId );
 
@@ -242,7 +231,6 @@ public class IndexQueryTransactionStateTest
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
         when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty );
         when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
         txContext.nodeRemoveLabel( state, 1l, labelId );
 
@@ -264,7 +252,6 @@ public class IndexQueryTransactionStateTest
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
         when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty );
         when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
         txContext.nodeRemoveLabel( state, 1l, labelId );
 
@@ -283,8 +270,8 @@ public class IndexQueryTransactionStateTest
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( true );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-                new DiffSets<>( Collections.<Long>emptySet(), asSet( 1l ) ) );
+        state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
+                Property.intProperty( propertyKeyId, 10 ) );
 
         txContext.nodeAddLabel( state, 1l, labelId );
 
@@ -319,18 +306,13 @@ public class IndexQueryTransactionStateTest
     IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
 
     private StoreReadLayer store;
-    private OldTxStateBridge oldTxState;
     private EntityOperations txContext;
     private KernelStatement state;
 
     @Before
     public void before() throws Exception
     {
-
-        oldTxState = mock( OldTxStateBridge.class );
-
-        TxState txState = new TxStateImpl( oldTxState, mock( PersistenceManager.class ),
-                mock( TxState.IdGeneration.class ) );
+        TxState txState = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexTransactionState.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
 
         int labelId1 = 10, labelId2 = 12;
@@ -346,7 +328,8 @@ public class IndexQueryTransactionStateTest
         StateHandlingStatementOperations stateHandlingOperations = new StateHandlingStatementOperations(
                 store,
                 mock( LegacyPropertyTrackers.class ),
-                mock( ConstraintIndexCreator.class ) );
+                mock( ConstraintIndexCreator.class ),
+                mock( LegacyIndexStore.class ) );
         txContext = new ConstraintEnforcingEntityOperations(
                 stateHandlingOperations, stateHandlingOperations, stateHandlingOperations );
     }

@@ -41,7 +41,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
-
 public class TestSlaveOnlyCluster
 {
     public final TargetDirectory directory = TargetDirectory.forTest( getClass() );

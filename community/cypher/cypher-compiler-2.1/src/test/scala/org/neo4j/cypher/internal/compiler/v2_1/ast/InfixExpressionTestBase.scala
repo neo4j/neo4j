@@ -19,25 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import ast.Expression.SemanticContext
-import symbols._
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expression) extends Assertions {
+abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expression) extends CypherFunSuite {
 
   protected val context: SemanticContext = SemanticContext.Simple
 
   protected def testValidTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec)(expected: TypeSpec) {
     val (result, expression) = evaluateWithTypes(lhsTypes, rhsTypes)
-    assert(result.errors.isEmpty, s"type check has errors: ${result.errors.mkString(",")}")
-    assert(expression.types(result.state) === expected)
+    result.errors shouldBe empty
+    expression.types(result.state) should equal(expected)
   }
 
   protected def testInvalidApplication(lhsTypes: TypeSpec, rhsTypes: TypeSpec)(message: String) {
     val (result, _) = evaluateWithTypes(lhsTypes, rhsTypes)
-    assert(result.errors.nonEmpty, "type check had no errors")
-    assert(result.errors.head.msg === message)
+    result.errors should not be empty
+    result.errors.head.msg should equal(message)
   }
 
   protected def evaluateWithTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec): (SemanticCheckResult, ast.Expression) = {
@@ -49,5 +49,4 @@ abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expressi
     val state = Seq(lhs, rhs).semanticCheck(context)(SemanticState.clean).state
     (expression.semanticCheck(context)(state), expression)
   }
-
 }

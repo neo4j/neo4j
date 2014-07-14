@@ -24,13 +24,12 @@ import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Response;
 import org.neo4j.shell.Session;
@@ -52,7 +51,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
 {
     private final GraphDatabaseAPI graphDb;
     private boolean graphDbCreatedHere;
-    protected final Map<Serializable, Transaction> transactions = new ConcurrentHashMap<Serializable, Transaction>();
+    protected final Map<Serializable, TopLevelTransaction> clients = new ConcurrentHashMap<>();
 
     /**
      * @throws RemoteException if an RMI error occurs.
@@ -87,29 +86,56 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     @Override
     public Response interpretLine( Serializable clientId, String line, Output out ) throws ShellException
     {
-        restoreTransaction( clientId );
+        bindTransaction( clientId );
         try
         {
             return super.interpretLine( clientId, line, out );
         }
         finally
         {
-            saveTransaction( clientId );
+            unbindAndRegisterTransaction( clientId );
         }
     }
 
-    private void saveTransaction( Serializable clientId ) throws ShellException
+    @Override
+    public void terminate( Serializable clientId )
+    {
+        TopLevelTransaction tx = clients.get( clientId );
+        if ( tx != null )
+        {
+            tx.terminate();
+        }
+    }
+
+    public void registerTopLevelTransactionInProgress( Serializable clientId ) throws ShellException
+    {
+        if ( !clients.containsKey( clientId ) )
+        {
+            ThreadToStatementContextBridge threadToStatementContextBridge = getThreadToStatementContextBridge();
+            TopLevelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
+            clients.put( clientId, tx );
+        }
+    }
+
+    private ThreadToStatementContextBridge getThreadToStatementContextBridge()
+    {
+        return getDb().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+    }
+
+    public void unbindAndRegisterTransaction( Serializable clientId ) throws ShellException
     {
         try
         {
-            Transaction tx = getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).suspend();
+            ThreadToStatementContextBridge threadToStatementContextBridge = getThreadToStatementContextBridge();
+            TopLevelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
+            threadToStatementContextBridge.unbindTransactionFromCurrentThread();
             if ( tx == null )
             {
-                transactions.remove( clientId );
+                clients.remove( clientId );
             }
             else
             {
-                transactions.put( clientId, tx );
+                clients.put( clientId, tx );
             }
         }
         catch ( Exception e )
@@ -118,14 +144,15 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         }
     }
 
-    private void restoreTransaction( Serializable clientId ) throws ShellException
+    public void bindTransaction( Serializable clientId ) throws ShellException
     {
-        Transaction tx = transactions.get( clientId );
+        TopLevelTransaction tx = clients.get( clientId );
         if ( tx != null )
         {
             try
             {
-                getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).resume( tx );
+                ThreadToStatementContextBridge threadToStatementContextBridge = getThreadToStatementContextBridge();
+                threadToStatementContextBridge.bindTransactionToCurrentThread( tx );
             }
             catch ( Exception e )
             {
@@ -187,7 +214,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
 
     /**
      * @return the {@link GraphDatabaseAPI} instance given in the
-     *         constructor.
+     * constructor.
      */
     public GraphDatabaseAPI getDb()
     {

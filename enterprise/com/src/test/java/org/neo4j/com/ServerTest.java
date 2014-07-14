@@ -29,8 +29,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
-import static org.neo4j.com.RequestContext.Tx;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -56,7 +54,7 @@ public class ServerTest
     {
         // Given
         Server<Object, Object> server = newServer( checksumVerifier );
-        RequestContext ctx = new RequestContext( 0, 1, 0, new Tx[]{ new Tx( DEFAULT_DATA_SOURCE_NAME, 1)}, -1, 12 );
+        RequestContext ctx = new RequestContext( 0, 1, 0, 1, -1, 12 );
 
         doThrow(new IllegalStateException("123")).when(checksumVerifier).assertMatch( anyLong(), anyInt(), anyLong() );
 

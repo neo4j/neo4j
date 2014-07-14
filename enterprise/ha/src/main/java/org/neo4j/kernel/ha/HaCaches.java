@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.kernel.impl.cache.HighPerformanceCacheSettings.node_cache_array_fraction;
+import static org.neo4j.kernel.impl.cache.HighPerformanceCacheSettings.node_cache_size;
+import static org.neo4j.kernel.impl.cache.HighPerformanceCacheSettings.relationship_cache_array_fraction;
+import static org.neo4j.kernel.impl.cache.HighPerformanceCacheSettings.relationship_cache_size;
+
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
@@ -29,11 +34,6 @@ import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.kernel.impl.cache.HighPerformanceCacheSettings.node_cache_array_fraction;
-import static org.neo4j.kernel.impl.cache.HighPerformanceCacheSettings.node_cache_size;
-import static org.neo4j.kernel.impl.cache.HighPerformanceCacheSettings.relationship_cache_array_fraction;
-import static org.neo4j.kernel.impl.cache.HighPerformanceCacheSettings.relationship_cache_size;
 
 public class HaCaches implements Caches
 {
@@ -105,5 +105,18 @@ public class HaCaches implements Caches
     {
         type = null;
         config = null;
+    }
+
+    @Override
+    public void clear()
+    {
+        node.clear();
+        relationship.clear();
+    }
+
+    @Override
+    public CacheProvider getProvider()
+    {
+        return type;
     }
 }

@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.util;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.NoSuchElementException;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.cache.SizeOfObject;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
@@ -851,7 +851,7 @@ public class RelIdArray implements SizeOfObject
         }
     }
 
-    public static RelIdArray from( RelIdArray src, RelIdArray add, Collection<Long> remove )
+    public static RelIdArray from( RelIdArray src, RelIdArray add, PrimitiveLongSet remove )
     {
         if ( remove == null )
         {
@@ -866,41 +866,39 @@ public class RelIdArray implements SizeOfObject
             }
             return src;
         }
+
+        if ( src == null && add == null )
+        {
+            return null;
+        }
+        RelIdArray newArray = null;
+        if ( src != null )
+        {
+            newArray = src.newSimilarInstance();
+            newArray.addAll( src );
+            evictExcluded( newArray, remove );
+        }
         else
         {
-            if ( src == null && add == null )
+            newArray = add.newSimilarInstance();
+        }
+        if ( add != null )
+        {
+            newArray = newArray.upgradeIfNeeded( add );
+            for ( RelIdIteratorImpl fromIterator = (RelIdIteratorImpl) add.iterator( DirectionWrapper.BOTH );
+                  fromIterator.hasNext();)
             {
-                return null;
-            }
-            RelIdArray newArray = null;
-            if ( src != null )
-            {
-                newArray = src.newSimilarInstance();
-                newArray.addAll( src );
-                evictExcluded( newArray, remove );
-            }
-            else
-            {
-                newArray = add.newSimilarInstance();
-            }
-            if ( add != null )
-            {
-                newArray = newArray.upgradeIfNeeded( add );
-                for ( RelIdIteratorImpl fromIterator = (RelIdIteratorImpl) add.iterator( DirectionWrapper.BOTH );
-                      fromIterator.hasNext();)
+                long value = fromIterator.next();
+                if ( !remove.contains( value ) )
                 {
-                    long value = fromIterator.next();
-                    if ( !remove.contains( value ) )
-                    {
-                        newArray.add( value, fromIterator.currentDirection );
-                    }
+                    newArray.add( value, fromIterator.currentDirection );
                 }
             }
-            return newArray;
         }
+        return newArray;
     }
 
-    private static void evictExcluded( RelIdArray ids, Collection<Long> excluded )
+    private static void evictExcluded( RelIdArray ids, PrimitiveLongSet excluded )
     {
         for ( RelIdIteratorImpl iterator = (RelIdIteratorImpl) DirectionWrapper.BOTH.iterator( ids );
               iterator.hasNext(); )

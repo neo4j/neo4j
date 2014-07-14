@@ -19,17 +19,19 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.index.Index;
+
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.index.IndexCommandFactory;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.index.IndexConnectionBroker;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 
 public class LuceneIndexImplementation implements IndexImplementation
 {
@@ -50,49 +52,26 @@ public class LuceneIndexImplementation implements IndexImplementation
 
     public static final int DEFAULT_LAZY_THRESHOLD = 100;
 
-    private final GraphDatabaseService graphDb;
-    private IndexConnectionBroker<LuceneXaConnection> broker;
-    private LuceneDataSource dataSource;
+    private final LuceneDataSource dataSource;
     final int lazynessThreshold;
 
-    public LuceneIndexImplementation( GraphDatabaseService db,
-                                      LuceneDataSource dataSource,
-                                      IndexConnectionBroker<LuceneXaConnection> broker
-    )
+    public LuceneIndexImplementation( LuceneDataSource dataSource )
     {
-        this.graphDb = db;
         this.dataSource = dataSource;
-        this.broker = broker;
         this.lazynessThreshold = DEFAULT_LAZY_THRESHOLD;
     }
 
-    IndexConnectionBroker<LuceneXaConnection> broker()
-    {
-        return broker;
-    }
-
-    LuceneDataSource dataSource()
-    {
-        return dataSource;
-    }
-
     @Override
-    public Index<Node> nodeIndex( String indexName, Map<String, String> config )
+    public LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory )
     {
-        return dataSource.nodeIndex(indexName, graphDb, this);
-    }
-
-    @Override
-    public RelationshipIndex relationshipIndex( String indexName, Map<String, String> config )
-    {
-        return dataSource.relationshipIndex( indexName, graphDb, this );
+        return new LuceneLegacyIndexTransaction( dataSource, commandFactory );
     }
 
     @Override
     public Map<String, String> fillInDefaults( Map<String, String> source )
     {
         Map<String, String> result = source != null ?
-                new HashMap<String, String>( source ) : new HashMap<String, String>();
+                new HashMap<>( source ) : new HashMap<String, String>();
         String analyzer = result.get( KEY_ANALYZER );
         if ( analyzer == null )
         {
@@ -109,6 +88,10 @@ public class LuceneIndexImplementation implements IndexImplementation
                 result.put( KEY_TO_LOWER_CASE, "true" );
             }
         }
+
+        // Try it on for size. Calling this will reveal configuration problems.
+        IndexType.getIndexType( result );
+
         return result;
     }
 
@@ -147,24 +130,20 @@ public class LuceneIndexImplementation implements IndexImplementation
     }
 
     @Override
-    public String getDataSourceName()
+    public NeoCommandHandler newApplier( boolean recovery )
     {
-        return LuceneDataSource.DEFAULT_NAME;
+        return new LuceneCommandApplier( dataSource, recovery );
     }
 
-    public boolean matches( GraphDatabaseService gdb )
+    @Override
+    public ResourceIterator<File> listStoreFiles() throws IOException
     {
-        return this.graphDb.equals(gdb);
+        return dataSource.listStoreFiles();
     }
 
-    public void reset( LuceneDataSource dataSource, IndexConnectionBroker<LuceneXaConnection> broker)
+    @Override
+    public void force()
     {
-        this.broker = broker;
-        this.dataSource = dataSource;
-    }
-
-    public GraphDatabaseService graphDb()
-    {
-        return graphDb;
+        dataSource.force();
     }
 }

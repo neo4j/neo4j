@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import org.junit.Test
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class CollectionSupportTest extends CollectionSupport {
+class CollectionSupportTest extends CypherFunSuite with CollectionSupport {
 
   val tester: PartialFunction[Any, Int] = { case x: Int => x }
   val mapper: PartialFunction[Any, Int] = { case x: Int => x + 1 }
 
-  @Test
-  def testIsCollectionOfMatching() {
+  test("testIsCollectionOfMatching") {
     // Given
     val given = Seq(1, 2, 3, 4)
 
@@ -35,11 +34,10 @@ class CollectionSupportTest extends CollectionSupport {
     val result = asCollectionOf[Int](tester)(given)
 
     // Then
-    assert(result == Some(given))
+    result should equal(Some(given))
   }
 
-  @Test
-  def testIsCollectionOf() {
+  test("testIsCollectionOf") {
     // Given
     val given = Seq(1, 2, 3, 4)
 
@@ -47,11 +45,10 @@ class CollectionSupportTest extends CollectionSupport {
     val result = asCollectionOf[Int](tester)(given)
 
     // Then
-    assert(result == Some(given))
+    result should equal(Some(given))
   }
 
-  @Test
-  def testIsCollectionOfMapping() {
+  test("testIsCollectionOfMapping") {
     // Given
     val given: Seq[Int] = Seq(1, 2, 3, 4)
 
@@ -59,11 +56,10 @@ class CollectionSupportTest extends CollectionSupport {
     val result = asCollectionOf[Int](mapper)(given)
 
     // Then
-    assert(result == Some(Seq(2, 3, 4, 5)))
+    result should equal(Some(Seq(2, 3, 4, 5)))
   }
 
-  @Test
-  def testIsCollectionOfFailing() {
+  test("testIsCollectionOfFailing") {
     // Given
     val given: Seq[Any] = Seq(1, 2, "foo", 3, 4)
 
@@ -71,11 +67,10 @@ class CollectionSupportTest extends CollectionSupport {
     val result = asCollectionOf[Int](mapper)(given)
 
     // Then
-    assert(result == None)
+    result should equal(None)
   }
 
-  @Test
-  def testIsCollectionOfEmpty() {
+  test("testIsCollectionOfEmpty") {
     // Given
     val given: Seq[String] = Seq.empty
 
@@ -83,6 +78,6 @@ class CollectionSupportTest extends CollectionSupport {
     val result = asCollectionOf[Int](mapper)(given)
 
     // Then
-    assert(result == Some(given))
+    result should equal(Some(given))
   }
 }

@@ -39,11 +39,9 @@ public class ToChannelBufferWriter implements MadeUpWriter
     @Override
     public void write( ReadableByteChannel data )
     {
-        BlockLogBuffer blockBuffer = new BlockLogBuffer( target, new Monitors().newMonitor( ByteCounterMonitor.class ) );
-        try
+        try ( BlockLogBuffer blockBuffer = new BlockLogBuffer( target, new Monitors().newMonitor( ByteCounterMonitor.class ) ) )
         {
             blockBuffer.write( data );
-            blockBuffer.done();
         }
         catch ( IOException e )
         {

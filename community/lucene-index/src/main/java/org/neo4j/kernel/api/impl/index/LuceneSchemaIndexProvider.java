@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
-
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -30,6 +28,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.Directory;
+
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -40,6 +39,8 @@ import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.configuration.Config;
 
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
     private final DirectoryFactory directoryFactory;
@@ -48,7 +49,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private final File rootDirectory;
     private final FailureStorage failureStorage;
     private final FolderLayout folderLayout;
-    private Map<Long, String> failures = new HashMap<>();
+    private final Map<Long, String> failures = new HashMap<>();
 
     public LuceneSchemaIndexProvider( DirectoryFactory directoryFactory, Config config )
     {

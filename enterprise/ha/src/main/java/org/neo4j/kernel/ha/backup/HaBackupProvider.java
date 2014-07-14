@@ -27,9 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.backup.BackupExtensionService;
-import org.neo4j.backup.OnlineBackupKernelExtension;
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -45,10 +42,8 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
-import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -56,16 +51,16 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.kernel.monitoring.Monitors;
 
-@Service.Implementation(BackupExtensionService.class)
-public final class HaBackupProvider extends BackupExtensionService
+//@Service.Implementation(BackupExtensionService.class)
+public final class HaBackupProvider //extends BackupExtensionService
 {
     public HaBackupProvider()
     {
-        super( "ha" );
+//        super( "ha" );
     }
 
-    @Override
-    public URI resolve( URI address, Args args, Logging logging )
+//    @Override
+    public URI resolve( URI address, Args args, Logging logging)
     {
         String master = null;
         StringLogger logger = logging.getMessagesLog( HaBackupProvider.class );
@@ -102,9 +97,9 @@ public final class HaBackupProvider extends BackupExtensionService
         params.put( ClusterSettings.initial_hosts.name(), from );
         params.put( ClusterSettings.instance_name.name(), "Backup" );
         params.put( ClusterClient.clusterJoinTimeout.name(), "20s" );
-        final Config config = new Config( params,
-                ClusterSettings.class, OnlineBackupSettings.class );
-
+//        final Config config = new Config( params,
+//                ClusterSettings.class, OnlineBackupSettings.class );
+        final Config config = null;
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
         final ClusterClient clusterClient = life.add( new ClusterClient( new Monitors(),
                 ClusterClient.adapt( config ), logging,
@@ -134,14 +129,16 @@ public final class HaBackupProvider extends BackupExtensionService
             @Override
             public void memberIsAvailable( String role, InstanceId clusterUri, URI roleUri )
             {
-                if ( OnlineBackupKernelExtension.BACKUP.equals( role ) )
-                {
-                    backupUris.put( clusterUri, roleUri );
-                }
-                else if ( HighAvailabilityModeSwitcher.MASTER.equals( role ) )
-                {
-                    master = clusterUri;
-                }
+                // TODO 2.2-future is this extension even necessary?
+                // TODO 2.2-future reevaluate need for having support for HA backup before 2.2 goes out, please
+//                if ( OnlineBackupKernelExtension.BACKUP.equals( role ) )
+//                {
+//                    backupUris.put( clusterUri, roleUri );
+//                }
+//                else if ( HighAvailabilityModeSwitcher.MASTER.equals( role ) )
+//                {
+//                    master = clusterUri;
+//                }
 
                 if ( master != null && backupUris.containsKey( master ) )
                 {

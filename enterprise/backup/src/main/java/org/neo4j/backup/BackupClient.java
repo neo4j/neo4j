@@ -19,10 +19,8 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.backup.BackupServer.FRAME_LENGTH;
-import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
-
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.Client;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;
@@ -36,21 +34,25 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.backup.BackupServer.FRAME_LENGTH;
+import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
+
 class BackupClient extends Client<TheBackupInterface> implements TheBackupInterface
 {
     public BackupClient( String hostNameOrIp, int port, Logging logging, Monitors monitors, StoreId storeId )
     {
         super( hostNameOrIp, port, logging, monitors, storeId, FRAME_LENGTH, PROTOCOL_VERSION, 40 * 1000,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
-                FRAME_LENGTH );
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH );
     }
 
+    @Override
     public Response<Void> fullBackup( StoreWriter storeWriter )
     {
         return sendRequest( BackupRequestType.FULL_BACKUP, RequestContext.EMPTY,
                 Protocol.EMPTY_SERIALIZER, new Protocol.FileStreamsDeserializer( storeWriter ) );
     }
 
+    @Override
     public Response<Void> incrementalBackup( RequestContext context )
     {
         return sendRequest( BackupRequestType.INCREMENTAL_BACKUP, context, Protocol.EMPTY_SERIALIZER,
@@ -67,6 +69,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
     {
         FULL_BACKUP( new TargetCaller<TheBackupInterface, Void>()
         {
+            @Override
             public Response<Void> call( TheBackupInterface master, RequestContext context,
                     ChannelBuffer input, ChannelBuffer target )
             {
@@ -75,6 +78,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
         }, Protocol.VOID_SERIALIZER ),
         INCREMENTAL_BACKUP( new TargetCaller<TheBackupInterface, Void>()
         {
+            @Override
             public Response<Void> call( TheBackupInterface master, RequestContext context,
                     ChannelBuffer input, ChannelBuffer target )
             {
@@ -95,18 +99,21 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
             this.serializer = serializer;
         }
 
+        @Override
         @SuppressWarnings( "rawtypes" )
         public TargetCaller getTargetCaller()
         {
             return masterCaller;
         }
 
+        @Override
         @SuppressWarnings( "rawtypes" )
         public ObjectSerializer getObjectSerializer()
         {
             return serializer;
         }
 
+        @Override
         public byte id()
         {
             return (byte) ordinal();

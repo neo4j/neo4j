@@ -32,13 +32,13 @@ public interface PageTable
      *
      * The page returned is pre-locked with the lock specified in the call.
      */
-    PinnablePage load( PageIO io, long pageId, PageLock lock ) throws IOException;
+    PinnablePage load( PageSwapper io, long pageId, PageLock lock ) throws IOException;
 
     /** Flush all dirty pages. */
     void flush() throws IOException;
 
     /** Flush all dirty pages backed by the specified io. */
-    void flush( PageIO io ) throws IOException;
+    void flush( PageSwapper io ) throws IOException;
 
     int pageSize();
 

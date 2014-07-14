@@ -19,23 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
+import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{LabelAction, LabelSetOp}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{IdempotentResult, LockingQueryContext, QueryContext}
 import org.neo4j.graphdb.{Direction, Node}
-import org.junit.Test
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.cypher.GraphDatabaseJUnitSuite
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{LabelSetOp, LabelAction}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{TokenType, KeyToken}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-class LabelActionTest extends GraphDatabaseJUnitSuite {
+class LabelActionTest extends GraphDatabaseFunSuite {
   val queryContext = new SnitchingQueryContext
   val state = QueryStateHelper.emptyWith(query = queryContext)
   val ctx = ExecutionContext()
 
-  @Test
-  def set_single_label_on_node() {
+  test("set single label on node") {
     //GIVEN
     val n = createNode()
     val given = LabelAction(Literal(n), LabelSetOp, Seq(KeyToken.Resolved("green", 12, TokenType.Label)))
@@ -44,13 +42,12 @@ class LabelActionTest extends GraphDatabaseJUnitSuite {
     val result = given.exec(ctx, state)
 
     //THEN
-    assert(queryContext.node === n.getId)
-    assert(queryContext.ids === Seq(12))
-    assert(result.toList === List(ctx))
+    queryContext.node should equal(n.getId)
+    queryContext.ids should equal(Seq(12))
+    result.toList should equal(List(ctx))
   }
 
-  @Test
-  def set_two_labels_on_node() {
+  test("set two labels on node") {
     //GIVEN
     val n = createNode()
     val given = LabelAction(Literal(n), LabelSetOp, Seq(KeyToken.Resolved("green", 12, TokenType.Label),
@@ -60,9 +57,9 @@ class LabelActionTest extends GraphDatabaseJUnitSuite {
     val result = given.exec(ctx, state)
 
     //THEN
-    assert(queryContext.node === n.getId)
-    assert(queryContext.ids === Seq(12, 42))
-    assert(result.toList === List(ctx))
+    queryContext.node should equal(n.getId)
+    queryContext.ids should equal(Seq(12, 42))
+    result.toList should equal(List(ctx))
   }
 }
 

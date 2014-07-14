@@ -25,12 +25,14 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 /**
  * Implementation of the relationship store.
@@ -91,12 +93,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     @Override
     public RelationshipRecord getRecord( long id )
     {
-        return getRecord( id, new RelationshipRecord( id ) );
-    }
-
-    public RelationshipRecord getRecord( long id, RelationshipRecord target )
-    {
-        return getRecord( id, target, RecordLoad.NORMAL );
+        return getRecord( id, new RelationshipRecord( id ), RecordLoad.NORMAL );
     }
 
     @Override
@@ -139,68 +136,65 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         return getRecord( id, new RelationshipRecord( id ), RecordLoad.CHECK );
     }
 
-    private RelationshipRecord getRecord( long id, RelationshipRecord target, RecordLoad loadMode )
+    public RelationshipRecord getRecord( long id, RelationshipRecord target, RecordLoad loadMode )
     {
-        PageCursor cursor = pageCache.newCursor();
-        try
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
-            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+            if ( cursor.next() )
+            {
+                RelationshipRecord record;
+                do
+                {
+                    record = getRecord( id, cursor, loadMode, target );
+                } while ( cursor.retry() );
+                return record;
+            }
+            else if ( loadMode == RecordLoad.NORMAL )
+            {
+                throw new InvalidRecordException( "RelationshipRecord[" + id + "] not in use" );
+            }
+            else if ( loadMode == RecordLoad.CHECK )
+            {
+                return null;
+            }
+            else // force
+            {
+                return new RelationshipRecord( id, -1, -1, -1 );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-        try
-        {
-            return getRecord( id, cursor, loadMode, target );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
-        }
-    }
-
-    @Override
-    public void updateRecord( RelationshipRecord record )
-    {
-        PageCursor cursor = pageCache.newCursor();
-        try
-        {
-            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-        try
-        {
-            updateRecord( record, cursor, false );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 
     @Override
     public void forceUpdateRecord( RelationshipRecord record )
     {
-        PageCursor cursor = pageCache.newCursor();
-        try
+        updateRecord( record, true );
+    }
+
+    @Override
+    public void updateRecord( RelationshipRecord record )
+    {
+        updateRecord( record, false );
+    }
+
+    private void updateRecord( RelationshipRecord record, boolean force )
+    {
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_EXCLUSIVE_LOCK ) )
         {
-            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+            if ( cursor.next() ) // should always be true
+            {
+                do
+                {
+                    updateRecord( record, cursor, force );
+                } while ( cursor.retry() );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-        try
-        {
-            updateRecord( record, cursor, true );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 

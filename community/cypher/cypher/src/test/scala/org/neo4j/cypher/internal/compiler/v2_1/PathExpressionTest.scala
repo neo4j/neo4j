@@ -19,20 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.cypher.GraphDatabaseJUnitSuite
-import org.junit.{After, Test}
-import org.junit.Assert._
-import org.neo4j.graphdb.{Path, Direction}
+import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.values.UnresolvedLabel
-import org.neo4j.cypher.internal.compiler.v2_1.commands.NonEmpty
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.ShortestPathExpression
-import org.neo4j.cypher.internal.compiler.v2_1.commands.SingleNode
-import org.neo4j.cypher.internal.compiler.v2_1.commands.ShortestPath
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.UnresolvedLabel
+import org.neo4j.graphdb.{Direction, Path}
 
-class PathExpressionTest extends GraphDatabaseJUnitSuite {
+class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
 
-  @Test def shouldAcceptShortestPathExpressions() {
+  test("should accept shortest path expressions") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -54,14 +49,16 @@ class PathExpressionTest extends GraphDatabaseJUnitSuite {
 
     val m = ExecutionContext.from("a" -> a, "c" -> c)
 
-    val result = expression(m)(state).asInstanceOf[Path]
+    val result = withQueryState { state =>
+      expression(m)(state).asInstanceOf[Path]
+    }
 
-    assertEquals(result.startNode(), a)
-    assertEquals(result.endNode(), c)
-    assertEquals(result.length(), 2)
+    result.startNode() should equal(a)
+    result.endNode() should equal(c)
+    result should have length 2
   }
 
-  @Test def should_handle_expressions_with_labels() {
+  test("should handle expressions with labels") {
     // GIVEN
     val a = createNode()
     val b = createLabeledNode("Foo")
@@ -70,16 +67,18 @@ class PathExpressionTest extends GraphDatabaseJUnitSuite {
 
     val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, Map.empty)
     val expression = NonEmpty(PathExpression(Seq(pattern)))
-    val m = createExecutionContext(Map("a" -> a))
+    val m = ExecutionContext.from("a" -> a)
 
     // WHEN
-    val result = expression(m)(state)
+    val result = withQueryState { state =>
+      expression(m)(state)
+    }
 
     // THEN
-    assert(result === true)
+    result should equal(true)
   }
 
-  @Test def should_return_false_if_labels_are_missing() {
+  test("should return false if labels are missing") {
     // GIVEN
     val a = createNode()
     val b = createLabeledNode("Bar")
@@ -88,27 +87,14 @@ class PathExpressionTest extends GraphDatabaseJUnitSuite {
 
     val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, Map.empty)
     val expression = NonEmpty(PathExpression(Seq(pattern)))
-    val m = createExecutionContext(Map("a" -> a))
+    val m = ExecutionContext.from("a" -> a)
 
     // WHEN
-    val result = expression(m)(state)
+    val result = withQueryState { state =>
+      expression(m)(state)
+    }
 
     // THEN
-    assert(result === false)
+    result should equal(false)
   }
-
-  var tx : org.neo4j.graphdb.Transaction = null
-
-  private def state = {
-    if(tx == null) tx = graph.beginTx()
-    QueryStateHelper.queryStateFrom(graph, tx)
-  }
-
-  @After
-  def cleanup()
-  {
-    if(tx != null) tx.close()
-  }
-
-  private def createExecutionContext(m: Map[String, Any]): ExecutionContext = ExecutionContext().newFrom(m)
 }

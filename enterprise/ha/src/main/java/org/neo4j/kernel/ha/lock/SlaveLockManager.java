@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class SlaveLockManager extends LifecycleAdapter implements Locks
@@ -33,10 +31,8 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     private final RequestContextFactory requestContextFactory;
     private final Locks local;
     private final Master master;
-    private final HaXaDataSourceManager xaDsm;
-    private final AbstractTransactionManager txManager;
-    private final RemoteTxHook txHook;
     private final AvailabilityGuard availabilityGuard;
+    private final TransactionCommittingResponseUnpacker unpacker;
     private final Configuration config;
 
     public static interface Configuration
@@ -45,14 +41,11 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     }
 
     public SlaveLockManager( Locks localLocks, RequestContextFactory requestContextFactory, Master master,
-            HaXaDataSourceManager xaDsm, AbstractTransactionManager txManager, RemoteTxHook txHook,
-            AvailabilityGuard availabilityGuard, Configuration config )
+                             AvailabilityGuard availabilityGuard, TransactionCommittingResponseUnpacker unpacker, Configuration config )
     {
         this.requestContextFactory = requestContextFactory;
-        this.xaDsm = xaDsm;
-        this.txManager = txManager;
-        this.txHook = txHook;
         this.availabilityGuard = availabilityGuard;
+        this.unpacker = unpacker;
         this.config = config;
         this.local = localLocks;
         this.master = master;
@@ -61,8 +54,8 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     @Override
     public Client newClient()
     {
-        return new SlaveLocksClient(master, local.newClient(), local, requestContextFactory, xaDsm, txManager, txHook,
-                availabilityGuard, config );
+        return new SlaveLocksClient( master, local.newClient(), local, requestContextFactory, availabilityGuard,
+                unpacker, config );
     }
 
     @Override
@@ -70,5 +63,4 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     {
         local.accept( visitor );
     }
-
 }

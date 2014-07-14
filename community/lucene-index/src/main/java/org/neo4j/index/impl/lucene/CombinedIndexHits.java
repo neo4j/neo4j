@@ -20,73 +20,51 @@
 package org.neo4j.index.impl.lucene;
 
 import java.util.Collection;
-import java.util.Iterator;
 
-import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.collection.CombiningIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.kernel.api.LegacyIndexHits;
 
-public class CombinedIndexHits<T> extends CombiningIterator<T> implements IndexHits<T>
+public class CombinedIndexHits extends PrimitiveLongCollections.PrimitiveLongConcatingIterator implements LegacyIndexHits
 {
-    private final Collection<IndexHits<T>> allIndexHits;
+    private final Collection<LegacyIndexHits> allIndexHits;
     private final int size;
-    
-    public CombinedIndexHits( Collection<IndexHits<T>> iterators )
+
+    public CombinedIndexHits( Collection<LegacyIndexHits> iterators )
     {
-        super( iterators );
+        super( iterators.iterator() );
         this.allIndexHits = iterators;
         size = accumulatedSize( iterators );
     }
 
-    private int accumulatedSize( Collection<IndexHits<T>> iterators )
+    private int accumulatedSize( Collection<LegacyIndexHits> iterators )
     {
         int result = 0;
-        for ( IndexHits<T> hits : iterators )
+        for ( LegacyIndexHits hits : iterators )
         {
             result += hits.size();
         }
         return result;
     }
 
-    public IndexHits<T> iterator()
-    {
-        return this;
-    }
-    
     @Override
-    protected IndexHits<T> currentIterator()
-    {
-        return (IndexHits<T>) super.currentIterator();
-    }
-
     public int size()
     {
         return size;
     }
 
+    @Override
     public void close()
     {
-        for ( IndexHits<T> hits : allIndexHits )
+        for ( LegacyIndexHits hits : allIndexHits )
         {
             hits.close();
         }
         allIndexHits.clear();
     }
 
-    public T getSingle()
-    {
-        try
-        {
-            return IteratorUtil.singleOrNull( (Iterator<T>) this );
-        }
-        finally
-        {
-            close();
-        }
-    }
-
+    @Override
     public float currentScore()
     {
-        return currentIterator().currentScore();
+        return ((LegacyIndexHits)currentIterator()).currentScore();
     }
 }

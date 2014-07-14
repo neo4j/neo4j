@@ -19,44 +19,39 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class ExpressionTest extends Assertions {
+class ExpressionTest extends CypherFunSuite {
 
   val expression = DummyExpression(CTAny, DummyPosition(0))
 
-  @Test
-  def shouldReturnCalculatedType() {
-    assert(expression.types(SemanticState.clean) === TypeSpec.all)
+  test("shouldReturnCalculatedType") {
+    expression.types(SemanticState.clean) should equal(TypeSpec.all)
   }
 
-  @Test
-  def shouldReturnTypeSetOfAllIfTypesRequestedButNotEvaluated() {
-    assert(expression.types(SemanticState.clean) === TypeSpec.all)
+  test("shouldReturnTypeSetOfAllIfTypesRequestedButNotEvaluated") {
+    expression.types(SemanticState.clean) should equal(TypeSpec.all)
   }
 
-  @Test
-  def shouldReturnSpecifiedAndConstrainedTypes() {
+  test("shouldReturnSpecifiedAndConstrainedTypes") {
     val state = (
       expression.specifyType(CTNode | CTInteger) chain
       expression.expectType(CTNumber.covariant)
     )(SemanticState.clean).state
 
-    assert(expression.types(state) === CTInteger.invariant)
+    expression.types(state) should equal(CTInteger.invariant)
   }
 
-  @Test
-  def shouldRaiseTypeErrorWhenMismatchBetweenSpecifiedTypeAndExpectedType() {
+  test("shouldRaiseTypeErrorWhenMismatchBetweenSpecifiedTypeAndExpectedType") {
     val result = (
       expression.specifyType(CTNode | CTInteger) chain
       expression.expectType(CTString.covariant)
     )(SemanticState.clean)
 
-    assert(result.errors.size === 1)
-    assert(result.errors.head.position === expression.position)
-    assert(expression.types(result.state).isEmpty)
+    result.errors should have size 1
+    result.errors.head.position should equal(expression.position)
+    expression.types(result.state) shouldBe empty
   }
 }

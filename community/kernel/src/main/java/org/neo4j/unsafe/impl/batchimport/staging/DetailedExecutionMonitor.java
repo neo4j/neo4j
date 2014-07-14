@@ -19,14 +19,13 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.helpers.Format.duration;
+
 import java.io.PrintStream;
 
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
-
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.helpers.Format.duration;
 
 /**
  * An {@link ExecutionMonitor} that prints very detailed information about each {@link Stage} and the
@@ -90,11 +89,5 @@ public class DetailedExecutionMonitor extends PollingExecutionMonitor
     private void printAndBackUpAgain( String toPrint )
     {
         out.println( toPrint );
-
-//        int length = toPrint.length();
-//        while ( length --> 0 )
-//        {
-//            System.out.print( "\b" );
-//        }
     }
 }

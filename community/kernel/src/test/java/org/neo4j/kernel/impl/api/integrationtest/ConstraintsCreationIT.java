@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
@@ -467,7 +468,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             return Integer.parseInt( s );
         }
 
-        public SchemaStateCheck setUp()
+        public SchemaStateCheck setUp() throws TransactionFailureException
         {
             this.readOperations = readOperationsInNewTransaction();
             checkState();

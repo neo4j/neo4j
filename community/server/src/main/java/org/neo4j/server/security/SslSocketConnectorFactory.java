@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.neo4j.server.web.HttpConnectorFactory;
+import org.neo4j.server.web.JettyThreadCalculator;
 
 
 public class SslSocketConnectorFactory extends HttpConnectorFactory
@@ -43,12 +44,12 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
         return httpConfig;
     }
 
-    public ServerConnector createConnector( Server server, KeyStoreInformation config, String host, int port, int jettyMaxThreads )
+    public ServerConnector createConnector( Server server, KeyStoreInformation config, String host, int port, JettyThreadCalculator jettyThreadCalculator )
     {
 
         SslConnectionFactory sslConnectionFactory = createSslConnectionFactory( config );
 
-        return super.createConnector( server, host, port, jettyMaxThreads, sslConnectionFactory, createHttpConnectionFactory() );
+        return super.createConnector( server, host, port, jettyThreadCalculator, sslConnectionFactory, createHttpConnectionFactory() );
     }
 
     private SslConnectionFactory createSslConnectionFactory( KeyStoreInformation config )

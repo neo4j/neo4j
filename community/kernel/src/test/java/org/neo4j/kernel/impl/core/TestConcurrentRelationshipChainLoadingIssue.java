@@ -56,19 +56,19 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 public class TestConcurrentRelationshipChainLoadingIssue
 {
     private final int relCount = 2;
-    
+
     @Test
     public void tryToTriggerRelationshipLoadingStoppingMidWay() throws Throwable
     {
         tryToTriggerRelationshipLoadingStoppingMidWay( 50 );
     }
-    
+
     @Test
     public void tryToTriggerRelationshipLoadingStoppingMidWayForDenseNodeRepresentation() throws Throwable
     {
         tryToTriggerRelationshipLoadingStoppingMidWay( 1 );
     }
-    
+
     private void tryToTriggerRelationshipLoadingStoppingMidWay( int denseNodeThreshold ) throws Throwable
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
@@ -93,7 +93,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
     private void checkStateToHelpDiagnoseFlakeyTest( GraphDatabaseAPI db, Node node )
     {
         loadNode( db, node );
-        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        db.getDependencyResolver().resolveDependency( Caches.class ).clear();
         loadNode( db, node );
     }
 
@@ -116,10 +116,10 @@ public class TestConcurrentRelationshipChainLoadingIssue
             throw new RuntimeException( e );
         }
     }
-    
+
     private void tryOnce( final GraphDatabaseAPI db, final Node node, int iterations ) throws Throwable
     {
-        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        db.getDependencyResolver().resolveDependency( Caches.class ).clear();
         ExecutorService executor = newCachedThreadPool();
         final CountDownLatch startSignal = new CountDownLatch( 1 );
         int threads = getRuntime().availableProcessors();
@@ -150,7 +150,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
         startSignal.countDown();
         executor.shutdown();
         executor.awaitTermination( 10, SECONDS );
-        
+
         if ( !errors.isEmpty() )
         {
             throw new MultipleCauseException(

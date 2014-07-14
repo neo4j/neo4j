@@ -19,18 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.{Literal, Multiply, Expression, Identifier}
-import symbols._
-import org.junit.Test
-import org.scalatest.Assertions
-import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Expression, Identifier, Literal, Multiply}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class DistinctPipeTest extends Assertions with MockitoSugar {
+class DistinctPipeTest extends CypherFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
 
-  @Test def distinct_input_passes_through() {
+  test("distinct_input_passes_through") {
     //GIVEN
     val pipe = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 2)))
 
@@ -38,10 +35,10 @@ class DistinctPipeTest extends Assertions with MockitoSugar {
     val result = pipe.createResults(QueryStateHelper.empty)
 
     //THEN
-    assert(result.toList === List(Map("x" -> 1), Map("x" -> 2)))
+    result.toList should equal( List(Map("x" -> 1), Map("x" -> 2)))
   }
 
-  @Test def distinct_executes_expressions() {
+  test("distinct_executes_expressions") {
     //GIVEN
     val expressions = Map("doubled" -> Multiply(Identifier("x"), Literal(2)))
     val pipe = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 2)), expressions)
@@ -50,10 +47,10 @@ class DistinctPipeTest extends Assertions with MockitoSugar {
     val result = pipe.createResults(QueryStateHelper.empty)
 
     //THEN
-    assert(result.toList === List(Map("doubled" -> 2), Map("doubled" -> 4)))
+    result.toList should equal( List(Map("doubled" -> 2), Map("doubled" -> 4)))
   }
 
-  @Test def undistinct_input_passes_through() {
+  test("undistinct_input_passes_through") {
     //GIVEN
     val pipe = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 1)))
 
@@ -61,7 +58,7 @@ class DistinctPipeTest extends Assertions with MockitoSugar {
     val result = pipe.createResults(QueryStateHelper.empty)
 
     //THEN
-    assert(result.toList === List(Map("x" -> 1)))
+    result.toList should equal( List(Map("x" -> 1)))
   }
 
   def createDistinctPipe(input: List[Map[String, Int]], expressions: Map[String, Expression] = Map("x" -> Identifier("x"))) = {

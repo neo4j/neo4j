@@ -19,91 +19,74 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import commands.expressions._
-import commands.expressions.Add
-import commands.expressions.Literal
-import commands.expressions.Multiply
-import commands.expressions.Subtract
-import pipes.QueryStateHelper
-import org.junit.Test
-import org.hamcrest.CoreMatchers._
-import org.hamcrest.Matcher
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-class TypeTest {
-  @Test
-  def plus_int_int() {
+class TypeTest extends CypherFunSuite {
+
+  test("plus int int") {
     val op = Add(Literal(1), Literal(2))
 
     val result = calc(op)
 
-    assertThat(result, instanceOf(classOf[java.lang.Integer]))
+    result shouldBe a [java.lang.Integer]
   }
 
-  @Test
-  def plus_double_int() {
+  test("plus double int") {
     val op = Add(Literal(1.2), Literal(2))
 
     val result = calc(op)
 
-    assertThat(result, instanceOf(classOf[java.lang.Double]))
+    result shouldBe a [java.lang.Double]
   }
 
-  @Test
-  def minus_int_int() {
+  test("minus int int") {
     val op = Subtract(Literal(1), Literal(2))
 
     val result = calc(op)
 
-    assertThat(result, instanceOf(classOf[java.lang.Integer]))
+    result shouldBe a [java.lang.Integer]
   }
 
-  @Test
-  def minus_double_int() {
+  test("minus double int") {
     val op = Subtract(Literal(1.2), Literal(2))
 
     val result = calc(op)
 
-    assertThat(result, instanceOf(classOf[java.lang.Double]))
+    result shouldBe a [java.lang.Double]
   }
 
-  @Test
-  def multiply_int_int() {
+  test("multiply int int") {
     val op = Multiply(Literal(1), Literal(2))
 
     val result = calc(op)
 
-    assertThat(result, instanceOf(classOf[java.lang.Integer]))
+    result shouldBe a [java.lang.Integer]
   }
 
-  @Test
-  def multiply_double_int() {
+  test("multiply double int") {
     val op = Multiply(Literal(1.2), Literal(2))
 
     val result = calc(op)
 
-    assertThat(result, instanceOf(classOf[java.lang.Double]))
+    result shouldBe a [java.lang.Double]
   }
 
-  @Test
-  def divide_int_int() {
+  test("divide int int") {
     val op = Divide(Literal(1), Literal(2))
 
     val result = calc(op)
 
-    assertThat(result, instanceOf(classOf[java.lang.Integer]))
+    result shouldBe a [java.lang.Integer]
   }
 
-  @Test
-  def divide_double_int() {
+  test("divide double int") {
     val op = Divide(Literal(1.2), Literal(2))
 
     val result = calc(op)
 
-    assertThat(result, instanceOf(classOf[java.lang.Double]))
-  }
-
-  private def assertThat(x:Any, matcher:Matcher[AnyRef]) {
-    org.junit.Assert.assertThat("\nGot a: " + x.getClass, x.asInstanceOf[Object], matcher)
+    result shouldBe a [java.lang.Double]
   }
 
   private def calc(e:Expression) = e.apply(ExecutionContext.empty)(QueryStateHelper.empty)

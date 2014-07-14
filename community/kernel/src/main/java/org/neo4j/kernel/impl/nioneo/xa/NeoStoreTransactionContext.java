@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
+import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
@@ -38,12 +38,12 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.CommandSet;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 public class NeoStoreTransactionContext
 {
@@ -55,11 +55,9 @@ public class NeoStoreTransactionContext
     private final PropertyDeleter propertyDeleter;
     private final TransactionalRelationshipLocker locker;
     private final RelationshipGroupGetter relationshipGroupGetter;
-
-    private TransactionState txState;
+    private final RelationshipChainLoader relationshipLoader;
 
     private final RecordChangeSet recordChangeSet;
-    private final CommandSet commandSet;
     private final NeoStore neoStore;
 
     public NeoStoreTransactionContext( NeoStoreTransactionContextSupplier supplier, NeoStore neoStore )
@@ -68,7 +66,6 @@ public class NeoStoreTransactionContext
         this.neoStore = neoStore;
 
         recordChangeSet = new RecordChangeSet( neoStore );
-        commandSet = new CommandSet();
 
         locker = new TransactionalRelationshipLocker();
         relationshipGroupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
@@ -77,6 +74,7 @@ public class NeoStoreTransactionContext
         propertyDeleter = new PropertyDeleter( neoStore.getPropertyStore(), propertyTraverser );
         relationshipCreator = new RelationshipCreator( locker, relationshipGroupGetter, neoStore.getDenseNodeThreshold() );
         relationshipDeleter = new RelationshipDeleter( locker, relationshipGroupGetter, propertyDeleter );
+        relationshipLoader = new RelationshipChainLoader( neoStore );
     }
 
     public ArrayMap<Integer, DefinedProperty> relationshipDelete( long relId )
@@ -87,25 +85,6 @@ public class NeoStoreTransactionContext
     public void relationshipCreate( long id, int typeId, long startNodeId, long endNodeId )
     {
         relationshipCreator.relationshipCreate( id, typeId, startNodeId, endNodeId, recordChangeSet );
-    }
-
-    public Collection<NodeRecord> getUpgradedDenseNodes()
-    {
-        return relationshipCreator.getUpgradedDenseNodes();
-    }
-
-    public void commitCows()
-    {
-        txState.commitCows();
-    }
-
-    public void updateFirstRelationships()
-    {
-        for ( RecordProxy<Long, NodeRecord, Void> change : recordChangeSet.getNodeRecords().changes() )
-        {
-            NodeRecord record = change.forReadingLinkage();
-            txState.setFirstIds( record.getId(), record.getNextRel(), record.getNextProp() );
-        }
     }
 
     public ArrayMap<Integer, DefinedProperty>  getAndDeletePropertyChain( NodeRecord nodeRecord )
@@ -148,59 +127,21 @@ public class NeoStoreTransactionContext
     public void createRelationshipTypeToken( String name, int id )
     {
         TokenCreator<RelationshipTypeTokenRecord> creator =
-                new TokenCreator<>( neoStore.getRelationshipTypeStore() );
+                new TokenCreator<>( neoStore.getRelationshipTypeTokenStore() );
         creator.createToken( name, id, getRelationshipTypeTokenRecords() );
     }
 
-    public void bind( TransactionState txState )
+    public void bind( Client locksClient )
     {
-        this.txState = txState;
-        locker.setLockClient( txState.locks() );
+        locker.setLockClient( locksClient );
     }
 
     public void close()
     {
         recordChangeSet.close();
-        commandSet.close();
 
         locker.setLockClient( null );
-        txState = null;
         supplier.release( this );
-    }
-
-    public Map<Long, org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand> getNodeCommands()
-    {
-        return commandSet.getNodeCommands();
-    }
-
-    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand> getPropCommands()
-    {
-        return commandSet.getPropCommands();
-    }
-
-    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipCommand> getRelCommands()
-    {
-        return commandSet.getRelCommands();
-    }
-
-    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand> getSchemaRuleCommands()
-    {
-        return commandSet.getSchemaRuleCommands();
-    }
-
-    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand> getRelationshipTypeTokenCommands()
-    {
-        return commandSet.getRelationshipTypeTokenCommands();
-    }
-
-    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.LabelTokenCommand> getLabelTokenCommands()
-    {
-        return commandSet.getLabelTokenCommands();
-    }
-
-    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyKeyTokenCommand> getPropertyKeyTokenCommands()
-    {
-        return commandSet.getPropertyKeyTokenCommands();
     }
 
     public RecordChanges<Long, NodeRecord, Void> getNodeRecords()
@@ -243,26 +184,6 @@ public class NeoStoreTransactionContext
         return recordChangeSet.getRelationshipTypeTokenChanges();
     }
 
-    public void generateNeoStoreCommand( NeoStoreRecord neoStoreRecord )
-    {
-        commandSet.generateNeoStoreCommand( neoStoreRecord );
-    }
-
-    public Command.NeoStoreCommand getNeoStoreCommand()
-    {
-        return commandSet.getNeoStoreCommand();
-    }
-
-    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipGroupCommand> getRelGroupCommands()
-    {
-        return commandSet.getRelGroupCommands();
-    }
-
-    public void setNeoStoreCommand( Command.NeoStoreCommand xaCommand )
-    {
-        commandSet.getNeoStoreCommand().init( xaCommand.getRecord() );
-    }
-
     public RecordProxy<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node, int type )
     {
         long groupId = node.getNextRel();
@@ -285,8 +206,25 @@ public class NeoStoreTransactionContext
         return null;
     }
 
-    public TransactionState getTransactionState()
+    public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition> getMoreRelationships(
+            long nodeId, RelationshipLoadingPosition position, DirectionWrapper direction,
+            int[] types, RelationshipStore relationshipStore )
     {
-        return txState;
+        return relationshipLoader.getMoreRelationships( nodeId, position, direction, types );
+    }
+
+    public int getRelationshipCount( long id, int type, DirectionWrapper direction )
+    {
+        return relationshipLoader.getRelationshipCount( id, type, direction );
+    }
+
+    public Integer[] getRelationshipTypes( long id )
+    {
+        return relationshipLoader.getRelationshipTypes( id );
+    }
+
+    public RelationshipLoadingPosition getRelationshipLoadingChainPoisition( long id )
+    {
+        return relationshipLoader.getRelationshipChainPosition( id );
     }
 }

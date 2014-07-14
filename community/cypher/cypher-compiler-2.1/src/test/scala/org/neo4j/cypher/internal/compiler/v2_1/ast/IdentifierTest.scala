@@ -19,23 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Assert._
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class IdentifierTest extends Assertions {
+class IdentifierTest extends CypherFunSuite {
 
-  @Test
-  def shouldDefineIdentifierDuringSemanticCheckWhenUndefined() {
+  test("shouldDefineIdentifierDuringSemanticCheckWhenUndefined") {
     val position = DummyPosition(0)
     val identifier = Identifier("x")(position)
 
     val result = identifier.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(1, result.errors.size)
-    assertEquals(position, result.errors.head.position)
-    assertTrue(result.state.symbol("x").isDefined)
-    assertEquals(CTAny.covariant, result.state.symbolTypes("x"))
+    result.errors should have size 1
+    result.errors.head.position should equal(position)
+    result.state.symbol("x").isDefined should equal(true)
+    result.state.symbolTypes("x") should equal(CTAny.covariant)
   }
 }

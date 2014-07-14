@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import java.util.Map;
-
 import org.neo4j.backup.BackupService.BackupOutcome;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -294,11 +292,11 @@ public class OnlineBackup
      * are the last committed transaction id for that data source.
      * @return A map from data source name to last committed transaction id.
      */
-    public Map<String, Long> getLastCommittedTxs()
+    public long getLastCommittedTx()
     {
-        return outcome().getLastCommittedTxs();
+        return outcome().getLastCommittedTx();
     }
-    
+
     /**
      * @return the consistency outcome of the last made backup. I
      */
@@ -306,7 +304,7 @@ public class OnlineBackup
     {
         return outcome().isConsistent();
     }
-    
+
     private BackupOutcome outcome()
     {
         if ( outcome == null )

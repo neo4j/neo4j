@@ -19,42 +19,39 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-
-import javax.transaction.NotSupportedException;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.ServerUtil;
+import org.neo4j.com.storecopy.ResponsePacker;
+import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 class DefaultMasterImplSPI implements MasterImpl.SPI
@@ -63,17 +60,27 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     private final DependencyResolver dependencyResolver;
     private final GraphDatabaseAPI graphDb;
     private final Logging logging;
-    private final TransactionManager txManager;
     private final Monitors monitors;
+    private final LogicalTransactionStore txStore;
+    private final TransactionIdStore transactionIdStore;
+    private final FileSystemAbstraction fileSystem;
+    private final File storeDir;
+    private final ResponsePacker responsePacker;
 
-    public DefaultMasterImplSPI( GraphDatabaseAPI graphDb, Logging logging,
-                                 TransactionManager txManager, Monitors monitors )
+    public DefaultMasterImplSPI( GraphDatabaseAPI graphDb, Logging logging, Monitors monitors )
     {
         this.graphDb = graphDb;
         this.logging = logging;
-        this.txManager = txManager;
         this.dependencyResolver = graphDb.getDependencyResolver();
         this.monitors = monitors;
+
+        // Hmm, fetching the dependencies here instead of handing them in the constructor directly feels bad,
+        // but it seems like there's some intricate usage and need for the db's dependency resolver.
+        this.transactionIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
+        this.fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
+        this.storeDir = new File( graphDb.getStoreDir() );
+        this.txStore = dependencyResolver.resolveDependency( LogicalTransactionStore.class );
+        this.responsePacker = new ResponsePacker( txStore, transactionIdStore, graphDb );
     }
 
     @Override
@@ -81,64 +88,6 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     {
         // Wait for 5s for the database to become available, if not already so
         return graphDb.isAvailable( 5000 );
-    }
-
-    @Override
-    public void acquireLock( MasterImpl.LockGrabber grabber, Locks.ResourceType type, long[] resourceIds )
-    {
-        try( Statement stmt = resolve( ThreadToStatementContextBridge.class ).instance())
-        {
-            for ( long resourceId : resourceIds )
-            {
-                grabber.grab( stmt, type, resourceId );
-            }
-        }
-    }
-
-    @Override
-    public Transaction beginTx() throws SystemException, NotSupportedException
-    {
-        txManager.begin();
-        return txManager.getTransaction();
-    }
-
-    @Override
-    public void finishTransaction( boolean success )
-    {
-        try
-        {
-            if ( success )
-            {
-                txManager.commit();
-            }
-            else
-            {
-                txManager.rollback();
-            }
-        }
-        catch ( Exception e )
-        {
-            throw Exceptions.launderedException( e );
-        }
-    }
-
-    @Override
-    public void suspendTransaction() throws SystemException
-    {
-        txManager.suspend();
-    }
-
-    @Override
-    public void resumeTransaction( Transaction transaction )
-    {
-        try
-        {
-            txManager.resume( transaction );
-        }
-        catch ( Exception e )
-        {
-            throw Exceptions.launderedException( e );
-        }
     }
 
     @Override
@@ -156,6 +105,12 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
+    public Locks.Client acquireClient()
+    {
+        return resolve( Locks.class ).newClient();
+    }
+
+    @Override
     public IdAllocation allocateIds( IdType idType )
     {
         IdGenerator generator = resolve( IdGeneratorFactory.class ).get(idType);
@@ -170,10 +125,13 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
-    public long applyPreparedTransaction( String resource, ReadableByteChannel preparedTransaction ) throws IOException
+    public long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException,
+            TransactionFailureException
     {
-        XaDataSource dataSource = resolve( XaDataSourceManager.class ).getXaDataSource( resource );
-        return dataSource.applyPreparedTransaction( preparedTransaction );
+
+        TransactionCommitProcess txCommitProcess = dependencyResolver.resolveDependency( NeoStoreXaDataSource.class ).
+                getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
+        return txCommitProcess.commit( preparedTransaction );
     }
 
     @Override
@@ -185,49 +143,50 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public Pair<Integer, Long> getMasterIdForCommittedTx( long txId ) throws IOException
     {
-        XaDataSource nioneoDataSource = resolve(XaDataSourceManager.class).getNeoStoreDataSource();
-        return nioneoDataSource.getMasterForCommittedTx( txId );
+        TransactionMetadataCache.TransactionMetadata metadata = txStore.getMetadataFor( txId );
+        return Pair.of( metadata.getMasterId(), metadata.getChecksum() );
     }
 
     @Override
-    public RequestContext rotateLogsAndStreamStoreFiles( StoreWriter writer )
+    public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
-        XaDataSourceManager xaDataSourceManager = resolve( XaDataSourceManager.class );
-        KernelPanicEventGenerator kernelPanicEventGenerator = resolve( KernelPanicEventGenerator.class );
-        return ServerUtil.rotateLogsAndStreamStoreFiles(
-                graphDb.getStoreDir(),
-                xaDataSourceManager,
-                kernelPanicEventGenerator,
-                logging.getMessagesLog( MasterImpl.class ),
-                true,
-                writer,
-                new DefaultFileSystemAbstraction(),
-                monitors.newMonitor( BackupMonitor.class, getClass() ) );
+        NeoStoreXaDataSource dataSource = graphDb.getDependencyResolver().resolveDependency(
+                DataSourceManager.class ).getDataSource();
+        StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource, fileSystem, storeDir );
+        return streamer.flushStoresAndStreamStoreFiles( writer );
     }
 
     @Override
     public Response<Void> copyTransactions( String dsName, long startTxId, long endTxId )
     {
-        return ServerUtil.getTransactions( graphDb, dsName, startTxId, endTxId );
+        // 2.2-future unnecessary
+        return null;
     }
 
     @Override
     public <T> Response<T> packResponse( RequestContext context, T response, Predicate<Long> filter )
     {
-        XaDataSourceManager xaDataSourceManager = resolve( XaDataSourceManager.class );
-        return ServerUtil.packResponse( storeId(), xaDataSourceManager, context, response, filter );
+        return responsePacker.packResponse( context, response, wrapLongFilter( filter ) );
+    }
+
+    // TODO there should be no need to wrap this here, provide the proper predicate type from the outside
+    // directly instead
+    private Predicate<CommittedTransactionRepresentation> wrapLongFilter( final Predicate<Long> filter )
+    {
+        return new Predicate<CommittedTransactionRepresentation>()
+        {
+            @Override
+            public boolean accept( CommittedTransactionRepresentation transaction )
+            {
+                return filter.accept( transaction.getCommitEntry().getTxId() );
+            }
+        };
     }
 
     @Override
-    public void pushTransaction( String resourceName, int eventIdentifier, long tx, int machineId )
+    public void pushTransaction( int eventIdentifier, long tx, int machineId )
     {
-        XaDataSourceManager xaDataSourceManager = resolve( XaDataSourceManager.class );
-        TxIdGenerator txIdGenerator = resolve( TxIdGenerator.class );
-        txIdGenerator.committed(
-                xaDataSourceManager.getXaDataSource(resourceName),
-                eventIdentifier,
-                tx,
-                machineId);
+        // 2.2-future - unnecessary
     }
 
     private <T> T resolve( Class<T> dependencyType )

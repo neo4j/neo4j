@@ -21,11 +21,9 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -54,7 +52,7 @@ public class Begin extends NonTransactionProvidingApp
             return Continuation.INPUT_COMPLETE;
         }
 
-        Transaction tx = currentTransaction( getServer() );
+        TopLevelTransaction tx = currentTransaction( getServer() );
 
         // This is a "begin" app so it will leave a transaction open. Don't close it in here
         getServer().getDb().beginTx();
@@ -84,7 +82,6 @@ public class Begin extends NonTransactionProvidingApp
         return Continuation.INPUT_COMPLETE;
     }
 
-
     private static String TRANSACTION = "TRANSACTION";
 
     private boolean acceptableText( String line )
@@ -98,15 +95,9 @@ public class Begin extends NonTransactionProvidingApp
         return substring.equals( line.toUpperCase() );
     }
 
-    public static Transaction currentTransaction( GraphDatabaseShellServer server ) throws ShellException
+    public static TopLevelTransaction currentTransaction( GraphDatabaseShellServer server )
     {
-        try
-        {
-            return server.getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).getTransaction();
-        }
-        catch ( SystemException e )
-        {
-            throw new ShellException( e.getMessage() );
-        }
+        return server.getDb().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
+                .getTopLevelTransactionBoundToThisThread( false );
     }
 }

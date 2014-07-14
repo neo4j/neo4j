@@ -35,7 +35,7 @@ public interface ShellServer extends Remote
 	 * @throws RemoteException RMI error.
 	 */
 	String getName() throws RemoteException;
-	
+
 	/**
 	 * Receives a command line (probably from a {@link ShellClient}) and reacts
 	 * to it. Output is written to the {@link Output} object.
@@ -44,14 +44,14 @@ public interface ShellServer extends Remote
 	 * @param out where output should go (like System.out).
 	 * @return some result from the execution, it's up to the client to
 	 * interpret the result, if any. F.ex. "e" could mean that the client
-	 * should exit, in response to a request "exit". 
+	 * should exit, in response to a request "exit".
 	 * @throws ShellException if there was an error in the
 	 * interpretation/execution of the command line.
 	 * @throws RemoteException RMI error.
 	 */
 	Response interpretLine( Serializable clientID, String line, Output out )
 		throws ShellException, RemoteException;
-	
+
 	/**
 	 * Interprets a variable from a client session and returns the
 	 * interpreted result.
@@ -63,7 +63,14 @@ public interface ShellServer extends Remote
 	 * @throws RemoteException RMI error.
 	 */
 	Serializable interpretVariable( Serializable clientID, String key ) throws ShellException, RemoteException;
- 
+
+    /**
+     * Marks the client's active transaction as terminated.
+     * @param clientID identifying the client.
+     * @throws RemoteException RMI error.
+     */
+    public void terminate( Serializable clientID ) throws RemoteException;
+
 	/**
 	 * @param initialSession the initial session variables that the client would
 	 * like to override or add to any initial server session variables.
@@ -81,13 +88,13 @@ public interface ShellServer extends Remote
 	 * @throws RemoteException RMI error.
 	 */
 	void leave( Serializable clientID ) throws RemoteException;
-	
+
 	/**
 	 * Shuts down the server.
 	 * @throws RemoteException RMI error.
 	 */
 	void shutdown() throws RemoteException;
-	
+
 	/**
 	 * Makes this server available at {@code localhost} for clients to connect to via RMI.
 	 * @param port the RMI port.
@@ -95,7 +102,7 @@ public interface ShellServer extends Remote
 	 * @throws RemoteException RMI error.
 	 */
 	void makeRemotelyAvailable( int port, String name ) throws RemoteException;
-	
+
 	/**
 	 * Makes this server available at the specific {@code host} for clients to connect to via RMI.
 	 * @param host the host to make this server available at.
@@ -104,13 +111,13 @@ public interface ShellServer extends Remote
 	 * @throws RemoteException RMI error.
 	 */
 	void makeRemotelyAvailable( String host, int port, String name ) throws RemoteException;
-	
+
 	/**
 	 * @return all the available commands one can issue to this server.
 	 * @throws RemoteException RMI error.
 	 */
 	String[] getAllAvailableCommands() throws RemoteException;
-	
+
 	/**
 	 * Tries to complete a half-entered line and returns possible candidates,
 	 * in the form of a {@link TabCompletion}.
@@ -122,7 +129,7 @@ public interface ShellServer extends Remote
 	 */
 	TabCompletion tabComplete( Serializable clientID, String partOfLine )
 	        throws ShellException, RemoteException;
-	
+
 	/**
 	 * Sets a session property for the session identified by {@code clientID}.
 	 * @param clientID the client ID to identify the session.

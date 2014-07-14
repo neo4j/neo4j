@@ -19,19 +19,17 @@
  */
 package org.neo4j.server.web;
 
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.test.Mute.muteAll;
+
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.Mute;
-
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.test.Mute.muteAll;
 
 public class JettyThreadLimitTest
 {
@@ -41,16 +39,15 @@ public class JettyThreadLimitTest
     @Test
     public void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
     {
-    	  Jetty9WebServer server = new Jetty9WebServer( DevNullLoggingService.DEV_NULL );
-        final int maxThreads = 7;
+    	Jetty9WebServer server = new Jetty9WebServer( DevNullLoggingService.DEV_NULL );
+        int maxThreads = 13; // 12 is the new min maxThreads value
         server.setMaxThreads( maxThreads );
         server.setPort( 7480 );
         try {
 	        server.start();
-	        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty()
-	                .getThreadPool();
+	        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty().getThreadPool();
 	        threadPool.start();
-            int configuredMaxThreads = maxThreads * Runtime.getRuntime().availableProcessors();
+            int configuredMaxThreads = maxThreads * 4;
             loadThreadPool( threadPool, configuredMaxThreads + 1);
 	        int threads = threadPool.getThreads();
 	        assertTrue( threads <= maxThreads );

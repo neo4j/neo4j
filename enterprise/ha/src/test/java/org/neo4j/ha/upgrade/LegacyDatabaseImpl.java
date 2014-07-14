@@ -212,11 +212,9 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
 
     public void doComplexLoad( long center )
     {
-        System.out.println("STarting.....");
         try( Transaction tx = db.beginTx() )
         {
             Node central = db.getNodeById( center );
-            System.out.println("got central");
 
             long[] type1RelId = new long[ 100 ];
             long[] type2RelId = new long[ 100 ];
@@ -245,7 +243,6 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
                 db.getRelationshipById( type2RelId[i] ).delete();
             }
 
-            System.out.println("deleted half");
             // Go ahead and create relationships to make up for these deletes
             for ( int i = 0; i < type1RelId.length / 2; i++ )
             {
@@ -270,9 +267,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
                 end.setProperty( "nodeProp", "nodeProp" + end.getId() + "-" + largestCreated  );
             }
 
-            System.out.println("committing");
             tx.success();
-            System.out.println("-----> Done");
         }
     }
 

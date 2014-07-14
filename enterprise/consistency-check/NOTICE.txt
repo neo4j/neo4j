@@ -26,6 +26,5 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  JTA 1.1
   Lucene Core
 

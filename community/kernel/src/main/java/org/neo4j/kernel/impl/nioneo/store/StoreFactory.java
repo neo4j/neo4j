@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,14 +31,13 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
 * Factory for Store implementations. Can also be used to create empty stores.
@@ -55,7 +56,6 @@ public class StoreFactory
     private final IdGeneratorFactory idGeneratorFactory;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final StringLogger stringLogger;
-    private final RemoteTxHook txHook;
 
     public static final String LABELS_PART = ".labels";
     public static final String NAMES_PART = ".names";
@@ -79,168 +79,183 @@ public class StoreFactory
     public static final String SCHEMA_STORE_NAME = ".schemastore.db";
     public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
     private final StoreVersionMismatchHandler versionMismatchHandler;
+    private final File neoStoreFileName;
     private final Monitors monitors;
     private final PageCache pageCache;
 
-    public StoreFactory(
-            Config config,
-            IdGeneratorFactory idGeneratorFactory,
-            PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
-            RemoteTxHook txHook,
-            Monitors monitors )
+    public StoreFactory( File storeDir, PageCache pageCache, StringLogger logger, Monitors monitors )
+    {
+        this( configForStoreDir( new Config(), storeDir ),
+                new DefaultIdGeneratorFactory(), pageCache, new DefaultFileSystemAbstraction(),
+                logger, monitors, StoreVersionMismatchHandler.THROW_EXCEPTION );
+    }
+
+    public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, Monitors monitors )
+    {
+        this( config, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
+                monitors, StoreVersionMismatchHandler.THROW_EXCEPTION );
+    }
+
+    public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+                         FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                         Monitors monitors, StoreVersionMismatchHandler versionMismatchHandler )
     {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.stringLogger = stringLogger;
-        this.txHook = txHook;
-        this.versionMismatchHandler = StoreVersionMismatchHandler.THROW_EXCEPTION;
+        this.versionMismatchHandler = versionMismatchHandler;
+        this.neoStoreFileName = config.get( GraphDatabaseSettings.neo_store );
+        assert neoStoreFileName != null;
         this.monitors = monitors;
         this.pageCache = pageCache;
     }
 
-    public boolean ensureStoreExists() throws IOException
+    private File storeFileName( String toAppend )
     {
-        boolean readOnly = config.get( GraphDatabaseSettings.read_only );
+        return new File( neoStoreFileName.getPath() + toAppend );
+    }
 
-        File store = config.get( GraphDatabaseSettings.neo_store );
-        boolean created = false;
-        if ( !readOnly && !fileSystemAbstraction.fileExists( store ))
+    public NeoStore newNeoStore( boolean allowCreate )
+    {
+        if ( !storeExists() && allowCreate )
         {
-            stringLogger.info( "Creating new db @ " + store );
-            fileSystemAbstraction.mkdirs( store.getParentFile() );
-            createNeoStore( store ).close();
-            created = true;
+            return createNeoStore();
         }
-        return created;
-    }
 
-    public NeoStore newNeoStore( File fileName )
-    {
-        return new NeoStore(
-                fileName,
-                config,
-                idGeneratorFactory,
-                pageCache,
-                fileSystemAbstraction,
+        // The store exists already, start it
+        return new NeoStore( neoStoreFileName, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 stringLogger,
-                txHook,
-                newRelationshipTypeTokenStore( new File( fileName.getPath() + RELATIONSHIP_TYPE_TOKEN_STORE_NAME ) ),
-                newLabelTokenStore( new File( fileName.getPath() + LABEL_TOKEN_STORE_NAME ) ),
-                newPropertyStore( new File( fileName.getPath() + PROPERTY_STORE_NAME) ),
-                newRelationshipStore( new File( fileName.getPath() + RELATIONSHIP_STORE_NAME) ),
-                newNodeStore( new File( fileName.getPath() + NODE_STORE_NAME) ),
+                newRelationshipTypeTokenStore(),
+                newLabelTokenStore(),
+                newPropertyStore(),
+                newRelationshipStore(),
+                newNodeStore(),
                 // We don't need any particular upgrade when we add the schema store
-                newSchemaStore( new File( fileName.getPath() + SCHEMA_STORE_NAME) ),
-                newRelationshipGroupStore( new File( fileName.getPath() + RELATIONSHIP_GROUP_STORE_NAME) ),
-                versionMismatchHandler,
-                monitors );
+                newSchemaStore(),
+                newRelationshipGroupStore(),
+                versionMismatchHandler, monitors );
     }
 
-    private RelationshipGroupStore newRelationshipGroupStore( File fileName )
+    public boolean storeExists()
     {
-        return new RelationshipGroupStore( fileName, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                stringLogger, versionMismatchHandler, monitors );
+        return fileSystemAbstraction.fileExists( neoStoreFileName );
     }
 
-    public SchemaStore newSchemaStore( File file )
+    public RelationshipGroupStore newRelationshipGroupStore()
     {
-        return new SchemaStore( file, config, IdType.SCHEMA, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
+        return new RelationshipGroupStore( storeFileName( RELATIONSHIP_GROUP_STORE_NAME ), config,
+                idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
-    private DynamicStringStore newDynamicStringStore(File fileName, IdType nameIdType)
+    public SchemaStore newSchemaStore()
+    {
+        return new SchemaStore( storeFileName( SCHEMA_STORE_NAME ), config, IdType.SCHEMA,
+                idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
+    }
+
+    private DynamicStringStore newDynamicStringStore( File fileName, IdType nameIdType )
     {
         return new DynamicStringStore( fileName, config, nameIdType, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
-    private RelationshipTypeTokenStore newRelationshipTypeTokenStore( File baseFileName )
+    private RelationshipTypeTokenStore newRelationshipTypeTokenStore()
     {
-        DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + NAMES_PART), IdType.RELATIONSHIP_TYPE_TOKEN_NAME );
-        return new RelationshipTypeTokenStore( baseFileName, config, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
+        DynamicStringStore nameStore = newDynamicStringStore( storeFileName( RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME ),
+                IdType.RELATIONSHIP_TYPE_TOKEN_NAME );
+        return new RelationshipTypeTokenStore( storeFileName( RELATIONSHIP_TYPE_TOKEN_STORE_NAME ), config,
+                idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, nameStore,
+                versionMismatchHandler, monitors );
     }
 
-    public PropertyStore newPropertyStore( File baseFileName )
+    public PropertyStore newPropertyStore()
     {
+        PropertyKeyTokenStore propertyKeyTokenStore = newPropertyKeyTokenStore();
         DynamicStringStore stringPropertyStore = newDynamicStringStore(
-                new File( baseFileName.getPath() + STRINGS_PART ), IdType.STRING_BLOCK );
-        PropertyKeyTokenStore propertyKeyTokenStore = newPropertyKeyTokenStore(
-                new File( baseFileName.getPath() + INDEX_PART ) );
-        DynamicArrayStore arrayPropertyStore = newDynamicArrayStore( new File( baseFileName.getPath() + ARRAYS_PART ) );
-        return new PropertyStore( baseFileName, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                stringLogger, stringPropertyStore, propertyKeyTokenStore, arrayPropertyStore, versionMismatchHandler,
-                monitors);
+                storeFileName( PROPERTY_STRINGS_STORE_NAME ), IdType.STRING_BLOCK );
+        DynamicArrayStore arrayPropertyStore = newDynamicArrayStore(
+                storeFileName( PROPERTY_ARRAYS_STORE_NAME ), IdType.ARRAY_BLOCK );
+        return new PropertyStore( storeFileName( PROPERTY_STORE_NAME ), config, idGeneratorFactory,
+                pageCache, fileSystemAbstraction, stringLogger, stringPropertyStore, propertyKeyTokenStore,
+                arrayPropertyStore, versionMismatchHandler, monitors );
     }
 
-    public PropertyKeyTokenStore newPropertyKeyTokenStore( File baseFileName )
+    public PropertyKeyTokenStore newPropertyKeyTokenStore()
     {
-        DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + KEYS_PART ),
+        DynamicStringStore nameStore = newDynamicStringStore( storeFileName( PROPERTY_KEY_TOKEN_NAMES_STORE_NAME ),
                 IdType.PROPERTY_KEY_TOKEN_NAME );
-        return new PropertyKeyTokenStore( baseFileName, config, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
+        return new PropertyKeyTokenStore( storeFileName( PROPERTY_KEY_TOKEN_STORE_NAME ), config,
+                idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, nameStore,
+                versionMismatchHandler, monitors );
     }
 
-    private LabelTokenStore newLabelTokenStore( File baseFileName )
+    private LabelTokenStore newLabelTokenStore()
     {
-        DynamicStringStore nameStore = newDynamicStringStore(new File( baseFileName.getPath() + NAMES_PART ),
+        DynamicStringStore nameStore = newDynamicStringStore( storeFileName( LABEL_TOKEN_NAMES_STORE_NAME ),
                 IdType.LABEL_TOKEN_NAME );
-        return new LabelTokenStore( baseFileName, config, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
+        return new LabelTokenStore( storeFileName( LABEL_TOKEN_STORE_NAME ), config, idGeneratorFactory,
+                pageCache, fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 
-    private RelationshipStore newRelationshipStore(File baseFileName)
+    public RelationshipStore newRelationshipStore()
     {
-        return new RelationshipStore( baseFileName, config, idGeneratorFactory, pageCache,
+        return new RelationshipStore( storeFileName( RELATIONSHIP_STORE_NAME ), config,
+                idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
+    }
+
+    public DynamicArrayStore newDynamicArrayStore( File fileName, IdType idType )
+    {
+        return new DynamicArrayStore( fileName, config, idType, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
-    private DynamicArrayStore newDynamicArrayStore(File baseFileName)
+    public NodeStore newNodeStore()
     {
-        return new DynamicArrayStore( baseFileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
-    }
-
-    public NodeStore newNodeStore(File baseFileName)
-    {
-        File labelsFileName = new File( baseFileName.getPath() + LABELS_PART );
-        DynamicArrayStore dynamicLabelStore = new DynamicArrayStore( labelsFileName,
+        DynamicArrayStore dynamicLabelStore = new DynamicArrayStore( storeFileName( NODE_LABELS_STORE_NAME ),
                 config, IdType.NODE_LABELS, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
                 versionMismatchHandler, monitors );
-        return new NodeStore( baseFileName, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                stringLogger, dynamicLabelStore, versionMismatchHandler, monitors );
+        return new NodeStore( storeFileName( NODE_STORE_NAME ), config, idGeneratorFactory, pageCache,
+                fileSystemAbstraction, stringLogger, dynamicLabelStore, versionMismatchHandler, monitors );
     }
 
-    public NeoStore createNeoStore(File fileName)
+    public NeoStore createNeoStore()
     {
-        NeoStore neoStore = createNeoStore( fileName, new StoreId() );
+        return createNeoStore( new StoreId() );
+    }
+
+    public NeoStore createNeoStore( StoreId storeId )
+    {
+        boolean readOnly = config.get( GraphDatabaseSettings.read_only );
+        if ( readOnly )
+        {   // but we're set to read-only mode
+            throw new UnderlyingStorageException(
+                    "Was told to create a neo store, but I'm in read-only mode" );
+        }
+
+        // Go ahead and create the store
+        stringLogger.info( "Creating new db @ " + neoStoreFileName );
         try
         {
-            pageCache.flush();
+            fileSystemAbstraction.mkdirs( neoStoreFileName.getParentFile() );
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( e );
+            throw new UnderlyingStorageException( "Unable to create directory " +
+                    neoStoreFileName.getParentFile() + " for creating a neo store in", e );
         }
-        return neoStore;
-    }
 
-    private NeoStore createNeoStore( File fileName, StoreId storeId )
-    {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( NeoStore.TYPE_DESCRIPTOR ) );
-        createNodeStore(new File( fileName.getPath() + NODE_STORE_NAME));
-        createRelationshipStore(new File( fileName.getPath() + RELATIONSHIP_STORE_NAME));
-        createPropertyStore(new File( fileName.getPath() + PROPERTY_STORE_NAME));
-        createRelationshipTypeStore(new File( fileName.getPath() + RELATIONSHIP_TYPE_TOKEN_STORE_NAME ));
-        createLabelTokenStore( new File( fileName.getPath() + LABEL_TOKEN_STORE_NAME ) );
-        createSchemaStore(new File( fileName.getPath() + SCHEMA_STORE_NAME));
-        createRelationshipGroupStore( new File( fileName.getPath() + RELATIONSHIP_GROUP_STORE_NAME ),
-                config.get( Configuration.dense_node_threshold ) );
+        createEmptyStore( neoStoreFileName, buildTypeDescriptorAndVersion( NeoStore.TYPE_DESCRIPTOR ) );
+        createNodeStore();
+        createRelationshipStore();
+        createPropertyStore();
+        createRelationshipTypeStore();
+        createLabelTokenStore();
+        createSchemaStore();
+        createRelationshipGroupStore( config.get( Configuration.dense_node_threshold ) );
 
-        NeoStore neoStore = newNeoStore( fileName );
+        NeoStore neoStore = newNeoStore( false );
         /*
         *  created time | random long | backup version | tx id | store version | next prop
         */
@@ -250,10 +265,19 @@ public class StoreFactory
         }
         neoStore.setCreationTime( storeId.getCreationTime() );
         neoStore.setRandomNumber( storeId.getRandomId() );
-        neoStore.setVersion( 0 );
-        neoStore.setLastCommittedTx( 1 );
+        neoStore.setCurrentLogVersion( 0 );
         neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         neoStore.setGraphNextProp( -1 );
+
+        try
+        {
+            pageCache.flush();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+
         return neoStore;
     }
 
@@ -261,20 +285,17 @@ public class StoreFactory
      * Creates a new node store contained in <CODE>fileName</CODE> If filename
      * is <CODE>null</CODE> or the file already exists an
      * <CODE>IOException</CODE> is thrown.
-     *
-     * @param fileName
-     *            File name of the new node store
      */
-    public void createNodeStore( File fileName )
+    public void createNodeStore()
     {
-        createNodeLabelsStore( new File( fileName.getPath() + LABELS_PART ) );
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( NodeStore.TYPE_DESCRIPTOR ) );
+        createNodeLabelsStore();
+        createEmptyStore( storeFileName( NODE_STORE_NAME ), buildTypeDescriptorAndVersion( NodeStore.TYPE_DESCRIPTOR ) );
     }
 
-    private void createNodeLabelsStore( File fileName )
+    private void createNodeLabelsStore()
     {
         int labelStoreBlockSize = config.get( Configuration.label_block_size );
-        createEmptyDynamicStore( fileName, labelStoreBlockSize,
+        createEmptyDynamicStore( storeFileName( NODE_LABELS_STORE_NAME ), labelStoreBlockSize,
                 DynamicArrayStore.VERSION, IdType.NODE_LABELS );
     }
 
@@ -282,77 +303,78 @@ public class StoreFactory
      * Creates a new relationship store contained in <CODE>fileName</CODE> If
      * filename is <CODE>null</CODE> or the file already exists an <CODE>IOException</CODE>
      * is thrown.
-     *
-     * @param fileName
-     *            File name of the new relationship store
      */
-    private void createRelationshipStore( File fileName)
+    public void createRelationshipStore()
     {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( RelationshipStore.TYPE_DESCRIPTOR ) );
+        createEmptyStore( storeFileName( RELATIONSHIP_STORE_NAME ),
+                buildTypeDescriptorAndVersion( RelationshipStore.TYPE_DESCRIPTOR ) );
     }
 
     /**
      * Creates a new property store contained in <CODE>fileName</CODE> If
      * filename is <CODE>null</CODE> or the file already exists an
      * <CODE>IOException</CODE> is thrown.
-     *
-     * @param fileName
-     *            File name of the new property store
      */
-    public void createPropertyStore( File fileName )
+    public void createPropertyStore()
     {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( PropertyStore.TYPE_DESCRIPTOR ));
+        createEmptyStore( storeFileName( PROPERTY_STORE_NAME ),
+                buildTypeDescriptorAndVersion( PropertyStore.TYPE_DESCRIPTOR ));
         int stringStoreBlockSize = config.get( Configuration.string_block_size );
         int arrayStoreBlockSize = config.get( Configuration.array_block_size );
 
-        createDynamicStringStore(new File( fileName.getPath() + STRINGS_PART), stringStoreBlockSize, IdType.STRING_BLOCK);
-        createPropertyKeyTokenStore( new File( fileName.getPath() + INDEX_PART ) );
-        createDynamicArrayStore( new File( fileName.getPath() + ARRAYS_PART ), arrayStoreBlockSize );
+        createPropertyKeyTokenStore();
+        createDynamicStringStore( storeFileName( PROPERTY_STRINGS_STORE_NAME ), stringStoreBlockSize,
+                IdType.STRING_BLOCK);
+        createDynamicArrayStore( storeFileName( PROPERTY_ARRAYS_STORE_NAME ), arrayStoreBlockSize );
     }
 
     /**
      * Creates a new relationship type store contained in <CODE>fileName</CODE>
      * If filename is <CODE>null</CODE> or the file already exists an
      * <CODE>IOException</CODE> is thrown.
-     *
-     * @param fileName
-     *            File name of the new relationship type store
      */
-    private void createRelationshipTypeStore( File fileName )
+    private void createRelationshipTypeStore()
     {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( RelationshipTypeTokenStore.TYPE_DESCRIPTOR ));
-        createDynamicStringStore( new File( fileName.getPath() + NAMES_PART), TokenStore.NAME_STORE_BLOCK_SIZE, IdType.RELATIONSHIP_TYPE_TOKEN_NAME );
-        RelationshipTypeTokenStore store = newRelationshipTypeTokenStore( fileName );
+        createEmptyStore( storeFileName( RELATIONSHIP_TYPE_TOKEN_STORE_NAME ),
+                buildTypeDescriptorAndVersion( RelationshipTypeTokenStore.TYPE_DESCRIPTOR ));
+        createDynamicStringStore( storeFileName( RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME ),
+                TokenStore.NAME_STORE_BLOCK_SIZE, IdType.RELATIONSHIP_TYPE_TOKEN_NAME );
+        RelationshipTypeTokenStore store = newRelationshipTypeTokenStore();
         store.close();
     }
 
-    private void createLabelTokenStore( File fileName )
+    private void createLabelTokenStore()
     {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( LabelTokenStore.TYPE_DESCRIPTOR ));
-        createDynamicStringStore( new File( fileName.getPath() + NAMES_PART), TokenStore.NAME_STORE_BLOCK_SIZE, IdType.LABEL_TOKEN_NAME );
-        LabelTokenStore store = newLabelTokenStore( fileName );
+        createEmptyStore( storeFileName( LABEL_TOKEN_STORE_NAME ),
+                buildTypeDescriptorAndVersion( LabelTokenStore.TYPE_DESCRIPTOR ));
+        createDynamicStringStore( storeFileName( LABEL_TOKEN_NAMES_STORE_NAME ),
+                TokenStore.NAME_STORE_BLOCK_SIZE, IdType.LABEL_TOKEN_NAME );
+        LabelTokenStore store = newLabelTokenStore();
         store.close();
     }
 
     private void createDynamicStringStore( File fileName, int blockSize, IdType idType )
     {
-        createEmptyDynamicStore(fileName, blockSize, DynamicStringStore.VERSION, idType);
+        createEmptyDynamicStore( fileName, blockSize, DynamicStringStore.VERSION, idType );
     }
 
-    private void createPropertyKeyTokenStore( File fileName )
+    public void createPropertyKeyTokenStore()
     {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( PropertyKeyTokenStore.TYPE_DESCRIPTOR ));
-        createDynamicStringStore(new File( fileName.getPath() + KEYS_PART), TokenStore.NAME_STORE_BLOCK_SIZE, IdType.PROPERTY_KEY_TOKEN_NAME );
+        createEmptyStore( storeFileName( PROPERTY_KEY_TOKEN_STORE_NAME ),
+                buildTypeDescriptorAndVersion( PropertyKeyTokenStore.TYPE_DESCRIPTOR ));
+        createDynamicStringStore( storeFileName( PROPERTY_KEY_TOKEN_NAMES_STORE_NAME ),
+                TokenStore.NAME_STORE_BLOCK_SIZE, IdType.PROPERTY_KEY_TOKEN_NAME );
     }
 
     public void createDynamicArrayStore( File fileName, int blockSize)
     {
-        createEmptyDynamicStore(fileName, blockSize, DynamicArrayStore.VERSION, IdType.ARRAY_BLOCK);
+        createEmptyDynamicStore( fileName, blockSize, DynamicArrayStore.VERSION, IdType.ARRAY_BLOCK );
     }
 
-    public void createSchemaStore( File fileName )
+    public void createSchemaStore()
     {
-        createEmptyDynamicStore( fileName, SchemaStore.BLOCK_SIZE, SchemaStore.VERSION, IdType.SCHEMA );
+        createEmptyDynamicStore( storeFileName( SCHEMA_STORE_NAME ), SchemaStore.BLOCK_SIZE,
+                SchemaStore.VERSION, IdType.SCHEMA );
     }
 
     /**
@@ -426,12 +448,13 @@ public class StoreFactory
         idGenerator.close();
     }
 
-    private void createRelationshipGroupStore( File fileName, int denseNodeThreshold )
+    public void createRelationshipGroupStore( int denseNodeThreshold )
     {
         ByteBuffer firstRecord = ByteBuffer.allocate( RelationshipGroupStore.RECORD_SIZE ).putInt( denseNodeThreshold );
         firstRecord.flip();
         firstRecord.limit( firstRecord.capacity() );
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( RelationshipGroupStore.TYPE_DESCRIPTOR ),
+        createEmptyStore( storeFileName( RELATIONSHIP_GROUP_STORE_NAME ),
+                buildTypeDescriptorAndVersion( RelationshipGroupStore.TYPE_DESCRIPTOR ),
                 firstRecord, IdType.RELATIONSHIP_GROUP );
     }
 
@@ -457,8 +480,8 @@ public class StoreFactory
         // write the header
         try
         {
-            StoreChannel channel = fileSystemAbstraction.create(fileName);
-            int endHeaderSize = UTF8.encode(typeAndVersionDescriptor).length;
+            StoreChannel channel = fileSystemAbstraction.create( fileName );
+            int endHeaderSize = UTF8.encode( typeAndVersionDescriptor ).length;
             if ( firstRecordData != null )
             {
                 endHeaderSize += firstRecordData.limit();
@@ -475,8 +498,7 @@ public class StoreFactory
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to create store "
-                    + fileName, e );
+            throw new UnderlyingStorageException( "Unable to create store " + fileName, e );
         }
         idGeneratorFactory.create( fileSystemAbstraction, new File( fileName.getPath() + ".id"), 0 );
         if ( firstRecordData != null )
@@ -499,8 +521,8 @@ public class StoreFactory
      */
     public static Config configForStoreDir( Config config, File storeDir )
     {
-        return config.with( stringMap( GraphDatabaseSettings.neo_store.name(),
-                new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath(),
+        return config.with( stringMap(
+                GraphDatabaseSettings.neo_store.name(), new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath(),
                 GraphDatabaseSettings.store_dir.name(), storeDir.getAbsolutePath() ) );
     }
 

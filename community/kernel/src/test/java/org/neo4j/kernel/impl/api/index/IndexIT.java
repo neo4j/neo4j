@@ -22,18 +22,20 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.Set;
 
 import org.junit.Test;
+
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 
-import javax.transaction.TransactionManager;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
@@ -115,10 +117,8 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldRemoveAConstraintIndexWithoutOwnerInRecovery() throws Exception
     {
         // given
-        Transactor transactor = new Transactor(
-                db.getDependencyResolver().resolveDependency( TransactionManager.class ),
-                db.getDependencyResolver().resolveDependency( PersistenceManager.class ) );
-        transactor.execute( ConstraintIndexCreator.createConstraintIndex( labelId, propertyKey ) );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( kernel, indexingService );
+        creator.createConstraintIndex( labelId, propertyKey );
 
         // when
         restartDb();
@@ -201,13 +201,15 @@ public class IndexIT extends KernelIntegrationTest
         }
 
         // when
+        try ( Transaction tx = db.beginTx() )
         {
-            schemaWriteOperationsInNewTransaction();
-            Set<IndexDefinition> indexes = asSet( db.schema().getIndexes() );
+            Set<IndexDefinition> indexes;
+            IndexDefinition index;
+            indexes = asSet( db.schema().getIndexes() );
 
             // then
             assertEquals( 1, indexes.size() );
-            IndexDefinition index = indexes.iterator().next();
+            index = indexes.iterator().next();
             assertEquals( "Label1", index.getLabel().name() );
             assertEquals( asSet( "property1" ), asSet( index.getPropertyKeys() ) );
             assertTrue( "index should be a constraint index", index.isConstraintIndex() );
@@ -225,7 +227,6 @@ public class IndexIT extends KernelIntegrationTest
                 assertEquals( "Constraint indexes cannot be dropped directly, " +
                         "instead drop the owning uniqueness constraint.", e.getMessage() );
             }
-            commit();
         }
     }
 

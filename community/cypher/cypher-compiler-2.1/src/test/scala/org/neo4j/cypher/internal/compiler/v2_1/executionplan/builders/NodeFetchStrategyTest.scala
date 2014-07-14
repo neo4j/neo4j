@@ -19,23 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{AnyInCollection, HasLabel, Equals}
-import commands.values.{UnresolvedLabel, UnresolvedProperty}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Collection, Literal, Property, Identifier}
-import spi.PlanContext
-import symbols._
-import org.neo4j.kernel.api.index.IndexDescriptor
-import org.junit.Test
-import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Collection, Identifier, Property}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{UnresolvedLabel, UnresolvedProperty}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{AnyInCollection, Equals, HasLabel}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.kernel.api.index.IndexDescriptor
 
-class NodeFetchStrategyTest extends MockitoSugar with Assertions {
+class NodeFetchStrategyTest extends CypherFunSuite {
   val propertyName = "prop"
   val labelName = "Label"
 
-  @Test def should_not_select_schema_index_when_expression_is_missing_dependencies() {
+  test("should_not_select_schema_index_when_expression_is_missing_dependencies") {
     //Given
     val noSymbols = new SymbolTable()
     val equalityPredicate = Equals(Property(Identifier("a"), UnresolvedProperty(propertyName)), Identifier("b"))
@@ -49,10 +46,10 @@ class NodeFetchStrategyTest extends MockitoSugar with Assertions {
     val foundStartItem = NodeFetchStrategy.findStartStrategy("a", Seq(equalityPredicate, labelPredicate), planCtx, noSymbols)
 
     // Then
-    assert(foundStartItem.rating === NodeFetchStrategy.LabelScan)
+    foundStartItem.rating should equal(NodeFetchStrategy.LabelScan)
   }
 
-  @Test def should_select_schema_index_when_expression_valid() {
+  test("should_select_schema_index_when_expression_valid") {
     //Given
     val noSymbols = new SymbolTable(Map("b"->CTNode))
     val equalityPredicate = Equals(Property(Identifier("a"), UnresolvedProperty(propertyName)), Identifier("b"))
@@ -67,10 +64,10 @@ class NodeFetchStrategyTest extends MockitoSugar with Assertions {
     val foundStartItem = NodeFetchStrategy.findStartStrategy("a", Seq(equalityPredicate, labelPredicate), planCtx, noSymbols)
 
     // Then
-    assert(foundStartItem.rating === NodeFetchStrategy.IndexEquality)
+    foundStartItem.rating should equal(NodeFetchStrategy.IndexEquality)
   }
 
-  @Test def should_select_schema_index_when_expression_property_check_with_in() {
+  test("should_select_schema_index_when_expression_property_check_with_in") {
     //Given
     val noSymbols = new SymbolTable(Map("b"->CTNode))
     val inPredicate = AnyInCollection(Collection(Identifier("b")),"_inner_",Equals(Property(Identifier("a"), UnresolvedProperty(propertyName)), Identifier("_inner_")))
@@ -85,6 +82,6 @@ class NodeFetchStrategyTest extends MockitoSugar with Assertions {
     val foundStartItem = NodeFetchStrategy.findStartStrategy("a", Seq(inPredicate, labelPredicate), planCtx, noSymbols)
 
     // Then
-    assert(foundStartItem.rating === NodeFetchStrategy.IndexEquality)
+    foundStartItem.rating should equal(NodeFetchStrategy.IndexEquality)
   }
 }

@@ -23,23 +23,24 @@ import java.io.File;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.commandEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.commitEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.containsExactly;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.doneEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.onePhaseCommitEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.startEntry;
 
 public class KernelRecoveryTest
 {
-
     @Rule public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
     @Test
@@ -49,9 +50,10 @@ public class KernelRecoveryTest
         EphemeralFileSystemAbstraction fs = fsRule.get();
         GraphDatabaseService db = newDB( fs );
 
-        try( Transaction tx = db.beginTx() )
+        long node1;
+        try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            node1 = db.createNode().getId();
             tx.success();
         }
 
@@ -61,9 +63,10 @@ public class KernelRecoveryTest
         db = newDB( crashedFs );
 
         // When
+        long node2;
         try( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            node2 = db.createNode().getId();
             tx.success();
         }
         db.shutdown();
@@ -73,19 +76,16 @@ public class KernelRecoveryTest
                 logEntries( crashedFs, new File( "target/test-data/impermanent-db/nioneo_logical.log.v0" ) ),
                 containsExactly(
                     // Tx before recovery
-                    startEntry( 3, -1, -1 ),
-                    commandEntry( 3 ),
-                    onePhaseCommitEntry( 3, 2 ),
-                    doneEntry( 3 ),
+                    startEntry( -1, -1 ),
+                    commandEntry( node1, NodeCommand.class ),
+                    commitEntry( 1 ),
 
                     // Tx after recovery
-                    startEntry( 6, -1, -1 ),
-                    commandEntry( 6 ),
-                    onePhaseCommitEntry( 6, 3 ),
-                    doneEntry( 6 )
+                    startEntry( -1, -1 ),
+                    commandEntry( node2, NodeCommand.class ),
+                    commitEntry( 2 )
                 )
         );
-
     }
 
     private GraphDatabaseService newDB( EphemeralFileSystemAbstraction fs )
@@ -94,5 +94,4 @@ public class KernelRecoveryTest
                     .setFileSystem( fs )
                     .newImpermanentDatabase();
     }
-
 }

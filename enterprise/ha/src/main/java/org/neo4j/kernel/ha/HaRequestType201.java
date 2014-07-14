@@ -19,18 +19,22 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
+import static org.neo4j.com.Protocol.LONG_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_SERIALIZER;
+import static org.neo4j.com.Protocol.readBoolean;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
+
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.neo4j.com.BlockLogReader;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
-import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
@@ -39,13 +43,6 @@ import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
-import static org.neo4j.com.Protocol.LONG_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_SERIALIZER;
-import static org.neo4j.com.Protocol.readBoolean;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
 
 public enum HaRequestType201 implements RequestType<Master>
 {
@@ -164,9 +161,36 @@ public enum HaRequestType201 implements RequestType<Master>
         public Response<Long> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            String resource = readString( input );
-            final ReadableByteChannel reader = new BlockLogReader( input );
-            return master.commitSingleResourceTransaction( context, resource, TxExtractor.create( reader ) );
+//            readString( input ); // Always neostorexadatasource
+//            TransactionAccumulator accumulator = new TransactionAccumulator();
+//            PhysicalTransactionCursor cursorReader = new PhysicalTransactionCursor(
+//                    new NetworkReadableLogChannel( input ),
+//                    new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ),
+//                    accumulator );
+//
+//            try
+//            {
+//                while( cursorReader.next() );
+//            }
+//            catch ( IOException e )
+//            {
+//                throw new RuntimeException( e );
+//            }
+//            finally
+//            {
+//                try
+//                {
+//                    cursorReader.close();
+//                }
+//                catch ( IOException e )
+//                {
+//                    throw new RuntimeException( e );
+//                }
+//            }
+//            assert accumulator.getAccumulator().size() == 1 : "There should be only one transaction received when committing";
+//            return master.commitSingleResourceTransaction( context, accumulator.getAccumulator().get( 0 ) );
+            // TODO 2.2-future i have like, no idea how to handle this
+            return null;
         }
     }, LONG_SERIALIZER ),
 
@@ -329,7 +353,8 @@ public enum HaRequestType201 implements RequestType<Master>
         public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.pushTransaction( context, readString( input ), input.readLong() );
+//            return master.pushTransaction( context, readString( input ), input.readLong() );
+            throw new ThisShouldNotHappenError( "ChrisG", "Transaction pushing requests are obsolete" );
         }
     }, VOID_SERIALIZER ),
     

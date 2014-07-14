@@ -21,9 +21,6 @@ package org.neo4j.kernel.ha;
 
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
@@ -33,10 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import javax.transaction.Transaction;
-
 import org.jboss.netty.logging.InternalLoggerFactory;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -52,6 +46,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -60,12 +55,14 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
@@ -84,31 +81,25 @@ import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
 import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
+import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.DenseNodeTransactionTranslator;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
-import org.neo4j.kernel.ha.transaction.TxHookModeSwitcher;
-import org.neo4j.kernel.ha.transaction.TxIdGeneratorModeSwitcher;
+import org.neo4j.kernel.ha.transaction.TransactionPropagator;
+import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.transaction.TxManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.impl.nioneo.xa.CommitProcessFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -139,15 +130,17 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private DelegateInvocationHandler memberContextDelegateInvocationHandler;
     private DelegateInvocationHandler clusterMemberAvailabilityDelegateInvocationHandler;
     private HighAvailabilityModeSwitcher highAvailabilityModeSwitcher;
+    private DefaultSlaveFactory slaveFactory;
+    private TransactionCommittingResponseUnpacker unpacker;
+    private Provider<KernelAPI> kernelProvider;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                         Iterable<CacheProvider> cacheProviders,
-                                         Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+                                         Iterable<CacheProvider> cacheProviders )
     {
         this( storeDir, params, new GraphDatabaseDependencies( null,
                 Arrays.<Class<?>>asList( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ),
-                kernelExtensions, cacheProviders, txInterceptorProviders ) );
+                kernelExtensions, cacheProviders ) );
     }
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
@@ -163,19 +156,36 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         masterDelegateInvocationHandler = new DelegateInvocationHandler( Master.class );
         master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
                 masterDelegateInvocationHandler );
+        requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ).toIntegerIndex(),
+                getDependencyResolver() );
+
+        this.unpacker = new TransactionCommittingResponseUnpacker( dependencyResolver );
+
+        kernelProvider = new Provider<KernelAPI>()
+        {
+            @Override
+            public KernelAPI instance()
+            {
+                return neoDataSource.getKernel();
+            }
+        };
 
         super.create();
 
-        kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( xaDataSourceManager,
-                (TxManager) txManager, availabilityGuard, logging, masterDelegateInvocationHandler ) );
-        life.add( updatePuller = new UpdatePuller( memberStateMachine, (HaXaDataSourceManager) xaDataSourceManager, master,
-                requestContextFactory, txManager, availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog ) );
+        life.add( requestContextFactory );
+
+        life.add( unpacker );
+
+        kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( availabilityGuard, logging,
+                masterDelegateInvocationHandler ) );
+        life.add( updatePuller = new UpdatePuller( memberStateMachine, master, requestContextFactory,
+                availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog, unpacker ) );
 
         stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
 
         life.add( paxosLife );
 
-        life.add( new DatabaseAvailability( txManager, availabilityGuard ) );
+        life.add( new DatabaseAvailability( availabilityGuard, transactionMonitor ) );
 
         life.add( new StartupWaiter() );
 
@@ -195,6 +205,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // Skip this, it's done manually in create() to ensure it is as late as possible
     }
 
+    @Override
     protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
     {
         return new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
@@ -219,7 +230,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected org.neo4j.graphdb.Transaction beginTx( ForceMode forceMode )
+    public org.neo4j.graphdb.Transaction beginTx()
     {
         if ( !availabilityGuard.isAvailable( stateSwitchTimeoutMillis ) )
         {
@@ -227,7 +238,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     + availabilityGuard.describeWhoIsBlocking() );
         }
 
-        return super.beginTx( forceMode );
+        return super.beginTx();
     }
 
     @Override
@@ -255,47 +266,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected TransactionStateFactory createTransactionStateFactory()
-    {
-        return new TransactionStateFactory( logging )
-        {
-            @Override
-            public TransactionState create( Transaction tx )
-            {
-                return new WritableTransactionState( newLockClient(), nodeManager,
-                        snapshot( txHook ),
-                        snapshot( txIdGenerator ) );
-            }
-
-            private Locks.Client newLockClient()
-            {
-                try
-                {
-                    return locks.newClient();
-                }
-                catch ( TransactionFailureException e )
-                {
-                    // This happens during recovery, when there is no lock manager available in certain conditions
-                    // due to HAs lifecycle management. It's "safe", since recover does not need locks, but this is
-                    // indicative of something shady, we should investigate the lifecycle of the lock management.
-                    return new NoOpClient();
-                }
-            }
-        };
-    }
-
-    @Override
-    protected XaDataSourceManager createXaDataSourceManager()
-    {
-        XaDataSourceManager toReturn = new HaXaDataSourceManager( logging.getMessagesLog( HaXaDataSourceManager.class
-        ) );
-        requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ).toIntegerIndex(),
-                toReturn, dependencyResolver );
-        return toReturn;
-    }
-
-    @Override
-    protected RemoteTxHook createTxHook()
+    protected void createTxHook()
     {
         clusterEventsDelegateInvocationHandler = new DelegateInvocationHandler( ClusterMemberEvents.class );
         memberContextDelegateInvocationHandler = new DelegateInvocationHandler( HighAvailabilityMemberContext.class );
@@ -409,21 +380,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         paxosLife.add( clusterEvents );
         paxosLife.add( localClusterMemberAvailability );
 
-        DelegateInvocationHandler<RemoteTxHook> txHookDelegate = new DelegateInvocationHandler<>( RemoteTxHook.class );
-        RemoteTxHook txHook = (RemoteTxHook) Proxy.newProxyInstance( RemoteTxHook.class.getClassLoader(),
-                new Class[]{RemoteTxHook.class},
-                txHookDelegate );
-        new TxHookModeSwitcher( memberStateMachine, txHookDelegate,
-                masterDelegateInvocationHandler, new TxHookModeSwitcher.RequestContextFactoryResolver()
-        {
-            @Override
-            public RequestContextFactory get()
-            {
-                return requestContextFactory;
-            }
-        }, logging.getMessagesLog( TxHookModeSwitcher.class ), dependencyResolver
-        );
-        return txHook;
     }
 
     @Override
@@ -439,20 +395,44 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected TxIdGenerator createTxIdGenerator()
+    protected TransactionHeaderInformationFactory createHeaderInformationFactory()
     {
-        DelegateInvocationHandler<TxIdGenerator> txIdGeneratorDelegate =
-                new DelegateInvocationHandler<>( TxIdGenerator.class );
-        TxIdGenerator txIdGenerator =
-                (TxIdGenerator) Proxy.newProxyInstance( TxIdGenerator.class.getClassLoader(),
-                        new Class[]{TxIdGenerator.class}, txIdGeneratorDelegate );
-        slaves = life.add( new HighAvailabilitySlaves( members, clusterClient, new DefaultSlaveFactory(
-                xaDataSourceManager, logging, monitors, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
+        return new TransactionHeaderInformationFactory()
+        {
+            @Override
+            public TransactionHeaderInformation create()
+            {
+                return new TransactionHeaderInformation( memberContext.getElectedMasterId().toIntegerIndex(),
+                        memberContext.getMyId().toIntegerIndex(), new byte[0] );
+            }
+        };
+    }
 
-        new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler, requestContextFactory,
-                msgLog, config, slaves, txManager, jobScheduler );
-        return txIdGenerator;
+    @Override
+    protected CommitProcessFactory getCommitProcessFactory()
+    {
+        final DelegateInvocationHandler<CommitProcessFactory> commitProcessFactoryDelegate =
+                new DelegateInvocationHandler<>( CommitProcessFactory.class );
+
+        final CommitProcessFactory commitProcessFactory =
+                (CommitProcessFactory) Proxy.newProxyInstance( CommitProcessFactory.class.getClassLoader(),
+                        new Class[]{ CommitProcessFactory.class }, commitProcessFactoryDelegate );
+
+        slaves = life.add( new HighAvailabilitySlaves( members, clusterClient,
+                this.slaveFactory = new DefaultSlaveFactory( logging, monitors, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
+        final TransactionPropagator pusher = life.add (new TransactionPropagator( TransactionPropagator.from( config ),
+                msgLog, slaves, new CommitPusher( jobScheduler ) ) );
+
+        new CommitProcessFactorySwitcher( pusher,
+                master, commitProcessFactoryDelegate, requestContextFactory, memberStateMachine, unpacker );
+
+        return commitProcessFactory;
+    }
+
+    @Override
+    protected void createNeoDataSource()
+    {
+        super.createNeoDataSource();
     }
 
     @Override
@@ -460,19 +440,21 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     {
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory );
+        SwitchToSlave switchToSlaveInstance = new SwitchToSlave( logging.getConsoleLog(
+                HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
+                (HaIdGeneratorFactory) idGeneratorFactory,
+                logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
+                monitors, kernelExtensions.listFactories()
+        );
+
+        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, msgLog, this,
+                (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
+                masterDelegateInvocationHandler, clusterMemberAvailability, monitors );
+
         highAvailabilityModeSwitcher =
-                new HighAvailabilityModeSwitcher( new SwitchToSlave( logging.getConsoleLog(
-                        HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
-                        (HaIdGeneratorFactory) idGeneratorFactory,
-                        logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
-                        updateableSchemaState, monitors, kernelExtensions.listFactories()
-                ),
-                        new SwitchToMaster( logging, msgLog, this,
-                                (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
-                                masterDelegateInvocationHandler, clusterMemberAvailability, monitors ),
+                new HighAvailabilityModeSwitcher( switchToSlaveInstance, switchToMasterInstance,
                         clusterClient, clusterMemberAvailability,
-                        logging.getMessagesLog( HighAvailabilityModeSwitcher.class )
-                );
+                        logging.getMessagesLog( HighAvailabilityModeSwitcher.class ) );
 
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );
         memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );
@@ -499,9 +481,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         Locks lockManager =
                 (Locks) Proxy.newProxyInstance( Locks.class.getClassLoader(),
                         new Class[]{Locks.class}, lockManagerDelegate );
-        new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler, requestContextFactory,
-                txManager, txHook, availabilityGuard, config, new Factory<Locks>()
+        new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate, masterDelegateInvocationHandler,
+                requestContextFactory, availabilityGuard, config, unpacker, new Factory<Locks>()
         {
             @Override
             public Locks newInstance()
@@ -520,9 +501,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         TokenCreator relationshipTypeCreator =
                 (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                         new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
+
+
+
         new RelationshipTypeCreatorModeSwitcher( memberStateMachine, relationshipTypeCreatorDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler,
-                requestContextFactory, logging );
+                masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory, unpacker );
         return relationshipTypeCreator;
     }
 
@@ -535,8 +518,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                         new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
         new PropertyKeyCreatorModeSwitcher( memberStateMachine, propertyKeyCreatorDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler,
-                requestContextFactory, logging );
+                masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory, unpacker );
         return propertyTokenCreator;
     }
 
@@ -549,8 +531,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                         new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
         new LabelTokenCreatorModeSwitcher( memberStateMachine, labelIdCreatorDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler,
-                requestContextFactory, logging );
+                masterDelegateInvocationHandler, requestContextFactory,  kernelProvider, idGeneratorFactory, unpacker );
         return labelIdCreator;
     }
 
@@ -568,20 +549,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider(
                 members, txIdGetter, lastUpdateTime );
         return new HighlyAvailableKernelData( this, members, databaseInfo );
-    }
-
-    @Override
-    protected Factory<byte[]> createXidGlobalIdFactory()
-    {
-        final int serverId = config.get( ClusterSettings.server_id ).toIntegerIndex();
-        return new Factory<byte[]>()
-        {
-            @Override
-            public byte[] newInstance()
-            {
-                return getNewGlobalId( DEFAULT_SEED, serverId );
-            }
-        };
     }
 
     @Override
@@ -623,10 +590,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 try
                 {
-                    synchronized ( xaDataSourceManager )
-                    {
-                        HighlyAvailableGraphDatabase.this.doAfterRecoveryAndStartup( isMaster );
-                    }
+                    HighlyAvailableGraphDatabase.this.doAfterRecoveryAndStartup( isMaster );
                 }
                 catch ( Throwable throwable )
                 {
@@ -719,6 +683,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     else if ( RequestContextFactory.class.isAssignableFrom( type ) )
                     {
                         result = type.cast( requestContextFactory );
+                    }
+                    else if ( SlaveFactory.class.isAssignableFrom( type ) )
+                    {
+                        result = type.cast( slaveFactory );
+                    }
+                    else if ( TransactionCommittingResponseUnpacker.class.isAssignableFrom( type ) )
+                    {
+                        result = type.cast( unpacker );
                     }
                     else
                     {

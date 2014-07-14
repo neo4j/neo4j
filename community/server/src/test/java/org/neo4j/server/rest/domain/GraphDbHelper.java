@@ -29,7 +29,6 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
@@ -43,7 +42,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.server.database.Database;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -61,19 +60,16 @@ public class GraphDbHelper
 
     public int getNumberOfNodes()
     {
-        return numberOfEntitiesFor( Node.class );
+        return (int) database.getGraph().getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate()
+                .getNodeStore().getNumberOfIdsInUse();
     }
 
     public int getNumberOfRelationships()
     {
-        return numberOfEntitiesFor( Relationship.class );
+        return (int) database.getGraph().getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate()
+                .getRelationshipStore().getNumberOfIdsInUse();
     }
 
-    private int numberOfEntitiesFor( Class<? extends PropertyContainer> type )
-    {
-        return (int) database.getGraph().getDependencyResolver().resolveDependency( NodeManager.class )
-                .getNumberOfIdsInUse( type );
-    }
 
     public Map<String, Object> getNodeProperties( long nodeId )
     {
@@ -199,7 +195,7 @@ public class GraphDbHelper
     }
 
     public void setRelationshipProperties( long relationshipId, Map<String, Object> properties )
-           
+
     {
         Transaction tx = database.getGraph().beginTx();
         try
@@ -500,7 +496,9 @@ public class GraphDbHelper
                         return single( keys ).equals( propertyKey );
                     }
                     else
+                    {
                         return false;
+                    }
 
                 }
             }, database.getGraph().schema().getConstraints( label( labelName ) ) );
@@ -520,7 +518,9 @@ public class GraphDbHelper
         {
             ConstraintCreator creator = database.getGraph().schema().constraintFor( label( labelName ) );
             for ( String propertyKey : propertyKeys )
+            {
                 creator = creator.assertPropertyIsUnique( propertyKey );
+            }
             ConstraintDefinition result = creator.create();
             tx.success();
             return result;

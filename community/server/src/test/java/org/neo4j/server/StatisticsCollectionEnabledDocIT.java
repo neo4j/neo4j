@@ -19,20 +19,18 @@
  */
 package org.neo4j.server;
 
-import com.sun.jersey.api.client.ClientResponse;
-import org.junit.After;
-import org.junit.Test;
-
-import org.neo4j.server.statistic.StatisticRecord;
-import org.neo4j.test.server.ExclusiveServerTestBase;
-
 import static com.sun.jersey.api.client.Client.create;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.server.configuration.Configurator.WEBSERVER_ENABLE_STATISTICS_COLLECTION;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
+
+import com.sun.jersey.api.client.ClientResponse;
+import org.junit.After;
+import org.junit.Test;
+import org.neo4j.server.statistic.StatisticRecord;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class StatisticsCollectionEnabledDocIT extends ExclusiveServerTestBase
 {
@@ -49,7 +47,7 @@ public class StatisticsCollectionEnabledDocIT extends ExclusiveServerTestBase
     public void statisticsShouldBeDisabledByDefault() throws Exception
     {
         server = server()
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
@@ -63,7 +61,7 @@ public class StatisticsCollectionEnabledDocIT extends ExclusiveServerTestBase
     public void statisticsCouldBeEnabled() throws Exception
     {
         server = server().withProperty( WEBSERVER_ENABLE_STATISTICS_COLLECTION, "true" )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 

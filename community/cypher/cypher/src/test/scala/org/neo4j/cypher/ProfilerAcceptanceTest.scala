@@ -73,7 +73,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("unfinished profiler complains") {
     //GIVEN
     createNode("foo" -> "bar")
-    val result: ExecutionResult = engine.profile("START n=node(0) RETURN n")
+    val result: ExecutionResult = eengine.profile("START n=node(0) RETURN n")
 
     //WHEN THEN
     intercept[ProfilerStatisticsNotReadyException](result.executionPlanDescription())
@@ -206,6 +206,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.executionPlanDescription().asJava should not equal null
     result.queryStatistics().containsUpdates should equal(true)
     result.queryStatistics().nodesCreated should equal(100)
+  }
+
+  test("should not have a problem profiling empty results") {
+    val result = super.profile("CYPHER 2.1.experimental MATCH n WHERE (n)-->() RETURN n")
+
+    result shouldBe empty
+    result.executionPlanDescription().toString should include("AllNodes")
   }
 
   private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {

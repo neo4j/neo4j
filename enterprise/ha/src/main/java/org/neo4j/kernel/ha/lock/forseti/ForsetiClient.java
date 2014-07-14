@@ -434,6 +434,12 @@ public class ForsetiClient implements Locks.Client
         clientPool.release( this );
     }
 
+    @Override
+    public long getIdentifier()
+    {
+        return myId;
+    }
+
     public int waitListSize()
     {
         return waitList.size();

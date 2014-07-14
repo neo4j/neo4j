@@ -44,7 +44,6 @@ Apache Software License, Version 2.0
   JAX-RS provider for JSON content type
   Jetty Server
   Jetty Utilities
-  JTA 1.1
   Lucene Core
   RRD4J
   Servlet Specification API

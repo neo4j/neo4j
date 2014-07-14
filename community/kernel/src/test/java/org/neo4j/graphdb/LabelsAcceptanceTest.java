@@ -272,6 +272,58 @@ public class LabelsAcceptanceTest
     }
 
     @Test
+    public void removingCommittedLabel2() throws Exception
+    {
+        // Given
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        Label label = Labels.MY_LABEL;
+
+        Transaction tx = beansAPI.beginTx();
+        Node myNode;
+        try
+        {
+            Node node = beansAPI.createNode( label );
+            tx.success();
+            myNode = node;
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // When
+        tx = beansAPI.beginTx();
+        try
+        {
+            myNode.removeLabel( label );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // Then
+        tx = beansAPI.beginTx();
+        try
+        {
+            for ( Node node : beansAPI.findNodesByLabelAndProperty( label, "foo", "bar" ) )
+            {
+                System.out.println(node);
+            }
+
+            for ( Label label1 : myNode.getLabels() )
+            {
+                System.out.println(label1);
+            }
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    @Test
     public void createNodeWithLabels() throws Exception
     {
         // GIVEN
@@ -648,15 +700,24 @@ public class LabelsAcceptanceTest
                         switch ( idType )
                         {
                             case LABEL_TOKEN:
-                                return new EphemeralIdGenerator( idType )
+                            {
+                                IdGenerator generator = generators.get( idType );
+                                if ( generator == null )
                                 {
-                                    @Override
-                                    public long nextId()
-                                    {
-                                        // Same exception as the one thrown by IdGeneratorImpl
-                                        throw new UnderlyingStorageException( "Id capacity exceeded" );
-                                    }
-                                };
+                                    generator = new EphemeralIdGenerator( idType )
+                                                {
+                                                    @Override
+                                                    public long nextId()
+                                                    {
+                                                        // Same exception as the one thrown by IdGeneratorImpl
+                                                        throw new UnderlyingStorageException( "Id capacity exceeded" );
+                                                    }
+                                                };
+                                    generators.put( idType, generator );
+                                }
+                                return generator;
+                            }
+
                             default:
                                 return super.open( fs, fileName, grabSize, idType, Long.MAX_VALUE );
                         }

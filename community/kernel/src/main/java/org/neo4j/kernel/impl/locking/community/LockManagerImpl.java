@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.locking.community;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.transaction.Transaction;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
@@ -48,42 +46,42 @@ public class LockManagerImpl implements LockManager
     }
 
     @Override
-    public void getReadLock( Object resource, Transaction tx )
+    public void getReadLock( Object resource, Object tx )
         throws DeadlockDetectedException, IllegalResourceException
     {
         getRWLockForAcquiring( resource, tx ).acquireReadLock( tx );
     }
 
     @Override
-    public boolean tryReadLock( Object resource, Transaction tx )
+    public boolean tryReadLock( Object resource, Object tx )
         throws IllegalResourceException
     {
         return getRWLockForAcquiring( resource, tx ).tryAcquireReadLock( tx );
     }
 
     @Override
-    public void getWriteLock( Object resource, Transaction tx )
+    public void getWriteLock( Object resource, Object tx )
         throws DeadlockDetectedException, IllegalResourceException
     {
         getRWLockForAcquiring( resource, tx ).acquireWriteLock( tx );
     }
 
     @Override
-    public boolean tryWriteLock( Object resource, Transaction tx )
+    public boolean tryWriteLock( Object resource, Object tx )
         throws IllegalResourceException
     {
         return getRWLockForAcquiring( resource, tx ).tryAcquireWriteLock( tx );
     }
-    
+
     @Override
-    public void releaseReadLock( Object resource, Transaction tx )
+    public void releaseReadLock( Object resource, Object tx )
         throws LockNotFoundException, IllegalResourceException
     {
         getRWLockForReleasing( resource, tx, 1, 0 ).releaseReadLock( tx );
     }
 
     @Override
-    public void releaseWriteLock( Object resource, Transaction tx )
+    public void releaseWriteLock( Object resource, Object tx )
         throws LockNotFoundException, IllegalResourceException
     {
         getRWLockForReleasing( resource, tx, 0, 1 ).releaseWriteLock( tx );
@@ -108,9 +106,9 @@ public class LockManagerImpl implements LockManager
 
     /**
      * Visit all locks.
-     * 
+     *
      * The supplied visitor may not block.
-     * 
+     *
      * @param visitor visitor for visiting each lock.
      */
     public void accept( Visitor<RWLock, RuntimeException> visitor )
@@ -127,15 +125,15 @@ public class LockManagerImpl implements LockManager
         }
     }
 
-    private void assertValidArguments( Object resource, Transaction tx )
+    private void assertValidArguments( Object resource, Object tx )
     {
         if ( resource == null || tx == null )
         {
             throw new IllegalResourceException( "Null parameter" );
         }
     }
-    
-    private RWLock getRWLockForAcquiring( Object resource, Transaction tx )
+
+    private RWLock getRWLockForAcquiring( Object resource, Object tx )
     {
         assertValidArguments( resource, tx );
         synchronized ( resourceLockMap )
@@ -150,8 +148,8 @@ public class LockManagerImpl implements LockManager
             return lock;
         }
     }
-    
-    private RWLock getRWLockForReleasing( Object resource, Transaction tx, int readCountPrerequisite,
+
+    private RWLock getRWLockForReleasing( Object resource, Object tx, int readCountPrerequisite,
             int writeCountPrerequisite )
     {
         assertValidArguments( resource, tx );

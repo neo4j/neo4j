@@ -31,7 +31,6 @@ import org.junit.Test;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
@@ -213,19 +212,15 @@ public class PropertyPhysicalToLogicalConverterTest
     @Before
     public void before() throws Exception
     {
+        File storeDir = new File( "dir" );
+        fs.get().mkdirs( storeDir );
         Monitors monitors = new Monitors();
-        Config config = new Config();
-        StoreFactory storeFactory = new StoreFactory(
-                config,
-                new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fs.get(), config ),
-                fs.get(),
-                StringLogger.DEV_NULL,
-                new DefaultTxHook(),
-                monitors );
-        File storeFile = new File( "propertystore" );
-        storeFactory.createPropertyStore( storeFile );
-        store = storeFactory.newPropertyStore( storeFile );
+        Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
+        StoreFactory storeFactory = new StoreFactory( config,
+                new DefaultIdGeneratorFactory(), pageCacheRule.getPageCache( fs.get(), config ),
+                fs.get(), StringLogger.DEV_NULL, monitors );
+        storeFactory.createPropertyStore();
+        store = storeFactory.newPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );
     }
 

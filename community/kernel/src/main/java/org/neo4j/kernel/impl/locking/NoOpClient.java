@@ -72,4 +72,10 @@ public class NoOpClient implements Locks.Client
     public void close()
     {
     }
+
+    @Override
+    public long getIdentifier()
+    {
+        return 0;
+    }
 }

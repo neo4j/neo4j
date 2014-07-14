@@ -19,54 +19,20 @@
  */
 package org.neo4j.com;
 
-import java.util.Collection;
-import java.util.Iterator;
+import java.io.IOException;
 
-import org.neo4j.helpers.Triplet;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 
-/**
- * Represents a stream of the data of one or more consecutive transactions.
- */
-public abstract class TransactionStream extends
-        PrefetchingIterator<Triplet<String/*datasource*/, Long/*txid*/, TxExtractor>>
+public interface TransactionStream
 {
+    void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException;
+
     public static final TransactionStream EMPTY = new TransactionStream()
     {
         @Override
-        protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
+        public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
         {
-            return null;
         }
     };
-    private final String[] datasources;
-
-    public TransactionStream( String... datasources )
-    {
-        this.datasources = datasources;
-    }
-
-    public String[] dataSourceNames()
-    {
-        return datasources.clone();
-    }
-
-    public static TransactionStream create( Collection<String> datasources,
-            Iterable<Triplet<String, Long, TxExtractor>> streamSource )
-    {
-        final Iterator<Triplet<String, Long, TxExtractor>> stream = streamSource.iterator();
-        return new TransactionStream( datasources.toArray( new String[datasources.size()] ) )
-        {
-            @Override
-            protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
-            {
-                if ( stream.hasNext() ) return stream.next();
-                return null;
-            }
-        };
-    }
-    
-    public void close()
-    {
-    }
 }

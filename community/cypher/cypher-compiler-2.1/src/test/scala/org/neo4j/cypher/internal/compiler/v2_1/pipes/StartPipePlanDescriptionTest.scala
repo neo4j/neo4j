@@ -19,56 +19,46 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.junit.{Before, Test}
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import org.scalatest.mock.MockitoSugar
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers._
-import org.neo4j.cypher.PlanDescription
-import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v2_1.commands.SchemaIndex
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v2_1.commands.NodeByLabel
-import org.neo4j.cypher.internal.compiler.v2_1.commands.NodeByIndex
-import org.neo4j.cypher.internal.compiler.v2_1.commands.NodeByIndexQuery
-import org.neo4j.cypher.internal.compiler.v2_1.commands.SingleQueryExpression
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.kernel.api.index.IndexDescriptor
 
-class StartPipePlanDescriptionTest extends MockitoSugar {
+class StartPipePlanDescriptionTest extends CypherFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
-  var planContext: PlanContext = null
-  var factory: EntityProducerFactory = null
-  val label: String = "label"
-  val prop: String = "prop"
-  val value = 42
+  private var planContext: PlanContext = null
+  private var factory: EntityProducerFactory = null
+  private val label: String = "label"
+  private val prop: String = "prop"
+  private val v42 = 42
 
-  @Before
-  def init() {
+  override def beforeEach() {
+    super.beforeEach()
     planContext = mock[PlanContext]
     factory = new EntityProducerFactory
     when(planContext.getIndexRule(label, prop)).thenReturn(Some(new IndexDescriptor(123,456)))
     when(planContext.getOptLabelId(label)).thenReturn(Some(1))
   }
 
-  @Test
-  def schema_index() {
+  test("schema_index") {
     //GIVEN
-    val planDescription = createPlanDescription(SchemaIndex("n", label, prop, AnyIndex, Some(SingleQueryExpression(Literal(value)))))
+    val planDescription = createPlanDescription(SchemaIndex("n", label, prop, AnyIndex, Some(SingleQueryExpression(Literal(v42)))))
 
     //WHEN
     val result = planDescription.toString
 
     //THEN
-    assertThat(result, containsString(label))
-    assertThat(result, containsString("SchemaIndex"))
-    assertThat(result, containsString(prop))
-    assertThat(result, containsString(value.toString))
+    result should include(label)
+    result should include("SchemaIndex")
+    result should include(prop)
+    result should include(v42.toString)
   }
 
-  @Test
-  def node_by_id() {
+  test("node_by_id") {
     //GIVEN
     val planDescription = createPlanDescription(NodeById("n", 0, 1))
 
@@ -76,13 +66,12 @@ class StartPipePlanDescriptionTest extends MockitoSugar {
     val result = planDescription.toString
 
     //THEN
-    assertThat(result, containsString("NodeById"))
-    assertThat(result, containsString("0"))
-    assertThat(result, containsString("1"))
+    result should include("NodeById")
+    result should include("0")
+    result should include("1")
   }
 
-  @Test
-  def node_by_index() {
+  test("node_by_index") {
     //GIVEN
     val planDescription = createPlanDescription(NodeByIndex("n", "indexName", Literal("key"), Literal("value")))
 
@@ -90,14 +79,13 @@ class StartPipePlanDescriptionTest extends MockitoSugar {
     val result = planDescription.toString
 
     //THEN
-    assertThat(result, containsString("NodeByIndex"))
-    assertThat(result, containsString("indexName"))
-    assertThat(result, containsString("key"))
-    assertThat(result, containsString("value"))
+    result should include("NodeByIndex")
+    result should include("indexName")
+    result should include("key")
+    result should include("value")
   }
 
-  @Test
-  def node_by_index_query() {
+  test("node_by_index_query") {
     //GIVEN
     val planDescription = createPlanDescription(NodeByIndexQuery("n", "indexName", Literal("awesomeIndexQuery")))
 
@@ -105,13 +93,12 @@ class StartPipePlanDescriptionTest extends MockitoSugar {
     val result = planDescription.toString
 
     //THEN
-    assertThat(result, containsString("NodeByIndex"))
-    assertThat(result, containsString("indexName"))
-    assertThat(result, containsString("awesomeIndexQuery"))
+    result should include("NodeByIndex")
+    result should include("indexName")
+    result should include("awesomeIndexQuery")
   }
 
-  @Test
-  def node_by_label() {
+  test("node_by_label") {
     //GIVEN
     val planDescription = createPlanDescription(NodeByLabel("n", label))
 
@@ -119,8 +106,8 @@ class StartPipePlanDescriptionTest extends MockitoSugar {
     val result = planDescription.toString
 
     //THEN
-    assertThat(result, containsString("NodeByLabel"))
-    assertThat(result, containsString(label))
+    result should include("NodeByLabel")
+    result should include(label)
   }
 
   private def createPlanDescription(startItem: StartItem): PlanDescription = {

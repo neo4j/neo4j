@@ -19,17 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.scalatest.Assertions
-import org.junit.Test
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class LiteralTest extends Assertions {
-  @Test
-  def collections_should_be_typed_correctly() {
+class LiteralTest extends CypherFunSuite {
+  test("collections_should_be_typed_correctly") {
     val value = Literal(Seq(Seq("Text")))
-    val typ = CTCollection(CTCollection(CTString))
 
-    assert(value.calculateType(SymbolTable()) === typ)
+    value.calculateType(SymbolTable()) should equal(CTCollection(CTCollection(CTString)))
   }
 }

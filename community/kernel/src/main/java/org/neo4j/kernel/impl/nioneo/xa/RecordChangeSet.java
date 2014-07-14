@@ -56,7 +56,7 @@ public class RecordChangeSet implements RecordAccessSet
         this.labelTokenChanges = new RecordChanges<>(
                 Loaders.labelTokenLoader( neoStore.getLabelTokenStore() ), false );
         this.relationshipTypeTokenChanges = new RecordChanges<>(
-                Loaders.relationshipTypeTokenLoader( neoStore.getRelationshipTypeStore() ), false );
+                Loaders.relationshipTypeTokenLoader( neoStore.getRelationshipTypeTokenStore() ), false );
     }
 
     @Override

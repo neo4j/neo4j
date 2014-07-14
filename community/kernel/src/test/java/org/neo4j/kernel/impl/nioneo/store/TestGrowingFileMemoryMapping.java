@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -72,7 +71,6 @@ public class TestGrowingFileMemoryMapping
                 pageCache,
                 fileSystemAbstraction,
                 StringLogger.DEV_NULL,
-                new DefaultTxHook(),
                 monitors );
 
         File fileName = new File( storeDir, NeoStore.DEFAULT_NAME + ".nodestore.db" );

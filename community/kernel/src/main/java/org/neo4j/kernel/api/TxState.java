@@ -26,10 +26,13 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.NodeState;
+import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
 import org.neo4j.kernel.impl.util.DiffSets;
 
@@ -101,21 +104,14 @@ public interface TxState
         boolean hasTxStateWithChanges();
 
     }
-    /**
-     * Ability to generate the leaking id types (node ids and relationship ids).
-     */
-    public interface IdGeneration
-    {
-
-        long newNodeId();
-        long newRelationshipId();
-
-    }
 
     public interface Visitor
     {
         void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
                                        Iterator<Integer> removed );
+
+        void visitNodeRelationshipChanges( long id, RelationshipChangesForNode added,
+                RelationshipChangesForNode removed );
 
         void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
                                       Iterator<Integer> removed );
@@ -134,6 +130,58 @@ public interface TxState
         void visitRemovedConstraint( UniquenessConstraint element );
     }
 
+    public static class VisitorAdapter implements Visitor
+    {
+        @Override
+        public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
+                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitNodeRelationshipChanges( long id, RelationshipChangesForNode added,
+                RelationshipChangesForNode removed )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added,
+                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+                Iterator<Integer> removed )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitNodeLabelChanges( long id, Iterator<Integer> added, Iterator<Integer> removed )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitAddedConstraint( UniquenessConstraint element )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitRemovedConstraint( UniquenessConstraint element )
+        {   // Ignore
+        }
+    }
+
     boolean hasChanges();
 
     void accept( Visitor visitor );
@@ -141,9 +189,9 @@ public interface TxState
 
     // ENTITY RELATED
 
-    long relationshipDoCreate( int relationshipTypeId, long startNodeId, long endNodeId );
+    void relationshipDoCreate( long id, int relationshipTypeId, long startNodeId, long endNodeId );
 
-    long nodeDoCreate();
+    void nodeDoCreate( long id );
 
     DiffSets<Long> labelStateNodeDiffSets( int labelId );
 
@@ -261,4 +309,22 @@ public interface TxState
     boolean constraintIndexDoUnRemove( IndexDescriptor index );
 
     Long indexCreatedForConstraint( UniquenessConstraint constraint );
+
+    PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
+
+    PrimitiveLongIterator augmentRelationshipsGetAll( PrimitiveLongIterator committed );
+
+    /**
+     * @return {@code true} if the relationship was visited in this state, i.e. if it was created
+     * by this current transaction, otherwise {@code false} where the relationship might need to be
+     * visited from the store.
+     */
+    <EXCEPTION extends Exception> boolean relationshipVisit(
+            long relId, RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION;
+
+    // <Legacy index>
+    LegacyIndex getNodeLegacyIndexChanges( String indexName ) throws LegacyIndexNotFoundKernelException;
+
+    LegacyIndex getRelationshipLegacyIndexChanges( String indexName ) throws LegacyIndexNotFoundKernelException;
+    // </Legacy index>
 }

@@ -19,88 +19,78 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
-import javax.transaction.xa.Xid;
-
-import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter.Output;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-
-public class LogEntryVerifyingOutput implements Output
+public class LogEntryVerifyingOutput //implements Output
 {
-    private final List<LogEntry> otherEntriesToVerify;
-    private final List<XaCommand> commandsToVerify;
-
-    public LogEntryVerifyingOutput( List<LogEntry> entriesToVerify )
-    {
-        commandsToVerify = pullOutCommands( entriesToVerify );
-        otherEntriesToVerify = pullOutOtherEntries( entriesToVerify );
-    }
-
-    private List<LogEntry> pullOutOtherEntries( List<LogEntry> entriesToVerify )
-    {
-        List<LogEntry> otherEntries = new ArrayList<>();
-        for ( LogEntry entry : entriesToVerify )
-        {
-            if ( !(entry instanceof LogEntry.Command) )
-            {
-                otherEntries.add( entry );
-            }
-        }
-        return otherEntries;
-    }
-
-    private List<XaCommand> pullOutCommands( List<LogEntry> entriesToVerify )
-    {
-        List<XaCommand> commands = new ArrayList<>();
-        for ( LogEntry entry : entriesToVerify )
-        {
-            if ( entry instanceof LogEntry.Command )
-            {
-                commands.add( ((LogEntry.Command) entry).getXaCommand() );
-            }
-        }
-        return commands;
-    }
-
-    @Override
-    public void writeStart( Xid xid, int identifier, int masterId, int myId, long startTimestamp,
-            long latestCommittedTxWhenTxStarted ) throws IOException
-    {
-        // TODO Check this too?
-    }
-
-    @Override
-    public void writeCommand( int identifier, XaCommand command ) throws IOException
-    {
-        boolean removed = commandsToVerify.remove( command );
-        assert removed  : "Unexpected command " + command + ". I had these left to verify " + commandsToVerify;
-    }
-
-    @Override
-    public void writePrepare( int identifier, long prepareTimestamp ) throws IOException
-    {
-        // TODO Check this too?
-    }
-
-    @Override
-    public void writeCommit( int identifier, boolean twoPhase, long txId, long commitTimestamp ) throws IOException
-    {
-        // TODO Check this too?
-    }
-
-    @Override
-    public void writeDone( int identifier ) throws IOException
-    {
-        // TODO Check this too?
-    }
-
-    public void done()
-    {
-        assert Collections.emptyList().equals( commandsToVerify ) : "Unexpected commands found" + commandsToVerify;
-    }
+//    private final List<LogEntry> otherEntriesToVerify;
+//    private final List<Command> commandsToVerify;
+//
+//    public LogEntryVerifyingOutput( List<LogEntry> entriesToVerify )
+//    {
+//        commandsToVerify = pullOutCommands( entriesToVerify );
+//        otherEntriesToVerify = pullOutOtherEntries( entriesToVerify );
+//    }
+//
+//    private List<LogEntry> pullOutOtherEntries( List<LogEntry> entriesToVerify )
+//    {
+//        List<LogEntry> otherEntries = new ArrayList<>();
+//        for ( LogEntry entry : entriesToVerify )
+//        {
+//            if ( !(entry instanceof LogEntry.Command) )
+//            {
+//                otherEntries.add( entry );
+//            }
+//        }
+//        return otherEntries;
+//    }
+//
+//    private List<XaCommand> pullOutCommands( List<LogEntry> entriesToVerify )
+//    {
+//        List<XaCommand> commands = new ArrayList<>();
+//        for ( LogEntry entry : entriesToVerify )
+//        {
+//            if ( entry instanceof LogEntry.Command )
+//            {
+//                commands.add( ((LogEntry.Command) entry).getXaCommand() );
+//            }
+//        }
+//        return commands;
+//    }
+//
+//    @Override
+//    public void writeStart( Xid xid, int identifier, int masterId, int myId, long startTimestamp,
+//            long latestCommittedTxWhenTxStarted ) throws IOException
+//    {
+//        // TODO Check this too?
+//    }
+//
+//    @Override
+//    public void writeCommand( int identifier, XaCommand command ) throws IOException
+//    {
+//        boolean removed = commandsToVerify.remove( command );
+//        assert removed  : "Unexpected command " + command + ". I had these left to verify " + commandsToVerify;
+//    }
+//
+//    @Override
+//    public void writePrepare( int identifier, long prepareTimestamp ) throws IOException
+//    {
+//        // TODO Check this too?
+//    }
+//
+//    @Override
+//    public void writeCommit( int identifier, boolean twoPhase, long txId, long commitTimestamp ) throws IOException
+//    {
+//        // TODO Check this too?
+//    }
+//
+//    @Override
+//    public void writeDone( int identifier ) throws IOException
+//    {
+//        // TODO Check this too?
+//    }
+//
+//    public void done()
+//    {
+//        assert Collections.emptyList().equals( commandsToVerify ) : "Unexpected commands found" + commandsToVerify;
+//    }
 }

@@ -36,7 +36,7 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.WrappingNeoServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -57,7 +57,7 @@ public class StreamingJsonFormatPerformanceTest {
         for ( int i = 0; i < 10; i++ ) {
             createData();
         }
-        server = new WrappingNeoServer( (AbstractGraphDatabase) gdb );
+        server = new WrappingNeoServer( (InternalAbstractGraphDatabase) gdb );
         server.start();
     }
 
@@ -93,7 +93,6 @@ public class StreamingJsonFormatPerformanceTest {
         input.close();
         final long delta = System.currentTimeMillis() - time;
         //System.out.println("result.length() = " + counter.getCount()+" took "+ delta +" ms.");
-        System.out.println(" took "+ delta +" ms.");
         return delta;
     }
 

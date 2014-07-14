@@ -80,7 +80,9 @@ public class IncrementalBackupTests
 
         // START SNIPPET: onlineBackup
         OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
+
         backup.full( backupPath.getPath() );
+
         // END SNIPPET: onlineBackup
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );

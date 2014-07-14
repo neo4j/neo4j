@@ -38,6 +38,7 @@ import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -56,14 +57,14 @@ public class SlaveClient extends Client<Slave> implements Slave
     }
 
     @Override
-    public Response<Void> pullUpdates( final String resource, final long upToAndIncludingTxId )
+    public Response<Void> pullUpdates( final long upToAndIncludingTxId )
     {
         return sendRequest( SlaveRequestType.PULL_UPDATES, RequestContext.EMPTY, new Serializer()
         {
             @Override
             public void write( ChannelBuffer buffer ) throws IOException
             {
-                writeString( buffer, resource );
+                writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
                 buffer.writeLong( upToAndIncludingTxId );
             }
         }, Protocol.VOID_DESERIALIZER );
@@ -77,7 +78,8 @@ public class SlaveClient extends Client<Slave> implements Slave
             public Response<Void> call( Slave master, RequestContext context, ChannelBuffer input,
                                         ChannelBuffer target )
             {
-                return master.pullUpdates( readString( input ), input.readLong() );
+                readString( input ); // And discard
+                return master.pullUpdates( input.readLong() );
             }
         }, VOID_SERIALIZER );
 

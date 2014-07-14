@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import javax.transaction.xa.XAException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
 /**
  * Allowed to validate and, if it likes, fail transactions that are injected into the logical log. Injection normally
@@ -31,11 +31,11 @@ public interface InjectedTransactionValidator
     InjectedTransactionValidator ALLOW_ALL = new InjectedTransactionValidator(){
 
         @Override
-        public void assertInjectionAllowed( long lastCommittedTxWhenTransactionStarted ) throws XAException
+        public void assertInjectionAllowed( long lastCommittedTxWhenTransactionStarted )
         {
             // Always ok.
         }
     };
 
-    void assertInjectionAllowed( long lastCommittedTxWhenTransactionStarted ) throws XAException;
+    void assertInjectionAllowed( long lastCommittedTxWhenTransactionStarted ) throws TransactionFailureException;
 }

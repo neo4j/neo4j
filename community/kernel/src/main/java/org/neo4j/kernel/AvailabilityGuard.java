@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel;
 
+import static org.neo4j.helpers.Listeners.notifyListeners;
+import static org.neo4j.helpers.collection.Iterables.join;
+
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,9 +30,6 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
-
-import static org.neo4j.helpers.Listeners.notifyListeners;
-import static org.neo4j.helpers.collection.Iterables.join;
 
 /**
  * The availability guard is what ensures that the database will only take calls when it is in an ok state. It allows
@@ -113,6 +113,7 @@ public class AvailabilityGuard
 
         } while ( !available.compareAndSet( val, val - 1 ) );
 
+        assert available.get() >= 0;
         blockingComponents.remove( requirementNowMet );
 
         if ( val == 1 )

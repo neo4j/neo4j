@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 
 /**
@@ -28,18 +27,6 @@ import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 @Deprecated
 public class DefaultTxHook implements RemoteTxHook
 {
-    @Override
-    public void remotelyInitializeTransaction( int eventIdentifier, TransactionState state )
-    {
-        // Do nothing from the ordinary here
-    }
-
-    @Override
-    public void remotelyFinishTransaction( int eventIdentifier, boolean success )
-    {
-        // Do nothing from the ordinary here
-    }
-
     @Override
     public boolean freeIdsDuringRollback()
     {

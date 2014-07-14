@@ -19,43 +19,56 @@
  */
 package org.neo4j.com.storecopy;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-
 import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.ServerUtil;
+import org.neo4j.com.TransactionStream;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.monitoring.BackupMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import static org.neo4j.com.ResourceReleaser.NO_OP;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
+import static org.neo4j.io.fs.FileUtils.relativePath;
+import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 public class RemoteStoreCopierTest
 {
@@ -64,23 +77,26 @@ public class RemoteStoreCopierTest
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Test
-    public void shouldStoreLogFilesAndRunRecovery() throws Exception
+    public void shouldCopyStoreAndStreamTransactionsHappeningWhileDoingSo() throws Exception
     {
         // Given
-        final String copyDir = new File( testDir.directory(), "copy" ).getAbsolutePath();
-        final String originalDir = new File( testDir.directory(), "original" ).getAbsolutePath();
-        Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
-        RemoteStoreCopier copier = new RemoteStoreCopier( config, loadKernelExtensions(), new ConsoleLogger( StringLogger.SYSTEM ), fs );
-
-        final GraphDatabaseAPI original = (GraphDatabaseAPI)new GraphDatabaseFactory().newEmbeddedDatabase( originalDir );
+        final File originalDir = new File( testDir.directory(), "original" );
+        final File copyDir = new File( testDir.directory(), "copy" );
+        Config config = new Config( stringMap( store_dir.name(), copyDir.getAbsolutePath() ) );
+        final GraphDatabaseAPI original = (GraphDatabaseAPI)new GraphDatabaseFactory()
+                .newEmbeddedDatabase( originalDir.getAbsolutePath() );
+        final DependencyResolver resolver = original.getDependencyResolver();
+        final FileSystemAbstraction fileSystem = resolver.resolveDependency( FileSystemAbstraction.class );
+        StoreCopyClient copier = new StoreCopyClient( config, loadKernelExtensions(),
+                new ConsoleLogger( StringLogger.SYSTEM ), fs );
 
         // When
-        RemoteStoreCopier.StoreCopyRequester requester = spy( new RemoteStoreCopier.StoreCopyRequester()
+        StoreCopyClient.StoreCopyRequester requester = spy( new StoreCopyClient.StoreCopyRequester()
         {
-            public Response<Object> response;
+            private Response<Object> response;
 
             @Override
-            public Response<?> copyStore( StoreWriter writer )
+            public Response<?> copyStore( StoreWriter writer ) throws IOException
             {
                 // Data that should be available in the store files
                 try ( Transaction tx = original.beginTx() )
@@ -89,15 +105,29 @@ public class RemoteStoreCopierTest
                     tx.success();
                 }
 
-                XaDataSourceManager dsManager = original.getDependencyResolver().resolveDependency(
-                        XaDataSourceManager.class );
-                RequestContext ctx = ServerUtil.rotateLogsAndStreamStoreFiles( originalDir,
-                        dsManager,
-                        original.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
-                        StringLogger.SYSTEM, false, writer, fs,
-                        original.getDependencyResolver().resolveDependency( Monitors.class ).newMonitor(
-                                BackupMonitor.class )
-                );
+                // TODO This code is sort-of-copied from DefaultMasterImplSPI. Please dedup that
+                // <copy>
+                final TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+                final long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittingTransactionId();
+                NeoStoreXaDataSource dataSource =
+                        resolver.resolveDependency( DataSourceManager.class ).getDataSource();
+                dataSource.forceEverything();
+                File baseDir = getMostCanonicalFile( originalDir );
+                ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
+
+                // Copy the store files
+                try ( ResourceIterator<File> files = dataSource.listStoreFiles() )
+                {
+                    while ( files.hasNext() )
+                    {
+                        File file = files.next();
+                        try ( StoreChannel fileChannel = fileSystem.open( file, "r" ) )
+                        {
+                            writer.write( relativePath( baseDir, file ), fileChannel, temporaryBuffer, file.length() > 0 );
+                        }
+                    }
+                }
+                // </copy>
 
                 // Data that should be made available as part of recovery
                 try ( Transaction tx = original.beginTx() )
@@ -106,9 +136,19 @@ public class RemoteStoreCopierTest
                     tx.success();
                 }
 
-                response = spy( ServerUtil.packResponse( original.storeId(), dsManager, ctx, null,
-                        ServerUtil.ALL ) );
-                return response;
+                // Stream committed transaction since the start of copying
+                TransactionStream transactions = new TransactionStream()
+                {
+                    @Override
+                    public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor )
+                            throws IOException
+                    {
+//                        long highTransactionId = transactionIdStore.getLastCommittingTransactionId();
+                        LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
+                        exhaustAndClose( txStore.getCursor( transactionIdWhenStartingCopy + 1, visitor ) );
+                    }
+                };
+                return response = spy( new Response<>( null, original.storeId(), transactions, NO_OP ) );
             }
 
             @Override
@@ -122,14 +162,13 @@ public class RemoteStoreCopierTest
         copier.copyStore( requester );
 
         // Then
-        GraphDatabaseService copy = new GraphDatabaseFactory().newEmbeddedDatabase( copyDir );
+        GraphDatabaseService copy = new GraphDatabaseFactory().newEmbeddedDatabase( copyDir.getAbsolutePath() );
 
-        try( Transaction tx = copy.beginTx() )
+        try ( Transaction tx = copy.beginTx() )
         {
             GlobalGraphOperations globalOps = GlobalGraphOperations.at( copy );
-            assertThat( Iterables.single( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) ).getId(),
-                    equalTo( 0l ) );
-            assertThat( Iterables.single(globalOps.getAllNodesWithLabel( label( "AfterCopy" ) )).getId(), equalTo(1l) );
+            assertThat( single( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) ).getId(), equalTo( 0l ) );
+            assertThat( single( globalOps.getAllNodesWithLabel( label( "AfterCopy" ) ) ).getId(), equalTo( 1l ) );
             tx.success();
         }
         finally
@@ -139,6 +178,18 @@ public class RemoteStoreCopierTest
         }
 
         verify( requester, times( 1 ) ).done();
+    }
+
+    protected Predicate<CommittedTransactionRepresentation> upToAndIncluding( final long upToAndIncludingTxId )
+    {
+        return new Predicate<CommittedTransactionRepresentation>()
+        {
+            @Override
+            public boolean accept( CommittedTransactionRepresentation transaction )
+            {
+                return transaction.getCommitEntry().getTxId() <= upToAndIncludingTxId;
+            }
+        };
     }
 
     private List<KernelExtensionFactory<?>> loadKernelExtensions()

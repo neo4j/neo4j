@@ -19,6 +19,7 @@
 package org.neo4j.examples;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -31,6 +32,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.io.fs.FileUtils;
 
 public class NewMatrix
 {
@@ -45,7 +47,7 @@ public class NewMatrix
     private GraphDatabaseService graphDb;
     private long matrixNodeId;
 
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
         NewMatrix matrix = new NewMatrix();
         matrix.setUp();
@@ -54,9 +56,9 @@ public class NewMatrix
         matrix.shutdown();
     }
 
-    public void setUp()
+    public void setUp() throws IOException
     {
-        deleteFileOrDirectory( new File( MATRIX_DB ) );
+        FileUtils.deleteRecursively( new File( MATRIX_DB ) );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( MATRIX_DB );
         registerShutdownHook();
         createNodespace();
@@ -118,7 +120,7 @@ public class NewMatrix
 
     /**
      * Get the Neo node. (a.k.a. Thomas Anderson node)
-     * 
+     *
      * @return the Neo node
      */
     private Node getNeoNode()
@@ -210,25 +212,5 @@ public class NewMatrix
                         graphDb.shutdown();
                     }
                 } );
-    }
-
-    private static void deleteFileOrDirectory( final File file )
-    {
-        if ( !file.exists() )
-        {
-            return;
-        }
-
-        if ( file.isDirectory() )
-        {
-            for ( File child : file.listFiles() )
-            {
-                deleteFileOrDirectory( child );
-            }
-        }
-        else
-        {
-            file.delete();
-        }
     }
 }

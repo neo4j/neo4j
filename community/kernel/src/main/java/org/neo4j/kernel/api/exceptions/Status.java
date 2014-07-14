@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import static java.lang.String.format;
+
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientError;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.TransientError;
@@ -98,6 +99,7 @@ public interface Status
         CouldNotBegin( DatabaseError,    "The database was unable to start the transaction." ),
         CouldNotRollback( DatabaseError, "The database was unable to roll back the transaction." ),
         CouldNotCommit( DatabaseError,   "The database was unable to commit the transaction." ),
+        CouldNotWriteToLog( DatabaseError, "The database was unable to write transaction to log." ),
 
         InvalidType( ClientError, "The transaction is of the wrong type to service the request. For instance, a " +
                 "transaction that has had schema modifications performed in it cannot be used to subsequently " +
@@ -113,6 +115,11 @@ public interface Status
         EventHandlerThrewException( ClientError, "A transaction event handler threw an exception. The transaction " +
         "will be rolled back." ),
 
+        ValidationFailed( ClientError, "Transaction changes did not pass validation checks" ),
+        HookFailed( ClientError, "Transaction hook failure." ),
+        MarkedAsFailed( ClientError, "Transaction was marked as both successful and failed. Failure takes precedence" +
+                " and so this transaction was rolled back although it may have looked like it was going to be " +
+                "committed" ),
         ;
 
 
@@ -210,6 +217,26 @@ public interface Status
         }
 
         private Schema( Classification classification, String description )
+        {
+            this.code = new Code( classification, this, description );
+        }
+    }
+
+    enum LegacyIndex implements Status
+    {
+        NoSuchIndex( ClientError, "The request (directly or indirectly) referred to a index that does not exist." )
+
+        ;
+
+        private final Code code;
+
+        @Override
+        public Code code()
+        {
+            return code;
+        }
+
+        private LegacyIndex( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }

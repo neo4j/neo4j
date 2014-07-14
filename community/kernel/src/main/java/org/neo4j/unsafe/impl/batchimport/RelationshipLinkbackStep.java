@@ -20,7 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.RecordLoad;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
@@ -51,12 +51,8 @@ public class RelationshipLinkbackStep extends LonelyProcessingStep
         RelationshipRecord heavilyReusedRecord = new RelationshipRecord( -1 );
         for ( long i = highId; i >= 0; i-- )
         {
-            RelationshipRecord record;
-            try
-            {
-                record = relStore.getRecord( i, heavilyReusedRecord );
-            }
-            catch ( InvalidRecordException e )
+            RelationshipRecord record = relStore.getRecord( i, heavilyReusedRecord, RecordLoad.CHECK );
+            if ( record == null )
             {
                 // It's OK
                 continue;

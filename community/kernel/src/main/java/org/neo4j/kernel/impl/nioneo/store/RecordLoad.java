@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-enum RecordLoad
+public enum RecordLoad
 {
     NORMAL, CHECK, FORCE
 }

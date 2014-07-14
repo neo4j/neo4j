@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -172,13 +173,22 @@ public class KernelIT extends KernelIntegrationTest
         Statement statement = statementContextProvider.instance();
 
         // WHEN
-        Node node = db.createNode();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
-        statement.close();
-        tx.failure();
-        tx.success();
-        tx.finish();
+        Node node = null;
+        int labelId = -1;
+        try
+        {
+            node = db.createNode();
+            labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
+            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
+            statement.close();
+            tx.failure();
+            tx.success();
+            tx.finish();
+            fail( "Should have failed" );
+        }
+        catch ( TransactionFailureException e )
+        {   // Expected
+        }
 
         // THEN
         tx = db.beginTx();
@@ -469,10 +479,11 @@ public class KernelIT extends KernelIntegrationTest
         createIndex( schemaWriteOperationsInNewTransaction() );
         commit();
 
-        schemaWriteOperationsInNewTransaction();
-        db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
-        commit();
-
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
+            tx.success();
+        }
         // THEN
         assertFalse( schemaStateContains( "my key" ) );
     }
@@ -484,11 +495,12 @@ public class KernelIT extends KernelIntegrationTest
         IndexDescriptor idx = createIndex( schemaWriteOperationsInNewTransaction() );
         commit();
 
-        schemaWriteOperationsInNewTransaction();
-        db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
-        getOrCreateSchemaState( "my key", "some state" );
-        commit();
-
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
+            getOrCreateSchemaState( "my key", "some state" );
+            tx.success();
+        }
         // WHEN
         schemaWriteOperationsInNewTransaction().indexDrop( idx );
         commit();

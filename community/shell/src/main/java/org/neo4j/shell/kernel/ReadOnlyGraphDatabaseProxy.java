@@ -55,7 +55,6 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.TransactionBuilder;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
@@ -962,12 +961,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public String getStoreDir()
     {
         return actual.getStoreDir();
-    }
-
-    @Override
-    public TransactionBuilder tx()
-    {
-        return actual.tx();
     }
 
     @Override

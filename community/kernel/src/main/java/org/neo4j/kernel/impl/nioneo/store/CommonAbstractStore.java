@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.nio.ByteBuffer.wrap;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.UTF8.encode;
+import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,6 +34,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils.FileOperation;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -37,14 +43,8 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
-import org.neo4j.io.fs.FileUtils.FileOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.nio.ByteBuffer.wrap;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.UTF8.encode;
-import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -142,10 +142,15 @@ public abstract class CommonAbstractStore implements IdSequence
 
     public static String buildTypeDescriptorAndVersion( String typeDescriptor )
     {
-        return typeDescriptor + " " + ALL_STORES_VERSION;
+        return buildTypeDescriptorAndVersion( typeDescriptor, ALL_STORES_VERSION );
     }
 
-    protected long longFromIntAndMod( long base, long modifier )
+    public static String buildTypeDescriptorAndVersion( String typeDescriptor, String version )
+    {
+        return typeDescriptor + " " + version;
+    }
+
+    protected static long longFromIntAndMod( long base, long modifier )
     {
         return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
     }
@@ -252,6 +257,11 @@ public abstract class CommonAbstractStore implements IdSequence
     protected int offsetForId( long id )
     {
         return (int) (id * getEffectiveRecordSize() % storeFile.pageSize());
+    }
+
+    protected long recordsPerPage()
+    {
+        return storeFile.pageSize() / getEffectiveRecordSize();
     }
 
     protected abstract int getEffectiveRecordSize();
@@ -589,7 +599,7 @@ public abstract class CommonAbstractStore implements IdSequence
     {
         try
         {
-            pageCache.flush();
+            storeFile.flush();
         }
         catch ( IOException e )
         {
@@ -729,7 +739,7 @@ public abstract class CommonAbstractStore implements IdSequence
 
     protected void registerIdFromUpdateRecord( long id )
     {
-        if ( isInRecoveryMode() )
+//        if ( isInRecoveryMode() )
         {
             highestUpdateRecordId = Math.max( highestUpdateRecordId, id + 1 );
         }

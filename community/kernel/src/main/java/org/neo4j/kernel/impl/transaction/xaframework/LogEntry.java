@@ -20,21 +20,23 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.TimeZone;
-
-import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Format;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 
 public abstract class LogEntry
 {
+    public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
+
     /* version 1 as of 2011-02-22
      * version 2 as of 2011-10-17
      * version 3 as of 2013-02-09: neo4j 2.0 Labels & Indexing
      * version 4 as of 2014-02-06: neo4j 2.1 Dense nodes, split by type/direction into groups
+     * version 5 as of 2014-05-23: neo4j 2.2 Removal of JTA / unified data source
      */
-    public static final byte CURRENT_LOG_VERSION = (byte) 4;
+    public static final byte CURRENT_LOG_VERSION = (byte) 5;
 
     /*
      * version 0 for Neo4j versions < 2.1
@@ -47,29 +49,19 @@ public abstract class LogEntry
 
     // Real entries
     public static final byte TX_START = (byte) 1;
-    public static final byte TX_PREPARE = (byte) 2;
     public static final byte COMMAND = (byte) 3;
-    public static final byte DONE = (byte) 4;
     public static final byte TX_1P_COMMIT = (byte) 5;
-    public static final byte TX_2P_COMMIT = (byte) 6;
 
-    private int identifier;
     private final byte type;
     private final byte version;
 
-    LogEntry( byte type, int identifier, byte version )
+    LogEntry( byte type, byte version )
     {
         this.type = type;
-        this.identifier = identifier;
         this.version = version;
     }
 
     public abstract void accept( LogHandler handler ) throws IOException;
-
-    public int getIdentifier()
-    {
-        return identifier;
-    }
 
     public byte getType()
     {
@@ -89,35 +81,31 @@ public abstract class LogEntry
     public static class
             Start extends LogEntry
     {
-        private final Xid xid;
         private final int masterId;
-        private final int myId;
+        private final int authorId;
         private final long timeWritten;
         private final long lastCommittedTxWhenTransactionStarted;
-        private long startPosition;
+        private final byte[] additionalHeader;
+        private LogPosition startPosition;
 
-        public Start( Xid xid, int identifier, int masterId, int myId, long startPosition, long timeWritten,
-                      long lastCommittedTxWhenTransactionStarted )
+        public Start( int masterId, int authorId, long timeWritten,
+                      long lastCommittedTxWhenTransactionStarted, byte[] additionalHeader,
+                      LogPosition startPosition )
         {
-            this( xid, identifier, CURRENT_LOG_ENTRY_VERSION, masterId, myId, startPosition, timeWritten,
-                    lastCommittedTxWhenTransactionStarted );
+            this( CURRENT_LOG_ENTRY_VERSION, masterId, authorId, timeWritten,
+                    lastCommittedTxWhenTransactionStarted, additionalHeader, startPosition );
         }
 
-        public Start( Xid xid, int identifier, byte version, int masterId, int myId, long startPosition, long timeWritten,
-               long lastCommittedTxWhenTransactionStarted )
+        public Start( byte version, int masterId, int authorId, long timeWritten,
+               long lastCommittedTxWhenTransactionStarted, byte[] additionalHeader, LogPosition startPosition )
         {
-            super( TX_START, identifier, version );
-            this.xid = xid;
+            super( TX_START, version );
             this.masterId = masterId;
-            this.myId = myId;
+            this.authorId = authorId;
             this.startPosition = startPosition;
             this.timeWritten = timeWritten;
             this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
-        }
-
-        public Xid getXid()
-        {
-            return xid;
+            this.additionalHeader = additionalHeader;
         }
 
         public int getMasterId()
@@ -127,15 +115,15 @@ public abstract class LogEntry
 
         public int getLocalId()
         {
-            return myId;
+            return authorId;
         }
 
-        public long getStartPosition()
+        public LogPosition getStartPosition()
         {
             return startPosition;
         }
 
-        public void setStartPosition( long position )
+        public void setStartPosition( LogPosition position )
         {
             this.startPosition = position;
         }
@@ -150,15 +138,25 @@ public abstract class LogEntry
             return lastCommittedTxWhenTransactionStarted;
         }
 
+        public byte[] getAdditionalHeader()
+        {
+            return additionalHeader;
+        }
+
         /**
          * @return combines necessary state to get a unique checksum to identify this transaction uniquely.
          */
-        public long getChecksum()
+        public static long checksum( byte[] additionalHeader, int masterId, int authorId )
         {
             // [4 bits combined masterId/myId][4 bits xid hashcode, which combines time/randomness]
-            long lowBits = xid.hashCode();
-            long highBits = masterId*37 + myId;
+            long lowBits = Arrays.hashCode( additionalHeader );
+            long highBits = masterId*37 + authorId;
             return (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+        }
+
+        public static long checksum( LogEntry.Start entry )
+        {
+            return checksum( entry.additionalHeader, entry.masterId, entry.authorId );
         }
 
         @Override
@@ -176,48 +174,9 @@ public abstract class LogEntry
         @Override
         public String toString( TimeZone timeZone )
         {
-            return "Start[" + getIdentifier() + ",xid=" + xid + ",master=" + masterId + ",me=" + myId + ",time=" +
+            return "Start[master=" + masterId + ",me=" + authorId + ",time=" +
                     timestamp( timeWritten, timeZone ) + ",lastCommittedTxWhenTransactionStarted="+
-                    lastCommittedTxWhenTransactionStarted+"]";
-        }
-    }
-
-    public static class Prepare extends LogEntry
-    {
-        private final long timeWritten;
-
-        public Prepare( int identifier, long timeWritten )
-        {
-            this( identifier, CURRENT_LOG_ENTRY_VERSION, timeWritten );
-        }
-
-        public Prepare( int identifier, byte version, long timeWritten )
-        {
-            super( TX_PREPARE, identifier, version );
-            this.timeWritten = timeWritten;
-        }
-
-        public long getTimeWritten()
-        {
-            return timeWritten;
-        }
-
-        @Override
-        public String toString()
-        {
-            return toString( Format.DEFAULT_TIME_ZONE );
-        }
-
-        @Override
-        public void accept( LogHandler handler ) throws IOException
-        {
-            handler.prepareEntry( this );
-        }
-
-        @Override
-        public String toString( TimeZone timeZone )
-        {
-            return "Prepare[" + getIdentifier() + ", " + timestamp( timeWritten, timeZone ) + "]";
+                    lastCommittedTxWhenTransactionStarted + ", additionalHeader.length=" + additionalHeader.length +"]";
         }
     }
 
@@ -227,9 +186,9 @@ public abstract class LogEntry
         private final long timeWritten;
         protected final String name;
 
-        Commit( byte type, int identifier, byte version, long txId, long timeWritten, String name )
+        Commit( byte type, byte version, long txId, long timeWritten, String name )
         {
-            super( type, identifier, version );
+            super( type, version );
             this.txId = txId;
             this.timeWritten = timeWritten;
             this.name = name;
@@ -254,20 +213,20 @@ public abstract class LogEntry
         @Override
         public String toString( TimeZone timeZone )
         {
-            return name + "[" + getIdentifier() + ", txId=" + getTxId() + ", " + timestamp( getTimeWritten(), timeZone ) + "]";
+            return name + "[txId=" + getTxId() + ", " + timestamp( getTimeWritten(), timeZone ) + "]";
         }
     }
 
     public static class OnePhaseCommit extends Commit
     {
-        public OnePhaseCommit( int identifier, long txId, long timeWritten )
+        public OnePhaseCommit( long txId, long timeWritten )
         {
-            this( identifier, CURRENT_LOG_ENTRY_VERSION, txId, timeWritten );
+            this( CURRENT_LOG_ENTRY_VERSION, txId, timeWritten );
         }
 
-        public OnePhaseCommit( int identifier, byte version, long txId, long timeWritten )
+        public OnePhaseCommit( byte version, long txId, long timeWritten )
         {
-            super( TX_1P_COMMIT, identifier, version, txId, timeWritten, "1PC" );
+            super( TX_1P_COMMIT, version, txId, timeWritten, "Commit" );
         }
 
         @Override
@@ -277,66 +236,22 @@ public abstract class LogEntry
         }
     }
 
-    public static class TwoPhaseCommit extends Commit
-    {
-        public TwoPhaseCommit( int identifier, long txId, long timeWritten )
-        {
-            this( identifier, CURRENT_LOG_ENTRY_VERSION, txId, timeWritten );
-        }
-
-        public TwoPhaseCommit( int identifier, byte version, long txId, long timeWritten )
-        {
-            super( TX_2P_COMMIT, identifier, version, txId, timeWritten, "2PC" );
-        }
-
-        @Override
-        public void accept( LogHandler handler ) throws IOException
-        {
-            handler.twoPhaseCommitEntry( this );
-        }
-    }
-
-    public static class Done extends LogEntry
-    {
-        public Done( int identifier )
-        {
-            this( identifier, CURRENT_LOG_ENTRY_VERSION );
-        }
-
-        public Done( int identifier, byte version )
-        {
-            super( DONE, identifier, version );
-        }
-
-        @Override
-        public void accept( LogHandler handler ) throws IOException
-        {
-            handler.doneEntry( this );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Done[" + getIdentifier() + "]";
-        }
-    }
-
     public static class Command extends LogEntry
     {
-        private final XaCommand command;
+        private final org.neo4j.kernel.impl.nioneo.xa.command.Command command;
 
-        public Command( int identifier, XaCommand command )
+        public Command( org.neo4j.kernel.impl.nioneo.xa.command.Command command )
         {
-            this( identifier, CURRENT_LOG_ENTRY_VERSION, command );
+            this( CURRENT_LOG_ENTRY_VERSION, command );
         }
 
-        public Command( int identifier, byte version, XaCommand command )
+        public Command( byte version, org.neo4j.kernel.impl.nioneo.xa.command.Command command )
         {
-            super( COMMAND, identifier, version );
+            super( COMMAND, version );
             this.command = command;
         }
 
-        public XaCommand getXaCommand()
+        public org.neo4j.kernel.impl.nioneo.xa.command.Command getXaCommand()
         {
             return command;
         }
@@ -344,7 +259,7 @@ public abstract class LogEntry
         @Override
         public String toString()
         {
-            return "Command[" + getIdentifier() + ", " + command + "]";
+            return "Command[" + command + "]";
         }
 
         @Override
@@ -352,12 +267,6 @@ public abstract class LogEntry
         {
             handler.commandEntry( this );
         }
-    }
-
-    public LogEntry reset( int newXidIdentifier )
-    {
-        identifier = newXidIdentifier;
-        return this;
     }
 
     public String timestamp( long timeWritten, TimeZone timeZone )

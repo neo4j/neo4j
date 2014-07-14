@@ -44,11 +44,13 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         this.sizePerJump = sizePerJump;
     }
 
+    @Override
     public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
     {
         return get( idType );
     }
 
+    @Override
     public IdGenerator get( IdType idType )
     {
         if ( idType == IdType.NODE || idType == IdType.RELATIONSHIP || idType == IdType.PROPERTY ||
@@ -65,6 +67,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         return forTheRest;
     }
 
+    @Override
     public void create( FileSystemAbstraction fs, File fileName, long highId )
     {
     }
@@ -141,6 +144,12 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         @Override
         public void delete()
         {
+        }
+
+        @Override
+        public long getHighestPossibleIdInUse()
+        {
+            return getHighId()-1;
         }
     }
 }

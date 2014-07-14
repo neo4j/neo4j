@@ -18,6 +18,11 @@
  */
 package org.neo4j.examples;
 
+import static java.lang.String.format;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +31,6 @@ import java.util.NoSuchElementException;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,13 +42,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.UniqueFactory;
 import org.neo4j.test.TargetDirectory;
-
-import static java.lang.String.format;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
 public class GetOrCreateDocIT extends AbstractJavaDocTestBase
 {
@@ -104,10 +101,12 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
     {
         static final int NUM_USERS = 100;
         final GetOrCreate<D> impl;
+        private final String base;
 
-        ThreadRunner( GetOrCreate<D> impl )
+        ThreadRunner( GetOrCreate<D> impl, String base )
         {
             this.impl = impl;
+            this.base = base;
         }
 
         abstract D createDependency();
@@ -122,7 +121,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
             for ( int i = 0; i < numThreads; i++ )
             {
                 String threadName = format( "%s thread %d", GetOrCreateDocIT.class.getSimpleName(), i );
-                threads.add( new GetOrCreateTask<>( db,  NUM_USERS, impl, threadName, dependency ) );
+                threads.add( new GetOrCreateTask<>( db,  NUM_USERS, impl, threadName, dependency, base ) );
             }
             for ( Thread thread : threads )
             {
@@ -163,7 +162,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
 
             for ( int i = 0; i < NUM_USERS; i++ )
             {
-                final String username = getUsername( i );
+                final String username = getUsername( base, i );
                 GraphDatabaseService graphdb = graphdb();
                 impl.getOrCreateUser( username, graphdb, dependency );
 
@@ -179,9 +178,9 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
         }
     }
 
-    private static String getUsername( int j )
+    private static String getUsername( String base, int j )
     {
-        return format( "User%d", j );
+        return format( "%s%d", base, j );
     }
 
     private static class GetOrCreateTask<D> extends Thread
@@ -190,17 +189,19 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
         private final int numUsers;
         private final GetOrCreate<D> impl;
         private final D dependency;
+        private final String base;
 
         volatile List<Node> result;
         volatile RuntimeException failure;
 
-        GetOrCreateTask( GraphDatabaseService db, int numUsers, GetOrCreate<D> impl, String name, D dependency )
+        GetOrCreateTask( GraphDatabaseService db, int numUsers, GetOrCreate<D> impl, String name, D dependency, String base )
         {
             super( name );
             this.db = db;
             this.numUsers = numUsers;
             this.impl = impl;
             this.dependency = dependency;
+            this.base = base;
         }
 
         @Override
@@ -211,7 +212,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
                 List<Node> subresult = new ArrayList<>();
                 for ( int j = 0; j < numUsers; j++ )
                 {
-                    subresult.add( impl.getOrCreateUser( getUsername( j ), db, dependency) );
+                    subresult.add( impl.getOrCreateUser( getUsername( base, j ), db, dependency) );
                 }
                 this.result = subresult;
             }
@@ -225,7 +226,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
     @Test
     public void testPessimisticLocking()
     {
-        new ThreadRunner<Node>( new PessimisticGetOrCreate() )
+        new ThreadRunner<Node>( new PessimisticGetOrCreate(), "chris" )
         {
             @Override
             Node createDependency()
@@ -238,7 +239,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
     @Test
     public void getOrCreateWithUniqueFactory() throws Exception
     {
-        new ThreadRunner<UniqueFactory<Node>>( new UniqueFactoryGetOrCreate() ) {
+        new ThreadRunner<UniqueFactory<Node>>( new UniqueFactoryGetOrCreate(), "davide" ) {
 
             @Override
             UniqueFactory<Node> createDependency()
@@ -251,7 +252,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
     @Test
     public void getOrCreateUsingCypher() throws Exception
     {
-        new ThreadRunner<ExecutionEngine>( new CypherGetOrCreate() ) {
+        new ThreadRunner<ExecutionEngine>( new CypherGetOrCreate(), "cypher") {
             @Override
             ExecutionEngine createDependency()
             {
@@ -298,7 +299,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
         // END SNIPPET: prepareLockNode
     }
 
-    private UniqueFactory<Node> createUniqueFactory(  GraphDatabaseService graphDb )
+    private UniqueFactory<Node> createUniqueFactory( GraphDatabaseService graphDb )
     {
         // START SNIPPET: prepareUniqueFactory
         try ( Transaction tx = graphDb.beginTx() )

@@ -40,10 +40,12 @@ public class LargeByteArraysIT
     @Test
     public void largeByteArrays() throws Exception
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( forTest( getClass() ).cleanDirectory( "bytearrays" ).getAbsolutePath() );
+        GraphDatabaseService db = new GraphDatabaseFactory().
+                newEmbeddedDatabase( forTest( getClass() ).
+                                cleanDirectory( "bytearrays" ).getAbsolutePath()
+                );
         try
         {
-//            setLogSize( db );
             for ( int i = 0; i < 100000; i++ )
             {
                 createNodeWithBigArray( db );
@@ -74,7 +76,7 @@ public class LargeByteArraysIT
     private byte[] randomBigByteArray()
     {
         byte[] array = new byte[max( 248, RANDOM.nextInt( 248*1024 ) )];
-        for ( int i = 0; i < array.length; i++ ) array[i] = (byte) (currentTimeMillis()%255);
+        for ( int i = 0; i < array.length; i++ ) array[i] = (byte) currentTimeMillis();
         return array;
     }
 }

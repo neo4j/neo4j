@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.values.TokenType._
-import commands.{CoercedPredicate, True, Not, ReturnItem}
-import pipes.QueryState
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{CoercedPredicate, Not, ReturnItem, True}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.junit.Test
-import org.scalatest.Assertions
-import collection.Map
 
-class ExpressionTest extends Assertions {
-  @Test def replacePropWithCache() {
+import scala.collection.Map
+
+class ExpressionTest extends CypherFunSuite {
+  test("replacePropWithCache") {
     val a = Collect(Property(Identifier("r"), PropertyKey("age")))
 
     val b = a.rewrite {
@@ -38,35 +38,31 @@ class ExpressionTest extends Assertions {
       case x              => x
     }
 
-    assert(b === Collect(Literal("r.age")))
+    b should equal(Collect(Literal("r.age")))
   }
 
-  @Test def merge_two_different_identifiers() {
+  test("merge_two_different_identifiers") {
     testMerge(
       Map("a" -> CTAny),
       Map("b" -> CTAny),
-
       Map("a" -> CTAny, "b" -> CTAny))
   }
 
-  @Test def merge_two_deps_on_the_same_identifier() {
+  test("merge_two_deps_on_the_same_identifier") {
     testMerge(
       Map("a" -> CTAny),
       Map("a" -> CTAny),
-
       Map("a" -> CTAny))
   }
 
-  @Test def merge_two_deps_same_id_different_types() {
+  test("merge_two_deps_same_id_different_types") {
     testMerge(
       Map("a" -> CTAny),
       Map("a" -> CTMap),
-
       Map("a" -> CTAny))
   }
 
-  @Test
-  def should_find_inner_aggregations() {
+  test("should_find_inner_aggregations") {
     //GIVEN
     val e = LengthFunction(Collect(Property(Identifier("n"), PropertyKey("bar"))))
 
@@ -74,11 +70,10 @@ class ExpressionTest extends Assertions {
     val aggregates = e.filter(e => e.isInstanceOf[AggregationExpression])
 
     //THEN
-    assert(aggregates.toList ===  List(Collect(Property(Identifier("n"), PropertyKey("bar")))))
+    aggregates.toList should equal( List(Collect(Property(Identifier("n"), PropertyKey("bar")))))
   }
 
-  @Test
-  def should_find_inner_aggregations2() {
+  test("should_find_inner_aggregations2") {
     //GIVEN
     val r = ReturnItem(Avg(Property(Identifier("a"), PropertyKey("age"))), "avg(a.age)")
 
@@ -86,11 +81,10 @@ class ExpressionTest extends Assertions {
     val aggregates = r.expression.filter(e => e.isInstanceOf[AggregationExpression])
 
     //THEN
-    assert(aggregates.toList ===  List(Avg(Property(Identifier("a"), PropertyKey("age")))))
+    aggregates.toList should equal( List(Avg(Property(Identifier("a"), PropertyKey("age")))))
   }
 
-  @Test
-  def should_handle_rewriting_to_non_predicates() {
+  test("should_handle_rewriting_to_non_predicates") {
     // given
     val expression = Not(True())
 
@@ -101,7 +95,7 @@ class ExpressionTest extends Assertions {
     }
 
     // then
-    assert(result === Not(CoercedPredicate(Literal(true))))
+    result should equal(Not(CoercedPredicate(Literal(true))))
   }
 
   private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]) {

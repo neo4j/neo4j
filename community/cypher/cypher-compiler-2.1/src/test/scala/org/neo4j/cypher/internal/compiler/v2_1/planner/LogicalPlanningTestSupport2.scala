@@ -19,18 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
-
+import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.scalatest.mock.MockitoSugar
 import org.scalatest.matchers._
 
 trait BeLikeMatcher {
@@ -53,8 +51,7 @@ object BeLikeMatcher extends BeLikeMatcher
 case class SemanticPlan(plan: QueryPlan, semanticTable: SemanticTable)
 
 trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
-
-  self: CypherTestSuite with MockitoSugar =>
+  self: CypherFunSuite =>
 
   var kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
   var monitors = new Monitors(kernelMonitors)
@@ -64,7 +61,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   var astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
   var tokenResolver = new SimpleTokenResolver()
   var monitor = mock[PlanningMonitor]
-  var strategy = new QueryPlanningStrategy()
+  var strategy = new QueryPlanningStrategy() {
+    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): QueryPlan =
+     planSingleQuery(query)
+  }
   var queryGraphSolver = new GreedyQueryGraphSolver()
 
   val realConfig = new RealLogicalPlanningConfiguration
@@ -82,9 +82,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     class given extends StubbedLogicalPlanningConfiguration(this)
 
-    def planFor(queryString: String): SemanticPlan = {
+    def planFor(queryString: String): SemanticPlan =
       LogicalPlanningEnvironment(this).planFor(queryString)
-    }
+
+    def getLogicalPlanFor(query: String): (LogicalPlan, SemanticTable) =
+      LogicalPlanningEnvironment(this).getLogicalPlanFor(query)
 
     def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {
       LogicalPlanningEnvironment(this).withLogicalPlanningContext(f)
@@ -251,12 +253,33 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       semanticChecker.check(queryString, parsedStatement)
       val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement)
       val semanticTable = semanticChecker.check(queryString, rewrittenStatement)
-      SemanticPlan(Planner.rewriteStatement(rewrittenStatement) match {
+      val plannerQuery: QueryPlan = Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          val (queryPlan, _) = planner.produceQueryPlan(ast, semanticTable)(planContext)
-          queryPlan
-      }, semanticTable)
+          val QueryPlanInput(unionQuery, patternInExpression) = plannerQueryBuilder.produce(ast)
+          val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
+          val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
+          val plannerQuery = unionQuery.queries.head
+          strategy.internalPlan(plannerQuery)(context, patternInExpression)
+      }
+
+      SemanticPlan(plannerQuery, semanticTable)
+    }
+
+    def getLogicalPlanFor(queryString: String): (LogicalPlan, SemanticTable) = {
+      val parsedStatement = parser.parse(queryString)
+      semanticChecker.check(queryString, parsedStatement)
+      val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement)
+      val semanticTable = semanticChecker.check(queryString, rewrittenStatement)
+
+      Planner.rewriteStatement(rewrittenStatement) match {
+        case ast: Query =>
+          tokenResolver.resolve(ast)(semanticTable, planContext)
+          val QueryPlanInput(unionQuery, patternInExpression) = plannerQueryBuilder.produce(ast)
+          val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
+          val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
+          (strategy.plan(unionQuery)(context, patternInExpression), semanticTable)
+      }
     }
 
     def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {

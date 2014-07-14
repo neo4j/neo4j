@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.perty.Doc._
 
 case object toStringDocBuilder extends CachingDocBuilder[Any] {
   override protected def newNestedDocGenerator = {
-    case v: Any => (_) => if (v == null) "null" else v.toString
+    case null    => inner => "null"
+    case v: Any  => inner => v.toString
   }
 }

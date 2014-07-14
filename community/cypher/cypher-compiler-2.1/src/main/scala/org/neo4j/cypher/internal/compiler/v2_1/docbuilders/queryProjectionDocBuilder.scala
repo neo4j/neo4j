@@ -20,28 +20,34 @@
 package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.perty._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryProjection
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{DescSortItem, AscSortItem}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{AggregatingQueryProjection, QueryProjection}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
 case class queryProjectionDocBuilder(prefix: String = "WITH") extends CachingDocBuilder[Any] {
+
   import Doc._
 
   override protected def newNestedDocGenerator = {
-    case queryProjection: QueryProjection => (inner: DocGenerator[Any]) =>
-      val projectionMapDoc = queryProjection.projections.collect {
-        case (k, v) => group( inner(v) :/: "AS " :: s"`$k`" )
+    case queryProjection: AggregatingQueryProjection =>
+      val distinct = if (queryProjection.aggregationExpressions.isEmpty) "DISTINCT" else ""
+      generateDoc(queryProjection, queryProjection.projections ++ queryProjection.aggregationExpressions, distinct)
+
+    case queryProjection: QueryProjection =>
+      generateDoc(queryProjection, queryProjection.projections)
+  }
+
+  private def generateDoc(queryProjection: QueryProjection,
+                          projectionsMap: Map[String, Expression],
+                          initialString: String = ""): DocGenerator[Any] => Doc =
+  { (inner: DocGenerator[Any]) =>
+
+      val projectionMapDoc = projectionsMap.collect {
+        case (k, v) => group(inner(v) :/: "AS " :: s"`$k`")
       }
-      val projection = if (projectionMapDoc.isEmpty) text("*") else group(sepList(projectionMapDoc))
 
-      val sortItemDocs = queryProjection.sortItems.collect {
-        case AscSortItem(expr)  => inner(expr)
-        case DescSortItem(expr) => inner(expr) :/: "DESC"
-      }
-      val sortItems = if (sortItemDocs.isEmpty) nil else group("ORDER BY" :/: sepList(sortItemDocs))
+      val projectionDoc = if (projectionMapDoc.isEmpty) text("*") else group(sepList(projectionMapDoc))
+      val shuffleDoc = inner(queryProjection.shuffle)
 
-      val skip = queryProjection.skip.map( skip => group("SKIP" :/: inner(skip)) ).getOrElse(nil)
-      val limit = queryProjection.limit.map( limit => group("LIMIT" :/: inner(limit)) ).getOrElse(nil)
-
-      section(prefix, projection :+: sortItems :+: skip :+: limit)
+      section(prefix, projectionDoc :+: shuffleDoc)
   }
 }

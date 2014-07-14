@@ -24,7 +24,7 @@ import org.scalatest.Assertions
 import org.neo4j.graphdb._
 import java.util.HashMap
 import org.neo4j.tooling.GlobalGraphOperations
-import javax.transaction.TransactionManager
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
 class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions with QueryStatisticsTestSupport {
 
@@ -325,8 +325,8 @@ return distinct center""")
   test("failed_query_should_not_leave_dangling_transactions") {
     intercept[EntityNotFoundException](execute("START left=node(1), right=node(3,4) CREATE UNIQUE left-[r:KNOWS]->right RETURN r"))
 
-    val txManager: TransactionManager = graph.getDependencyResolver.resolveDependency(classOf[TransactionManager])
-    txManager.getTransaction should be(null)
+    val contextBridge : ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+    contextBridge.getTopLevelTransactionBoundToThisThread( false ) should be(null)
   }
 
   test("create_unique_twice_with_param_map") {

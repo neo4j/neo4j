@@ -19,19 +19,22 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import javax.transaction.xa.XAException;
-
 import org.junit.Test;
-import org.neo4j.graphdb.TransactionFailureException;
+
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class TransactionHookIT extends KernelIntegrationTest
 {
@@ -48,8 +51,10 @@ public class TransactionHookIT extends KernelIntegrationTest
         commit();
 
         // Then
-        verify(hook).beforeCommit( any(TxState.class), any( KernelTransaction.class) );
-        verify(hook).afterCommit( any( TxState.class ), any( KernelTransaction.class ), any(TransactionHook.Outcome.class) );
+        verify( hook ).beforeCommit( any( TxState.class ), any( KernelTransaction.class ),
+                any( StoreReadLayer.class ) );
+        verify( hook ).afterCommit( any( TxState.class ), any( KernelTransaction.class ),
+                any( TransactionHook.Outcome.class ) );
         verifyNoMoreInteractions( hook );
     }
 
@@ -58,8 +63,9 @@ public class TransactionHookIT extends KernelIntegrationTest
     {
         // Given
         TransactionHook hook = mock( TransactionHook.class );
-        when( hook.beforeCommit( any( TxState.class ), any( KernelTransaction.class ) )).thenReturn( new TransactionHook.Outcome()
-
+        final String message = "Original";
+        when( hook.beforeCommit( any( TxState.class ), any( KernelTransaction.class ),
+                any( StoreReadLayer.class ) ) ).thenReturn( new TransactionHook.Outcome()
         {
             @Override
             public boolean isSuccessful()
@@ -70,7 +76,7 @@ public class TransactionHookIT extends KernelIntegrationTest
             @Override
             public Throwable failure()
             {
-                return new Throwable();
+                return new Throwable( message );
             }
         } );
         kernel.registerTransactionHook( hook );
@@ -84,16 +90,17 @@ public class TransactionHookIT extends KernelIntegrationTest
             commit();
             fail("Expected this to fail.");
         }
-        catch(TransactionFailureException e)
+        catch ( org.neo4j.kernel.api.exceptions.TransactionFailureException e )
         {
-            XAException xaException = (XAException)e.getCause().getCause();
-            assertThat( xaException.errorCode, equalTo(XAException.XA_RBOTHER) );
-            assertThat( xaException.getCause().getMessage(), equalTo("Transaction handler failed.") );
+            e.printStackTrace();
+            assertThat( e.getCause().getMessage(), equalTo( "Transaction handler failed." ) );
+            assertThat( e.getCause().getCause().getMessage(), equalTo( message ) );
         }
-
         // Then
-        verify(hook).beforeCommit( any(TxState.class), any( KernelTransaction.class) );
-        verify(hook).afterRollback( any( TxState.class ), any( KernelTransaction.class ), any(TransactionHook.Outcome.class) );
+        verify( hook ).beforeCommit( any( TxState.class ), any( KernelTransaction.class ),
+                any( StoreReadLayer.class ) );
+        verify( hook ).afterRollback( any( TxState.class ), any( KernelTransaction.class ),
+                any( TransactionHook.Outcome.class ) );
         verifyNoMoreInteractions( hook );
     }
 }

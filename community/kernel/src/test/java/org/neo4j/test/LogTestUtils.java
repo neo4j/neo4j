@@ -19,51 +19,49 @@
  */
 package org.neo4j.test;
 
-import static java.lang.Math.max;
-import static java.util.Arrays.asList;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileName;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.TxLog;
-import org.neo4j.kernel.impl.transaction.XidImpl;
-import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
-import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles.LogVersionVisitor;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalWritableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 import org.neo4j.kernel.impl.util.Cursor;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
  *
  * @author Mattias Persson
  */
+// TODO 2.2-future rewrite this using the new APIs
 public class LogTestUtils
 {
     public static interface LogHook<RECORD> extends Predicate<RECORD>
@@ -86,16 +84,6 @@ public class LogTestUtils
         }
     }
 
-    public static final LogHook<Pair<Byte, List<byte[]>>> EVERYTHING_BUT_DONE_RECORDS =
-            new LogHookAdapter<Pair<Byte,List<byte[]>>>()
-    {
-        @Override
-        public boolean accept( Pair<Byte, List<byte[]>> item )
-        {
-            return item.first().byteValue() != TxLog.TX_DONE;
-        }
-    };
-
     public static final LogHook<Pair<Byte, List<byte[]>>> NO_FILTER = new LogHookAdapter<Pair<Byte,List<byte[]>>>()
     {
         @Override
@@ -104,146 +92,6 @@ public class LogTestUtils
             return true;
         }
     };
-
-    public static final LogHook<Pair<Byte, List<byte[]>>> PRINT_DANGLING = new LogHook<Pair<Byte,List<byte[]>>>()
-    {
-        private final Map<ByteArray,List<Xid>> xids = new HashMap<>();
-
-        @Override
-        public boolean accept( Pair<Byte, List<byte[]>> item )
-        {
-            if ( item.first().byteValue() == TxLog.BRANCH_ADD )
-            {
-                ByteArray key = new ByteArray( item.other().get( 0 ) );
-                List<Xid> list = xids.get( key );
-                if ( list == null )
-                {
-                    list = new ArrayList<>();
-                    xids.put( key, list );
-                }
-                Xid xid = new XidImpl( item.other().get( 0 ), item.other().get( 1 ) );
-                list.add( xid );
-            }
-            else if ( item.first().byteValue() == TxLog.TX_DONE )
-            {
-                List<Xid> removed = xids.remove( new ByteArray( item.other().get( 0 ) ) );
-                if ( removed == null )
-                {
-                    throw new IllegalArgumentException( "Not found" );
-                }
-            }
-            return true;
-        }
-
-        @Override
-        public void file( File file )
-        {
-            xids.clear();
-            System.out.println( "=== " + file + " ===" );
-        }
-
-        @Override
-        public void done( File file )
-        {
-            for ( List<Xid> xid : xids.values() )
-            {
-                System.out.println( "dangling " + xid );
-            }
-        }
-    };
-
-    public static final LogHook<Pair<Byte, List<byte[]>>> DUMP = new LogHook<Pair<Byte,List<byte[]>>>()
-    {
-        private int recordCount = 0;
-
-        @Override
-        public boolean accept( Pair<Byte, List<byte[]>> item )
-        {
-            System.out.println( stringifyTxLogType( item.first().byteValue() ) + ": " +
-                    stringifyTxLogBody( item.other() ) );
-            recordCount++;
-            return true;
-        }
-
-        @Override
-        public void file( File file )
-        {
-            System.out.println( "=== File:" + file + " ===" );
-            recordCount = 0;
-        }
-
-        @Override
-        public void done( File file )
-        {
-            System.out.println( "===> Read " + recordCount + " records from " + file );
-        }
-    };
-
-    public static LogHook<LogEntry> findLastTransactionIdentifier( final AtomicInteger target )
-    {
-        return new LogHookAdapter<LogEntry>()
-        {
-            @Override
-            public boolean accept( LogEntry item )
-            {
-                target.set( max( target.get(), item.getIdentifier() ) );
-                return true;
-            }
-        };
-    }
-
-    private static String stringifyTxLogType( byte recordType )
-    {
-        switch ( recordType )
-        {
-        case TxLog.TX_START: return "TX_START";
-        case TxLog.BRANCH_ADD: return "BRANCH_ADD";
-        case TxLog.MARK_COMMIT: return "MARK_COMMIT";
-        case TxLog.TX_DONE: return "TX_DONE";
-        default: return "Unknown " + recordType;
-        }
-    }
-
-    private static String stringifyTxLogBody( List<byte[]> list )
-    {
-        if ( list.size() == 2 )
-        {
-            return new XidImpl( list.get( 0 ), list.get( 1 ) ).toString();
-        }
-        else if ( list.size() == 1 )
-        {
-            return stripFromBranch( new XidImpl( list.get( 0 ), new byte[0] ).toString() );
-        }
-        throw new RuntimeException( list.toString() );
-    }
-
-    private static String stripFromBranch( String xidToString )
-    {
-        int index = xidToString.lastIndexOf( ", BranchId" );
-        return xidToString.substring( 0, index );
-    }
-
-    private static class ByteArray
-    {
-        private final byte[] bytes;
-
-        public ByteArray( byte[] bytes )
-        {
-            this.bytes = bytes;
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            return Arrays.equals( bytes, ((ByteArray)obj).bytes );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Arrays.hashCode( bytes );
-        }
-    }
 
     public static class CountingLogHook<RECORD> extends LogHookAdapter<RECORD>
     {
@@ -262,97 +110,6 @@ public class LogTestUtils
         }
     }
 
-    public static void filterTxLog( FileSystemAbstraction fileSystem, String storeDir,
-            LogHook<Pair<Byte, List<byte[]>>> filter ) throws IOException
-    {
-        filterTxLog( fileSystem, storeDir, filter, 0 );
-    }
-
-    public static void filterTxLog( FileSystemAbstraction fileSystem, String storeDir,
-            LogHook<Pair<Byte, List<byte[]>>> filter, long startPosition ) throws IOException
-    {
-        for ( File file : oneOrTwo( fileSystem, new File( storeDir, "tm_tx_log" ) ) )
-        {
-            filterTxLog( fileSystem, file, filter, startPosition );
-        }
-    }
-
-    public static void filterTxLog( FileSystemAbstraction fileSystem, File file,
-            LogHook<Pair<Byte, List<byte[]>>> filter ) throws IOException
-    {
-        filterTxLog( fileSystem, file, filter, 0 );
-    }
-
-    public static void filterTxLog( FileSystemAbstraction fileSystem, File file,
-            LogHook<Pair<Byte, List<byte[]>>> filter, long startPosition ) throws IOException
-    {
-        File tempFile = new File( file.getPath() + ".tmp" );
-        fileSystem.deleteFile( tempFile );
-        StoreChannel in = fileSystem.open( file, "r" );
-        in.position( startPosition );
-        StoreChannel out = fileSystem.open( tempFile, "rw" );
-        LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( ByteCounterMonitor.class ) );
-        ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
-        boolean changed = false;
-        try
-        {
-            filter.file( file );
-            in.read( buffer );
-            buffer.flip();
-            while ( buffer.hasRemaining() )
-            {
-                byte type = buffer.get();
-                List<byte[]> xids = null;
-                if ( type == TxLog.TX_START )
-                {
-                    xids = readXids( buffer, 1 );
-                }
-                else if ( type == TxLog.BRANCH_ADD )
-                {
-                    xids = readXids( buffer, 2 );
-                }
-                else if ( type == TxLog.MARK_COMMIT )
-                {
-                    xids = readXids( buffer, 1 );
-                }
-                else if ( type == TxLog.TX_DONE )
-                {
-                    xids = readXids( buffer, 1 );
-                }
-                else
-                {
-                    throw new IllegalArgumentException( "Unknown type:" + type + ", position:" +
-                            (in.position()-buffer.remaining()) );
-                }
-                if ( filter.accept( Pair.of( type, xids ) ) )
-                {
-                    outBuffer.put( type );
-                    writeXids( xids, outBuffer );
-                }
-                else
-                {
-                    changed = true;
-                }
-            }
-        }
-        finally
-        {
-            safeClose( in );
-            outBuffer.force();
-            safeClose( out );
-            filter.done( file );
-        }
-
-        if ( changed )
-        {
-            replace( tempFile, file );
-        }
-        else
-        {
-            tempFile.delete();
-        }
-    }
-
     public static void assertLogContains( FileSystemAbstraction fileSystem, String logPath,
             LogEntry ... expectedEntries ) throws IOException
     {
@@ -365,22 +122,24 @@ public class LogTestUtils
 
             // Read all log entries
             final List<LogEntry> entries = new ArrayList<>();
-            LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
+            LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
 
 
-            Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
+            Visitor<LogEntry, IOException> visitor = new Visitor<LogEntry, IOException>()
             {
                 @Override
-                public boolean accept( LogEntry entry ) throws IOException
+                public boolean visit( LogEntry entry ) throws IOException
                 {
                     entries.add( entry );
                     return true;
                 }
             };
 
-            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
+            ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel), LogVersionBridge.NO_MORE_CHANNELS, 4096);
+
+            try ( Cursor<IOException> cursor = deserializer.cursor( logChannel, visitor ) )
             {
-                cursor.next( consumer );
+                cursor.next();
             }
 
             // Assert entries are what we expected
@@ -412,9 +171,16 @@ public class LogTestUtils
     public static File[] filterNeostoreLogicalLog( FileSystemAbstraction fileSystem,
             String storeDir, LogHook<LogEntry> filter ) throws IOException
     {
-        List<File> files = new ArrayList<>( asList(
-                oneOrTwo( fileSystem, new File( storeDir, LOGICAL_LOG_DEFAULT_NAME ) ) ) );
-        gatherHistoricalLogicalLogFiles( fileSystem, storeDir, files );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( new File( storeDir ), fileSystem );
+        final List<File> files = new ArrayList<>();
+        logFiles.accept( new LogVersionVisitor()
+        {
+            @Override
+            public void visit( File file, long logVersion )
+            {
+                files.add( file );
+            }
+        } );
         for ( File file : files )
         {
             File filteredLog = filterNeostoreLogicalLog( fileSystem, file, filter );
@@ -424,138 +190,46 @@ public class LogTestUtils
         return files.toArray( new File[files.size()] );
     }
 
-    private static void gatherHistoricalLogicalLogFiles( FileSystemAbstraction fileSystem, String storeDir,
-            List<File> files )
-    {
-        long highestVersion = getHighestHistoryLogVersion( fileSystem, new File( storeDir ), LOGICAL_LOG_DEFAULT_NAME );
-        for ( long version = 0; version <= highestVersion; version++ )
-        {
-            File versionFile = getHistoryFileName( new File( storeDir, LOGICAL_LOG_DEFAULT_NAME ), version );
-            if ( fileSystem.fileExists( versionFile ) )
-            {
-                files.add( versionFile );
-            }
-        }
-    }
-
-    public static File filterNeostoreLogicalLog( FileSystemAbstraction fileSystem, File file, final LogHook<LogEntry> filter )
+    public static File filterNeostoreLogicalLog( FileSystemAbstraction fileSystem, File file,
+            final LogHook<LogEntry> filter )
             throws IOException
     {
         filter.file( file );
         File tempFile = new File( file.getAbsolutePath() + ".tmp" );
         fileSystem.deleteFile( tempFile );
-        StoreChannel in = fileSystem.open( file, "r" );
-        StoreChannel out = fileSystem.open( tempFile, "rw" );
-        final LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( ByteCounterMonitor.class ) );
-        ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
-        transferLogicalLogHeader( in, outBuffer, buffer );
-        final LogEntryWriterv1 writer = new LogEntryWriterv1();
-        writer.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
-
-        LogDeserializer deserializer =
-                new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
-
-        Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
+        try ( StoreChannel in = fileSystem.open( file, "r" );
+                StoreChannel out = fileSystem.open( tempFile, "rw" ) )
         {
-            @Override
-            public boolean accept( LogEntry entry ) throws IOException
+            final WritableLogChannel outBuffer = new PhysicalWritableLogChannel(
+                    new PhysicalLogVersionedStoreChannel( out ) );
+            ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
+            LogEntryWriter entryWriter = new LogEntryWriterv1( outBuffer, new CommandWriter( outBuffer ) );
+            transferLogicalLogHeader( in, outBuffer, buffer );
+
+            ReadableLogChannel inBuffer = new ReadAheadLogChannel( new PhysicalLogVersionedStoreChannel( in ),
+                    LogVersionBridge.NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
+            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader(
+                    CommandReaderFactory.DEFAULT );
+            LogEntry entry;
+            while ( (entry = entryReader.readLogEntry( inBuffer )) != null )
             {
-                boolean accepted = filter.accept( entry );
-                if ( accepted )
-                {
-                    writer.writeLogEntry( entry, outBuffer );
+                if ( filter.accept( entry ) )
+                {   // TODO allright, write to outBuffer
                 }
-                return true;
             }
-        };
-
-        try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( in ) )
-        {
-            while ( cursor.next( consumer ) );
-        }
-        finally
-        {
-            safeClose( in );
-            outBuffer.force();
-            safeClose( out );
-            filter.done( file );
         }
 
         return tempFile;
     }
 
-    private static void transferLogicalLogHeader( StoreChannel in, LogBuffer outBuffer,
+    private static void transferLogicalLogHeader( StoreChannel in, WritableLogChannel outBuffer,
             ByteBuffer buffer ) throws IOException
     {
         long[] header = VersionAwareLogEntryReader.readLogHeader( buffer, in, true );
         VersionAwareLogEntryReader.writeLogHeader( buffer, header[0], header[1] );
         byte[] headerBytes = new byte[buffer.limit()];
         buffer.get( headerBytes );
-        outBuffer.put( headerBytes );
-    }
-
-    private static void safeClose( StoreChannel channel )
-    {
-        try
-        {
-            if ( channel != null )
-            {
-                channel.close();
-            }
-        }
-        catch ( IOException e )
-        {   // OK
-        }
-    }
-
-    private static void writeXids( List<byte[]> xids, LogBuffer outBuffer ) throws IOException
-    {
-        for ( byte[] xid : xids )
-        {
-            outBuffer.put( (byte)xid.length );
-        }
-        for ( byte[] xid : xids )
-        {
-            outBuffer.put( xid );
-        }
-    }
-
-    private static List<byte[]> readXids( ByteBuffer buffer, int count )
-    {
-        byte[] counts = new byte[count];
-        for ( int i = 0; i < count; i++ )
-        {
-            counts[i] = buffer.get();
-        }
-        List<byte[]> xids = new ArrayList<>();
-        for ( int i = 0; i < count; i++ )
-        {
-            xids.add( readXid( buffer, counts[i] ) );
-        }
-        return xids;
-    }
-
-    private static byte[] readXid( ByteBuffer buffer, byte length )
-    {
-        byte[] bytes = new byte[length];
-        buffer.get( bytes );
-        return bytes;
-    }
-
-    public static File[] oneOrTwo( FileSystemAbstraction fileSystem, File file )
-    {
-        List<File> files = new ArrayList<>();
-        File one = new File( file.getPath() + ".1" );
-        if ( fileSystem.fileExists( one ) )
-        {
-            files.add( one );
-        }
-        File two = new File( file.getPath() + ".2" );
-        if ( fileSystem.fileExists( two ) )
-        {
-            files.add( two );
-        }
-        return files.toArray( new File[files.size()] );
+        outBuffer.put( headerBytes, headerBytes.length );
     }
 
     public static NonCleanLogCopy copyLogicalLog( FileSystemAbstraction fileSystem,

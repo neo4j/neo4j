@@ -28,7 +28,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Runtime.getRuntime;
@@ -43,7 +42,7 @@ import static org.neo4j.test.TargetDirectory.forTest;
 public class TestRecoveryMultipleDataSources
 {
     private static final String dir = forTest( TestRecoveryMultipleDataSources.class ).makeGraphDbDir().getAbsolutePath();
-    
+
     /**
      * Tests an issue where loading all relationship types and property indexes after
      * the neostore data source had been started internally. The db would be in a
@@ -60,7 +59,7 @@ public class TestRecoveryMultipleDataSources
         deleteRecursively( new File( dir ) );
         assertEquals( 0, getRuntime().exec( new String[] { "java", "-cp", getProperty( "java.class.path" ),
                 getClass().getName() } ).waitFor() );
-        
+
         // When
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir );
 
@@ -82,8 +81,9 @@ public class TestRecoveryMultipleDataSources
         db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
         tx.success();
         tx.close();
-        
-        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
+
+        // TODO 2.2-future
+//        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
         tx = db.beginTx();
         db.index().forNodes( "index" ).add( db.createNode(), dir, db.createNode() );
         tx.success();

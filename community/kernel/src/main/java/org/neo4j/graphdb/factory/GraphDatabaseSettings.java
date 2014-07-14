@@ -110,10 +110,6 @@ public abstract class GraphDatabaseSettings
             "setting. This should generally not be changed.")
     public static final Setting<File> neo_store = setting("neo_store", PATH, "neostore", basePath(store_dir) );
 
-    @Description("The base name for the logical log files, either an absolute path or relative to the store_dir " +
-            "setting. This should generally not be changed.")
-    public static final Setting<File> logical_log = setting("logical_log", PATH, "nioneo_logical.log", basePath(store_dir));
-
     // Remote logging
     @Description("Whether to enable logging to a remote server or not.")
     public static final Setting<Boolean> remote_logging_enabled = setting("remote_logging_enabled", BOOLEAN, FALSE );

@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.guard;
 
-import static java.lang.System.currentTimeMillis;
-
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.lang.System.currentTimeMillis;
 
 public class Guard
 {
-
     private final ThreadLocal<GuardInternal> threadLocal = new ThreadLocal<GuardInternal>();
 
     private final StringLogger logger;
@@ -77,13 +76,11 @@ public class Guard
 
     public interface GuardInternal
     {
-
         void check();
     }
 
     public class OperationsCount implements GuardInternal
     {
-
         private final long max;
         private long opsCount = 0;
 
@@ -112,7 +109,6 @@ public class Guard
 
     public class Timeout implements GuardInternal
     {
-
         private final long valid;
         private final long start;
 

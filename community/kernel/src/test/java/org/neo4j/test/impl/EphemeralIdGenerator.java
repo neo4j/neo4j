@@ -27,9 +27,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 
@@ -37,7 +37,7 @@ public class EphemeralIdGenerator implements IdGenerator
 {
     public static class Factory implements IdGeneratorFactory
     {
-        private final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
+        protected final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
 
         @Override
         public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
@@ -86,7 +86,10 @@ public class EphemeralIdGenerator implements IdGenerator
         if ( freeList != null )
         {
             Long id = freeList.poll();
-            if ( id != null ) return id.longValue();
+            if ( id != null )
+            {
+                return id.longValue();
+            }
         }
         return nextId.getAndIncrement();
     }
@@ -112,8 +115,14 @@ public class EphemeralIdGenerator implements IdGenerator
     @Override
     public void freeId( long id )
     {
-        if (freeList != null) freeList.add( id );
-        else freedButNotReturnableIdCount.getAndIncrement();
+        if (freeList != null)
+        {
+            freeList.add( id );
+        }
+        else
+        {
+            freedButNotReturnableIdCount.getAndIncrement();
+        }
     }
 
     @Override
@@ -137,5 +146,11 @@ public class EphemeralIdGenerator implements IdGenerator
     @Override
     public void delete()
     {
+    }
+
+    @Override
+    public long getHighestPossibleIdInUse()
+    {
+        return nextId.get();
     }
 }

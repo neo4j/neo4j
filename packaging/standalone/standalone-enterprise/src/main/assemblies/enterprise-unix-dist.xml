@@ -106,7 +106,6 @@
       <useStrictFiltering>true</useStrictFiltering>
       <includes>
         <include>org.neo4j:*</include>
-        <include>org.apache.geronimo.specs:geronimo-jta_1.1_spec</include>
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
         <include>org.apache.lucene:lucene-core</include>
         <include>io.netty:netty</include>
@@ -117,7 +116,6 @@
         <include>net.sf.opencsv:opencsv</include>
       </includes>
       <excludes>
-        <exclude>*:javadoc:*</exclude>
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j-enterprise:jar</exclude>
         <exclude>org.neo4j:neo4j-advanced</exclude>
@@ -134,7 +132,6 @@
       <excludes>
         <exclude>org.neo4j:*</exclude>
         <exclude>org.neo4j.doc:*</exclude>
-        <exclude>org.apache.geronimo.specs:geronimo-jta_1.1_spec</exclude>
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
         <exclude>org.apache.lucene:lucene-core</exclude>
         <exclude>io.netty:netty</exclude>

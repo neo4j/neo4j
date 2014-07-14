@@ -19,36 +19,30 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.functions
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class PercentileContTest extends FunctionTestBase("percentileCont") {
 
   override val context = SemanticContext.Results
 
-  @Test
-  def shouldHandleAllSpecializations() {
+  test("shouldHandleAllSpecializations") {
     testValidTypes(CTInteger, CTInteger)(CTFloat)
     testValidTypes(CTInteger, CTFloat)(CTFloat)
     testValidTypes(CTFloat, CTInteger)(CTFloat)
     testValidTypes(CTFloat, CTFloat)(CTFloat)
   }
 
-  @Test
-  def shouldHandleCombinedSpecializations() {
+  test("shouldHandleCombinedSpecializations") {
     testValidTypes(CTFloat | CTInteger, CTFloat | CTInteger)(CTFloat)
   }
 
-  @Test
-  def shouldFailIfWrongArguments() {
+  test("shouldFailIfWrongArguments") {
     testInvalidApplication(CTFloat)("Insufficient parameters for function 'percentileCont'")
     testInvalidApplication(CTFloat, CTFloat, CTFloat)("Too many parameters for function 'percentileCont'")
   }
 
-  @Test
-  def shouldFailTypeCheckWhenAddingIncompatible() {
+  test("shouldFailTypeCheckWhenAddingIncompatible") {
     testInvalidApplication(CTInteger, CTBoolean)(
       "Type mismatch: expected Float but was Boolean"
     )

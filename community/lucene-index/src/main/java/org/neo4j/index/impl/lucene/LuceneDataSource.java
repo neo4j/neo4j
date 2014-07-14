@@ -22,18 +22,14 @@ package org.neo4j.index.impl.lucene;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import javax.transaction.TransactionManager;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
@@ -41,8 +37,6 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
@@ -60,49 +54,23 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
-import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.index.IndexProviderStore;
-import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
-import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
-import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
-import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
-import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
@@ -111,20 +79,16 @@ import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
  * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
  * This class is public because the XA framework requires it.
  */
-public class LuceneDataSource extends LogBackedXaDataSource
+public class LuceneDataSource implements Lifecycle
 {
     private final Config config;
     private final FileSystemAbstraction fileSystemAbstraction;
 
     public static abstract class Configuration
-            extends LogBackedXaDataSource.Configuration
     {
-        public static final Setting<Integer> lucene_searcher_cache_size = GraphDatabaseSettings
-                .lucene_searcher_cache_size;
-
+        public static final Setting<Integer> lucene_searcher_cache_size = GraphDatabaseSettings.lucene_searcher_cache_size;
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
         public static final Setting<Boolean> allow_store_upgrade = GraphDatabaseSettings.allow_store_upgrade;
-
         public static final Setting<Boolean> ephemeral = InternalAbstractGraphDatabase.Configuration.ephemeral;
         public static final Setting<File> store_dir = NeoStoreXaDataSource.Configuration.store_dir;
     }
@@ -132,12 +96,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
     public static final Version LUCENE_VERSION = Version.LUCENE_36;
     public static final String DEFAULT_NAME = "lucene-index";
     public static final byte[] DEFAULT_BRANCH_ID = UTF8.encode( "162374" );
-    
     // The reason this is still 3.5 even though the lucene version is 3.6 the format is compatible
     // (both forwards and backwards) with lucene 3.5 and changing this would require an explicit
     // store upgrade which feels unnecessary.
     public static final long INDEX_VERSION = versionStringToLong( "3.5" );
-
     /**
      * Default {@link Analyzer} for fulltext parsing.
      */
@@ -155,7 +117,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
             return "LOWER_CASE_WHITESPACE_ANALYZER";
         }
     };
-
     public static final Analyzer WHITESPACE_ANALYZER = new Analyzer()
     {
         @Override
@@ -170,42 +131,27 @@ public class LuceneDataSource extends LogBackedXaDataSource
             return "WHITESPACE_ANALYZER";
         }
     };
-
     public static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
-
     private IndexClockCache indexSearchers;
-    private XaContainer xaContainer;
     private File baseStorePath;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    final IndexStore indexStore;
-    private final XaFactory xaFactory;
-    private final TransactionManager txManager;
-    IndexProviderStore providerStore;
+    final IndexConfigStore indexStore;
     private IndexTypeCache typeCache;
     private boolean closed;
     private Cache caching;
-    EntityType nodeEntityType;
-    EntityType relationshipEntityType;
-    final Map<IndexIdentifier, LuceneIndex<? extends PropertyContainer>> indexes =
-            new HashMap<IndexIdentifier, LuceneIndex<? extends PropertyContainer>>();
     private LuceneFilesystemFacade filesystemFacade;
-
     // Used for assertion after recovery has been completed.
-    private final Set<IndexIdentifier> expectedFutureRecoveryDeletions = new HashSet<IndexIdentifier>();
+    private final Set<IndexIdentifier> expectedFutureRecoveryDeletions = new HashSet<>();
 
     /**
      * Constructs this data source.
      * @throws InstantiationException if the data source couldn't be
      *                                instantiated
      */
-    public LuceneDataSource( Config config, IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction,
-                             XaFactory xaFactory, TransactionManager txManager )
+    public LuceneDataSource( Config config, IndexConfigStore indexStore, FileSystemAbstraction fileSystemAbstraction )
     {
-        super( DEFAULT_BRANCH_ID, DEFAULT_NAME );
         this.config = config;
         this.indexStore = indexStore;
-        this.xaFactory = xaFactory;
-        this.txManager = txManager;
         this.typeCache = new IndexTypeCache( indexStore );
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
@@ -218,89 +164,21 @@ public class LuceneDataSource extends LogBackedXaDataSource
     @Override
     public void start()
     {
-        this.filesystemFacade = config.get( Configuration.ephemeral ) ? LuceneFilesystemFacade.MEMORY :
-                LuceneFilesystemFacade.FS;
+        this.filesystemFacade = config.get( Configuration.ephemeral ) ? LuceneFilesystemFacade.MEMORY
+                : LuceneFilesystemFacade.FS;
         indexSearchers = new IndexClockCache( config.get( Configuration.lucene_searcher_cache_size ) );
         caching = new Cache();
         File storeDir = config.get( Configuration.store_dir );
-        this.baseStorePath =
-                this.filesystemFacade.ensureDirectoryExists( fileSystemAbstraction, baseDirectory( storeDir ) );
+        this.baseStorePath = this.filesystemFacade.ensureDirectoryExists( fileSystemAbstraction,
+                baseDirectory( storeDir ) );
         this.filesystemFacade.cleanWriteLocks( baseStorePath );
         boolean allowUpgrade = config.get( Configuration.allow_store_upgrade );
-        this.providerStore = newIndexStore( baseStorePath, fileSystemAbstraction, allowUpgrade );
         this.typeCache = new IndexTypeCache( indexStore );
         boolean isReadOnly = config.get( Configuration.read_only );
-
-        nodeEntityType = new EntityType()
-        {
-            @Override
-            public Document newDocument( Object entityId )
-            {
-                return IndexType.newBaseDocument( (Long) entityId );
-            }
-
-            @Override
-            public Class<? extends PropertyContainer> getType()
-            {
-                return Node.class;
-            }
-        };
-        relationshipEntityType = new EntityType()
-        {
-            @Override
-            public Document newDocument( Object entityId )
-            {
-                RelationshipId relId = (RelationshipId) entityId;
-                Document doc = IndexType.newBaseDocument( relId.id );
-                doc.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + relId.startNode,
-                        Store.YES, org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
-                doc.add( new Field( LuceneIndex.KEY_END_NODE_ID, "" + relId.endNode,
-                        Store.YES, org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
-                return doc;
-            }
-
-            @Override
-            public Class<? extends PropertyContainer> getType()
-            {
-                return Relationship.class;
-            }
-        };
-
-        XaCommandReaderFactory commandReaderFactory = new LuceneCommandReaderFactory( nodeEntityType,
-                relationshipEntityType );
-        XaCommandWriterFactory commandWriterFactory = new LuceneCommandWriterFactory();
-        XaTransactionFactory tf = new LuceneTransactionFactory();
-        DependencyResolver dummy = new DependencyResolver.Adapter()
-        {
-            @Override
-            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
-            {
-                return (T) LuceneDataSource.this.config;
-            }
-        };
-        xaContainer = xaFactory.newXaContainer( this, logBaseName(baseStorePath), commandReaderFactory,
-                commandWriterFactory, InjectedTransactionValidator.ALLOW_ALL, tf, TransactionStateFactory.noStateFactory( null ),
-                new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ), false,
-                new LuceneLogTranslator() );
         closed = false;
         if ( !isReadOnly )
-        {
-            try
-            {
-                xaContainer.openLogicalLog();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( "Unable to open lucene log in " + this.baseStorePath, e );
-            }
-
-            setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
+        {   // TODO do something special if so?
         }
-    }
-
-    private File logBaseName(File baseDirectory)
-    {
-        return new File( baseDirectory, "lucene.log");
     }
 
     private File baseDirectory( File storeDir )
@@ -313,19 +191,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return typeCache.getIndexType( identifier, recovery );
     }
 
-    private IndexProviderStore newIndexStore( File dbStoreDir, FileSystemAbstraction fileSystem,
-                                              boolean allowUpgrade )
-    {
-        File file = new File( dbStoreDir, "lucene-store.db");
-        return new IndexProviderStore( file, fileSystem, INDEX_VERSION, allowUpgrade );
-    }
-
     @Override
     public void stop()
     {
         synchronized ( this )
         {
-            super.stop();
             if ( closed )
             {
                 return;
@@ -344,12 +214,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
             indexSearchers.clear();
         }
-
-        if ( xaContainer != null )
-        {
-            xaContainer.close();
-        }
-        providerStore.close();
     }
 
     @Override
@@ -357,156 +221,25 @@ public class LuceneDataSource extends LogBackedXaDataSource
     {
     }
 
-    public Index<Node> nodeIndex( String indexName, GraphDatabaseService graphDb,
-                                  LuceneIndexImplementation luceneIndexImplementation )
-    {
-        IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE,
-                nodeEntityType, indexName );
-        synchronized ( indexes )
-        {
-            LuceneIndex index = indexes.get( identifier );
-            if ( index == null )
-            {
-                index = new LuceneIndex.NodeIndex( luceneIndexImplementation, graphDb, identifier, txManager );
-                indexes.put( identifier, index );
-            }
-            return index;
-        }
-    }
-
-    public RelationshipIndex relationshipIndex( String indexName,
-                                                GraphDatabaseService gdb,
-                                                LuceneIndexImplementation luceneIndexImplementation
-    )
-    {
-        IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.RELATIONSHIP,
-                relationshipEntityType, indexName );
-        synchronized ( indexes )
-        {
-            LuceneIndex index = indexes.get( identifier );
-            if ( index == null )
-            {
-                index = new LuceneIndex.RelationshipIndex( luceneIndexImplementation, gdb, identifier, txManager );
-                indexes.put( identifier, index );
-            }
-            return (RelationshipIndex) index;
-        }
-    }
-
-    @Override
-    public XaConnection getXaConnection()
-    {
-        return new LuceneXaConnection( baseStorePath, xaContainer
-                .getResourceManager(), getBranchId() );
-    }
-
-    public static class LuceneCommandReaderFactory implements XaCommandReaderFactory
-    {
-        private final EntityType nodeEntityType;
-        private final EntityType relationshipEntityType;
-
-        public LuceneCommandReaderFactory( EntityType nodeEntityType, EntityType relationshipEntityType )
-        {
-            this.nodeEntityType = nodeEntityType;
-            this.relationshipEntityType = relationshipEntityType;
-        }
-
-        @Override
-        public XaCommandReader newInstance( byte logEntryVersion, final ByteBuffer scratch )
-        {
-            return new XaCommandReader()
-            {
-                @Override
-                public XaCommand read( ReadableByteChannel channel ) throws IOException
-                {
-                    return LuceneCommand.readCommand( channel, scratch, nodeEntityType, relationshipEntityType );
-                }
-            };
-        }
-    }
-
-    private static class LuceneCommandWriterFactory implements XaCommandWriterFactory
-    {
-        @Override
-        public XaCommandWriter newInstance()
-        {
-            return new XaCommandWriter()
-            {
-                @Override
-                public void write( XaCommand command, LogBuffer buffer ) throws IOException
-                {
-                    ((LuceneCommand) command).writeToFile( buffer );
-                }
-            };
-        }
-    }
-
-    private class LuceneTransactionFactory extends XaTransactionFactory
-    {
-        @Override
-        public XaTransaction create( long lastCommittedTxWhenTransactionStarted, TransactionState state)
-        {
-            return createTransaction( this.getLogicalLog(), state );
-        }
-
-        @Override
-        public void flushAll()
-        {
-            for ( IndexReference index : getAllIndexes() )
-            {
-                try
-                {
-                    index.getWriter().commit();
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( "unable to commit changes to " + index.getIdentifier(), e );
-                }
-            }
-            providerStore.flush();
-        }
-
-        @Override
-        public void recoveryComplete()
-        {
-            if ( !expectedFutureRecoveryDeletions.isEmpty() )
-            {
-                throw new TransactionFailureException( "Recovery discovered transactions which couldn't " +
-                        "be applied due to a future index deletion, however some expected deletions " +
-                        "weren't encountered: " + expectedFutureRecoveryDeletions );
-            }
-        }
-
-        @Override
-        public long getCurrentVersion()
-        {
-            return providerStore.getVersion();
-        }
-
-        @Override
-        public long getAndSetNewVersion()
-        {
-            return providerStore.incrementVersion();
-        }
-
-        @Override
-        public void setVersion( long version )
-        {
-            providerStore.setVersion( version );
-        }
-
-        @Override
-        public long getLastCommittedTx()
-        {
-            return providerStore.getLastCommittedTx();
-        }
-    }
-
     private synchronized IndexReference[] getAllIndexes()
     {
         Collection<IndexReference> indexReferences = indexSearchers.values();
-
         return indexReferences.toArray( new IndexReference[indexReferences.size()] );
+    }
+
+    void force()
+    {
+        for ( IndexReference index : getAllIndexes() )
+        {
+            try
+            {
+                index.getWriter().commit();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( "unable to commit changes to " + index.getIdentifier(), e );
+            }
+        }
     }
 
     void getReadLock()
@@ -562,33 +295,19 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
 
-    static File getFileDirectory( File storeDir, byte entityType )
+    static File getFileDirectory( File storeDir, IndexEntityType type )
     {
         File path = new File( storeDir, "lucene" );
-        String extra = null;
-        if ( entityType == LuceneCommand.NODE )
-        {
-            extra = "node";
-        }
-        else if ( entityType == LuceneCommand.RELATIONSHIP )
-        {
-            extra = "relationship";
-        }
-        else
-        {
-            throw new RuntimeException( "" + entityType );
-        }
+        String extra = type.name();
         return new File( path, extra );
     }
 
     static File getFileDirectory( File storeDir, IndexIdentifier identifier )
     {
-        return new File( getFileDirectory( storeDir, identifier.entityTypeByte ),
-                identifier.indexName );
+        return new File( getFileDirectory( storeDir, identifier.entityType ), identifier.indexName );
     }
 
-    static Directory getDirectory( File storeDir,
-                                   IndexIdentifier identifier ) throws IOException
+    static Directory getDirectory( File storeDir, IndexIdentifier identifier ) throws IOException
     {
         return FSDirectory.open( getFileDirectory( storeDir, identifier ) );
     }
@@ -606,7 +325,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             return syncGetIndexSearcher( identifier );
         }
-
         synchronized ( searcher )
         {
             /*
@@ -686,11 +404,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return searcher;
     }
 
-    XaTransaction createTransaction( XaLogicalLog logicalLog, TransactionState state )
-    {
-        return new LuceneTransaction( logicalLog, state, this );
-    }
-
     void invalidateIndexSearcher( IndexIdentifier identifier )
     {
         IndexReference searcher = indexSearchers.get( identifier );
@@ -705,21 +418,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
         closeIndex( identifier );
         deleteFileOrDirectory( getFileDirectory( baseStorePath, identifier ) );
         invalidateCache( identifier );
-        boolean removeFromIndexStore = !recovery || (recovery &&
-                indexStore.has( identifier.entityType.getType(), identifier.indexName ));
+        boolean removeFromIndexStore = !recovery
+                || (recovery && indexStore.has( identifier.entityType.entityClass(), identifier.indexName ));
         if ( removeFromIndexStore )
         {
-            indexStore.remove( identifier.entityType.getType(), identifier.indexName );
+            indexStore.remove( identifier.entityType.entityClass(), identifier.indexName );
         }
         typeCache.invalidate( identifier );
-        synchronized ( indexes )
-        {
-            LuceneIndex<? extends PropertyContainer> index = indexes.remove( identifier );
-            if ( index != null )
-            {
-                index.markAsDeleted();
-            }
-        }
     }
 
     private static void deleteFileOrDirectory( File file )
@@ -737,7 +442,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
 
-    private /*synchronized elsewhere*/ IndexWriter newIndexWriter( IndexIdentifier identifier )
+    private/*synchronized elsewhere*/IndexWriter newIndexWriter( IndexIdentifier identifier )
     {
         assertNotClosed();
         try
@@ -754,12 +459,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 writerConfig.setSimilarity( similarity );
             }
             IndexWriter indexWriter = new IndexWriter( dir, writerConfig );
-
             // TODO We should tamper with this value and see how it affects the
             // general performance. Lucene docs says rather <10 for mixed
             // reads/writes
-//            writer.setMergeFactor( 8 );
-
+            //            writer.setMergeFactor( 8 );
             return indexWriter;
         }
         catch ( IOException e )
@@ -803,9 +506,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
         List<Fieldable> fields = document.getFields();
         for ( Fieldable field : fields )
         {
-            if ( !(LuceneIndex.KEY_DOC_ID.equals( field.name() ) ||
-                   LuceneIndex.KEY_END_NODE_ID.equals( field.name() ) ||
-                   LuceneIndex.KEY_START_NODE_ID.equals( field.name() )))
+            if ( !(LuceneIndex.KEY_DOC_ID.equals( field.name() ) || LuceneIndex.KEY_END_NODE_ID.equals( field.name() ) || LuceneIndex.KEY_START_NODE_ID
+                    .equals( field.name() )) )
             {
                 return false;
             }
@@ -872,52 +574,15 @@ public class LuceneDataSource extends LogBackedXaDataSource
         this.caching.disable( identifier );
     }
 
-    @Override
-    public long getCreationTime()
-    {
-        return providerStore.getCreationTime();
-    }
-
-    @Override
-    public long getRandomIdentifier()
-    {
-        return providerStore.getRandomNumber();
-    }
-
-    @Override
-    public long getCurrentLogVersion()
-    {
-        return providerStore.getVersion();
-    }
-
-    @Override
-    public long getLastCommittedTxId()
-    {
-        return providerStore.getLastCommittedTx();
-    }
-
-    @Override
-    public void setLastCommittedTxId( long txId )
-    {
-        providerStore.setLastCommittedTx( txId );
-    }
-
-    @Override
-    public XaContainer getXaContainer()
-    {
-        return this.xaContainer;
-    }
-
-    @Override
     public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
-    {   // Never include logical logs since they are of little importance
+    { // Never include logical logs since they are of little importance
         final Collection<File> files = new ArrayList<>();
         final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<>();
         makeSureAllIndexesAreInstantiated();
         for ( IndexReference writer : getAllIndexes() )
         {
-            SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy)
-                    writer.getWriter().getConfig().getIndexDeletionPolicy();
+            SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) writer.getWriter().getConfig()
+                    .getIndexDeletionPolicy();
             File indexDirectory = getFileDirectory( baseStorePath, writer.getIdentifier() );
             try
             {
@@ -939,17 +604,16 @@ public class LuceneDataSource extends LogBackedXaDataSource
                  */
             }
         }
-        files.add( providerStore.getFile() );
         return new PrefetchingResourceIterator<File>()
         {
             private final Iterator<File> filesIterator = files.iterator();
-            
+
             @Override
             protected File fetchNextOrNull()
             {
                 return filesIterator.hasNext() ? filesIterator.next() : null;
             }
-            
+
             @Override
             public void close()
             {
@@ -969,29 +633,14 @@ public class LuceneDataSource extends LogBackedXaDataSource
         };
     }
 
-    @Override
     public ResourceIterator<File> listStoreFiles() throws IOException
     {
         return listStoreFiles( false );
     }
 
-    @Override
     public ResourceIterator<File> listLogicalLogs() throws IOException
     {
         return IteratorUtil.emptyIterator();
-    }
-
-    @Override
-    public LogBufferFactory createLogBufferFactory()
-    {
-        return xaContainer.getLogicalLog().createLogWriter( new Function<Config, File>()
-        {
-            @Override
-            public File apply( Config config )
-            {
-                return logBaseName( baseDirectory( config.get( GraphDatabaseSettings.store_dir ) ) );
-            }
-        } );
     }
 
     private void makeSureAllIndexesAreInstantiated()
@@ -1001,7 +650,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             Map<String, String> config = indexStore.get( Node.class, name );
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
-                IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE, nodeEntityType, name );
+                IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Node, name );
                 getIndexSearcher( identifier );
             }
         }
@@ -1010,8 +659,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             Map<String, String> config = indexStore.get( Relationship.class, name );
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
-                IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.RELATIONSHIP, relationshipEntityType,
-                        name );
+                IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Relationship, name );
                 getIndexSearcher( identifier );
             }
         }
@@ -1020,75 +668,73 @@ public class LuceneDataSource extends LogBackedXaDataSource
     private static enum LuceneFilesystemFacade
     {
         FS
+        {
+            @Override
+            Directory getDirectory( File baseStorePath, IndexIdentifier identifier ) throws IOException
+            {
+                return FSDirectory.open( getFileDirectory( baseStorePath, identifier ) );
+            }
+
+            @Override
+            void cleanWriteLocks( File dir )
+            {
+                if ( !dir.isDirectory() )
                 {
-                    @Override
-                    Directory getDirectory( File baseStorePath, IndexIdentifier identifier ) throws IOException
+                    return;
+                }
+                for ( File file : dir.listFiles() )
+                {
+                    if ( file.isDirectory() )
                     {
-                        return FSDirectory.open( getFileDirectory( baseStorePath, identifier ) );
+                        cleanWriteLocks( file );
                     }
-
-                    @Override
-                    void cleanWriteLocks( File dir )
+                    else if ( file.getName().equals( "write.lock" ) )
                     {
-                        if ( !dir.isDirectory() )
-                        {
-                            return;
-                        }
-                        for ( File file : dir.listFiles() )
-                        {
-                            if ( file.isDirectory() )
-                            {
-                                cleanWriteLocks( file );
-                            }
-                            else if ( file.getName().equals( "write.lock" ) )
-                            {
-                                boolean success = file.delete();
-                                assert success;
-                            }
-                        }
+                        boolean success = file.delete();
+                        assert success;
                     }
+                }
+            }
 
-                    @Override
-                    File ensureDirectoryExists( FileSystemAbstraction fileSystem, File dir )
-                    {
-                        if ( !dir.exists() && !dir.mkdirs() )
-                        {
-                            String message = String.format( "Unable to create directory path[%s] for Neo4j store" +
-                                    ".", dir.getAbsolutePath() );
-                            throw new RuntimeException( message );
-                        }
-                        return dir;
-
-                    }
-                },
+            @Override
+            File ensureDirectoryExists( FileSystemAbstraction fileSystem, File dir )
+            {
+                if ( !dir.exists() && !dir.mkdirs() )
+                {
+                    String message = String.format( "Unable to create directory path[%s] for Neo4j store" + ".",
+                            dir.getAbsolutePath() );
+                    throw new RuntimeException( message );
+                }
+                return dir;
+            }
+        },
         MEMORY
+        {
+            @Override
+            Directory getDirectory( File baseStorePath, IndexIdentifier identifier )
+            {
+                return new RAMDirectory();
+            }
+
+            @Override
+            void cleanWriteLocks( File path )
+            {
+            }
+
+            @Override
+            File ensureDirectoryExists( FileSystemAbstraction fileSystem, File path )
+            {
+                try
                 {
-                    @Override
-                    Directory getDirectory( File baseStorePath, IndexIdentifier identifier )
-                    {
-                        return new RAMDirectory();
-                    }
-
-                    @Override
-                    void cleanWriteLocks( File path )
-                    {
-                    }
-
-                    @Override
-                    File ensureDirectoryExists( FileSystemAbstraction fileSystem, File path )
-                    {
-                        try
-                        {
-                            fileSystem.mkdirs( path );
-                        }
-                        catch ( IOException e )
-                        {
-                            throw new RuntimeException( e );
-                        }
-                        return path;
-                    }
-                };
-
+                    fileSystem.mkdirs( path );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+                return path;
+            }
+        };
         abstract Directory getDirectory( File baseStorePath, IndexIdentifier identifier ) throws IOException;
 
         abstract File ensureDirectoryExists( FileSystemAbstraction fileSystem, File path );

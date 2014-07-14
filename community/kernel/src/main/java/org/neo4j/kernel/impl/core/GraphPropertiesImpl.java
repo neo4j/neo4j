@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,9 +46,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
-import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
-import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
 
 import static org.neo4j.kernel.api.properties.Property.property;
 
@@ -59,27 +59,21 @@ import static org.neo4j.kernel.api.properties.Property.property;
  */
 public class GraphPropertiesImpl extends Primitive implements GraphProperties
 {
-    private final NodeManager nodeManager;
+    private final long epoch;
     private Map<Integer, DefinedProperty> properties;
     private final ThreadToStatementContextBridge statementContextProvider;
 
-    GraphPropertiesImpl( NodeManager nodeManager, ThreadToStatementContextBridge statementContextProvider )
+    GraphPropertiesImpl( long epoch, ThreadToStatementContextBridge statementContextProvider )
     {
-        super( false );
-        this.nodeManager = nodeManager;
+        this.epoch = epoch;
         this.statementContextProvider = statementContextProvider;
-    }
-
-    @Override
-    public NodeManager getNodeManager()
-    {
-        return nodeManager;
     }
 
     @Override
     public GraphDatabaseService getGraphDatabase()
     {
-        return this.nodeManager.getGraphDbService();
+//        return this.nodeManager.getGraphDbService();
+        throw new UnsupportedOperationException( "Please implement" );
     }
 
     @Override
@@ -95,9 +89,11 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
 
     @Override
-    protected Iterator<DefinedProperty> loadProperties( NodeManager nodeManager )
+    protected Iterator<DefinedProperty> loadProperties( PropertyLoader loader )
     {
-        return nodeManager.loadGraphProperties( false );
+        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
+        loader.graphLoadProperties( receiver );
+        return receiver;
     }
 
     @Override
@@ -164,12 +160,10 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     public void setProperty( String key, Object value )
     {
-        boolean success = false;
         try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             statement.dataWriteOperations().graphSetProperty( property( propertyKeyId, value ) );
-            success = true;
         }
         catch ( IllegalTokenNameException e )
         {
@@ -183,13 +177,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         catch ( ReadOnlyDatabaseKernelException e )
         {
             throw new ReadOnlyDbException();
-        }
-        finally
-        {
-            if ( !success )
-            {
-                nodeManager.setRollbackOnly();
-            }
         }
     }
 
@@ -244,13 +231,13 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     public boolean equals( Object obj )
     {
-        return obj instanceof GraphProperties && ((GraphProperties) obj).getNodeManager().equals( nodeManager );
+        return obj instanceof GraphPropertiesImpl && ((GraphPropertiesImpl) obj).epoch == epoch;
     }
 
     @Override
     public int hashCode()
     {
-        return nodeManager.hashCode();
+        return Long.valueOf( epoch ).hashCode();
     }
 
     @Override
@@ -285,7 +272,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     protected DefinedProperty getPropertyForIndex( int keyId )
     {
         DefinedProperty property = properties.get( keyId );
@@ -312,33 +298,29 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
 
     @Override
-    public CowEntityElement getEntityElement( PrimitiveElement element, boolean create )
-    {
-        return element.graphElement( create );
-    }
-
-    @Override
     PropertyContainer asProxy( NodeManager nm )
     {
         return this;
     }
 
     @Override
-    protected void commitPropertyMaps( ArrayMap<Integer, DefinedProperty> cowPropertyAddMap,
-                                       ArrayMap<Integer, DefinedProperty> cowPropertyRemoveMap, long firstProp )
+    public void commitPropertyMaps( PrimitiveIntObjectMap<DefinedProperty> cowPropertyAddMap,
+            Iterator<Integer> removed )
     {
         if ( cowPropertyAddMap != null )
         {
-            for ( Map.Entry<Integer, DefinedProperty> entry : cowPropertyAddMap.entrySet() )
+            PrimitiveIntIterator keyIterator = cowPropertyAddMap.iterator();
+            while ( keyIterator.hasNext() )
             {
-                properties.put( entry.getKey(), Property.property( entry.getKey(), entry.getValue().value() ) );
+                int key = keyIterator.next();
+                properties.put( key, cowPropertyAddMap.get( key ) );
             }
         }
-        if ( cowPropertyRemoveMap != null )
+        if ( removed != null )
         {
-            for ( Map.Entry<Integer, DefinedProperty> entry : cowPropertyRemoveMap.entrySet() )
+            while ( removed.hasNext() )
             {
-                properties.remove( entry.getKey() );
+                properties.remove( removed.next() );
             }
         }
     }

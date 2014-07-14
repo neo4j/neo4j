@@ -25,6 +25,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.impl.index.IndexCommand;
+import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -42,7 +44,7 @@ import org.neo4j.kernel.impl.nioneo.xa.RelationshipDeleter;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipLocker;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 
 public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, List<LogEntry>>
@@ -103,14 +105,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
                     result.add( logEntry );
                     break;
                 case LogEntry.TX_1P_COMMIT:
-                case LogEntry.TX_2P_COMMIT:
                     commit = logEntry;
-                    break;
-                case LogEntry.TX_PREPARE:
-                    prepare = logEntry;
-                    break;
-                case LogEntry.DONE:
-                    done = logEntry;
                     break;
                 case LogEntry.COMMAND:
                     try
@@ -151,7 +146,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         {
             Command.NodeCommand newCommand = new Command.NodeCommand();
             newCommand.init( nodeChange.getBefore(), nodeChange.forChangingData() );
-            result.add( new LogEntry.Command( result.get( 0 ).getIdentifier(), newCommand ) );
+            result.add( new LogEntry.Command( newCommand ) );
         }
 
         for ( RecordChanges.RecordChange<Long, RelationshipRecord, Void> relChange :
@@ -159,7 +154,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         {
             Command.RelationshipCommand newCommand = new Command.RelationshipCommand();
             newCommand.init( relChange.forChangingData() );
-            result.add( new LogEntry.Command( result.get( 0 ).getIdentifier(), newCommand ) );
+            result.add( new LogEntry.Command( newCommand ) );
         }
 
         for ( RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> relGroupChange :
@@ -167,7 +162,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         {
             Command.RelationshipGroupCommand newCommand = new Command.RelationshipGroupCommand();
             newCommand.init( relGroupChange.forChangingData() );
-            result.add( new LogEntry.Command( result.get( 0 ).getIdentifier(), newCommand ) );
+            result.add( new LogEntry.Command( newCommand ) );
         }
 
         for ( RecordChanges.RecordChange<Long, PropertyRecord, PrimitiveRecord> propChange :
@@ -175,7 +170,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         {
             Command.PropertyCommand newCommand = new Command.PropertyCommand();
             newCommand.init( propChange.getBefore(), propChange.forChangingData() );
-            result.add( new LogEntry.Command( result.get( 0 ).getIdentifier(), newCommand ) );
+            result.add( new LogEntry.Command( newCommand ) );
         }
 
         for ( LogEntry.Command commandEntry : commands )
@@ -207,10 +202,10 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
     private boolean handleCommand( LogEntry.Command commandEntry ) throws IOException
     {
         Command command = (Command) commandEntry.getXaCommand();
-        return command.accept( commandVisitor );
+        return command.handle( commandVisitor );
     }
 
-    private class TranslatingNeoCommandVisitor implements NeoCommandVisitor
+    private class TranslatingNeoCommandVisitor implements NeoCommandHandler
     {
         @Override
         public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
@@ -260,7 +255,8 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         private void translateNodeCreation( Command.NodeCommand command )
         {
             NodeRecord created = recordChangeSet.getNodeRecords().create( command.getKey(), null ).forChangingData();
-            created.copyFrom( command.getAfter() );
+            // TODO 2.2-future fix this
+//            created.copyFrom( command.getAfter() );
             created.setNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             created.setInUse( true );
 //            recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null )
@@ -347,6 +343,48 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         public boolean visitNeoStoreCommand( Command.NeoStoreCommand command )
         {
             return false;
+        }
+
+        @Override
+        public boolean visitIndexAddNodeCommand( IndexCommand.AddNodeCommand command ) throws IOException
+        {
+            return false;
+        }
+
+        @Override
+        public boolean visitIndexAddRelationshipCommand( IndexCommand.AddRelationshipCommand command ) throws IOException
+        {
+            return false;
+        }
+
+        @Override
+        public boolean visitIndexRemoveCommand( IndexCommand.RemoveCommand command ) throws IOException
+        {
+            return false;
+        }
+
+        @Override
+        public boolean visitIndexDeleteCommand( IndexCommand.DeleteCommand command ) throws IOException
+        {
+            return false;
+        }
+
+        @Override
+        public boolean visitIndexCreateCommand( IndexCommand.CreateCommand command ) throws IOException
+        {
+            return false;
+        }
+
+        @Override
+        public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
+        {
+            return false;
+        }
+
+        @Override
+        public void close()
+        {
+
         }
 
         private void translateRelationshipCreation( Command.RelationshipCommand command )

@@ -21,67 +21,21 @@ package org.neo4j.kernel.impl.locking.community;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.RollbackException;
-import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.xa.XAResource;
-
 import org.neo4j.kernel.impl.locking.Locks;
 
 /**
  * A transaction used for the sole purpose of acquiring locks via the community lock manager. This exists solely to
  * allow using the community lock manager with the {@link Locks} API.
  */
-public class LockTransaction implements Transaction
+public class LockTransaction
 {
     private final static AtomicLong IDS = new AtomicLong( 0 );
 
     private final long id = IDS.getAndIncrement();
 
-    @Override
-    public void commit() throws HeuristicMixedException, HeuristicRollbackException, RollbackException, SecurityException, SystemException
+    public long getId()
     {
-        //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    @Override
-    public boolean delistResource( XAResource xaRes, int flag ) throws IllegalStateException, SystemException
-    {
-        return false;  //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    @Override
-    public boolean enlistResource( XAResource xaRes ) throws IllegalStateException, RollbackException, SystemException
-    {
-        return false;  //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    @Override
-    public int getStatus() throws SystemException
-    {
-        return 0;  //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    @Override
-    public void registerSynchronization( Synchronization synch ) throws IllegalStateException, RollbackException,
-            SystemException
-    {
-        //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    @Override
-    public void rollback() throws IllegalStateException, SystemException
-    {
-        //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    @Override
-    public void setRollbackOnly() throws IllegalStateException, SystemException
-    {
-        //To change body of implemented methods use File | Settings | File Templates.
+        return id;
     }
 
     @Override

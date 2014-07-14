@@ -24,23 +24,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 
 class IndexTypeCache
 {
     private final Map<IndexIdentifier, Pair<Integer, IndexType>> cache = Collections.synchronizedMap(
             new HashMap<IndexIdentifier, Pair<Integer, IndexType>>() );
-    private final IndexStore indexStore;
-    
-    IndexTypeCache( IndexStore indexStore )
+    private final IndexConfigStore indexStore;
+
+    IndexTypeCache( IndexConfigStore indexStore )
     {
         this.indexStore = indexStore;
     }
-    
+
     IndexType getIndexType( IndexIdentifier identifier, boolean recovery )
     {
         Pair<Integer, IndexType> type = cache.get( identifier );
-        Map<String, String> config = indexStore.get( identifier.entityType.getType(), identifier.indexName );
+        Map<String, String> config = indexStore.get( identifier.entityType.entityClass(), identifier.indexName );
         if ( type != null && config.hashCode() == type.first() )
         {
             return type.other();
@@ -48,14 +48,16 @@ class IndexTypeCache
         if ( config == null )
         {
             if ( recovery )
+            {
                 return null;
-            throw new IllegalArgumentException( "Unknown index " + identifier );
+            }
+            throw new IllegalStateException( "Unknown index " + identifier );
         }
-        type = Pair.of( config.hashCode(), IndexType.getIndexType( identifier, config ) );
+        type = Pair.of( config.hashCode(), IndexType.getIndexType( config ) );
         cache.put( identifier, type );
         return type.other();
     }
-    
+
     void invalidate( IndexIdentifier identifier )
     {
         cache.remove( identifier );

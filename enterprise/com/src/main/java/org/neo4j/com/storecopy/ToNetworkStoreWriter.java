@@ -55,13 +55,14 @@ public class ToNetworkStoreWriter implements StoreWriter
         if ( hasData )
         {
             totalWritten += buffer.write( data );
-            buffer.done();
+            buffer.close();
+
         }
         return totalWritten;
     }
 
     @Override
-    public void done()
+    public void close()
     {
         targetBuffer.writeShort( 0 );
     }

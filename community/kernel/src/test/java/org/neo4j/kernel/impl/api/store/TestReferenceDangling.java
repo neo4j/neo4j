@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.core.Caches;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 /**
@@ -87,7 +87,7 @@ public class TestReferenceDangling
             n.setProperty( key, new long[]{-1,2,2,3,4,5,5} );
             tx.success();
         }
-        slave.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        slave.getDependencyResolver().resolveDependency( Caches.class ).clear();
 
         try( Transaction tx = slave.beginTx() )
         {
@@ -99,9 +99,7 @@ public class TestReferenceDangling
 
     private void restartNeoDataSource( GraphDatabaseAPI slave ) throws Throwable
     {
-        slave.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getXaDataSource(
-                NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ).stop();
-        slave.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getXaDataSource(
-                NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ).start();
+        slave.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource().stop();
+        slave.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource().start();
     }
 }

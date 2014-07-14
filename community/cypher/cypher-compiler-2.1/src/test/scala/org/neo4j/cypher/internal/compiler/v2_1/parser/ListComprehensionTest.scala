@@ -20,16 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import ast.convert.ExpressionConverters._
-import commands.{expressions => legacy}
-import commands.values.TokenType.PropertyKey
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
 import org.parboiled.scala._
 
 class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Expression] with Expressions {
   implicit val parserToTest = ListComprehension ~ EOI
 
-  @Test def tests() {
+  test("tests") {
     val filterCommand = legacy.FilterFunction(
       legacy.Identifier("p"),
       "a",

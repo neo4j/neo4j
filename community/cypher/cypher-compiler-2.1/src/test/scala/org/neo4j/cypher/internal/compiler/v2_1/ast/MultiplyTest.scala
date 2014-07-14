@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class MultiplyTest extends InfixExpressionTestBase(Multiply(_, _)(DummyPosition(0))) {
 
@@ -31,21 +30,18 @@ class MultiplyTest extends InfixExpressionTestBase(Multiply(_, _)(DummyPosition(
   // 1.1 * 1 => 1.1
   // 1.1 * 1.1 => 1.21
 
-  @Test
-  def shouldHandleAllSpecializations() {
+  test("shouldHandleAllSpecializations") {
     testValidTypes(CTInteger, CTInteger)(CTInteger)
     testValidTypes(CTInteger, CTFloat)(CTFloat)
     testValidTypes(CTFloat, CTInteger)(CTFloat)
     testValidTypes(CTFloat, CTFloat)(CTFloat)
   }
 
-  @Test
-  def shouldHandleCombinedSpecializations() {
+  test("shouldHandleCombinedSpecializations") {
     testValidTypes(CTFloat | CTInteger, CTFloat | CTInteger)(CTFloat | CTInteger)
   }
 
-  @Test
-  def shouldFailTypeCheckWhenAddingIncompatible() {
+  test("shouldFailTypeCheckWhenAddingIncompatible") {
     testInvalidApplication(CTInteger, CTBoolean)(
       "Type mismatch: expected Float or Integer but was Boolean"
     )

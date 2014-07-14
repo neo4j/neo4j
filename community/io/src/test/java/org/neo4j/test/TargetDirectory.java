@@ -27,6 +27,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -48,8 +49,16 @@ public class TargetDirectory
 
         public File directory()
         {
-            if ( subdir == null ) throw new IllegalStateException( "Not initialized" );
+            if ( subdir == null )
+            {
+                throw new IllegalStateException( "Not initialized" );
+            }
             return subdir;
+        }
+
+        public File file( String name )
+        {
+            return new File( directory(), name );
         }
 
         @Override
@@ -216,7 +225,9 @@ public class TargetDirectory
     private File ensureBase()
     {
         if ( fileSystem.fileExists( base ) && !fileSystem.isDirectory( base ) )
+        {
             throw new IllegalStateException( base + " exists and is not a directory!" );
+        }
 
         try
         {

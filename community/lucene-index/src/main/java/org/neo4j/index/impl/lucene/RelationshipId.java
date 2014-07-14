@@ -19,8 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import org.neo4j.graphdb.Relationship;
-
 class RelationshipId
 {
     final long id;
@@ -33,18 +31,18 @@ class RelationshipId
         this.startNode = startNode;
         this.endNode = endNode;
     }
-    
-    public static RelationshipId of( Relationship rel )
+
+    public static RelationshipId of( long id, long start, long end )
     {
-        return new RelationshipId( rel.getId(), rel.getStartNode().getId(), rel.getEndNode().getId() );
+        return new RelationshipId( id, start, end );
     }
-    
+
     @Override
     public boolean equals( Object obj )
     {
         return ((RelationshipId) obj).id == id;
     }
-    
+
     @Override
     public int hashCode()
     {

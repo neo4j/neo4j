@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.commons.{CypherJUnitSuite, CypherFunSuite}
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.graphdb.{Node, PropertyContainer}
-import collection.JavaConverters._
+import org.scalatest.matchers.{MatchResult, Matcher}
 
-abstract class GraphDatabaseJUnitSuite
-  extends CypherJUnitSuite with GraphDatabaseTestSupport
+import scala.collection.JavaConverters._
+
+abstract class GraphDatabaseFunSuite extends CypherFunSuite with GraphDatabaseTestSupport
 
 abstract class ExecutionEngineFunSuite
   extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport {
@@ -73,5 +73,4 @@ abstract class ExecutionEngineFunSuite
       )
     }
   }
-
 }

@@ -72,8 +72,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     // with the server in some way.
     public static final int DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT = 20;
     public static final int DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS = 20;
-    private ClientBootstrap bootstrap;
 
+    private ClientBootstrap bootstrap;
     private final SocketAddress address;
     private final StringLogger msgLog;
     private ExecutorService executor;
@@ -85,10 +85,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private final StoreId storeId;
     private ResourceReleaser resourcePoolReleaser;
     private final List<MismatchingVersionHandler> mismatchingVersionHandlers;
-
     private final RequestMonitor requestMonitor;
-
-    private int chunkSize;
 
     public Client( String hostNameOrIp, int port, Logging logging, Monitors monitors,
                    StoreId storeId, int frameLength,
@@ -103,7 +100,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         this.readTimeout = readTimeout;
         // ResourcePool no longer controls max concurrent channels. Use this value for the pool size
         this.maxUnusedChannels = maxConcurrentChannels;
-        this.mismatchingVersionHandlers = new ArrayList<MismatchingVersionHandler>( 2 );
+        this.mismatchingVersionHandlers = new ArrayList<>( 2 );
         this.address = new InetSocketAddress( hostNameOrIp, port );
         this.protocol = new Protocol( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
 
@@ -214,7 +211,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             ByteBuffer input = channelContext.third();
 
 
-            Map<String, String> requestContext = new HashMap<String, String>();
+            Map<String, String> requestContext = new HashMap<>();
             requestContext.put( "type", type.toString() );
             requestContext.put( "slaveContext", context.toString() );
             requestContext.put( "serverAddress", channel.getRemoteAddress().toString() );
@@ -329,7 +326,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         ChannelPipeline pipeline = Channels.pipeline();
         addLengthFieldPipes( pipeline, frameLength );
-        BlockingReadHandler<ChannelBuffer> reader = new BlockingReadHandler<ChannelBuffer>(
+        BlockingReadHandler<ChannelBuffer> reader = new BlockingReadHandler<>(
                 new ArrayBlockingQueue<ChannelEvent>( 3, false ) );
         pipeline.addLast( "blockingHandler", reader );
         return pipeline;

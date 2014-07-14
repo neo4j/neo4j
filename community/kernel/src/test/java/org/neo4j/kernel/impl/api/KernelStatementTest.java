@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 
@@ -43,7 +44,7 @@ public class KernelStatementTest
         KernelStatement statement =
             new KernelStatement(
                 mock( KernelTransactionImplementation.class ),
-                mock( IndexReaderFactory.class ), scanStore, null, null, null, null );
+                mock( IndexReaderFactory.class ), scanStore, null, null, null, null, null );
 
         statement.acquire();
 
@@ -62,5 +63,19 @@ public class KernelStatementTest
 
         verify( scanReader ).close();
         verifyNoMoreInteractions( scanReader );
+    }
+
+    @Test(expected = TransactionTerminatedException.class)
+    public void shouldThrowTerminateExceptionWhenTransactionTerminated() throws Exception
+    {
+        KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
+        when( transaction.shouldBeTerminated() ).thenReturn( true );
+
+        KernelStatement statement = new KernelStatement(
+            transaction, mock( IndexReaderFactory.class ),
+                mock( LabelScanStore.class ), null, null, null, null, null
+        );
+
+        statement.readOperations().nodeExists( 0 );
     }
 }

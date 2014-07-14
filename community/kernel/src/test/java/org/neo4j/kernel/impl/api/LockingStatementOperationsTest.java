@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
@@ -43,20 +44,22 @@ import static org.mockito.Mockito.when;
 public class LockingStatementOperationsTest
 {
     private final LockingStatementOperations lockingOps;
+    private final EntityReadOperations entityReadOps;
     private final EntityWriteOperations entityWriteOps;
     private final SchemaReadOperations schemaReadOps;
     private final SchemaWriteOperations schemaWriteOps;
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
-    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null, null );
+    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null, null, null );
 
     public LockingStatementOperationsTest()
     {
+        entityReadOps = mock( EntityReadOperations.class );
         entityWriteOps = mock( EntityWriteOperations.class );
         schemaReadOps = mock( SchemaReadOperations.class );
         schemaWriteOps = mock( SchemaWriteOperations.class );
         order = inOrder( locks, entityWriteOps, schemaReadOps, schemaWriteOps );
-        lockingOps = new LockingStatementOperations( entityWriteOps, schemaReadOps, schemaWriteOps, null );
+        lockingOps = new LockingStatementOperations( entityReadOps, entityWriteOps, schemaReadOps, schemaWriteOps, null );
     }
 
     @Test

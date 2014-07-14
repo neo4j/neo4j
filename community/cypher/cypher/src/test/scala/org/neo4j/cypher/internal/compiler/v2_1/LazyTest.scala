@@ -30,8 +30,9 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{Statement, ReadOperations}
-import org.neo4j.kernel.impl.core.{ThreadToStatementContextBridge, NodeManager}
+import org.neo4j.kernel.impl.core.{ThreadToStatementContextBridge, NodeManager, NodeProxy}
 import org.neo4j.tooling.GlobalGraphOperations
+import org.neo4j.collection.primitive.PrimitiveLongCollections
 import java.util.{Iterator => JIterator}
 import java.lang.{Iterable => JIterable}
 import org.junit.Assert._
@@ -190,7 +191,9 @@ class LazyTest extends ExecutionEngineFunSuite {
     val fakeReadStatement = mock[ReadOperations]
     val fakeStatement = mock[Statement]
 
-    when(nodeManager.getAllNodes).thenReturn(counter)
+    when(nodeManager.newNodeProxyById(anyLong())).thenAnswer( new Answer[NodeProxy] {
+      def answer( invocation: InvocationOnMock ): NodeProxy = new NodeProxy( invocation.getArguments()(0).asInstanceOf[Long], null, null, null )
+    })
     when(bridge.instance()).thenReturn(fakeStatement)
     when(fakeStatement.readOperations()).thenReturn(fakeReadStatement)
     when(fakeStatement.dataWriteOperations()).thenReturn(fakeDataStatement)
@@ -199,6 +202,8 @@ class LazyTest extends ExecutionEngineFunSuite {
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
     when(dependencies.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])).thenReturn(monitors)
     when(fakeGraph.beginTx()).thenReturn(tx)
+    val nodesIterator = PrimitiveLongCollections.iterator( 0L, 1L, 2L, 3L, 4L, 5L, 6L )
+    when(fakeReadStatement.nodesGetAll()).thenReturn(nodesIterator)
 
     val cache = new LRUCache[String, (ExecutionPlan, Map[String, Any])](1)
     when(fakeReadStatement.schemaStateGetOrCreate(any(), any())).then(
@@ -215,7 +220,8 @@ class LazyTest extends ExecutionEngineFunSuite {
     }
 
     //Then:
-    assert(counter.count === 5, "Should not have fetched more than this many nodes.")
+    assert( nodesIterator.hasNext() == true )
+    assert( nodesIterator.next() === 5L )
   }
 
   test("traversalmatcherpipe is lazy") {

@@ -24,7 +24,7 @@ import java.util.Timer;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -39,11 +39,11 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class UdcKernelExtension implements Lifecycle
 {
     private Timer timer;
-    private Config config;
-    private XaDataSourceManager xadsm;
-    private KernelData kernelData;
+    private final Config config;
+    private final DataSourceManager xadsm;
+    private final KernelData kernelData;
 
-    public UdcKernelExtension( Config config, XaDataSourceManager xadsm, KernelData kernelData, Timer timer )
+    public UdcKernelExtension( Config config, DataSourceManager xadsm, KernelData kernelData, Timer timer )
     {
         this.config = config;
         this.xadsm = xadsm;

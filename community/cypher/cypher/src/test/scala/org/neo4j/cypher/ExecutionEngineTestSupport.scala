@@ -20,14 +20,15 @@
 package org.neo4j.cypher
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.Duration
-import scala.concurrent.ExecutionContext.Implicits.global
+
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
-import org.neo4j.kernel.monitoring.Monitors
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 
 case class ExpectedException[T <: Throwable](e: T) {
@@ -35,25 +36,25 @@ case class ExpectedException[T <: Throwable](e: T) {
 }
 
 trait ExecutionEngineTestSupport extends CypherTestSupport {
-  self: CypherTestSuite with GraphDatabaseTestSupport =>
+  self: CypherFunSuite with GraphDatabaseTestSupport =>
 
-  var engine: ExecutionEngine = null
+  var eengine: ExecutionEngine = null
 
   override protected def initTest() {
     super.initTest()
-    engine = new ExecutionEngine(graph)
+    eengine = new ExecutionEngine(graph)
   }
 
   def execute(q: String, params: (String, Any)*): ExecutionResult =
-    RewindableExecutionResult(engine.execute(q, params.toMap))
+    RewindableExecutionResult(eengine.execute(q, params.toMap))
 
   def profile(q: String, params: (String, Any)*): ExecutionResult =
-    RewindableExecutionResult(engine.profile(q, params.toMap))
+    RewindableExecutionResult(eengine.profile(q, params.toMap))
 
   def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =
     ExpectedException(intercept[T](execute(q)))
 
-  def executeScalar[T](q: String, params: (String, Any)*):T = engine.execute(q, params.toMap).toList match {
+  def executeScalar[T](q: String, params: (String, Any)*):T = eengine.execute(q, params.toMap).toList match {
     case m :: Nil =>
       if (m.size!=1)
         fail(s"expected scalar value: $m")

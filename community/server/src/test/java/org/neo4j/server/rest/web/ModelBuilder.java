@@ -23,8 +23,6 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-
 /**
  * Helps generate testable data models, using a RestfulGraphDatabase.
  *

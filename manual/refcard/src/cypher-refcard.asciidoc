@@ -78,6 +78,8 @@ include::{sources}/index.asciidoc[]
 
 include::{sources}/constraint.asciidoc[]
 
+include::{sources}/import.asciidoc[]
+
 ++++
 <div class="col cardgeneral c3-2 c6-1"><div class="blk">
 ++++
@@ -148,7 +150,7 @@ include::{sources}/aggregation.asciidoc[]
 include::{sources}/case.asciidoc[]
 
 ++++
-<div class="col carddeprecation c2-2 c3-3 c4-4 c5-5 c6-6"><div class="blk">
+<div class="col carddeprecation c2-2 c3-3 c4-4 c5-3 c6-6"><div class="blk">
 ++++
 
 [options="header", cols="a"]
@@ -181,7 +183,7 @@ include::{sources}/create-unique.asciidoc[]
 
 
 ++++
-<div class="col cardperformance c3-1 c5-1 c6-2"><div class="blk">
+<div class="col cardperformance c3-1 c5-1 c6-6"><div class="blk">
 ++++
 
 [options="header", cols="a"]

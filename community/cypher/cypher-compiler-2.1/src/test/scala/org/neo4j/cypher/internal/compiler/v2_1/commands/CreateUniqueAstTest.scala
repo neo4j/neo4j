@@ -19,57 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions.Literal
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import mutation.{NamedExpectation, UniqueLink, CreateUniqueAction}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.{CreateUniqueAction, NamedExpectation, UniqueLink}
 import org.neo4j.graphdb.Direction
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.Test
-import org.scalatest.Assertions
-import org.junit.runners.Parameterized.Parameters
 
-@RunWith(value = classOf[Parameterized])
-class CreateUniqueAstTest(name: String,
-                          patterns: Seq[AbstractPattern],
-                          expectedNamedPaths: Seq[NamedPath],
-                          expectedStartItems: Seq[StartItem]) extends Assertions {
-  @Test
-  def testNextStepOnCreateUniqueAst() {
-    //given is the constructor of this class
+class CreateUniqueAstTest extends CypherFunSuite {
 
-    // when
-    val (startItems, namedPaths) = new CreateUniqueAst(patterns).nextStep()
-
-    //then
-    assert(startItems === expectedStartItems)
-    assert(namedPaths === expectedNamedPaths)
-  }
-}
-
-object CreateUniqueAstTest {
   val simplePropMap = Map("name" -> Literal("Neo"))
 
-  @Parameters(name = "{0}")
-  def parameters: java.util.Collection[Array[AnyRef]] = {
-    val list = new java.util.ArrayList[Array[AnyRef]]()
-    def add(name: String, given: Seq[AbstractPattern], expectedNamedPaths: Seq[NamedPath], expectedLinks: Seq[UniqueLink]) {
-      list.add(Array(name, given, expectedNamedPaths, Seq(CreateUniqueStartItem(CreateUniqueAction(expectedLinks: _*)))))
-    }
-
-    add(
-      name = "a-[r:REL]->b",
-      given = Seq(ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING)),
+  test("testNextStepOnCreateUniqueAst") {
+    // "a-[r:REL]->b"
+    Seq(ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING)) -->(
       expectedLinks = Seq(UniqueLink("a", "b", "r", "REL", Direction.OUTGOING)),
       expectedNamedPaths = Seq()
     )
 
-    add(
-      name = "a-[r:REL]->b-[r2:REL]->c",
-      given = Seq(
-        ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING),
-        ParsedRelation("r2", "b", "c", Seq("REL"), Direction.OUTGOING)
-      ),
+    // "a-[r:REL]->b-[r2:REL]->c"
+    Seq(
+      ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING),
+      ParsedRelation("r2", "b", "c", Seq("REL"), Direction.OUTGOING)
+    ) -->(
       expectedLinks = Seq(
         UniqueLink("a", "b", "r", "REL", Direction.OUTGOING),
         UniqueLink("b", "c", "r2", "REL", Direction.OUTGOING)
@@ -77,32 +48,35 @@ object CreateUniqueAstTest {
       expectedNamedPaths = Seq()
     )
 
-    add(
-      name = "a-[r:REL {name:'Neo'}]->b",
-      given = Seq(
-        ParsedRelation(name = "r",
-          props = simplePropMap,
-          start = ParsedEntity("a"),
-          end = ParsedEntity("b"), typ = Seq("REL"),
-          dir = Direction.OUTGOING, optional = false)),
-
+    // "a-[r:REL {name:'Neo'}]->b"
+    Seq(
+      ParsedRelation(name = "r",
+        props = simplePropMap,
+        start = ParsedEntity("a"),
+        end = ParsedEntity("b"), typ = Seq("REL"),
+        dir = Direction.OUTGOING, optional = false)) -->(
       expectedLinks = Seq(UniqueLink(
         start = NamedExpectation("a"),
         end = NamedExpectation("b"),
         rel = NamedExpectation("r", simplePropMap),
         relType = "REL", dir = Direction.OUTGOING)),
-
       expectedNamedPaths = Seq()
     )
 
-    add(
-      name = "p = a-[r:REL]->b",
-      given = Seq(ParsedNamedPath("p", Seq(ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING)))),
+    // "p = a-[r:REL]->b"
+    Seq(ParsedNamedPath("p", Seq(ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING)))) -->(
       expectedLinks = Seq(UniqueLink("a", "b", "r", "REL", Direction.OUTGOING)),
       expectedNamedPaths = Seq(NamedPath("p", ParsedRelation("r", "a", "b", Seq("REL"), Direction.OUTGOING)))
     )
+  }
 
+  implicit class Check(patterns: Seq[AbstractPattern]) {
 
-    list
+    def -->(expectedNamedPaths: Seq[NamedPath], expectedLinks: Seq[UniqueLink]) {
+      val (startItems, namedPaths) = new CreateUniqueAst(patterns).nextStep()
+      val expectedStartItems = Seq(CreateUniqueStartItem(CreateUniqueAction(expectedLinks: _*)))
+      startItems should equal(expectedStartItems)
+      namedPaths should equal(expectedNamedPaths)
+    }
   }
 }

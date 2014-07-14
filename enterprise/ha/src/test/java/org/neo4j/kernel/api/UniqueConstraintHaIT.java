@@ -19,35 +19,34 @@
  */
 package org.neo4j.kernel.api;
 
-import java.io.File;
-import javax.transaction.TransactionManager;
-import javax.transaction.xa.XAException;
-
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.graphdb.InvalidTransactionTypeException;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
-import org.neo4j.test.ha.ClusterManager;
-import org.neo4j.test.ha.ClusterRule;
-
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
+
+import java.io.File;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.neo4j.graphdb.InvalidTransactionTypeException;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
+import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.test.ha.ClusterRule;
 
 public class UniqueConstraintHaIT
 {
@@ -149,7 +148,7 @@ public class UniqueConstraintHaIT
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
 
-        TransactionManager txManager = slave.getDependencyResolver().resolveDependency( TransactionManager.class );
+        ThreadToStatementContextBridge txBridge = slave.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
 
         // And given there is a user named bob
         createUser(master, "Bob");
@@ -157,7 +156,8 @@ public class UniqueConstraintHaIT
         // And given that I begin a transaction that will create another user named bob
         slave.beginTx();
         slave.createNode( label("User") ).setProperty( "name", "Bob" );
-        javax.transaction.Transaction slaveTx = txManager.suspend();
+        TopLevelTransaction slaveTx = txBridge.getTopLevelTransactionBoundToThisThread( true );
+        txBridge.unbindTransactionFromCurrentThread();
 
         // When I create a constraint for unique user names
         try(Transaction tx = master.beginTx())
@@ -167,16 +167,17 @@ public class UniqueConstraintHaIT
         }
 
         // Then the transaction started on the slave should fail on commit, with an integrity error
-        txManager.resume( slaveTx );
+        txBridge.bindTransactionToCurrentThread( slaveTx );
         try
         {
-            slaveTx.commit();
+            slaveTx.success();
+            slaveTx.finish();
             fail( "Expected this commit to fail :(" );
         }
-        catch( Exception e )
+        catch( TransactionFailureException e )
         {
-            XAException cause = (XAException) e.getCause();
-            assertThat(cause.errorCode, equalTo(XAException.XA_RBINTEGRITY));
+            // It will come as wrapped in a RuntimeException because the master throws it that way
+            assertTrue( e.getCause().getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException);
         }
 
         // And then both master and slave should keep working, accepting reads

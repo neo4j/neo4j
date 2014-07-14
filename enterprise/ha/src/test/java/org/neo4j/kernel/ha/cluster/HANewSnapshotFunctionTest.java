@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha.cluster;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.backup.OnlineBackupKernelExtension.BACKUP;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
 
@@ -43,7 +42,8 @@ public class HANewSnapshotFunctionTest
         // This is what the end result should look like
         List<MemberIsAvailable> events = new LinkedList<MemberIsAvailable>();
         events.add( roleForId( MASTER, 1 ) );
-        events.add( roleForId( BACKUP, 1 ) );
+        // TODO 2.2-future is this needed?
+//        events.add( roleForId( BACKUP, 1 ) );
         events.add( roleForId( SLAVE, 2 ) );
         events.add( roleForId( SLAVE, 3 ) );
 
@@ -65,7 +65,8 @@ public class HANewSnapshotFunctionTest
         // This is the list of events
         List<MemberIsAvailable> events = new LinkedList<MemberIsAvailable>();
         events.add( roleForId( MASTER, 1 ) );
-        events.add( roleForId( BACKUP, 1 ) );
+        // TODO 2.2-future is this needed?
+//        events.add( roleForId( BACKUP, 1 ) );
         events.add( roleForId( SLAVE, 2 ) );
         events.add( roleForId( SLAVE, 3 ) );
         events.add( roleForId( SLAVE, 2 ) );
@@ -73,7 +74,8 @@ public class HANewSnapshotFunctionTest
         // This is what it should look like
         List<MemberIsAvailable> expected = new LinkedList<MemberIsAvailable>();
         expected.add( roleForId( MASTER, 1 ) );
-        expected.add( roleForId( BACKUP, 1 ) );
+        // TODO 2.2-future is this needed?
+//        expected.add( roleForId( BACKUP, 1 ) );
         expected.add( roleForId( SLAVE, 2 ) );
         expected.add( roleForId( SLAVE, 3 ) );
 
@@ -94,7 +96,8 @@ public class HANewSnapshotFunctionTest
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<MemberIsAvailable>();
         events.add( roleForId( MASTER, 1 ) );
-        events.add( roleForId( BACKUP, 1 ) );
+        // TODO 2.2-future is this needed?
+//        events.add( roleForId( BACKUP, 1 ) );
         events.add( roleForId( SLAVE, 2 ) );
         events.add( roleForId( SLAVE, 1 ) );
         events.add( roleForId( SLAVE, 3 ) );
@@ -147,7 +150,8 @@ public class HANewSnapshotFunctionTest
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<MemberIsAvailable>();
         events.add( roleForId( MASTER, 1 ) );
-        events.add( roleForId( BACKUP, 1 ) );
+        // TODO 2.2-future is this needed?
+//        events.add( roleForId( BACKUP, 1 ) );
         events.add( roleForId( MASTER, 2 ) );
         events.add( roleForId( SLAVE, 3 ) );
         // and this expected outcome

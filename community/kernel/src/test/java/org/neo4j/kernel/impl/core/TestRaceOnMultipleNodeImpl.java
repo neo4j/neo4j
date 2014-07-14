@@ -27,12 +27,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
@@ -183,7 +186,9 @@ public class TestRaceOnMultipleNodeImpl
                         public void run()
                         {
                             for ( @SuppressWarnings("unused")String key : root.getPropertyKeys() )
+                            {
                                 precondition.set( true );
+                            }
                             offenderSetUp.countDown();
                             root.setProperty( "tx", "offender" );
                         }
@@ -213,20 +218,23 @@ public class TestRaceOnMultipleNodeImpl
 
     private static void await( CountDownLatch latch )
     {
-        for ( ;; ) try
+        for ( ;; )
         {
-            latch.await();
-            return;
-        }
-        catch ( InterruptedException e )
-        {
-            // ignore
+            try
+            {
+                latch.await();
+                return;
+            }
+            catch ( InterruptedException e )
+            {
+                // ignore
+            }
         }
     }
 
     private void clearCaches()
     {
-        graphdb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        graphdb.getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 
     private static Thread thread( String name, Runnable task )
@@ -238,21 +246,24 @@ public class TestRaceOnMultipleNodeImpl
 
     private static void awaitWaitingState( Thread thread )
     {
-        for ( ;/*ever*/; ) switch ( thread.getState() )
+        for ( ;/*ever*/; )
         {
-        case WAITING:
-        case TIMED_WAITING:
-            return;
-        case TERMINATED:
-            throw new IllegalStateException( "thread terminated" );
-        default:
-            try
+            switch ( thread.getState() )
             {
-                Thread.sleep( 1 );
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
+            case WAITING:
+            case TIMED_WAITING:
+                return;
+            case TERMINATED:
+                throw new IllegalStateException( "thread terminated" );
+            default:
+                try
+                {
+                    Thread.sleep( 1 );
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.interrupted();
+                }
             }
         }
     }
@@ -314,7 +325,10 @@ public class TestRaceOnMultipleNodeImpl
     {
         try
         {
-            if ( graphdb != null ) graphdb.shutdown();
+            if ( graphdb != null )
+            {
+                graphdb.shutdown();
+            }
         }
         finally
         {

@@ -23,12 +23,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class TestBrokenStoreRecovery
 {
@@ -46,7 +48,7 @@ public class TestBrokenStoreRecovery
      * that during recovery by truncating the logical log as well. Id
      * regeneration should proceed without exceptions, even though the last
      * property record is incomplete.
-     * 
+     *
      * @throws Exception
      */
     @Test
@@ -67,7 +69,7 @@ public class TestBrokenStoreRecovery
             0,
             new ProcessStreamHandler( process, true ).waitForResult() );
         trimFileToSize( new File( storeDir, "neostore.propertystore.db" ), 42 );
-        File log = new File( storeDir, "nioneo_logical.log.1" );
+        File log = new File( storeDir, "nioneo_logical.log.v0" );
         trimFileToSize( log, 78 );
         new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() ).shutdown();
     }

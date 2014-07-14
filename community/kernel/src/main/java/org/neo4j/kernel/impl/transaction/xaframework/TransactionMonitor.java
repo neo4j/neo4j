@@ -19,13 +19,21 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import javax.transaction.xa.Xid;
-
 public interface TransactionMonitor
 {
-    void transactionCommitted( Xid xid, boolean recovered );
+    // Inputs
+    void transactionStarted();
 
-    void injectOnePhaseCommit( Xid xid );
+    void transactionFinished( boolean successful );
 
-    void injectTwoPhaseCommit( Xid xid );
+    // Outputs
+    int getNumberOfActiveTransactions();
+
+    int getPeakConcurrentNumberOfTransactions();
+
+    int getNumberOfStartedTransactions();
+
+    long getNumberOfCommittedTransactions();
+
+    long getNumberOfRolledbackTransactions();
 }

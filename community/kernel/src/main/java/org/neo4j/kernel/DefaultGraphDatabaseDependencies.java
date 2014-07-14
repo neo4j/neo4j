@@ -26,7 +26,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.logging.Logging;
 
 public class DefaultGraphDatabaseDependencies extends GraphDatabaseDependencies
@@ -52,7 +51,6 @@ public class DefaultGraphDatabaseDependencies extends GraphDatabaseDependencies
                 logging,
                 Arrays.<Class<?>>asList( settingsClasses ),
                 Iterables.<KernelExtensionFactory<?>,KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
-                Service.load( CacheProvider.class ),
-                Service.load( TransactionInterceptorProvider.class ) );
+                Service.load( CacheProvider.class ) );
     }
 }

@@ -33,17 +33,24 @@ import java.util.TreeSet;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 
 import static java.util.TimeZone.getTimeZone;
+
 import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
+import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 public class DumpLogicalLog
 {
@@ -53,7 +60,7 @@ public class DumpLogicalLog
     {
         this.fileSystem = fileSystem;
     }
-    
+
     public int dump( String filenameOrDirectory, PrintStream out, TimeZone timeZone ) throws IOException
     {
         int logsFound = 0;
@@ -82,13 +89,12 @@ public class DumpLogicalLog
                 prevLastCommittedTx + "]" );
 
             LogDeserializer deserializer =
-                    new LogDeserializer( buffer, instantiateCommandReaderFactory() );
+                    new LogDeserializer( instantiateCommandReaderFactory() );
             PrintingConsumer consumer = new PrintingConsumer( out, timeZone );
 
-            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
-            {
-                while( cursor.next( consumer ) );
-            }
+            ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel, logVersion), LogVersionBridge.NO_MORE_CHANNELS, 4096);
+
+            exhaustAndClose( deserializer.cursor( logChannel, consumer ) );
         }
         return logsFound;
     }
@@ -99,9 +105,9 @@ public class DumpLogicalLog
         return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
     }
 
-    protected XaCommandReaderFactory instantiateCommandReaderFactory()
+    protected CommandReaderFactory instantiateCommandReaderFactory()
     {
-        return XaCommandReaderFactory.DEFAULT;
+        return CommandReaderFactory.DEFAULT;
     }
 
     protected String getLogPrefix()
@@ -122,21 +128,21 @@ public class DumpLogicalLog
             }
         }
     }
-    
+
     public static Printer getPrinter( Args args )
     {
         boolean toFile = args.getBoolean( "tofile", false, true ).booleanValue();
         return toFile ? new FilePrinter() : SYSTEM_OUT_PRINTER;
     }
-    
+
     public interface Printer extends AutoCloseable
     {
         PrintStream getFor( String file ) throws FileNotFoundException;
-        
+
         @Override
         void close();
     }
-    
+
     private static final Printer SYSTEM_OUT_PRINTER = new Printer()
     {
         @Override
@@ -150,12 +156,12 @@ public class DumpLogicalLog
         {   // Don't close System.out
         }
     };
-    
+
     private static class FilePrinter implements Printer
     {
         private File directory;
         private PrintStream out;
-        
+
         @Override
         public PrintStream getFor( String file ) throws FileNotFoundException
         {
@@ -242,7 +248,7 @@ public class DumpLogicalLog
         };
     }
 
-    private class PrintingConsumer implements Consumer<LogEntry, IOException>
+    private class PrintingConsumer implements Visitor<LogEntry, IOException>
     {
 
         private final PrintStream out;
@@ -255,7 +261,7 @@ public class DumpLogicalLog
         }
 
         @Override
-        public boolean accept( LogEntry entry ) throws IOException
+        public boolean visit( LogEntry entry ) throws IOException
         {
             out.println( entry.toString( timeZone ) );
             return true;

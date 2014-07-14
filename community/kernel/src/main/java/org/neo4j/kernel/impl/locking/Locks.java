@@ -110,6 +110,8 @@ public interface Locks extends Lifecycle
         /** Releases all locks, using the client after calling this is undefined. */
         @Override
         void close();
+
+        long getIdentifier();
     }
 
     /**

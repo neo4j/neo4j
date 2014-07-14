@@ -98,8 +98,8 @@ public class TestBasicHaOperations
     public void testBasicPropagationFromSlaveToMaster() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.cleanDirectory( "propagation" ),
-                stringMap( tx_push_factor.name(), "2" ) );
+        clusterManager = new ClusterManager( clusterOfSize( 2 ), dir.cleanDirectory( "propagation" ),
+                stringMap( tx_push_factor.name(), "1" ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
@@ -107,6 +107,7 @@ public class TestBasicHaOperations
 
         long nodeId = 0;
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+
         try ( Transaction tx = slave.beginTx() )
         {
             Node node = slave.createNode();
@@ -147,7 +148,6 @@ public class TestBasicHaOperations
 
             tx.success();
         }
-
 
         // No need to wait, the push factor is 2
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();

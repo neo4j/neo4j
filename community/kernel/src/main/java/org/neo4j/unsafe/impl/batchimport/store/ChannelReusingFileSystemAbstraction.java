@@ -188,7 +188,7 @@ public class ChannelReusingFileSystemAbstraction extends LifecycleAdapter implem
             Function<Class<K>, K> creator )
     {
         return delegate.getOrCreateThirdPartyFileSystem( clazz, creator );
-    };
+    }
 
     public static class KeepAliveStoreChannel implements StoreChannel
     {

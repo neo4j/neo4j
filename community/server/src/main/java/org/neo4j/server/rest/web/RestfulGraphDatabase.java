@@ -19,6 +19,18 @@
  */
 package org.neo4j.server.rest.web;
 
+import static java.lang.String.format;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.MapUtil.toMap;
+import static org.neo4j.server.rest.web.Surface.PATH_LABELS;
+import static org.neo4j.server.rest.web.Surface.PATH_NODES;
+import static org.neo4j.server.rest.web.Surface.PATH_NODE_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
+import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
+import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -28,6 +40,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -47,7 +60,6 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.EvaluationException;
 import org.neo4j.server.rest.domain.PropertySettingStrategy;
@@ -62,19 +74,6 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
-
-import static java.lang.String.format;
-
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.helpers.collection.MapUtil.toMap;
-import static org.neo4j.server.rest.web.Surface.PATH_LABELS;
-import static org.neo4j.server.rest.web.Surface.PATH_NODES;
-import static org.neo4j.server.rest.web.Surface.PATH_NODE_INDEX;
-import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
-import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
-import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
-import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
 
 @Path( "/" )
 public class RestfulGraphDatabase

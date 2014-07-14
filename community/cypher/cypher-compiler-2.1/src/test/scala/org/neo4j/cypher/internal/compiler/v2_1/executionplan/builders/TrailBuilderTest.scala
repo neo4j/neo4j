@@ -19,20 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.junit.Test
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import expressions.{Identifier, Literal, Property}
-import org.neo4j.graphdb.Direction
-import org.scalatest.Assertions
-import org.neo4j.graphdb.DynamicRelationshipType.withName
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching._
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.EndPoint
-import org.neo4j.cypher.internal.compiler.v2_1.commands.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.SingleStepTrail
-import org.neo4j.cypher.internal.compiler.v2_1.commands.True
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching._
+import org.neo4j.graphdb.Direction
+import org.neo4j.graphdb.DynamicRelationshipType.withName
 
-class TrailBuilderTest extends Assertions {
+class TrailBuilderTest extends CypherFunSuite {
   val A = withName("A")
   val B = withName("B")
   val C = withName("C")
@@ -63,33 +58,31 @@ class TrailBuilderTest extends Assertions {
   val EtoF = VarLengthRelatedTo("p2", SingleNode("e"), SingleNode("f"), None, None, Seq("C"), Direction.BOTH, None, Map.empty)
   val EtoG = RelatedTo(SingleNode("e"), SingleNode("g"), "pr5", Seq("E"), Direction.OUTGOING, Map.empty)
 
-  @Test def find_longest_path_for_single_pattern() {
+  test("find_longest_path_for_single_pattern") {
     val expectedTrail = Some(LongestTrail("a", Some("b"), SingleStepTrail(EndPoint("b"), Direction.OUTGOING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())))
 
-    assert(
-      TrailBuilder.findLongestTrail(Seq(AtoB), Seq("a", "b")) ===
-      expectedTrail)
+    TrailBuilder.findLongestTrail(Seq(AtoB), Seq("a", "b")) should equal(expectedTrail)
   }
 
-  @Test def single_path_is_reversed_to_be_able_to_start_from_startpoint() {
+  test("single_path_is_reversed_to_be_able_to_start_from_startpoint") {
     val trail = SingleStepTrail(EndPoint("a"), Direction.INCOMING, "pr1", Seq("A"), "b", True(), True(), AtoB, Seq())
 
     val expectedTrail = Some(LongestTrail("b", None, trail))
 
-    assert(
-      TrailBuilder.findLongestTrail(Seq(AtoB), Seq("b")) === expectedTrail)
+
+    TrailBuilder.findLongestTrail(Seq(AtoB), Seq("b")) should equal(expectedTrail)
   }
 
-  @Test def find_longest_path_between_two_points() {
+  test("find_longest_path_between_two_points") {
     val boundPoint = EndPoint("c")
     val second = SingleStepTrail(boundPoint, Direction.OUTGOING, "pr2", Seq("B"), "b", True(), True(), BtoC, Seq())
     val first = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
     val expectedTrail = Some(LongestTrail("a", Some("c"), first))
 
-    assert(expectedTrail === TrailBuilder.findLongestTrail(Seq(AtoB, BtoC, BtoB2), Seq("a", "c")))
+    expectedTrail should equal(TrailBuilder.findLongestTrail(Seq(AtoB, BtoC, BtoB2), Seq("a", "c")))
   }
 
-  @Test def find_longest_path_between_two_points_with_a_predicate() {
+  test("find_longest_path_between_two_points_with_a_predicate") {
     //()<-[r1:A]-(a)<-[r2:B]-()
     //WHERE r1.prop = 42 AND r2.prop = "FOO"
     val r1Pred = Equals(Property(Identifier("pr1"), PropertyKey("prop")), Literal(42))
@@ -105,10 +98,10 @@ class TrailBuilderTest extends Assertions {
     val expectedTrail = Some(LongestTrail("a", Some("c"), first))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoC, BtoB2), Seq("a", "c"), predicates)
-    assert(expectedTrail === foundTrail)
+    expectedTrail should equal(foundTrail)
   }
 
-  @Test def find_longest_path_between_two_points_with_a_node_predicate() {
+  test("find_longest_path_between_two_points_with_a_node_predicate") {
     //(a)-[pr1:A]->(b)-[pr2:B]->(c)
     //WHERE b.prop = 42
 
@@ -123,18 +116,18 @@ class TrailBuilderTest extends Assertions {
     val expectedTrail = Some(LongestTrail("a", Some("c"), first))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoC, BtoB2), Seq("a", "c"), predicates)
-    assert(expectedTrail === foundTrail)
+    expectedTrail should equal(foundTrail)
   }
 
-  @Test def should_not_accept_trails_with_bound_points_in_the_middle() {
+  test("should_not_accept_trails_with_bound_points_in_the_middle") {
     //(a)-[pr1:A]->(b)-[pr2:B]->(c)
 
     val LongestTrail(_, _, trail) = TrailBuilder.findLongestTrail(Seq(AtoB, BtoC), Seq("a", "b", "c"), Seq()).get
 
-    assert(trail.size === 1)
+    trail.size should equal(1)
   }
 
-  @Test def find_longest_path_with_single_start() {
+  test("find_longest_path_with_single_start") {
     //(a)-[pr1:A]->(b)-[pr2:B]->(c)-[pr3:B]->(d)
 
     val boundPoint = EndPoint("d")
@@ -144,10 +137,10 @@ class TrailBuilderTest extends Assertions {
     val expectedTrail = Some(LongestTrail("a", None, first))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoC, BtoB2, CtoD), Seq("a"), Nil)
-    assert(foundTrail === expectedTrail)
+    foundTrail should equal(expectedTrail)
   }
 
-  @Test def single_varlength_path() {
+  test("single_varlength_path") {
     //(b)-[:A*]->(e)
 
     val boundPoint = EndPoint("e")
@@ -155,10 +148,10 @@ class TrailBuilderTest extends Assertions {
     val expectedTrail = Some(LongestTrail("b", None, first))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(BtoE), Seq("b"), Nil)
-    assert(foundTrail === expectedTrail)
+    foundTrail should equal(expectedTrail)
   }
 
-  @Test def single_rel_followed_by_varlength_with_single_bound_point() {
+  test("single_rel_followed_by_varlength_with_single_bound_point") {
     //(a)-[:A]->(b)-[:A*]->(e)
 
     val endPoint = EndPoint("e")
@@ -167,10 +160,10 @@ class TrailBuilderTest extends Assertions {
     val expected = Some(LongestTrail("a", None, first))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE), Seq("a"), Nil)
-    assert(foundTrail === expected)
+    foundTrail should equal(expected)
   }
 
-  @Test def two_varlength_paths_with_both_ends_bound() {
+  test("two_varlength_paths_with_both_ends_bound") {
     //(b)-[:A*]->(e)-[:C*]->f
 
     val endPoint = EndPoint("e")
@@ -178,10 +171,10 @@ class TrailBuilderTest extends Assertions {
     val expected = Some(LongestTrail("b", None, trail))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(BtoE, EtoF), Seq("b", "f"), Nil)
-    assert(foundTrail === expected)
+    foundTrail should equal(expected)
   }
 
-  @Test def mono_directional_trails_can_end_in_varlength_paths() {
+  test("mono_directional_trails_can_end_in_varlength_paths") {
 
     /*
     Given the pattern
@@ -200,10 +193,10 @@ class TrailBuilderTest extends Assertions {
     val expected = Some(LongestTrail("a", None, trail))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE, BtoC), Seq("a"), Nil)
-    assert(foundTrail === expected)
+    foundTrail should equal(expected)
   }
 
-  @Test def mono_directional_trails_can_only_have_single_varlength_paths() {
+  test("mono_directional_trails_can_only_have_single_varlength_paths") {
 
     /*
     Given the pattern
@@ -219,10 +212,10 @@ class TrailBuilderTest extends Assertions {
     val expected = Some(LongestTrail("a", None, trail))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE, EtoF), Seq("a"), Nil)
-    assert(foundTrail === expected)
+    foundTrail should equal(expected)
   }
 
-  @Test def mono_directional_trails_can_only_have_varlength_paths_at_the_end() {
+  test("mono_directional_trails_can_only_have_varlength_paths_at_the_end") {
 
     /*
     Given the pattern
@@ -238,10 +231,10 @@ class TrailBuilderTest extends Assertions {
     val expected = Some(LongestTrail("a", None, trail))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE, EtoG), Seq("a"), Nil)
-    assert(foundTrail === expected)
+    foundTrail should equal(expected)
   }
 
-  @Test def two_varlength_paths_with_one_end_bound() {
+  test("two_varlength_paths_with_one_end_bound") {
 
     /*
     Given the pattern
@@ -260,10 +253,10 @@ class TrailBuilderTest extends Assertions {
     val expected = Some(LongestTrail("a", None, trail))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoE, BtoC), Seq("a"), Nil)
-    assert(foundTrail === expected)
+    foundTrail should equal(expected)
   }
 
-  @Test def should_handle_loops() {
+  test("should_handle_loops") {
 
     // (a)-[pr1:A]->b-[pr2:B]->c
     //  \                      ^
@@ -281,10 +274,10 @@ class TrailBuilderTest extends Assertions {
 
     val expected = Some(LongestTrail("a", Some("c"), trail))
 
-    assert(result === expected)
+    result should equal(expected)
   }
 
-  @Test def should_handle_long_paths_with_unnamed_nodes() {
+  test("should_handle_long_paths_with_unnamed_nodes") {
     // GIVEN
     // a<-[15]- (13)<-[16]- b-[17]-> (14)-[18]-> c
 
@@ -304,10 +297,10 @@ class TrailBuilderTest extends Assertions {
 
     val expected = Some(LongestTrail("a", None, first))
 
-    assert(result === expected)
+    result should equal(expected)
   }
 
-  @Test def should_handle_predicates_in_the_middle() {
+  test("should_handle_predicates_in_the_middle") {
     // GIVEN
     // MATCH (a)-[r1]->(b)-[r2]->(c)<-[r3]-(d)
     // WHERE c.name = 'c ' and b.name = 'b '
@@ -331,6 +324,6 @@ class TrailBuilderTest extends Assertions {
 
     val expected = Some(LongestTrail("a", None, first))
 
-    assert(result === expected)
+    result should equal(expected)
   }
 }

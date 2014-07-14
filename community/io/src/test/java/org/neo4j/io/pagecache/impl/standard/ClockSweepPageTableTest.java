@@ -72,7 +72,7 @@ public class ClockSweepPageTableTest
     public void loading_must_read_file() throws Exception
     {
         // Given
-        BufferPageIO io = new BufferPageIO( bytesA );
+        BufferPageSwapper io = new BufferPageSwapper( bytesA );
 
         // When
         PinnablePage page = table.load( io, 1, PageLock.EXCLUSIVE );
@@ -89,7 +89,7 @@ public class ClockSweepPageTableTest
     {
         // Given a table with 1 entry, which I've modified
         ByteBuffer storageBuffer = ByteBuffer.allocate( TEST_PAGE_SIZE );
-        BufferPageIO io = new BufferPageIO( storageBuffer );
+        BufferPageSwapper io = new BufferPageSwapper( storageBuffer );
 
         PinnablePage page = table.load( io, 12, PageLock.EXCLUSIVE );
         page.putBytes( bytesA, 0 );
@@ -102,7 +102,7 @@ public class ClockSweepPageTableTest
             public void run()
             {
                 // This thread will cause the single page in the cache to be replaced
-                BufferPageIO io = new BufferPageIO( ByteBuffer.allocate( 1 ) );
+                BufferPageSwapper io = new BufferPageSwapper( ByteBuffer.allocate( 1 ) );
                 try
                 {
                     table.load( io, 3, PageLock.SHARED );
@@ -125,7 +125,7 @@ public class ClockSweepPageTableTest
     public void loading_with_shared_lock_allows_other_shared() throws Exception
     {
         // Given
-        BufferPageIO io = new BufferPageIO( bytesA );
+        BufferPageSwapper io = new BufferPageSwapper( bytesA );
 
         // When
         PinnablePage page = table.load( io, 12, PageLock.SHARED );
@@ -138,7 +138,7 @@ public class ClockSweepPageTableTest
     public void loading_with_shared_lock_stops_exclusive_pinners() throws Exception
     {
         // Given
-        final BufferPageIO io = new BufferPageIO( bytesA );
+        final BufferPageSwapper io = new BufferPageSwapper( bytesA );
 
         // When
         final PinnablePage page = table.load( io, 12, PageLock.SHARED );
@@ -172,7 +172,7 @@ public class ClockSweepPageTableTest
     {
         // Given
         ClockSweepPageTable table = new ClockSweepPageTable( 1, TEST_PAGE_SIZE, PageCacheMonitor.NULL );
-        final BufferPageIO io = new BufferPageIO( bytesA );
+        final BufferPageSwapper io = new BufferPageSwapper( bytesA );
 
         // When
         final PinnablePage page = table.load( io, 12, PageLock.EXCLUSIVE );
@@ -205,7 +205,7 @@ public class ClockSweepPageTableTest
     public void pinning_replaced_page_must_fail() throws Exception
     {
         // Given
-        BufferPageIO io = new BufferPageIO( bytesA );
+        BufferPageSwapper io = new BufferPageSwapper( bytesA );
 
         PinnablePage page = table.load( io, 12, PageLock.SHARED );
         page.unpin( PageLock.SHARED );
@@ -217,7 +217,7 @@ public class ClockSweepPageTableTest
             public void run()
             {
                 // This thread will cause the single page in the cache to be replaced
-                BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( bytesB ) );
+                BufferPageSwapper io = new BufferPageSwapper( ByteBuffer.wrap( bytesB ) );
                 try
                 {
                     table.load( io, 3, PageLock.SHARED ).unpin( PageLock.SHARED );
@@ -237,7 +237,7 @@ public class ClockSweepPageTableTest
     public void must_notify_io_object_on_eviction() throws Exception
     {
         // Given
-        BufferPageIO io = spy(new BufferPageIO( bytesA ));
+        BufferPageSwapper io = spy(new BufferPageSwapper( bytesA ));
 
         PinnablePage page = table.load( io, 12, PageLock.SHARED );
         page.unpin( PageLock.SHARED );
@@ -249,7 +249,7 @@ public class ClockSweepPageTableTest
             public void run()
             {
                 // This thread will cause the single page in the cache to be replaced
-                BufferPageIO io = new BufferPageIO( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
+                BufferPageSwapper io = new BufferPageSwapper( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
                 try
                 {
                     table.load( io, 3, PageLock.SHARED ).unpin( PageLock.SHARED );
@@ -270,7 +270,7 @@ public class ClockSweepPageTableTest
     public void must_notify_monitor_of_evicted_pages() throws Exception
     {
         // If we load a page ...
-        PageIO io = new BufferPageIO( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
+        PageSwapper io = new BufferPageSwapper( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
         long pageId = 12;
         PinnablePage page = table.load( io, pageId, PageLock.EXCLUSIVE );
         page.unpin( PageLock.EXCLUSIVE );
@@ -286,7 +286,7 @@ public class ClockSweepPageTableTest
     public void readers_and_writers_must_block_on_evicting_page() throws Exception
     {
         // If we have a loaded page ...
-        PageIO io = new BufferPageIO( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
+        PageSwapper io = new BufferPageSwapper( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
         long pageId = 12;
         PinnablePage page = table.load( io, pageId, PageLock.EXCLUSIVE );
         monitor.observe( Fault.class );
@@ -312,8 +312,6 @@ public class ClockSweepPageTableTest
         pinForExclusive.join();
     }
 
-    // TODO closing a paged file will flush with a particular PageIO - this must not race with eviction!
-
     @Test
     public void flushing_pages_with_specific_pageio_must_not_race_with_eviction() throws Exception
     {
@@ -321,7 +319,7 @@ public class ClockSweepPageTableTest
         // be evicted. As soon as we have unpinned, we repeatedly try to flush it with our given
         // PageIO. If this causes an exception to be thrown, then we've raced with the eviction
         // where we shouldn't.
-        PageIO io = new BufferPageIO( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
+        PageSwapper io = new BufferPageSwapper( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
         long pageId = 12;
 
         PinnablePage page = table.load( io, pageId, PageLock.EXCLUSIVE );
@@ -353,7 +351,7 @@ public class ClockSweepPageTableTest
 
     private Runnable $pinUnpin(
             final PinnablePage page,
-            final PageIO io,
+            final PageSwapper io,
             final long pageId,
             final PageLock pageLock )
     {
@@ -370,16 +368,16 @@ public class ClockSweepPageTableTest
         };
     }
 
-    private class BufferPageIO implements PageIO
+    private class BufferPageSwapper implements PageSwapper
     {
         private final ByteBuffer buffer;
 
-        private BufferPageIO( byte[] bytes )
+        private BufferPageSwapper( byte[] bytes )
         {
             this( ByteBuffer.wrap( bytes ) );
         }
 
-        private BufferPageIO( ByteBuffer buffer )
+        private BufferPageSwapper( ByteBuffer buffer )
         {
             this.buffer = buffer;
         }

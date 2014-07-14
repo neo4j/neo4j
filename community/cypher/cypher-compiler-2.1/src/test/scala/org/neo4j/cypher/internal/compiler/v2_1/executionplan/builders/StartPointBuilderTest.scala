@@ -19,41 +19,30 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import expressions._
-import expressions.Literal
-import expressions.Property
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeStartPipe
-import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.IndexHintException
-import org.neo4j.cypher.internal.compiler.v2_1.commands.SchemaIndex
-import org.neo4j.cypher.internal.compiler.v2_1.commands.AllNodes
-import org.neo4j.cypher.internal.compiler.v2_1.commands.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.commands.NodeByIndexQuery
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeStartPipe
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-class StartPointBuilderTest extends BuilderTest with MockitoSugar {
+class StartPointBuilderTest extends BuilderTest {
 
   context = mock[PlanContext]
   val builder = new StartPointBuilder()
 
-  @Test
-  def says_yes_to_node_by_id_queries() {
+  test("says_yes_to_node_by_id_queries") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
     assertAccepts(q)
   }
 
-  @Test
-  def only_takes_one_start_item_at_the_time() {
+  test("only_takes_one_start_item_at_the_time") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(
         Unsolved(NodeByIndexQuery("s", "idx", Literal("foo"))),
@@ -61,12 +50,11 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
 
     val remaining = assertAccepts(q).query
 
-    assertEquals("No more than 1 startitem should be solved", 1, remaining.start.filter(_.solved).length)
-    assertEquals("Stuff should remain", 1, remaining.start.filterNot(_.solved).length)
+    remaining.start.filter(_.solved) should have length 1
+    remaining.start.filterNot(_.solved) should have length 1
   }
 
-  @Test
-  def fixes_node_by_id_and_keeps_the_rest_around() {
+  test("fixes_node_by_id_and_keeps_the_rest_around") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo"))), Unsolved(RelationshipById("x", 1))))
 
@@ -75,35 +63,31 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
 
     val expected = Set(Solved(NodeByIndexQuery("s", "idx", Literal("foo"))), Unsolved(RelationshipById("x", 1)))
 
-    assert(result.start.toSet === expected)
+    result.start.toSet should equal(expected)
   }
 
-  @Test
-  def says_no_to_already_solved_node_by_id_queries() {
+  test("says_no_to_already_solved_node_by_id_queries") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
     assertRejects(q)
   }
 
-  @Test
-  def builds_a_nice_start_pipe() {
+  test("builds_a_nice_start_pipe") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
     val remainingQ = assertAccepts(q).query
 
-    assert(remainingQ.start === Seq(Solved(NodeByIndexQuery("s", "idx", Literal("foo")))))
+    remainingQ.start should equal(Seq(Solved(NodeByIndexQuery("s", "idx", Literal("foo")))))
   }
 
-  @Test
-  def does_not_offer_to_solve_empty_queries() {
+  test("does_not_offer_to_solve_empty_queries") {
     //GIVEN WHEN THEN
     assertRejects(PartiallySolvedQuery())
   }
 
-  @Test
-  def offers_to_solve_query_with_index_hints() {
+  test("offers_to_solve_query_with_index_hints") {
     val propertyKey= PropertyKey("name")
     val labelName: String = "Person"
     //GIVEN
@@ -116,11 +100,10 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
     //THEN
     val producedPlan = assertAccepts(q)
 
-    assert(producedPlan.pipe.isInstanceOf[NodeStartPipe])
+    producedPlan.pipe shouldBe a [NodeStartPipe]
   }
 
-  @Test
-  def throws_exception_if_no_index_is_found() {
+  test("throws_exception_if_no_index_is_found") {
     //GIVEN
     val propertyKey= PropertyKey("name")
     val q = PartiallySolvedQuery().copy(
@@ -133,30 +116,27 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
     intercept[IndexHintException](assertAccepts(q))
   }
 
-  @Test
-  def says_yes_to_global_queries() {
+  test("says_yes_to_global_queries") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(AllNodes("s"))))
 
     assertAccepts(q)
   }
 
-  @Test
-  def says_yes_to_global_rel_queries() {
+  test("says_yes_to_global_rel_queries") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(AllRelationships("s"))))
 
     assertAccepts(q)
   }
 
-  @Test
-  def only_takes_one_global_start_item_at_the_time() {
+  test("only_takes_one_global_start_item_at_the_time") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(AllNodes("s")), Unsolved(AllNodes("x"))))
 
     val remaining = assertAccepts(q).query
 
-    assertEquals("No more than 1 startitem should be solved", 1, remaining.start.filter(_.solved).length)
-    assertEquals("Stuff should remain", 1, remaining.start.filterNot(_.solved).length)
+    remaining.start.filter(_.solved) should have length 1
+    remaining.start.filterNot(_.solved) should have length 1
   }
 }

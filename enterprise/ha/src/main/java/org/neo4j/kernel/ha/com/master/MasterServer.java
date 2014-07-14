@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -35,11 +37,8 @@ import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.kernel.ha.HaRequestType210;
 import org.neo4j.kernel.ha.MasterClient210;
-import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -74,12 +73,6 @@ public class MasterServer extends Server<Master, Void>
             // This is OK. This method has been called due to some connection problem or similar,
             // it's a best-effort to finish of a channel and transactions associated with it.
         }
-    }
-
-    @Override
-    protected boolean shouldLogFailureToFinishOffChannel( Throwable failure )
-    {
-        return !(failure instanceof TransactionAlreadyActiveException);
     }
 
     public Map<Integer, Collection<RequestContext>> getSlaveInformation()

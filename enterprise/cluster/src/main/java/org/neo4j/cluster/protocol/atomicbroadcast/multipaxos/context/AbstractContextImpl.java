@@ -31,11 +31,11 @@ import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.helpers.collection.Iterables.limit;
+import static org.neo4j.helpers.collection.Iterables.toList;
 
 class AbstractContextImpl
         implements TimeoutsContext, LoggingContext, ConfigurationContext
@@ -78,7 +78,7 @@ class AbstractContextImpl
     @Override
     public List<URI> getMemberURIs()
     {
-        return Iterables.toList( commonState.configuration().getMemberURIs() );
+        return toList( commonState.configuration().getMemberURIs() );
     }
 
     @Override
@@ -97,7 +97,7 @@ class AbstractContextImpl
     public List<URI> getAcceptors()
     {
         // Only use 2f+1 acceptors
-        return Iterables.toList( limit( commonState.configuration()
+        return toList( limit( commonState.configuration()
                 .getAllowedFailures() * 2 + 1, commonState.configuration().getMemberURIs() ) );
     }
 

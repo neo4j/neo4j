@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes.aggregation
 
-import org.junit.Test
-import org.junit.Assert._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 
-class CountTest extends AggregateTest {
+class CountTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new CountFunction(inner)
 
-  @Test def testCounts() {
+  test("testCounts") {
     val result = aggregateOn(1, null, "foo")
 
-    assertEquals(2L, result)
-    assertTrue(result.isInstanceOf[Long])
+    result should equal(2L)
+    result shouldBe a [java.lang.Long]
   }
 }

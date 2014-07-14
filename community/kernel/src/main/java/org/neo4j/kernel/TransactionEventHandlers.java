@@ -34,6 +34,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -115,7 +116,8 @@ public class TransactionEventHandlers
     }
 
     @Override
-    public TransactionHandlerState beforeCommit( TxState state, KernelTransaction transaction )
+    public TransactionHandlerState beforeCommit( TxState state, KernelTransaction transaction,
+            StoreReadLayer storeReadLayer )
     {
         if(transactionEventHandlers.isEmpty())
         {
@@ -123,7 +125,7 @@ public class TransactionEventHandlers
         }
 
         TransactionData txData = state == null ? EMPTY_DATA :
-                new TxStateTransactionDataSnapshot( state, nodeLookup, relationshipLookups, bridge );
+                new TxStateTransactionDataSnapshot( state, nodeLookup, relationshipLookups, bridge, storeReadLayer );
 
         TransactionHandlerState handlerStates = new TransactionHandlerState( txData );
         for ( TransactionEventHandler<?> handler : this.transactionEventHandlers )

@@ -29,31 +29,28 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.MasterServer;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.TxManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
+
 
 public class MetricsLogExtension implements Lifecycle
 {
     private Monitors monitors;
     private Config config;
     private FileSystemAbstraction fileSystemAbstraction;
-    private TxManager txManager;
     private ByteCounterMetrics networkCounterMetrics;
     private ByteCounterMetrics diskCounterMetrics;
     private ScheduledExecutorService executor;
     private CSVFile csv;
 
-    public MetricsLogExtension( Monitors monitors, Config config, FileSystemAbstraction fileSystemAbstraction, TxManager txManager )
+    public MetricsLogExtension( Monitors monitors, Config config, FileSystemAbstraction fileSystemAbstraction )
     {
         this.monitors = monitors;
         this.config = config;
         this.fileSystemAbstraction = fileSystemAbstraction;
-        this.txManager = txManager;
     }
 
     @Override
@@ -69,10 +66,10 @@ public class MetricsLogExtension implements Lifecycle
         monitors.addMonitorListener( networkCounterMetrics, "logdeserializer" );
 
         diskCounterMetrics = new ByteCounterMetrics();
-        monitors.addMonitorListener( diskCounterMetrics, XaLogicalLog.class.getName() );
+        // TODO 2.2-future properly attach this somewhere
+        monitors.addMonitorListener( diskCounterMetrics, "this used to attach to XaLogicalLog" );
 
         File path = new File( config.get( GraphDatabaseSettings.store_dir ), "metrics.txt" );
-        System.out.println("CSV:"+path);
 
         OutputStream file = fileSystemAbstraction.openAsOutputStream( path, false );
 
@@ -88,9 +85,12 @@ public class MetricsLogExtension implements Lifecycle
                 {
                     csv.print( System.currentTimeMillis(),
                             diskCounterMetrics.getBytesWritten(), diskCounterMetrics.getBytesRead(),
-                            networkCounterMetrics.getBytesWritten(), networkCounterMetrics.getBytesRead(),
-                            txManager.getCommittedTxCount());
-                    System.out.println( config.get( ClusterSettings.server_id ) + " bytes written:" + networkCounterMetrics
+                            networkCounterMetrics.getBytesWritten(), networkCounterMetrics.getBytesRead()
+                            // TODO 2.2-future provide a corresponding monitor here
+                            //, txManager.getCommittedTxCount()
+                            );
+                    System.out.println( config.get( ClusterSettings.server_id ) + " bytes written:" +
+                            networkCounterMetrics
                             .getBytesWritten() );
                 }
                 catch ( IOException e )

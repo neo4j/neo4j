@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -69,6 +70,7 @@ import static org.neo4j.test.subprocess.DebuggerDeadlockCallback.RESUME_THREAD;
         @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction",
                 method = "doPrepare", on = BreakPoint.Event.EXIT ) } )
 @RunWith( SubProcessTestRunner.class )
+@Ignore( "TODO 2.2-future NeoStoreTransaction doesn't exist and everything has changed around it" )
 public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
 {
     private static final int RelationshipGrabSize = 2;
@@ -108,7 +110,7 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
         tx.finish();
 
         // This is required, otherwise relChainPosition is never consulted, everything will already be in mem.
-        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        db.getDependencyResolver().resolveDependency( Caches.class ).clear();
 
         Runnable writer = new Runnable()
         {

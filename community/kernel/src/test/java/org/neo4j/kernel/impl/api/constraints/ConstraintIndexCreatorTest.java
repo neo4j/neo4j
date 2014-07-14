@@ -24,18 +24,24 @@ import java.util.List;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.StatementOperationParts;
-import org.neo4j.kernel.impl.core.Transactor;
-import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.TransactionHook;
+import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.heuristics.StatisticsData;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -63,22 +69,22 @@ public class ConstraintIndexCreatorTest
         KernelStatement state = mockedState();
 
         IndexingService indexingService = mock( IndexingService.class );
-        StubTransactor transactor = new StubTransactor();
+        StubKernel kernel = new StubKernel();
 
         when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor, CONSTRAINT ) )
                 .thenReturn( 2468l );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getProxyForRule( 2468l ) ).thenReturn( indexProxy );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( transactor, indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( kernel, indexingService );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123, 456 );
 
         // then
         assertEquals( 2468l, indexId );
-        assertEquals( 1, transactor.transactions.size() );
-        verify( transactor.transactions.get( 0 ).txState() ).constraintIndexRuleDoAdd( descriptor );
+        assertEquals( 1, kernel.statements.size() );
+        verify( kernel.statements.get( 0 ).txState() ).constraintIndexRuleDoAdd( descriptor );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor, CONSTRAINT );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
@@ -95,7 +101,7 @@ public class ConstraintIndexCreatorTest
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
 
         IndexingService indexingService = mock( IndexingService.class );
-        StubTransactor transactor = new StubTransactor();
+        StubKernel kernel = new StubKernel();
 
         when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor, CONSTRAINT ) )
                 .thenReturn( 2468l );
@@ -105,7 +111,7 @@ public class ConstraintIndexCreatorTest
         doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause) )
                 .when(indexProxy).awaitStoreScanCompleted();
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( transactor, indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( kernel, indexingService );
 
         // when
         try
@@ -120,13 +126,13 @@ public class ConstraintIndexCreatorTest
             assertEquals( "Existing data does not satisfy CONSTRAINT ON ( n:label[123] ) ASSERT n.property[456] IS UNIQUE.",
                           e.getMessage() );
         }
-        assertEquals( 2, transactor.transactions.size() );
-        TxState tx1 = transactor.transactions.get( 0 ).txState();
+        assertEquals( 2, kernel.statements.size() );
+        TxState tx1 = kernel.statements.get( 0 ).txState();
         verify( tx1 ).constraintIndexRuleDoAdd( new IndexDescriptor( 123, 456 ) );
         verifyNoMoreInteractions( tx1 );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor, CONSTRAINT );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
-        TxState tx2 = transactor.transactions.get( 1 ).txState();
+        TxState tx2 = kernel.statements.get( 1 ).txState();
         verify( tx2 ).constraintIndexDoDrop( new IndexDescriptor( 123, 456 ) );
         verifyNoMoreInteractions( tx2 );
     }
@@ -135,38 +141,124 @@ public class ConstraintIndexCreatorTest
     public void shouldDropIndexInAnotherTransaction() throws Exception
     {
         // given
-        StubTransactor transactor = new StubTransactor();
+        StubKernel kernel = new StubKernel();
         IndexingService indexingService = mock( IndexingService.class );
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( transactor, indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( kernel, indexingService );
 
         // when
         creator.dropUniquenessConstraintIndex( descriptor );
 
         // then
-        assertEquals( 1, transactor.transactions.size() );
-        verify( transactor.transactions.get( 0 ).txState() ).constraintIndexDoDrop( descriptor );
+        assertEquals( 1, kernel.statements.size() );
+        verify( kernel.statements.get( 0 ).txState() ).constraintIndexDoDrop( descriptor );
         verifyZeroInteractions( indexingService );
     }
 
-    private static class StubTransactor extends Transactor
+    public class StubKernel implements KernelAPI
     {
-        final List<KernelStatement> transactions = new ArrayList<>();
+        private final List<KernelStatement> statements = new ArrayList<>();
 
-        StubTransactor()
+        @Override
+        public KernelTransaction newTransaction()
         {
-            super( null, null );
+            return new KernelTransaction()
+            {
+                @Override
+                public void success()
+                {
+                }
+
+                @Override
+                public TransactionRecordState getTransactionRecordState()
+                {
+                    throw new UnsupportedOperationException( "Please implement" );
+                }
+
+                @Override
+                public void failure()
+                {
+                }
+
+                @Override
+                public void close() throws TransactionFailureException
+                {
+                }
+
+                @Override
+                public Statement acquireStatement()
+                {
+                    return remember( mockedState() );
+                }
+
+                private Statement remember( KernelStatement mockedState )
+                {
+                    statements.add( mockedState );
+                    return mockedState;
+                }
+
+                @Override
+                public boolean isOpen()
+                {
+                    return true;
+                }
+
+                public boolean shouldBeTerminated()
+                {
+                    return false;
+                }
+
+                @Override
+                public void markForTermination()
+                {
+                }
+
+                @Override
+                public LegacyIndexTransactionState getLegacyIndexTransactionState()
+                {
+                    throw new UnsupportedOperationException( "Please implement" );
+                }
+            };
         }
 
         @Override
-        public <RESULT, FAILURE extends KernelException> RESULT execute(
-                Work<RESULT, FAILURE> work ) throws FAILURE
+        public void registerTransactionHook( TransactionHook hook )
         {
-            KernelStatement state = mockedState();
-            transactions.add( state );
-            return work.perform( state );
+            throw new UnsupportedOperationException( "Please implement" );
+        }
+
+        @Override
+        public void unregisterTransactionHook( TransactionHook hook )
+        {
+            throw new UnsupportedOperationException( "Please implement" );
+        }
+
+        @Override
+        public StatisticsData heuristics()
+        {
+            throw new UnsupportedOperationException( "Please implement" );
         }
     }
+
+//
+//    private static class StubTransactor extends Transactor
+//    {
+//        final List<KernelStatement> transactions = new ArrayList<>();
+//
+//        StubTransactor()
+//        {
+//            super( null, null );
+//        }
+//
+//        @Override
+//        public <RESULT, FAILURE extends KernelException> RESULT execute(
+//                Work<RESULT, FAILURE> work ) throws FAILURE
+//        {
+//            KernelStatement state = mockedState();
+//            transactions.add( state );
+//            return work.perform( state );
+//        }
+//    }
 }

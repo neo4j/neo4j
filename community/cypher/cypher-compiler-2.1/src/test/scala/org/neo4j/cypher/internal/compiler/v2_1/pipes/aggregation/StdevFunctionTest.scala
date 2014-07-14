@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes.aggregation
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.{Expression, Identifier, NumericHelper}
-import pipes.QueryStateHelper
-import org.junit.Test
-import org.junit.Assert._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Expression, Identifier, NumericHelper}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-abstract class StdevTest {
+trait StdevTest {
   def createAggregator(inner: Expression): AggregationFunction
 
   def getStdev(values: List[Any]): Double = {
@@ -40,80 +39,80 @@ abstract class StdevTest {
   }
 }
 
-class StdevSampleTest extends StdevTest {
+class StdevSampleTest extends CypherFunSuite with StdevTest {
   def createAggregator(inner: Expression) = new StdevFunction(inner, false)
 
-  @Test def singleOne() {
+  test("singleOne") {
     val values = List(1)
-    assertEquals(0.0, getStdev(values), 0.000001)
+    getStdev(values) should equal(0.0 +- 0.000001)
   }
 
-  @Test def manyOnes() {
+  test("manyOnes") {
     val values = List(1, 1)
-    assertEquals(0.0, getStdev(values), 0.000001)
+    getStdev(values) should equal(0.0 +- 0.000001)
   }
 
-  @Test def oneTwoThree() {
+  test("oneTwoThree") {
     val values = List(1, 2, 3)
-    assertEquals(1.0, getStdev(values), 0.000001)
+    getStdev(values) should equal(1.0 +- 0.000001)
   }
 
-  @Test def oneTwoThreeFour() {
+  test("oneTwoThreeFour") {
     val values = List(1, 2, 3, 4)
-    assertEquals(1.29099444874, getStdev(values), 0.000001)
+    getStdev(values) should equal(1.29099444874 +- 0.000001)
   }
 
-  @Test def oneTwoThreeFourFive() {
+  test("oneTwoThreeFourFive") {
     val values = List(1, 2, 3, 4, 5)
-    assertEquals(1.58113883008, getStdev(values), 0.000001)
+    getStdev(values) should equal(1.58113883008 +- 0.000001)
   }
 
-  @Test def oneTwoThreeFourFiveSix() {
+  test("oneTwoThreeFourFiveSix") {
     val values = List(1, 2, 3, 4, 5, 6)
-    assertEquals(1.87082869339, getStdev(values), 0.000001)
+    getStdev(values) should equal(1.87082869339 +- 0.000001)
   }
 
-  @Test def oneTwoThreeFourFiveSixSeven() {
+  test("oneTwoThreeFourFiveSixSeven") {
     val values = List(1, 2, 3, 4, 5, 6, 7)
-    assertEquals(2.16024689947, getStdev(values), 0.000001)
+    getStdev(values) should equal(2.16024689947 +- 0.000001)
   }
 }
 
-class StdevPopulationTest extends StdevTest with NumericHelper{
+class StdevPopulationTest extends CypherFunSuite with StdevTest with NumericHelper {
   def createAggregator(inner: Expression) = new StdevFunction(inner, true)
 
-  @Test def singleOne() {
+  test("singleOne") {
     val values = List(1)
-    assertEquals(0.0, getStdev(values), 0.000001)
+    getStdev(values) should equal(0.0 +- 0.000001)
   }
 
-  @Test def manyOnes() {
+  test("manyOnes") {
     val values = List(1,1)
-    assertEquals(0.0, getStdev(values), 0.000001)
+    getStdev(values) should equal(0.0 +- 0.000001)
   }
 
-  @Test def oneTwoThree() {
+  test("oneTwoThree") {
     val values = List(1,2,3)
-    assertEquals(0.816496580928, getStdev(values), 0.000001)
+    getStdev(values) should equal(0.816496580928 +- 0.000001)
   }
 
-  @Test def oneTwoThreeFour() {
+  test("oneTwoThreeFour") {
     val values = List(1,2,3,4)
-    assertEquals(1.11803398875, getStdev(values), 0.000001)
+    getStdev(values) should equal(1.11803398875 +- 0.000001)
   }
 
-  @Test def oneTwoThreeFourFive() {
+  test("oneTwoThreeFourFive") {
     val values = List(1, 2, 3, 4, 5)
-    assertEquals(1.41421356237, getStdev(values), 0.000001)
+    getStdev(values) should equal(1.41421356237 +- 0.000001)
   }
 
-  @Test def oneTwoThreeFourFiveSix() {
+  test("oneTwoThreeFourFiveSix") {
     val values = List(1, 2, 3, 4, 5, 6)
-    assertEquals(1.70782512766, getStdev(values), 0.000001)
+    getStdev(values) should equal(1.70782512766 +- 0.000001)
   }
 
-  @Test def oneTwoThreeFourFiveSixSeven() {
+  test("oneTwoThreeFourFiveSixSeven") {
     val values = List(1, 2, 3, 4, 5, 6, 7)
-    assertEquals(2.0, getStdev(values), 0.000001)
+    getStdev(values) should equal(2.0 +- 0.000001)
   }
 }
