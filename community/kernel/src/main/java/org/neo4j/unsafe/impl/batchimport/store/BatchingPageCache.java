@@ -124,7 +124,7 @@ public class BatchingPageCache implements PageCache
     public PagedFile map( File file, int pageSize ) throws IOException
     {
         StoreChannel channel = fs.open( file, "rw" );
-        BatchingPagedFile pageFile = new BatchingPagedFile( channel, file,
+        BatchingPagedFile pageFile = new BatchingPagedFile( channel,
                 writerFactory.create( file, channel, monitor ), pageSize, mode );
         pagedFiles.put( file, pageFile );
         return pageFile;
@@ -174,11 +174,11 @@ public class BatchingPageCache implements PageCache
         private final StoreChannel channel;
         private final int pageSize;
 
-        public BatchingPagedFile( StoreChannel channel, File file, Writer writer, int pageSize, Mode mode )
+        public BatchingPagedFile( StoreChannel channel, Writer writer, int pageSize, Mode mode ) throws IOException
         {
             this.channel = channel;
             this.pageSize = pageSize;
-            this.singleCursor = new BatchingPageCursor( channel, file, writer, pageSize, mode );
+            this.singleCursor = new BatchingPageCursor( channel, writer, pageSize, mode );
         }
 
         @Override
@@ -187,7 +187,7 @@ public class BatchingPageCache implements PageCache
             singleCursor.ensurePagePlacedOver( pageId );
             // Do this so that the first call to next() will have the cursor "placed" there
             // and consecutive calls move the cursor forwards.
-            singleCursor.unpin();
+            singleCursor.pinned = false;
             return singleCursor;
         }
 
@@ -223,6 +223,12 @@ public class BatchingPageCache implements PageCache
         {
             channel.force( true );
         }
+
+        @Override
+        public long getLastPageId() throws IOException
+        {
+            return singleCursor.highestKnownPageId();
+        }
     }
 
     static class BatchingPageCursor implements PageCursor
@@ -235,12 +241,11 @@ public class BatchingPageCache implements PageCache
         private final Mode mode;
         private final int pageSize;
         private boolean pinned;
-        private final File file;
+        private long highestKnownPageId;
 
-        BatchingPageCursor( StoreChannel channel, File file, Writer writer, final int pageSize, Mode mode )
+        BatchingPageCursor( StoreChannel channel, Writer writer, final int pageSize, Mode mode ) throws IOException
         {
             this.channel = channel;
-            this.file = file;
             this.writer = writer;
             this.pageSize = pageSize;
             this.mode = mode;
@@ -253,11 +258,7 @@ public class BatchingPageCache implements PageCache
                 }
             } );
             this.currentBuffer = bufferRing.next();
-        }
-
-        private void unpin()
-        {
-            pinned = false;
+            highestKnownPageId = channel.size() / pageSize;
         }
 
         @Override
@@ -406,6 +407,7 @@ public class BatchingPageCache implements PageCache
             // buffer position after we placed the window is irrelevant since every future access
             // will set offset explicitly before use.
             currentPageId = pageId;
+            highestKnownPageId = Math.max( highestKnownPageId, pageId );
             prepared( currentBuffer );
         }
 
@@ -432,6 +434,11 @@ public class BatchingPageCache implements PageCache
             buffer.flip();
             buffer.limit( pageSize ); // always write the full page
             return buffer;
+        }
+
+        public long highestKnownPageId()
+        {
+            return highestKnownPageId;
         }
     }
 

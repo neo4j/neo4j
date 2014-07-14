@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -33,9 +32,6 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
-import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
-import org.neo4j.io.pagecache.impl.standard.StandardPageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -169,16 +165,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     public int getRecordHeaderSize()
     {
         return RECORD_SIZE - DEFAULT_PAYLOAD_SIZE;
-    }
-
-    public void freeStringBlockId( long blockId )
-    {
-        stringPropertyStore.freeId( blockId );
-    }
-
-    public void freeArrayBlockId( long blockId )
-    {
-        arrayPropertyStore.freeId( blockId );
     }
 
     public PropertyKeyTokenStore getPropertyKeyTokenStore()
@@ -657,15 +643,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     public int getArrayBlockSize()
     {
         return arrayPropertyStore.getBlockSize();
-    }
-
-    // TODO this is only for rebuilding id generators... remove when those are rewritten
-    @Override
-    protected boolean isRecordInUse( ByteBuffer buffer )
-    {
-        // TODO: The next line is an ugly hack, but works.
-        OffsetTrackingCursor cursor = new StandardPageCursor( null ).reset(new ByteBufferPage( buffer ));
-        return buffer.limit() >= RECORD_SIZE && getRecordFromBuffer( 0, cursor ).inUse();
     }
 
     @Override

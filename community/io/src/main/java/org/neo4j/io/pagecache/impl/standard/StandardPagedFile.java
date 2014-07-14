@@ -216,6 +216,7 @@ public class StandardPagedFile implements PagedFile
         swapper.force();
     }
 
+    @Override
     public long getLastPageId() throws IOException
     {
         return lastPageId.get();

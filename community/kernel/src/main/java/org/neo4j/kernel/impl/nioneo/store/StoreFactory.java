@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,6 +36,8 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
 * Factory for Store implementations. Can also be used to create empty stores.
@@ -155,7 +155,7 @@ public class StoreFactory
                 idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
-    private DynamicStringStore newDynamicStringStore( File fileName, IdType nameIdType )
+    public DynamicStringStore newDynamicStringStore( File fileName, IdType nameIdType )
     {
         return new DynamicStringStore( fileName, config, nameIdType, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
@@ -353,7 +353,7 @@ public class StoreFactory
         store.close();
     }
 
-    private void createDynamicStringStore( File fileName, int blockSize, IdType idType )
+    public void createDynamicStringStore( File fileName, int blockSize, IdType idType )
     {
         createEmptyDynamicStore( fileName, blockSize, DynamicStringStore.VERSION, idType );
     }
