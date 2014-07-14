@@ -88,7 +88,7 @@ object Function {
     functions.ToFloat,
     functions.ToInt,
     functions.ToLower,
-    functions.ToStr,
+    functions.ToString,
     functions.ToUpper,
     functions.Trim,
     functions.Type,

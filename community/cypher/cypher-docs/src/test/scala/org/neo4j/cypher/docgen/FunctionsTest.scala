@@ -765,6 +765,18 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
     )
   }
 
+  @Test def toStringFunc() {
+    testThis(
+      title = "TOSTRING",
+      syntax = "TOSTRING( expression )",
+      arguments = List("expression" -> "An expression that returns anything"),
+      text = "`TOSTRING` converts the argument to a string. It converts integers and floating point numbers to strings, and if called with a string will leave it unchanged.",
+      queryText = "return toString(11.5), toString(\"already a string\")",
+      returns = "",
+      assertions = (p) => assert(List(Map("toString(11.5)" -> "11.5", "toString(\"already a string\")" -> "already a string")) === p.toList)
+    )
+  }
+
   @Test def now() {
     testThis(
       title = "TIMESTAMP",

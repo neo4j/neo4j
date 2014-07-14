@@ -2,6 +2,7 @@
 -----
 o Adds support for Octal literals (using a preceding 0, e.g. 03517)
 o Add `exists(...)` predicate function for checking patterns and properties
+o Ensure `toString(...)` only does type conversion
 
 2.0.4
 -----
