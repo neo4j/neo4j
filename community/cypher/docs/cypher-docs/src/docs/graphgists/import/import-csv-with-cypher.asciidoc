@@ -45,6 +45,17 @@ If you are storing your data in a SQL database, this is the one-to-many relation
 We're using +MERGE+ to create nodes that represent countries.
 Using +MERGE+ avoids creating duplicate country nodes in the case where multiple movies have been made in the same country.
 
+[IMPORTANT]
+When using +MERGE+ or +MATCH+ with +LOAD CSV+ we need to make sure we have an index (see <<query-schema-index>>) or a unique constraint (see <<query-constraints>>) on the property we're merging.
+This will ensure the query executes in a performant way.
+
+Before running our query to connect movies and countries we'll create an index for the name property on the Country label to ensure the query runs as fast as it can:
+
+[source,cypher]
+----
+CREATE INDEX ON :Country(name)
+----
+
 [source,cypher]
 ----
 LOAD CSV WITH HEADERS FROM "movies.csv" AS csvLine
@@ -89,6 +100,9 @@ CREATE CONSTRAINT ON (movie:Movie) ASSERT movie.id IS UNIQUE
 
 Now importing the relationships is a matter of finding the nodes and then creating relationships between them.
 
+For this query we'll use +USING PERIODIC COMMIT+ (see <<query-periodic-commit>>) which is helpful for queries that operate on large CSV files.
+This hint tells Neo4j that the query might build up inordinate amounts of transaction state, and so needs to be periodically committed.
+
 [source,cypher]
 ----
 USING PERIODIC COMMIT
@@ -107,9 +121,6 @@ include::../../graphgists/import/roles.csv[]
 Relationships created: 6
 Properties set: 6
 ////
-
-In the query above, we used +USING PERIODIC COMMIT+.
-This hint tells Neo4j that the query might build up inordinate amounts of transaction state, and so needs to be periodically committed.
 
 Finally, as the +id+ property was only necessary to import the relationships, we can drop the constraints and the id property from all movie and person nodes.
 
