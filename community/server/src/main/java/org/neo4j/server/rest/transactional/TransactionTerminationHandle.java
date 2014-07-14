@@ -17,27 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.server.rest.transactional;
 
-public interface TransactionMonitor
+public interface TransactionTerminationHandle
 {
-    // Inputs
-    void transactionStarted();
-
-    void transactionFinished( boolean successful );
-
-    void transactionTerminated();
-
-    // Outputs
-    int getNumberOfActiveTransactions();
-
-    int getPeakConcurrentNumberOfTransactions();
-
-    int getNumberOfStartedTransactions();
-
-    long getNumberOfCommittedTransactions();
-
-    long getNumberOfRolledbackTransactions();
-
-    long getNumberOfTerminatedTransactions();
+    boolean terminate();
 }

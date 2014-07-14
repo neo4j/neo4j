@@ -33,7 +33,7 @@ public class BaseConstraintCreator implements ConstraintCreator
         this.actions = actions;
         this.label = label;
 
-        assertInTransaction();
+        assertInUnterminatedTransaction();
     }
 
     @Override
@@ -45,12 +45,12 @@ public class BaseConstraintCreator implements ConstraintCreator
     @Override
     public ConstraintDefinition create()
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         throw new IllegalStateException( "No constraint assertions specified" );
     }
 
-    protected final void assertInTransaction()
+    protected final void assertInUnterminatedTransaction()
     {
-        actions.assertInTransaction();
+        actions.assertInUnterminatedTransaction();
     }
 }

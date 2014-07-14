@@ -1017,7 +1017,7 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
-        public void assertInTransaction()
+        public void assertInUnterminatedTransaction()
         {
             // BatchInserterImpl always is expected to be running in one big single "transaction"
         }

@@ -26,6 +26,7 @@ public class TransactionMonitorImpl implements TransactionMonitor
     private final AtomicInteger startedTransactionCount = new AtomicInteger();
     private final AtomicInteger activeTransactionCount = new AtomicInteger();
     private final AtomicInteger rolledBackTransactionCount = new AtomicInteger();
+    private final AtomicInteger transactionTerminationCount = new AtomicInteger();
     private int peakTransactionCount; // hard to have absolutely atomic, and it doesn't need to be.
 
     @Override
@@ -45,6 +46,12 @@ public class TransactionMonitorImpl implements TransactionMonitor
         {
             rolledBackTransactionCount.incrementAndGet();
         }
+    }
+
+    @Override
+    public void transactionTerminated()
+    {
+        transactionTerminationCount.incrementAndGet();
     }
 
     @Override
@@ -69,6 +76,12 @@ public class TransactionMonitorImpl implements TransactionMonitor
     public long getNumberOfCommittedTransactions()
     {
         return startedTransactionCount.get() - activeTransactionCount.get() - rolledBackTransactionCount.get();
+    }
+
+    @Override
+    public long getNumberOfTerminatedTransactions()
+    {
+        return transactionTerminationCount.get();
     }
 
     @Override

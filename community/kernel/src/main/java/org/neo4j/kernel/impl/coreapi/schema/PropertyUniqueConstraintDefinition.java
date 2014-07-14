@@ -41,35 +41,35 @@ public class PropertyUniqueConstraintDefinition implements ConstraintDefinition
     @Override
     public void drop()
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         actions.dropPropertyUniquenessConstraint( label, propertyKey );
     }
 
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         return singletonList( propertyKey );
     }
 
     @Override
     public Label getLabel()
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         return label;
     }
 
     @Override
     public ConstraintType getConstraintType()
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         return ConstraintType.UNIQUENESS;
     }
 
     @Override
     public boolean isConstraintType( ConstraintType type )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         return getConstraintType().equals( type );
     }
 
@@ -120,8 +120,8 @@ public class PropertyUniqueConstraintDefinition implements ConstraintDefinition
         return String.format( "%s.%s IS UNIQUE", label.name().toLowerCase(), propertyKey );
     }
 
-    private final void assertInTransaction()
+    private final void assertInUnterminatedTransaction()
     {
-        actions.assertInTransaction();
+        actions.assertInUnterminatedTransaction();
     }
 }
