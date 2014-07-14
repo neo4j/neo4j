@@ -49,12 +49,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
@@ -66,7 +64,7 @@ public class StoreUpgraderTestIT
     @Test
     public void shouldUpgradeAnOldFormatStore() throws IOException
     {
-        assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, LegacyStore.LEGACY_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, Legacy20Store.LEGACY_VERSION ) );
 
         newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
                 .migrateIfNeeded( dbDirectory );
@@ -312,9 +310,10 @@ public class StoreUpgraderTestIT
 
     public static void truncateAllFiles( FileSystemAbstraction fileSystem, File workingDirectory ) throws IOException
     {
-        for ( StoreFile storeFile : StoreFile.legacyStoreFiles() )
+        for ( StoreFile20 storeFile : StoreFile20.legacyStoreFiles() )
         {
-            truncateFile( fileSystem, new File( workingDirectory, storeFile.storeFileName() ), storeFile.legacyVersion() );
+            truncateFile( fileSystem, new File( workingDirectory, storeFile.storeFileName() ),
+                    storeFile.legacyVersion() );
         }
     }
 
@@ -322,7 +321,6 @@ public class StoreUpgraderTestIT
     private File dbDirectory;
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     @SuppressWarnings( "deprecation" )
-    private final IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator )
     {

@@ -58,6 +58,7 @@ public class NodeFirstRelationshipStep extends LonelyProcessingStep implements G
     protected void process()
     {
         long highId = nodeStore.getHighestPossibleIdInUse();
+        System.out.println("Starting at " + highId);
         NodeRecord heavilyReusedRecord = new NodeRecord( -1 );
         for ( long nodeId = highId; nodeId >= 0; nodeId-- )
         {

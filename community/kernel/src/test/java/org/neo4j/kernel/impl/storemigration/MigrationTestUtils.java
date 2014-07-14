@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,15 +35,11 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.Unzip;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class MigrationTestUtils
 {
@@ -120,18 +120,23 @@ public class MigrationTestUtils
 
     public static File findOldFormatStoreDirectory() throws IOException
     {
-        return Unzip.unzip( LegacyStore.class, "exampledb.zip" );
+        return Unzip.unzip( Legacy20Store.class, "exampledb.zip" );
+    }
+
+    public static File find19FormatStoreDirectory( File unzipTarget ) throws IOException
+    {
+        return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip", unzipTarget );
     }
 
     public static File findOldFormatStoreDirectory( File unzipTarget ) throws IOException
     {
-        return Unzip.unzip( LegacyStore.class, "exampledb.zip", unzipTarget );
+        return Unzip.unzip( Legacy20Store.class, "exampledb.zip", unzipTarget );
     }
 
     public static boolean allStoreFilesHaveVersion( FileSystemAbstraction fileSystem, File workingDirectory,
             String version ) throws IOException
     {
-        for ( StoreFile storeFile : StoreFile.legacyStoreFiles() )
+        for ( StoreFile20 storeFile : StoreFile20.legacyStoreFiles() )
         {
             StoreChannel channel = fileSystem.open( new File( workingDirectory, storeFile.storeFileName() ), "r" );
             int length = UTF8.encode( version ).length;
@@ -165,7 +170,7 @@ public class MigrationTestUtils
 
     public static boolean containsAnyStoreFiles( FileSystemAbstraction fileSystem, File directory )
     {
-        for ( StoreFile file : StoreFile.values() )
+        for ( StoreFile20 file : StoreFile20.values() )
         {
             if ( fileSystem.fileExists( new File( directory, file.storeFileName() ) ) )
             {

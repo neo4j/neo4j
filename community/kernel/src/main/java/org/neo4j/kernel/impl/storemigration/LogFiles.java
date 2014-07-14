@@ -71,7 +71,7 @@ public class LogFiles
         {
             if ( filter.accept( fromDirectory, logFile.getName() ) )
             {
-                StoreFile.moveFile( fs, logFile.getName(), fromDirectory, toDirectory, false, false );
+                StoreFile20.moveFile( fs, logFile.getName(), fromDirectory, toDirectory, false, false );
             }
         }
     }

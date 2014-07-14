@@ -26,6 +26,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
 import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1.writeLogHeader;
 
 import java.io.File;
 import java.io.IOException;
@@ -319,7 +320,7 @@ public class TestLogPruneStrategy
         private void clearAndWriteHeader()
         {
             activeBuffer.clear();
-            VersionAwareLogEntryReader.writeLogHeader( activeBuffer, version, tx );
+            writeLogHeader( activeBuffer, version, tx );
             
             // Because writeLogHeader does flip()
             activeBuffer.limit( activeBuffer.capacity() );
