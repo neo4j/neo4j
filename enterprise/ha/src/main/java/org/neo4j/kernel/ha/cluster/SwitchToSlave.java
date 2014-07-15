@@ -383,7 +383,6 @@ public class SwitchToSlave
         myMaster = metadata.getMasterId();
         myChecksum = metadata.getChecksum();
 
-
         HandshakeResult handshake;
         try ( Response<HandshakeResult> response = master.handshake( myLastCommittedTx, nioneoDataSource.getStoreId() ) )
         {

@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.pruning;
 
-import java.io.IOException;
-
-public interface LogEntryReader<S>
+public interface LogPruneStrategy
 {
-    LogEntry readLogEntry( S source ) throws IOException;
+    void prune();
 }

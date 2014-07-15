@@ -17,12 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
-public class XaLogicalLogTokens {
+import java.io.IOException;
 
-    public static final char CLEAN = 'C';
-    public static final char LOG1 = '1';
-    public static final char LOG2 = '2';
-    
+import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
+
+public class OnePhaseCommit extends LogEntryCommit
+{
+    public OnePhaseCommit( long txId, long timeWritten )
+    {
+        this( CURRENT_LOG_ENTRY_VERSION, txId, timeWritten );
+    }
+
+    public OnePhaseCommit( byte version, long txId, long timeWritten )
+    {
+        super( TX_1P_COMMIT, version, txId, timeWritten, "Commit" );
+    }
+
+    @Override
+    public void accept( LogHandler handler ) throws IOException
+    {
+        handler.onePhaseCommitEntry( this );
+    }
 }

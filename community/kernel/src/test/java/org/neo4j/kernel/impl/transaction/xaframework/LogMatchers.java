@@ -35,6 +35,11 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
 import static org.neo4j.kernel.impl.util.Cursors.iterable;
 
@@ -119,10 +124,10 @@ public class LogMatchers
 
     public static Matcher<? extends LogEntry> startEntry( final int masterId, final int localId )
     {
-        return new TypeSafeMatcher<LogEntry.Start>()
+        return new TypeSafeMatcher<LogEntryStart>()
         {
             @Override
-            public boolean matchesSafely( LogEntry.Start entry )
+            public boolean matchesSafely( LogEntryStart entry )
             {
                 return entry != null && entry.getMasterId() == masterId
                         && entry.getLocalId() == localId;
@@ -139,10 +144,10 @@ public class LogMatchers
 
     public static Matcher<? extends LogEntry> commitEntry( final long txId )
     {
-        return new TypeSafeMatcher<LogEntry.OnePhaseCommit>()
+        return new TypeSafeMatcher<OnePhaseCommit>()
         {
             @Override
-            public boolean matchesSafely( LogEntry.OnePhaseCommit onePC )
+            public boolean matchesSafely( OnePhaseCommit onePC )
             {
                 return onePC != null && onePC.getTxId() == txId;
             }
@@ -158,10 +163,10 @@ public class LogMatchers
     public static Matcher<? extends LogEntry> commandEntry( final long key,
             final Class<? extends Command> commandClass )
     {
-        return new TypeSafeMatcher<LogEntry.Command>()
+        return new TypeSafeMatcher<LogEntryCommand>()
         {
             @Override
-            public boolean matchesSafely( LogEntry.Command commandEntry )
+            public boolean matchesSafely( LogEntryCommand commandEntry )
             {
                 if ( commandEntry == null )
                 {

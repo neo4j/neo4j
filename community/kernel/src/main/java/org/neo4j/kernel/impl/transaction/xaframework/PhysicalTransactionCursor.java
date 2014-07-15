@@ -24,6 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 
 public class PhysicalTransactionCursor implements IOCursor<CommittedTransactionRepresentation>
 {
@@ -51,15 +56,17 @@ public class PhysicalTransactionCursor implements IOCursor<CommittedTransactionR
     @Override
     public boolean next() throws IOException
     {
-        List<Command> entries = commandList();
         LogEntry entry = entryReader.readLogEntry( channel );
         if ( entry == null )
         {
             return false;
         }
-        assert entry instanceof LogEntry.Start : "Expected Start entry, read " + entry + " instead";
-        LogEntry.Start startEntry = (LogEntry.Start) entry;
-        LogEntry.Commit commitEntry;
+
+        assert entry instanceof LogEntryStart : "Expected Start entry, read " + entry + " instead";
+        LogEntryStart startEntry = (LogEntryStart) entry;
+        LogEntryCommit commitEntry;
+
+        List<Command> entries = commandList();
         while ( true )
         {
             entry = entryReader.readLogEntry( channel );
@@ -67,13 +74,13 @@ public class PhysicalTransactionCursor implements IOCursor<CommittedTransactionR
             {
                 return false;
             }
-            if ( entry instanceof LogEntry.Commit )
+            if ( entry instanceof LogEntryCommit )
             {
-                commitEntry = (LogEntry.Commit) entry;
+                commitEntry = (LogEntryCommit) entry;
                 break;
             }
 
-            entries.add( ((LogEntry.Command) entry).getXaCommand() );
+            entries.add( ((LogEntryCommand) entry).getXaCommand() );
         }
 
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriter;
+
 public class TransactionLogWriter
 {
     private final LogEntryWriter writer;

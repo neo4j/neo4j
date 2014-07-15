@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
 
 public class EntryReusingPhysicalTransactionCursor extends PhysicalTransactionCursor
 {

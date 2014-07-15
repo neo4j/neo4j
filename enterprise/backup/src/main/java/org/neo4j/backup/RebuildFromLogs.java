@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReaderLogVersionBridge;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.String.format;
@@ -78,7 +78,7 @@ class RebuildFromLogs
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( sourceDir, FS );
         int startVersion = 0;
-        File logFile = logFiles.getVersionFileName( startVersion ); // assume we always start from version 0?
+        File logFile = logFiles.getLogFileForVersion( startVersion ); // assume we always start from version 0?
         LogVersionBridge versionBridge = new ReaderLogVersionBridge( FS, logFiles );
         ReadableLogChannel logChannel = new ReadAheadLogChannel(
                 new PhysicalLogVersionedStoreChannel( FS.open( logFile, "R" ), startVersion ),
@@ -180,7 +180,7 @@ class RebuildFromLogs
     private static long findLastTransactionId( PhysicalLogFiles logFiles, long highestVersion )
             throws IOException
     {
-        File logFile = logFiles.getVersionFileName( highestVersion );
+        File logFile = logFiles.getLogFileForVersion( highestVersion );
         ReadableLogChannel logChannel = new ReadAheadLogChannel(
                 new PhysicalLogVersionedStoreChannel( FS.open( logFile, "R" ), highestVersion ),
                 NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );

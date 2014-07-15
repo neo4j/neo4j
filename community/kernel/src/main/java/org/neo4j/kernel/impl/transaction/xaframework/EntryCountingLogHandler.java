@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.OnePhaseCommit;
 
 public class EntryCountingLogHandler extends LogHandler.Filter
 {
@@ -39,21 +42,21 @@ public class EntryCountingLogHandler extends LogHandler.Filter
     }
 
     @Override
-    public void startEntry( LogEntry.Start startEntry ) throws IOException
+    public void startEntry( LogEntryStart startEntry ) throws IOException
     {
         entriesFound++;
         super.startEntry( startEntry );
     }
 
     @Override
-    public void onePhaseCommitEntry( LogEntry.OnePhaseCommit onePhaseCommitEntry ) throws IOException
+    public void onePhaseCommitEntry( OnePhaseCommit onePhaseCommitEntry ) throws IOException
     {
         entriesFound++;
         super.onePhaseCommitEntry( onePhaseCommitEntry );
     }
 
     @Override
-    public void commandEntry( LogEntry.Command commandEntry ) throws IOException
+    public void commandEntry( LogEntryCommand commandEntry ) throws IOException
     {
         entriesFound++;
         super.commandEntry( commandEntry );

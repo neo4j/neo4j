@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -33,10 +33,9 @@ import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
  */
 class TranslatingEntryVisitor implements Visitor<LogEntry, IOException>
 {
-    private LogEntry.Start startEntry;
+    private LogEntryStart startEntry;
 
     private LogHandler handler;
-    private int xidIdentifier;
     private List<LogEntry> entries;
     private final Function<List<LogEntry>, List<LogEntry>> translator;
 
@@ -54,7 +53,7 @@ class TranslatingEntryVisitor implements Visitor<LogEntry, IOException>
             {
                 throw new IOException( "Unable to find start entry" );
             }
-            startEntry = (LogEntry.Start) logEntry;
+            startEntry = (LogEntryStart) logEntry;
         }
 
         if ( logEntry.getVersion() != LogEntry.CURRENT_LOG_ENTRY_VERSION )
@@ -88,9 +87,8 @@ class TranslatingEntryVisitor implements Visitor<LogEntry, IOException>
      * This is a necessary call before processing a transaction - bad things will happen if two transactions
      * are processed with this consumer without a proper bind() call in between.
      */
-    public TranslatingEntryVisitor bind( int xidIdentifier, LogHandler handler )
+    public TranslatingEntryVisitor bind( LogHandler handler )
     {
-        this.xidIdentifier = xidIdentifier;
         this.handler = handler;
         this.entries = null;
         return this;

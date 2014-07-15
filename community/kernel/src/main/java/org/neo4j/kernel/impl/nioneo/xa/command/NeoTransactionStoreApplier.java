@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode;
@@ -61,30 +62,6 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
         this.neoStore = store;
         this.indexes = indexes;
         this.lockGroup = new LockGroup();
-    }
-
-    private void addRelationshipType( int id )
-    {
-        Token type = recovery ?
-                     neoStore.getRelationshipTypeTokenStore().getToken( id ) :
-                     neoStore.getRelationshipTypeTokenStore().getToken( id );
-        cacheAccess.addRelationshipTypeToken( type );
-    }
-
-    private void addLabel( int id )
-    {
-        Token labelId = recovery ?
-                        neoStore.getLabelTokenStore().getToken( id ) :
-                        neoStore.getLabelTokenStore().getToken( id );
-        cacheAccess.addLabelToken( labelId );
-    }
-
-    private void addPropertyKey( int id )
-    {
-        Token index = recovery ?
-                      neoStore.getPropertyKeyTokenStore().getToken( id ) :
-                      neoStore.getPropertyKeyTokenStore().getToken( id );
-        cacheAccess.addPropertyKeyToken( index );
     }
 
     @Override
@@ -126,27 +103,18 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
         }
         neoStore.getNodeStore().updateDynamicLabelRecords( toUpdate );
 
-        invalidateCache( command );
         // Additional cache invalidation check for nodes that have just been upgraded to dense
-        if ( nodeHasBeenUpgradedToDense( command ) )
-        {
-            command.invalidateCache( cacheAccess );
-        }
+        invalidateCache( command, nodeHasBeenUpgradedToDense( command ) );
         return true;
     }
 
     private boolean nodeHasBeenUpgradedToDense( NodeCommand command )
     {
-        return command.getBefore().inUse() && !command.getBefore().isDense() &&
-                command.getAfter().inUse() && command.getAfter().isDense();
-    }
+        final NodeRecord before = command.getBefore();
+        final NodeRecord after = command.getAfter();
 
-    private void invalidateCache( Command command )
-    {
-        if ( recovery || command.getMode() == Mode.DELETE )
-        {
-            command.invalidateCache( cacheAccess );
-        }
+        return before.inUse() && !before.isDense() &&
+                after.inUse() && after.isDense();
     }
 
     @Override
@@ -208,17 +176,17 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     }
 
     @Override
-    public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws
-            IOException
+    public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException
     {
     	if ( recovery )
     	{
-    		neoStore.getRelationshipTypeTokenStore().setHighId(command.getRecord().getId() );
+    		neoStore.getRelationshipTypeTokenStore().setHighId( command.getRecord().getId() );
     	}
         neoStore.getRelationshipTypeTokenStore().updateRecord( command.getRecord() );
         if ( recovery )
         {
-            addRelationshipType( (int) command.getKey() );
+            Token type = neoStore.getRelationshipTypeTokenStore().getToken( (int) command.getKey() );
+            cacheAccess.addRelationshipTypeToken( type );
         }
         invalidateCache( command );
         return true;
@@ -234,7 +202,8 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
         neoStore.getLabelTokenStore().updateRecord( command.getRecord() );
         if ( recovery )
         {
-            addLabel( (int) command.getKey() );
+            Token labelId = neoStore.getLabelTokenStore().getToken( (int) command.getKey() );
+            cacheAccess.addLabelToken( labelId );
         }
         invalidateCache( command );
         return true;
@@ -247,10 +216,11 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     	{
     		neoStore.getPropertyKeyTokenStore().setHighId( command.getRecord().getId() );
     	}
-        neoStore.getPropertyStore().getPropertyKeyTokenStore().updateRecord( command.getRecord() );
+        neoStore.getPropertyKeyTokenStore().updateRecord( command.getRecord() );
         if ( recovery )
         {
-            addPropertyKey( (int) command.getKey() );
+            Token index = neoStore.getPropertyKeyTokenStore().getToken( (int) command.getKey() );
+            cacheAccess.addPropertyKeyToken( index );
         }
         invalidateCache( command );
         return true;
@@ -345,6 +315,18 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
         }
         invalidateCache( command );
         return true;
+    }
+
+    private void invalidateCache( Command command ) {
+        invalidateCache( command, false );
+    }
+
+    private void invalidateCache( Command command, boolean force )
+    {
+        if ( force || recovery || command.getMode() == Mode.DELETE )
+        {
+            command.invalidateCache( cacheAccess );
+        }
     }
 
     @Override

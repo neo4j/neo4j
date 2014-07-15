@@ -52,16 +52,17 @@ public interface LockService
 
     Lock acquireNodeLock( long nodeId, LockType type );
 
+    public static final Lock NO_LOCK = new Lock()
+    {
+        @Override
+        public void release()
+        {
+           // Nothing to release, I'm not a lock, mind you
+        }
+    };
+
     public static final LockService NO_LOCK_SERVICE = new LockService()
     {
-        private final Lock NO_LOCK = new Lock()
-        {
-            @Override
-            public void release()
-            {   // Nothing to release, I'm not a lock, mind you
-            }
-        };
-
         @Override
         public Lock acquireNodeLock( long nodeId, LockType type )
         {

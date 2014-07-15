@@ -32,6 +32,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.Monitor;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
@@ -61,7 +62,7 @@ public class PhysicalLogFileTest
         life.shutdown();
 
         // THEN
-        File file = new PhysicalLogFiles( directory.directory(), name, fs ).getVersionFileName( 1L );
+        File file = new PhysicalLogFiles( directory.directory(), name, fs ).getLogFileForVersion( 1L );
         long[] header = VersionAwareLogEntryReader.readLogHeader( fs, file );
         assertEquals( 1L, header[0] );
         assertEquals( 5L, header[1] );

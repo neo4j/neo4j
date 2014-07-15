@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.pruning;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +41,15 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogFileRecoverer;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestLogPruning
@@ -75,7 +84,7 @@ public class TestLogPruning
         for ( long version = 0; version < currentVersion; version++ )
         {
             assertTrue( "Version " + version + " has been unexpectedly pruned",
-                    fs.fileExists( files.getVersionFileName( version ) ) );
+                    fs.fileExists( files.getLogFileForVersion( version ) ) );
         }
     }
 
@@ -172,7 +181,7 @@ public class TestLogPruning
         db = newDb( "true", transactionLogSize*2 );
         doTransaction();
         db.shutdown();
-        System.out.println( fs.getFileSize( files.getVersionFileName( 0 ) ) );
+        System.out.println( fs.getFileSize( files.getLogFileForVersion( 0 ) ) );
     }
 
     private int aggregateLogData( Extractor extractor ) throws IOException
@@ -180,7 +189,7 @@ public class TestLogPruning
         int total = 0;
         for ( long i = files.getHighestLogVersion(); i >= 0; i-- )
         {
-            File versionFileName = files.getVersionFileName( i );
+            File versionFileName = files.getLogFileForVersion( i );
             if ( fs.fileExists( versionFileName ) )
             {
                 total += extractor.extract( versionFileName );

@@ -113,13 +113,13 @@ import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategy;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
@@ -131,7 +131,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformatio
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -437,9 +437,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             VersionAwareLogEntryReader logEntryReader =
                     new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
             // Recovery process ties log and commit process together
-            RecoveryVisitor recoveryVisitor = new RecoveryVisitor();
-            Visitor<ReadableLogChannel, IOException> logFileRecoverer =
-                    new LogFileRecoverer( logEntryReader, recoveryVisitor );
 
             LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
                     nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
@@ -469,9 +466,9 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                         LogEntry entry;
                                         while ( (entry = reader.readLogEntry( channel )) != null )
                                         {
-                                            if ( entry instanceof LogEntry.Start )
+                                            if ( entry instanceof LogEntryStart )
                                             {
-                                                return ((LogEntry.Start) entry).getTimeWritten();
+                                                return ((LogEntryStart) entry).getTimeWritten();
                                             }
                                         }
                                     }
@@ -482,6 +479,13 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
                     logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
 
+            storeApplier = dependencies.satisfyDependency( new TransactionRepresentationStoreApplier(
+                    indexingService, labelScanStore, neoStore,
+                    cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore ) );
+
+            RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeApplier, recoveredCount );
+            Visitor<ReadableLogChannel, IOException> logFileRecoverer =
+                    new LogFileRecoverer( logEntryReader, recoveryVisitor );
             logFile = dependencies.satisfyDependency( new PhysicalLogFile( fs, logFiles,
                     config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), logPruneStrategy, neoStore,
                     neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
@@ -491,9 +495,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
                             transactionMetadataCache, logEntryReader, neoStore ) );
 
-            storeApplier = dependencies.satisfyDependency( new TransactionRepresentationStoreApplier(
-                    indexingService, labelScanStore, neoStore,
-                    cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore ) );
 
 
 
@@ -554,12 +555,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             neoStore.setRecoveredStatus( true );
             try
             {
-                // Recovery happens in here. Recovery status is needed both in init and start,
-                // init reads which log version to read from.
-                // start reads the log and performs recovery.
-                // Basically.
                 life.start();
-                recoveryVisitor.applyLastCommittedTransactionIdIfRecoveryTookPlace( neoStore );
             }
             finally
             {
@@ -594,30 +590,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAllSchemaRules() ) )
         {
             schemaCache.addSchemaRule( schemaRule );
-        }
-    }
-
-    private class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation, IOException>
-    {
-        private long lastTransactionIdApplied = -1;
-
-        public void applyLastCommittedTransactionIdIfRecoveryTookPlace(
-                TransactionIdStore transactionIdStore )
-        {
-            if ( lastTransactionIdApplied != -1 )
-            {
-                transactionIdStore.setLastCommittingAndClosedTransactionId( lastTransactionIdApplied );
-            }
-        }
-
-        @Override
-        public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
-        {
-            long txId = transaction.getCommitEntry().getTxId();
-            storeApplier.apply( transaction.getTransactionRepresentation(), txId, true );
-            recoveredCount.incrementAndGet();
-            lastTransactionIdApplied = txId;
-            return true;
         }
     }
 

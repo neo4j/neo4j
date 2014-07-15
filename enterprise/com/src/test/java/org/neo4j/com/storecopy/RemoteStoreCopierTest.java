@@ -145,7 +145,6 @@ public class RemoteStoreCopierTest
                     {
 //                        long highTransactionId = transactionIdStore.getLastCommittingTransactionId();
                         LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
-
                         try (IOCursor<CommittedTransactionRepresentation> cursor = txStore.getTransactions( transactionIdWhenStartingCopy + 1 ) )
                         {
                             while (cursor.next() && visitor.visit( cursor.get() ));

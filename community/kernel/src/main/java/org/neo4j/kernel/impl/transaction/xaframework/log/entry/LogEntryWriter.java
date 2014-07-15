@@ -17,11 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
-import javax.transaction.xa.XAResource;
+import java.io.IOException;
 
-public interface XaResource extends XAResource
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+
+public interface LogEntryWriter
 {
-    byte[] getBranchId();
+    void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
+            byte[] additionalHeaderData ) throws IOException;
+
+    void serialize( TransactionRepresentation tx ) throws IOException;
+
+    void writeCommitEntry( long transactionId, long timeWritten ) throws IOException;
 }

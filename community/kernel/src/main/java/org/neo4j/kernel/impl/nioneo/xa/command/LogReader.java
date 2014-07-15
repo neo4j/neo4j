@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa.command;
 
+
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 
 public interface LogReader<T extends ReadableLogChannel>
 {

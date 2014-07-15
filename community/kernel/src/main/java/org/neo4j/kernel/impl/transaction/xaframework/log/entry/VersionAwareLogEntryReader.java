@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +29,11 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.IllegalLogFormatException;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadPastEndException;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
 /**
  * Version aware implementation of LogEntryReader
@@ -62,8 +67,8 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
     /**
      * @return long[] {logVersion, lastCommittedTxIdOfPreviousLog}
      */
-    public static long[] readLogHeader( ByteBuffer buffer, ReadableByteChannel channel,
-            boolean strict ) throws IOException
+    public static long[] readLogHeader( ByteBuffer buffer, ReadableByteChannel channel, boolean strict )
+            throws IOException
     {
         buffer.clear();
         buffer.limit( LOG_HEADER_SIZE );
@@ -77,22 +82,15 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
             return null;
         }
         buffer.flip();
-        long version = buffer.getLong();
+        long logVersion = decodeLogVersion(  buffer.getLong(), strict );
         long previousCommittedTx = buffer.getLong();
-        long logFormatVersion = ( version >> 56 ) & 0xFF;
-        if ( (strict && CURRENT_FORMAT_VERSION != logFormatVersion ) || CURRENT_FORMAT_VERSION < logFormatVersion )
-        {
-            throw new IllegalLogFormatException( CURRENT_FORMAT_VERSION, logFormatVersion );
-        }
-        version = version & 0x00FFFFFFFFFFFFFFL;
-        return new long[] { version, previousCommittedTx };
+        return new long[] { logVersion, previousCommittedTx };
     }
 
-    public static ByteBuffer writeLogHeader( ByteBuffer buffer, long logVersion,
-            long previousCommittedTxId )
+    public static ByteBuffer writeLogHeader( ByteBuffer buffer, long logVersion, long previousCommittedTxId )
     {
         buffer.clear();
-        buffer.putLong( logVersion | ( ( (long) CURRENT_FORMAT_VERSION ) << 56 ) );
+        buffer.putLong( encodeLogVersion( logVersion ) );
         buffer.putLong( previousCommittedTxId );
         buffer.flip();
         return buffer;
@@ -109,6 +107,20 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         }
     }
 
+    static long encodeLogVersion(long logVersion) {
+        return logVersion | ( ( (long) CURRENT_FORMAT_VERSION ) << 56 );
+    }
+
+    static long decodeLogVersion(long encLogVersion, boolean strict) throws IllegalLogFormatException
+    {
+        final long logFormatVersion = ( encLogVersion >> 56 ) & 0xFF;
+        if ( (strict && CURRENT_FORMAT_VERSION != logFormatVersion ) || CURRENT_FORMAT_VERSION < logFormatVersion )
+        {
+            throw new IllegalLogFormatException( CURRENT_FORMAT_VERSION, logFormatVersion );
+        }
+        return encLogVersion & 0x00FFFFFFFFFFFFFFL;
+    }
+
     @Override
     public LogEntry readLogEntry( ReadableLogChannel channel ) throws IOException
     {
@@ -121,9 +133,6 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
              * first byte is the actual type. That is a mismatch that can be resolved externally, hence this conditional
              * extra byte read. After 2.1 is released we can remove it.
              */
-
-            // TODO this is wasteful. Turn this around so that LogPosition is mutable and pass it in,
-            // or introduce a LogPositionMark that is mutable and that can create LogPosition when requested.
             channel.getCurrentPosition( positionMarker );
             byte version = channel.get();
             byte type = channel.get();
@@ -148,8 +157,8 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         }
     }
 
-    private LogEntry.Start readTxStartEntry( byte version, ReadableLogChannel channel,
-            LogPosition position ) throws IOException
+    private LogEntryStart readTxStartEntry( byte version, ReadableLogChannel channel, LogPosition position )
+            throws IOException
     {
         int masterId = channel.getInt();
         int authorId = channel.getInt();
@@ -158,17 +167,19 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         int additionalHeaderLength = channel.getInt();
         byte[] additionalHeader = new byte[additionalHeaderLength];
         channel.get( additionalHeader, additionalHeaderLength );
-        return new LogEntry.Start( version, masterId, authorId, timeWritten, latestCommittedTxWhenStarted,
+        return new LogEntryStart( version, masterId, authorId, timeWritten, latestCommittedTxWhenStarted,
                 additionalHeader, position );
     }
 
-    private LogEntry.OnePhaseCommit readTxOnePhaseCommitEntry( byte version, ReadableLogChannel channel )
+    private OnePhaseCommit readTxOnePhaseCommitEntry( byte version, ReadableLogChannel channel )
             throws IOException
     {
-        return new LogEntry.OnePhaseCommit( version, channel.getLong(), channel.getLong() );
+        long txId = channel.getLong();
+        long timeWritten = channel.getLong();
+        return new OnePhaseCommit( version, txId, timeWritten );
     }
 
-    private LogEntry.Command readTxCommandEntry( byte version, ReadableLogChannel channel )
+    private LogEntryCommand readTxCommandEntry( byte version, ReadableLogChannel channel )
             throws IOException
     {
         CommandReader commandReader = commandReaderFactory.newInstance( version );
@@ -177,6 +188,6 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         {
             return null;
         }
-        return new LogEntry.Command( version, command );
+        return new LogEntryCommand( version, command );
     }
 }

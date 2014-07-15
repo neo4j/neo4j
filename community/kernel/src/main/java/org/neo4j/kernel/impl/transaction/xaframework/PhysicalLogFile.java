@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.writeLogHeader;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -110,7 +111,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
 
     private PhysicalLogVersionedStoreChannel openLogChannelForVersion( long forVersion ) throws IOException
     {
-        File toOpen = logFiles.getVersionFileName( forVersion );
+        File toOpen = logFiles.getLogFileForVersion( forVersion );
         PhysicalLogVersionedStoreChannel channel = openFileChannel( toOpen, "rw" );
         long[] header = readLogHeader( headerBuffer, channel, false );
         if ( header == null )
@@ -196,7 +197,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     private PhysicalLogVersionedStoreChannel openLogChannel( LogPosition position ) throws IOException
     {
         long version = position.getLogVersion();
-        File fileToOpen = logFiles.getVersionFileName( version );
+        File fileToOpen = logFiles.getLogFileForVersion( version );
         PhysicalLogVersionedStoreChannel channel = openFileChannel( fileToOpen, "r", version );
         channel.position( position.getByteOffset() );
         return channel;
@@ -275,7 +276,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
             long previousLogLastTxId = transactionMetadataCache.getLogHeader( logVersion );
             if ( previousLogLastTxId == -1 )
             {
-                long[] header = readLogHeader( fileSystem, logFiles.getVersionFileName( logVersion ) );
+                long[] header = readLogHeader( fileSystem, logFiles.getLogFileForVersion( logVersion ) );
                 transactionMetadataCache.putHeader( header[0], header[1] );
                 previousLogLastTxId = header[1];
             }
