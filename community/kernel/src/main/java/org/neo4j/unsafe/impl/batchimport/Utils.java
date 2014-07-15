@@ -42,7 +42,7 @@ public class Utils
     }
 
     public static Iterator<PropertyBlock> propertyKeysAndValues( final Object[] properties,
-            final BatchingTokenRepository<?> propetyKeyHolder, final PropertyCreator creator )
+            final BatchingTokenRepository<?> propertyKeyHolder, final PropertyCreator creator )
     {
         return new PrefetchingIterator<PropertyBlock>()
         {
@@ -56,7 +56,7 @@ public class Utils
                     return null;
                 }
 
-                int key = propetyKeyHolder.getOrCreateId( (String)properties[cursor++] );
+                int key = propertyKeyHolder.getOrCreateId( (String)properties[cursor++] );
                 Object value = properties[cursor++];
                 return creator.encodeValue( new PropertyBlock(), key, value );
             }

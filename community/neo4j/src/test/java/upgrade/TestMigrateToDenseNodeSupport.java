@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -189,7 +190,8 @@ public class TestMigrateToDenseNodeSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node refNode = single( at( db ).getAllNodesWithLabel( referenceNode ) );
+            ResourceIterable<Node> allNodesWithLabel = at( db ).getAllNodesWithLabel( referenceNode );
+            Node refNode = single( allNodesWithLabel );
             int sparseCount = 0;
             for ( Relationship relationship : refNode.getRelationships( Types.SPARSE, OUTGOING ) )
             {
