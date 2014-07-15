@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
@@ -472,10 +473,13 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         final String statement =
                 "WITH range(0, 100000) AS r UNWIND r AS i CREATE (n {number: i}) RETURN count(n)";
 
+        final CountDownLatch latch = new CountDownLatch( 1 );
+
         final Future<Response> executeFuture = Executors.newSingleThreadExecutor().submit( new Callable<Response>()
         {
             public Response call()
             {
+                latch.countDown();
                 Response response = http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
                         statement + "' } ] }" ) );
                 assertThat( response.status(), equalTo( 200 ) );
@@ -491,7 +495,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             {
                 try
                 {
-                    Thread.sleep( 1000L );
+                    latch.await();
+                    Thread.sleep( 100 );
                 }
                 catch ( InterruptedException ignored )
                 {
