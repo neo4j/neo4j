@@ -26,7 +26,7 @@ public class NoCache<E extends EntityWithSizeObject> implements Cache<E>
 {
     private final String name;
     private volatile long misses;
-    
+
     private static final AtomicLong MISSES = new AtomicLong( 0 );
 
     public NoCache( String name )
@@ -34,20 +34,25 @@ public class NoCache<E extends EntityWithSizeObject> implements Cache<E>
         this.name = name;
     }
 
-    public void put( E value )
+    @Override
+    public E put( E value )
     {
+        return value;
     }
 
+    @Override
     public void putAll( Collection<E> values )
     {
     }
 
+    @Override
     public E get( long key )
     {
         MISSES.incrementAndGet();
         return null;
     }
 
+    @Override
     public E remove( long key )
     {
         return null;
@@ -65,15 +70,18 @@ public class NoCache<E extends EntityWithSizeObject> implements Cache<E>
         return misses;
     }
 
+    @Override
     public long size()
     {
         return 0;
     }
 
+    @Override
     public void clear()
     {
     }
 
+    @Override
     public String getName()
     {
         return name;
@@ -84,7 +92,7 @@ public class NoCache<E extends EntityWithSizeObject> implements Cache<E>
     {
         // do nothing
     }
-    
+
     @Override
     public void printStatistics()
     {

@@ -35,7 +35,7 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
     {
         void purged( long sizeBefore, long sizeAfter, int numberOfEntitiesPurged );
     }
-    
+
     public static final long MIN_SIZE = 1;
     private final AtomicReferenceArray<E> cache;
     private final long maxSize;
@@ -55,7 +55,7 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
     private long purgeCount = 0;
 
     private final StringLogger logger;
-    
+
     private final AtomicBoolean purging = new AtomicBoolean();
     private final AtomicInteger avertedPurgeWaits = new AtomicInteger();
     private final AtomicInteger forcedPurgeWaits = new AtomicInteger();
@@ -71,7 +71,7 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
         this.logger = null;
         calculateSizes();
     }
-    
+
     public GCResistantCache( long maxSizeInBytes, float arrayHeapFraction, long minLogInterval, String name,
             StringLogger logger, Monitor monitor )
     {
@@ -107,7 +107,7 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
         this.purgeStopSize = (long)(maxSize * 0.90d);
         this.purgeHandoffSize = (long)(maxSize * 1.05d);
     }
-    
+
     private int getPosition( EntityWithSizeObject obj )
     {
         return (int) ( obj.getId() % cache.length() );
@@ -121,7 +121,7 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
     private long putTimeStamp = 0;
 
     @Override
-    public void put( E obj )
+    public E put( E obj )
     {
         long time = System.currentTimeMillis();
         if ( time - putTimeStamp > minLogInterval )
@@ -154,7 +154,9 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
                     purgeFrom( pos );
                 }
             }
+            return oldObj;
         }
+        return obj;
     }
 
     /**
@@ -219,7 +221,7 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
         {
             return;
         }
-        
+
         // if we're within 0.95 < size < 1.05 and someone else is purging then just return and let
         // the other one purge for us. if we're above 1.05 then wait for the purger to finish before returning.
         if ( purging.compareAndSet( false, true ) )
@@ -262,7 +264,7 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
         {
             return;
         }
-        
+
         long startTime = System.currentTimeMillis();
         purgeCount++;
         int numberOfEntitiesPurged = 0;
@@ -338,7 +340,7 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
                 registeredSize += obj.getRegisteredSize();
             }
         }
-        logger.logMessage( name + " purge (nr " + purgeCount + "): elementCount:" + elementCount + " and sizes actual:" + getSize( actualSize ) + 
+        logger.logMessage( name + " purge (nr " + purgeCount + "): elementCount:" + elementCount + " and sizes actual:" + getSize( actualSize ) +
                     ", perceived:" + getSize( currentSize.get() ) + " (diff:" + getSize(currentSize.get() - actualSize) + "), registered:" + getSize( registeredSize ), true );
     }
 
@@ -383,7 +385,7 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
 
         String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";
         String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
-        
+
         return name + " array:" + cache.length() + " purge:" + purgeCount + " size:" + currentSizeStr +
                 " misses:" + missPercentage + " collisions:" + colPercentage + " (" + collisions + ") av.purge waits:" +
                 avertedPurgeWaits.get() + " purge waits:" + forcedPurgeWaits.get() + " avg. purge time:" + (purgeCount > 0 ? (purgeTime/purgeCount) + "ms" : "N/A");

@@ -19,12 +19,17 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.neo4j.kernel.impl.cache.SoftValue.SOFT_VALUE_FACTORY;
+import java.lang.ref.ReferenceQueue;
 
-public class SoftLruCache<E extends EntityWithSizeObject> extends ReferenceCache<E>
+public class ReferenceWithKeyQueue<K, V> extends ReferenceQueue<ReferenceWithKey<K, V>>
 {
-    public SoftLruCache( String name )
+    public ReferenceWithKeyQueue()
     {
-        super( name, SOFT_VALUE_FACTORY );
+        super();
+    }
+
+    public ReferenceWithKey<K, V> safePoll()
+    {
+        return (ReferenceWithKey<K, V>) poll();
     }
 }
