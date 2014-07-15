@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallellBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.cache.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -73,6 +74,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     private final MigrationProgressMonitor progressMonitor;
     private final UpgradableDatabase upgradableDatabase;
     private final Config config;
+    private String versionToUpgradeFrom;
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
@@ -107,7 +109,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     public void migrate( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
             DependencyResolver dependencyResolver ) throws IOException
     {
-        String versionToUpgradeFrom = upgradableDatabase.checkUpgradeable( storeDir );
+        versionToUpgradeFrom = upgradableDatabase.checkUpgradeable( storeDir );
 
         progressMonitor.started();
 
@@ -133,8 +135,10 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         BatchImporter importer = new ParallellBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
                 new Configuration.OverrideFromConfig( config ), Collections.<KernelExtensionFactory<?>>emptyList(),
                 executionMonitor );
-        importer.doImport( legacyNodesAsInput( legacyStore ), legacyRelationshipsAsInput( legacyStore ),
-                IdMappers.actualIds() );
+        Iterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
+        Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
+        IdMapper idMapper = IdMappers.actualIds();
+        importer.doImport( nodes, relationships, idMapper );
         progressMonitor.finished();
 
         // Close
@@ -223,9 +227,29 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         // The batch importer will create a whole store. so
         // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
         StoreFile20.deleteIdFile( fileSystem, migrationDir, allExcept( StoreFile20.RELATIONSHIP_GROUP_STORE ) );
-        StoreFile20.deleteStoreFile( fileSystem, migrationDir, allExcept( StoreFile20.NODE_STORE,
-                StoreFile20.RELATIONSHIP_STORE, StoreFile20.RELATIONSHIP_GROUP_STORE, StoreFile20.LABEL_TOKEN_STORE,
-                StoreFile20.NODE_LABEL_STORE, StoreFile20.LABEL_TOKEN_NAMES_STORE, StoreFile20.SCHEMA_STORE ) );
+
+        StoreFile20[] filesToDelete;
+        if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
+        {
+            filesToDelete = allExcept(
+                    StoreFile20.NODE_STORE,
+                    StoreFile20.RELATIONSHIP_STORE,
+                    StoreFile20.RELATIONSHIP_GROUP_STORE,
+                    StoreFile20.LABEL_TOKEN_STORE,
+                    StoreFile20.NODE_LABEL_STORE,
+                    StoreFile20.LABEL_TOKEN_NAMES_STORE,
+                    StoreFile20.SCHEMA_STORE );
+        }
+        else
+        {
+            // Note: We don't overwrite the label stores in 2.0
+            filesToDelete = allExcept(
+                    StoreFile20.NODE_STORE,
+                    StoreFile20.RELATIONSHIP_STORE,
+                    StoreFile20.RELATIONSHIP_GROUP_STORE,
+                    StoreFile20.SCHEMA_STORE );
+        }
+        StoreFile20.deleteStoreFile( fileSystem, migrationDir, filesToDelete );
 
         // Move the current ones into the leftovers directory
         StoreFile20.move( fileSystem, storeDir, leftOversDir,
@@ -238,7 +262,6 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
                 true,   // allow overwrite target files
                 StoreFileType.values() );
         StoreFile20.ensureStoreVersion( fileSystem, storeDir, StoreFile20.currentStoreFiles() );
-//        LogFiles.move( fileSystem, storeDir, leftOversDir );
     }
 
     @Override
