@@ -31,17 +31,18 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
@@ -64,7 +65,7 @@ public class TestCrashWithRebuildSlow
         String storeDir = new File("dir").getAbsolutePath();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
-        produceNonCleanDefraggedStringStore( db );
+        List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
         EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDb( db ) );
 
         // Recover with rebuild_idgenerators_fast=false
@@ -73,10 +74,10 @@ public class TestCrashWithRebuildSlow
                 .newImpermanentDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, Settings.FALSE )
                 .newGraphDatabase();
-        assertNumberOfFreeIdsEquals( storeDir, snapshot, 4 );
 
         try ( Transaction tx = newDb.beginTx() )
         {
+            // Verify that the data we didn't delete is still around
             int nameCount = 0;
             int relCount = 0;
             for ( Node node : GlobalGraphOperations.at( newDb ).getAllNodes() )
@@ -88,6 +89,14 @@ public class TestCrashWithRebuildSlow
 
             assertEquals( 16, nameCount );
             assertEquals( 12, relCount );
+
+            // Verify that the ids of the nodes we deleted are reused
+            List<Long> newIds = new ArrayList<>();
+            newIds.add( newDb.createNode().getId() );
+            newIds.add( newDb.createNode().getId() );
+            newIds.add( newDb.createNode().getId() );
+            newIds.add( newDb.createNode().getId() );
+            assertThat( newIds, is( deletedNodeIds ) );
             tx.success();
         }
         finally
@@ -96,20 +105,21 @@ public class TestCrashWithRebuildSlow
         }
     }
 
-    private void assertNumberOfFreeIdsEquals( String storeDir, FileSystemAbstraction fs, int numberOfFreeIds )
+    private void assertNumberOfFreeIdsEquals( String storeDir, FileSystemAbstraction fs, long numberOfFreeIds )
     {
-        assertEquals( 9/*header*/ + 8*numberOfFreeIds,
-                fs.getFileSize( new File( storeDir, "neostore.propertystore.db.strings.id" ) ) );
+        long fileSize = fs.getFileSize( new File( storeDir, "neostore.propertystore.db.strings.id" ) );
+        long fileSizeWithoutHeader = fileSize - 9;
+        long actualFreeIds = fileSizeWithoutHeader / 8;
+
+        assertThat( "Id file should at least have a 9 byte header",
+                fileSize, greaterThanOrEqualTo( 9L ) );
+        assertThat( "File should contain the expected number of free ids",
+                actualFreeIds, is( numberOfFreeIds ) );
+        assertThat( "File size should not contain more bytes than expected",
+                8 * numberOfFreeIds, is( fileSizeWithoutHeader ) );
     }
 
-    public static void main( String[] args )
-    {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( args[0] );
-        produceNonCleanDefraggedStringStore( db );
-        System.exit( 1 );
-    }
-
-    private static void produceNonCleanDefraggedStringStore( GraphDatabaseService db )
+    private static List<Long> produceNonCleanDefraggedStringStore( GraphDatabaseService db )
     {
         // Create some strings
         List<Node> nodes = new ArrayList<>();
@@ -131,14 +141,24 @@ public class TestCrashWithRebuildSlow
         }
 
         // Delete some of them, but leave some in between deletions
+        List<Long> deletedNodeIds = new ArrayList<>();
         try ( Transaction tx = db.beginTx() )
         {
-            delete( nodes.get( 5 ) );
-            delete( nodes.get( 7 ) );
-            delete( nodes.get( 8 ) );
-            delete( nodes.get( 10 ) );
+            Node a = nodes.get( 5 );
+            Node b = nodes.get( 7 );
+            Node c = nodes.get( 8 );
+            Node d = nodes.get( 10 );
+            deletedNodeIds.add( a.getId() );
+            deletedNodeIds.add( b.getId() );
+            deletedNodeIds.add( c.getId() );
+            deletedNodeIds.add( d.getId() );
+            delete( a );
+            delete( b );
+            delete( c );
+            delete( d );
             tx.success();
         }
+        return deletedNodeIds;
     }
 
     private static void delete( Node node )

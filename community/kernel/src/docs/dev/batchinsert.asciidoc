@@ -16,7 +16,8 @@ Be aware of the following points when using batch insertion:
   on shutdown.
 * Unless +shutdown+ is successfully invoked at the end of the import, the database files _will_ be corrupt.
 
-WARNING: Always perform batch insertion in a _single thread_ (or use synchronization to make only one thread at a time access the batch inserter) and invoke +shutdown+ when finished.
+[WARNING]
+Always perform batch insertion in a _single thread_ (or use synchronization to make only one thread at a time access the batch inserter) and invoke +shutdown+ when finished.
 
 [[batchinsert-examples]]
 == Batch Inserter Examples ==
@@ -37,8 +38,8 @@ source=examples/BatchInsertDocTest.java
 tag=insert
 ----
 
-To gain good performance you probably want to set some configuration settings for the batch inserter.
-Read <<configuration-batchinsert>> for information on configuring a batch inserter.
+The BatchInserter can take configuration settings, if need be.
+Read <<configuration-batchinsert>> for information on what configations are available and what they do.
 This is how to start a batch inserter with configuration options:
 
 [snippet,java]

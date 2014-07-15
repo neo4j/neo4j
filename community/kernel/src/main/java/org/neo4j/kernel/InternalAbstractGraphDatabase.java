@@ -216,8 +216,6 @@ public abstract class InternalAbstractGraphDatabase
     public static class Configuration
     {
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
-        public static final Setting<Boolean> use_memory_mapped_buffers =
-                GraphDatabaseSettings.use_memory_mapped_buffers;
         public static final Setting<Boolean> execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
         public static final Setting<String> cache_type = GraphDatabaseSettings.cache_type;
         public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
@@ -409,28 +407,7 @@ public abstract class InternalAbstractGraphDatabase
         storeMigrationProcess = new StoreUpgrader( new ConfigMapUpgradeConfiguration( config ), fileSystem,
                 monitors.newMonitor( StoreUpgrader.Monitor.class ) );
 
-        // Apply autoconfiguration for memory settings
-        AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
-                config.get( NeoStoreXaDataSource.Configuration.store_dir ),
-                config.get( Configuration.use_memory_mapped_buffers ),
-                logging.getConsoleLog( AutoConfigurator.class ) );
-        if (config.get( GraphDatabaseSettings.dump_configuration ))
-        {
-            // TODO please, PLEASE pass in a PrintStream instead
-            System.out.println( autoConfigurator.getNiceMemoryInformation() );
-        }
         Map<String, String> configParams = config.getParams();
-        Map<String, String> autoConfiguration = autoConfigurator.configure();
-        for ( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
-        {
-            // Don't override explicit settings
-            String key = autoConfig.getKey();
-            if ( !config.getParams().containsKey( key ) )
-            {
-                configParams.put( key, autoConfig.getValue() );
-            }
-        }
-
         config.applyChanges( configParams );
 
         this.msgLog = logging.getMessagesLog( getClass() );
@@ -656,7 +633,12 @@ public abstract class InternalAbstractGraphDatabase
 
     protected PageCache createPageCache()
     {
-        return new LifecycledPageCache( fileSystem, jobScheduler, config );
+        LifecycledPageCache lifecycledPageCache = new LifecycledPageCache( fileSystem, jobScheduler, config );
+        if ( config.get( GraphDatabaseSettings.dump_configuration ) )
+        {
+            lifecycledPageCache.dumpConfiguration( logging.getMessagesLog( PageCache.class ) );
+        }
+        return lifecycledPageCache;
     }
 
     protected RecoveryVerifier createRecoveryVerifier()

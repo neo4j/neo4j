@@ -19,16 +19,6 @@
  */
 package org.neo4j.perftest.enterprise.ccheck;
 
-import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
-import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
-import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
-import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.passOn;
-import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.enumSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
-import static org.neo4j.perftest.enterprise.windowpool.MemoryMappingConfiguration.addLegacyMemoryMappingConfiguration;
-
 import java.util.Map;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
@@ -57,6 +47,15 @@ import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Parameters;
 import org.neo4j.perftest.enterprise.util.Setting;
 
+import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
+import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
+import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
+import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.passOn;
+import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.enumSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
+
 public class ConsistencyPerformanceCheck
 {
     static final Setting<Boolean> generate_graph = booleanSetting( "generate_graph", false );
@@ -65,8 +64,8 @@ public class ConsistencyPerformanceCheck
     static final Setting<TaskExecutionOrder> execution_order =
             enumSetting( "execution_order", TaskExecutionOrder.SINGLE_THREADED );
     static final Setting<Boolean> wait_before_check = booleanSetting( "wait_before_check", false );
-    static final Setting<String> all_stores_total_mapped_memory_size =
-            stringSetting( "all_stores_total_mapped_memory_size", "2G" );
+    static final Setting<String> mapped_memory_total_size =
+            stringSetting( "mapped_memory_total_size", "2G" );
     static final Setting<String> mapped_memory_page_size = stringSetting( "mapped_memory_page_size", "4k" );
     static final Setting<Boolean> log_mapped_memory_stats =
             booleanSetting( "log_mapped_memory_stats", true );
@@ -168,15 +167,12 @@ public class ConsistencyPerformanceCheck
     {
         Map<String, String> passedOnConfiguration = passOn( configuration,
                 param( GraphDatabaseSettings.store_dir, DataGenerator.store_dir ),
-                param( GraphDatabaseSettings.all_stores_total_mapped_memory_size, all_stores_total_mapped_memory_size ),
-                param( ConsistencyCheckSettings.consistency_check_execution_order, execution_order ),
+                param( GraphDatabaseSettings.mapped_memory_total_size, mapped_memory_total_size ),
                 param( GraphDatabaseSettings.mapped_memory_page_size, mapped_memory_page_size ),
+                param( ConsistencyCheckSettings.consistency_check_execution_order, execution_order ),
                 param( GraphDatabaseSettings.log_mapped_memory_stats, log_mapped_memory_stats ),
                 param( GraphDatabaseSettings.log_mapped_memory_stats_filename, log_mapped_memory_stats_filename ),
                 param( GraphDatabaseSettings.log_mapped_memory_stats_interval, log_mapped_memory_stats_interval ) );
-
-        addLegacyMemoryMappingConfiguration( passedOnConfiguration,
-                configuration.get( all_stores_total_mapped_memory_size ) );
 
         return new Config( passedOnConfiguration, GraphDatabaseSettings.class );
     }

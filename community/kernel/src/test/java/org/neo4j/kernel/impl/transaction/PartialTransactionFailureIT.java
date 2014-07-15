@@ -70,8 +70,7 @@ public class PartialTransactionFailureIT
         adversary.disable();
 
         Map<String, String> params = stringMap(
-                "logical_log_rotation_threshold", "1",
-                "use_memory_mapped_buffers", "false");
+                "logical_log_rotation_threshold", "1");
         String storeDir = dir.directory().getAbsolutePath();
         final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, params ) {
             @Override

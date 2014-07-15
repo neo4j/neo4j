@@ -22,16 +22,18 @@ package org.neo4j.kernel.impl.pagecache;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.all_stores_total_mapped_memory_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_total_size;
 
 public class LifecycledPageCache extends LifecycleAdapter implements PageCache
 {
@@ -47,7 +49,10 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
 
     private static int calculateMaxPages( Config config )
     {
-        return (int) Math.floor(config.get( all_stores_total_mapped_memory_size ) / config.get( mapped_memory_page_size));
+        long availableMemory = config.get( mapped_memory_total_size );
+        long pageSize = config.get( mapped_memory_page_size );
+        long pageCount = availableMemory / pageSize;
+        return (int) Math.min( Integer.MAX_VALUE, pageCount );
     }
 
     private static int calculatePageSize( Config config )
@@ -105,5 +110,17 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     public int maxCachedPages()
     {
         return pageCache.maxCachedPages();
+    }
+
+    public void dumpConfiguration( StringLogger messagesLog )
+    {
+        long totalPhysicalMemMb = Settings.DirectMemoryUsage.totalPhysicalMemory() / 1024 / 1024;
+        long maxVmUsageMb = Runtime.getRuntime().maxMemory() / 1024 / 1024;
+        long pageCacheMb = (maxCachedPages() * pageSize()) / 1024 / 1024;
+        String msg = "Physical mem: " + totalPhysicalMemMb + "MB," +
+                " Heap size: " + maxVmUsageMb + "MB," +
+                " Page cache size: " + pageCacheMb + "MB.";
+
+        messagesLog.info( msg );
     }
 }

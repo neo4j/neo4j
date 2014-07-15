@@ -65,13 +65,8 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     @Before
     public void setUp()
     {
-        gen().setSection( getDocumentationSectionName() );
-    }
-
-    @Before
-    public void cleanContent()
-    {
         cleanDatabase();
+        gen().setSection( getDocumentationSectionName() );
         gen().setGraph( graphdb() );
     }
 

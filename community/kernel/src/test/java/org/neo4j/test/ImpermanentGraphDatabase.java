@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,10 +35,7 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
-import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
 import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
@@ -172,10 +170,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )
     {
-        // Because EphemeralFileChannel doesn't support memory mapping
         Map<String, String> result = new HashMap<>( params );
-        result.put( use_memory_mapped_buffers.name(), FALSE );
-
         // To signal to index provides that we should be in-memory
         result.put( ephemeral.name(), TRUE );
         return result;

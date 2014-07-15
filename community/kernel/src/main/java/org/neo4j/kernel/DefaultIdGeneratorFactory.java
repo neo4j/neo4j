@@ -34,12 +34,14 @@ import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 public class DefaultIdGeneratorFactory
     implements IdGeneratorFactory
 {
-    private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
+    private final Map<IdType, IdGenerator> generators = new HashMap<>();
 
     public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
     {
-        IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, idType.getMaxValue(),
-                idType.allowAggressiveReuse(), highId );
+        long maxValue = idType.getMaxValue();
+        boolean aggressiveReuse = idType.allowAggressiveReuse();
+        IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, maxValue,
+                aggressiveReuse, highId );
         generators.put( idType, generator );
         return generator;
     }
