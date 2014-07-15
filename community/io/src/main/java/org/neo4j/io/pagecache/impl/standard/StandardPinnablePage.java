@@ -24,8 +24,11 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageLock;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
 {
@@ -50,13 +53,14 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     }
 
     @Override
-    public boolean pin( PageSwapper assertSwapper, long assertPageId, PageLock lockType )
+    public boolean pin( PageSwapper assertSwapper, long assertPageId, int pf_flags )
     {
-        lock( lockType );
+        lock(pf_flags);
+
         if( verifyPageBindings( assertSwapper, assertPageId ) )
         {
             byte stamp = usageStamp;
-            if ( stamp < MAX_USAGE_COUNT )
+            if ( stamp < MAX_USAGE_COUNT && (pf_flags & PagedFile.PF_TRANSIENT) == 0)
             {
                 // Racy, but we don't care
                 usageStamp = (byte) (stamp + 1);
@@ -65,47 +69,49 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
         }
         else
         {
-            unpin( lockType );
+            unpin( pf_flags );
         }
         return false;
     }
 
     @Override
-    public void unpin( PageLock lock )
+    public void unpin( int pf_flags)
     {
-        unlock( lock );
+        unlock( pf_flags );
     }
 
-    void lock( PageLock lockType )
+    void lock( int pf_flags )
     {
-        if(lockType == PageLock.SHARED)
+        switch ( pf_flags & (PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK) )
         {
-            lock.readLock().lock();
-        }
-        else if( lockType == PageLock.EXCLUSIVE )
-        {
-            lock.writeLock().lock();
-            dirty = true;
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown lock type: " + lockType );
+            case PF_EXCLUSIVE_LOCK:
+                lock.writeLock().lock();
+                dirty = true;
+                return;
+            case PF_SHARED_LOCK:
+                lock.readLock().lock();
+                return;
+            case PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK: throw new IllegalArgumentException(
+                    "Invalid flags: cannot ask to pin a page with both a shared and an exclusive lock" );
+            default: throw new IllegalArgumentException(
+                    "Invalid flags: must specify either shared or exclusive lock for page pinning" );
         }
     }
 
-    void unlock( PageLock lockType )
+    void unlock( int pf_flags )
     {
-        if( lockType == PageLock.SHARED)
+        switch ( pf_flags & (PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK) )
         {
-            this.lock.readLock().unlock();
-        }
-        else if( lockType == PageLock.EXCLUSIVE )
-        {
-            this.lock.writeLock().unlock();
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown lock type: " + lockType );
+            case PF_EXCLUSIVE_LOCK:
+                this.lock.writeLock().unlock();
+                return;
+            case PF_SHARED_LOCK:
+                this.lock.readLock().unlock();
+                return;
+            case PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK: throw new IllegalArgumentException(
+                    "Invalid flags: cannot ask to pin a page with both a shared and an exclusive lock" );
+            default: throw new IllegalArgumentException(
+                    "Invalid flags: must specify either shared or exclusive lock for page pinning" );
         }
     }
 
