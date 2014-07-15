@@ -63,7 +63,7 @@ class StringFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
 ###assertion=returns-one parameters=expression
 RETURN
 
-str({expression})
+toString({expression})
 ###
 
 String representation of the expression.

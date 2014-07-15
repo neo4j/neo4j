@@ -21,23 +21,18 @@ package org.neo4j.cypher.internal.compiler.v2_1.functions
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import ast.convert.ExpressionConverters._
-import commands.values.TokenType.PropertyKey
+import commands.{expressions => commandexpressions}
 import symbols._
 
-case object Has extends Function {
-  def name = "HAS"
+case object ToString extends Function with SimpleTypedFunction {
+  def name = "toString"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkArgs(invocation, 1) ifOkChain {
-      invocation.arguments(0).expectType(CTAny.covariant) chain
-      (invocation.arguments(0) match {
-        case _: ast.Property => None
-        case e => Some(SemanticError(s"Argument to ${invocation.name} is not a property", e.position, invocation.position))
-      })
-    } chain invocation.specifyType(CTBoolean)
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTFloat), outputType = CTString),
+    Signature(argumentTypes = Vector(CTInteger), outputType = CTString),
+    Signature(argumentTypes = Vector(CTString), outputType = CTString)
+  )
 
-  def asCommandExpression(invocation: ast.FunctionInvocation) = {
-    val property = invocation.arguments(0).asInstanceOf[ast.Property]
-    commands.PropertyExists(property.map.asCommandExpression, PropertyKey(property.propertyKey.name))
-  }
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
+    commandexpressions.ToStringFunction(invocation.arguments(0).asCommandExpression)
 }
