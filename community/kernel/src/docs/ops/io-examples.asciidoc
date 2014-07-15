@@ -4,7 +4,7 @@ Memory mapped IO settings
 
 == Introduction ==
 
-Each file in the Neo4j store is accessed through its own internal page cache, when reading from, or writing to, the store files.
+Each file in the Neo4j store is accessed through the Neo4j page cache, when reading from, or writing to, the store files.
 Since there is only one page cache, there is only one setting for specifying how much memory Neo4j is allowed to use for page caching.
 The shared page cache ensures that memory is split across the various store files in the most optimal manner footnote:[This is an informal comparison to the store-specific memory mapping settings of previous versions of Neo4j. We are not claiming that our page replacement algorithms are optimal in the formal sense. Truly optimal page replacement algorithms require knowledge of events arbitrarily far into the future.], depending on how the database is used and what data is popular.
 
