@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{CoercedPredicate, Not, ReturnItem, True}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -96,6 +97,15 @@ class ExpressionTest extends CypherFunSuite {
 
     // then
     result should equal(Not(CoercedPredicate(Literal(true))))
+  }
+
+  test("should not be considered effectful") {
+    // given
+    val expression = Not(True())
+
+    // then
+    expression.localEffects should equal(Effects.NONE)
+    expression.effects should equal(Effects.NONE)
   }
 
   private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]) {

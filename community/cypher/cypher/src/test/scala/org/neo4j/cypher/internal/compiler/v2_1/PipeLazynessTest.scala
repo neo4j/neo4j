@@ -23,7 +23,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{CountStar, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.Argument
@@ -42,24 +42,16 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
 
   test("test") {
     columnFilterPipe.!!()
-    eagerPipe.!!()
     distinctPipe.!!()
-    eagerAggregationPipe.!!()
-    emptyResultPipe.!!()
     executeUpdateCommandsPipe.!!()
     filterPipe.!!()
     matchPipe.!!()
     namedPathPipe.!!()
     shortestPathPipe.!!()
     slicePipe.!!()
-    sortPipe.!!()
     startPipe.!!()
-    topPipe.!!()
     traversalMatcherPipe.!!()
     unionPipe.!!()
-
-    // TODO add test for NullInsertingPipe
-    // constrainOperationPipe and indexOperationPipe do not take a source pipe, and so aren't covered by these tests
   }
 
   implicit class IsNotEager(pair: (Pipe, LazyIterator[Map[String, Any]])) {
@@ -74,8 +66,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
         if (resultIterator.hasNext)
           resultIterator.next()
 
-        val isEager = iter.isEmpty
-        pipe.isLazy should not be isEager
+        assert(iter.nonEmpty, pipe.getClass.getSimpleName)
       }
   }
 
@@ -89,24 +80,6 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
     val iter = new LazyIterator[Map[String, Any]](10, (n) => Map("x" -> n))
     val src = new FakePipe(iter, "x" -> CTNumber)
     val pipe = new DistinctPipe(src, Map("x" -> Identifier("x")))
-    (pipe, iter)
-  }
-
-  private def eagerAggregationPipe = {
-    val (iter, src) = emptyFakes
-    val pipe = new EagerAggregationPipe(src, Map.empty, Map("x" -> CountStar()))
-    (pipe, iter)
-  }
-
-  private def eagerPipe = {
-    val (iter, src) = emptyFakes
-    val pipe = new EagerPipe(src)
-    (pipe, iter)
-  }
-
-  private def emptyResultPipe = {
-    val (iter, src) = emptyFakes
-    val pipe = new EmptyResultPipe(src)
     (pipe, iter)
   }
 
@@ -168,12 +141,6 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
     (pipe, iter)
   }
 
-  private def sortPipe = {
-    val (iter, src) = emptyFakes
-    val pipe = new LegacySortPipe(src, sortByX)
-    (pipe, iter)
-  }
-
   private val sortByX: List[SortItem] = List(SortItem(Identifier("x"), ascending = true))
 
   private def startPipe = {
@@ -193,14 +160,8 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
     val (iter, src) = emptyFakes
     val (_, src2) = emptyFakes
 
-    val pipe = new UnionPipe(Seq(src, src2), List("x"))
+    val pipe = new UnionPipe(List(src, src2), List("x"))
 
-    (pipe, iter)
-  }
-
-  private def topPipe = {
-    val (iter, src) = emptyFakes
-    val pipe = new TopPipe(src, sortByX, Literal(5))
     (pipe, iter)
   }
 

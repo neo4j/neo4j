@@ -61,4 +61,11 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expr
   def symbols = new SymbolTable(Map(ident -> CTRelationship, toNode -> CTNode, fromNode -> CTNode))
 
   def monitor = pipeMonitor
+
+  def dup(sources: List[Pipe]): Pipe = {
+    assert(sources.isEmpty)
+    this
+  }
+
+  def sources: Seq[Pipe] = Seq.empty
 }

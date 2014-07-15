@@ -65,4 +65,11 @@ case class NodeHashJoinPipe(nodeIdentifier: String, left: Pipe, right: Pipe)
     )
 
   def symbols: SymbolTable = left.symbols.add(right.symbols.identifiers).add(nodeIdentifier, CTNode)
+
+  override val sources = Seq(left, right)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (left :: right :: Nil) = sources
+    copy(left = left, right = right)
+  }
 }

@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.{CoercedPredicate, Predicate, AstNode}
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.internal.helpers._
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.cypher.internal.helpers._
 
-abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
+abstract class Expression extends Typed with TypeSafe with EffectfulAstNode[Expression] {
   def rewrite(f: Expression => Expression): Expression
 
   def rewriteAsPredicate(f: Expression => Expression): Predicate = rewrite(f) match {
@@ -74,6 +75,7 @@ abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
     case _          => getClass.getSimpleName
   }
 
+  def localEffects = Effects.NONE
 
   val isDeterministic = ! exists {
     case RandFunction() => true

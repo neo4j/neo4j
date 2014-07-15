@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.graphdb.{Relationship, Node, Direction}
-import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compiler.v2_1.symbols._
-import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.graphdb.{Direction, Node, Relationship}
+
+import scala.collection.mutable
 
 case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction,
                                types: Seq[String], min: Int, max: Option[Int])(implicit pipeMonitor: PipeMonitor)
@@ -81,4 +82,9 @@ case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, 
       IntroducedIdentifier(relName))
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(head)
+  }
 }

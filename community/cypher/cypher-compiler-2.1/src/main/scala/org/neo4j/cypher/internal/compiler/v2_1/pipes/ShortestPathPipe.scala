@@ -20,18 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands._
-import commands.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.helpers._
-import org.neo4j.graphdb.{Relationship, Path}
-import collection.JavaConverters._
+import org.neo4j.graphdb.{Path, Relationship}
+
+import scala.collection.JavaConverters._
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
  */
-class ShortestPathPipe(source: Pipe, ast: ShortestPath)
-                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with CollectionSupport {
+case class ShortestPathPipe(source: Pipe, ast: ShortestPath)
+                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with CollectionSupport {
   private def pathName = ast.pathName
   private val expression = ShortestPathExpression(ast)
 
@@ -66,4 +67,8 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath)
   override def planDescription =
     source.planDescription.andThen(this, "ShortestPath", IntroducedIdentifier(ast.pathName))
 
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
 }

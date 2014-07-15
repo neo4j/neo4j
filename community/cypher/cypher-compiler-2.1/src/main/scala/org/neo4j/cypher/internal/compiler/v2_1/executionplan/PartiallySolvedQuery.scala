@@ -19,18 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.{PatternGraphBuilder, QueryToken, Unsolved}
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import scala.collection.Seq
-import expressions.{Expression, AggregationExpression}
-import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.Pipe
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{AggregationExpression, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.{PatternGraphBuilder, QueryToken, Unsolved}
 import org.neo4j.cypher.internal.compiler.v2_1.mutation.UpdateAction
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.commands.NamedPath
-import org.neo4j.cypher.internal.compiler.v2_1.commands.ReturnItem
-import org.neo4j.cypher.internal.compiler.v2_1.commands.SortItem
-import org.neo4j.cypher.internal.compiler.v2_1.commands.Slice
+import org.neo4j.helpers.ThisShouldNotHappenError
+
+import scala.collection.Seq
 
 
 object PartiallySolvedQuery {
@@ -99,7 +96,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 aggregateToDo: Boolean,
                                 extracted: Boolean,
                                 optional: Boolean,
-                                tail: Option[PartiallySolvedQuery]) extends AstNode[PartiallySolvedQuery] with PatternGraphBuilder  {
+                                tail: Option[PartiallySolvedQuery]) extends EffectfulAstNode[PartiallySolvedQuery] with PatternGraphBuilder  {
 
   val matchPattern : MatchPattern = MatchPattern(patterns.map(_.token))
 
@@ -191,15 +188,13 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
     returnExpressions ++ wherePredicates ++ aggregateExpressions ++ sortExpressions ++ tailNodes ++ startItems ++ patternsX
   }
 
-  def containsUpdates = start.exists(_.token.mutating) || updates.nonEmpty
+  def containsAggregation: Boolean = aggregation.nonEmpty || tail.exists(_.containsAggregation)
 
-  def containsAggregation: Boolean = !aggregation.isEmpty || tail.exists(_.containsAggregation)
-
-  /*
-  This methods is used to rewrite the queries from the end of the query line to the beginning of it
-   */
+  /* This methods is used to rewrite the queries from the end of the query line to the beginning of it */
   def rewriteFromTheTail(f: PartiallySolvedQuery => PartiallySolvedQuery): PartiallySolvedQuery =
     f(copy(tail = tail.map(_.rewriteFromTheTail(f))))
+
+  def localEffects = Effects.NONE
 }
 
 case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean = false)

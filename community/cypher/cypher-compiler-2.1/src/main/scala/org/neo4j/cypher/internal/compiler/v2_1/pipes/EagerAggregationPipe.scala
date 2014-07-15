@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.{Expression, AggregationExpression}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{AggregationExpression, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments
-import symbols._
-import collection.mutable.{Map => MutableMap}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+
+import scala.collection.mutable.{Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
@@ -90,5 +92,10 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
 
   def planDescription = source.planDescription.andThen(this, "EagerAggregation", Arguments.KeyNames(keyExpressions.keys.toSeq))
 
-  override def isLazy = false
+  override def effects = Effects.NONE
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (source :: Nil) = sources
+    copy(source = source)
+  }
 }

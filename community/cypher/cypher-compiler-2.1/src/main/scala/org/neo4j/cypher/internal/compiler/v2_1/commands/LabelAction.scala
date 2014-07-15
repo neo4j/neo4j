@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions.Expression
-import values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_1._
-import mutation.{GraphElementPropertyFunctions, UpdateAction}
-import pipes.QueryState
-import symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.{GraphElementPropertyFunctions, UpdateAction}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import org.neo4j.cypher.internal.helpers._
 import org.neo4j.graphdb.Node
 
@@ -36,6 +36,8 @@ case object LabelRemoveOp extends LabelOp
 //TODO: Should take single label
 case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[KeyToken])
   extends UpdateAction with GraphElementPropertyFunctions with CollectionSupport {
+
+  override def localEffects = Effects.WRITES_NODES
 
   def children = labels.flatMap(_.children) :+ entity
 

@@ -34,5 +34,9 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
     def planDescription = ???
     def symbols: SymbolTable = ???
     def monitor: PipeMonitor = newMonitor
+
+    def dup(sources: List[Pipe]): Pipe = ???
+
+    def sources: Seq[Pipe] = ???
   }
 }
