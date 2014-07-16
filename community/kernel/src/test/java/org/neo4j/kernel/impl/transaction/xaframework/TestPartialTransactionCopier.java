@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import static java.nio.ByteBuffer.allocate;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.nioneo.xa.CommandMatchers.nodeCommandEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.containsExactly;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.doneEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.onePhaseCommitEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.startEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
 import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 import java.io.File;

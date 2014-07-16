@@ -25,6 +25,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileName;
 
@@ -488,7 +489,7 @@ public class LogTestUtils
             ByteBuffer buffer ) throws IOException
     {
         long[] header = VersionAwareLogEntryReader.readLogHeader( buffer, in, true );
-        VersionAwareLogEntryReader.writeLogHeader( buffer, header[0], header[1] );
+        writeLogHeader( buffer, header[0], header[1] );
         byte[] headerBytes = new byte[buffer.limit()];
         buffer.get( headerBytes );
         outBuffer.put( headerBytes );

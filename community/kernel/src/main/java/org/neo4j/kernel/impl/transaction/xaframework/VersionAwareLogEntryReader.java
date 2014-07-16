@@ -94,16 +94,6 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableByteCh
         return new long[] { version, previousCommittedTx };
     }
 
-    public static ByteBuffer writeLogHeader( ByteBuffer buffer, long logVersion,
-            long previousCommittedTxId )
-    {
-        buffer.clear();
-        buffer.putLong( logVersion | ( ( (long) CURRENT_FORMAT_VERSION ) << 56 ) );
-        buffer.putLong( previousCommittedTxId );
-        buffer.flip();
-        return buffer;
-    }
-
     public LogEntry readLogEntry( ReadableByteChannel channel ) throws IOException
     {
         /*
