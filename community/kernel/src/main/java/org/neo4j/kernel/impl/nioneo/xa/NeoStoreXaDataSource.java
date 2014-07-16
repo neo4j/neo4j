@@ -495,20 +495,15 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
                             transactionMetadataCache, logEntryReader, neoStore ) );
 
-
-
+            commitProcess = dependencies.satisfyDependency( TransactionCommitProcess.class,
+                    commitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore, storeApplier,
+                            new NeoStoreInjectedTransactionValidator( integrityValidator ), false ) );
 
             Factory<KernelTransaction> transactionFactory = new Factory<KernelTransaction>()
             {
                 @Override
                 public KernelTransaction newInstance()
                 {
-
-
-                    commitProcess = dependencies.satisfyDependency( TransactionCommitProcess.class,
-                            commitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore, storeApplier,
-                                    new NeoStoreInjectedTransactionValidator( integrityValidator ), false ) );
-
                     checkIfShutdown();
                     NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
                     Locks.Client locksClient = locks.newClient();
