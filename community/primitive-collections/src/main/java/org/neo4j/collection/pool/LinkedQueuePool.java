@@ -193,7 +193,19 @@ public class LinkedQueuePool<R> implements Pool<R>
         }
     }
 
+    /**
+     * Dispose of all pooled objects.
+     */
+    public void disposeAll()
+    {
+        for(R resource = unused.poll(); resource != null; resource = unused.poll())
+        {
+            dispose( resource );
+        }
+    }
+
     public void close( boolean force )
     {
+        disposeAll();
     }
 }

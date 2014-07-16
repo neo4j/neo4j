@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -42,11 +43,11 @@ import static java.util.Collections.singleton;
 public class ConstraintIndexCreator
 {
     private final IndexingService indexingService;
-    private final KernelAPI kernel;
+    private final Provider<KernelAPI> kernel;
 
-    public ConstraintIndexCreator( KernelAPI kernel, IndexingService indexingService )
+    public ConstraintIndexCreator( Provider<KernelAPI> kernelProvider, IndexingService indexingService )
     {
-        this.kernel = kernel;
+        this.kernel = kernelProvider;
         this.indexingService = indexingService;
     }
 
@@ -93,7 +94,7 @@ public class ConstraintIndexCreator
     public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
             throws TransactionFailureException, DropIndexFailureException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction();
+        try ( KernelTransaction transaction = kernel.instance().newTransaction();
              Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
@@ -138,7 +139,7 @@ public class ConstraintIndexCreator
 
     public IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
     {
-        try ( KernelTransaction transaction = kernel.newTransaction();
+        try ( KernelTransaction transaction = kernel.instance().newTransaction();
               Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema

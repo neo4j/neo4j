@@ -89,7 +89,7 @@ public class SwitchToMaster
 
             idGeneratorFactory.switchToMaster();
             NeoStoreXaDataSource neoStoreXaDataSource = dataSourceManager.getDataSource();
-            neoStoreXaDataSource.reloadSchemaCache();
+            neoStoreXaDataSource.afterModeSwitch();
 
             Monitors monitors = resolver.resolveDependency( Monitors.class );
 

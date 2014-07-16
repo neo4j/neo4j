@@ -84,6 +84,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
     public void close()
     {
         recordChanges.clear();
+        changeCounter.set(0);
     }
 
     @Override
@@ -166,9 +167,14 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
             ensureHasBeforeRecordImage();
             if ( !this.changed )
             {
-                this.allChanges.put( key, this );
+                RecordChange<KEY, RECORD, ADDITIONAL> previous = this.allChanges.put( key, this );
+
+                if(previous == null || !previous.changed)
+                {
+                    changeCounter.increment();
+                }
+
                 this.changed = true;
-                changeCounter.increment();
             }
             return this.record;
         }

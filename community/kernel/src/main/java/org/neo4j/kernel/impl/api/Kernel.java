@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.helpers.Factory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
@@ -87,15 +86,15 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class Kernel extends LifecycleAdapter implements KernelAPI
 {
     private final StatisticsService statisticsService;
-    private final Factory<KernelTransaction> transactionFactory;
+    private final KernelTransactions transactions;
     private final TransactionHooks hooks;
     private final KernelHealth health;
     private final TransactionMonitor transactionMonitor;
 
-    public Kernel( StatisticsService statisticsService, Factory<KernelTransaction> transactionFactory,
-            TransactionHooks hooks, KernelHealth health, TransactionMonitor transactionMonitor )
+    public Kernel( StatisticsService statisticsService, KernelTransactions transactionFactory,
+                   TransactionHooks hooks, KernelHealth health, TransactionMonitor transactionMonitor )
     {
-        this.transactionFactory = transactionFactory;
+        this.transactions = transactionFactory;
         this.statisticsService = statisticsService;
         this.hooks = hooks;
         this.health = health;
@@ -106,7 +105,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public KernelTransaction newTransaction() throws TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
-        KernelTransaction transaction = transactionFactory.newInstance();
+        KernelTransaction transaction = transactions.newInstance();
         transactionMonitor.transactionStarted();
         return transaction;
     }
@@ -127,5 +126,11 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public StatisticsData heuristics()
     {
         return statisticsService.statistics();
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        transactions.disposeAll();
     }
 }
