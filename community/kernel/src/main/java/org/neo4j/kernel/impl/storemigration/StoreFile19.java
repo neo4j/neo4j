@@ -19,18 +19,10 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.setStoreVersion;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
-
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicStringStore;
@@ -41,7 +33,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 
@@ -79,14 +70,6 @@ public enum StoreFile19
         return typeDescriptor + " " + Legacy19Store.LEGACY_VERSION;
     }
 
-    /**
-     * The first part of the version String.
-     */
-    public String typeDescriptor()
-    {
-        return typeDescriptor;
-    }
-
     public String fileName( StoreFileType type )
     {
         return type.augment( NeoStore.DEFAULT_NAME + storeFileNamePart );
@@ -95,11 +78,6 @@ public enum StoreFile19
     public String storeFileName()
     {
         return fileName( StoreFileType.STORE );
-    }
-
-    public String idFileName()
-    {
-        return fileName( StoreFileType.ID );
     }
 
     public static Iterable<StoreFile19> legacyStoreFiles()
@@ -173,56 +151,5 @@ public enum StoreFile19
         }
 
         fs.moveToDirectory( sourceFile, toDirectory );
-    }
-
-    public static void ensureStoreVersion( FileSystemAbstraction fs,
-            File storeDir, Iterable<StoreFile19> files ) throws IOException
-    {
-        ensureStoreVersion( fs, storeDir, files, ALL_STORES_VERSION );
-    }
-
-    public static void ensureStoreVersion( FileSystemAbstraction fs,
-            File storeDir, Iterable<StoreFile19> files, String version ) throws IOException
-    {
-        for ( StoreFile19 file : files )
-        {
-            setStoreVersionTrailer( fs, new File( storeDir, file.storeFileName() ),
-                    buildTypeDescriptorAndVersion( file.typeDescriptor(), version ) );
-        }
-        setStoreVersion( fs, new File( storeDir, DEFAULT_NAME ), versionStringToLong( version ) );
-    }
-
-    private static void setStoreVersionTrailer( FileSystemAbstraction fs,
-            File targetStoreFileName, String versionTrailer ) throws IOException
-    {
-        byte[] trailer = UTF8.encode( versionTrailer );
-        long fileSize = 0;
-        try ( StoreChannel fileChannel = fs.open( targetStoreFileName, "rw" ) )
-        {
-            fileSize = fileChannel.size();
-            fileChannel.position( fileChannel.size() - trailer.length );
-            fileChannel.write( ByteBuffer.wrap( trailer ) );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new IllegalArgumentException( "size:" + fileSize + ", trailer:" + trailer.length +
-                    " for " + targetStoreFileName );
-        }
-    }
-
-    public static void deleteIdFile( FileSystemAbstraction fs, File directory, StoreFile19... stores )
-    {
-        for ( StoreFile19 store : stores )
-        {
-            fs.deleteFile( new File( directory, store.idFileName() ) );
-        }
-    }
-
-    public static void deleteStoreFile( FileSystemAbstraction fs, File directory, StoreFile19... stores )
-    {
-        for ( StoreFile19 store : stores )
-        {
-            fs.deleteFile( new File( directory, store.storeFileName() ) );
-        }
     }
 }

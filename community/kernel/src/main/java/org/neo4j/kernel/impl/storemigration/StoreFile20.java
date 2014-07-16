@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.setStoreVersion;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -47,6 +41,12 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.setStoreVersion;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
 public enum StoreFile20
 {
@@ -213,7 +213,6 @@ public enum StoreFile20
         }
         catch ( IllegalArgumentException e )
         {
-            e.printStackTrace();
             throw new IllegalArgumentException( "size:" + fileSize + ", trailer:" + trailer.length +
                     " for " + targetStoreFileName );
         }

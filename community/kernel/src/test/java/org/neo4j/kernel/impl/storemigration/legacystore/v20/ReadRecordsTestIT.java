@@ -67,6 +67,6 @@ public class ReadRecordsTestIT
 
     private File exampleDbStore() throws IOException
     {
-        return MigrationTestUtils.findOldFormatStoreDirectory();
+        return MigrationTestUtils.find20FormatStoreDirectory();
     }
 }

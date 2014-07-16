@@ -97,6 +97,6 @@ public class UpgradableDatabaseTestIT
     @Before
     public void prepareDirectory() throws IOException
     {
-        workingDirectory = MigrationTestUtils.findOldFormatStoreDirectory();
+        workingDirectory = MigrationTestUtils.find20FormatStoreDirectory();
     }
 }

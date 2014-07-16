@@ -85,7 +85,7 @@ public class StoreUpgraderTestIT
 
         File backupDirectory = new File( dbDirectory, "upgrade_backup" );
 
-        verifyFilesHaveSameContent( fileSystem, MigrationTestUtils.findOldFormatStoreDirectory(), backupDirectory );
+        verifyFilesHaveSameContent( fileSystem, MigrationTestUtils.find20FormatStoreDirectory(), backupDirectory );
 
         // We leave logical logs in place since the new version can read the old
     }

@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
-import static java.nio.ByteBuffer.allocateDirect;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.longFromIntAndMod;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -39,6 +36,8 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
+
+import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.longFromIntAndMod;
 
 public class Legacy20NodeStoreReader implements LegacyNodeStoreReader
 {
@@ -183,40 +182,5 @@ public class Legacy20NodeStoreReader implements LegacyNodeStoreReader
     public void close() throws IOException
     {
         fileChannel.close();
-    }
-
-//    @Override
-    public NodeRecord readNodeStore( long id ) throws IOException
-    {
-        ByteBuffer buffer = allocateDirect( RECORD_SIZE );
-        NodeRecord nodeRecord;
-
-        fileChannel.position( id * RECORD_SIZE );
-        fileChannel.read( buffer );
-        buffer.flip();
-
-        long inUseByte = buffer.get();
-
-        boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
-        if ( inUse )
-        {
-            long nextRel = Legacy20Store.getUnsignedInt( buffer );
-            long relModifier = (inUseByte & 0xEL) << 31;
-            long nextProp = Legacy20Store.getUnsignedInt( buffer );
-            long propModifier = (inUseByte & 0xF0L) << 28;
-            long lsbLabels = Legacy20Store.getUnsignedInt( buffer );
-            long hsbLabels = buffer.get() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
-            long labels = lsbLabels | (hsbLabels << 32);
-            nodeRecord = new NodeRecord( id, false, longFromIntAndMod( nextRel, relModifier ),
-                    longFromIntAndMod( nextProp, propModifier ) );
-            nodeRecord.setLabelField( labels, Collections.<DynamicRecord>emptyList() ); // no need to load 'em heavy
-        }
-        else
-        {
-            nodeRecord = new NodeRecord( id, false,
-                    Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
-        }
-        nodeRecord.setInUse( inUse );
-        return nodeRecord;
     }
 }

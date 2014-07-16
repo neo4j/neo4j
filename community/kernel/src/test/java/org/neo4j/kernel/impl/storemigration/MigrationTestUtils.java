@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -40,6 +36,11 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.Unzip;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class MigrationTestUtils
 {
@@ -103,13 +104,13 @@ public class MigrationTestUtils
     public static void prepareSampleLegacyDatabase( EphemeralFileSystemAbstraction workingFs,
             File workingDirectory ) throws IOException
     {
-        File resourceDirectory = findOldFormatStoreDirectory();
+        File resourceDirectory = find20FormatStoreDirectory();
         workingFs.copyRecursivelyFromOtherFs( resourceDirectory, new DefaultFileSystemAbstraction(), workingDirectory );
     }
 
     public static void prepareSampleLegacyDatabase( FileSystemAbstraction workingFs, File workingDirectory ) throws IOException
     {
-        File resourceDirectory = findOldFormatStoreDirectory();
+        File resourceDirectory = find20FormatStoreDirectory();
 
         workingFs.deleteRecursively( workingDirectory );
         workingFs.mkdirs( workingDirectory );
@@ -118,7 +119,7 @@ public class MigrationTestUtils
         FileUtils.copyRecursively( resourceDirectory, workingDirectory );
     }
 
-    public static File findOldFormatStoreDirectory() throws IOException
+    public static File find20FormatStoreDirectory() throws IOException
     {
         return Unzip.unzip( Legacy20Store.class, "exampledb.zip" );
     }
@@ -128,7 +129,7 @@ public class MigrationTestUtils
         return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip", unzipTarget );
     }
 
-    public static File findOldFormatStoreDirectory( File unzipTarget ) throws IOException
+    public static File find20FormatStoreDirectory( File unzipTarget ) throws IOException
     {
         return Unzip.unzip( Legacy20Store.class, "exampledb.zip", unzipTarget );
     }
@@ -153,19 +154,6 @@ public class MigrationTestUtils
             }
         }
         return true;
-    }
-
-    public static boolean containsAnyLogicalLogs( FileSystemAbstraction fileSystem, File directory )
-    {
-        boolean containsLogicalLog = false;
-        for ( File workingFile : fileSystem.listFiles( directory ) )
-        {
-            if ( workingFile.getName().contains( "nioneo_logical" ))
-            {
-                containsLogicalLog = true;
-            }
-        }
-        return containsLogicalLog;
     }
 
     public static boolean containsAnyStoreFiles( FileSystemAbstraction fileSystem, File directory )

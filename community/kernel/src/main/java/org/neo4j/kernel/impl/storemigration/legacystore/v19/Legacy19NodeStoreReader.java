@@ -94,12 +94,6 @@ public class Legacy19NodeStoreReader implements LegacyNodeStoreReader
                 }
                 return nodeRecord;
             }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
-            }
         };
     }
 
