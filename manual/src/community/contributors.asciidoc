@@ -101,5 +101,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Sebastian Wallin|https://github.com/wallin[wallin]
 |Dan Allen|https://github.com/mojavelinux[mojavelinux]
 |Javad Karabi|https://github.com/karabijavad[karabijavad]
+|Georg Summer|https://github.com/gsummer[gsummer]
 |=======
 
