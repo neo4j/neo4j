@@ -56,9 +56,10 @@ public class StrongReferenceCache<E extends EntityWithSizeObject> implements Cac
         return Integer.MAX_VALUE;
     }
 
-    public void put( E value )
+    public E put( E value )
     {
-        cache.put( value.getId(), value );
+        E old = cache.put( value.getId(), value );
+        return old == null ? value : old;
     }
 
     public void putAll( List<E> list )
@@ -105,7 +106,7 @@ public class StrongReferenceCache<E extends EntityWithSizeObject> implements Cac
     {
         // do nothing
     }
-    
+
     @Override
     public void printStatistics()
     {

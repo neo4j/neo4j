@@ -19,12 +19,24 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.neo4j.kernel.impl.cache.SoftValue.SOFT_VALUE_FACTORY;
+import java.lang.ref.ReferenceQueue;
 
-public class SoftLruCache<E extends EntityWithSizeObject> extends ReferenceCache<E>
+/**
+ * Common interface for soft and weak values.
+ */
+public interface ReferenceWithKey<KEY, VALUE>
 {
-    public SoftLruCache( String name )
+    interface Factory
     {
-        super( name, SOFT_VALUE_FACTORY );
+        <FK, FV> ReferenceWithKey<FK, FV> newReference( FK key, FV value, ReferenceQueue<? super FV> queue );
     }
+
+    KEY key();
+
+    VALUE get();
+
+    void clear();
+
+    boolean enqueue();
+
 }

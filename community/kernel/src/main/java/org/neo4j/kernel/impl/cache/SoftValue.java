@@ -22,10 +22,19 @@ package org.neo4j.kernel.impl.cache;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 
-public class SoftValue<K,V> extends SoftReference<V> 
+public class SoftValue<K, V> extends SoftReference<V> implements ReferenceWithKey<K, V>
 {
+    public static Factory SOFT_VALUE_FACTORY = new Factory()
+    {
+        @Override
+        public <FK, FV> SoftValue<FK, FV> newReference( FK key, FV value, ReferenceQueue<? super FV> queue )
+        {
+            return new SoftValue<FK, FV>( key, value, queue );
+        }
+    };
+
     public final K key;
-    
+
     public SoftValue( K key, V value, ReferenceQueue<? super V> queue )
     {
         super( value, queue );
@@ -36,5 +45,11 @@ public class SoftValue<K,V> extends SoftReference<V>
     {
         super( value );
         this.key = key;
+    }
+
+    @Override
+    public K key()
+    {
+        return key;
     }
 }

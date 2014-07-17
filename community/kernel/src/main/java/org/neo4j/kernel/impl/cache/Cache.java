@@ -33,10 +33,10 @@ public interface Cache<E extends EntityWithSizeObject>
     /**
      * Adds <CODE>element</CODE> to cache.
      *
-     * @param element
+     * @param value
      *            the element to cache
      */
-    public void put( E value );
+    public E put( E value );
 
     /**
      * Removes the element for <CODE>key</CODE> from cache and returns it. If
@@ -89,6 +89,6 @@ public interface Cache<E extends EntityWithSizeObject>
     public long missCount();
 
     public void updateSize( E entity, int newSize );
-    
+
     public void printStatistics();
 }

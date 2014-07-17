@@ -26,6 +26,7 @@ import java.net.URISyntaxException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
@@ -45,6 +46,11 @@ public class TargetDirectory
         private TestDirectory( boolean clean )
         {
             this.clean = clean;
+        }
+
+        public String absolutePath()
+        {
+            return directory().getAbsolutePath();
         }
 
         public File directory()

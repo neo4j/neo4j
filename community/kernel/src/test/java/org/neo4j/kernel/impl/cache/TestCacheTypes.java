@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.cache;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
@@ -74,7 +75,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         assertEquals( StrongCacheProvider.NAME, db.getNodeManager().getCacheType().getName() );
         db.shutdown();
     }
-    
+
     @Test
     public void testInvalidCache()
     {
@@ -88,6 +89,71 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         catch( Exception e )
         {
             // Ok
+        }
+    }
+
+    @Test
+    public void softCacheShouldHonorPutSemantics() throws Exception
+    {
+        assertCacheHonorsPutsSemantics( new SoftLruCache<EntityWithSizeObject>( "test" ) );
+    }
+
+    @Test
+    public void weakCacheShouldHonorPutSemantics() throws Exception
+    {
+        assertCacheHonorsPutsSemantics( new WeakLruCache<EntityWithSizeObject>( "test" ) );
+    }
+
+    @Test
+    public void strongCacheShouldHonorPutSemantics() throws Exception
+    {
+        assertCacheHonorsPutsSemantics( new StrongReferenceCache<EntityWithSizeObject>( "test" ) );
+    }
+
+    private void assertCacheHonorsPutsSemantics( Cache<EntityWithSizeObject> cache )
+    {
+        Entity version1 = new Entity( 10 );
+        assertTrue( version1 == cache.put( version1 ) );
+
+        // WHEN
+        Entity version2 = new Entity( 10 );
+
+        // THEN
+        assertTrue( version1 == cache.put( version2 ) );
+    }
+
+    public static class Entity implements EntityWithSizeObject
+    {
+        private int registeredSize;
+        private final long id;
+
+        Entity( long id )
+        {
+            this.id = id;
+        }
+
+        @Override
+        public int sizeOfObjectInBytesIncludingOverhead()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getId()
+        {
+            return id;
+        }
+
+        @Override
+        public void setRegisteredSize( int size )
+        {
+            registeredSize = size;
+        }
+
+        @Override
+        public int getRegisteredSize()
+        {
+            return registeredSize;
         }
     }
 }
