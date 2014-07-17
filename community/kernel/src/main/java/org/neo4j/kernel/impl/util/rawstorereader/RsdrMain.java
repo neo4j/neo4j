@@ -190,30 +190,37 @@ public class RsdrMain
         toId = Math.min( toId, store.getHighId() );
         try ( StoreChannel channel = files.open( store.getStorageFileName(), "r" ) )
         {
+            int recordSize = store.getRecordSize();
+            ByteBuffer buf = ByteBuffer.allocate( recordSize );
             for ( long i = fromId; i <= toId; i++ )
             {
+                buf.clear();
+                long offset = recordSize * i;
+                int count = channel.read( buf, offset );
+                byte[] bytes = new byte[count];
+                buf.clear();
+                buf.get( bytes );
+                String hex = DatatypeConverter.printHexBinary( bytes );
+                int paddingNeeded = (recordSize * 2 - Math.max( count * 2, 0 )) + 1;
+                String format = "%s %6s 0x%08X %s%" + paddingNeeded + "s%s%n";
+                String str;
+                String use;
+
                 try
                 {
                     AbstractBaseRecord record = store.getRecord( i );
-                    String str = record.toString();
-                    if ( pattern == null || pattern.matcher( str ).find() )
-                    {
-                        console.printf( "%6s %s%n", i, str );
-                    }
+                    use = record.inUse()? "+" : "-";
+                    str = record.toString();
                 }
                 catch ( InvalidRecordException e )
                 {
-                    int recordSize = store.getRecordSize();
-                    long offset = recordSize * i;
-                    ByteBuffer buf = ByteBuffer.allocate( recordSize );
-                    int count = channel.read( buf, offset );
-                    byte[] bytes = new byte[count];
-                    buf.clear();
-                    buf.get( bytes );
-                    String hex = DatatypeConverter.printHexBinary( bytes );
-                    String str = new String( bytes, 0, count, "ASCII" );
-                    String format = "%6s 0x%08X %s%" + ((recordSize-count)+recordSize+2) + "s%n";
-                    console.printf( format, i, offset, hex, str );
+                    str = new String( bytes, 0, count, "ASCII" );
+                    use = "?";
+                }
+
+                if ( pattern == null || pattern.matcher( str ).find() )
+                {
+                    console.printf( format, use, i, offset, hex, " ", str );
                 }
             }
         }

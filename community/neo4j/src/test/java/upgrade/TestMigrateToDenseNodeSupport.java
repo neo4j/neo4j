@@ -62,7 +62,7 @@ public class TestMigrateToDenseNodeSupport
         DENSE,
         SPARSE,
         OTHER,
-        FOURTH;
+        FOURTH
     }
 
     private static enum Properties
