@@ -90,13 +90,25 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
   def name = "MATCH"
 
   def semanticCheck =
-    ensureFreshIdsInPattern chain
-    checkUsageBoundIds chain
     pattern.semanticCheck(Pattern.SemanticContext.Match) chain
     hints.semanticCheck chain
     uniqueHints chain
     where.semanticCheck chain
-    checkHints
+    checkHints chain
+    checkUsageBoundIds
+
+  def checkUsageBoundIds:  SemanticState => Seq[SemanticError] = (state) => {
+    pattern.elements.collect {
+      case Left(r @ RelationshipPattern(Some(id), _, types, _, props, _))
+        if state.hasSymbol(id.name) && (types.nonEmpty || props.isDefined) =>
+
+        SemanticError("Cannot add types or properties on a relationship which is already bound", r.position)
+      case Right(n @ NodePattern(Some(id), labels, props, _))
+        if state.hasSymbol(id.name) && (labels.nonEmpty || props.isDefined) =>
+
+        SemanticError("Cannot add labels or properties on a node which is already bound", n.position)
+    }
+  }
 
   def uniqueHints: SemanticCheck = {
     val errors = hints.groupBy(_.identifier).collect {
@@ -126,36 +138,6 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
              | top-level AND). Note that the label must be specified on a non-optional node""".stripLinesAndMargins, hint.position)
     }
     error.getOrElse(SemanticCheckResult.success)
-  }
-
-  def ensureFreshIdsInPattern: SemanticCheck = (state) => {
-    val optIds = pattern.elements.map {
-      case Left(RelationshipPattern(id, _, _, _, _, _)) => id
-      case Right(n@NodePattern(id, _, _, _)) => id
-    }
-
-    val ids: Seq[Identifier] = optIds.flatten
-    if (ids.size == optIds.size) {
-      val freshIds = ids.filterNot(id => state.hasSymbol(id.name))
-      if (freshIds.nonEmpty)
-        SemanticCheckResult.success(state)
-      else
-        SemanticCheckResult.error(state, SemanticError("Cannot match on a pattern containing only already bound identifiers", position))
-    } else
-      SemanticCheckResult.success(state)
-  }
-
-  def checkUsageBoundIds: SemanticState => Seq[SemanticError] = (state) => {
-    pattern.elements.collect {
-      case Left(r @ RelationshipPattern(Some(id), _, types, _, props, _))
-        if state.hasSymbol(id.name) && (types.nonEmpty || props.isDefined) =>
-
-        SemanticError("Cannot add types or properties on a relationship which is already bound", r.position)
-      case Right(n @ NodePattern(Some(id), labels, props, _))
-        if state.hasSymbol(id.name) && (labels.nonEmpty || props.isDefined) =>
-
-        SemanticError("Cannot add labels or properties on a node which is already bound", n.position)
-    }
   }
 
   def containsPropertyPredicate(identifier: String, property: String): Boolean = {
