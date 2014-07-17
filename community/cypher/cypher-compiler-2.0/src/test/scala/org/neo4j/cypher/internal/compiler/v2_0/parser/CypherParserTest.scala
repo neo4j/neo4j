@@ -2141,12 +2141,17 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("foreach with literal collection") {
+
+    val tail = Query.
+      updates(ForeachAction(Collection(Literal(1.0), Literal(2.0), Literal(3.0)), "x", Seq(CreateNode("a", Map("number" -> Identifier("x")), Seq.empty)))).
+      returns()
+
     expectQuery(
       "create root foreach(x in [1,2,3] | create (a {number:x}))",
       Query.
         start(CreateNodeStartItem(CreateNode("root", Map.empty, Seq.empty))).
-        updates(ForeachAction(Collection(Literal(1.0), Literal(2.0), Literal(3.0)), "x", Seq(CreateNode("a", Map("number" -> Identifier("x")), Seq.empty)))).
-        returns()
+        tail(tail).
+        returns(AllIdentifiers())
     )
   }
 

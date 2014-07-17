@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Node
-import org.scalautils.LegacyTripleEquals
 
 class MergeNodeAcceptanceTest
   extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
@@ -487,5 +485,32 @@ class MergeNodeAcceptanceTest
         "MERGE (a:N {x: x, y: y}) " +
         "MERGE (b:N {x: x+1, y: y})  " +
         "RETURN x, y;").toList
+  }
+
+  @Test
+  def merge_should_see_identifiers_introduced_by_other_update_actions() {
+    // when
+    val result = execute("CREATE a MERGE a-[:X]->() RETURN a")
+
+    // then
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  @Test
+  def merge_inside_foreach_should_see_identifiers_introduced_by_update_actions_outside_foreach() {
+    // when
+    val result = execute("CREATE a FOREACH(x in [1,2,3] | MERGE (a)-[:X]->({id: x})) RETURN a")
+
+    // then
+    assertStats(result, nodesCreated = 4, relationshipsCreated = 3, propertiesSet = 3)
+  }
+
+  @Test
+  def merge_should_see_identifiers_introduced_by_update_actions() {
+    // when
+    val result = execute("CREATE a MERGE (a)-[:X]->() RETURN a")
+
+    // then
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 }
