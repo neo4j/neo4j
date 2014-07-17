@@ -1,0 +1,18 @@
+== Neo4j Graph Database, Cross-Component Integration Tests ==
+
+=== Building ===
+
+To build the latest snapshot of neo4j you just need to add m2.neo4j.org to
+your repository list (it's mostly for getting the parent pom). Here it is:
+
+   http://dist.neo4j.org/settings.xml
+
+store that as your +~/.m2/settings.xml+ start the build with.
+
+----
+mvn clean install
+----
+
+
+For more information, visit:
+http://neo4j.org/

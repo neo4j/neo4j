@@ -31,7 +31,8 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.Unzip;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -103,13 +104,13 @@ public class MigrationTestUtils
     public static void prepareSampleLegacyDatabase( EphemeralFileSystemAbstraction workingFs,
             File workingDirectory ) throws IOException
     {
-        File resourceDirectory = findOldFormatStoreDirectory();
+        File resourceDirectory = find20FormatStoreDirectory();
         workingFs.copyRecursivelyFromOtherFs( resourceDirectory, new DefaultFileSystemAbstraction(), workingDirectory );
     }
 
     public static void prepareSampleLegacyDatabase( FileSystemAbstraction workingFs, File workingDirectory ) throws IOException
     {
-        File resourceDirectory = findOldFormatStoreDirectory();
+        File resourceDirectory = find20FormatStoreDirectory();
 
         workingFs.deleteRecursively( workingDirectory );
         workingFs.mkdirs( workingDirectory );
@@ -118,20 +119,25 @@ public class MigrationTestUtils
         FileUtils.copyRecursively( resourceDirectory, workingDirectory );
     }
 
-    public static File findOldFormatStoreDirectory() throws IOException
+    public static File find20FormatStoreDirectory() throws IOException
     {
-        return Unzip.unzip( LegacyStore.class, "exampledb.zip" );
+        return Unzip.unzip( Legacy20Store.class, "exampledb.zip" );
     }
 
-    public static File findOldFormatStoreDirectory( File unzipTarget ) throws IOException
+    public static File find19FormatStoreDirectory( File unzipTarget ) throws IOException
     {
-        return Unzip.unzip( LegacyStore.class, "exampledb.zip", unzipTarget );
+        return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip", unzipTarget );
+    }
+
+    public static File find20FormatStoreDirectory( File unzipTarget ) throws IOException
+    {
+        return Unzip.unzip( Legacy20Store.class, "exampledb.zip", unzipTarget );
     }
 
     public static boolean allStoreFilesHaveVersion( FileSystemAbstraction fileSystem, File workingDirectory,
             String version ) throws IOException
     {
-        for ( StoreFile storeFile : StoreFile.legacyStoreFiles() )
+        for ( StoreFile20 storeFile : StoreFile20.legacyStoreFiles() )
         {
             StoreChannel channel = fileSystem.open( new File( workingDirectory, storeFile.storeFileName() ), "r" );
             int length = UTF8.encode( version ).length;
@@ -150,22 +156,9 @@ public class MigrationTestUtils
         return true;
     }
 
-    public static boolean containsAnyLogicalLogs( FileSystemAbstraction fileSystem, File directory )
-    {
-        boolean containsLogicalLog = false;
-        for ( File workingFile : fileSystem.listFiles( directory ) )
-        {
-            if ( workingFile.getName().contains( "nioneo_logical" ))
-            {
-                containsLogicalLog = true;
-            }
-        }
-        return containsLogicalLog;
-    }
-
     public static boolean containsAnyStoreFiles( FileSystemAbstraction fileSystem, File directory )
     {
-        for ( StoreFile file : StoreFile.values() )
+        for ( StoreFile20 file : StoreFile20.values() )
         {
             if ( fileSystem.fileExists( new File( directory, file.storeFileName() ) ) )
             {
