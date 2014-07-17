@@ -24,18 +24,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
 {
-    final static int MAX_NUM_PUT_BEFORE_POLL = 5000;
 
     private final ConcurrentHashMap<Long,ReferenceWithKey<Long,E>> cache = new ConcurrentHashMap<>();
     private final ReferenceWithKeyQueue<Long,E> refQueue = new ReferenceWithKeyQueue<>();
     private final String name;
-
-    private final HitCounter hitCounter = new HitCounter();
-    private final AtomicInteger putCounter = new AtomicInteger();
+    private final HitCounter counter = new HitCounter();
 
     private final ReferenceWithKey.Factory referenceFactory;
 
@@ -49,36 +45,31 @@ public class ReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
     public E put( E value )
     {
         Long key = value.getId();
-        ReferenceWithKey<Long, E> ref = referenceFactory.<Long, E>newReference( key, value, (ReferenceQueue) refQueue );
+        ReferenceWithKey<Long,E> ref = referenceFactory.newReference( key, value, (ReferenceQueue) refQueue );
 
-        try
+        // The block below retries until successful. The reason it needs to retry is that we are racing against GC
+        // collecting the weak reference, and need to account for that happening at any time.
+        do
         {
-            // The block below retries until successful. The reason it needs to retry is that we are racing against GC
-            // collecting the weak reference, and need to account for that happening at any time.
-            do
+            ReferenceWithKey<Long, E> previous = cache.putIfAbsent( key, ref );
+
+            if(previous != null)
             {
-                ReferenceWithKey<Long, E> previous = cache.putIfAbsent( key, ref );
-
-                if ( previous != null )
+                E prevValue = previous.get();
+                if(prevValue == null)
                 {
-                    E prevValue = previous.get();
-                    if ( prevValue == null )
-                    {
-                        pollClearedValues();
-                        // Re-run the loop body, re-attempting to get-or-set the reference in the cache.
-                        continue;
-                    }
+                    pollClearedValues();
+                    // Re-run the loop body, re-attempting to get-or-set the reference in the cache.
+                    continue;
+                }
 
-                    return prevValue;
-                }
-                else
-                {
-                    return value;
-                }
-            } while ( true );
-        } finally {
-            recordPutAndPollIfNeeded( 1 );
-        }
+                return prevValue;
+            }
+            else
+            {
+                return value;
+            }
+        } while(true);
     }
 
     @Override
@@ -92,7 +83,7 @@ public class ReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
             softMap.put( key, ref );
         }
         cache.putAll( softMap );
-        recordPutAndPollIfNeeded( softMap.size() );
+        pollClearedValues();
     }
 
     @Override
@@ -102,13 +93,13 @@ public class ReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
         if ( ref != null )
         {
             E value = ref.get();
-            if ( value != null )
+            if ( value == null )
             {
-                return hitCounter.count( value );
+                cache.remove( key );
             }
-            pollClearedValues();
+            return counter.count( value );
         }
-        return hitCounter.count( null );
+        return counter.count( null );
     }
 
     @Override
@@ -117,12 +108,7 @@ public class ReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
         ReferenceWithKey<Long, E> ref = cache.remove( key );
         if ( ref != null )
         {
-            E value = ref.get();
-            if ( value != null )
-            {
-                return value;
-            }
-            pollClearedValues();
+            return ref.get();
         }
         return null;
     }
@@ -142,13 +128,13 @@ public class ReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
     @Override
     public long hitCount()
     {
-        return hitCounter.getHitsCount();
+        return counter.getHitsCount();
     }
 
     @Override
     public long missCount()
     {
-        return hitCounter.getMissCount();
+        return counter.getMissCount();
     }
 
     @Override
@@ -169,17 +155,8 @@ public class ReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
         // do nothing
     }
 
-    private void recordPutAndPollIfNeeded( int elementsCount )
-    {
-        int count = putCounter.addAndGet( elementsCount );
-        if ( count > MAX_NUM_PUT_BEFORE_POLL) {
-            pollClearedValues();
-        }
-    }
-
     private void pollClearedValues()
     {
-        putCounter.set( 0 );
         ReferenceWithKey<Long,E> clearedValue = refQueue.safePoll();
         while ( clearedValue != null )
         {
