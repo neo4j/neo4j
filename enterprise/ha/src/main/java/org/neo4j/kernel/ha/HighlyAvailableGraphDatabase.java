@@ -19,21 +19,12 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.helpers.collection.Iterables.iterable;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
-
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
 import javax.transaction.Transaction;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
@@ -57,11 +48,9 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -115,6 +104,14 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.Iterables.iterable;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
@@ -181,13 +178,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         life.add( new StartupWaiter() );
 
         diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine, clusterClient ) );
-    }
-
-    @Override
-    protected AvailabilityGuard createAvailabilityGuard()
-    {
-        // 3 conditions: DatabaseAvailability, HighAvailabilityMemberStateMachine, and HA Kernel Panic
-        return new AvailabilityGuard( Clock.SYSTEM_CLOCK, 3 );
     }
 
     @Override

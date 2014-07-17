@@ -64,6 +64,11 @@ public class AvailabilityGuard
     private final List<AvailabilityRequirement> blockingComponents = new CopyOnWriteArrayList<>();
     private final Clock clock;
 
+    public AvailabilityGuard( Clock clock )
+    {
+        this(clock, 0);
+    }
+
     public AvailabilityGuard( Clock clock, int conditionCount )
     {
         this.clock = clock;
@@ -209,7 +214,7 @@ public class AvailabilityGuard
         if(blockingComponents.size() > 0 || available.get() > 0)
         {
             String causes = join( ", ", Iterables.map( DESCRIPTION, blockingComponents ) );
-            return "Blocking components ("+available.get()+"): [" + causes + "]";
+            return available.get() + " reasons for blocking: " + causes + ".";
         }
         return "No blocking components";
     }
