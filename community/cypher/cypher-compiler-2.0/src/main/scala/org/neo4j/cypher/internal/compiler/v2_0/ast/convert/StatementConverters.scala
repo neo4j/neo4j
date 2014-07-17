@@ -109,10 +109,6 @@ object StatementConverters {
             case Seq(_: ast.With, _: ast.Return)               => combine
             case Seq(_: ast.ClosingClause, _)                  => split
             case Seq(_, _: ast.ClosingClause)                  => combine
-            case Seq(_: ast.UpdateClause, _: ast.Create)       => split
-            case Seq(_: ast.UpdateClause, _: ast.CreateUnique) => split
-            case Seq(_: ast.UpdateClause, _: ast.Merge)        => split
-            case Seq(_: ast.UpdateClause, _: ast.UpdateClause) => combine
             case Seq(_: ast.UpdateClause, _)                   => split
             case Seq(_, _: ast.UpdateClause)                   => split
             case Seq(_: ast.Match, _)                          => split
