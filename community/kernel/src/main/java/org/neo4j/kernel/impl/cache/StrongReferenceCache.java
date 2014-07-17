@@ -60,8 +60,8 @@ public class StrongReferenceCache<E extends EntityWithSizeObject> implements Cac
     @Override
     public E put( E value )
     {
-        E previous = cache.putIfAbsent( value.getId(), value );
-        return previous != null ? previous : value;
+        E old = cache.put( value.getId(), value );
+        return old == null ? value : old;
     }
 
     public void putAll( List<E> list )
