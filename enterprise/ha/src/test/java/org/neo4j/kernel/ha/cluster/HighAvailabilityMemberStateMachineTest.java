@@ -241,7 +241,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
-        verify(guard, times(1)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
+        verify(guard, times(2)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
     }
 
     @Test
@@ -300,7 +300,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
-        verify(guard, times(1)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
+        verify(guard, times(2)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
     }
 
     @Test
@@ -358,7 +358,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
-        verify(guard, times(0)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
+        verify(guard, times(1)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
     }
 
     @Test
@@ -416,7 +416,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
-        verify(guard, times(0)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
+        verify(guard, times(1)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
     }
 
     @Test

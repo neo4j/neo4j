@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.cache;
 
 import java.lang.ref.ReferenceQueue;
 
-public class ReferenceWithKeyQueue<K,V> extends ReferenceQueue<ReferenceWithKey<K, V>>
+public class ReferenceWithKeyQueue<K, V> extends ReferenceQueue<ReferenceWithKey<K, V>>
 {
     public ReferenceWithKeyQueue()
     {

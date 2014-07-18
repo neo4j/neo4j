@@ -419,8 +419,8 @@ public class SwitchToSlave
         }
         catch ( Exception e )
         {
-            throw new BranchedDataException( "Exception while getting master ID for txId "
-                    + myLastCommittedTx + ".", e );
+            throw new BranchedDataException( "Unable to gather data for mandatory sanity check. Details: "+
+                    "Exception while getting master ID for txId " + myLastCommittedTx + ".", e );
         }
 
         HandshakeResult handshake;
@@ -432,7 +432,8 @@ public class SwitchToSlave
         catch( BranchedDataException e )
         {
             // Rethrow wrapped in a branched data exception on our side, to clarify where the problem originates.
-            throw new BranchedDataException( "Master detected branched data for this machine.", e );
+            throw new BranchedDataException( "The database stored on this machine has diverged from that " +
+                    "of the master. This will be automatically resolved.", e );
         }
         catch ( RuntimeException e )
         {
@@ -455,10 +456,10 @@ public class SwitchToSlave
         if ( myMaster.first() != XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER &&
                 (myMaster.first() != handshake.txAuthor() || myMaster.other() != handshake.txChecksum()) )
         {
-            String msg = "Branched data, I (machineId:" + config.get( ClusterSettings.server_id ) + ") think machineId for" +
-                    " txId (" +
-                    myLastCommittedTx + ") is " + myMaster + ", but master (machineId:" +
-                    getServerId( availableMasterId ) + ") says that it's " + handshake;
+            String msg = "The cluster contains two logically different versions of the database.. This will be " +
+                    "automatically resolved. Details: I (machineId:" + config.get( ClusterSettings.server_id ) +
+                    ") think machineId for txId (" + myLastCommittedTx + ") is " + myMaster +
+                    ", but master (machineId:" + getServerId( availableMasterId ) + ") says that it's " + handshake;
             throw new BranchedDataException( msg );
         }
         msgLog.logMessage( "Master id for last committed tx ok with highestTxId=" +

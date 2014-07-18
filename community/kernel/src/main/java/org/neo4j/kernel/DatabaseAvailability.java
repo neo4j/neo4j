@@ -40,6 +40,9 @@ public class DatabaseAvailability
     {
         this.txManager = txManager;
         this.availabilityGuard = availabilityGuard;
+
+        // On initial setup, deny availability
+        availabilityGuard.deny( this );
     }
 
     @Override
@@ -87,6 +90,6 @@ public class DatabaseAvailability
     @Override
     public String description()
     {
-        return getClass().getSimpleName();
+        return "Database is stopped";
     }
 }

@@ -22,10 +22,8 @@ package org.neo4j.kernel.impl.cache;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
-public class WeakValue<K,V> extends WeakReference<V> implements ReferenceWithKey<K,V>
+public class WeakValue<K, V> extends WeakReference<V> implements ReferenceWithKey<K, V>
 {
-    public final K key;
-
     public static Factory WEAK_VALUE_FACTORY = new Factory()
     {
         @Override
@@ -34,6 +32,8 @@ public class WeakValue<K,V> extends WeakReference<V> implements ReferenceWithKey
             return new WeakValue<>( key, value, queue );
         }
     };
+
+    public final K key;
 
     private WeakValue( K key, V value, ReferenceQueue<? super V> queue )
     {
