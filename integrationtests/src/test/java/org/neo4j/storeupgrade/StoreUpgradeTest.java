@@ -49,7 +49,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterables.count;
 
 @RunWith( Theories.class )
-public class StoreUpgradeIT
+public class StoreUpgradeTest
 {
     private static class Store
     {
@@ -64,7 +64,7 @@ public class StoreUpgradeIT
 
         public File prepareDirectory() throws IOException
         {
-            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeIT.class, resourceName );
+            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeTest.class, resourceName );
             new File( dir, "messages.log" ).delete(); // clear the log
             return dir;
         }
