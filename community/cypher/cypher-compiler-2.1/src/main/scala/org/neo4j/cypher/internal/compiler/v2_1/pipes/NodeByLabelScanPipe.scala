@@ -19,12 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, _}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.{IntroducedIdentifier, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v2_1.symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.{LabelName, IntroducedIdentifier}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.{SymbolTable, _}
 
 case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])(implicit pipeMonitor: PipeMonitor) extends Pipe {
 
@@ -55,4 +53,11 @@ case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])(im
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
+
+  def dup(sources: List[Pipe]): Pipe = {
+    require(sources.isEmpty)
+    this
+  }
+
+  def sources: Seq[Pipe] = Seq.empty
 }

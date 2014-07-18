@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.{SymbolTable, CypherType}
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{VarLengthRelatedTo, RelatedTo, Pattern, AstNode}
-import org.neo4j.graphdb.Node
-import org.neo4j.cypher.{InvalidSemanticsException, InternalException}
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.PropertySupport
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.{CypherType, SymbolTable}
+import org.neo4j.cypher.{InternalException, InvalidSemanticsException}
+import org.neo4j.graphdb.Node
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class MergePatternAction(patterns: Seq[Pattern],

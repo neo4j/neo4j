@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{TwoChildren, PlanDescriptionImpl, PlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
 case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)(implicit pipeMonitor: PipeMonitor) extends Pipe {
@@ -38,4 +38,11 @@ case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)(implicit pipeMonitor: Pipe
   }
 
   def monitor: PipeMonitor = pipeMonitor
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (l :: r :: Nil) = sources
+    copy(lhs = l, rhs = r)
+  }
+
+  def sources: Seq[Pipe] = Seq(lhs, rhs)
 }

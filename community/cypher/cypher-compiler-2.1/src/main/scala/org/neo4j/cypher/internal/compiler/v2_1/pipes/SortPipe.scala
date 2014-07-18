@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{Comparer, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.compiler.v2_1.{Comparer, ExecutionContext}
 
 trait SortDescription {
   def id: String
@@ -36,9 +37,9 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])(implicit monito
 
   def planDescription = source.planDescription.andThen(this, "Sort", KeyNames(orderBy.map(_.id)))
 
-  def symbols = source.symbols
+  override def effects = Effects.NONE
 
-  override def isLazy = false
+  def symbols = source.symbols
 
   private def compareBy(a: ExecutionContext, b: ExecutionContext, order: Seq[SortDescription])(implicit qtx: QueryState): Boolean = order match {
     case Nil => false
@@ -52,5 +53,10 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])(implicit monito
         case -1 => sort.isInstanceOf[Ascending]
         case 0 => compareBy(a, b, tail)
       }
+  }
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
   }
 }

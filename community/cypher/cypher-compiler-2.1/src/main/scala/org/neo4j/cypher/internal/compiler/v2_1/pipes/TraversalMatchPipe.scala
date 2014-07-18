@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import matching.{Trail, TraversalMatcher}
-
 import org.neo4j.cypher.internal.compiler.v2_1._
-import collection.JavaConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.{Trail, TraversalMatcher}
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.KeyNames
 
-class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail)
-                        (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+import scala.collection.JavaConverters._
+
+case class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail)
+                             (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.flatMap {
@@ -47,4 +48,11 @@ class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail)
 
   def planDescription =
     source.planDescription.andThen(this, "TraversalMatcher", KeyNames(trail.pathDescription))
+
+  override def localEffects = Effects.READS
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
 }

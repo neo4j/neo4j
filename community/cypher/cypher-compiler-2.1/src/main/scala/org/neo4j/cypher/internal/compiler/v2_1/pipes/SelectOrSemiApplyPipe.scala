@@ -46,4 +46,11 @@ case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate
     arguments = Seq(LegacyExpression(predicate)))
 
   def symbols: SymbolTable = source.symbols
+
+  override val sources = Seq(source, inner)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (source :: inner :: Nil) = sources
+    copy(source = source, inner = inner)
+  }
 }

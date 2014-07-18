@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.{CachedExpression, Identifier, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{CachedExpression, Expression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{SingleChild, PlanDescriptionImpl}
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescriptionImpl, SingleChild}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 object ExtractPipe {
   def apply(source: Pipe, expressions: Map[String, Expression])(implicit pipeMonitor: PipeMonitor): ExtractPipe = source match {
@@ -103,5 +103,12 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
 
     new PlanDescriptionImpl(this, "Extract", SingleChild(source.planDescription), Seq(KeyNames(arguments)))
   }
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (source :: Nil) = sources
+    copy(source = source)
+  }
+
+  override def localEffects = expressions.values.map(_.effects).reduce(_ | _)
 }
 

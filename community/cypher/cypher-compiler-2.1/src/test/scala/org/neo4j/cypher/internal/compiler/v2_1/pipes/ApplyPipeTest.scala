@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.{SymbolTable, CTNumber}
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.{CTNumber, SymbolTable}
 
 class ApplyPipeTest extends CypherFunSuite {
 
@@ -38,6 +38,8 @@ class ApplyPipeTest extends CypherFunSuite {
       def planDescription = ???
       def symbols: SymbolTable = ???
       def monitor: PipeMonitor = newMonitor
+      def dup(sources: List[Pipe]): Pipe = ???
+      def sources: Seq[Pipe] = ???
     }
 
     val result = ApplyPipe(lhs, rhs)(newMonitor).createResults(QueryStateHelper.empty).toList
@@ -58,6 +60,8 @@ class ApplyPipeTest extends CypherFunSuite {
       def planDescription = ???
       def symbols: SymbolTable = ???
       def monitor: PipeMonitor = newMonitor
+      def dup(sources: List[Pipe]): Pipe = ???
+      def sources: Seq[Pipe] = ???
     }
 
     val result = ApplyPipe(lhs, rhs)(newMonitor).createResults(QueryStateHelper.empty).toList
@@ -77,6 +81,8 @@ class ApplyPipeTest extends CypherFunSuite {
       def planDescription = ???
       def symbols: SymbolTable = ???
       def monitor: PipeMonitor = newMonitor
+      def dup(sources: List[Pipe]): Pipe = ???
+      def sources: Seq[Pipe] = ???
     }
 
     val result = ApplyPipe(lhs, rhs)(newMonitor).createResults(QueryStateHelper.empty).toList

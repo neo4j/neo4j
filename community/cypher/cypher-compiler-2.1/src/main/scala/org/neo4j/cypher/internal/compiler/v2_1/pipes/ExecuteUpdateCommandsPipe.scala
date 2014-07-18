@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
-import mutation._
-import symbols._
-import org.neo4j.cypher.{SyntaxException, ParameterWrongTypeException, InternalException}
+import org.neo4j.cypher.internal.compiler.v2_1.mutation._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.{InternalException, ParameterWrongTypeException, SyntaxException}
 import org.neo4j.graphdb.NotInTransactionException
-import collection.mutable
+
+import scala.collection.mutable
 
 case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with CollectionSupport with NoLushEntityCreation {
@@ -67,6 +68,13 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(
   def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
 
   def sourceSymbols: SymbolTable = source.symbols
+
+  override def localEffects = commands.map(_.effects).reduce(_ | _)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (source :: Nil) = sources
+    copy(source = source)
+  }
 }
 
 // TODO: Write unit tests for this

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{SingleChild, PlanDescriptionImpl, PlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
 case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -40,4 +40,9 @@ case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)(implicit
     )
 
   def symbols: SymbolTable = source.symbols
+
+  def dup(sources: List[Pipe]) = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
 }

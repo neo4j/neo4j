@@ -17,30 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pipes
+package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{EagerPipe, Pipe}
 
-case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
-    while(input.hasNext) {
-      input.next()
-    }
-
-    Iterator.empty
+object addEagernessIfNecessary extends (Pipe => Pipe) {
+  def wouldInterfere(from: Effects, to: Effects): Boolean = {
+    val nodesInterfere = from.contains(Effects.READS_NODES) && to.contains(Effects.WRITES_NODES)
+    val relsInterfere = from.contains(Effects.READS_RELATIONSHIPS) && to.contains(Effects.WRITES_RELATIONSHIPS)
+    nodesInterfere || relsInterfere
   }
 
-  override def planDescription = source.planDescription.andThen(this, "EmptyResult")
-
-  def symbols = SymbolTable()
-
-  override def localEffects = Effects.NONE
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)
+  def apply(in: Pipe): Pipe = {
+    val sources = in.sources.map(apply).map { source =>
+      if (wouldInterfere(source.effects, in.effects)) {
+        new EagerPipe(source)(source.monitor)
+      } else {
+        source
+      }
+    }
+    in.dup(sources.toList)
   }
 }

@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.Expression
-import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.LegacyExpression
+import org.neo4j.helpers.ThisShouldNotHappenError
 
-class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression])
-               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class SlicePipe(source: Pipe, skip: Option[Expression], limit: Option[Expression])
+                    (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
   val symbols = source.symbols
 
@@ -66,6 +67,13 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression])
       .planDescription
       .andThen(this, "Slice", skip.map(LegacyExpression).toSeq ++ limit.map(LegacyExpression).toSeq:_*)
   }
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
+
+  override def localEffects = (skip ++ limit).foldLeft(Effects.NONE)(_ | _.effects)
 }
 
 class HeadAndTail[T](head:T, tail:Iterator[T]) extends Iterator[T] {

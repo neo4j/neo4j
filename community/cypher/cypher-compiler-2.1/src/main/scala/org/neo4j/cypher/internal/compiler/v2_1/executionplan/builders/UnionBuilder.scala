@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{Query, Union}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, DistinctPipe, UnionPipe, Pipe}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Expression}
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{Query, Union}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{DistinctPipe, PipeMonitor, UnionPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 
-trait QueryBuilder {
+trait GraphQueryBuilder {
   def buildQuery(q: Query, context:PlanContext)(implicit pipeMonitor: PipeMonitor): PipeInfo
 }
 
-class UnionBuilder(queryBuilder: QueryBuilder) {
+class UnionBuilder(queryBuilder: GraphQueryBuilder) {
   def buildUnionQuery(union: Union, context:PlanContext)(implicit pipeMonitor: PipeMonitor): PipeInfo = {
     checkQueriesHaveSameColumns(union)
 
@@ -40,7 +40,7 @@ class UnionBuilder(queryBuilder: QueryBuilder) {
     val pipes = combined.map(_.pipe)
     val updating = combined.map(_.updating).reduce(_ || _)
 
-    val unionPipe = new UnionPipe(pipes, union.queries.head.columns)
+    val unionPipe = new UnionPipe(pipes.toList, union.queries.head.columns)
     val pipe = if (union.distinct) {
       val expressions: Map[String, Expression] = union.queries.head.columns.map(k => k -> Identifier(k)).toMap
       new DistinctPipe(unionPipe, expressions)

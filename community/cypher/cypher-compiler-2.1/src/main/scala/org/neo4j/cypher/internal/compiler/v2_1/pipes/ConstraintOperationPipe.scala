@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, propertyKey: KeyToken)(implicit val monitor: PipeMonitor) extends Pipe {
+class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, propertyKey: KeyToken)
+                             (implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val labelId = label.getOrCreateId(state.query)
     val propertyKeyId = propertyKey.getOrCreateId(state.query)
@@ -43,4 +44,11 @@ class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, pr
   def planDescription = new PlanDescriptionImpl(this, "ConstraintOperation", NoChildren, Seq.empty)
 
   def exists(pred: Pipe => Boolean) = pred(this)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    require(sources.isEmpty)
+    this
+  }
+
+  def sources: Seq[Pipe] = Seq.empty
 }

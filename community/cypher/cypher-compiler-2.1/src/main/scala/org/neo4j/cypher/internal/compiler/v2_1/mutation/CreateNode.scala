@@ -19,19 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.{Literal, Expression}
-import commands.values.KeyToken
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.CypherTypeException
-import collection.Map
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Expression, Literal}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.cypher.internal.helpers.CollectionSupport
+
+import scala.collection.Map
 
 case class CreateNode(key: String, properties: Map[String, Expression], labels: Seq[KeyToken])
   extends UpdateAction
   with GraphElementPropertyFunctions
   with CollectionSupport {
+
+  override def localEffects = properties.values.foldLeft(Effects.WRITES_NODES)(_ | _.effects)
 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
     def fromAnyToLiteral(x: Map[String, Any]): Map[String, Expression] = x.map {
