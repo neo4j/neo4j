@@ -223,7 +223,8 @@ public class ForsetiClient implements Locks.Client
                         if(sharedLock.numberOfHolders() == 1)
                         {
                             lockMap.put( resourceId, myExclusiveLock );
-                            return true;
+                            heldLocks.put( resourceId, 1 );
+                            continue;
                         }
                         else
                         {
