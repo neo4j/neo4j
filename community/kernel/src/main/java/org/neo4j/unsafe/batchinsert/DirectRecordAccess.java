@@ -23,10 +23,11 @@ import java.util.Comparator;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.neo4j.collection.pool.LinkedQueuePool;
+import org.neo4j.function.Factory;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.AbstractRecordStore;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess;
-import org.neo4j.kernel.impl.util.FlyweightPool;
 
 /**
  * Provides direct access to records in a store. Changes are batched up and written whenever {@link #commit()}
@@ -46,20 +47,21 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         }
     });
     private boolean changed;
-    private final FlyweightPool<DirectRecordProxy> proxyFlyweightPool;
+    private final LinkedQueuePool<DirectRecordProxy> proxyFlyweightPool;
 
     public DirectRecordAccess( AbstractRecordStore<RECORD> store, Loader<KEY, RECORD, ADDITIONAL> loader )
     {
         this.store = store;
         this.loader = loader;
-        proxyFlyweightPool = new FlyweightPool<DirectRecordProxy>( 100 )
+        // TODO: We should modify marshlandpool to support multiple items pooled per thread, and use that here.
+        proxyFlyweightPool = new LinkedQueuePool<>( 100, new Factory<DirectRecordProxy>()
         {
             @Override
-            protected DirectRecordProxy create()
+            public DirectRecordProxy newInstance()
             {
                 return new DirectRecordProxy();
             }
-        };
+        } );
     }
 
     @Override

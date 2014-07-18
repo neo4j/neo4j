@@ -17,17 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
-
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+package org.neo4j.collection.pool;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.Clock;
+import org.neo4j.function.Factory;
+import org.neo4j.function.primitive.LongSupplier;
 
-public abstract class FlyweightPool<R>
+public class LinkedQueuePool<R> implements Pool<R>
 {
     public interface Monitor<R>
     {
@@ -78,19 +77,31 @@ public abstract class FlyweightPool<R>
         {
             private final long interval;
             private long lastCheckTime;
-            private final Clock clock;
+            private final LongSupplier clock;
 
-            public TimeoutCheckStrategy( long interval, Clock clock )
+            public TimeoutCheckStrategy( long interval )
+            {
+                this(interval, new LongSupplier()
+                {
+                    @Override
+                    public long getAsLong()
+                    {
+                        return System.currentTimeMillis();
+                    }
+                });
+            }
+
+            public TimeoutCheckStrategy( long interval, LongSupplier clock )
             {
                 this.interval = interval;
-                this.lastCheckTime = clock.currentTimeMillis();
+                this.lastCheckTime = clock.getAsLong();
                 this.clock = clock;
             }
 
             @Override
             public boolean shouldCheck()
             {
-                long currentTime = clock.currentTimeMillis();
+                long currentTime = clock.getAsLong();
                 if ( currentTime > lastCheckTime + interval )
                 {
                     lastCheckTime = currentTime;
@@ -106,6 +117,7 @@ public abstract class FlyweightPool<R>
     private final Queue<R> unused = new ConcurrentLinkedQueue<>();
     private final Monitor monitor;
     private final int minSize;
+    private final Factory<R> factory;
     private final CheckStrategy checkStrategy;
     // Guarded by nothing. Those are estimates, losing some values doesn't matter much
     private final AtomicInteger allocated = new AtomicInteger( 0 );
@@ -113,22 +125,26 @@ public abstract class FlyweightPool<R>
     private int currentPeakSize;
     private int targetSize;
 
-    protected FlyweightPool( int minSize )
+    public LinkedQueuePool( int minSize, Factory<R> factory)
     {
-        this( minSize, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL, SYSTEM_CLOCK ),
-                new Monitor.Adapter() );
+        this( minSize, factory, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL ),
+            new Monitor.Adapter() );
     }
 
-    protected FlyweightPool( int minSize, CheckStrategy strategy, Monitor monitor )
+    public LinkedQueuePool( int minSize, Factory<R> factory, CheckStrategy strategy, Monitor monitor )
     {
         this.minSize = minSize;
+        this.factory = factory;
         this.currentPeakSize = 0;
         this.targetSize = minSize;
         this.checkStrategy = strategy;
         this.monitor = monitor;
     }
 
-    protected abstract R create();
+    protected R create()
+    {
+        return factory.newInstance();
+    }
 
     protected void dispose( R resource )
     {
@@ -136,6 +152,7 @@ public abstract class FlyweightPool<R>
         allocated.decrementAndGet();
     }
 
+    @Override
     public final R acquire()
     {
         R resource = unused.poll();
@@ -162,6 +179,7 @@ public abstract class FlyweightPool<R>
         return resource;
     }
 
+    @Override
     public void release( R toRelease )
     {
         if ( queueSize.get() < targetSize )
