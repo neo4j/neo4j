@@ -27,6 +27,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
+import org.neo4j.io.pagecache.PagedFile;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -50,8 +51,8 @@ public class StandardPagedFileTest
     public void shouldLoadPage() throws Exception
     {
         // Given
-        when( table.load( swapper, 12, PageLock.SHARED ) ).thenReturn( page );
-        when( page.pin( swapper, 12, PageLock.SHARED ) ).thenReturn( true );
+        when( table.load( swapper, 12, PagedFile.PF_NO_GROW | PagedFile.PF_SHARED_LOCK ) ).thenReturn( page );
+        when( page.pin( swapper, 12, PagedFile.PF_SHARED_LOCK ) ).thenReturn( true );
         when( page.pageId() ).thenReturn( 12L );
         when( channel.size() ).thenReturn( 2048L );
 
@@ -66,15 +67,15 @@ public class StandardPagedFileTest
         }
 
         // And then
-        verify( table ).load( swapper, 12, PageLock.SHARED );
+        verify( table ).load( swapper, 12, PagedFile.PF_NO_GROW | PagedFile.PF_SHARED_LOCK );
     }
 
     @Test
     public void shouldUnpinWithCorrectLockType() throws Exception
     {
         // Given
-        when( table.load( swapper, 12, PageLock.EXCLUSIVE ) ).thenReturn( page );
-        when( page.pin( swapper, 12, PageLock.EXCLUSIVE ) ).thenReturn( true );
+        when( table.load( swapper, 12, PagedFile.PF_EXCLUSIVE_LOCK ) ).thenReturn( page );
+        when( page.pin( swapper, 12, PagedFile.PF_EXCLUSIVE_LOCK ) ).thenReturn( true );
         when( page.pageId() ).thenReturn( 12L );
         when( swapper.getLastPageId() ).thenReturn( 512L );
 
@@ -87,15 +88,15 @@ public class StandardPagedFileTest
             assertTrue( cursor.next() );
             assertThat( cursor.getCurrentPageId(), is( 12L ) );
         }
-        verify( page ).unpin( PageLock.EXCLUSIVE );
+        verify( page ).unpin( PagedFile.PF_EXCLUSIVE_LOCK );
     }
 
     @Test( expected = IllegalArgumentException.class )
     public void shouldThrowIfNoLockSpecified() throws Exception
     {
         // Given
-        when( table.load( swapper, 12, PageLock.SHARED ) ).thenReturn( page );
-        when( page.pin( swapper, 12, PageLock.SHARED ) ).thenReturn( true );
+        when( table.load( swapper, 12, PagedFile.PF_SHARED_LOCK ) ).thenReturn( page );
+        when( page.pin( swapper, 12, PagedFile.PF_SHARED_LOCK ) ).thenReturn( true );
 
         StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
 
@@ -112,8 +113,8 @@ public class StandardPagedFileTest
     public void shouldThrowIfSpecifyingBothSharedAndExclusiveLock() throws IOException
     {
         // Given
-        when( table.load( swapper, 12, PageLock.SHARED ) ).thenReturn( page );
-        when( page.pin( swapper, 12, PageLock.SHARED ) ).thenReturn( true );
+        when( table.load( swapper, 12, PagedFile.PF_SHARED_LOCK ) ).thenReturn( page );
+        when( page.pin( swapper, 12, PagedFile.PF_SHARED_LOCK ) ).thenReturn( true );
 
         StandardPagedFile file = new StandardPagedFile( table, null, channel, 512, PageCacheMonitor.NULL );
 

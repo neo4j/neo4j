@@ -96,9 +96,11 @@ public class StandardPagedFile implements PagedFile
         return cursor;
     }
 
-    void pin( StandardPageCursor cursor, PageLock lock, long pageId ) throws IOException
+    void pin( StandardPageCursor cursor, int pf_flags, long pageId ) throws IOException
     {
         cursor.assertNotInUse();
+        PageLock lock = getLockType(pf_flags);
+
         for (;;)
         {
             Object pageRef = filePages.get( pageId );
@@ -111,7 +113,7 @@ public class StandardPagedFile implements PagedFile
                 CountDownLatch latch = new CountDownLatch( 1 );
                 if ( filePages.replace( pageId, pageRef, latch ) )
                 {
-                    PinnablePage page = table.load( swapper, pageId, lock );
+                    PinnablePage page = table.load( swapper, pageId, pf_flags );
                     cursor.reset( page, lock );
                     filePages.put( pageId, page );
                     latch.countDown();
@@ -136,7 +138,7 @@ public class StandardPagedFile implements PagedFile
             {
                 // happy case where we have a page id
                 PinnablePage page = (PinnablePage) pageRef;
-                if ( page.pin( swapper, pageId, lock ) )
+                if ( page.pin( swapper, pageId, pf_flags ) )
                 {
                     cursor.reset( page, lock );
                     monitor.pin( lock, pageId, swapper );
@@ -153,7 +155,7 @@ public class StandardPagedFile implements PagedFile
         PageLock lock = standardCursor.lockType();
         PinnablePage page = standardCursor.page();
         long pageId = page.pageId();
-        page.unpin( lock );
+        page.unpin( standardCursor.flags() );
         monitor.unpin( lock, pageId, swapper );
         standardCursor.reset( null, null );
     }
@@ -237,5 +239,19 @@ public class StandardPagedFile implements PagedFile
        while ( current < newLastPageId
                && !lastPageId.compareAndSet( current, newLastPageId ) );
        return lastPageId.get();
+    }
+
+    private static PageLock getLockType( int pf_flags ) throws IOException
+    {
+        // TODO this is an annoying conversion... we should use ints all the way down
+        switch ( pf_flags & (PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK) )
+        {
+            case PF_EXCLUSIVE_LOCK: return PageLock.EXCLUSIVE;
+            case PF_SHARED_LOCK: return PageLock.SHARED;
+            case PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK: throw new IOException(
+                    "Invalid flags: cannot ask to pin a page with both a shared and an exclusive lock" );
+            default: throw new IOException(
+                    "Invalid flags: must specify either shared or exclusive lock for page pinning" );
+        }
     }
 }

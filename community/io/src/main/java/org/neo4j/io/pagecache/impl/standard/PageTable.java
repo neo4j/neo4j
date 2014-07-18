@@ -32,7 +32,7 @@ public interface PageTable
      *
      * The page returned is pre-locked with the lock specified in the call.
      */
-    PinnablePage load( PageSwapper io, long pageId, PageLock lock ) throws IOException;
+    PinnablePage load( PageSwapper io, long pageId, int pf_flags ) throws IOException;
 
     /** Flush all dirty pages. */
     void flush() throws IOException;
