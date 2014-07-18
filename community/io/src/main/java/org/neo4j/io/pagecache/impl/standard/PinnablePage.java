@@ -34,7 +34,7 @@ public interface PinnablePage extends Page
      * If the page is currently pinned for reading or writing, and the given PageLock is EXCLUSIVE, the pin will block.
      * If the page is currently pinned for writing, and the given PageLock is SHARED, the pin will block.
      */
-    boolean pin( PageSwapper assertIO, long assertPageId, PageLock lock );
+    boolean pin( PageSwapper assertIO, long assertPageId, int pf_flags );
 
     /**
      * Unpin the page.
@@ -43,7 +43,7 @@ public interface PinnablePage extends Page
      * ensure that this method does not get called without an accompanying #pin() call
      * beforehand.
      */
-    void unpin( PageLock lock );
+    void unpin( int pf_flags );
 
     /**
      * The PageId that this page is <strong>currently</strong> pinned with.

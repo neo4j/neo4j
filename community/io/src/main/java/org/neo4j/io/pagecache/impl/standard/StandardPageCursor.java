@@ -58,6 +58,8 @@ public class StandardPageCursor extends OffsetTrackingCursor
         return lockTypeHeld;
     }
 
+    public int flags() { return pf_flags; }
+
     public void reset( PinnablePage page, PageLock lockTypeHeld )
     {
         this.lockTypeHeld = lockTypeHeld;
@@ -72,19 +74,6 @@ public class StandardPageCursor extends OffsetTrackingCursor
         }
     }
 
-    private static PageLock getLockType( int pf_flags ) throws IOException
-    {
-        // TODO this is an annoying conversion... we should use ints all the way down
-        switch ( pf_flags & (PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK) )
-        {
-            case PF_EXCLUSIVE_LOCK: return PageLock.EXCLUSIVE;
-            case PF_SHARED_LOCK: return PageLock.SHARED;
-            case PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK: throw new IOException(
-                    "Invalid flags: cannot ask to pin a page with both a shared and an exclusive lock" );
-            default: throw new IOException(
-                    "Invalid flags: must specify either shared or exclusive lock for page pinning" );
-        }
-    }
 
     @Override
     public boolean next() throws IOException
@@ -146,7 +135,7 @@ public class StandardPageCursor extends OffsetTrackingCursor
         currentPageId = nextPageId;
         try
         {
-            pagedFile.pin( this, getLockType( pf_flags ), currentPageId );
+            pagedFile.pin( this, pf_flags, currentPageId );
         }
         catch ( IOException e )
         {
