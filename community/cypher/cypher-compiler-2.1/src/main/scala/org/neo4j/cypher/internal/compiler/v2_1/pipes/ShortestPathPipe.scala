@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
 import commands.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
 import symbols._
 import org.neo4j.cypher.internal.helpers._
 import org.neo4j.graphdb.{Relationship, Path}
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
 import collection.JavaConverters._
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes

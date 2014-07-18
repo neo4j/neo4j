@@ -150,6 +150,13 @@ public class StoreUpgrader extends DependencySatisfier.Adapter
         {
             File migrationStateFile = new File( migrationDirectory, MIGRATION_STATUS_FILE );
             File leftOversDirectory = new File( storeDirectory, MIGRATION_LEFT_OVERS_DIRECTORY );
+            int backupDirCounter = 0;
+            while ( fileSystem.fileExists( leftOversDirectory ) )
+            {
+                backupDirCounter++;
+                String dirname = MIGRATION_LEFT_OVERS_DIRECTORY + "_" + backupDirCounter;
+                leftOversDirectory = new File( storeDirectory, dirname );
+            }
 
             // We don't need to migrate if we're at the phase where we have migrated successfully
             // and it's just a matter of moving over the files to the storeDir.

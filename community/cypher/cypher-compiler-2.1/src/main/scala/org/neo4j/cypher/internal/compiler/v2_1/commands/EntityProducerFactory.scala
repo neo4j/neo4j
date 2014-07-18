@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import mutation.GraphElementPropertyFunctions
-import pipes.{EntityProducer, QueryState}
-import org.neo4j.cypher.{CypherTypeException, EntityNotFoundException, IndexHintException, InternalException}
-import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.helpers.IsCollection
-import scala.collection.GenTraversableOnce
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.GetGraphElements
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{EntityProducer, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.{EntityNotFoundException, IndexHintException, InternalException}
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 class EntityProducerFactory extends GraphElementPropertyFunctions {
 

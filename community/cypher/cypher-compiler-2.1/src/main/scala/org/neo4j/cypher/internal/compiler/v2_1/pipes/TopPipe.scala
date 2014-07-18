@@ -24,7 +24,7 @@ import commands.SortItem
 import commands.expressions.Expression
 import scala.math._
 import java.util.Comparator
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{KeyExpressions, LegacyExpression}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.{KeyExpressions, LegacyExpression}
 
 /*
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then

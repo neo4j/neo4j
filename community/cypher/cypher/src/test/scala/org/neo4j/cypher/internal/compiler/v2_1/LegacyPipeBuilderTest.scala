@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Literal, Identifier}
 import commands.values.TokenType.{Label, PropertyKey}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription
 import pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.{GraphDatabaseTestSupport, InternalException}

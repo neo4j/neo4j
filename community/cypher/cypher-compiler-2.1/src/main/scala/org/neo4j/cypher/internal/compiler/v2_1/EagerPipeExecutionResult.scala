@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription
 import pipes.QueryState
 import org.neo4j.cypher.ExecutionResult
 

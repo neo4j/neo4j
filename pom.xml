@@ -33,6 +33,7 @@
     <module>community</module>
     <module>advanced</module>
     <module>enterprise</module>
+    <module>integrationtests</module>
   </modules>
 
   <build>

@@ -27,6 +27,8 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import ch.qos.logback.classic.LoggerContext;
+
 import org.neo4j.com.ComException;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -34,12 +36,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
+import org.neo4j.kernel.impl.storemigration.StoreFile20;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -47,10 +49,9 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 
-import ch.qos.logback.classic.LoggerContext;
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 public class BackupTool
 {
@@ -271,7 +272,7 @@ public class BackupTool
             throw new IOException( "Trouble making target backup directory "
                     + backupDir.getAbsolutePath() );
         }
-        StoreFile.move( fs, toDir, backupDir, StoreFile.legacyStoreFiles(), false, false, StoreFileType.values() );
+        StoreFile20.move( fs, toDir, backupDir, StoreFile20.legacyStoreFiles(), false, false, StoreFileType.values() );
         LogFiles.move( fs, toDir, backupDir );
     }
 
