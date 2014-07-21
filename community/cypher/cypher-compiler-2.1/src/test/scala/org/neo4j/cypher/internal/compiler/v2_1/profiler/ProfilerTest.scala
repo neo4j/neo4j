@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.profiler
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{Argument, PlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext

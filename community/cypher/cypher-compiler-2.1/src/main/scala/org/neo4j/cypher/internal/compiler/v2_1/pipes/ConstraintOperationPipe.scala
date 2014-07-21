@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands._
-import commands.values.KeyToken
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, propertyKey: KeyToken)(implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {

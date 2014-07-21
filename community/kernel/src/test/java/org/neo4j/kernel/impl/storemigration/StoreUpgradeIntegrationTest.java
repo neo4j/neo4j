@@ -44,7 +44,7 @@ import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.LEGACY_VERSION;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.LEGACY_VERSION;
 
 public class StoreUpgradeIntegrationTest
 {

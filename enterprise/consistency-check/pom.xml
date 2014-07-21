@@ -17,7 +17,7 @@
 
   <properties>
     <version-package>consistency.checking.impl</version-package>
-    <neo4j.version>2.2-SNAPSHOT</neo4j.version>
+    <neo4j.version>${project.version}</neo4j.version>
     <bundle.namespace>org.neo4j.consistency</bundle.namespace>
     <short-name>consistency-check</short-name>
     <docs-plugin.skip>true</docs-plugin.skip>

@@ -595,7 +595,7 @@ public class NodeProxy implements Node
         }
         catch ( LabelNotFoundKernelException e )
         {
-            throw new ThisShouldNotHappenError( "Stefan", "Label retrieved through kernel API should exist." );
+            throw new ThisShouldNotHappenError( "Stefan", "Label retrieved through kernel API should exist.", e );
         }
     }
 

@@ -643,4 +643,3 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
   </buildIds>
   <buildOptions verbose="true" faster="false" disableSigning="false" debug="false" />
 </install4j>
-

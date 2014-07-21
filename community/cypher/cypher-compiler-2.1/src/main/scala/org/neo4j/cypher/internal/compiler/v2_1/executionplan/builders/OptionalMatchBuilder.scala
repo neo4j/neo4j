@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, PlanBuilder, Phase}
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, Phase, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
-import org.neo4j.cypher.internal.compiler.v2_1.{TwoChildren, PlanDescriptionImpl, PlanDescription, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{TwoChildren, PlanDescriptionImpl, PlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.ExecutionPlanInProgress
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
 
 case class OptionalMatchBuilder(solveMatch: Phase) extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean = plan.query.optional

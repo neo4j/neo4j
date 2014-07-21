@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -71,7 +71,8 @@ import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.findOldFormatStoreDirectory;
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
 public class StoreMigratorIT
@@ -81,7 +82,7 @@ public class StoreMigratorIT
     {
         // WHEN
         upgrader( new StoreMigrator( monitor, fs ) )
-                .migrateIfNeeded( findOldFormatStoreDirectory( storeDir ) );
+                .migrateIfNeeded( find20FormatStoreDirectory( storeDir ) );
 
         // THEN
         assertEquals( 100, monitor.events.size() );
@@ -125,7 +126,7 @@ public class StoreMigratorIT
         // a store that contains two nodes with property "name" of which there are two key tokens
         // that should be merged in the store migration
         // WHEN
-        Unzip.unzip( LegacyStore.class, "propkeydupdb.zip", storeDir );
+        Unzip.unzip( Legacy20Store.class, "propkeydupdb.zip", storeDir );
         upgrader( new StoreMigrator( monitor, fs ) ).migrateIfNeeded( storeDir );
 
         // THEN

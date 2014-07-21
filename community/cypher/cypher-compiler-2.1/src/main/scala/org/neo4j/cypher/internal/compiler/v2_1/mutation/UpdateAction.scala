@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_1.mutation
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.AstNode
 import commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments._
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{UpdateActionName, IntroducedIdentifier}
 
 trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
 
@@ -36,5 +37,5 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
 
   def shortName: String = getClass.getSimpleName.replace("Action", "")
 
-  def arguments:Seq[Argument] = identifiers.map(tuple => IntroducedIdentifier(tuple._1)) :+ UpdateActionName(shortName)
+  def arguments: Seq[Argument] = identifiers.map(tuple => IntroducedIdentifier(tuple._1)) :+ UpdateActionName(shortName)
 }

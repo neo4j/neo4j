@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.{Comparer, ExecutionContext}
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.KeyNames
 
 trait SortDescription {
   def id: String

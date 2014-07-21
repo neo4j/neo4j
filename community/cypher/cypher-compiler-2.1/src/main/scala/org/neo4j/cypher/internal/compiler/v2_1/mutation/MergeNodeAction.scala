@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.expressions.Expression
 import commands.Predicate
 import commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.Argument
 import pipes.{QueryState, EntityProducer}
 import symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext

@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.SortItem
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.LegacyExpression
 import scala.math.signum
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.LegacyExpression
 
 case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with ExecutionContextComparer {

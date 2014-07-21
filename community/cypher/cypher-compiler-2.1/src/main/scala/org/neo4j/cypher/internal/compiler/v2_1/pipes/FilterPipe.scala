@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.Predicate
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.LegacyExpression
 
 case class FilterPipe(source: Pipe, predicate: Predicate)
                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {

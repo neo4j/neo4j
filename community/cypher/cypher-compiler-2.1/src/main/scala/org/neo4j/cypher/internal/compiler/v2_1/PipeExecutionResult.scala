@@ -30,6 +30,7 @@ import collection.immutable.{Map => ImmutableMap}
 import collection.Map
 import java.util
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription
 
 class PipeExecutionResult(val result: ClosingIterator,
                           val columns: List[String], val state: QueryState,

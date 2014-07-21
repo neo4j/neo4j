@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{NoChildren, PlanDescriptionImpl, symbols, ExecutionContext}
-import symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
+import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 case class AllNodesScanPipe(ident: String)(implicit pipeMonitor: PipeMonitor) extends Pipe {
 

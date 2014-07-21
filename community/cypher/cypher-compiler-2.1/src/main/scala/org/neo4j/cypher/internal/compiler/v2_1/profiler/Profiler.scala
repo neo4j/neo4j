@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.profiler
 
 import org.neo4j.cypher.ProfilerStatisticsNotReadyException
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{NullPipe, Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}

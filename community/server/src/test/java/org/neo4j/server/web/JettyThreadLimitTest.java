@@ -19,16 +19,18 @@
  */
 package org.neo4j.server.web;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.Mute.muteAll;
-
 import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.Mute;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.test.Mute.muteAll;
 
 public class JettyThreadLimitTest
 {
@@ -41,6 +43,9 @@ public class JettyThreadLimitTest
         Jetty9WebServer server = new Jetty9WebServer( DevNullLoggingService.DEV_NULL );
         int numCores = 1;
         int configuredMaxThreads = 12; // 12 is the new min max Threads value, for one core
+        int acceptorThreads = 1; // In this configuration, 1 thread will become an acceptor...
+        int selectorThreads = 1; // ... and 1 thread will become a selector...
+        int jobThreads = configuredMaxThreads - acceptorThreads - selectorThreads; // ... and the rest are job threads
         server.setMaxThreads( numCores );
         server.setPort( 7480 );
         try
@@ -48,11 +53,12 @@ public class JettyThreadLimitTest
             server.start();
             QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty().getThreadPool();
             threadPool.start();
-            CountDownLatch cb = loadThreadPool( threadPool, configuredMaxThreads + 1 );
-            Thread.sleep( 10 ); // Wait for threadPool to create threads
+            CountDownLatch startLatch = new CountDownLatch( jobThreads );
+            CountDownLatch endLatch = loadThreadPool( threadPool, configuredMaxThreads + 1, startLatch );
+            startLatch.await(); // Wait for threadPool to create threads
             int threads = threadPool.getThreads();
             assertEquals( "Wrong number of threads in pool", configuredMaxThreads, threads );
-            cb.countDown();
+            endLatch.countDown();
         }
         finally
         {
@@ -60,9 +66,12 @@ public class JettyThreadLimitTest
         }
     }
 
-    private CountDownLatch loadThreadPool( QueuedThreadPool threadPool, int tasksToSubmit )
+    private CountDownLatch loadThreadPool(
+            QueuedThreadPool threadPool,
+            int tasksToSubmit,
+            final CountDownLatch startLatch )
     {
-        final CountDownLatch cb = new CountDownLatch( 1 );
+        final CountDownLatch endLatch = new CountDownLatch( 1 );
         for ( int i = 0; i < tasksToSubmit; i++ )
         {
             threadPool.dispatch( new Runnable()
@@ -70,9 +79,10 @@ public class JettyThreadLimitTest
                 @Override
                 public void run()
                 {
+                    startLatch.countDown();
                     try
                     {
-                        cb.await();
+                        endLatch.await();
                     }
                     catch ( InterruptedException e )
                     {
@@ -81,6 +91,6 @@ public class JettyThreadLimitTest
                 }
             } );
         }
-        return cb;
+        return endLatch;
     }
 }
