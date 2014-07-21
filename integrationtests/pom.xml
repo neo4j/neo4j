@@ -120,10 +120,6 @@
           <argLine>-Xmx300m</argLine>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
 
       <!-- Disable the ComponentVersion generation -->
       <plugin>

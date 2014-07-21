@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
@@ -65,4 +66,13 @@ case class NodeHashJoinPipe(nodeIdentifier: String, left: Pipe, right: Pipe)
     )
 
   def symbols: SymbolTable = left.symbols.add(right.symbols.identifiers).add(nodeIdentifier, CTNode)
+
+  override val sources = Seq(left, right)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (left :: right :: Nil) = sources
+    copy(left = left, right = right)
+  }
+
+  override def localEffects = Effects.NONE
 }

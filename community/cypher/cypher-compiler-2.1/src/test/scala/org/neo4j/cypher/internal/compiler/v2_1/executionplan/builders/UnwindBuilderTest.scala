@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
+package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Collection, Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{AllIdentifiers, Query, ReturnItem, Unwind}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.{BuilderTest, Solved, UnwindBuilder}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.UnwindPipe
 
 class UnwindBuilderTest extends BuilderTest {

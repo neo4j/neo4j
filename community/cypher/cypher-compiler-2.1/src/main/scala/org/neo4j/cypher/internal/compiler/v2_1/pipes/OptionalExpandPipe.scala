@@ -68,4 +68,11 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
       andThen(this, "OptionalExpand", IntroducedIdentifier(relName), IntroducedIdentifier(to))
 
   def symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
+
+  override def localEffects = predicate.effects
 }

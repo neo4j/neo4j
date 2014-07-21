@@ -75,6 +75,34 @@ class LegacyPipeBuilderTest extends CypherFunSuite {
     } should equal(true)
   }
 
+  test("should not introduce an eager pipe between two node reads and a relationships create") {
+    val pipe = buildExecutionPipe("MATCH (a), (b) CREATE (a)-[:TYPE]->(b)")
+    assertPipeDoesNotExist(pipe, classOf[EagerPipe])
+  }
+
+  test("should not introduce an eager pipe between two node reads and a relationships create when theres is sorting between the two") {
+    val pipe = buildExecutionPipe("MATCH (a), (b) WITH a, b ORDER BY id(a) CREATE (a)-[:TYPE]->(b)")
+    assertPipeDoesNotExist(pipe, classOf[EagerPipe])
+  }
+
+  test("should introduce an eager pipe between a node read and a relationship + node create") {
+    val pipe = buildExecutionPipe("MATCH (a) CREATE (a)-[:TYPE]->()")
+    assertPipeExists(pipe, classOf[EagerPipe])
+  }
+
+  test("should introduce an eager pipe between a relationship read and a relationship create") {
+    val pipe = buildExecutionPipe("MATCH (a)-[:TYPE]->(b) CREATE (a)-[:TYPE]->(b)")
+    assertPipeExists(pipe, classOf[EagerPipe])
+  }
+
+  def assertPipeExists[T](pipe: Pipe, klass: Class[T]) {
+    assert(pipe.exists(_.getClass == klass), s"Expected to contain a pipe of type $klass. Got: $pipe")
+  }
+
+  def assertPipeDoesNotExist[T](pipe: Pipe, klass: Class[T]) {
+    assert(!pipe.exists(_.getClass == klass), s"Expected not to contain a pipe of type $klass. Got: $pipe")
+  }
+
   private def buildExecutionPipe(q: String): Pipe = {
     val statement = parser.parse(q)
     val parsedQ = ParsedQuery(statement, statement.asQuery, mock[SemanticTable], q)

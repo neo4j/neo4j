@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_1.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.LegacyExpression
 
 case class FilterPipe(source: Pipe, predicate: Predicate)
@@ -31,4 +32,11 @@ case class FilterPipe(source: Pipe, predicate: Predicate)
     input.filter(ctx => predicate.isTrue(ctx)(state))
 
   def planDescription = source.planDescription.andThen(this, "Filter", LegacyExpression(predicate))
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (source :: Nil) = sources
+    copy(source = source)
+  }
+
+  override def localEffects = predicate.effects
 }

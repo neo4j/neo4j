@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.{SymbolTable, CTNode}
-import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.{Index, IntroducedIdentifier}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{indexQuery, QueryExpression}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{PropertyKeyToken, LabelToken}
-import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{QueryExpression, indexQuery}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.{Index, IntroducedIdentifier}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.{CTNode, SymbolTable}
+import org.neo4j.graphdb.Node
+import org.neo4j.kernel.api.index.IndexDescriptor
 
 case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,
@@ -62,4 +63,13 @@ case class NodeIndexSeekPipe(ident: String,
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
+
+  def dup(sources: List[Pipe]): Pipe = {
+    require(sources.isEmpty)
+    this
+  }
+
+  def sources: Seq[Pipe] = Seq.empty
+
+  override def localEffects = Effects.READS_NODES
 }

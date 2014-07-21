@@ -20,13 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions._
-import pipes.QueryState
-import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
+import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class PropertySetAction(prop: Property, e: Expression)
   extends UpdateAction with GraphElementPropertyFunctions {
+
+  override def localEffects = Effects.WRITES_ENTITIES
 
   val Property(mapExpr, propertyKey) = prop
 

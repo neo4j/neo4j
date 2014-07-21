@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v2_1.{symbols, ExecutionContext}
-import symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
-import org.neo4j.graphdb.Relationship
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.{ExecutionContext, symbols}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.graphdb.Relationship
 
 
 case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expression], toNode: String, fromNode: String)
@@ -57,4 +58,13 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expres
   def symbols = new SymbolTable(Map(ident -> CTRelationship, toNode -> CTNode, fromNode -> CTNode))
 
   def monitor = pipeMonitor
+
+  def dup(sources: List[Pipe]): Pipe = {
+    require(sources.isEmpty)
+    this
+  }
+
+  def sources: Seq[Pipe] = Seq.empty
+
+  override def localEffects = Effects.READS_ENTITIES
 }

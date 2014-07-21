@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import pipes.QueryState
 import symbols._
 import org.neo4j.graphdb.Relationship
@@ -38,4 +39,6 @@ case class RelationshipTypeFunction(relationship: Expression) extends NullInNull
   }
 
   def symbolTableDependencies = relationship.symbolTableDependencies
+
+  override def localEffects = Effects.READS_RELATIONSHIPS
 }

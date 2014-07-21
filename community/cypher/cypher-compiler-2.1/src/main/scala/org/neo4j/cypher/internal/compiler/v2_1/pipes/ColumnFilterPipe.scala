@@ -20,15 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands._
-import commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{SingleChild, PlanDescriptionImpl}
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescriptionImpl, SingleChild}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects._
 
-class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
-                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+
+case class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem])
+                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val returnItemNames: Seq[String] = returnItems.map(_.name)
   val symbols = SymbolTable(identifiers2.toMap)
 
@@ -53,4 +55,11 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
     new PlanDescriptionImpl(this, "ColumnFilter", SingleChild(source.planDescription), Seq(Arguments.ColumnsLeft(returnItemNames.toList)))
 
   def dependencies = Seq()
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
+
+  override def localEffects = returnItems.effects
 }

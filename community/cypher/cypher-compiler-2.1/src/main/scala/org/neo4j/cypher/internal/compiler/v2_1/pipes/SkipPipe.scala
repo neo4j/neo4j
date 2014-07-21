@@ -43,6 +43,12 @@ case class SkipPipe(source: Pipe, exp: Expression)(implicit pipeMonitor: PipeMon
     .planDescription
     .andThen(this, "Skip", LegacyExpression(exp))
 
-
   def symbols: SymbolTable = source.symbols
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
+
+  override def localEffects = exp.effects
 }

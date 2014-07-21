@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.cache;
 
 import org.junit.Test;
+
 import static org.junit.Assert.assertTrue;
 
 public class TestCacheTypes

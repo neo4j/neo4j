@@ -19,20 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
+import java.net.URL
+
+import org.neo4j.cypher.LoadExternalResourceException
+import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.{CollectionType, AnyType, MapType, SymbolTable}
-import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
-import java.net.URL
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
-import org.neo4j.cypher.LoadExternalResourceException
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.{AnyType, CollectionType, MapType, SymbolTable}
 
 sealed trait CSVFormat
 case object HasHeaders extends CSVFormat
 case object NoHeaders extends CSVFormat
 
-class LoadCSVPipe(source: Pipe,
+case class LoadCSVPipe(source: Pipe,
                   format: CSVFormat,
                   urlExpression: Expression,
                   identifier: String,
@@ -87,7 +89,11 @@ class LoadCSVPipe(source: Pipe,
     case NoHeaders => source.symbols.add(identifier, CollectionType(AnyType.instance))
   }
 
-  override def readsFromDatabase = false
+  override def localEffects = Effects.NONE
 
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
 }
 

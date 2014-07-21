@@ -323,6 +323,7 @@ public abstract class InternalAbstractGraphDatabase
         boolean failed = false;
         try
         {
+            enableAvailabilityLogging(); // Done after create to avoid a redundant "database is now unavailable"
             registerRecovery();
 
             life.start();
@@ -346,6 +347,24 @@ public abstract class InternalAbstractGraphDatabase
     {
         // This is how we lock the entire database to avoid threads using it during lifecycle events
         life.add( new DatabaseAvailability( availabilityGuard, transactionMonitor ) );
+    }
+
+    private void enableAvailabilityLogging()
+    {
+        availabilityGuard.addListener( new AvailabilityGuard.AvailabilityListener()
+        {
+            @Override
+            public void available()
+            {
+                msgLog.info( "Database is now ready" );
+            }
+
+            @Override
+            public void unavailable()
+            {
+                msgLog.info( "Database is now unavailable" );
+            }
+        } );
     }
 
     protected void registerRecovery()
@@ -375,22 +394,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void create()
     {
-        availabilityGuard = createAvailabilityGuard();
-
-        availabilityGuard.addListener( new AvailabilityGuard.AvailabilityListener()
-        {
-            @Override
-            public void available()
-            {
-                msgLog.info( "Database is now ready" );
-            }
-
-            @Override
-            public void unavailable()
-            {
-                msgLog.info( "Database is now unavailable" );
-            }
-        } );
+        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK );
 
         fileSystem = createFileSystemAbstraction();
 
@@ -555,11 +559,6 @@ public abstract class InternalAbstractGraphDatabase
     protected Monitors createMonitors()
     {
         return new Monitors();
-    }
-
-    protected AvailabilityGuard createAvailabilityGuard()
-    {
-        return new AvailabilityGuard( Clock.SYSTEM_CLOCK, 1 );
     }
 
     @Override

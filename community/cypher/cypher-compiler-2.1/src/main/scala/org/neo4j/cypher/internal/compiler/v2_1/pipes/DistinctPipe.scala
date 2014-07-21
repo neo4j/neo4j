@@ -20,13 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.Expression
-import symbols._
-import collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.helpers._
 
-class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
-                  (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+import scala.collection.mutable
+
+case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
+                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
   val keyNames: Seq[String] = expressions.keys.toSeq
 
@@ -63,4 +65,11 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
     val identifiers = Materialized.mapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))
     SymbolTable(identifiers)
   }
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (source :: Nil) = sources
+    copy(source = source)
+  }
+
+  override def localEffects = expressions.effects
 }

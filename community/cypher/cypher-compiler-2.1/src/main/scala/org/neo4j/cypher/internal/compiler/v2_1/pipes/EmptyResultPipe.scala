@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
     while(input.hasNext) {
@@ -34,11 +35,12 @@ class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) extends P
 
   override def planDescription = source.planDescription.andThen(this, "EmptyResult")
 
-  def dependencies = Seq()
-
-  def deps = Map()
-
   def symbols = SymbolTable()
 
-  override def isLazy = false
+  override def localEffects = Effects.NONE
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (source :: Nil) = sources
+    copy(source = source)
+  }
 }

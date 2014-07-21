@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
 import org.neo4j.cypher.internal.PathImpl
-import org.neo4j.graphdb.{Path, PropertyContainer}
-import collection.JavaConverters._
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.graphdb.{Path, PropertyContainer}
+
+import scala.collection.JavaConverters._
 
 case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractPattern])
                         (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -77,4 +79,11 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
 
   override def planDescription =
     source.planDescription.andThen(this, "ExtractPath",  IntroducedIdentifier(pathName))
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
+
+  override def localEffects = Effects.NONE
 }
