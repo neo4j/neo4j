@@ -83,6 +83,15 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
     ) -> Effects.READS,
 
     EmptyResultPipe(NullPipe())
+      -> Effects.NONE,
+
+    EagerPipe(NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]]))
+      -> Effects.NONE,
+
+    DistinctPipe(NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]]), Map.empty)
+      -> Effects.READS_NODES,
+
+    DistinctPipe(NullPipe(), Map.empty)
       -> Effects.NONE
   )
 

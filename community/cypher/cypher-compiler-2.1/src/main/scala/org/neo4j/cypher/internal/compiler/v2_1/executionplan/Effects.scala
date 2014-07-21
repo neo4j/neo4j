@@ -31,7 +31,8 @@ case class Effects(value: Int)  {
   override def toString =
     if (value == 0) "NONE"
     else {
-      Seq("WRITES_NODES", "WRITES_RELATIONSHIPS", "READS_NODES", "READS_RELATIONSHIPS").zipWithIndex.filter { case (_: String, index: Int) => (value & (2 << index)) != 0}.map(_._1).mkString(" | ")
+      Seq("WRITES_NODES", "WRITES_RELATIONSHIPS", "READS_NODES", "READS_RELATIONSHIPS").zipWithIndex
+        .filter { case (_: String, index: Int) => (value & (2 << index)) != 0}.map(_._1).mkString(" | ")
     }
 }
 
