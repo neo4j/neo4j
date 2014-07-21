@@ -100,26 +100,26 @@ The cache sizes will be configured based on the available memory on the computer
 The object cache caches individual nodes and relationships and their properties in a form that is optimized for fast traversal of the graph.
 There are two different categories of object caches in Neo4j.
 
-There is the reference caches.
-Here Neo4j will utilize as much as it can out of the allocated heap memory for the JVM for object caching and relies on garbage collection for eviction from the cache in an LRU manner.
-Note however that Neo4j is ``competing'' for the heap space with other objects in the same JVM, such as a your application, if deployed in embedded mode, and Neo4j will let the application ``win'' by using less memory if the application needs more.
+Firstly, there are the _reference caches_.
+With these caches, Neo4j will utilize as much of the allocated JVM heap memory as it can to hold nodes and relationships. It relies on garbage collection for eviction from the cache in an LRU manner.
+Note however that Neo4j is ``competing'' for the heap space with other objects in the same JVM, such as a your application (if deployed in embedded mode) or intermediate objects produced by Cypher queries,
+and Neo4j will yield to the application or query by using less memory for caching.
 
 NOTE: The High-Performance Cache described below is only available in the Neo4j Enterprise Edition.
 
-The other is the _High-Performance Cache_ which gets assigned a certain amount of space in the JVM heap and will purge objects whenever it grows bigger than that.
-It is assigned a maximum amount of memory which the sum of all cached objects in it will not exceed.
-Objects will be evicted from cache when the maximum size is about to be reached, instead of relying on garbage collection (GC) to make that decision.
-Here the competition with other objects in the heap as well as GC-pauses can be better controlled since the cache gets assigned a maximum heap space usage.
+The other is the _High-Performance Cache_ which gets assigned a certain maximum amount of space on the JVM heap and will purge objects whenever it grows bigger than that.
+Objects are evicted from the high performance cache when the maximum size is about to be reached, instead of relying on garbage collection (GC) to make that decision.
+With the high-performance cache, GC-pauses can be better controlled.
 The overhead of the High-Performance Cache is also much smaller as well as insert/lookup times faster than for reference caches.
 
 [TIP]
-The use of heap memory is subject to the java garbage collector -- depending on the cache type some tuning might be needed to play well with the GC at large heap sizes.
+The use of heap memory is subject to the Java Garbage Collector -- depending on the cache type some tuning might be needed to play well with the GC at large heap sizes.
 Therefore, assigning a large heap for Neo4j's sake isn't always the best strategy as it may lead to long GC-pauses.
 Instead leave some space for Neo4j's filesystem caches.
 These are outside of the heap and under under the kernel's direct control, thus more efficiently managed.
 
 The content of this cache are objects with a representation geared towards supporting the Neo4j object API and graph traversals.
-Reading from this cache is 5 to 10 times faster than reading from the file buffer cache.
+Reading from this cache may be 5 to 10 times faster than reading from the file buffer cache.
 This cache is contained in the heap of the JVM and the size is adapted to the current amount of available heap memory.
 
 Nodes and relationships are added to the object cache as soon as they are accessed.
