@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.graphdb.{Path, PropertyContainer}
@@ -83,4 +84,6 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
     val (head :: Nil) = sources
     copy(source = head)
   }
+
+  override def localEffects = Effects.NONE
 }

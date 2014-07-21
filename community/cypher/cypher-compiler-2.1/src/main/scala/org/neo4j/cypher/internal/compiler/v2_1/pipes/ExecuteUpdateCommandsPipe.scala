@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.{InternalException, ParameterWrongTypeException, SyntaxException}
 import org.neo4j.graphdb.NotInTransactionException
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects._
 
 import scala.collection.mutable
 
@@ -69,7 +70,7 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(
 
   def sourceSymbols: SymbolTable = source.symbols
 
-  override def localEffects = commands.map(_.effects).reduce(_ | _)
+  override def localEffects = commands.effects
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

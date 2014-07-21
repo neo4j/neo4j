@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.A
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, predicate: Predicate, negated: Boolean)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, predicate: Predicate, negated: Boolean)
+                                   (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
       (outerContext) =>
@@ -54,4 +55,6 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
     val (source :: inner :: Nil) = sources
     copy(source = source, inner = inner)
   }
+
+  override def localEffects = predicate.effects
 }

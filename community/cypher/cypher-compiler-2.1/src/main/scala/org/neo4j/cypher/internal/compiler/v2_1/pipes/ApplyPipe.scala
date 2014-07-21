@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
@@ -45,4 +46,6 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(implicit pipeMonitor: PipeMonito
   }
 
   override val sources: Seq[Pipe] = Seq(source, inner)
+
+  override def localEffects = Effects.NONE
 }

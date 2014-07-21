@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
@@ -39,6 +40,8 @@ case class UnionPipe(sources: List[Pipe], columns:List[String])(implicit val mon
 
     copy(sources = sources)
   }
+
+  override def localEffects = Effects.NONE
 }
 
 case class NewUnionPipe(l: Pipe, r: Pipe)(implicit val monitor: PipeMonitor) extends Pipe {
@@ -58,4 +61,6 @@ case class NewUnionPipe(l: Pipe, r: Pipe)(implicit val monitor: PipeMonitor) ext
   }
 
   def sources: Seq[Pipe] = Seq(l, r)
+
+  override def localEffects = Effects.NONE
 }

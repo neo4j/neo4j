@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.helpers._
 
@@ -71,5 +71,5 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
     copy(source = source)
   }
 
-  override def localEffects = expressions.values.foldLeft(Effects.NONE)(_ | _.effects)
+  override def localEffects = expressions.effects
 }

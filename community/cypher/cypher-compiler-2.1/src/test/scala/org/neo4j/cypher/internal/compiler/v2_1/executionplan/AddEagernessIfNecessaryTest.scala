@@ -51,26 +51,26 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
   }
 
   test("WRITES -> WRITES need no eagerness") {
-    testThatGoingFrom(Effects.WRITES)
-    .to(Effects.READS)
+    testThatGoingFrom(Effects.WRITES_ENTITIES)
+    .to(Effects.READS_ENTITIES)
     .doesNotIntroduceEagerness()
   }
 
   test("READS -> WRITES needs eagerness") {
-    testThatGoingFrom(Effects.READS)
-    .to(Effects.WRITES)
+    testThatGoingFrom(Effects.READS_ENTITIES)
+    .to(Effects.WRITES_ENTITIES)
     .doesIntroduceEagerness()
   }
 
   test("WRITES -> READS needs eagerness") {
-    testThatGoingFrom(Effects.WRITES)
-    .to(Effects.READS)
+    testThatGoingFrom(Effects.WRITES_ENTITIES)
+    .to(Effects.READS_ENTITIES)
     .doesNotIntroduceEagerness()
   }
 
   test("READS -> READS needs eagerness") {
-    testThatGoingFrom(Effects.READS)
-    .to(Effects.READS)
+    testThatGoingFrom(Effects.READS_ENTITIES)
+    .to(Effects.READS_ENTITIES)
     .doesNotIntroduceEagerness()
   }
 
@@ -81,7 +81,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
   }
 
   test("READS ALL -> WRITE RELS needs eagerness") {
-    testThatGoingFrom(Effects.READS)
+    testThatGoingFrom(Effects.READS_ENTITIES)
     .to(Effects.WRITES_RELATIONSHIPS)
     .doesIntroduceEagerness()
   }
@@ -105,7 +105,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
 
   test("NONE -> READS ALL -> WRITE NODES -> NONE needs eagerness") {
     val a = FakePipeWithSources("a", List.empty, Effects.NONE)
-    val b = FakePipeWithSources("b", List(a), Effects.READS)
+    val b = FakePipeWithSources("b", List(a), Effects.READS_ENTITIES)
     val c = FakePipeWithSources("c", List(b), Effects.WRITES_NODES)
     val d = FakePipeWithSources("d", List(c), Effects.NONE)
 

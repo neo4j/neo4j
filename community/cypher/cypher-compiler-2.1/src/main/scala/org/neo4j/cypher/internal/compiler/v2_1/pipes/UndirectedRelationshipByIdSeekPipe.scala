@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
@@ -66,6 +67,8 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expr
     assert(sources.isEmpty)
     this
   }
+
+  override def localEffects = relIdExpr.effects
 
   def sources: Seq[Pipe] = Seq.empty
 }

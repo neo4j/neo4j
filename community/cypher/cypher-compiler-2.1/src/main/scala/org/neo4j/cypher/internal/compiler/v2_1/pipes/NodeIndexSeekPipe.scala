@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{QueryExpression, indexQuery}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.{Index, IntroducedIdentifier}
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.{CTNode, SymbolTable}
@@ -69,4 +70,6 @@ case class NodeIndexSeekPipe(ident: String,
   }
 
   def sources: Seq[Pipe] = Seq.empty
+
+  override def localEffects = Effects.READS_NODES
 }

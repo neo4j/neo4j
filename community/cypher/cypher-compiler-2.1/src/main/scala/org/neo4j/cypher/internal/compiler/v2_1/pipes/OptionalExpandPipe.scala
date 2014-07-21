@@ -73,4 +73,6 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
     val (head :: Nil) = sources
     copy(source = head)
   }
+
+  override def localEffects = predicate.effects
 }

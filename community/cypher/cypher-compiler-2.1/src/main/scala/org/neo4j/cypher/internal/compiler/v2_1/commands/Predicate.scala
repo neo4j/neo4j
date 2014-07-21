@@ -249,7 +249,7 @@ case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends
 
   def symbolTableDependencies = identifier.symbolTableDependencies
 
-  override def localEffects = Effects.READS
+  override def localEffects = Effects.READS_ENTITIES
 }
 
 case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predicate {

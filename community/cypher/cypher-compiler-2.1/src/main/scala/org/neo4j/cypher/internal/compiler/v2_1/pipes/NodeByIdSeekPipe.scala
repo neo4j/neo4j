@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.{CTNode, SymbolTable}
@@ -48,4 +49,6 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: Seq[Expression])(implici
   }
 
   def sources: Seq[Pipe] = Seq.empty
+
+  override def localEffects = Effects.READS_NODES
 }

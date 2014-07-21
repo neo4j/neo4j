@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects._
 
 case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
                             (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -54,4 +55,6 @@ case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
     val (source :: Nil) = sources
     copy(source = source)
   }
+
+  override def localEffects = expressions.effects
 }

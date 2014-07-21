@@ -47,5 +47,5 @@ trait UpdateAction extends TypeSafe with EffectfulAstNode[UpdateAction] {
 
   def arguments: Seq[Argument] = identifiers.map(tuple => IntroducedIdentifier(tuple._1)) :+ UpdateActionName(shortName)
 
-  def localEffects = Effects.READS | Effects.WRITES
+  def localEffects = Effects.READS_ENTITIES | Effects.WRITES_ENTITIES
 }

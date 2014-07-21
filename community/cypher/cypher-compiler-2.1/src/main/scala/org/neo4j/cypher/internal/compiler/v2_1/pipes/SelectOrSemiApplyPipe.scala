@@ -53,4 +53,6 @@ case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate
     val (source :: inner :: Nil) = sources
     copy(source = source, inner = inner)
   }
+
+  override def localEffects = predicate.effects
 }

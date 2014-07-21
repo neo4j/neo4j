@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.graphdb.{Direction, Node, Relationship}
@@ -87,4 +88,6 @@ case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, 
     val (head :: Nil) = sources
     copy(head)
   }
+
+  override def localEffects = Effects.READS_ENTITIES
 }

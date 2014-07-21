@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.helpers._
@@ -71,4 +72,6 @@ case class ShortestPathPipe(source: Pipe, ast: ShortestPath)
     val (head :: Nil) = sources
     copy(source = head)
   }
+
+  override def localEffects = Effects.READS_ENTITIES
 }

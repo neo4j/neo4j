@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{AggregationExpression, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
@@ -98,4 +99,6 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
     val (source :: Nil) = sources
     copy(source = source)
   }
+
+  override def localEffects = keyExpressions.effects
 }

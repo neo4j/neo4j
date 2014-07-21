@@ -29,7 +29,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 case class PropertySetAction(prop: Property, e: Expression)
   extends UpdateAction with GraphElementPropertyFunctions {
 
-  override def localEffects = Effects.WRITES
+  override def localEffects = Effects.WRITES_ENTITIES
 
   val Property(mapExpr, propertyKey) = prop
 

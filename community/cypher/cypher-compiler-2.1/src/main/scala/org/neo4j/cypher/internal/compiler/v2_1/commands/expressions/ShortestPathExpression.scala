@@ -77,7 +77,7 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
 
   def symbolTableDependencies = ast.symbolTableDependencies + ast.left.name + ast.right.name
 
-  override def localEffects = Effects.READS
+  override def localEffects = Effects.READS_ENTITIES
 }
 
 trait ShortestPathStrategy {

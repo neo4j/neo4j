@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
@@ -65,4 +66,6 @@ case class IndexOperationPipe(indexOp: IndexOperation)(implicit val monitor: Pip
   }
 
   def sources: Seq[Pipe] = Seq.empty
+
+  override def localEffects = Effects.NONE
 }

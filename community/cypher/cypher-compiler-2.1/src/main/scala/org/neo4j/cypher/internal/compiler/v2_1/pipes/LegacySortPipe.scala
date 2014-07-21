@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.SortItem
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.LegacyExpression
 
 import scala.math.signum
@@ -42,7 +42,7 @@ case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
     copy(source = source)
   }
 
-  override def effects = Effects.NONE
+  override def effects = sortDescription.effects
 }
 
 trait ExecutionContextComparer extends Comparer {

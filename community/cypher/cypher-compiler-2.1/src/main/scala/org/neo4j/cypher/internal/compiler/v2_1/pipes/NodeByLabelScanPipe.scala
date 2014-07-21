@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, _}
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.{IntroducedIdentifier, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
@@ -60,4 +61,6 @@ case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])(im
   }
 
   def sources: Seq[Pipe] = Seq.empty
+
+  override def localEffects = Effects.READS_NODES
 }

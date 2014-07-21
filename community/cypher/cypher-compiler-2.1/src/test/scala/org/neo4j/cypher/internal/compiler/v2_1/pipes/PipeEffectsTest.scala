@@ -47,7 +47,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
     ExecuteUpdateCommandsPipe(NullPipe(), Seq(
       CreateNode("n", Map.empty, Seq.empty),
       CreateRelationship("r", RelationshipEndpoint("a"), RelationshipEndpoint("b"), "TYPE", Map.empty)))
-    -> Effects.WRITES,
+    -> Effects.WRITES_ENTITIES,
 
     ExecuteUpdateCommandsPipe(NullPipe(), Seq(MergeNodeAction("n", Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)))
       -> Effects.ALL,
@@ -71,7 +71,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
       -> Effects.NONE,
 
     TraversalMatchPipe(NullPipe(), mock[TraversalMatcher], mock[Trail])
-      -> Effects.READS,
+      -> Effects.READS_ENTITIES,
 
     SlicePipe(NullPipe(), Some(Literal(10)), None)
       -> Effects.NONE,
@@ -80,7 +80,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
       new FakePipe(Iterator(Map("x" -> null)), "x" -> CTNode), Seq.empty,
       new PatternGraph(Map.empty, Map.empty, Seq.empty, Seq.empty),
       Set("x", "r", "z")
-    ) -> Effects.READS,
+    ) -> Effects.READS_ENTITIES,
 
     EmptyResultPipe(NullPipe())
       -> Effects.NONE,

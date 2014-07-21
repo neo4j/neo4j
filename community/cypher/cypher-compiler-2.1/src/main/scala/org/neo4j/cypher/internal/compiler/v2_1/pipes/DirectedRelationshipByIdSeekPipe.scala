@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
@@ -64,4 +65,6 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expres
   }
 
   def sources: Seq[Pipe] = Seq.empty
+
+  override def localEffects = Effects.READS_ENTITIES
 }

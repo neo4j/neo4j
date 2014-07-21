@@ -19,14 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{SortItem, ReturnItem}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.{UpdateAction, Effectful}
+
 case class Effects(value: Int)  {
   def &(other: Effects): Effects = Effects(other.value & value)
   def |(other: Effects): Effects = Effects(other.value | value)
 
   def contains(other: Effects): Boolean = (value & other.value) == other.value
   def intersects(other: Effects): Boolean = (value & other.value) != 0
-  def reads(): Boolean = intersects(Effects.READS)
-  def writes(): Boolean = intersects(Effects.WRITES)
+  def reads(): Boolean = intersects(Effects.READS_ENTITIES)
+  def writes(): Boolean = intersects(Effects.WRITES_ENTITIES)
 
   override def toString =
     if (value == 0) "NONE"
@@ -43,7 +47,35 @@ object Effects {
   val READS_RELATIONSHIPS = Effects(2 << 3)
 
   val NONE = Effects(0)
-  val READS = READS_NODES | READS_RELATIONSHIPS
-  val WRITES = WRITES_NODES | WRITES_RELATIONSHIPS
-  val ALL = READS | WRITES
+  val READS_ENTITIES = READS_NODES | READS_RELATIONSHIPS
+  val WRITES_ENTITIES = WRITES_NODES | WRITES_RELATIONSHIPS
+  val ALL = READS_ENTITIES | WRITES_ENTITIES
+
+  implicit class TraversableEffects(iter: Traversable[Effectful]) {
+    def effects: Effects = iter.map(_.effects).reduced
+  }
+
+  implicit class TraversableExpressions(iter: Traversable[Expression]) {
+    def effects: Effects = iter.map(_.effects).reduced
+  }
+
+  implicit class EffectfulReturnItems(iter: Traversable[ReturnItem]) {
+    def effects: Effects = iter.map(_.expression. effects).reduced
+  }
+
+  implicit class EffectfulUpdateAction(commands: Traversable[UpdateAction]) {
+    def effects: Effects = commands.map(_.effects).reduced
+  }
+
+  implicit class MapEffects(m: Map[_, Expression]) {
+    def effects: Effects = m.values.map(_.effects).reduced
+  }
+
+  implicit class SortItemEffects(m: Traversable[SortItem]) {
+    def effects: Effects = m.map(_.expression.effects).reduced
+  }
+
+  implicit class ReducedEffects(effects: Traversable[Effects]) {
+    def reduced = effects.reduceOption(_ | _).getOrElse(Effects.NONE)
+  }
 }

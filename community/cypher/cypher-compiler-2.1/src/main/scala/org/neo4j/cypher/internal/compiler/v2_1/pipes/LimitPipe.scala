@@ -39,7 +39,6 @@ case class LimitPipe(source: Pipe, exp: Expression)(implicit pipeMonitor: PipeMo
     new HeadAndTail(first, input).take(count)
   }
 
-
   override def planDescription = source
     .planDescription
     .andThen(this, "Limit", LegacyExpression(exp))
@@ -50,4 +49,6 @@ case class LimitPipe(source: Pipe, exp: Expression)(implicit pipeMonitor: PipeMo
     val (head :: Nil) = sources
     copy(source = head)
   }
+
+  override def localEffects = exp.effects
 }

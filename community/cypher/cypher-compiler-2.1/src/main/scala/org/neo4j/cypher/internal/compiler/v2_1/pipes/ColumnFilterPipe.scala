@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNa
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects._
+
 
 case class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem])
                            (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -59,5 +61,5 @@ case class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem])
     copy(source = head)
   }
 
-  override def effects = source.effects
+  override def localEffects = returnItems.effects
 }

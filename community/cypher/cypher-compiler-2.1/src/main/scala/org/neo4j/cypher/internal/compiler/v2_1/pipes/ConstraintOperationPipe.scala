@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
@@ -51,4 +52,6 @@ class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, pr
   }
 
   def sources: Seq[Pipe] = Seq.empty
+
+  override def effects = Effects.NONE
 }

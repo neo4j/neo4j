@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
@@ -45,4 +46,6 @@ case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)(implicit
     val (head :: Nil) = sources
     copy(source = head)
   }
+
+  override def localEffects = Effects.NONE
 }

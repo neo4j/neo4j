@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{CachedExpression, Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
@@ -109,6 +110,6 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
     copy(source = source)
   }
 
-  override def localEffects = expressions.values.map(_.effects).reduce(_ | _)
+  override def localEffects = expressions.effects
 }
 

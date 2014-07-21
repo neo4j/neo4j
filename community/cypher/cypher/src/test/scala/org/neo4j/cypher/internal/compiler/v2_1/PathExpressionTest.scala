@@ -107,6 +107,6 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
     val expression = PathExpression(Seq(pattern))
 
     // THEN
-    expression.effects should equal(Effects.READS)
+    expression.effects should equal(Effects.READS_ENTITIES)
   }
 }
