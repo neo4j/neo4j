@@ -78,13 +78,14 @@ class CypherCompiler(graph: GraphDatabaseService,
 
       case CypherVersion.v2_1 =>
         new PreparedQuery(queryText, version) {
+          val preparedQueryForV_2_1 = ronjaCompiler2_1.prepareQuery(remainingQueryText)
           override def plan(context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any]) = {
-            val preparedQuery = ronjaCompiler2_1.prepareQuery(remainingQueryText)
-            val (planImpl, extractedParameters) = legacyCompiler2_1.planPreparedQuery(preparedQuery, new PlanContext_v2_1(statement, kernelAPI, context))
-            (new ExecutionPlanWrapperForV2_1(planImpl), extractedParameters)
+            val planContext = new PlanContext_v2_1(statement, kernelAPI, context)
+            val (planImpl, extractedParameters) = legacyCompiler2_1.planPreparedQuery(preparedQueryForV_2_1, planContext)
+            (new ExecutionPlanWrapperForV2_1( planImpl ), extractedParameters)
           }
 
-          override def isPeriodicCommit: Boolean = false
+          override def isPeriodicCommit: Boolean = preparedQueryForV_2_1.isPeriodicCommit
         }
 
       case CypherVersion.v2_0 =>

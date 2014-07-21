@@ -117,7 +117,7 @@ public class TransactionHandle
                 boolean periodicCommit;
                 try
                 {
-                    periodicCommit = pristine && engine.isPeriodicCommitQuery( statements.peek().statement() );
+                    periodicCommit = pristine && engine.isPeriodicCommit( statements.peek().statement() );
                 }
                 catch ( CypherException e )
                 {

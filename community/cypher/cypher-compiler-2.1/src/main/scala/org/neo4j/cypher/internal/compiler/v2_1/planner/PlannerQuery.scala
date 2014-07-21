@@ -78,9 +78,12 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
           graph = graph ++ other.graph,
           tail = either(tail, other.tail)
         )
-    }
 
+      case _ =>
+        throw new InternalException("Tried to concatenate non-regular query projections")
+    }
   }
+
   private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
     case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
     case (s@Some(_), None) => s

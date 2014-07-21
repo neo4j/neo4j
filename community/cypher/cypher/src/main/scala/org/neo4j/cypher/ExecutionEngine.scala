@@ -51,15 +51,22 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
+  private val preparedQueries = new LRUCache[String, PreparedQuery](getPlanCacheSize)
+
   @throws(classOf[SyntaxException])
   def profile(query: String): ExecutionResult = profile(query, Map[String, Any]())
+
   @throws(classOf[SyntaxException])
   def profile(query: String, params: JavaMap[String, Any]): ExecutionResult = profile(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, params: Map[String, Any]): ExecutionResult = {
-    logger.debug(query)
-    val (plan, extractedParams, txInfo) = planQuery(query)
+  def profile(query: String, params: Map[String, Any]): ExecutionResult =
+    profilePreparedQuery(prepareQuery(query), params)
+
+  @throws(classOf[SyntaxException])
+  protected def profilePreparedQuery(preparedQuery: PreparedQuery, params: Map[String, Any]): ExecutionResult = {
+    logger.debug(preparedQuery.queryText)
+    val (plan, extractedParams, txInfo) = planPreparedQuery(preparedQuery)
     plan.profile(graphAPI, txInfo, params ++ extractedParams)
   }
 
@@ -70,19 +77,20 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: Map[String, Any]): ExecutionResult = {
-    logger.debug(query)
-    val (plan, extractedParams, txInfo) = planQuery(query)
+  def execute(query: String, params: Map[String, Any]): ExecutionResult =
+    executePreparedQuery(prepareQuery(query), params)
+
+  @throws(classOf[SyntaxException])
+  protected def executePreparedQuery(preparedQuery: PreparedQuery, params: Map[String, Any]): ExecutionResult = {
+    logger.debug(preparedQuery.queryText)
+    val (plan, extractedParams, txInfo) = planPreparedQuery(preparedQuery)
     plan.execute(graphAPI, txInfo, params ++ extractedParams)
   }
 
   @throws(classOf[SyntaxException])
-  protected def planQuery(queryText: String): (ExecutionPlan, Map[String, Any], TransactionInfo) =
-    planPreparedQuery(compiler.prepareQuery(queryText))
-
-  @throws(classOf[SyntaxException])
-  protected def prepareQuery(queryText: String): PreparedQuery =
-    compiler.prepareQuery(queryText)
+  protected def prepareQuery(queryText: String): PreparedQuery = preparedQueries.getOrElseUpdate( queryText,
+    compiler.prepareQuery( queryText )
+  )
 
   @throws(classOf[SyntaxException])
   protected def planPreparedQuery(preparedQuery: PreparedQuery): (ExecutionPlan, Map[String, Any], TransactionInfo) = {

@@ -96,7 +96,7 @@ public class CypherService
         try
         {
             ServerExecutionEngine executionEngine = cypherExecutor.getExecutionEngine();
-            boolean periodicCommitQuery = executionEngine.isPeriodicCommitQuery( query );
+            boolean periodicCommitQuery = executionEngine.isPeriodicCommit( query );
             CommitOnSuccessfulStatusCodeRepresentationWriteHandler handler = (CommitOnSuccessfulStatusCodeRepresentationWriteHandler) this.output.getRepresentationWriteHandler();
             if ( periodicCommitQuery )
             {
