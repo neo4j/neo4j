@@ -61,25 +61,51 @@ class CypherCompiler(graph: GraphDatabaseService,
   val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
 
   @throws(classOf[SyntaxException])
-  def prepare(query: String, context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any]) = {
-    val (version, remainingQuery) = versionedQuery(query)
+  def prepareQuery(queryText: String): PreparedQuery = {
+    val (version, remainingQueryText) = versionedQuery(queryText)
 
     version match {
       case CypherVersion.experimental =>
-        val (plan, extractedParameters) = ronjaCompiler2_1.prepare(remainingQuery, new PlanContext_v2_1(statement, kernelAPI, context))
-        (new ExecutionPlanWrapperForV2_1(plan), extractedParameters)
+        val preparedQueryForV_experimental = ronjaCompiler2_1.prepareQuery(remainingQueryText)
+        new PreparedQuery(queryText, version) {
+          def isPeriodicCommit = preparedQueryForV_experimental.isPeriodicCommit
+          def plan(context: GraphDatabaseService, statement: Statement) = {
+            val planContext = new PlanContext_v2_1(statement, kernelAPI, context)
+            val (planImpl, extractedParameters) = ronjaCompiler2_1.planPreparedQuery(preparedQueryForV_experimental, planContext)
+            (new ExecutionPlanWrapperForV2_1( planImpl ), extractedParameters)
+          }
+        }
 
       case CypherVersion.v2_1 =>
-        val (plan, extractedParameters) = legacyCompiler2_1.prepare(remainingQuery, new PlanContext_v2_1(statement, kernelAPI, context))
-        (new ExecutionPlanWrapperForV2_1(plan), extractedParameters)
+        new PreparedQuery(queryText, version) {
+          override def plan(context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any]) = {
+            val preparedQuery = ronjaCompiler2_1.prepareQuery(remainingQueryText)
+            val (planImpl, extractedParameters) = legacyCompiler2_1.planPreparedQuery(preparedQuery, new PlanContext_v2_1(statement, kernelAPI, context))
+            (new ExecutionPlanWrapperForV2_1(planImpl), extractedParameters)
+          }
+
+          override def isPeriodicCommit: Boolean = false
+        }
 
       case CypherVersion.v2_0 =>
-        val plan = compiler2_0.prepare(remainingQuery, new PlanContext_v2_0(statement, context))
-        (new ExecutionPlanWrapperForV2_0(plan), Map.empty)
+        new PreparedQuery(queryText, version) {
+          override def plan(context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any]) = {
+            val planImpl = compiler2_0.prepare(remainingQueryText, new PlanContext_v2_0(statement, context))
+            (new ExecutionPlanWrapperForV2_0(planImpl), Map.empty)
+          }
+
+          override def isPeriodicCommit: Boolean = false
+        }
 
       case CypherVersion.v1_9 =>
-        val plan = compiler1_9.prepare(remainingQuery)
-        (new ExecutionPlanWrapperForV1_9(plan), Map.empty)
+        new PreparedQuery(queryText, version) {
+          override def plan(context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any]) = {
+            val planImpl = compiler1_9.prepare(remainingQueryText)
+            (new ExecutionPlanWrapperForV1_9(planImpl), Map.empty)
+          }
+
+          override def isPeriodicCommit: Boolean = false
+        }
     }
   }
 

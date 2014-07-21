@@ -32,7 +32,7 @@ class ServerExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = 
   extends ExecutionEngine(graph, logger) {
 
   def isPeriodicCommit(queryText: String): Boolean = {
-    val (plan, _, tx) = prepare(queryText)
+    val (plan, _, tx) = planQuery(queryText)
     try {
       plan.isPeriodicCommit
     } finally {

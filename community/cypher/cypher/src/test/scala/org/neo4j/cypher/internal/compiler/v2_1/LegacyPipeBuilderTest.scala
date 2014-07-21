@@ -58,7 +58,7 @@ class LegacyPipeBuilderTest
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
       val pipeBuilder = new LegacyPipeBuilderWithCustomPlanBuilders(Seq(new BadBuilder), Monitors(kernelMonitors))
-      val query = ParsedQuery(ast, q, SemanticTable(), "")
+      val query = PreparedQuery(ast, q, SemanticTable(), "", Map.empty)
       pipeBuilder.producePlan(query, planContext)
     })
 
@@ -82,7 +82,7 @@ class LegacyPipeBuilderTest
       val pipeBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val pkId = queryContext.getPropertyKeyId("foo")
-      val parsedQ = ParsedQuery(null, q, null, null)
+      val parsedQ = PreparedQuery(null, q, null, null, null)
 
       // when
 
@@ -108,7 +108,7 @@ class LegacyPipeBuilderTest
       val execPlanBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val labelId = queryContext.getLabelId("Person")
-      val parsedQ = ParsedQuery(null, q, null, null)
+      val parsedQ = PreparedQuery(null, q, null, null, null)
 
       // when
       val predicate = execPlanBuilder.producePlan(parsedQ, planContext).pipe.asInstanceOf[FilterPipe].predicate
@@ -133,7 +133,7 @@ class LegacyPipeBuilderTest
           .returns()
         )
         .returns(AllIdentifiers())
-      val parsedQ = ParsedQuery(null, q, null, null)
+      val parsedQ = PreparedQuery(null, q, null, null, null)
 
       val pipeBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
       val pipe = pipeBuilder.producePlan(parsedQ, planContext).pipe
@@ -158,7 +158,7 @@ class LegacyPipeBuilderTest
           .returns()
         )
         .returns(AllIdentifiers())
-      val parsedQ = ParsedQuery(null, q, null, null)
+      val parsedQ = PreparedQuery(null, q, null, null, null)
 
 
       val execPlanBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
@@ -183,7 +183,7 @@ class LegacyPipeBuilderTest
           returns(),
         None
       )
-      val parsedQ = ParsedQuery(null, q, null, null)
+      val parsedQ = PreparedQuery(null, q, null, null, null)
 
       val pipeBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
 

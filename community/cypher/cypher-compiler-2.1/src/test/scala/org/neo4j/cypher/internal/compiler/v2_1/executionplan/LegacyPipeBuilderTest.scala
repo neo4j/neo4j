@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.parser.{CypherParser, ParserMonit
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{Monitors, ParsedQuery}
+import org.neo4j.cypher.internal.compiler.v2_1.{Monitors, PreparedQuery}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class LegacyPipeBuilderTest extends CypherFunSuite {
@@ -105,7 +105,7 @@ class LegacyPipeBuilderTest extends CypherFunSuite {
 
   private def buildExecutionPipe(q: String): Pipe = {
     val statement = parser.parse(q)
-    val parsedQ = ParsedQuery(statement, statement.asQuery, mock[SemanticTable], q)
+    val parsedQ = PreparedQuery(statement, statement.asQuery, mock[SemanticTable], q, Map.empty)
     planBuilder.producePlan(parsedQ, planContext).pipe
   }
 }

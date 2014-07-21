@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.AbstractQuery
@@ -30,7 +29,6 @@ import org.neo4j.cypher.internal.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_1.planner.PlanningMonitor
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_1.planner.Planner
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{SimpleMetricsFactory, CachedMetricsFactory}
 
@@ -103,22 +101,24 @@ case class CypherCompiler(parser: CypherParser,
                           cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[ast.Statement, ExecutionPlan]],
                           monitors: Monitors) {
 
-  def prepare(queryText: String, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
-    val (parsedQuery, extractedParams) = prepareParsedQuery(queryText, context)
-    val cache = provideCache(cacheAccessor, cacheMonitor, context)
-    val plan = cacheAccessor.getOrElseUpdate(cache)(parsedQuery.statement, {
-      executionPlanBuilder.build(context, parsedQuery)
-    })
-    (plan, extractedParams)
-  }
+  def planQuery(queryText: String, context: PlanContext): (ExecutionPlan, Map[String, Any]) =
+    planPreparedQuery(prepareQuery(queryText), context)
 
-  private def prepareParsedQuery(queryText: String, context: PlanContext): (ParsedQuery, Map[String, Any]) = {
+  def prepareQuery(queryText: String): PreparedQuery = {
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, parsedStatement)
     val table = semanticChecker.check(queryText, parsedStatement)
     val query: AbstractQuery = rewrittenStatement.asQuery.setQueryText(queryText)
-    (ParsedQuery(rewrittenStatement, query, table, queryText), extractedParams)
+    PreparedQuery(rewrittenStatement, query, table, queryText, extractedParams)
+  }
+
+  def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
+    val cache = provideCache(cacheAccessor, cacheMonitor, context)
+    val plan = cacheAccessor.getOrElseUpdate(cache)(parsedQuery.statement, {
+      executionPlanBuilder.build(context, parsedQuery)
+    })
+    (plan, parsedQuery.extractedParams)
   }
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
