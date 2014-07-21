@@ -94,7 +94,6 @@ import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
-import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -106,14 +105,12 @@ import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.NodeProxy.NodeLookup;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.RelationshipData;
-import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipLookups;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
@@ -150,13 +147,13 @@ import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -457,7 +454,6 @@ public abstract class InternalAbstractGraphDatabase
         createTxHook();
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
-//        assert guard == null : "Guard not properly implemented for the time being";
 
         updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
 
@@ -476,12 +472,12 @@ public abstract class InternalAbstractGraphDatabase
         relationshipTypeTokenHolder = life.add( new RelationshipTypeTokenHolder( createRelationshipTypeCreator() ) );
 
         caches.configure( cacheProvider, config );
-        Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
-        Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
+        diagnosticsManager.tryAppendProvider( caches.node() );
+        diagnosticsManager.tryAppendProvider( caches.relationship() );
 
         threadToTransactionBridge = life.add( new ThreadToStatementContextBridge() );
 
-        nodeManager = createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
+        nodeManager = createNodeManager();
 
         transactionEventHandlers = new TransactionEventHandlers( createNodeLookup(), createRelationshipLookups(),
                 threadToTransactionBridge  );
@@ -592,13 +588,13 @@ public abstract class InternalAbstractGraphDatabase
         return new DefaultLabelIdCreator( dataSourceManager, idGeneratorFactory );
     }
 
-    private NodeManager createNodeManager( final boolean readOnly, final CacheProvider cacheType,
-                                           Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
+    private NodeManager createNodeManager()
     {
         NodeLookup nodeLookup = createNodeLookup();
         RelationshipLookups relationshipLookup = createRelationshipLookups();
         return new NodeManager(
-                logging.getMessagesLog( NodeManager.class ), nodeLookup, relationshipLookup,
+                nodeLookup,
+                relationshipLookup,
                 threadToTransactionBridge );
     }
 

@@ -25,7 +25,6 @@ import java.util.List;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.System.currentTimeMillis;
@@ -39,8 +38,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
     private long epoch;
 
-    public NodeManager( StringLogger logger,
-                        NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
+    public NodeManager( NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
                         ThreadToStatementContextBridge threadToTransactionBridge )
     {
         this.nodeLookup = nodeLookup;
@@ -49,21 +47,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         this.nodePropertyTrackers = new LinkedList<>();
         this.relationshipPropertyTrackers = new LinkedList<>();
     }
-
-//    @Override
-//    public void stop()
-//    {
-//        clearCache();
-//    }
-//
-//    @Override
-//    public void shutdown()
-//    {
-//        nodeCache.printStatistics();
-//        relCache.printStatistics();
-//        nodeCache.clear();
-//        relCache.clear();
-//    }
 
     @Override
     public void start() throws Throwable
