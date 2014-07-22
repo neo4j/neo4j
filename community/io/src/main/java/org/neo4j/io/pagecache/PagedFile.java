@@ -56,8 +56,6 @@ public interface PagedFile
 
     int pageSize();
 
-    void close() throws IOException;
-
     int numberOfCachedPages();
 
     /** Flush all dirty pages into the file channel, and force the file channel to disk. */

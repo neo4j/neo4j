@@ -82,8 +82,16 @@ class MuninnPagedFile implements PagedFile
             throw new IllegalArgumentException(
                     "Cannot specify both PF_EXCLUSIVE_LOCK and PF_SHARED_LOCK" );
         }
-        MuninnPageCursor cursor = (pf_flags & PF_SHARED_LOCK) == 0?
-                writeCursors.takeCursor() : readCursors.takeCursor();
+        MuninnPageCursor cursor;
+        if ( (pf_flags & PF_SHARED_LOCK) == 0 )
+        {
+            cursor = writeCursors.takeCursor();
+        }
+        else
+        {
+            cursor = readCursors.takeCursor();
+        }
+
         cursor.initialise( this, pageId, pf_flags );
         cursor.rewind();
         return cursor;
@@ -95,9 +103,9 @@ class MuninnPagedFile implements PagedFile
         return pageSize;
     }
 
-    @Override
     public void close() throws IOException
     {
+        force();
 
     }
 

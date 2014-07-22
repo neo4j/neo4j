@@ -17,31 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.standard;
+package org.neo4j.io.pagecache.impl.common;
 
+import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 
-public interface PageTable
+public class SingleFilePageSwapperFactory implements PageSwapperFactory
 {
-    /**
-     * Load a new page into the table. This does not guarantee avoiding duplicate
-     * pages loaded into the cache, it is up to the callee to ensure pages do not get
-     * duplicated into the table.
-     *
-     * The page returned is pre-locked with the lock specified in the call.
-     */
-    PinnablePage load( PageSwapper io, long pageId, int pf_flags ) throws IOException;
+    private final FileSystemAbstraction fs;
 
-    /** Flush all dirty pages. */
-    void flush() throws IOException;
+    public SingleFilePageSwapperFactory( FileSystemAbstraction fs )
+    {
+        this.fs = fs;
+    }
 
-    /** Flush all dirty pages backed by the specified io. */
-    void flush( PageSwapper io ) throws IOException;
-
-    int pageSize();
-
-    int maxCachedPages();
-
+    @Override
+    public PageSwapper createPageSwapper(
+            File file,
+            int filePageSize,
+            PageEvictionCallback onEviction ) throws IOException
+    {
+        StoreChannel channel = fs.open( file, "rw" );
+        return new SingleFilePageSwapper( file, channel, filePageSize, onEviction );
+    }
 }

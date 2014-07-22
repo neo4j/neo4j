@@ -17,23 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.common;
+package org.neo4j.io.pagecache;
 
-public interface Page
+import java.io.File;
+import java.io.IOException;
+
+public interface PageSwapperFactory
 {
-    byte getByte( int offset );
-
-    long getLong( int offset );
-    void putLong( long value, int offset );
-
-    int getInt( int offset );
-    void putInt( int value, int offset );
-
-    void getBytes( byte[] data, int offset );
-    void putBytes( byte[] data, int offset );
-
-    void putByte( byte value, int offset );
-
-    short getShort( int offset );
-    void putShort( short value, int offset );
+    public PageSwapper createPageSwapper(
+            File file,
+            int filePageSize,
+            PageEvictionCallback onEviction ) throws IOException;
 }

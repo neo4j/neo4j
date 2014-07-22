@@ -25,17 +25,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapperFactory;
 
 /**
  * Your average run-of-the-mill page cache.
  */
 public class StandardPageCache implements PageCache, Runnable
 {
-    private final FileSystemAbstraction fs;
+    private final PageSwapperFactory swapperFactory;
     private final PageCacheMonitor monitor;
     private final Map<File, StandardPagedFile> pagedFiles = new HashMap<>();
     private final ClockSweepPageTable table;
@@ -49,7 +50,16 @@ public class StandardPageCache implements PageCache, Runnable
 
     public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize, PageCacheMonitor monitor )
     {
-        this.fs = fs;
+        this( new SingleFilePageSwapperFactory( fs ), maxPages, pageSize, monitor );
+    }
+
+    public StandardPageCache(
+            PageSwapperFactory swapperFactory,
+            int maxPages,
+            int pageSize,
+            PageCacheMonitor monitor )
+    {
+        this.swapperFactory = swapperFactory;
         this.monitor = monitor;
         this.table = new ClockSweepPageTable( maxPages, pageSize, monitor );
     }
@@ -68,8 +78,7 @@ public class StandardPageCache implements PageCache, Runnable
         StandardPagedFile pagedFile = pagedFiles.get( file );
         if ( pagedFile == null || !pagedFile.claimReference() )
         {
-            StoreChannel channel = fs.open( file, "rw" );
-            pagedFile = new StandardPagedFile( table, file, channel, filePageSize, monitor );
+            pagedFile = new StandardPagedFile( table, file, swapperFactory, filePageSize, monitor );
             pagedFiles.put( file, pagedFile );
         }
 

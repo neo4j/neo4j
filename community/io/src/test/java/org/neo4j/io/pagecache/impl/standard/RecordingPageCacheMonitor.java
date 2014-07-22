@@ -27,6 +27,7 @@ import org.hamcrest.Matcher;
 
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageLock;
+import org.neo4j.io.pagecache.PageSwapper;
 
 public class RecordingPageCacheMonitor implements PageCacheMonitor
 {

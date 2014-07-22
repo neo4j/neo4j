@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.common;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 
+import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 
 public abstract class OffsetTrackingCursor implements PageCursor

@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
 
@@ -182,8 +183,8 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
         assertLocked();
         if ( dirty )
         {
-            buffer().position(0);
-            swapper.write( pageId, buffer );
+            buffer();
+            swapper.write( pageId, this );
             dirty = false;
         }
     }
@@ -194,8 +195,8 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     void load() throws IOException
     {
         assertLocked();
-        buffer().position(0);
-        swapper.read( pageId, buffer );
+        buffer();
+        swapper.read( pageId, this );
         loaded = true;
     }
 

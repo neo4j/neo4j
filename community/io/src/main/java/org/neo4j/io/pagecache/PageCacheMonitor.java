@@ -19,8 +19,6 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.neo4j.io.pagecache.impl.standard.PageSwapper;
-
 public interface PageCacheMonitor
 {
     public static final PageCacheMonitor NULL = new PageCacheMonitor()

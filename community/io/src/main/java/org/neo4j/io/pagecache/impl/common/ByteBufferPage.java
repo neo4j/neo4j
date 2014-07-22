@@ -19,7 +19,11 @@
  */
 package org.neo4j.io.pagecache.impl.common;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.Page;
 
 /** A page backed by a simple byte buffer. */
 public class ByteBufferPage implements Page
@@ -34,13 +38,13 @@ public class ByteBufferPage implements Page
     @Override
     public byte getByte( int offset )
     {
-        return buffer.get(offset);
+        return buffer.get( offset );
     }
 
     @Override
     public long getLong( int offset )
     {
-        return buffer.getLong(offset);
+        return buffer.getLong( offset );
     }
 
     @Override
@@ -65,20 +69,24 @@ public class ByteBufferPage implements Page
     public void getBytes( byte[] data, int offset )
     {
         for (int i = 0; i < data.length; i++)
-            data[i] = getByte(i + offset);
+        {
+            data[i] = getByte( i + offset );
+        }
     }
 
     @Override
     public void putBytes( byte[] data, int offset )
     {
         for (int i = 0; i < data.length; i++)
-            putByte(data[i], offset + i );
+        {
+            putByte( data[i], offset + i );
+        }
     }
 
     @Override
     public void putByte( byte value, int offset )
     {
-        buffer.put(offset, value);
+        buffer.put( offset, value );
     }
 
     @Override
@@ -91,5 +99,30 @@ public class ByteBufferPage implements Page
     public void putShort( short value, int offset )
     {
         buffer.putShort( offset, value );
+    }
+
+    @Override
+    public void swapIn( StoreChannel channel, long offset, int length ) throws IOException
+    {
+        buffer.clear();
+        buffer.limit( length );
+        int bytesRead = 0;
+        int read;
+        do {
+            read = channel.read( buffer, offset + bytesRead );
+        } while ( read != -1 && (bytesRead += read) < length );
+
+        // zero-fill the rest
+        while ( buffer.position() < buffer.limit() )
+        {
+            buffer.put( (byte) 0 );
+        }
+    }
+
+    @Override
+    public void swapOut( StoreChannel channel, long offset, int length ) throws IOException
+    {
+        buffer.position( 0 );
+        channel.writeAll( buffer, offset );
     }
 }

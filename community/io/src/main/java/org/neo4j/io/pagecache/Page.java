@@ -17,31 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.standard;
+package org.neo4j.io.pagecache;
 
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.fs.StoreChannel;
 
-public interface PageTable
+public interface Page
 {
-    /**
-     * Load a new page into the table. This does not guarantee avoiding duplicate
-     * pages loaded into the cache, it is up to the callee to ensure pages do not get
-     * duplicated into the table.
-     *
-     * The page returned is pre-locked with the lock specified in the call.
-     */
-    PinnablePage load( PageSwapper io, long pageId, int pf_flags ) throws IOException;
+    byte getByte( int offset );
+    void putByte( byte value, int offset );
 
-    /** Flush all dirty pages. */
-    void flush() throws IOException;
+    void getBytes( byte[] data, int offset );
+    void putBytes( byte[] data, int offset );
 
-    /** Flush all dirty pages backed by the specified io. */
-    void flush( PageSwapper io ) throws IOException;
+    short getShort( int offset );
+    void putShort( short value, int offset );
 
-    int pageSize();
+    int getInt( int offset );
+    void putInt( int value, int offset );
 
-    int maxCachedPages();
+    long getLong( int offset );
+    void putLong( long value, int offset );
 
+    void swapIn( StoreChannel channel, long offset, int length ) throws IOException;
+    void swapOut( StoreChannel channel, long offset, int length ) throws IOException;
 }

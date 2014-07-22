@@ -27,10 +27,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
+import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 
 public class StandardPagedFile implements PagedFile
@@ -42,7 +43,7 @@ public class StandardPagedFile implements PagedFile
     private final PageCacheMonitor monitor;
     /** Currently active pages in the file this object manages. */
     private final  ConcurrentMap<Long, Object> filePages;
-    private final StandardPageSwapper swapper;
+    private final PageSwapper swapper;
     private final AtomicInteger references;
     private final AtomicLong lastPageId;
     private final CursorFreelist cursorFreelist;
@@ -50,7 +51,7 @@ public class StandardPagedFile implements PagedFile
     /**
      * @param table
      * @param file
-     * @param channel
+     * @param swapperFactory
      * @param filePageSize is the page size used by this file, NOT the page size used by
      *                     the cache. This value is always smaller than the page size used
      *                     by the cache. The remaining space in the page cache buffers is
@@ -60,7 +61,7 @@ public class StandardPagedFile implements PagedFile
     StandardPagedFile(
             PageTable table,
             File file,
-            StoreChannel channel,
+            PageSwapperFactory swapperFactory,
             int filePageSize,
             PageCacheMonitor monitor ) throws IOException
     {
@@ -68,7 +69,8 @@ public class StandardPagedFile implements PagedFile
         this.filePageSize = filePageSize;
         this.monitor = monitor;
         this.filePages = new ConcurrentHashMap<>();
-        this.swapper = new StandardPageSwapper( file, channel, filePageSize, new RemoveEvictedPage( filePages ) );
+        RemoveEvictedPage onEviction = new RemoveEvictedPage( filePages );
+        this.swapper = swapperFactory.createPageSwapper( file, filePageSize, onEviction );
         this.references = new AtomicInteger( 1 );
         this.lastPageId = new AtomicLong( swapper.getLastPageId() );
         this.cursorFreelist = new CursorFreelist();
@@ -197,8 +199,6 @@ public class StandardPagedFile implements PagedFile
         return references.decrementAndGet() == 0;
     }
 
-    // TODO why do we have both this close method, and unmap on the PageCache?
-    @Override
     public void close() throws IOException
     {
         force();

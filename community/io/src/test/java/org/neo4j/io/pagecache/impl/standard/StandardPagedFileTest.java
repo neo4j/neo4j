@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.junit.Test;
@@ -26,7 +27,11 @@ import org.junit.Test;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageEvictionCallback;
+import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapper;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -44,29 +49,42 @@ public class StandardPagedFileTest
     private final PageTable table = mock( PageTable.class );
     private final PinnablePage page = mock( PinnablePage.class );
     private final StoreChannel channel = mock( StoreChannel.class);
-    private final StandardPageSwapper swapper = new StandardPageSwapper( null, channel, 512, null );
+    private SingleFilePageSwapper swapper = new SingleFilePageSwapper( null, channel, 512, null );
+    private final PageSwapperFactory swapperFactory = new PageSwapperFactory()
+    {
+        @Override
+        public PageSwapper createPageSwapper( File file, int filePageSize, PageEvictionCallback onEviction ) throws IOException
+        {
+            return swapper;
+        }
+    };
 
     @Test
     public void shouldLoadPage() throws Exception
     {
         // Given
-        when( table.load( swapper, 12, PagedFile.PF_NO_GROW | PagedFile.PF_SHARED_LOCK ) ).thenReturn( page );
-        when( page.pin( swapper, 12, PagedFile.PF_SHARED_LOCK ) ).thenReturn( true );
-        when( page.pageId() ).thenReturn( 12L );
-        when( channel.size() ).thenReturn( 2048L );
+        int filePageSize = 28;
+        long fileSize = 2048L;
+        long pageId = 12;
+        swapper = new SingleFilePageSwapper( null, channel, filePageSize, null );
 
-        StandardPagedFile file = new StandardPagedFile( table, null, channel, 28, PageCacheMonitor.NULL );
+        when( table.load( swapper, pageId, PagedFile.PF_NO_GROW | PagedFile.PF_SHARED_LOCK ) ).thenReturn( page );
+        when( page.pin( swapper, pageId, PagedFile.PF_SHARED_LOCK ) ).thenReturn( true );
+        when( page.pageId() ).thenReturn( pageId );
+        when( channel.size() ).thenReturn( fileSize );
+
+        StandardPagedFile file = new StandardPagedFile( table, null, swapperFactory, filePageSize, PageCacheMonitor.NULL );
 
         // When
-        try ( PageCursor cursor = file.io( 12, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = file.io( pageId, PF_SHARED_LOCK ) )
         {
             // Then
             assertTrue( cursor.next() );
-            assertThat( cursor.getCurrentPageId(), is( 12L ) );
+            assertThat( cursor.getCurrentPageId(), is( pageId ) );
         }
 
         // And then
-        verify( table ).load( swapper, 12, PagedFile.PF_NO_GROW | PagedFile.PF_SHARED_LOCK );
+        verify( table ).load( swapper, pageId, PagedFile.PF_NO_GROW | PagedFile.PF_SHARED_LOCK );
     }
 
     @Test
@@ -78,7 +96,7 @@ public class StandardPagedFileTest
         when( page.pageId() ).thenReturn( 12L );
         when( swapper.getLastPageId() ).thenReturn( 512L );
 
-        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
+        StandardPagedFile file = new StandardPagedFile(table, null, swapperFactory, 512, PageCacheMonitor.NULL );
 
         // When
         try ( PageCursor cursor = file.io( 12, PF_EXCLUSIVE_LOCK ) )
@@ -97,7 +115,7 @@ public class StandardPagedFileTest
         when( table.load( swapper, 12, PagedFile.PF_SHARED_LOCK ) ).thenReturn( page );
         when( page.pin( swapper, 12, PagedFile.PF_SHARED_LOCK ) ).thenReturn( true );
 
-        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
+        StandardPagedFile file = new StandardPagedFile(table, null, swapperFactory, 512, PageCacheMonitor.NULL );
 
         // When
         try ( PageCursor cursor = file.io( 12, 0 ) )
@@ -115,7 +133,7 @@ public class StandardPagedFileTest
         when( table.load( swapper, 12, PagedFile.PF_SHARED_LOCK ) ).thenReturn( page );
         when( page.pin( swapper, 12, PagedFile.PF_SHARED_LOCK ) ).thenReturn( true );
 
-        StandardPagedFile file = new StandardPagedFile( table, null, channel, 512, PageCacheMonitor.NULL );
+        StandardPagedFile file = new StandardPagedFile( table, null, swapperFactory, 512, PageCacheMonitor.NULL );
 
         // When
         int pf_flags = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;

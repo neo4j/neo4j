@@ -19,9 +19,11 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import java.io.IOException;
 import java.util.concurrent.locks.StampedLock;
 
-import org.neo4j.io.pagecache.impl.common.Page;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.Page;
 
 class MuninnPage extends StampedLock implements Page
 {
@@ -120,5 +122,17 @@ class MuninnPage extends StampedLock implements Page
             return UnsafeUtil.getAndAddInt( this, usageStampOffset, -1 ) <= 1;
         }
         return true;
+    }
+
+    @Override
+    public void swapIn( StoreChannel channel, long offset, int length ) throws IOException
+    {
+
+    }
+
+    @Override
+    public void swapOut( StoreChannel channel, long offset, int length ) throws IOException
+    {
+
     }
 }

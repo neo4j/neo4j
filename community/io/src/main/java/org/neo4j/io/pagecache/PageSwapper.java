@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.standard;
+package org.neo4j.io.pagecache;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * <strong>Implementation note:</strong> These methods must NEVER swallow a thread-interrupt.
@@ -30,8 +29,9 @@ import java.nio.ByteBuffer;
  */
 public interface PageSwapper
 {
-    void read( long pageId, ByteBuffer into ) throws IOException;
-    void write( long pageId, ByteBuffer from ) throws IOException;
+    void read( long pageId, Page page ) throws IOException;
+
+    void write( long pageId, Page page ) throws IOException;
 
     /**
      * Notification that a page has been evicted, used to clean up state in structures
@@ -40,4 +40,10 @@ public interface PageSwapper
     void evicted( long pageId );
 
     String fileName();
+
+    void close() throws IOException;
+
+    void force() throws IOException;
+
+    long getLastPageId() throws IOException;
 }

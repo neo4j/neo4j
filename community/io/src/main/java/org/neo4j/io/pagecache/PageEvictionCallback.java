@@ -17,31 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.standard;
+package org.neo4j.io.pagecache;
 
-import java.io.IOException;
-
-import org.neo4j.io.pagecache.PageSwapper;
-
-public interface PageTable
+public interface PageEvictionCallback
 {
-    /**
-     * Load a new page into the table. This does not guarantee avoiding duplicate
-     * pages loaded into the cache, it is up to the callee to ensure pages do not get
-     * duplicated into the table.
-     *
-     * The page returned is pre-locked with the lock specified in the call.
-     */
-    PinnablePage load( PageSwapper io, long pageId, int pf_flags ) throws IOException;
-
-    /** Flush all dirty pages. */
-    void flush() throws IOException;
-
-    /** Flush all dirty pages backed by the specified io. */
-    void flush( PageSwapper io ) throws IOException;
-
-    int pageSize();
-
-    int maxCachedPages();
-
+    public void onEvict( long pageId );
 }

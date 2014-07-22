@@ -31,9 +31,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -58,6 +55,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.test.ByteArrayMatcher.byteArray;
 
 public abstract class PageCacheTest<T extends PageCache>
 {
@@ -1213,46 +1211,5 @@ public abstract class PageCacheTest<T extends PageCache>
         byte[] b = new byte[] { 1, 3, -2 };
         assertThat( "a == a", a, byteArray( a ) );
         assertThat( "a != b", a, byteArray( b ) ); // this must fail
-    }
-
-    private static Matcher<byte[]> byteArray( final byte[] expected )
-    {
-        return new TypeSafeDiagnosingMatcher<byte[]>()
-        {
-            @Override
-            protected boolean matchesSafely( byte[] actual, Description description )
-            {
-                describe( actual, description );
-                if ( actual.length != expected.length )
-                {
-                    return false;
-                }
-                for ( int i = 0; i < expected.length; i++ )
-                {
-                    if ( actual[i] != expected[i] )
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                describe( expected, description );
-            }
-
-            private void describe( byte[] bytes, Description description )
-            {
-                description.appendText( "byte[] { " );
-                for ( int i = 0; i < bytes.length; i++ )
-                {
-                    int b = bytes[i] & 0xFF;
-                    description.appendText( String.format( "%02X ", b ) );
-                }
-                description.appendText( "}" );
-            }
-        };
     }
 }

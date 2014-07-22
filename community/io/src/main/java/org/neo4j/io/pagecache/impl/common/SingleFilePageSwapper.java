@@ -17,25 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.standard;
+package org.neo4j.io.pagecache.impl.common;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageEvictionCallback;
+import org.neo4j.io.pagecache.PageSwapper;
 
-public class StandardPageSwapper implements PageSwapper
+public class SingleFilePageSwapper implements PageSwapper
 {
     private final File file;
     private final StoreChannel channel;
     private final int filePageSize;
-    private final FunctionFromPrimitiveLong onEviction;
+    private final PageEvictionCallback onEviction;
 
-    public StandardPageSwapper( File file, StoreChannel channel, int filePageSize, FunctionFromPrimitiveLong
-            onEviction )
+    public SingleFilePageSwapper(
+            File file,
+            StoreChannel channel,
+            int filePageSize,
+            PageEvictionCallback onEviction )
     {
         this.file = file;
         this.channel = channel;
@@ -44,40 +48,26 @@ public class StandardPageSwapper implements PageSwapper
     }
 
     @Override
-    public void read( long pageId, ByteBuffer into ) throws IOException
+    public void read( long pageId, Page page ) throws IOException
     {
-        into.position( 0 );
-        into.limit( filePageSize );
-        long position = pageIdToPosition( pageId );
-
-        int readBytes = -1;
-        if ( position <= channel.size() )
+        long offset = pageIdToPosition( pageId );
+        if ( offset < channel.size() )
         {
-            readBytes = channel.read( into, position );
-        }
-
-        if ( readBytes < filePageSize )
-        {
-            // zero-fill any part of the page that was not in the file.
-            for ( int i = Math.max( readBytes, 0 ); i < filePageSize; i++ )
-            {
-                into.put( i, (byte) 0 );
-            }
+            page.swapIn( channel, offset, filePageSize );
         }
     }
 
     @Override
-    public void write( long pageId, ByteBuffer from ) throws IOException
+    public void write( long pageId, Page page ) throws IOException
     {
-        from.position( 0 );
-        from.limit( filePageSize );
-        channel.writeAll( from, pageIdToPosition( pageId ) );
+        long offset = pageIdToPosition( pageId );
+        page.swapOut( channel, offset, filePageSize );
     }
 
     @Override
     public void evicted( long pageId )
     {
-        onEviction.apply( pageId );
+        onEviction.onEvict( pageId );
     }
 
     @Override
@@ -103,7 +93,7 @@ public class StandardPageSwapper implements PageSwapper
             return false;
         }
 
-        StandardPageSwapper that = (StandardPageSwapper) o;
+        SingleFilePageSwapper that = (SingleFilePageSwapper) o;
 
         return !(channel != null ? !channel.equals( that.channel ) : that.channel != null);
 
@@ -115,16 +105,19 @@ public class StandardPageSwapper implements PageSwapper
         return channel != null ? channel.hashCode() : 0;
     }
 
+    @Override
     public void close() throws IOException
     {
         channel.close();
     }
 
+    @Override
     public void force() throws IOException
     {
         channel.force( false );
     }
 
+    @Override
     public long getLastPageId() throws IOException
     {
         long channelSize = channel.size();
