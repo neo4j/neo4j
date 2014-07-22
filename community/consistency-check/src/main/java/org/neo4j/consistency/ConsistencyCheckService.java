@@ -47,11 +47,21 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ConsistencyCheckService
 {
-    private final Date timestamp = new Date();
+    private final Date timestamp;
+
+    public ConsistencyCheckService()
+    {
+        this( new Date() );
+    }
+
+    public ConsistencyCheckService( Date timestamp )
+    {
+        this.timestamp = timestamp;
+    }
 
     public Result runFullConsistencyCheck( String storeDir,
-                                           Config tuningConfiguration,
-                                           ProgressMonitorFactory progressFactory,
+                                                  Config tuningConfiguration,
+                                                  ProgressMonitorFactory progressFactory,
                                            StringLogger logger ) throws ConsistencyCheckIncompleteException
     {
         Map<String, String> params = tuningConfiguration.getParams();
@@ -112,50 +122,44 @@ public class ConsistencyCheckService
             logger.logMessage( String.format( "See '%s' for a detailed consistency report.", reportFile.getPath() ) );
             return Result.FAILURE;
         }
-        else
-        {
-            return Result.SUCCESS;
-        }
+
+        return Result.SUCCESS;
     }
 
     private File chooseReportPath( Config tuningConfiguration )
     {
-        File reportPath = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_report_file );
-        File reportFile;
+        final File reportPath = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_report_file );
         if ( reportPath == null )
         {
-            reportFile = new File( tuningConfiguration.get( GraphDatabaseSettings.store_dir ), defaultLogFileName() );
-        } else
-        {
-            if ( reportPath.isDirectory() )
-            {
-                reportFile = new File( reportPath, defaultLogFileName() );
-            }
-            else
-            {
-                reportFile = reportPath;
-            }
+            return new File( tuningConfiguration.get( GraphDatabaseSettings.store_dir ),
+                    defaultLogFileName( timestamp ) );
         }
-        return reportFile;
+
+        if ( reportPath.isDirectory() )
+        {
+            return new File( reportPath, defaultLogFileName( timestamp ) );
+        }
+
+        return reportPath;
     }
 
-    String defaultLogFileName()
+    public static String defaultLogFileName( Date date )
     {
-        return String.format( "inconsistencies-%s.report",
-                new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( timestamp ) );
+        final String formattedDate = new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( date );
+        return String.format( "inconsistencies-%s.report", formattedDate );
     }
 
-    public enum Result
+    public static enum Result
     {
         FAILURE( false ), SUCCESS( true );
-        
+
         private boolean successful;
 
         private Result( boolean successful )
         {
             this.successful = successful;
         }
-        
+
         public boolean isSuccessful()
         {
             return this.successful;

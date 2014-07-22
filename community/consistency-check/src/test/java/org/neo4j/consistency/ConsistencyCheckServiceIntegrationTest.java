@@ -19,18 +19,13 @@
  */
 package org.neo4j.consistency;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
-
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,22 +37,32 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.consistency.ConsistencyCheckService.defaultLogFileName;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
+
 public class ConsistencyCheckServiceIntegrationTest
 {
     @Test
     public void shouldSucceedIfStoreIsConsistent() throws Exception
     {
         // given
-        ConsistencyCheckService service = new ConsistencyCheckService();
+        Date timestamp = new Date();
+        ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
+        Config configuration = new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
-                new Config( stringMap(  ), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ),
-                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+                configuration, ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
         assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
-        File reportFile = new File( fixture.directory(), service.defaultLogFileName() );
+        File reportFile = new File( fixture.directory(), defaultLogFileName( timestamp ) );
         assertFalse( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
     }
 
@@ -66,16 +71,17 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         // given
         breakNodeStore();
-        ConsistencyCheckService service = new ConsistencyCheckService();
+        Date timestamp = new Date();
+        ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
+        Config configuration = new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
-                new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ),
-                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+                configuration, ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
         assertEquals( ConsistencyCheckService.Result.FAILURE, result );
-        File reportFile = new File(fixture.directory(), service.defaultLogFileName());
+        File reportFile = new File( fixture.directory(), defaultLogFileName( timestamp ) );
         assertTrue( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
     }
 
@@ -86,11 +92,13 @@ public class ConsistencyCheckServiceIntegrationTest
         breakNodeStore();
         ConsistencyCheckService service = new ConsistencyCheckService();
         File specificLogFile = new File( testDirectory.directory(), "specific_logfile.txt" );
+        Config configuration = new Config(
+                stringMap( ConsistencyCheckSettings.consistency_check_report_file.name(), specificLogFile.getPath() ),
+                GraphDatabaseSettings.class, ConsistencyCheckSettings.class
+        );
 
         // when
-        service.runFullConsistencyCheck( fixture.directory().getPath(),
-                new Config( stringMap( ConsistencyCheckSettings.consistency_check_report_file.name(),specificLogFile.getPath()),
-                        GraphDatabaseSettings.class, ConsistencyCheckSettings.class ),
+        service.runFullConsistencyCheck( fixture.directory().getPath(), configuration,
                 ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
