@@ -19,10 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -46,6 +42,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -56,6 +53,10 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -202,14 +203,25 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         boolean success = true;
         Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext = null;
         Throwable failure = null;
+
+        // Send 'em over the wire
+        Channel channel = null;
+        ChannelBuffer output = null;
+        ByteBuffer input = null;
         try
         {
-            // Send 'em over the wire
             channelContext = getChannel( type );
-            Channel channel = channelContext.first();
-            ChannelBuffer output = channelContext.second();
-            ByteBuffer input = channelContext.third();
+            channel = channelContext.first();
+            output = channelContext.second();
+            input = channelContext.third();
+        }
+        catch ( Throwable e )
+        {
+            throw Exceptions.launderedException( ComException.class, e );
+        }
 
+        try
+        {
 
             Map<String, String> requestContext = new HashMap<>();
             requestContext.put( "type", type.toString() );

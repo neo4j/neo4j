@@ -40,7 +40,7 @@
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-client</artifactId>
-      <version>1.9</version>
+      <version>1.18.1</version>
     </dependency>
     <!-- Test dependencies -->
     <dependency>

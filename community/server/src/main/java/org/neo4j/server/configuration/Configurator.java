@@ -21,6 +21,7 @@ package org.neo4j.server.configuration;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -177,7 +178,7 @@ public interface Configurator
         @Override
         public Configuration configuration()
         {
-            return new MapConfiguration( emptyMap() );
+            return new MapConfiguration( Collections.<String, String>emptyMap() );
         }
     }
 
