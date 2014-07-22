@@ -136,7 +136,6 @@
         <exclude>org.apache.lucene:lucene-core</exclude>
         <exclude>io.netty:netty</exclude>
         <exclude>org.slf4j:slf4j-api</exclude>
-        <exclude>commons-logging:*</exclude>
         <exclude>org.scala-lang:scala-library</exclude>
         <exclude>org.parboiled:*</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
