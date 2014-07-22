@@ -52,16 +52,26 @@ case object isolateAggregation extends Rewriter {
         case c =>
           val originalExpressions = getExpressions(c)
 
-          val expressionsToGoToWith = iterateUntilConverged {
+          val expressionsToGoToWith: Seq[Expression] = iterateUntilConverged {
             (expressions: Seq[Expression]) => expressions.flatMap {
-              case e if hasAggregateButIsNotAggregate(e) => e.arguments
-              case e => Some(e)
+              case e if hasAggregateButIsNotAggregate(e) =>
+                e match {
+                  case ReduceExpression(_, init, _, coll, _) => Seq(init, coll)
+                  case FilterExpression(_, expr, _)          => Some(expr)
+                  case ExtractExpression(_, expr, _, _)      => Some(expr)
+                  case ListComprehension(_, expr, _, _)      => Some(expr)
+                  case _                                     => e.arguments
+                }
+
+              case e =>
+                Some(e)
+
             }
           }(originalExpressions)
 
           val withReturnItems: Seq[ReturnItem] = expressionsToGoToWith.map {
-            case id:Identifier => AliasedReturnItem(id, id)(id.position)
-            case e             => AliasedReturnItem(e, Identifier(AggregationNameGenerator.name(e.position.offset))(e.position))(e.position)
+            case id: Identifier => AliasedReturnItem(id, id)(id.position)
+            case e              => AliasedReturnItem(e, Identifier(AggregationNameGenerator.name(e.position.offset))(e.position))(e.position)
           }
           val pos = c.position
           val withClause = With(distinct = false, ListedReturnItems(withReturnItems)(pos), None, None, None, None)(pos)
