@@ -232,7 +232,7 @@ public class PropertyFileConfigurator extends Configurator.Adapter
     public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
     {
         List<ThirdPartyJaxRsPackage> thirdPartyPackages = new ArrayList<ThirdPartyJaxRsPackage>();
-        List<String> packagesAndMountpoints = this.configuration().getList( THIRD_PARTY_PACKAGES_KEY );
+        List<String> packagesAndMountpoints = (List)this.configuration().getList( THIRD_PARTY_PACKAGES_KEY );
 
         for ( String packageAndMoutpoint : packagesAndMountpoints )
         {

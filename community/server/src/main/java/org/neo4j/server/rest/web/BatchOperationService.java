@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.WebApplicationException;
@@ -93,6 +94,25 @@ public class BatchOperationService {
                             public void write( int i ) throws IOException
                             {
                                 output.write( i );
+                            }
+
+                            @Override
+                            public boolean isReady()
+                            {
+                                return true;
+                            }
+
+                            @Override
+                            public void setWriteListener( WriteListener writeListener )
+                            {
+                                try
+                                {
+                                    writeListener.onWritePossible();
+                                }
+                                catch ( IOException e )
+                                {
+                                    // Ignore
+                                }
                             }
                         };
                         new StreamingBatchOperations( webServer ).readAndExecuteOperations( uriInfo, httpHeaders, body,

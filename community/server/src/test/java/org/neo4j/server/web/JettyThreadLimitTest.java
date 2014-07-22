@@ -74,7 +74,7 @@ public class JettyThreadLimitTest
         final CountDownLatch endLatch = new CountDownLatch( 1 );
         for ( int i = 0; i < tasksToSubmit; i++ )
         {
-            threadPool.dispatch( new Runnable()
+            threadPool.execute( new Runnable()
             {
                 @Override
                 public void run()

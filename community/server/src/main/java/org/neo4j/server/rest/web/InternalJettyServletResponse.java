@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -59,6 +60,25 @@ public class InternalJettyServletResponse extends Response
             catch ( Exception e )
             {
                 throw new RuntimeException( e);
+            }
+        }
+
+        @Override
+        public boolean isReady()
+        {
+            return true;
+        }
+
+        @Override
+        public void setWriteListener( WriteListener writeListener )
+        {
+            try
+            {
+                writeListener.onWritePossible();
+            }
+            catch ( IOException e )
+            {
+                // Ignore
             }
         }
     }

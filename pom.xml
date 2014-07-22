@@ -20,12 +20,12 @@
     <jta.groupId>org.apache.geronimo.specs</jta.groupId>
     <jta.artifactId>geronimo-jta_1.1_spec</jta.artifactId>
     <jta.version>1.1.1</jta.version>
-    <pico.version>2.11.2</pico.version>
+    <pico.version>2.14.3</pico.version>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
     <lucene.version>3.6.2</lucene.version>
-    <powermock.version>1.4.12</powermock.version>
-    <slf4j-api.version>1.6.2</slf4j-api.version>
+    <powermock.version>1.5.5</powermock.version>
+    <slf4j-api.version>1.7.7</slf4j-api.version>
     <logback-classic.version>1.1.2</logback-classic.version>
   </properties>
 
@@ -440,19 +440,19 @@ public class ComponentVersion extends Version
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
-        <version>4.0.1</version>
+        <version>4.3.4</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpcore</artifactId>
-        <version>4.0.1</version>
+        <version>4.3.2</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
-        <version>4.0.1</version>
+        <version>4.3.4</version>
         <classifier>tests</classifier>
         <scope>test</scope>
       </dependency>
@@ -465,7 +465,7 @@ public class ComponentVersion extends Version
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-all</artifactId>
-        <version>1.9.0</version>
+        <version>1.9.5</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -480,25 +480,14 @@ public class ComponentVersion extends Version
         <version>${powermock.version}</version>
         <scope>test</scope>
       </dependency>
-      <dependency>
-        <groupId>org.jmock</groupId>
-        <artifactId>jmock</artifactId>
-        <version>2.5.1</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.jmock</groupId>
-        <artifactId>jmock-junit4</artifactId>
-        <version>2.5.1</version>
-        <!-- 2.6.0 ? -->
-        <scope>test</scope>
-      </dependency>
+<!--
       <dependency>
         <groupId>org.ow2.jotm</groupId>
         <artifactId>jotm-core</artifactId>
         <version>2.2.3</version>
         <scope>test</scope>
       </dependency>
+-->
       <dependency>
         <groupId>geronimo-spec</groupId>
         <artifactId>geronimo-spec-j2ee</artifactId>
@@ -508,13 +497,37 @@ public class ComponentVersion extends Version
       <dependency>
         <groupId>org.hsqldb</groupId>
         <artifactId>hsqldb</artifactId>
-        <version>2.3.0</version>
+        <version>2.3.2</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.7</version>
+        <version>1.9</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>3.2.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>commons-logging</groupId>
+        <artifactId>commons-logging</artifactId>
+        <version>1.1.3</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-library</artifactId>
+        <version>1.3</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-all</artifactId>
+        <version>1.3</version>
         <scope>test</scope>
       </dependency>
 
@@ -522,17 +535,17 @@ public class ComponentVersion extends Version
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.2.2</version>
+        <version>2.2.4</version>
       </dependency>
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>1.4</version>
+        <version>2.4</version>
       </dependency>
       <dependency>
         <groupId>commons-configuration</groupId>
         <artifactId>commons-configuration</artifactId>
-        <version>1.6</version>
+        <version>1.10</version>
         <type>jar</type>
         <scope>compile</scope>
         <exclusions>
@@ -546,14 +559,14 @@ public class ComponentVersion extends Version
       <dependency>
         <groupId>commons-digester</groupId>
         <artifactId>commons-digester</artifactId>
-        <version>1.8.1</version>
+        <version>2.1</version>
         <type>jar</type>
         <scope>compile</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.1</version>
+        <version>3.3.2</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -563,7 +576,7 @@ public class ComponentVersion extends Version
       <dependency>
         <groupId>log4j</groupId>
         <artifactId>log4j</artifactId>
-        <version>1.2.16</version>
+        <version>1.2.17</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
@@ -588,13 +601,12 @@ public class ComponentVersion extends Version
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <!-- This actually conflicts with the jcl-over-slf4j version which is 1.6.1. -->
         <version>${slf4j-api.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>jcl-over-slf4j</artifactId>
-        <version>1.6.1</version>
+        <version>${slf4j-api.version}</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.janino</groupId>
@@ -618,42 +630,47 @@ public class ComponentVersion extends Version
       <dependency>
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-client</artifactId>
-        <version>1.9</version>
+        <version>1.18.1</version>
       </dependency>
       <dependency>
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-server</artifactId>
-        <version>1.9</version>
+        <version>1.18.1</version>
+      </dependency>
+      <dependency>
+      	<groupId>com.sun.jersey</groupId>
+      	<artifactId>jersey-servlet</artifactId>
+      	<version>1.18.1</version>
       </dependency>
       <dependency>
         <groupId>com.sun.jersey.contribs</groupId>
         <artifactId>jersey-multipart</artifactId>
-        <version>1.9</version>
+        <version>1.18.1</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
-        <artifactId>jackson-core-lgpl</artifactId>
-        <version>1.9.7</version>
+        <artifactId>jackson-core-asl</artifactId>
+        <version>1.9.11</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
         <artifactId>jackson-jaxrs</artifactId>
-        <version>1.9.7</version>
+        <version>1.9.11</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
         <artifactId>jackson-mapper-asl</artifactId>
-        <version>1.9.7</version>
+        <version>1.9.11</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jetty</artifactId>
-        <version>6.1.25</version>
+        <version>6.1.26</version>
       </dependency>
       <dependency>
         <groupId>org.rrd4j</groupId>
         <artifactId>rrd4j</artifactId>
-        <version>2.0.7</version>
+        <version>2.2</version>
       </dependency>
       <dependency>
         <groupId>org.mozilla</groupId>

@@ -19,12 +19,9 @@
  */
 package org.neo4j.ha.monitoring;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.fromXml;
-
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -34,6 +31,11 @@ import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 @Ignore("This is to be dealt with after the first milestone for 2.2")
 public class RemoteRequestMonitoringIT
