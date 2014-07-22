@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{TwoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negated: Boolean)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negated: Boolean)
+                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
       (outerContext) =>
@@ -39,4 +41,13 @@ case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negat
   def planDescription = PlanDescriptionImpl(this, name, TwoChildren(source.planDescription, inner.planDescription), Seq.empty)
 
   def symbols: SymbolTable = source.symbols.add(letVarName, CTBoolean)
+
+  override val sources = Seq(source, inner)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (source :: inner :: Nil) = sources
+    copy(source = source, inner = inner)
+  }
+
+  override def localEffects = Effects.NONE
 }

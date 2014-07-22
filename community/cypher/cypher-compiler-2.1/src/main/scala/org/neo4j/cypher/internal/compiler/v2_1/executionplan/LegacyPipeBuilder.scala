@@ -19,17 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders._
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import org.neo4j.cypher.internal.compiler.v2_1.pipes._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{TokenType, KeyToken}
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.prepare.KeyTokenResolver
+import org.neo4j.cypher.internal.compiler.v2_1.pipes._
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.{Monitors, ParsedQuery}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.QueryBuilder
+import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
-class LegacyPipeBuilder(monitors: Monitors) extends PatternGraphBuilder with PipeBuilder with QueryBuilder {
+trait ExecutionPlanInProgressRewriter {
+  def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
+}
+
+class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
+  extends PatternGraphBuilder with PipeBuilder with GraphQueryBuilder {
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
@@ -68,30 +73,25 @@ class LegacyPipeBuilder(monitors: Monitors) extends PatternGraphBuilder with Pip
   def buildQuery(inputQuery: Query, context: PlanContext)(implicit pipeMonitor:PipeMonitor): PipeInfo = {
     val initialPSQ = PartiallySolvedQuery(inputQuery)
 
-    var continue = true
-    var planInProgress = ExecutionPlanInProgress(initialPSQ, NullPipe(), isUpdating = false)
+    def untilConverged(in: ExecutionPlanInProgress): ExecutionPlanInProgress =
+      iterateUntilConverged { input: ExecutionPlanInProgress =>
+        val result = phases(input, context)
+        if (!result.query.isSolved) {
+          produceAndThrowException(result)
+        }
 
-    while (continue) {
-      planInProgress = phases(planInProgress, context)
+        input.query.tail match {
+          case None       => result
+          case Some(tail) => result.copy(query = tail)
+        }
+      }(in)
 
-      if (!planInProgress.query.isSolved) {
-        produceAndThrowException(planInProgress)
-      }
+    val planInProgress: ExecutionPlanInProgress =
+      untilConverged(ExecutionPlanInProgress(initialPSQ, NullPipe(), isUpdating = false))
 
-      planInProgress.query.tail match {
-        case None => continue = false
-        case Some(q) =>
-          val pipe = if (q.containsUpdates && planInProgress.pipe.readsFromDatabase && planInProgress.pipe.isLazy) {
-            new EagerPipe(planInProgress.pipe)
-          }
-          else {
-            planInProgress.pipe
-          }
-          planInProgress = planInProgress.copy(query = q, pipe = pipe)
-      }
-    }
+    val pipe = eagernessRewriter(planInProgress.pipe)
 
-    PipeInfo(planInProgress.pipe, planInProgress.isUpdating)
+    PipeInfo(pipe, planInProgress.isUpdating)
   }
 
   private def produceAndThrowException(plan: ExecutionPlanInProgress) {
@@ -111,10 +111,10 @@ The Neo4j Team""")
 
   val phases =
     prepare andThen /* Prepares the query by rewriting it before other plan builders start working on it. */
-      matching andThen /* Pulls in data from the stores, adds named paths, and filters the result */
-      updates andThen /* Plans update actions */
-      extract andThen /* Handles RETURN and WITH expression */
-      finish /* Prepares the return set so it looks like the user specified */
+    matching andThen /* Pulls in data from the stores, adds named paths, and filters the result */
+    updates andThen /* Plans update actions */
+    extract andThen /* Handles RETURN and WITH expression */
+    finish /* Prepares the return set so it looks like the user specified */
 
 
   lazy val builders = phases.myBuilders.distinct

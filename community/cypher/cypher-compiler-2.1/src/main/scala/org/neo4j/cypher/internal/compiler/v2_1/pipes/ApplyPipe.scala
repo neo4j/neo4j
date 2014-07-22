@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{TwoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
 case class ApplyPipe(source: Pipe, inner: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -38,4 +39,13 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(implicit pipeMonitor: PipeMonito
     PlanDescriptionImpl(this, "Apply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty)
 
   def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (l :: r :: Nil) = sources
+    copy(source = l, inner= r)
+  }
+
+  override val sources: Seq[Pipe] = Seq(source, inner)
+
+  override def localEffects = Effects.NONE
 }

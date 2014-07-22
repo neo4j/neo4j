@@ -19,9 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions.Expression
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 
+
+trait EffectfulAstNode[T] extends AstNode[T] {
+  def localEffects: Effects
+  final def effects: Effects = {
+    var completeEffects = localEffects
+    visitChildren {
+      case (expr: EffectfulAstNode[_]) =>
+        completeEffects = completeEffects | expr.localEffects
+    }
+    completeEffects
+  }
+}
 
 trait AstNode[T] {
   def children: Seq[AstNode[_]]

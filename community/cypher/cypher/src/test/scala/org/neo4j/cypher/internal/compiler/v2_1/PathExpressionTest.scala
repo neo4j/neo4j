@@ -23,6 +23,7 @@ import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.UnresolvedLabel
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.graphdb.{Direction, Path}
 
 class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
@@ -96,5 +97,16 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
 
     // THEN
     result should equal(false)
+  }
+
+  test("should indicate reading nodes and rels as a side effect") {
+    // GIVEN
+    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, Map.empty)
+
+    // WHEN
+    val expression = PathExpression(Seq(pattern))
+
+    // THEN
+    expression.effects should equal(Effects.READS_ENTITIES)
   }
 }

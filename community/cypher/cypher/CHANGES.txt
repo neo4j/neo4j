@@ -1,6 +1,7 @@
 2.1.3
 -----
 o Adds support for Octal literals (using a preceding 0, e.g. 03517)
+o Adds support for Hexadecimal literals (using a preceding 0x, e.g. 0xF0071E55)
 o Add `exists(...)` predicate function for checking patterns and properties
 o Ensure `toString(...)` only does type conversion
 

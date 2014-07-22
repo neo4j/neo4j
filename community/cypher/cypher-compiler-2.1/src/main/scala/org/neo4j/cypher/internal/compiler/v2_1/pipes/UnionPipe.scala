@@ -19,18 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-case class UnionPipe(in: Seq[Pipe], columns:List[String])(implicit val monitor: PipeMonitor) extends Pipe {
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = new UnionIterator(in, state)
+case class UnionPipe(sources: List[Pipe], columns:List[String])(implicit val monitor: PipeMonitor) extends Pipe {
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = new UnionIterator(sources, state)
 
   def planDescription: PlanDescription = PlanDescriptionImpl(this, "Union", NoChildren, Seq.empty) // TODO: This is wrong. Missing children
 
   def symbols: SymbolTable = new SymbolTable(columns.map(k => k -> CTAny).toMap)
 
-  def exists(pred: Pipe => Boolean) = pred(this) || in.exists(_.exists(pred))
+  def exists(pred: Pipe => Boolean) = pred(this) || sources.exists(_.exists(pred))
+
+  def dup(sources: List[Pipe]): Pipe = {
+    if (sources.length != this.sources.length)
+      throw new InternalException("Cannot changes the number of pipes when rewriting")
+
+    copy(sources = sources)
+  }
+
+  override def localEffects = Effects.NONE
 }
 
 case class NewUnionPipe(l: Pipe, r: Pipe)(implicit val monitor: PipeMonitor) extends Pipe {
@@ -43,4 +54,13 @@ case class NewUnionPipe(l: Pipe, r: Pipe)(implicit val monitor: PipeMonitor) ext
     l.createResults(state) ++ r.createResults(state)
 
   def exists(pred: Pipe => Boolean): Boolean = l.exists(pred) || r.exists(pred)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (l :: r :: Nil) = sources
+    copy(l, r)
+  }
+
+  def sources: Seq[Pipe] = Seq(l, r)
+
+  override def localEffects = Effects.NONE
 }

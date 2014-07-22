@@ -20,15 +20,23 @@
 package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.AstNode
-import commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.commands.EffectfulAstNode
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments._
-import pipes.QueryState
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
+trait WritesNodes
+trait WritesRelationships
 
+trait Effectful {
+  def effects: Effects
+  def localEffects: Effects
+}
+
+trait UpdateAction extends TypeSafe with EffectfulAstNode[UpdateAction] {
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext]
 
   def identifiers: Seq[(String, CypherType)]
@@ -38,4 +46,6 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   def shortName: String = getClass.getSimpleName.replace("Action", "")
 
   def arguments: Seq[Argument] = identifiers.map(tuple => IntroducedIdentifier(tuple._1)) :+ UpdateActionName(shortName)
+
+  def localEffects = Effects.READS_ENTITIES | Effects.WRITES_ENTITIES
 }

@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.Effectful
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NullPlanDescription, PlanDescription}
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.ExecutionResult
 
 trait PipeMonitor {
   def startSetup(queryId: AnyRef, pipe: Pipe)
@@ -38,10 +39,12 @@ trait PipeMonitor {
  * Pipes are combined to form an execution plan, and when iterated over,
  * the execute the query.
  */
-trait Pipe {
+trait Pipe extends Effectful {
   self: Pipe =>
 
   def monitor: PipeMonitor
+
+  def dup(sources: List[Pipe]): Pipe
 
   def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(self, state)
@@ -66,14 +69,11 @@ trait Pipe {
 
   def planDescription: PlanDescription
 
-  /**
-   * Please make sure to add a test for this implementation @ PipeLazynessTest
-   */
-  def isLazy: Boolean = true
+  def sources: Seq[Pipe]
 
-  def readsFromDatabase: Boolean = true
+  def localEffects: Effects = Effects.ALL
 
-  def sources: Seq[Pipe] = Seq.empty
+  def effects: Effects = localEffects
 
   /*
   Runs the predicate on all the inner Pipe until no pipes are left, or one returns true.
@@ -89,6 +89,12 @@ case class NullPipe(symbols: SymbolTable = SymbolTable())
   def exists(pred: Pipe => Boolean) = pred(this)
 
   def planDescription: PlanDescription = new NullPlanDescription(this)
+
+  override def localEffects = Effects.NONE
+
+  def dup(sources: List[Pipe]): Pipe = this
+
+  def sources: Seq[Pipe] = Seq.empty
 }
 
 abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe {
@@ -106,6 +112,9 @@ abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pi
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
 
   override val sources: Seq[Pipe] = Seq(source)
+
+  override def effects =
+    sources.foldLeft(localEffects)(_ | _.effects)
 
   def exists(pred: Pipe => Boolean) = pred(this) || source.exists(pred)
 }

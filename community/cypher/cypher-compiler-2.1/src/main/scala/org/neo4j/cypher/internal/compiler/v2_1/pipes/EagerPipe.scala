@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 case class EagerPipe(src: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) {
   def symbols: SymbolTable = src.symbols
@@ -30,5 +31,10 @@ case class EagerPipe(src: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeW
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toList.toIterator
 
-  override def isLazy = false
+  override val effects = Effects.NONE
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (src :: Nil) = sources
+    copy(src = src)
+  }
 }

@@ -17,39 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.cache;
+package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{EagerPipe, Pipe}
 
-public class SoftValue<K, V> extends SoftReference<V> implements ReferenceWithKey<K, V>
-{
-    public static Factory SOFT_VALUE_FACTORY = new Factory()
-    {
-        @Override
-        public <FK, FV> SoftValue<FK, FV> newReference( FK key, FV value, ReferenceQueue<? super FV> queue )
-        {
-            return new SoftValue<>( key, value, queue );
-        }
-    };
+object addEagernessIfNecessary extends (Pipe => Pipe) {
+  def wouldInterfere(from: Effects, to: Effects): Boolean = {
+    val nodesInterfere = from.contains(Effects.READS_NODES) && to.contains(Effects.WRITES_NODES)
+    val relsInterfere = from.contains(Effects.READS_RELATIONSHIPS) && to.contains(Effects.WRITES_RELATIONSHIPS)
+    nodesInterfere || relsInterfere
+  }
 
-    public final K key;
-
-    public SoftValue( K key, V value, ReferenceQueue<? super V> queue )
-    {
-        super( value, queue );
-        this.key = key;
+  def apply(in: Pipe): Pipe = {
+    val sources = in.sources.map(apply).map { source =>
+      if (wouldInterfere(source.effects, in.effects)) {
+        new EagerPipe(source)(source.monitor)
+      } else {
+        source
+      }
     }
-
-    public SoftValue( K key, V value )
-    {
-        super( value );
-        this.key = key;
-    }
-
-    @Override
-    public K key()
-    {
-        return key;
-    }
+    in.dup(sources.toList)
+  }
 }

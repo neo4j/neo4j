@@ -256,6 +256,6 @@ public class AvailabilityGuardTest
         availabilityGuard.deny(REQUIREMENT);
 
         // Then
-        assertThat( availabilityGuard.describeWhoIsBlocking(), equalTo( "Blocking components (2): [Thing, Thing]" ) );
+        assertThat( availabilityGuard.describeWhoIsBlocking(), equalTo( "2 reasons for blocking: Thing, Thing." ) );
     }
 }

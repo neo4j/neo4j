@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands._
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
-import symbols._
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class IndexOperationPipe(indexOp: IndexOperation)(implicit val monitor: PipeMonitor) extends Pipe {
+case class IndexOperationPipe(indexOp: IndexOperation)(implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val queryContext = state.query
 
@@ -58,4 +59,13 @@ class IndexOperationPipe(indexOp: IndexOperation)(implicit val monitor: PipeMoni
   def planDescription = PlanDescriptionImpl(this, indexOp.toString, NoChildren, Seq.empty)
 
   def exists(pred: Pipe => Boolean) = pred(this)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    require(sources.isEmpty)
+    this
+  }
+
+  def sources: Seq[Pipe] = Seq.empty
+
+  override def localEffects = Effects.NONE
 }

@@ -19,29 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Literal, Identifier}
-import commands.values.TokenType.{Label, PropertyKey}
+import java.util.concurrent._
+
+import org.junit.Assert._
+import org.mockito.Mockito._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ReturnItem, _}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType.{Label, PropertyKey}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, _}
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.{CreateNode, DeletePropertyAction}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription
-import pipes._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{Planner, PlanningMonitor, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundQueryContext
 import org.neo4j.cypher.{GraphDatabaseTestSupport, InternalException}
 import org.neo4j.graphdb.DynamicLabel
-import scala.collection.Seq
-import org.junit.Assert._
-import java.util.concurrent._
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
-import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.commands.ReturnItem
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.ExecutionPlanInProgress
-import org.neo4j.cypher.internal.compiler.v2_1.mutation.{CreateNode, DeletePropertyAction}
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlanningMonitor, Planner, SemanticTable}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleMetricsFactory
+
+import scala.collection.Seq
 
 class LegacyPipeBuilderTest
   extends CypherFunSuite
@@ -231,6 +231,10 @@ class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
     def exists(pred: Pipe => Boolean) = ???
 
     val monitor = mock[PipeMonitor]
+
+    def dup(sources: List[Pipe]): Pipe = ???
+
+    def sources: scala.Seq[Pipe] = ???
   }
 }
 

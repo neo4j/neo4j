@@ -19,12 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.SortItem
-import commands.expressions.Expression
-import scala.math._
 import java.util.Comparator
+
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.SortItem
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.{KeyExpressions, LegacyExpression}
+
+import scala.math._
 
 /*
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
@@ -111,5 +114,10 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
 
   def symbols = source.symbols
 
-  override val isLazy = false
+  override def effects = Effects.NONE
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
 }

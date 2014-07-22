@@ -22,28 +22,32 @@ package org.neo4j.kernel.impl.cache;
 import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
+import static org.neo4j.kernel.impl.cache.ReferenceCache.MAX_NUM_PUT_BEFORE_POLL;
 
 @RunWith(Parameterized.class)
 public class ReferenceCacheTest
 {
-    static class SpyCreatingWeakValueFactory implements ReferenceWithKey.Factory
+
+    static class SpyCreatingValueFactory implements ReferenceWithKey.Factory
     {
-        ArrayList<ReferenceWithKey> weakValues = new ArrayList<>();
+        ArrayList<ReferenceWithKey> values = new ArrayList<>();
         private final ArrayList<Object> hardReferencesToStopGC = new ArrayList<>();
         private final ReferenceWithKey.Factory refFactory;
 
-        SpyCreatingWeakValueFactory( ReferenceWithKey.Factory referenceFactory )
+        SpyCreatingValueFactory( ReferenceWithKey.Factory referenceFactory )
         {
             refFactory = referenceFactory;
         }
@@ -53,20 +57,20 @@ public class ReferenceCacheTest
         {
             ReferenceWithKey<FK, FV> ref = Mockito.spy( refFactory.newReference( key, value, queue ) );
             hardReferencesToStopGC.add( value );
-            weakValues.add( ref );
+            values.add( ref );
             return ref;
         }
 
         public void clearAndQueueReferenceNo( int index )
         {
-            ReferenceWithKey val = weakValues.get( index );
+            ReferenceWithKey val = values.get( index );
             val.clear();
             val.enqueue();
         }
 
         public void reset()
         {
-            weakValues.clear();
+            values.clear();
             hardReferencesToStopGC.clear();
         }
     }
@@ -75,14 +79,14 @@ public class ReferenceCacheTest
     public static Collection<Object[]> parameters()
     {
         return asList( new Object[][]{
-            {new SpyCreatingWeakValueFactory( WeakValue.WEAK_VALUE_FACTORY )},
-            {new SpyCreatingWeakValueFactory( SoftValue.SOFT_VALUE_FACTORY )}
+                {new SpyCreatingValueFactory( WeakValue.WEAK_VALUE_FACTORY )},
+                {new SpyCreatingValueFactory( SoftValue.SOFT_VALUE_FACTORY )}
         });
     }
 
-    private SpyCreatingWeakValueFactory spyFactory;
+    private SpyCreatingValueFactory spyFactory;
 
-    public ReferenceCacheTest( SpyCreatingWeakValueFactory factory )
+    public ReferenceCacheTest( SpyCreatingValueFactory factory )
     {
         this.spyFactory = factory;
         spyFactory.reset(); // Instance is shared across tests
@@ -110,42 +114,127 @@ public class ReferenceCacheTest
     }
 
     @Test
-    public void shouldHandleReferenceGarbageCollectedDuringGet() throws Exception
+    public void shouldForceACacheCleanupAfterManyPutsWithoutReading() throws Exception
     {
         // Given
         ReferenceCache<TestCacheTypes.Entity> cache = new ReferenceCache<>( "MyCache!", spyFactory );
 
-        final TestCacheTypes.Entity originalEntity = new TestCacheTypes.Entity( 0 );
-        cache.put( originalEntity );
+        for ( int i = 0; i < MAX_NUM_PUT_BEFORE_POLL; i++ )
+        {
+            cache.put( new TestCacheTypes.Entity( i ) );
+        }
 
         // Clear the weak reference that the cache will have created (emulating GC doing this)
-        when( spyFactory.weakValues.get( 0 ).get() ).thenAnswer( entityFirstTimeNullAfterThat( originalEntity ) );
+        for ( int i = 0; i < MAX_NUM_PUT_BEFORE_POLL / 2; i++ )
+        {
+            spyFactory.clearAndQueueReferenceNo( i );
+        }
+
+        // this should trigger a poll and remove the collected values from the cache
+        cache.put( new TestCacheTypes.Entity( MAX_NUM_PUT_BEFORE_POLL ) );
+
+        assertEquals( (MAX_NUM_PUT_BEFORE_POLL / 2) + 1, cache.size() );
+        for ( int i = 0; i < MAX_NUM_PUT_BEFORE_POLL / 2; i++ )
+        {
+            assertNull( cache.get( i ) );
+        }
+    }
+
+    @Test
+    public void shouldReturnTheValueIfNotGCed() throws Exception
+    {
+        // Given
+        ReferenceCache<TestCacheTypes.Entity> cache = new ReferenceCache<>( "MyCache!", spyFactory );
+
+        TestCacheTypes.Entity entity = new TestCacheTypes.Entity( 0 );
+        cache.put( entity );
 
         // When
         TestCacheTypes.Entity returnedEntity = cache.get( 0 );
 
         // Then
-        assertEquals(originalEntity, returnedEntity);
+        assertEquals( entity, returnedEntity );
     }
 
-    private Answer<Object> entityFirstTimeNullAfterThat( final TestCacheTypes.Entity originalEntity )
+    @Test
+    public void shouldHandleReferenceGarbageCollectedDuringGet() throws Exception
     {
-        return new Answer<Object>()
-        {
-            int invocations = 0;
+        // Given
+        ReferenceCache<TestCacheTypes.Entity> cache = new ReferenceCache<>( "MyCache!", spyFactory );
 
-            @Override
-            public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                if(invocations++ == 0)
-                {
-                    return originalEntity;
-                } else
-                {
-                    return null;
-                }
-            }
-        };
+        cache.put( new TestCacheTypes.Entity( 0 ) );
+        cache.put( new TestCacheTypes.Entity( 1 ) );
+        cache.put( new TestCacheTypes.Entity( 2 ) );
+
+        // Clear the weak reference that the cache will have created (emulating GC doing this)
+        spyFactory.clearAndQueueReferenceNo( 0 );
+        spyFactory.clearAndQueueReferenceNo( 1 );
+
+        // When
+        TestCacheTypes.Entity returnedEntity = cache.get( 1 );
+
+        // Then
+        assertNull( returnedEntity );
+        assertEquals( 1, cache.size() );
     }
 
+    @Test
+    public void shouldPollAfterAPutAllInvocation()
+    {
+        // Given
+        ReferenceCache<TestCacheTypes.Entity> cache = new ReferenceCache<>( "MyCache!", spyFactory );
+
+        for ( int i = 0; i < MAX_NUM_PUT_BEFORE_POLL / 2; i++ )
+        {
+            cache.put( new TestCacheTypes.Entity( i ) );
+        }
+
+        // Clear the weak reference that the cache will have created (emulating GC doing this)
+        for ( int i = 0; i < MAX_NUM_PUT_BEFORE_POLL / 3; i++ )
+        {
+            spyFactory.clearAndQueueReferenceNo( i );
+        }
+
+
+        List<TestCacheTypes.Entity> entities = new ArrayList<>();
+        for ( int i = MAX_NUM_PUT_BEFORE_POLL / 2; i < MAX_NUM_PUT_BEFORE_POLL + 1; i++ )
+        {
+            entities.add( new TestCacheTypes.Entity( i ) );
+        }
+
+        // this should trigger a poll and remove the collected values from the cache
+        cache.putAll( entities );
+
+        assertEquals( MAX_NUM_PUT_BEFORE_POLL - (MAX_NUM_PUT_BEFORE_POLL / 3) + 1, cache.size() );
+        for ( int i = 0; i < MAX_NUM_PUT_BEFORE_POLL / 3; i++ )
+        {
+            assertNull( cache.get( i ) );
+        }
+    }
+
+    @Test
+    public void shouldHandleReferenceGarbageCollectedDuringRemove() throws Exception
+    {
+        // Given
+        ReferenceCache<TestCacheTypes.Entity> cache = new ReferenceCache<>( "MyCache!", spyFactory );
+
+        cache.put( new TestCacheTypes.Entity( 0 ) );
+        cache.put( new TestCacheTypes.Entity( 1 ) );
+        cache.put( new TestCacheTypes.Entity( 2 ) );
+        cache.put( new TestCacheTypes.Entity( 3 ) );
+
+        spyFactory.clearAndQueueReferenceNo( 0 );
+        spyFactory.clearAndQueueReferenceNo( 1 );
+
+        // When
+        TestCacheTypes.Entity returnedEntity = cache.remove( 1 );
+
+        // Then
+        assertNull( returnedEntity );
+        assertEquals( 2, cache.size() );
+        assertNull( cache.get( 0 ) );
+        assertNull( cache.get( 1 ) );
+        assertNotNull( cache.get( 2 ) );
+        assertNotNull( cache.get( 3 ) );
+    }
 }

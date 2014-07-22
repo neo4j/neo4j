@@ -20,13 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.{Identifier, Expression}
-import commands.values.KeyToken
-import pipes.QueryState
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.helpers._
 import org.neo4j.graphdb.Node
-import collection.Map
+
+import scala.collection.Map
 
 object RelationshipEndpoint {
   def apply(name:String) = new RelationshipEndpoint(Identifier(name), Map.empty, Seq.empty)
@@ -56,6 +58,8 @@ case class CreateRelationship(key: String,
                               typ: String, props: Map[String, Expression])
 extends UpdateAction
   with GraphElementPropertyFunctions {
+
+  override def localEffects = props.values.foldLeft(Effects.WRITES_RELATIONSHIPS)(_ | _.effects)
 
   override def children =
     props.map(_._2).toSeq ++ Seq(from.node, to.node) ++

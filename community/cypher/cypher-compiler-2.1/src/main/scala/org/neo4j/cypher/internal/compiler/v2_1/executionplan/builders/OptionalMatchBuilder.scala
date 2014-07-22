@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, Phase, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{TwoChildren, PlanDescriptionImpl, PlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
@@ -71,5 +71,12 @@ case class OptionalMatchBuilder(solveMatch: Phase) extends PlanBuilder {
     }
 
     def doMatch(state: QueryState)(ctx: ExecutionContext) = matchPipe.createResults(state)
+
+    def dup(sources: List[Pipe]): Pipe = {
+      val (l :: r :: Nil) = sources
+      copy(source = l, matchPipe = r)
+    }
+
+    override val sources: Seq[Pipe] = Seq(source, matchPipe)
   }
 }

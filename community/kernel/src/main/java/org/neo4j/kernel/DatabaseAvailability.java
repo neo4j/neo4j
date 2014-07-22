@@ -38,6 +38,9 @@ public class DatabaseAvailability
     {
         this.availabilityGuard = availabilityGuard;
         this.transactionMonitor = transactionMonitor;
+
+        // On initial setup, deny availability
+        availabilityGuard.deny( this );
     }
 
     @Override
@@ -81,6 +84,6 @@ public class DatabaseAvailability
     @Override
     public String description()
     {
-        return getClass().getSimpleName();
+        return "Database is stopped";
     }
 }

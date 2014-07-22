@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.graphdb.Node
@@ -27,7 +28,7 @@ import org.neo4j.graphdb.Node
 import scala.collection.mutable
 
 case class NodeOuterHashJoinPipe(node: String, source: Pipe, inner: Pipe, nullableIdentifiers: Set[String])
-                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                                (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val nullColumns: Map[String, Any] = nullableIdentifiers.map(_ -> null).toMap
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -77,4 +78,13 @@ case class NodeOuterHashJoinPipe(node: String, source: Pipe, inner: Pipe, nullab
     )
 
   def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers).add(node, CTNode)
+
+  override val sources = Seq(source, inner)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (source :: inner :: Nil) = sources
+    copy(source = source, inner = inner)
+  }
+
+  override def localEffects = Effects.NONE
 }

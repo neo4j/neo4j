@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{SingleChild, PlanDescriptionImpl, PlanDescription}
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planDescription.{PlanDescription, PlanDescriptionImpl, SingleChild}
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)(implicit monitor: PipeMonitor)
   extends PipeWithSource(source, monitor) with CollectionSupport {
@@ -38,6 +38,10 @@ case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)(
 
   def symbols = source.symbols.add(identifier, collection.getType(source.symbols).legacyIteratedType)
 
-  override def readsFromDatabase = false
-}
+  override def localEffects = collection.effects
 
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
+}

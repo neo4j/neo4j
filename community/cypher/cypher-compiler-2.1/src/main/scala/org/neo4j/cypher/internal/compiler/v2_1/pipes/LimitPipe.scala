@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
+import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Expression, NumericHelper}
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.LegacyExpression
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{NumericHelper, Expression}
 
 case class LimitPipe(source: Pipe, exp: Expression)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with NumericHelper {
@@ -39,11 +39,16 @@ case class LimitPipe(source: Pipe, exp: Expression)(implicit pipeMonitor: PipeMo
     new HeadAndTail(first, input).take(count)
   }
 
-
   override def planDescription = source
     .planDescription
     .andThen(this, "Limit", LegacyExpression(exp))
 
-
   def symbols: SymbolTable = source.symbols
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
+
+  override def localEffects = exp.effects
 }

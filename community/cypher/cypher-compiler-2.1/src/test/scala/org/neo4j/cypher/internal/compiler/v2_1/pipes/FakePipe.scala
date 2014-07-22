@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.NullPlanDescription
-import symbols.{SymbolTable, CypherType}
-import collection.Map
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.{CypherType, SymbolTable}
 import org.scalatest.mock.MockitoSugar
+
+import scala.collection.Map
 
 class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, CypherType)*) extends Pipe with MockitoSugar {
 
@@ -38,4 +40,10 @@ class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, Cyphe
   def exists(pred: Pipe => Boolean) = ???
 
   val monitor: PipeMonitor = mock[PipeMonitor]
+
+  def dup(sources: List[Pipe]): Pipe = ???
+
+  def sources: Seq[Pipe] = ???
+
+  override def localEffects = Effects.NONE
 }

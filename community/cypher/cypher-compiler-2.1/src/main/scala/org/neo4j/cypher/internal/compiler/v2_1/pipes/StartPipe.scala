@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.IntroducedIdentifier
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 abstract class StartPipe[T <: PropertyContainer](source: Pipe,
                                                  name: String,
@@ -46,12 +47,24 @@ abstract class StartPipe[T <: PropertyContainer](source: Pipe,
       .andThen(this, s"${createSource.producerType}", createSource.arguments :+ IntroducedIdentifier(name):_*)
 }
 
-class NodeStartPipe(source: Pipe, name: String, val createSource: EntityProducer[Node])(implicit pipeMonitor: PipeMonitor)
+case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node])(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Node](source, name, createSource, pipeMonitor) {
   def identifierType = CTNode
+  override def localEffects = Effects.READS_NODES
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
 }
 
-class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(implicit pipeMonitor: PipeMonitor)
+case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Relationship](source, name, createSource, pipeMonitor) {
   def identifierType = CTRelationship
+  override def localEffects = Effects.READS_RELATIONSHIPS
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)
+  }
 }
