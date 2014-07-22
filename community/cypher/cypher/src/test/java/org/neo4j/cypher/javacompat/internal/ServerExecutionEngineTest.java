@@ -38,7 +38,7 @@ public class ServerExecutionEngineTest
         ServerExecutionEngine engine = new ServerExecutionEngine( rule.getGraphDatabaseService() );
 
         // WHEN
-        boolean result = engine.isPeriodicCommitQuery("USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE ()");
+        boolean result = engine.isPeriodicCommit("USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE ()");
 
         // THEN
         assertTrue( "Did not detect periodic commit query", result );
@@ -51,7 +51,7 @@ public class ServerExecutionEngineTest
         ServerExecutionEngine engine = new ServerExecutionEngine( rule.getGraphDatabaseService() );
 
         // WHEN
-        boolean result = engine.isPeriodicCommitQuery("CREATE ()");
+        boolean result = engine.isPeriodicCommit("CREATE ()");
 
         // THEN
         assertFalse( "Did detect non-periodic commit query as periodic commit query", result );

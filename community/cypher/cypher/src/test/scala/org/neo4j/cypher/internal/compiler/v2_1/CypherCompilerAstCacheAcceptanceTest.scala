@@ -47,7 +47,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.prepare("return 42", planContext) }
+    graph.inTx { compiler.planQuery("return 42", planContext) }
 
     counter.counts should equal(CacheCounts(hits = 0, misses = 1, flushes = 1))
   }
@@ -57,8 +57,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.prepare("return 42", planContext) }
-    graph.inTx { compiler.prepare("return 42", planContext) }
+    graph.inTx { compiler.planQuery("return 42", planContext) }
+    graph.inTx { compiler.planQuery("return 42", planContext) }
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
@@ -68,9 +68,9 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.prepare("return 42", planContext) }
+    graph.inTx { compiler.planQuery("return 42", planContext) }
     graph.createConstraint("Person", "id")
-    graph.inTx { compiler.prepare("return 42", planContext) }
+    graph.inTx { compiler.planQuery("return 42", planContext) }
 
     counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 2))
   }

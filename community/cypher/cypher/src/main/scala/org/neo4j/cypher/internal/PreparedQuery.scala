@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_1.commands.AbstractQuery
-import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.api.Statement
+import org.neo4j.cypher.CypherVersion
 
-
-case class ParsedQuery(statement: Statement,
-                       abstractQuery: AbstractQuery,
-                       semanticTable: SemanticTable,
-                       queryText: String)
-
+abstract class PreparedQuery(val queryText: String, val version: CypherVersion) {
+  def isPeriodicCommit: Boolean
+  def plan(context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any])
+}
