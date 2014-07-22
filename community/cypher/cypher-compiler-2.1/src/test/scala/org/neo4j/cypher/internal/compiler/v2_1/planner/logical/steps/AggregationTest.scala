@@ -54,8 +54,9 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("RETURN x.prop, count(*) => WITH x.prop as `x.prop` RETURN `x.prop`, count(*)") {
     // Given RETURN x.prop, count(*) => WITH x.prop as `x.prop` RETURN `x.prop`, count(*)
     val groupingMap = Map("x.prop" -> Property(Identifier("x")(pos), PropertyKeyName("prop")(pos))(pos))
+    val groupingKeyMap = Map("x.prop" -> Identifier("x.prop")(pos))
     val projection = AggregatingQueryProjection(
-      groupingKeys = groupingMap,
+      groupingKeys = groupingKeyMap,
       aggregationExpressions = aggregatingMap
     )
 
@@ -75,12 +76,11 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // When
     val result = aggregation(projectionPlan, projection)(context)
 
-
     // Then
     result should equal(
       planAggregation(
         left = projectionPlan,
-        grouping = groupingMap,
+        grouping = groupingKeyMap,
         aggregation = aggregatingMap)
     )
   }

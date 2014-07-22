@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.bottomUp
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 
 class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
   val rewriterUnderTest = isolateAggregation
@@ -66,6 +64,31 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
       "MATCH n RETURN n, count(n) + 3",
       "MATCH n WITH n, count(n) as `  AGGREGATION18`, 3 as `  AGGREGATION29` RETURN n, `  AGGREGATION18` + `  AGGREGATION29` as `count(n) + 3`")
   }
+
+  test("UNWIND [1,2,3] AS a RETURN reduce(y=0, x IN collect(a) | x) AS z") {
+    assertRewrite(
+      "UNWIND [1,2,3] AS a RETURN reduce(y=0, x IN collect(a) | x) AS z",
+      "UNWIND [1,2,3] as a WITH 0 as `  AGGREGATION36`, collect(a) as `  AGGREGATION44` RETURN reduce(y=`  AGGREGATION36`, x IN `  AGGREGATION44` | x) as z")
+  }
+
+  test("UNWIND [1,2,3] AS a RETURN filter(x IN collect(a) WHERE x <> 0) AS z") {
+    assertRewrite(
+      "UNWIND [1,2,3] AS a RETURN filter(x IN collect(a) WHERE x <> 0) AS z",
+      "UNWIND [1,2,3] as a WITH collect(a) as `  AGGREGATION39` RETURN filter(x IN `  AGGREGATION39` WHERE x <> 0) as z")
+  }
+
+  test("UNWIND [1,2,3] AS a RETURN extract(x IN collect(a) | x) AS z") {
+    assertRewrite(
+      "UNWIND [1,2,3] AS a RETURN extract(x IN collect(a) | x) AS z",
+      "UNWIND [1,2,3] as a WITH collect(a) as `  AGGREGATION40` RETURN extract(x IN `  AGGREGATION40` | x) as z")
+  }
+
+  test("UNWIND [1,2,3] AS a RETURN [x IN collect(a) | x] AS z") {
+    assertRewrite(
+      "UNWIND [1,2,3] AS a RETURN [x IN collect(a) | x] AS z",
+      "UNWIND [1,2,3] as a WITH collect(a) as `  AGGREGATION33` RETURN [x IN `  AGGREGATION33` | x] as z")
+  }
+
 
   test("MATCH n WITH 60/60/count(*) as x RETURN x") {
     assertRewrite(
