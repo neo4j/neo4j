@@ -60,13 +60,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   def profile(query: String, params: JavaMap[String, Any]): ExecutionResult = profile(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, params: Map[String, Any]): ExecutionResult =
-    profilePreparedQuery(prepareQuery(query), params)
-
-  @throws(classOf[SyntaxException])
-  protected def profilePreparedQuery(preparedQuery: PreparedQuery, params: Map[String, Any]): ExecutionResult = {
-    logger.debug(preparedQuery.queryText)
-    val (plan, extractedParams, txInfo) = planPreparedQuery(preparedQuery)
+  def profile(query: String, params: Map[String, Any]): ExecutionResult = {
+    val (plan, extractedParams, txInfo) = planQuery(query)
     plan.profile(graphAPI, txInfo, params ++ extractedParams)
   }
 
@@ -77,13 +72,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: Map[String, Any]): ExecutionResult =
-    executePreparedQuery(prepareQuery(query), params)
-
-  @throws(classOf[SyntaxException])
-  protected def executePreparedQuery(preparedQuery: PreparedQuery, params: Map[String, Any]): ExecutionResult = {
-    logger.debug(preparedQuery.queryText)
-    val (plan, extractedParams, txInfo) = planPreparedQuery(preparedQuery)
+  def execute(query: String, params: Map[String, Any]): ExecutionResult = {
+    val (plan, extractedParams, txInfo) = planQuery(query)
     plan.execute(graphAPI, txInfo, params ++ extractedParams)
   }
 
@@ -93,7 +83,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   )
 
   @throws(classOf[SyntaxException])
-  protected def planPreparedQuery(preparedQuery: PreparedQuery): (ExecutionPlan, Map[String, Any], TransactionInfo) = {
+  protected def planQuery(queryText: String): (ExecutionPlan, Map[String, Any], TransactionInfo) = {
+    logger.debug(queryText)
     var n = 0
     while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
       // create transaction and query context
@@ -107,9 +98,11 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
           cacheMonitor.cacheFlushDetected(statement)
           new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
         })
-        cacheAccessor.getOrElseUpdate(cache)(preparedQuery.queryText, {
+        cacheAccessor.getOrElseUpdate(cache)(queryText, {
           touched = true
-          preparedQuery.plan(graph, statement)
+          val preparedQuery = prepareQuery(queryText)
+          val queryPlan = preparedQuery.plan(graph, statement)
+          queryPlan
         })
       }
       catch {
