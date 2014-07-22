@@ -28,13 +28,15 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Expression}
 object aggregation {
   def apply(plan: QueryPlan, aggregation: AggregatingQueryProjection)(implicit context: LogicalPlanningContext): QueryPlan = {
 
-    // Writes down the grouping values
-    val expressionsMap: Map[String, Expression] = aggregation.groupingKeys ++ plan.plan.availableSymbols.map {
+    val aggregationProjections: Map[String, Expression] = aggregation.groupingKeys
+    val availableSymbolProjections: Map[String, Identifier] = plan.plan.availableSymbols.map {
       case IdName(x) => x -> Identifier(x)(null)
-    }
+    }.toMap
+    // Writes down the grouping values
+    val expressionsMap: Map[String, Expression] = availableSymbolProjections ++ aggregationProjections
 
     // TODO: we need to project here since the pipe does not do that, when moving to the new runtime the aggregation pipe MUST do the projection itself
     val projectedPlan = projection(plan, expressionsMap)
-    planAggregation(projectedPlan, aggregation.groupingKeys, aggregation.aggregationExpressions)
+    planAggregation(projectedPlan, aggregationProjections, aggregation.aggregationExpressions)
   }
 }
