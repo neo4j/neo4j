@@ -73,7 +73,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("unfinished profiler complains") {
     //GIVEN
     createNode("foo" -> "bar")
-    val result: ExecutionResult = engine.profile("START n=node(0) RETURN n")
+    val result: ExecutionResult = eengine.profile("START n=node(0) RETURN n")
 
     //WHEN THEN
     intercept[ProfilerStatisticsNotReadyException](result.executionPlanDescription())

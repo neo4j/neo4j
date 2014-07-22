@@ -26,20 +26,27 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 
 final class FileSizeThreshold implements Threshold
 {
-    private int size;
     private final FileSystemAbstraction fileSystem;
-    private final int maxSize;
+    private final long maxSize;
 
-    FileSizeThreshold( FileSystemAbstraction fileSystem, int maxSize )
+    private long currentSize;
+
+    FileSizeThreshold( FileSystemAbstraction fileSystem, long maxSize )
     {
         this.fileSystem = fileSystem;
         this.maxSize = maxSize;
     }
 
     @Override
+    public void init()
+    {
+        currentSize = 0;
+    }
+
+    @Override
     public boolean reached( File file, long version, LogFileInformation source )
     {
-        size += fileSystem.getFileSize( file );
-        return size >= maxSize;
+        currentSize += fileSystem.getFileSize( file );
+        return currentSize >= maxSize;
     }
 }

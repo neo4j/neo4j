@@ -34,41 +34,18 @@ public class ReadAheadLogChannel implements ReadableLogChannel
 {
     public static final int DEFAULT_READ_AHEAD_SIZE = 1024*4;
 
-    private final byte[] backingArray;
     private final ByteBuffer aheadBuffer;
     private VersionedStoreChannel channel;
     private final LogVersionBridge channelBridge;
     private final int readAheadSize;
 
-    public ReadAheadLogChannel( VersionedStoreChannel startingChannel, LogVersionBridge channelBridge,
-            int readAheadSize )
+    public ReadAheadLogChannel( VersionedStoreChannel startingChannel, LogVersionBridge channelBridge, int readAheadSize )
     {
         this.channel = startingChannel;
         this.channelBridge = channelBridge;
         this.readAheadSize = readAheadSize;
-        this.backingArray = new byte[readAheadSize];
-        this.aheadBuffer = ByteBuffer.wrap( backingArray );
+        this.aheadBuffer = ByteBuffer.allocate( readAheadSize );
         aheadBuffer.position( aheadBuffer.capacity() );
-    }
-
-    @Override
-    public boolean hasMoreData() throws IOException
-    {
-        if ( aheadBuffer.hasRemaining() )
-        {
-            return true;
-        }
-
-        try
-        {
-            ensureDataExists( 1 );
-            return true;
-        }
-        catch ( ReadPastEndException e )
-        {
-            return false;
-        }
-        // let through IOException (which points to real I/O error
     }
 
     @Override
@@ -158,13 +135,8 @@ public class ReadAheadLogChannel implements ReadableLogChannel
                 VersionedStoreChannel nextChannel = channelBridge.next( channel );
                 assert nextChannel != null;
                 if ( nextChannel == channel )
-                {   // no more channels...
-                    if ( aheadBuffer.position() >= requestedNumberOfBytes )
-                    {   // ... although we have read enough to satisfy the requested number of bytes
-                        break;
-                    }
-
-                    // ... so we cannot satisfy the requested number of bytes
+                {
+                    // no more channels so we cannot satisfy the requested number of bytes
                     throw new ReadPastEndException();
                 }
                 channel = nextChannel;

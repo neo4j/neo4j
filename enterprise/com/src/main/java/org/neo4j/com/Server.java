@@ -64,8 +64,9 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
@@ -628,12 +629,12 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             @Override
             public boolean visit( CommittedTransactionRepresentation tx ) throws IOException
             {
-                LogEntry.Start startEntry = tx.getStartEntry();
+                LogEntryStart startEntry = tx.getStartEntry();
                 writer.writeStartEntry( startEntry.getMasterId(), startEntry.getLocalId(),
                         startEntry.getTimeWritten(), startEntry.getLastCommittedTxWhenTransactionStarted(),
                         startEntry.getAdditionalHeader() );
                 writer.serialize( tx.getTransactionRepresentation() );
-                LogEntry.Commit commitEntry = tx.getCommitEntry();
+                LogEntryCommit commitEntry = tx.getCommitEntry();
                 writer.writeCommitEntry( commitEntry.getTxId(), commitEntry.getTimeWritten() );
                 return true;
             }

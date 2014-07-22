@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
-
 public class DeadSimpleLogVersionRepository implements LogVersionRepository
 {
     private long logVersion;
@@ -31,16 +29,10 @@ public class DeadSimpleLogVersionRepository implements LogVersionRepository
     }
 
     @Override
-    public long incrementAndGetVersion() throws IOException
-    {
-        incrementVersion();
-        return logVersion;
-    }
-
-    @Override
-    public void incrementVersion()
+    public long incrementAndGetVersion()
     {
         logVersion++;
+        return logVersion;
     }
 
     @Override

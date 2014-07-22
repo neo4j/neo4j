@@ -29,28 +29,26 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.TreeSet;
-
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
 import static java.util.TimeZone.getTimeZone;
 
 import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
-import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 public class DumpLogicalLog
 {
@@ -88,13 +86,17 @@ public class DumpLogicalLog
             out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
                 prevLastCommittedTx + "]" );
 
-            LogDeserializer deserializer =
-                    new LogDeserializer( instantiateCommandReaderFactory() );
-            PrintingConsumer consumer = new PrintingConsumer( out, timeZone );
+            LogDeserializer deserializer = new LogDeserializer( instantiateCommandReaderFactory() );
 
             ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel, logVersion), LogVersionBridge.NO_MORE_CHANNELS, 4096);
 
-            exhaustAndClose( deserializer.cursor( logChannel, consumer ) );
+            try (IOCursor<LogEntry> cursor = deserializer.logEntries( logChannel ))
+            {
+                while (cursor.next())
+                {
+                    out.println( cursor.get().toString( timeZone ) );
+                }
+            }
         }
         return logsFound;
     }
@@ -246,25 +248,5 @@ public class DumpLogicalLog
                 return Integer.valueOf( string.substring( index + toFind.length() ) );
             }
         };
-    }
-
-    private class PrintingConsumer implements Visitor<LogEntry, IOException>
-    {
-
-        private final PrintStream out;
-        private final TimeZone timeZone;
-
-        private PrintingConsumer( PrintStream out, TimeZone timeZone )
-        {
-            this.out = out;
-            this.timeZone = timeZone;
-        }
-
-        @Override
-        public boolean visit( LogEntry entry ) throws IOException
-        {
-            out.println( entry.toString( timeZone ) );
-            return true;
-        }
     }
 }

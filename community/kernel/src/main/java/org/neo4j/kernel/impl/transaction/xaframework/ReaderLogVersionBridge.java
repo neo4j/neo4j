@@ -24,6 +24,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
 public class ReaderLogVersionBridge implements LogVersionBridge
 {
@@ -57,14 +59,11 @@ public class ReaderLogVersionBridge implements LogVersionBridge
     private PhysicalLogVersionedStoreChannel openLogChannel( LogPosition position ) throws IOException
     {
         long version = position.getLogVersion();
-        File fileToOpen = logFiles.getVersionFileName( version );
-        PhysicalLogVersionedStoreChannel channel = openFileChannel( fileToOpen, "r", version );
+        final File fileToOpen = logFiles.getLogFileForVersion( version );
+        final StoreChannel rawChannel = fileSystem.open( fileToOpen, "r" );
+        final PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel( rawChannel, version );
         channel.position( position.getByteOffset() );
         return channel;
     }
 
-    private PhysicalLogVersionedStoreChannel openFileChannel( File file, String mode, long version ) throws IOException
-    {
-        return new PhysicalLogVersionedStoreChannel( fileSystem.open( file, mode ), version );
-    }
 }

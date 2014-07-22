@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.store;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -160,6 +161,12 @@ public class ChannelReusingFileSystemAbstraction extends LifecycleAdapter implem
     }
 
     @Override
+    public File[] listFiles( File directory, FilenameFilter filter )
+    {
+        return delegate.listFiles( directory, filter );
+    }
+
+    @Override
     public boolean isDirectory( File file )
     {
         return delegate.isDirectory( file );
@@ -188,7 +195,7 @@ public class ChannelReusingFileSystemAbstraction extends LifecycleAdapter implem
             Function<Class<K>, K> creator )
     {
         return delegate.getOrCreateThirdPartyFileSystem( clazz, creator );
-    };
+    }
 
     public static class KeepAliveStoreChannel implements StoreChannel
     {

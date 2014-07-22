@@ -36,7 +36,9 @@ import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 
 public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
@@ -95,6 +97,7 @@ public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
 
         // Then
         Thread.sleep( 50 );
-        assertThat( pagedFile.numberOfCachedPages(), equalTo( pagesKeptInUse ) );
+        assertThat( pagedFile.numberOfCachedPages(),
+                allOf( greaterThanOrEqualTo( pagesKeptInUse ), lessThanOrEqualTo( pagesInCache ) ) );
     }
 }

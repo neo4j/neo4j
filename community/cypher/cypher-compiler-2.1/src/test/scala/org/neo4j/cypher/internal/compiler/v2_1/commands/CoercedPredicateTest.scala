@@ -19,18 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions.{Literal, Collection}
-import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.{QueryStateHelper, QueryState}
-import org.junit.Test
-import org.junit.Assert._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Collection, Literal}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{QueryState, QueryStateHelper}
 
-class CoercedPredicateTest {
+class CoercedPredicateTest extends CypherFunSuite {
 
   val ctx: ExecutionContext = null
   implicit val state: QueryState = QueryStateHelper.empty
 
-  @Test def should_coerce_non_empty_collection_to_true() {
+  test("should_coerce_non_empty_collection_to_true") {
     // Given
     val collection = Collection(Literal(1))
 
@@ -38,10 +37,10 @@ class CoercedPredicateTest {
     val result = CoercedPredicate(collection).isTrue(ctx)
 
     // Then
-    assertTrue(s"$collection should return true", result)
+    result should equal(true)
   }
 
-  @Test def should_coerce_empty_collection_to_false() {
+  test("should_coerce_empty_collection_to_false") {
     // Given
     val collection = Collection()
 
@@ -49,10 +48,10 @@ class CoercedPredicateTest {
     val result = CoercedPredicate(collection).isTrue(ctx)
 
     // Then
-    assertFalse(s"$collection should return false", result)
+    result should equal(false)
   }
 
-  @Test def should_pass_through_false() {
+  test("should_pass_through_false") {
     // Given
     val inner = Not(True())
 
@@ -60,10 +59,10 @@ class CoercedPredicateTest {
     val result = CoercedPredicate(inner).isTrue(ctx)
 
     // Then
-    assertFalse(s"$inner should return false", result)
+    result should equal(false)
   }
 
-  @Test def should_pass_through_true() {
+  test("should_pass_through_true") {
     // Given
     val inner = True()
 
@@ -71,10 +70,10 @@ class CoercedPredicateTest {
     val result = CoercedPredicate(inner).isTrue(ctx)
 
     // Then
-    assertTrue(s"$inner should return true", result)
+    result should equal(true)
   }
 
-  @Test def should_treat_null_as_false() {
+  test("should_treat_null_as_false") {
     // Given
     val inner = Literal(null)
 
@@ -82,6 +81,6 @@ class CoercedPredicateTest {
     val result = CoercedPredicate(inner).isTrue(ctx)
 
     // Then
-    assertFalse(s"$inner should return false", result)
+    result should equal(false)
   }
 }

@@ -19,14 +19,19 @@
  */
 package org.neo4j.server.rest.security;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.net.URI;
+
 import javax.ws.rs.core.MediaType;
 
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
@@ -36,11 +41,6 @@ import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class SecurityRulesDocIT extends ExclusiveServerTestBase
 {
@@ -86,7 +86,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     {
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyFailingSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         gen.get().addSnippet(
@@ -112,7 +112,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyFailingSecurityRule.class.getCanonicalName(),
                 PermanentlyPassingSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
@@ -132,7 +132,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 NoAccessToDatabaseSecurityRule.class.getCanonicalName(),
                 NoAccessToWebAdminSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
@@ -153,7 +153,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     {
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyPassingSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
@@ -196,7 +196,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
                         mountPoint )
                 .withSecurityRules(
                         PermanentlyFailingSecurityRuleWithWildcardPath.class.getCanonicalName() )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
@@ -248,7 +248,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
                         mountPoint )
                 .withSecurityRules(
                         PermanentlyFailingSecurityRuleWithComplexWildcardPath.class.getCanonicalName() )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         gen.get().addSnippet(

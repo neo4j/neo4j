@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{CountStar, SignedDecimalIntegerLiteral, DescSortItem, AscSortItem}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{AggregatingQueryProjection, QueryShuffle, RegularQueryProjection, QueryProjection}
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.{scalaDocBuilder, toStringDocBuilder, DocBuilderTestSuite}
 import org.neo4j.cypher.internal.compiler.v2_1.perty.DocBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
 class QueryProjectionDocBuilderTest extends DocBuilderTestSuite[Any] {
 
@@ -64,5 +65,9 @@ class QueryProjectionDocBuilderTest extends DocBuilderTestSuite[Any] {
   test("renders order by") {
     format(RegularQueryProjection(shuffle = QueryShuffle(sortItems = Seq(AscSortItem(ident("a"))_)))) should equal("WITH * ORDER BY a")
     format(RegularQueryProjection(shuffle = QueryShuffle(sortItems = Seq(DescSortItem(ident("a"))_)))) should equal("WITH * ORDER BY a DESC")
+  }
+
+  test("renders unwind") {
+    format(UnwindProjection(identifier = IdName("name"), ident("n"))) should equal("UNWIND n AS `name`")
   }
 }

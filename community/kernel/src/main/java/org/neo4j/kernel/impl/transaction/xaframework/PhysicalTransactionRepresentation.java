@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.Visitor;
@@ -88,5 +89,59 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     public long getLatestCommittedTxWhenStarted()
     {
         return latestCommittedTxWhenStarted;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        PhysicalTransactionRepresentation that = (PhysicalTransactionRepresentation) o;
+
+        if ( authorId != that.authorId )
+        {
+            return false;
+        }
+        if ( latestCommittedTxWhenStarted != that.latestCommittedTxWhenStarted )
+        {
+            return false;
+        }
+        if ( masterId != that.masterId )
+        {
+            return false;
+        }
+        if ( timeWritten != that.timeWritten )
+        {
+            return false;
+        }
+        if ( !Arrays.equals( additionalHeader, that.additionalHeader ) )
+        {
+            return false;
+        }
+        if ( !commands.equals( that.commands ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = commands.hashCode();
+        result = 31 * result + (additionalHeader != null ? Arrays.hashCode( additionalHeader ) : 0);
+        result = 31 * result + masterId;
+        result = 31 * result + authorId;
+        result = 31 * result + (int) (timeWritten ^ (timeWritten >>> 32));
+        result = 31 * result + (int) (latestCommittedTxWhenStarted ^ (latestCommittedTxWhenStarted >>> 32));
+        return result;
     }
 }

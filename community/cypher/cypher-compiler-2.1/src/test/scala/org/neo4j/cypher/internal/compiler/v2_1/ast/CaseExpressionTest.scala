@@ -19,16 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
-import org.scalatest.Assertions
-import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class CaseExpressionTest extends Assertions {
+class CaseExpressionTest extends CypherFunSuite {
 
-  @Test
-  def shouldHaveMergedTypesOfAllAlternativesInSimpleCase() {
+  test("shouldHaveMergedTypesOfAllAlternativesInSimpleCase") {
     val caseExpression = CaseExpression(
       expression = Some(DummyExpression(CTString)),
       alternatives = Seq(
@@ -44,12 +41,11 @@ class CaseExpressionTest extends Assertions {
     )(DummyPosition(2))
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assert(result.errors === Seq())
-    assert(caseExpression.types(result.state) === CTNumber.invariant)
+    result.errors shouldBe empty
+    caseExpression.types(result.state) should equal(CTNumber.invariant)
   }
 
-  @Test
-  def shouldHaveMergedTypesOfAllAlternativesInGenericCase() {
+  test("shouldHaveMergedTypesOfAllAlternativesInGenericCase") {
     val caseExpression = CaseExpression(
       None,
       Seq(
@@ -65,12 +61,11 @@ class CaseExpressionTest extends Assertions {
     )(DummyPosition(2))
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assert(result.errors === Seq())
-    assert(caseExpression.types(result.state) === (CTNumber | CTAny))
+    result.errors shouldBe empty
+    caseExpression.types(result.state) should equal(CTNumber | CTAny)
   }
 
-  @Test
-  def shouldTypeCheckPredicatesInGenericCase() {
+  test("shouldTypeCheckPredicatesInGenericCase") {
     val caseExpression = CaseExpression(
       None,
       Seq(
@@ -86,9 +81,9 @@ class CaseExpressionTest extends Assertions {
     )(DummyPosition(2))
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assert(result.errors.size === 1)
-    assert(result.errors.head.msg === "Type mismatch: expected Boolean but was String")
-    assert(result.errors.head.position === DummyPosition(12))
+    result.errors should have size 1
+    result.errors.head.msg should equal("Type mismatch: expected Boolean but was String")
+    result.errors.head.position should equal(DummyPosition(12))
   }
 
 }

@@ -23,6 +23,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
@@ -64,18 +65,22 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         return getKernelTransactionBoundToThisThread( true ).acquireStatement();
     }
 
-    private void assertInTransaction( TopLevelTransaction transaction )
+    private void assertInUnterminatedTransaction( TopLevelTransaction transaction )
     {
         if ( transaction == null )
         {
             throw new NotInTransactionException();
         }
+        if ( transaction.getTransaction().shouldBeTerminated() )
+        {
+            throw new TransactionTerminatedException();
+        }
     }
 
-    public void assertInTransaction()
+    public void assertInUnterminatedTransaction()
     {
         checkIfShutdown();
-        assertInTransaction( threadToTransactionMap.get() );
+        assertInUnterminatedTransaction( threadToTransactionMap.get() );
     }
 
     @Override
@@ -97,7 +102,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         TopLevelTransaction transaction = threadToTransactionMap.get();
         if ( strict )
         {
-            assertInTransaction( transaction );
+            assertInUnterminatedTransaction( transaction );
         }
         return transaction;
     }

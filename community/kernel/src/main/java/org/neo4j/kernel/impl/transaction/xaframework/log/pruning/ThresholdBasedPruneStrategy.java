@@ -23,10 +23,9 @@ import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
 public class ThresholdBasedPruneStrategy implements LogPruneStrategy
 {
@@ -55,11 +54,12 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
             return;
         }
 
+        threshold.init();
         long upper = currentLogVersion-1;
         boolean exceeded = false;
         while ( upper >= 0 )
         {
-            File file = files.getVersionFileName( upper );
+            File file = files.getLogFileForVersion( upper );
             if ( !fileSystem.fileExists( file ) )
             {
                 // There aren't logs to prune anything. Just return
@@ -82,7 +82,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
 
         // Find out which log is the earliest existing (lower bound to prune)
         long lower = upper;
-        while ( fileSystem.fileExists( files.getVersionFileName( lower-1 ) ) )
+        while ( fileSystem.fileExists( files.getLogFileForVersion( lower - 1 ) ) )
         {
             lower--;
         }
@@ -91,7 +91,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
         // we can be sure that no holes are created
         for ( long version = lower; version <= upper; version++ )
         {
-            fileSystem.deleteFile( files.getVersionFileName( version ) );
+            fileSystem.deleteFile( files.getLogFileForVersion( version ) );
         }
     }
 }

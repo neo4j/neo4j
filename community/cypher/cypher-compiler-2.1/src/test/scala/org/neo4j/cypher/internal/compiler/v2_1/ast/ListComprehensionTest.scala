@@ -19,49 +19,44 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import Expression.SemanticContext
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Assert._
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class ListComprehensionTest extends Assertions {
+class ListComprehensionTest extends CypherFunSuite {
 
   val dummyExpression = DummyExpression(
     CTCollection(CTNode) | CTBoolean | CTCollection(CTString))
 
-  @Test
-  def withoutExtractExpressionShouldHaveCollectionTypesOfInnerExpression() {
+  test("withoutExtractExpressionShouldHaveCollectionTypesOfInnerExpression") {
     val filter = ListComprehension(Identifier("x")(DummyPosition(5)), dummyExpression, None, None)(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(), result.errors)
-    assertEquals(CTCollection(CTNode) | CTCollection(CTString), filter.types(result.state))
+    result.errors shouldBe empty
+    filter.types(result.state) should equal(CTCollection(CTNode) | CTCollection(CTString))
   }
 
-  @Test
-  def shouldHaveCollectionWithInnerTypesOfExtractExpression() {
+  test("shouldHaveCollectionWithInnerTypesOfExtractExpression") {
     val extractExpression = DummyExpression(CTNode | CTNumber, DummyPosition(2))
 
     val filter = ListComprehension(Identifier("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(), result.errors)
-    assertEquals(CTCollection(CTNode) | CTCollection(CTNumber), filter.types(result.state))
+    result.errors shouldBe empty
+    filter.types(result.state) should equal(CTCollection(CTNode) | CTCollection(CTNumber))
   }
 
-  @Test
-  def shouldSemanticCheckPredicateInStateContainingTypedIdentifier() {
+  test("shouldSemanticCheckPredicateInStateContainingTypedIdentifier") {
     val error = SemanticError("dummy error", DummyPosition(8))
     val predicate = new DummyExpression(CTAny, DummyPosition(7)) {
       override def semanticCheck(ctx: SemanticContext) = s => {
-        assertEquals(CTNode | CTString, s.symbolTypes("x"))
+        s.symbolTypes("x") should equal(CTNode | CTString)
         SemanticCheckResult.error(s, error)
       }
     }
 
     val filter = ListComprehension(Identifier("x")(DummyPosition(2)), dummyExpression, Some(predicate), None)(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(error), result.errors)
-    assertEquals(None, result.state.symbol("x"))
+    result.errors should equal(Seq(error))
+    result.state.symbol("x") should equal(None)
   }
 }

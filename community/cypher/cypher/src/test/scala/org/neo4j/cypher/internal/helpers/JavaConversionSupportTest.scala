@@ -19,14 +19,12 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import org.scalatest.Assertions
-import org.junit.Test
 import org.neo4j.collection.primitive.PrimitiveLongCollections
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class JavaConversionSupportTest extends Assertions {
+class JavaConversionSupportTest extends CypherFunSuite {
 
-  @Test
-  def shouldConvertPrimitiveLongIterators() {
+  test("shouldConvertPrimitiveLongIterators") {
     // given
     val iterator = PrimitiveLongCollections.iterator( 12l, 14l )
 
@@ -34,12 +32,11 @@ class JavaConversionSupportTest extends Assertions {
     val result = JavaConversionSupport.asScala(iterator)
 
     // then
-    assert( List( 12l, 14l ) === result.toList )
+    List(12l, 14l) should equal(result.toList)
   }
 
 
-  @Test
-  def shouldConvertAndMapPrimitiveLongIterators() {
+  test("shouldConvertAndMapPrimitiveLongIterators") {
     // given
     val iterator = PrimitiveLongCollections.iterator( 12l, 14l )
 
@@ -47,6 +44,6 @@ class JavaConversionSupportTest extends Assertions {
     val result = JavaConversionSupport.mapToScala(iterator){ _ + 1l }
 
     // then
-    assert( List( 13l, 15l ) === result.toList )
+    List(13l, 15l) should equal(result.toList)
   }
 }

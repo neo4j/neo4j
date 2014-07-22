@@ -19,30 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions.Identifier
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class AllIdentifiersTest extends Assertions {
+class AllIdentifiersTest extends CypherFunSuite {
   val x = AllIdentifiers()
 
-  @Test def nodes() {
+  test("nodes") {
     val symbols = getSymbols("n" -> CTNode)
 
-    assert(x.expressions(symbols) === Map("n" -> Identifier("n")))
+     x.expressions(symbols) should equal(Map("n" -> Identifier("n")))
   }
 
-  @Test def relationships() {
+  test("relationships") {
     val symbols = getSymbols("r" -> CTRelationship)
 
-    assert(x.expressions(symbols) === Map("r" -> Identifier("r")))
+     x.expressions(symbols) should equal(Map("r" -> Identifier("r")))
   }
 
-  @Test def paths() {
+  test("paths") {
     val symbols = getSymbols("p" -> CTPath)
 
-    assert(x.expressions(symbols) === Map("p" -> Identifier("p")))
+     x.expressions(symbols) should equal(Map("p" -> Identifier("p")))
   }
 
   private def getSymbols(k: (String, CypherType)*): SymbolTable =

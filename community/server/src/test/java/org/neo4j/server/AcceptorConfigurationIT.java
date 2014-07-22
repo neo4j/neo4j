@@ -19,14 +19,14 @@
  */
 package org.neo4j.server;
 
-import org.junit.After;
-import org.junit.Test;
-import org.neo4j.test.server.ExclusiveServerTestBase;
-
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 import static org.neo4j.test.server.HTTP.GET;
+
+import org.junit.After;
+import org.junit.Test;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class AcceptorConfigurationIT extends ExclusiveServerTestBase
 {
@@ -43,7 +43,7 @@ public class AcceptorConfigurationIT extends ExclusiveServerTestBase
     public void serverShouldNotHangWithThreadPoolSizeSmallerThanCpuCount() throws Exception
     {
         server = server().withMaxJettyThreads( 3 )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 

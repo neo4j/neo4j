@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.server.web;
 
 public class JettyThreadCalculator
@@ -25,38 +24,38 @@ public class JettyThreadCalculator
     private int acceptors;
     private int selectors;
     private int minThreads;
-
-
     private int maxThreads;
     private int maxCapacity;
 
-    public JettyThreadCalculator(int jettyMaxThreads)
+    public JettyThreadCalculator( int jettyMaxThreads )
     {
         int transactionThreads = jettyMaxThreads / 5;
-        acceptors = Math.max(1, transactionThreads / 3);
-        selectors = Math.max(1, transactionThreads - acceptors);
-        if (jettyMaxThreads < 4)
+        acceptors = Math.max( 1, transactionThreads / 3 );
+        selectors = Math.max( 1, transactionThreads - acceptors );
+        if ( jettyMaxThreads < 4 )
         {
             acceptors = 1;
             selectors = 1;
-        } else if (jettyMaxThreads == 4)
+        }
+        else if ( jettyMaxThreads == 4 )
         {
             acceptors = 1;
             selectors = 2;
-        } else if (jettyMaxThreads <= 8)
+        }
+        else if ( jettyMaxThreads <= 8 )
         {
             acceptors = 2;
             selectors = 3;
-        } else if (jettyMaxThreads <= 16)
+        }
+        else if ( jettyMaxThreads <= 16 )
         {
             transactionThreads = jettyMaxThreads / 4;
-            acceptors = Math.max(2, transactionThreads / 3);
-            selectors = Math.max(3, transactionThreads - acceptors);
+            acceptors = Math.max( 2, transactionThreads / 3 );
+            selectors = Math.max( 3, transactionThreads - acceptors );
         }
-
-        minThreads = Math.max(2, transactionThreads);
-        maxThreads = Math.max((jettyMaxThreads - selectors - acceptors), 8);
-        maxCapacity = maxThreads * 1000 * 60; // threads * 1000 req/s * 60 s
+        minThreads = Math.max( 2, transactionThreads ) + (acceptors + selectors) * 2;
+        maxThreads = Math.max( (jettyMaxThreads - selectors - acceptors), 8 ) + (acceptors + selectors) * 2;
+        maxCapacity = (maxThreads - (selectors + acceptors) * 2) * 1000 * 60; // threads * 1000 req/s * 60 s
     }
 
     public int getAcceptors()
@@ -83,5 +82,4 @@ public class JettyThreadCalculator
     {
         return maxCapacity;
     }
-
 }

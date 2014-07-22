@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.RelatedTo
-import symbols._
-import org.junit.Test
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.RelatedTo
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.graphdb.Direction
-import org.scalatest.Assertions
 
-class PatternGraphBuilderTest extends PatternGraphBuilder with Assertions {
-  @Test
-  def should_only_include_connected_patterns() {
+class PatternGraphBuilderTest extends CypherFunSuite with PatternGraphBuilder {
+
+  test("should_only_include_connected_patterns") {
     // given MATCH a-[r1]->b, c-[r2]->d
     val symbols = new SymbolTable(Map("a" -> CTNode, "b" -> CTNode, "c" -> CTNode, "d" -> CTNode))
     val r1 = RelatedTo("a", "b", "r1", "FOO", Direction.OUTGOING)
@@ -38,11 +36,10 @@ class PatternGraphBuilderTest extends PatternGraphBuilder with Assertions {
     val graph = buildPatternGraph(symbols, Seq(r1, r2))
 
     // then
-    assert(graph.patternNodes.keys.toSet === Set("a", "b"))
+    graph.patternNodes.keys.toSet should equal(Set("a", "b"))
   }
 
-  @Test
-  def should_include_connected_patterns() {
+  test("should_include_connected_patterns") {
     // given MATCH a-[r1]->b-[r2]->c-[r2]->d
     val symbols = new SymbolTable(Map("a" -> CTNode))
     val r1 = RelatedTo("a", "b", "r1", "FOO", Direction.OUTGOING)
@@ -53,6 +50,6 @@ class PatternGraphBuilderTest extends PatternGraphBuilder with Assertions {
     val graph = buildPatternGraph(symbols, Seq(r1, r2, r3))
 
     // then
-    assert(graph.patternNodes.keys.toSet === Set("a", "b", "c", "d"))
+    graph.patternNodes.keys.toSet should equal(Set("a", "b", "c", "d"))
   }
 }

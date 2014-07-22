@@ -20,30 +20,34 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+
 /**
  * This class represents the concept of a TransactionRepresentation that has been
  * committed to the TransactionStore. It contains, in addition to the TransactionRepresentation
  * itself, a Start and Commit entry. This is the thing that {@link LogicalTransactionStore} returns when
  * asked for a transaction via a cursor.
  */
-// TODO 2.2-future make this visitable in the same way TransactionRepresentation is, if necessary
-// TODO The way it is setup now, it means that the TransactionRepresentation has to be wholly in memory before
-// TODO acting on it, which precludes the ability to stream the thing. This may not be good short term.
+
+// TODO 2.2-future This class should not be used for transferring transactions around. HA communication should
+// TODO 2.2-future happen via channel.transferTo() calls. This class should be used only for local iteration
+// TODO 2.2-future over the log, which theoretically should be only recovery and LogPosition discovery
 public class CommittedTransactionRepresentation
 {
-    private final LogEntry.Start startEntry;
+    private final LogEntryStart startEntry;
     private final TransactionRepresentation transactionRepresentation;
-    private final LogEntry.Commit commitEntry;
+    private final LogEntryCommit commitEntry;
 
-    public CommittedTransactionRepresentation( LogEntry.Start startEntry, TransactionRepresentation
-            transactionRepresentation, LogEntry.Commit commitEntry )
+    public CommittedTransactionRepresentation( LogEntryStart startEntry, TransactionRepresentation
+            transactionRepresentation, LogEntryCommit commitEntry )
     {
         this.startEntry = startEntry;
         this.transactionRepresentation = transactionRepresentation;
         this.commitEntry = commitEntry;
     }
 
-    public LogEntry.Start getStartEntry()
+    public LogEntryStart getStartEntry()
     {
         return startEntry;
     }
@@ -53,7 +57,7 @@ public class CommittedTransactionRepresentation
         return transactionRepresentation;
     }
 
-    public LogEntry.Commit getCommitEntry()
+    public LogEntryCommit getCommitEntry()
     {
         return commitEntry;
     }
@@ -63,5 +67,44 @@ public class CommittedTransactionRepresentation
     {
         return getClass().getSimpleName() +
                 "[" + startEntry + ", " + transactionRepresentation + ", " + commitEntry + "]";
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        CommittedTransactionRepresentation that = (CommittedTransactionRepresentation) o;
+
+        if ( !commitEntry.equals( that.commitEntry ) )
+        {
+            return false;
+        }
+        if ( !startEntry.equals( that.startEntry ) )
+        {
+            return false;
+        }
+        if ( !transactionRepresentation.equals( that.transactionRepresentation ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = startEntry.hashCode();
+        result = 31 * result + transactionRepresentation.hashCode();
+        result = 31 * result + commitEntry.hashCode();
+        return result;
     }
 }

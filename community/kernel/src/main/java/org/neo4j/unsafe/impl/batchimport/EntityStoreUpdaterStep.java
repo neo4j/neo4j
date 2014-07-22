@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
-import org.neo4j.unsafe.impl.batchimport.store.IoMonitor;
+import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 /**
  * Writes {@link RecordBatch entity batches} to the underlying stores.
@@ -54,9 +54,11 @@ public class EntityStoreUpdaterStep<T extends PrimitiveRecord> extends ExecutorS
     @Override
     protected Object process( long ticket, RecordBatch<T> batch )
     {
-        for ( T node : batch.getEntityRecords() )
+        for ( T entityRecord : batch.getEntityRecords() )
         {
-            entityStore.updateRecord( node );
+            // +1 since "high id" is the next id to return, i.e. "high id" is "highest id in use"+1
+            entityStore.setHighId( entityRecord.getId()+1 );
+            entityStore.updateRecord( entityRecord );
         }
         for ( PropertyRecord propertyRecord : batch.getPropertyRecords() )
         {

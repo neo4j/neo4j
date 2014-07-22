@@ -500,12 +500,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         }
     }
 
-    @Override
-    public void incrementVersion()
-    {
-        incrementAndGetVersion();
-    }
-
     public long getStoreVersion()
     {
         checkInitialized( storeVersionField );

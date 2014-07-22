@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.util.TestLogger;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.all_stores_total_mapped_memory_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_total_size;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
 
@@ -106,9 +106,9 @@ public class TestGraphDatabaseConfigurationMigrator
                 "neostore.relationshipstore.db.mapped_memory", "0" );
 
         // When & Then
-        assertThat( migrator.apply( oldConfig, log ).get(all_stores_total_mapped_memory_size.name() ),
+        assertThat( migrator.apply( oldConfig, log ).get( mapped_memory_total_size.name() ),
             equalTo( "1074790416" ) );
 
-        log.assertAtLeastOnce( warn( "The neostore.*.db.mapped_memory settings have been replaced by the single 'all_stores_total_mapped_memory_size'. The sum of the old configuration will be used as the value for the new setting." ) );
+        log.assertAtLeastOnce( warn( "The neostore.*.db.mapped_memory settings have been replaced by the single 'mapped_memory_total_size'. The sum of the old configuration will be used as the value for the new setting." ) );
     }
 }

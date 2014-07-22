@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{Query, ReturnItem, Unwind, AllIdentifiers}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Literal, Collection}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Collection, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{AllIdentifiers, Query, ReturnItem, Unwind}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.{BuilderTest, Solved, UnwindBuilder}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.UnwindPipe
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.{UnwindBuilder, Solved, BuilderTest}
 
 class UnwindBuilderTest extends BuilderTest {
   val builder = new UnwindBuilder
 
-  @Test def should_accept_queries_containing_unsolved_load_csv_items() {
+  test("should_accept_queries_containing_unsolved_load_csv_items") {
     val unwind = Unwind(Collection(Literal(1),Literal(2)),"y")
     val q = Query.
       start(unwind).
@@ -36,11 +35,11 @@ class UnwindBuilderTest extends BuilderTest {
 
     val result = assertAccepts(q)
 
-    assert(result.query.start === Seq(Solved(unwind)))
-    assert(result.pipe.isInstanceOf[UnwindPipe])
+    result.query.start should equal(Seq(Solved(unwind)))
+    result.pipe shouldBe a [UnwindPipe]
   }
 
-  @Test def should_reject_queries_containing_no_unsolved_load_csv_items() {
+  test("should_reject_queries_containing_no_unsolved_load_csv_items") {
     val q = Query.start().returns(AllIdentifiers())
     assertRejects(q)
   }

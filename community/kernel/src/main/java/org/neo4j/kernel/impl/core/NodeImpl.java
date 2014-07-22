@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.lang.System.arraycopy;
+import static java.util.Arrays.binarySearch;
+import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
+import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
+import static org.neo4j.kernel.impl.util.RelIdArray.empty;
+import static org.neo4j.kernel.impl.util.RelIdArray.wrap;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -47,15 +55,6 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
-
-import static java.lang.System.arraycopy;
-import static java.util.Arrays.binarySearch;
-
-import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
-import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
-import static org.neo4j.kernel.impl.util.RelIdArray.empty;
-import static org.neo4j.kernel.impl.util.RelIdArray.wrap;
 
 /**
  * This class currently has multiple responsibilities, and a very complex set of interrelationships with the world
@@ -248,7 +247,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     private void ensureRelationshipMapNotNull( RelationshipLoader relationshipLoader,
             DirectionWrapper direction, int[] types, CacheUpdateListener cacheUpdateListener )
     {
-        if ( relationships == null )
+        if ( relationships == null || (relationships.length == 0 && relChainPosition.hasMore( direction, types ) ) )
         {
             loadInitialRelationships( relationshipLoader, direction, types, cacheUpdateListener );
         }
@@ -267,7 +266,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition> rels = null;
         synchronized ( this )
         {
-            if ( relationships == null )
+            if ( relationships == null || (relationships.length == 0 && relChainPosition.hasMore( direction, types ) ) )
             {
                 try
                 {

@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.nio.ByteBuffer.wrap;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.UTF8.encode;
-import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils.FileOperation;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -45,6 +41,14 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.nio.ByteBuffer.wrap;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.UTF8.encode;
+import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
+import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -59,7 +63,6 @@ public abstract class CommonAbstractStore implements IdSequence
 
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
         public static final Setting<Boolean> backup_slave = GraphDatabaseSettings.backup_slave;
-        public static final Setting<Boolean> use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
     }
 
     public static final String ALL_STORES_VERSION = "v0.A.3";
@@ -259,7 +262,7 @@ public abstract class CommonAbstractStore implements IdSequence
         return (int) (id * getEffectiveRecordSize() % storeFile.pageSize());
     }
 
-    protected long recordsPerPage()
+    protected int recordsPerPage()
     {
         return storeFile.pageSize() / getEffectiveRecordSize();
     }
@@ -346,6 +349,12 @@ public abstract class CommonAbstractStore implements IdSequence
         }
     }
 
+    protected abstract boolean isInUse( byte inUseByte );
+
+    protected abstract boolean useFastIdGeneratorRebuilding();
+
+    protected abstract boolean firstRecordIsHeader();
+
     /**
      * Should rebuild the id generator from scratch.
      * <p>
@@ -354,7 +363,138 @@ public abstract class CommonAbstractStore implements IdSequence
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
-    protected abstract void rebuildIdGenerator();
+    protected void rebuildIdGenerator()
+    {
+        int blockSize = getEffectiveRecordSize();
+        if ( blockSize <= 0 )
+        {
+            throw new InvalidRecordException( "Illegal blockSize: " + blockSize );
+        }
+        stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
+        closeIdGenerator();
+        File idFile = new File( getStorageFileName().getPath() + ".id" );
+        if ( fileSystemAbstraction.fileExists( idFile ) )
+        {
+            boolean success = fileSystemAbstraction.deleteFile( idFile );
+            assert success : "Couldn't delete " + idFile.getPath() + ", still open?";
+        }
+        createIdGenerator( idFile );
+        openIdGenerator();
+        if ( firstRecordIsHeader() )
+        {
+            setHighId( 1 ); // reserved first block containing blockSize
+        }
+
+        int filePageSize = storeFile.pageSize();
+        int recordsPerPage = recordsPerPage();
+        long defraggedCount;
+
+        try
+        {
+            PagedFile pagedFile = pageCache.map( storageFileName, filePageSize );
+            try
+            {
+                if ( useFastIdGeneratorRebuilding() )
+                {
+                    try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+                    {
+                        defraggedCount = rebuildIdGeneratorFast( cursor, recordsPerPage, blockSize, pagedFile.getLastPageId() );
+                    }
+                }
+                else
+                {
+                    try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK | PF_READ_AHEAD ) )
+                    {
+                        defraggedCount = rebuildIdGeneratorSlow( cursor, recordsPerPage, blockSize );
+                    }
+                }
+            }
+            finally
+            {
+                pageCache.unmap( storageFileName );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException(
+                    "Unable to rebuild id generator " + getStorageFileName(), e );
+        }
+
+        stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
+                + " (defragged=" + defraggedCount + ")" );
+        stringLogger.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
+                " defragged count=" + defraggedCount, true );
+        closeIdGenerator();
+        openIdGenerator();
+    }
+
+    private long rebuildIdGeneratorFast( PageCursor cursor, int recordsPerPage, int blockSize, long lastPageId ) throws IOException
+    {
+        long nextPageId = lastPageId;
+
+        while ( nextPageId >= 0 && cursor.next( nextPageId ) )
+        {
+            nextPageId--;
+            do {
+                int currentRecord = recordsPerPage;
+                while ( currentRecord --> 0 )
+                {
+                    cursor.setOffset( currentRecord * blockSize );
+                    byte inUseByte = cursor.getByte();
+
+                    if ( isInUse( inUseByte ) )
+                    {
+                        // We've found the highest id that is in use
+                        setHighId( (cursor.getCurrentPageId() * recordsPerPage) + currentRecord );
+                        // Return the number of records that we skipped over to find it
+                        return ((lastPageId - nextPageId) * recordsPerPage) - currentRecord;
+                    }
+                }
+            } while ( cursor.retry() );
+        }
+
+        return 0;
+    }
+
+    private long rebuildIdGeneratorSlow( PageCursor cursor, int recordsPerPage, int blockSize ) throws IOException
+    {
+        long defragCount = 0;
+        long[] freedBatch = new long[recordsPerPage]; // we process in batches of one page worth of records
+        int startingId = firstRecordIsHeader()? 1 : 0;
+        int defragged;
+
+        while ( cursor.next() )
+        {
+            long idPageOffset = (cursor.getCurrentPageId() * recordsPerPage);
+
+            do {
+                defragged = 0;
+                for ( int i = startingId; i < recordsPerPage; i++ )
+                {
+                    cursor.setOffset( i * blockSize );
+                    byte inUseByte = cursor.getByte();
+
+                    long recordId = idPageOffset + i;
+                    if ( !isInUse( inUseByte ) )
+                    {
+                        freedBatch[defragged] = recordId;
+                        defragged++;
+                    }
+                }
+            } while ( cursor.retry() );
+
+            setHighId( idPageOffset + recordsPerPage );
+            for ( int i = 0; i < defragged; i++ )
+            {
+                long freedId = freedBatch[i];
+                freeId( freedId );
+            }
+            defragCount += defragged;
+            startingId = 0;
+        }
+
+        return defragCount;
+    }
 
     /**
      * This method should close/release all resources that the implementation of
@@ -409,7 +549,8 @@ public abstract class CommonAbstractStore implements IdSequence
      *
      * @return The next free id
      */
-    @Override public long nextId()
+    @Override
+    public long nextId()
     {
         return idGenerator.nextId();
     }
@@ -537,7 +678,6 @@ public abstract class CommonAbstractStore implements IdSequence
     protected void openIdGenerator()
     {
         idGenerator = openIdGenerator( new File( storageFileName.getPath() + ".id" ), idType.getGrabSize() );
-
         /* MP: 2011-11-23
          * There may have been some migration done in the startup process, so if there have been some
          * high id registered during, then update id generators. updateHighId does nothing if
@@ -556,8 +696,9 @@ public abstract class CommonAbstractStore implements IdSequence
      */
     protected IdGenerator openIdGenerator( File fileName, int grabSize )
     {
-        return idGeneratorFactory
-                .open( fileSystemAbstraction, fileName, grabSize, getIdType(), figureOutHighestIdInUse() );
+        IdType type = getIdType();
+        long highestIdInUse = figureOutHighestIdInUse();
+        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, type, highestIdInUse );
     }
 
     /**
@@ -739,10 +880,7 @@ public abstract class CommonAbstractStore implements IdSequence
 
     protected void registerIdFromUpdateRecord( long id )
     {
-//        if ( isInRecoveryMode() )
-        {
-            highestUpdateRecordId = Math.max( highestUpdateRecordId, id + 1 );
-        }
+        highestUpdateRecordId = Math.max( highestUpdateRecordId, id + 1 );
     }
 
     protected void updateHighId()

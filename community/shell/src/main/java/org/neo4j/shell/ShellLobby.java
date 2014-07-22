@@ -63,10 +63,21 @@ public abstract class ShellLobby
 	 * communicate with.
 	 * @return the new shell client.
 	 */
-	public static ShellClient newClient( ShellServer server ) throws ShellException
+	public static ShellClient newClient( ShellServer server, CtrlCHandler signalHandler ) throws ShellException
     {
-	    return newClient( server, new HashMap<String, Serializable>() );
+	    return newClient( server, new HashMap<String, Serializable>(), signalHandler );
 	}
+
+    /**
+     * Creates a client and "starts" it, i.e. grabs the console prompt.
+     * @param server the server (in the same JVM) which the client will
+     * communicate with.
+     * @return the new shell client.
+     */
+    public static ShellClient newClient( ShellServer server ) throws ShellException
+    {
+        return newClient( server, new HashMap<String, Serializable>(), InterruptSignalHandler.getHandler() );
+    }
 	
     /**
      * Creates a client and "starts" it, i.e. grabs the console prompt.
@@ -74,11 +85,13 @@ public abstract class ShellLobby
      * communicate with.
      * @param initialSession the initial session variables the shell will have,
      * in addition to those provided by the server initially.
+     * @param signalHandler
      * @return the new shell client.
      */
-    public static ShellClient newClient( ShellServer server, Map<String, Serializable> initialSession ) throws ShellException
+    public static ShellClient newClient( ShellServer server, Map<String, Serializable> initialSession,
+                                         CtrlCHandler signalHandler ) throws ShellException
     {
-        return new SameJvmClient( initialSession, server );
+        return new SameJvmClient( initialSession, server, signalHandler );
     }
 	
     /**
@@ -89,10 +102,10 @@ public abstract class ShellLobby
      * @throws ShellException if no server was found at the RMI location.
      * @return the new shell client.
      */
-    public static ShellClient newClient( int port, String name )
+    public static ShellClient newClient( int port, String name, CtrlCHandler ctrlcHandler )
             throws ShellException
     {
-        return newClient( "localhost", port, name );
+        return newClient( "localhost", port, name, ctrlcHandler );
     }
     
     /**
@@ -117,10 +130,10 @@ public abstract class ShellLobby
 	 * @throws ShellException if no server was found at the RMI location.
 	 * @return the new shell client.
 	 */
-	public static ShellClient newClient( String host, int port, String name )
+	public static ShellClient newClient( String host, int port, String name, CtrlCHandler ctrlcHandler )
 		throws ShellException
 	{
-		return newClient( RmiLocation.location( host, port, name ) );
+		return newClient( RmiLocation.location( host, port, name ), ctrlcHandler );
 	}
 
     /**
@@ -134,7 +147,7 @@ public abstract class ShellLobby
     public static ShellClient newClient( String host, int port )
         throws ShellException
     {
-        return newClient( host, port, SimpleAppServer.DEFAULT_NAME );
+        return newClient( host, port, SimpleAppServer.DEFAULT_NAME, InterruptSignalHandler.getHandler() );
     }
     
 	/**
@@ -144,10 +157,10 @@ public abstract class ShellLobby
 	 * @throws ShellException if no server was found at the RMI location.
 	 * @return the new shell client.
 	 */
-	public static ShellClient newClient( RmiLocation serverLocation )
+	public static ShellClient newClient( RmiLocation serverLocation, CtrlCHandler ctrlcHandler )
 		throws ShellException
 	{
-		return newClient( serverLocation, new HashMap<String, Serializable>() );
+		return newClient( serverLocation, new HashMap<String, Serializable>(), ctrlcHandler );
 	}
 	
     /**
@@ -159,10 +172,10 @@ public abstract class ShellLobby
      * @throws ShellException if no server was found at the RMI location.
      * @return the new shell client.
      */
-    public static ShellClient newClient( RmiLocation serverLocation, Map<String, Serializable> initialSession )
+    public static ShellClient newClient( RmiLocation serverLocation, Map<String, Serializable> initialSession, CtrlCHandler ctrlcHandler )
         throws ShellException
     {
-        return new RemoteClient( initialSession, serverLocation );
+        return new RemoteClient( initialSession, serverLocation, ctrlcHandler );
     }
     
     /**
@@ -173,9 +186,9 @@ public abstract class ShellLobby
      * @throws ShellException if no server was found at the RMI location.
      * @return the new shell client.
      */
-	public static ShellClient newClient( String host ) throws ShellException
+	public static ShellClient newClient( String host, CtrlCHandler ctrlcHandler ) throws ShellException
 	{
-	    return newClient( host, SimpleAppServer.DEFAULT_PORT, SimpleAppServer.DEFAULT_NAME );
+	    return newClient( host, SimpleAppServer.DEFAULT_PORT, SimpleAppServer.DEFAULT_NAME, ctrlcHandler );
 	}
 	
     /**
@@ -187,7 +200,7 @@ public abstract class ShellLobby
      */
 	public static ShellClient newClient() throws ShellException
 	{
-        return newClient( "localhost", SimpleAppServer.DEFAULT_PORT, SimpleAppServer.DEFAULT_NAME );
+        return newClient( "localhost", SimpleAppServer.DEFAULT_PORT, SimpleAppServer.DEFAULT_NAME, InterruptSignalHandler.getHandler() );
 	}
 	
     public static RmiLocation remoteLocation()

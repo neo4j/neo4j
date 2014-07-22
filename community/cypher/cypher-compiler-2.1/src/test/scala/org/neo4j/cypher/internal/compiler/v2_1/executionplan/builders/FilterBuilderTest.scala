@@ -19,33 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{SingleNode, Predicate, Equals}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Property
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
-import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
 import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{Equals, Predicate, SingleNode}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
 
-class FilterBuilderTest extends BuilderTest with MockitoSugar {
+class FilterBuilderTest extends BuilderTest {
 
   private implicit val monitor: PipeMonitor = mock[PipeMonitor]
   val builder = new FilterBuilder
 
-  @Test
-  def does_not_offer_to_solve_queries_without_start_items() {
+  test("does_not_offer_to_solve_queries_without_start_items") {
     val q = PartiallySolvedQuery().
       copy(where = Seq(Unsolved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar")))))
 
     assertRejects(q)
   }
 
-  @Test
-  def should_offer_to_filter_the_necessary_pipe_is_there() {
+  test("should_offer_to_filter_the_necessary_pipe_is_there") {
     val q = PartiallySolvedQuery().
       copy(where = Seq(Unsolved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar")))))
 
@@ -54,8 +48,7 @@ class FilterBuilderTest extends BuilderTest with MockitoSugar {
     assertAccepts(pipe, q)
   }
 
-  @Test
-  def should_solve_the_predicates_that_are_possible_to_solve() {
+  test("should_solve_the_predicates_that_are_possible_to_solve") {
     val q = PartiallySolvedQuery().
       copy(where = Seq(
       Unsolved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar"))),
@@ -66,13 +59,12 @@ class FilterBuilderTest extends BuilderTest with MockitoSugar {
 
     val resultPlan = assertAccepts(pipe, q)
 
-    assert(resultPlan.query.where.toSet === Set(
+    resultPlan.query.where.toSet should equal(Set(
       Solved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar"))),
       Unsolved(Equals(Property(Identifier("x"), PropertyKey("foo")), Literal("bar")))))
   }
 
-  @Test
-  def does_not_take_on_non_deterministic_predicates_until_the_whole_pattern_is_solved() {
+  test("does_not_take_on_non_deterministic_predicates_until_the_whole_pattern_is_solved") {
     val nonDeterministicPredicate = mock[Predicate]
     when(nonDeterministicPredicate.isDeterministic).thenReturn(false)
     when(nonDeterministicPredicate.symbolDependenciesMet(any())).thenReturn(true)
@@ -86,8 +78,7 @@ class FilterBuilderTest extends BuilderTest with MockitoSugar {
     assertRejects(pipe, q)
   }
 
-  @Test
-  def takes_on_predicates_that_are_deterministic_as_soon_as_possible() {
+  test("takes_on_predicates_that_are_deterministic_as_soon_as_possible") {
     val nonDeterministicPredicate = mock[Predicate]
     when(nonDeterministicPredicate.isDeterministic).thenReturn(true)
     when(nonDeterministicPredicate.symbolDependenciesMet(any())).thenReturn(true)

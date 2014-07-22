@@ -35,45 +35,20 @@ import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
-import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class BatchInserterImplTest
 {
-    private void assumeNotWindows()
-    {
-        // Windows doesn't work well at all with memory mapping. The problem being that
-        // in Java there's no way to unmap a memory mapping from a file, instead that
-        // is handed over to GC and GC isn't deterministic. Well, actually there is a way
-        // unmap if using reflection. Anyways Windows has problems with truncating a file
-        // or similar if a memory mapped section of it is still open, i.e. hasn't yet
-        // been GCed... which may happen from time to time.
-        assumeTrue( !osIsWindows() );
-    }
-    
     @Test
     public void testHonorsPassedInParams() throws Exception
     {
-        assumeNotWindows();
-        
-        Boolean memoryMappingConfig = createInserterAndGetMemoryMappingConfig( stringMap( GraphDatabaseSettings
-                .use_memory_mapped_buffers.name(), "true" ) );
-        assertTrue( "memory mapped config is active", memoryMappingConfig );
-    }
-
-    @Test
-    public void testDefaultsToNoMemoryMapping() throws Exception
-    {
-        assumeNotWindows();
-        
-        Boolean memoryMappingConfig = createInserterAndGetMemoryMappingConfig( stringMap() );
-        assertFalse( "memory mapped config is active", memoryMappingConfig );
+        Long mappedMemoryTotalSize = createInserterAndGetMemoryMappingConfig( stringMap(
+                GraphDatabaseSettings.mapped_memory_total_size.name(), "16K" ) );
+        assertThat( "memory mapped config is active", mappedMemoryTotalSize, is( 16 * 1024L ) );
     }
 
     @Test
@@ -116,13 +91,13 @@ public class BatchInserterImplTest
         }
     }
     
-    private Boolean createInserterAndGetMemoryMappingConfig( Map<String, String> initialConfig ) throws Exception
+    private Long createInserterAndGetMemoryMappingConfig( Map<String, String> initialConfig ) throws Exception
     {
         BatchInserter inserter = BatchInserters.inserter(
                 TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath(), initialConfig );
         NeoStore neoStore = ReflectionUtil.getPrivateField( inserter, "neoStore", NeoStore.class );
         Config config = ReflectionUtil.getPrivateField( neoStore, "conf", Config.class );
         inserter.shutdown();
-        return config.get( GraphDatabaseSettings.use_memory_mapped_buffers );
+        return config.get( GraphDatabaseSettings.mapped_memory_total_size );
     }
 }

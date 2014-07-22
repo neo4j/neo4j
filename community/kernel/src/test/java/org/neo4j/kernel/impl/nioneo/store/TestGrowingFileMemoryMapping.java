@@ -39,7 +39,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.nodestore_mapped_memory_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_total_size;
 import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -58,8 +58,7 @@ public class TestGrowingFileMemoryMapping
 
         File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
         Config config = new Config( stringMap(
-                nodestore_mapped_memory_size.name(), mmapSize( NUMBER_OF_RECORDS, NodeStore.RECORD_SIZE ),
-                Configuration.use_memory_mapped_buffers.name(), "true",
+                mapped_memory_total_size.name(), mmapSize( NUMBER_OF_RECORDS, NodeStore.RECORD_SIZE ),
                 Configuration.store_dir.name(), storeDir.getPath() ), NodeStore.Configuration.class );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         Monitors monitors = new Monitors();

@@ -31,21 +31,21 @@ class PlannerQueryDocBuilderTest extends DocBuilderTestSuite[Any] {
   test("renders tail free empty planner query") {
     format(PlannerQuery(
       graph = QueryGraph(),
-      horizon = QueryHorizon.empty
+      horizon = QueryProjection.empty
     )) should equal("GIVEN * RETURN *")
   }
 
   test("renders tail free non-empty planner query") {
     format(PlannerQuery(
       graph = QueryGraph(patternNodes = Set(IdName("a"))),
-      horizon = QueryHorizon( projection = RegularQueryProjection( projections = Map("a" -> SignedDecimalIntegerLiteral("1")_)) )
+      horizon = RegularQueryProjection(projections = Map("a" -> SignedDecimalIntegerLiteral("1") _))
     )) should equal("GIVEN * MATCH (a) RETURN SignedDecimalIntegerLiteral(\"1\") AS `a`")
   }
 
   test("render planner query with tail") {
     format(PlannerQuery(
       graph = QueryGraph(patternNodes = Set(IdName("a"))),
-      horizon = QueryHorizon( projection = RegularQueryProjection(  projections = Map("a" -> SignedDecimalIntegerLiteral("1")_)) ),
+      horizon = RegularQueryProjection(projections = Map("a" -> SignedDecimalIntegerLiteral("1") _)),
       tail = Some(PlannerQuery.empty)
     )) should equal("GIVEN * MATCH (a) WITH SignedDecimalIntegerLiteral(\"1\") AS `a` GIVEN * RETURN *")
   }

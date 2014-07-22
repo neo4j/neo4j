@@ -46,6 +46,10 @@ public interface PagedFile
      * locking when you want to overwrite the whole page anyway.
      */
     public static final int PF_NO_FAULT = 1 << 4; // TBD
+    /**
+     * Do not update page access statistics.
+     */
+    public static final int PF_TRANSIENT = 1 << 5;
 
 
     PageCursor io( long pageId, int pf_flags ) throws IOException;
@@ -61,4 +65,6 @@ public interface PagedFile
 
     /** Force all changes to this file handle down to disk. Does not flush dirty pages. */
     void force() throws IOException;
+
+    long getLastPageId() throws IOException;
 }

@@ -23,21 +23,23 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 
-public class PhysicalTransactionCursor implements IOCursor
+public class PhysicalTransactionCursor implements IOCursor<CommittedTransactionRepresentation>
 {
     private final ReadableLogChannel channel;
     private final LogEntryReader<ReadableLogChannel> entryReader;
-    private final Visitor<CommittedTransactionRepresentation, IOException> visitor;
+    private CommittedTransactionRepresentation current;
 
-    public PhysicalTransactionCursor( ReadableLogChannel channel, LogEntryReader<ReadableLogChannel> entryReader,
-            Visitor<CommittedTransactionRepresentation, IOException> visitor )
+    public PhysicalTransactionCursor( ReadableLogChannel channel, LogEntryReader<ReadableLogChannel> entryReader)
     {
         this.channel = channel;
         this.entryReader = entryReader;
-        this.visitor = visitor;
     }
 
     protected List<Command> commandList()
@@ -46,17 +48,25 @@ public class PhysicalTransactionCursor implements IOCursor
     }
 
     @Override
+    public CommittedTransactionRepresentation get()
+    {
+        return current;
+    }
+
+    @Override
     public boolean next() throws IOException
     {
-        List<Command> entries = commandList();
         LogEntry entry = entryReader.readLogEntry( channel );
         if ( entry == null )
         {
             return false;
         }
-        assert entry instanceof LogEntry.Start;
-        LogEntry.Start startEntry = (LogEntry.Start) entry;
-        LogEntry.Commit commitEntry;
+
+        assert entry instanceof LogEntryStart : "Expected Start entry, read " + entry + " instead";
+        LogEntryStart startEntry = (LogEntryStart) entry;
+        LogEntryCommit commitEntry;
+
+        List<Command> entries = commandList();
         while ( true )
         {
             entry = entryReader.readLogEntry( channel );
@@ -64,20 +74,21 @@ public class PhysicalTransactionCursor implements IOCursor
             {
                 return false;
             }
-            if ( entry instanceof LogEntry.Commit )
+            if ( entry instanceof LogEntryCommit )
             {
-                commitEntry = (LogEntry.Commit) entry;
+                commitEntry = (LogEntryCommit) entry;
                 break;
             }
 
-            entries.add( ((LogEntry.Command) entry).getXaCommand() );
+            entries.add( ((LogEntryCommand) entry).getXaCommand() );
         }
 
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );
         transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getMasterId(),
                 startEntry.getLocalId(), startEntry.getTimeWritten(),
                 startEntry.getLastCommittedTxWhenTransactionStarted() );
-        return visitor.visit( new CommittedTransactionRepresentation( startEntry, transaction, commitEntry ) );
+        current = new CommittedTransactionRepresentation( startEntry, transaction, commitEntry );
+        return true;
     }
 
     @Override

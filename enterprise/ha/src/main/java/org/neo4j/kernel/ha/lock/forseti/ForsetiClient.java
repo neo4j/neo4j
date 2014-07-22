@@ -23,11 +23,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
+import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.util.FlyweightPool;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
 
@@ -43,7 +43,7 @@ public class ForsetiClient implements Locks.Client
     private final WaitStrategy<AcquireLockTimeoutException>[] waitStrategies;
 
     /** Handle to return client to pool when closed. */
-    private final FlyweightPool<ForsetiClient> clientPool;
+    private final LinkedQueuePool<ForsetiClient> clientPool;
 
     // TODO We should really look into some kind of primitive maps here.
     // TODO As a stop-gap, we could start out by using AtomicInteger values, and thereby remove a lot
@@ -63,7 +63,7 @@ public class ForsetiClient implements Locks.Client
     public ForsetiClient( int id,
                           ConcurrentMap[] lockMaps,
                           WaitStrategy[] waitStrategies,
-                          FlyweightPool<ForsetiClient> clientPool )
+                          LinkedQueuePool<ForsetiClient> clientPool )
     {
         this.myId                = id;
         this.lockMaps            = lockMaps;
@@ -223,7 +223,8 @@ public class ForsetiClient implements Locks.Client
                         if(sharedLock.numberOfHolders() == 1)
                         {
                             lockMap.put( resourceId, myExclusiveLock );
-                            return true;
+                            heldLocks.put( resourceId, 1 );
+                            continue;
                         }
                         else
                         {
@@ -406,23 +407,41 @@ public class ForsetiClient implements Locks.Client
     @Override
     public void releaseAll()
     {
-        releaseAll( exclusiveLockCounts );
-        releaseAll( sharedLockCounts );
-    }
-
-    private void releaseAll( Map<Long, Integer>[] lockCounts )
-    {
-        for ( int i = 0; i < lockCounts.length; i++ )
+        // Force the release of all locks held.
+        for ( int i = 0; i < exclusiveLockCounts.length; i++ )
         {
-            Map<Long, Integer> localLocks = lockCounts[i];
-            if(localLocks != null)
+            Map<Long, Integer> exclusiveLocks = exclusiveLockCounts[i];
+            Map<Long, Integer> sharedLocks = sharedLockCounts[i];
+
+            // Begin releasing exclusive locks, as we may hold both exclusive and shared locks on the same resource,
+            // and so releasing shared locks means we can "throw away" our shared lock (which would normally have been
+            // re-instated after releasing the exclusive lock).
+            if(exclusiveLocks != null)
             {
                 ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap = lockMaps[i];
-                for ( Long resourceId : localLocks.keySet() )
+                for ( Long resourceId : exclusiveLocks.keySet() )
+                {
+                    releaseGlobalLock( lockMap, resourceId );
+
+                    // If we hold this as a shared lock, we can throw that shared lock away directly, since we haven't
+                    // followed the down-grade protocol.
+                    if(sharedLocks != null)
+                    {
+                        sharedLocks.remove( resourceId );
+                    }
+                }
+                exclusiveLocks.clear();
+            }
+
+            // Then release all remaining shared locks
+            if(sharedLocks != null)
+            {
+                ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap = lockMaps[i];
+                for ( Long resourceId : sharedLocks.keySet() )
                 {
                     releaseGlobalLock( lockMap, resourceId );
                 }
-                localLocks.clear();
+                sharedLocks.clear();
             }
         }
     }

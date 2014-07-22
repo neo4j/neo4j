@@ -37,10 +37,4 @@ public interface LogVersionRepository
      * atomically and can potentially block.
      */
     long incrementAndGetVersion() throws IOException;
-
-    /**
-     * Increments the log version. Useful when just shutting down.
-     */
-    // TODO wat? we have incrementAndGet above. Also, note how this method does not throw IOException. So, like i said, wat?
-    void incrementVersion();
 }

@@ -19,6 +19,13 @@
  */
 package org.neo4j.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.helpers.CommunityServerBuilder.server;
+import static org.neo4j.test.server.HTTP.POST;
+
 import java.io.IOException;
 
 import javax.ws.rs.core.MediaType;
@@ -30,12 +37,6 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
-import static org.neo4j.server.helpers.CommunityServerBuilder.server;
-import static org.neo4j.test.server.HTTP.POST;
 
 public class ServerConfigDocIT extends ExclusiveServerTestBase
 {
@@ -53,7 +54,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         final int NON_DEFAULT_PORT = 4321;
 
         server = server().onPort( NON_DEFAULT_PORT )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
@@ -72,7 +73,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         String webAdminManagementUri = "/a/different/webadmin/management/uri/";
 
         server = server().withRelativeWebDataAdminUriPath( webAdminDataUri )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .withRelativeWebAdminUriPath( webAdminManagementUri )
                 .build();
         server.start();
@@ -90,7 +91,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     public void shouldGenerateWADLWhenExplicitlyEnabledInConfig() throws IOException
     {
         server = server().withProperty( Configurator.WADL_ENABLED, "true" )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
@@ -106,7 +107,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     public void shouldNotGenerateWADLWhenNotExplicitlyEnabledInConfig() throws IOException
     {
         server = server()
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
@@ -119,7 +120,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     public void shouldNotGenerateWADLWhenExplicitlyDisabledInConfig() throws IOException
     {
         server = server().withProperty( Configurator.WADL_ENABLED, "false" )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
@@ -133,7 +134,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     {
         // Given
         server = server()
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         String node = POST( server.baseUri().toASCIIString() + "db/data/node" ).location();
@@ -179,7 +180,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
 
         server = server().withProperty( Configurator.SCRIPT_SANDBOXING_ENABLED_KEY, "false" )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .build();
 
         // When

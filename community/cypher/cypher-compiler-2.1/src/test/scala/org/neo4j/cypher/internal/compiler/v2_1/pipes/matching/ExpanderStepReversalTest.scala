@@ -19,45 +19,43 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes.matching
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.{Equals, True, Predicate}
-import commands.expressions.{Literal, Identifier, Property, Expression}
-import commands.values.TokenType.PropertyKey
-import pipes.QueryState
-import symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Expression, Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{Equals, Predicate, True}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import org.neo4j.graphdb.Direction
-import org.junit.Test
-import org.scalatest.Assertions
 
-class ExpanderStepReversalTest extends Assertions {
+class ExpanderStepReversalTest extends CypherFunSuite {
   val A = "A"
   val B = "B"
   val C = "C"
 
-  val c = step(2, Seq(C), Direction.INCOMING, None)
-  val b = step(1, Seq(B), Direction.BOTH, Some(c))
-  val a = step(0, Seq(A), Direction.OUTGOING, Some(b))
+  val _c = step(2, Seq(C), Direction.INCOMING, None)
+  val _b = step(1, Seq(B), Direction.BOTH, Some(_c))
+  val _a = step(0, Seq(A), Direction.OUTGOING, Some(_b))
 
-  val aR = step(0, Seq(A), Direction.INCOMING, None)
-  val bR = step(1, Seq(B), Direction.BOTH, Some(aR))
-  val cR = step(2, Seq(C), Direction.OUTGOING, Some(bR))
+  val _aR = step(0, Seq(A), Direction.INCOMING, None)
+  val _bR = step(1, Seq(B), Direction.BOTH, Some(_aR))
+  val _cR = step(2, Seq(C), Direction.OUTGOING, Some(_bR))
 
-  @Test def reverse() {
-    assert(a.reverse() === cR)
-    assert(cR.reverse() === a)
+  test("reverse") {
+    _a.reverse() should equal(_cR)
+    _cR.reverse() should equal(_a)
   }
 
-  @Test def reverse_single_predicate() {
+  test("reverse_single_predicate") {
     //Given
     val step1 = step(0, A, Direction.OUTGOING, None, "pr1")
     val step1R = step(0, A, Direction.INCOMING, None, "pr1")
 
     //When&Then
-    assert(step1.reverse() === step1R)
-    assert(step1R.reverse() === step1)
+    step1.reverse() should equal(step1R)
+    step1R.reverse() should equal(step1)
   }
 
-  @Test def reverse_long_trail_with_two_predicates() {
+  test("reverse_long_trail_with_two_predicates") {
 
     def step(id: Int,
                      typ: Seq[String],
@@ -83,11 +81,11 @@ class ExpanderStepReversalTest extends Assertions {
     val reverse3 = step(2, Seq(), Direction.OUTGOING, Some(reverse2), nodePredicate = predForC)
 
     //When&Then
-    assert(forward1.reverse() === reverse3)
-    assert(reverse3.reverse() === forward1)
+    forward1.reverse() should equal(reverse3)
+    reverse3.reverse() should equal(forward1)
   }
 
-  @Test def reverse_two_steps() {
+  test("reverse_two_steps") {
     //()-[pr1:A]->(a)-[pr2:B]->()
 
     val step1 = step(1, B, Direction.OUTGOING, None, "pr2")
@@ -96,11 +94,11 @@ class ExpanderStepReversalTest extends Assertions {
     val step0R = step(0, A, Direction.INCOMING, None, "pr1")
     val step1R = step(1, B, Direction.INCOMING, Some(step0R), "pr2", "a")
 
-    assert(step0.reverse() === step1R)
-    assert(step1R.reverse() === step0)
+    step0.reverse() should equal(step1R)
+    step1R.reverse() should equal(step0)
   }
 
-  @Test def reverse_with_three_steps() {
+  test("reverse_with_three_steps") {
     //()-[pr0:A]->(a)-[pr1:B]->(b)-[pr2:C]->()
 
     val step2 = step(2, C, Direction.OUTGOING, None, "pr2")
@@ -111,12 +109,11 @@ class ExpanderStepReversalTest extends Assertions {
     val step1R = step(1, B, Direction.INCOMING, Some(step0R), "pr1", "a")
     val step2R = step(2, C, Direction.INCOMING, Some(step1R), "pr2", "b")
 
-    assert(step0.reverse() === step2R)
-    assert(step2R.reverse() === step0)
-
+    step0.reverse() should equal(step2R)
+    step2R.reverse() should equal(step0)
   }
 
-  @Test def reverse_predicates_with_mixed_directions() {
+  test("reverse_predicates_with_mixed_directions") {
     //(a)-[pr0:A]->(b)-[pr1:B]-(c)<-[pr2:C]-(d)
 
     val step3 = step(2, C, Direction.INCOMING, None, "pr2")
@@ -127,14 +124,12 @@ class ExpanderStepReversalTest extends Assertions {
     val step2R = step(1, B, Direction.BOTH, Some(step1R), "pr1", "b")
     val step3R = step(2, C, Direction.OUTGOING, Some(step2R), "pr2", "c")
 
-    assert(step1.reverse() === step3R)
-    assert(step3R.reverse() === step1)
+    step1.reverse() should equal(step3R)
+    step3R.reverse() should equal(step1)
   }
 
-  private def step(id: Int,
-                   typ: Seq[String],
-                   direction: Direction,
-                   next: Option[ExpanderStep]) = SingleStep(id, typ, direction, next, True(), True())
+  private def step(id: Int, typ: Seq[String], direction: Direction, next: Option[ExpanderStep]) =
+    SingleStep(id, typ, direction, next, True(), True())
 
   def step(id: Int, t: String, dir: Direction, next: Option[ExpanderStep], relName: String, nodeName: String): ExpanderStep =
     SingleStep(id, Seq(t), dir, next, relPredicate = Pred(relName), nodePredicate = Pred(nodeName))

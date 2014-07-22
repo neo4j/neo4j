@@ -19,24 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands._
-import commands.expressions.{Literal, Property, Identifier}
-import commands.values.{UnresolvedProperty, UnresolvedLabel}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{Namer, ExecutionPlanInProgress, PlanBuilder}
-import org.neo4j.graphdb.Direction
-import java.util
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{UnresolvedLabel, UnresolvedProperty}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, Namer, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
+import org.neo4j.graphdb.Direction
 
-@RunWith(value = classOf[Parameterized])
-class PredicateRewriterTest(name: String,
-                            inputMatchPattern: Pattern,
-                            expectedWhere: Seq[Predicate],
-                            expectedPattern: Seq[Pattern]) extends BuilderTest {
+class PredicateRewriterTest extends BuilderTest {
 
   private implicit val monitor = mock[PipeMonitor]
 
@@ -49,34 +39,6 @@ class PredicateRewriterTest(name: String,
     }
   })
 
-  @Test def should_rewrite_patterns_with_labels() {
-    // Given
-    val q = Query.
-      matches(inputMatchPattern).
-      returns(ReturnItem(Identifier("a"), "a"))
-
-    // When supposed to reject...
-    if (expectedPattern.isEmpty) {
-      assertRejects(q)
-      return
-    }
-
-    // Otherwise, when supposed to accept...
-    assertAccepts(q)
-    val result = untilDone(plan(q))
-
-    // Then
-    assert(result.query.where.toSet === expectedWhere.map(Unsolved.apply).toSet)
-    assert(result.query.patterns.toSet === expectedPattern.map(Unsolved.apply).toSet)
-  }
-
-  private def untilDone(q: ExecutionPlanInProgress): ExecutionPlanInProgress =
-    if (builder.canWorkWith(q, context))
-      untilDone(builder(q, context))
-    else q
-}
-
-object PredicateRewriterTest {
   val literal = Literal("bar")
   val properties = Map("foo" -> literal)
   val label = UnresolvedLabel("Person")
@@ -110,121 +72,141 @@ object PredicateRewriterTest {
   val predicateForPropertiedA = Equals(Property(Identifier("a"), prop), literal)
   val predicateForPropertiedB = Equals(Property(Identifier("b"), prop), literal)
   val predicateForPropertiedR = Equals(Property(Identifier("r"), prop), literal)
+
   def predicateForPropertiedRelIterator(collection: String, innerSymbol: String) =
     AllInCollection(Identifier(collection), innerSymbol, Equals(Property(Identifier(innerSymbol), prop), literal))
 
-  @Parameters(name = "{0}")
-  def parameters: util.Collection[Array[AnyRef]] = {
-    val list = new util.ArrayList[Array[AnyRef]]()
-    def add(name: String,
-            inputMatchPattern: Pattern,
-            expectedWhere: Seq[Predicate],
-            expectedPattern: Seq[Pattern]) {
-      list.add(Array(name, inputMatchPattern, expectedWhere, expectedPattern))
-    }
+  test("should_rewrite_patterns_with_labels") {
 
-    add("MATCH a RETURN a => :(",
-      bareA,
+    // "MATCH a RETURN a => :("
+    bareA --> (
       Seq(),
       Seq()
-    )
+      )
 
-    add("MATCH a:Person RETURN a => MATCH a WHERE a:Person RETURN a",
-      labeledA,
+    // "MATCH a:Person RETURN a => MATCH a WHERE a:Person RETURN a"
+    labeledA -->(
       Seq(predicateForLabelA),
       Seq(bareA)
-    )
+      )
 
-    add("MATCH a:Person-->b RETURN a => MATCH a-->b WHERE a:Person RETURN a",
-      relationshipLabeledLeft,
+    // "MATCH a:Person-->b RETURN a => MATCH a-->b WHERE a:Person RETURN a"
+    relationshipLabeledLeft -->(
       Seq(predicateForLabelA),
       Seq(relationshipBare)
-    )
+      )
 
-    add("MATCH a-->b:Person RETURN a => MATCH a-->b WHERE b:Person RETURN a",
-      relationshipLabeledRight,
+    // "MATCH a-->b:Person RETURN a => MATCH a-->b WHERE b:Person RETURN a"
+    relationshipLabeledRight -->(
       Seq(predicateForLabelB),
       Seq(relationshipBare)
-    )
+      )
 
-    add("MATCH p = a-[*]->b RETURN a => :(",
-      varlengthRelatedToNoLabels,
+    // "MATCH p = a-[*]->b RETURN a => :("
+    varlengthRelatedToNoLabels -->(
       Seq(),
       Seq()
-    )
+      )
 
-    add("MATCH p = a:Person-[*]->b RETURN a => MATCH p = a-[*]->b WHERE a:Person RETURN a",
-      varlengthRelatedToNoLabels.copy(left = labeledA),
+    // "MATCH p = a:Person-[*]->b RETURN a => MATCH p = a-[*]->b WHERE a:Person RETURN a"
+    varlengthRelatedToNoLabels.copy(left = labeledA) -->(
       Seq(predicateForLabelA),
       Seq(varlengthRelatedToNoLabels)
-    )
+      )
 
-    add("MATCH p = a-[*]->b:Person RETURN a => MATCH p = a-[*]->b WHERE b:Person RETURN a",
-      varlengthRelatedToNoLabels.copy(right = labeledB),
+    // "MATCH p = a-[*]->b:Person RETURN a => MATCH p = a-[*]->b WHERE b:Person RETURN a"
+    varlengthRelatedToNoLabels.copy(right = labeledB) -->(
       Seq(predicateForLabelB),
       Seq(varlengthRelatedToNoLabels)
-    )
+      )
 
-    add("MATCH p = shortestPath(a-[*]->b) RETURN a => :(",
-      shortestPathNoLabels,
+    // "MATCH p = shortestPath(a-[*]->b) RETURN a => :("
+    shortestPathNoLabels -->(
       Seq(),
       Seq()
-    )
+      )
 
-    add("MATCH p = shortestPath(a:Person-[*]->b) => MATCH p = shortestPath(a-[*]->b) WHERE a:Person",
-      shortestPathNoLabels.copy(left = labeledA),
+    // "MATCH p = shortestPath(a:Person-[*]->b) => MATCH p = shortestPath(a-[*]->b) WHERE a:Person"
+    shortestPathNoLabels.copy(left = labeledA) -->(
       Seq(predicateForLabelA),
       Seq(shortestPathNoLabels)
-    )
+      )
 
-    add("MATCH p = shortestPath(a-[*]->b:Person) => MATCH p = shortestPath(a-[*]->b) WHERE b:Person",
-      shortestPathNoLabels.copy(right = labeledB),
+    // "MATCH p = shortestPath(a-[*]->b:Person) => MATCH p = shortestPath(a-[*]->b) WHERE b:Person"
+    shortestPathNoLabels.copy(right = labeledB) -->(
       Seq(predicateForLabelB),
       Seq(shortestPathNoLabels)
-    )
+      )
 
-    add("MATCH (a {foo:'bar'}) RETURN a => MATCH a WHERE a.foo='bar'",
-      propertiedA,
+    // "MATCH (a {foo:'bar'}) RETURN a => MATCH a WHERE a.foo='bar'"
+    propertiedA -->(
       Seq(predicateForPropertiedA),
       Seq(bareA)
-    )
+      )
 
-    add("MATCH (a {foo:'bar'})-->(b) RETURN a => MATCH (a)-->(b) WHERE a.foo='bar'",
-      relationshipPropsOnLeft,
+    // "MATCH (a {foo:'bar'})-->(b) RETURN a => MATCH (a)-->(b) WHERE a.foo='bar'"
+    relationshipPropsOnLeft -->(
       Seq(predicateForPropertiedA),
       Seq(relationshipBare)
-    )
+      )
 
-    add("MATCH (a)-->(b {foo:'bar'}) RETURN a => MATCH (a)-->(b) WHERE b.foo='bar'",
-      relationshipPropsOnRight,
+    // "MATCH (a)-->(b {foo:'bar'}) RETURN a => MATCH (a)-->(b) WHERE b.foo='bar'"
+    relationshipPropsOnRight -->(
       Seq(predicateForPropertiedB),
       Seq(relationshipBare)
-    )
+      )
 
-    add("MATCH (a {foo:'bar'})-->(b {foo:'bar'}) RETURN a => MATCH (a)-->(b) WHERE a.foo = 'bar' AND b.foo='bar'",
-      relationshipPropsOnBoth,
+    // "MATCH (a {foo:'bar'})-->(b {foo:'bar'}) RETURN a => MATCH (a)-->(b) WHERE a.foo = 'bar' AND b.foo='bar'"
+    relationshipPropsOnBoth -->(
       Seq(predicateForPropertiedB, predicateForPropertiedA),
       Seq(relationshipBare)
-    )
+      )
 
-    add("MATCH (a)-[r {foo:'bar'}]->(b) RETURN a => MATCH (a)-[r]->(b) WHERE r.foo = 'bar'",
-      relationshipBare.copy(properties = properties),
+    // "MATCH (a)-[r {foo:'bar'}]->(b) RETURN a => MATCH (a)-[r]->(b) WHERE r.foo = 'bar'"
+    relationshipBare.copy(properties = properties) -->(
       Seq(predicateForPropertiedR),
       Seq(relationshipBare)
-    )
+      )
 
-    add("MATCH (a)-[rels* {foo:'bar'}]->(b) RETURN a => MATCH (a)-[rels*]->(b) WHERE ALL(x in rels | x.foo = 'bar')" ,
-      varlengthRelatedToWithProps.copy(relIterator = Some("RELS")),
+    // "MATCH (a)-[rels* {foo:'bar'}]->(b) RETURN a => MATCH (a)-[rels*]->(b) WHERE ALL(x in rels | x.foo = 'bar')"
+    varlengthRelatedToWithProps.copy(relIterator = Some("RELS")) -->(
       Seq(predicateForPropertiedRelIterator("RELS", "1")),
       Seq(varlengthRelatedToNoLabels.copy(relIterator = Some("RELS")))
-    )
+      )
 
-    add("MATCH (a)-[* {foo:'bar'}]->(b) RETURN a => MATCH (a)-[*]->(b) WHERE ALL(x in UNNAMED | x.foo = 'bar')",
-      varlengthRelatedToWithProps,
+    // "MATCH (a)-[* {foo:'bar'}]->(b) RETURN a => MATCH (a)-[*]->(b) WHERE ALL(x in UNNAMED | x.foo = 'bar')"
+    varlengthRelatedToWithProps -->(
       Seq(predicateForPropertiedRelIterator("1", "2")),
       Seq(varlengthRelatedToWithProps.copy(relIterator = Some("1"), properties = Map.empty))
-    )
+      )
+  }
 
-    list
+  implicit class CheckPattern(inputMatchPattern: Pattern) {
+
+    def -->(expectedWhere: Seq[Predicate], expectedPattern: Seq[Pattern]) {
+      // Given
+      val q = Query.
+        matches(inputMatchPattern).
+        returns(ReturnItem(Identifier("a"), "a"))
+
+      // When supposed to reject...
+      if (expectedPattern.isEmpty) {
+        assertRejects(q)
+        return
+      }
+
+      // Otherwise, when supposed to accept...
+      assertAccepts(q)
+      val result = untilDone(plan(q))
+
+      // Then
+      result.query.where.toSet should equal(expectedWhere.map(Unsolved.apply).toSet)
+      result.query.patterns.toSet should equal(expectedPattern.map(Unsolved.apply).toSet)
+    }
+
+    private def untilDone(q: ExecutionPlanInProgress): ExecutionPlanInProgress =
+      if (builder.canWorkWith(q, context))
+        untilDone(builder(q, context))
+      else q
   }
 }

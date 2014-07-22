@@ -26,6 +26,8 @@ public interface TransactionMonitor
 
     void transactionFinished( boolean successful );
 
+    void transactionTerminated();
+
     // Outputs
     int getNumberOfActiveTransactions();
 
@@ -36,4 +38,6 @@ public interface TransactionMonitor
     long getNumberOfCommittedTransactions();
 
     long getNumberOfRolledbackTransactions();
+
+    long getNumberOfTerminatedTransactions();
 }

@@ -19,27 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.scalatest.Assertions
-import org.junit.Test
-import org.scalatest.mock.MockitoSugar
 
-class EagerPipeTest extends Assertions with MockitoSugar {
+class EagerPipeTest extends CypherFunSuite {
   private implicit val monitor = mock[PipeMonitor]
 
-  @Test
-  def shouldMakeLazyEager() {
+  test("shouldMakeLazyEager") {
     // Given a lazy iterator that is not empty
     val lazyIterator = new LazyIterator[ExecutionContext](10, (_) => ExecutionContext.empty)
     val src = new FakePipe(lazyIterator)
     val eager = new EagerPipe(src)
-    assert(lazyIterator.nonEmpty, "Should not be empty")
+    lazyIterator should not be empty
 
     // When
     val resultIterator = eager.createResults(QueryStateHelper.empty)
 
     // Then the lazy iterator is emptied, and the returned iterator is not
-    assert(lazyIterator.isEmpty, "Should be empty")
-    assert(resultIterator.nonEmpty, "Should not be empty")
+    lazyIterator shouldBe empty
+    resultIterator should not be empty
   }
 }

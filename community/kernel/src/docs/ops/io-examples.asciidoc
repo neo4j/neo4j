@@ -4,105 +4,49 @@ Memory mapped IO settings
 
 == Introduction ==
 
-Each file in the Neo4j store can use memory mapped I/O for reading/writing.
-Best performance is achieved if the full file can be memory mapped but if 
-there isn't enough memory for that Neo4j will try and make the best use of 
-the memory it gets (regions of the file that get accessed often will more
-likely be memory mapped).
+Each file in the Neo4j store is accessed through the Neo4j page cache, when reading from, or writing to, the store files.
+Since there is only one page cache, there is only one setting for specifying how much memory Neo4j is allowed to use for page caching.
+The shared page cache ensures that memory is split across the various store files in the most optimal manner footnote:[This is an informal comparison to the store-specific memory mapping settings of previous versions of Neo4j. We are not claiming that our page replacement algorithms are optimal in the formal sense. Truly optimal page replacement algorithms require knowledge of events arbitrarily far into the future.], depending on how the database is used and what data is popular.
+
+The memory for the page cache is allocated outside the normal Java heap, so you need to take both the Java heap, and the page cache, into consideration in your capacity planning.
+Other processes running on the OS will impact the availability of such memory. Neo4j will require all of the heap memory of the JVM, plus the memory to be used for the page cache, to be available as physical memory.
+Other processes may thus not use more than what is available after the configured memory allocation is made for Neo4j.
 
 [IMPORTANT]
-Neo4j makes heavy use of the +java.nio+ package. Native I/O will result in
-memory being allocated outside the normal Java heap so  that memory usage
-needs to be taken into consideration. Other processes running on the OS will
-impact the availability of such memory. Neo4j will require all of the heap
-memory of the JVM plus the memory to be used for memory mapping to be available
-as physical memory. Other processes may thus not use more than what is
-available after the configured memory allocation is made for Neo4j.
+Make sure that your system is configured such that it will never need to swap.
+If memory belonging to the Neo4j process gets swapped out, it can lead to considerable performance degradation.
 
-A well configured OS 
-with large disk caches will help a lot once we get cache misses in the node 
-and relationship caches. Therefore it is not a good idea to use all available memory as Java heap. 
+The amount of memory available to the page cache can be configured in two ways; both using the `mapped_memory_total_size` setting.
+You can either directly specify the number of bytes available to the page cache, e.g. `150M` og `4G`, or you can specify a percentage of the available memory, which is what the default setting of `50%` means.
+In either case, the amount of memory reserved for the page cache is capped at the amount of free memory as measured when the database starts, and then rounded down to a multiple of the `mapped_memory_page_size`.
 
-If you look into the directory of your Neo4j database, you will find its store files, all prefixed by +neostore+:
-
-* +nodestore+ stores information about nodes
-* +relationshipstore+ holds all the relationships
-* +propertystore+ stores information of properties and all simple properties such as primitive types (both for relationships and nodes)
-* +propertystore strings+ stores all string properties
-* +propertystore arrays+ stores all array properties
-
-There are other files there as well, but they are normally not interesting in this context.
-
-This is how the default memory mapping configuration looks:
-
-[source]
-----
-neostore.nodestore.db.mapped_memory=25M
-neostore.relationshipstore.db.mapped_memory=50M
-neostore.propertystore.db.mapped_memory=90M
-neostore.propertystore.db.strings.mapped_memory=130M
-neostore.propertystore.db.arrays.mapped_memory=130M
-----
-
-== Optimizing for traversal speed example ==
-
-To tune the memory mapping settings start by investigating the size of the different store files found in the directory of your Neo4j database. Here is an example of some of the files and sizes in a Neo4j database:
-
-[source]
-----
-14M neostore.nodestore.db
-510M neostore.propertystore.db
-1.2G neostore.propertystore.db.strings
-304M neostore.relationshipstore.db
-----
-
-In this example the application is running on a machine with 4GB of RAM. We've reserved about 2GB for the OS and other programs. The Java heap is set to 1.5GB, that leaves about 500MB of RAM that can be used for memory mapping.
-
-TIP: If traversal speed is the highest priority it is good to memory map as much as possible of the node- and relationship stores.
-
-An example configuration on the example machine focusing on traversal speed would then look something like: 
-
-[source]
-----
-neostore.nodestore.db.mapped_memory=15M
-neostore.relationshipstore.db.mapped_memory=285M
-neostore.propertystore.db.mapped_memory=100M
-neostore.propertystore.db.strings.mapped_memory=100M
-neostore.propertystore.db.arrays.mapped_memory=0M
-----
+For optimal performance, you will want to have as much of your data fit in the page cache as possible.
+You can sum up the size of all the `neostore.*` files in your store file directory, to figure out how big a page cache you need to fit all your data.
+Obviously the store files will grow as you add more nodes, relationships and properties.
 
 [[configuration-batchinsert]]
 == Batch insert example ==
 
 Read general information on batch insertion in <<batchinsert>>.
 
-The configuration should suit the data set you are about to inject using BatchInsert. Lets say we have a random-like graph with 10M nodes and 100M relationships. Each node (and maybe some relationships) have different properties of string and Java primitive types (but no arrays). The important thing with a random graph will be to give lots of memory to the relationship and node store:
+The configuration should suit the data set you are about to inject using BatchInsert.
+Lets say we have a random-like graph with 10M nodes and 100M relationships.
+Each node (and maybe some relationships) have different properties of string and Java primitive types.
+The important thing is that the page cache has enough memory to work with, that it doesn't slow down the BatchInserter:
 
 [source]
 ----
-neostore.nodestore.db.mapped_memory=90M
-neostore.relationshipstore.db.mapped_memory=3G
-neostore.propertystore.db.mapped_memory=50M
-neostore.propertystore.db.strings.mapped_memory=100M
-neostore.propertystore.db.arrays.mapped_memory=0M
+mapped_memory_total_size=4G
 ----
 
-The configuration above will fit the entire graph (with exception to properties) in memory. 
-
-A rough formula to calculate the memory needed for the nodes:
+The configuration above will more or less fit the entire graph in memory.
+A rough formula to calculate the memory needed can look like this:
 
 [source]
 ----
-number_of_nodes * 9 bytes
+bytes_needed = number_of_nodes * 15
+             + number_of_relationships * 34
+             + number_of_properties * 64
 ----
 
-and for relationships:
-
-[source]
-----
-number_of_relationships * 33 bytes
-----
-
-Properties will typically only be injected once and never read so a few megabytes for the property store and string store is usually enough. If you have very large strings or arrays you may want to increase the amount of memory assigned to the string and array store files.
-
-An important thing to remember is that the above configuration will need a Java heap of 3.3G+ since in batch inserter mode normal Java buffers that gets allocated on the heap will be used instead of memory mapped ones.
+Note that the size of the individual property very much depends on what data it contains. The numbers given in the above formula are only a rough estimate.

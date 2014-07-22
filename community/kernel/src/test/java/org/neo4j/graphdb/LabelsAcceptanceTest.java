@@ -29,9 +29,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.test.ImpermanentDatabaseRule;

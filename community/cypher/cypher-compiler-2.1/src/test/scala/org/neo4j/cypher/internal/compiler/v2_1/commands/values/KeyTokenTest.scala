@@ -19,14 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.values
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{QueryContext, TokenContext}
-import org.junit.Test
-import org.scalatest.Assertions
 
-class KeyTokenTest extends Assertions {
+class KeyTokenTest extends CypherFunSuite {
 
-  @Test
-  def should_resolve_unresolved() {
+  test("should_resolve_unresolved") {
     // given
     val tokenType = MapKeyTokenType(Map("a" -> 1))
     val keyToken = KeyToken.Unresolved("a", tokenType)
@@ -35,11 +33,10 @@ class KeyTokenTest extends Assertions {
     val result = keyToken.resolve(null)
 
     // then
-    assert( result == KeyToken.Resolved("a", 1, tokenType) )
+    result should equal(KeyToken.Resolved("a", 1, tokenType))
   }
 
-  @Test
-  def should_not_resolve_resolved() {
+  test("should_not_resolve_resolved") {
     // given
     val tokenType = MapKeyTokenType(Map("a" -> 1))
     val keyToken = KeyToken.Resolved("a", 2, tokenType)
@@ -48,11 +45,10 @@ class KeyTokenTest extends Assertions {
     val result = keyToken.resolve(null)
 
     // then
-    assert( result == KeyToken.Resolved("a", 2, tokenType) )
+    result should equal(KeyToken.Resolved("a", 2, tokenType))
   }
 
-  @Test
-  def should_not_resolve_unknown() {
+  test("should_not_resolve_unknown") {
     // given
     val tokenType = MapKeyTokenType(Map("a" -> 1))
     val keyToken = KeyToken.Unresolved("b", tokenType)
@@ -61,7 +57,7 @@ class KeyTokenTest extends Assertions {
     val result = keyToken.resolve(null)
 
     // then
-    assert( result == KeyToken.Unresolved("b", tokenType) )
+    result should equal(KeyToken.Unresolved("b", tokenType))
   }
 }
 

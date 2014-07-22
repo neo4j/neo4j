@@ -198,4 +198,17 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
         // And other clients are denied it
         assertFalse( clientB.trySharedLock( NODE, 1l ) );
     }
+
+    @Test
+    public void shouldUpgradeExclusiveOnTry() throws Exception
+    {
+        // Given I've grabbed a shared lock
+        clientA.acquireShared( NODE, 1l );
+
+        // When
+        assertTrue( clientA.tryExclusiveLock( NODE, 1l ) );
+
+        // Then I should be able to release it
+        clientA.releaseExclusive( NODE, 1l );
+    }
 }

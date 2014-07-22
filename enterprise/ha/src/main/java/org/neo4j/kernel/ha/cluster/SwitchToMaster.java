@@ -37,6 +37,7 @@ import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -54,10 +55,12 @@ public class SwitchToMaster
     private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final Monitors monitors;
+    private final DataSourceManager dataSourceManager;
 
-    public SwitchToMaster( Logging logging, StringLogger msgLog, GraphDatabaseAPI graphDb, HaIdGeneratorFactory
-            idGeneratorFactory, Config config, DependencyResolver resolver, DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
-                           Monitors monitors )
+    public SwitchToMaster( Logging logging, StringLogger msgLog, GraphDatabaseAPI graphDb,
+            HaIdGeneratorFactory idGeneratorFactory, Config config, DependencyResolver resolver,
+            DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
+            Monitors monitors, DataSourceManager dataSourceManager )
     {
         this.logging = logging;
         this.msgLog = msgLog;
@@ -68,6 +71,7 @@ public class SwitchToMaster
         this.masterDelegateHandler = masterDelegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.monitors = monitors;
+        this.dataSourceManager = dataSourceManager;
     }
 
     public URI switchToMaster(LifeSupport haCommunicationLife, URI me)
@@ -84,6 +88,8 @@ public class SwitchToMaster
         {
 
             idGeneratorFactory.switchToMaster();
+            NeoStoreXaDataSource neoStoreXaDataSource = dataSourceManager.getDataSource();
+            neoStoreXaDataSource.reloadSchemaCache();
 
             Monitors monitors = resolver.resolveDependency( Monitors.class );
 

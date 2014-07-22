@@ -19,21 +19,20 @@
  */
 package org.neo4j.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 
 import org.junit.Test;
-
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.web.Jetty9WebServer;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
 {
@@ -46,7 +45,7 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
             Logging logging = new BufferingLogging();
             CommunityNeoServer server = CommunityServerBuilder.server()
                     .onPort( contestedPort )
-                    .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                    .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                     .onHost( Jetty9WebServer.DEFAULT_ADDRESS )
                     .withLogging( logging )
                     .build();

@@ -19,45 +19,44 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes.aggregation
 
-import org.junit.Assert._
-import org.junit.Test
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 
-class MinFunctionTest extends AggregateTest {
-  @Test def singleValueReturnsThatNumber() {
+class MinFunctionTest extends CypherFunSuite with AggregateTest {
+  test("singleValueReturnsThatNumber") {
     val result = aggregateOn(1)
 
-    assertEquals(1, result)
-    assertTrue(result.isInstanceOf[Int])
+    result should equal(1)
+    result shouldBe a [java.lang.Integer]
   }
 
-  @Test def singleValueOfDecimalReturnsDecimal() {
+  test("singleValueOfDecimalReturnsDecimal") {
     val result = aggregateOn(1.0d)
 
-    assertEquals(1.0, result)
+    result should equal(1.0)
   }
 
-  @Test def mixesOfTypesIsOK() {
+  test("mixesOfTypesIsOK") {
     val result = aggregateOn(1, 2.0d)
 
-    assertEquals(1, result)
+    result should equal(1)
   }
 
-  @Test def longListOfMixedStuff() {
+  test("longListOfMixedStuff") {
     val result = aggregateOn(100, 230.0d, 56, 237, 23)
 
-    assertEquals(23, result)
+    result should equal(23)
   }
 
-  @Test def nullDoesNotChangeTheSum() {
+  test("nullDoesNotChangeTheSum") {
     val result = aggregateOn(1, null, 10)
 
-    assertEquals(1, result)
+    result should equal(1)
   }
 
-  @Test(expected = classOf[SyntaxException]) def noNumberValuesThrowAnException() {
-    aggregateOn(1, "wut")
+  test("noNumberValuesThrowAnException") {
+    intercept[SyntaxException](aggregateOn(1, "wut"))
   }
 
   def createAggregator(inner: Expression) = new MinFunction(inner)

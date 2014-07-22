@@ -18,34 +18,31 @@ Neo4j works fine with the default stack space configuration, but if your applica
 
 Most modern CPUs implement a http://en.wikipedia.org/wiki/Non-Uniform_Memory_Access[Non-Uniform Memory Access (NUMA) architecture], where different parts of the memory have different access speeds. Suns Hotspot JVM is able to allocate objects with awareness of the NUMA structure as of version 1.6.0 update 18. When enabled this can give up to 40% performance improvements. To enabled the NUMA awareness, specify the +-XX:+UseNUMA+ parameter (works only when using the Parallel Scavenger garbage collector (default or +-XX:+UseParallelGC+ not the concurrent mark and sweep one).
 
-Properly configuring memory utilization of the JVM is crucial for optimal performance. 
-As an example, a poorly configured JVM could spend all CPU time performing garbage collection (blocking all threads from performing any work). 
-Requirements such as latency, total throughput and available hardware have to be considered to find the right setup. 
+Properly configuring memory utilization of the JVM is crucial for optimal performance.
+As an example, a poorly configured JVM could spend all CPU time performing garbage collection (blocking all threads from performing any work).
+Requirements such as latency, total throughput and available hardware have to be considered to find the right setup.
 In production, Neo4j should run on a multi core/CPU platform with the JVM in server mode.
- 
+
 == Configuring heap size and GC ==
 
-A large heap allows for larger node and relationship caches -- which is a good thing -- but large heaps can also lead to latency problems caused by full garbage collection. 
+A large heap allows for larger node and relationship caches -- which is a good thing -- but large heaps can also lead to latency problems caused by full garbage collection.
 The different high level cache implementations available in Neo4j together with a suitable JVM configuration of heap size and garbage collection (GC) should be able to handle most workloads.
 
-The default cache (soft reference based LRU cache) works best with a heap that never gets full: a graph where the most used nodes and relationships can be cached. 
-If the heap gets too full there is a risk that a full GC will be triggered; the larger the heap, the longer it can take to determine what soft references should be cleared. 
+The default cache (soft reference based LRU cache) works best with a heap that never gets full: a graph where the most used nodes and relationships can be cached.
+If the heap gets too full there is a risk that a full GC will be triggered; the larger the heap, the longer it can take to determine what soft references should be cleared.
 
 Using the strong reference cache means that 'all' the nodes and relationships being used must fit in the available heap.
-Otherwise there is a risk of getting out-of-memory exceptions. 
+Otherwise there is a risk of getting out-of-memory exceptions.
 The soft reference and strong reference caches are well suited for applications were the overal throughput is important.
 
-The weak reference cache basically needs enough heap to handle the peak load of the application -- peak load multiplied by the average memory required per request. 
+The weak reference cache basically needs enough heap to handle the peak load of the application -- peak load multiplied by the average memory required per request.
 It is well suited for low latency requirements were GC interuptions are not acceptable.
-
-[IMPORTANT]
-When running Neo4j on Windows, keep in mind that the memory mapped buffers are allocated on heap by default, so they need to be taken into account when determining heap size.
 
 .Guidelines for heap size
 [format="csv",width="75%",cols="4",options="header"]
 |======================================================================================================
-Number of primitives,RAM size,Heap configuration,Reserved RAM for the OS
-10M,2GB,512MB,the rest
+Number of entities,RAM size,Heap configuration,Reserved RAM for the OS
+10M,2GB,512MB,~1GB
 100M,8GB+,1-4GB,1-2GB
 1B+,16GB-32GB+,4GB+,1-2GB
 |======================================================================================================
@@ -74,4 +71,3 @@ These are the default configurations on some platforms according to our non-exha
 |Mac OS X Snow Leopard, 64-bit, Hotspot 1.6.0_17 |+ParNew+ and +ConcurrentMarkSweep+ |+PS Scavenge+ and +PS MarkSweep+ | +ParNew+ and +ConcurrentMarkSweep+ |+PS Scavenge+ and +PS MarkSweep+
 |Ubuntu, 32-bit, Hotspot 1.6.0_16 |+Copy+ and +MarkSweepCompact+ |+Copy+ and +MarkSweepCompact+ |N/A |N/A
 |====
-

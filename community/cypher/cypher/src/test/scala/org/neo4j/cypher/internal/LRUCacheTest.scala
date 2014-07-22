@@ -19,36 +19,27 @@
  */
 package org.neo4j.cypher.internal
 
-import org.scalatest.Assertions
-import org.junit.Test
-import org.junit.Assert._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class LRUCacheTest extends Assertions {
-  @Test def shouldStoreSingleValue() {
+class LRUCacheTest extends CypherFunSuite {
+
+  test("shouldStoreSingleValue") {
     val cache = new LRUCache[String, String](5)
     cache.getOrElseUpdate("hello", "world")
 
-    assert(cache.get("hello") === Some("world"))
+    cache.get("hello") should equal(Some("world"))
   }
 
-  def fillWithOneToFive(cache: LRUCache[String, String]) {
-    cache.put("1", "1")
-    cache.put("2", "2")
-    cache.put("3", "3")
-    cache.put("4", "4")
-    cache.put("5", "5")
-  }
-
-  @Test def shouldLooseTheFirstOne() {
+  test("shouldLooseTheFirstOne") {
     val cache = new LRUCache[String, String](5)
     fillWithOneToFive(cache)
 
     cache.getOrElseUpdate("6", "6")
 
-    assertFalse(cache.containsKey("1"))
+    cache.containsKey("1") should equal(false)
   }
 
-  @Test def shouldLooseTheLeastUsedItem() {
+  test("shouldLooseTheLeastUsedItem") {
     val cache = new LRUCache[String, String](5)
     fillWithOneToFive(cache)
 
@@ -59,7 +50,14 @@ class LRUCacheTest extends Assertions {
 
     cache.put("6", "6")
 
-    assertFalse(cache.containsKey("2"));
+    cache.containsKey("2") should equal(false);
   }
 
+  def fillWithOneToFive(cache: LRUCache[String, String]) {
+    cache.put("1", "1")
+    cache.put("2", "2")
+    cache.put("3", "3")
+    cache.put("4", "4")
+    cache.put("5", "5")
+  }
 }

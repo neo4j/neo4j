@@ -21,17 +21,18 @@ package org.neo4j.kernel.impl.nioneo.xa.command;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.*;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
 
 public interface LogHandler
 {
     void startLog();
 
-    void startEntry( LogEntry.Start startEntry ) throws IOException;
+    void startEntry( LogEntryStart startEntry ) throws IOException;
 
-    void onePhaseCommitEntry( LogEntry.OnePhaseCommit onePhaseCommitEntry ) throws IOException;
+    void onePhaseCommitEntry( OnePhaseCommit onePhaseCommitEntry ) throws IOException;
 
-    void commandEntry( LogEntry.Command commandEntry ) throws IOException;
+    void commandEntry( LogEntryCommand commandEntry ) throws IOException;
 
     void endLog( boolean success ) throws IOException;
 
@@ -51,19 +52,19 @@ public interface LogHandler
         }
 
         @Override
-        public void startEntry( LogEntry.Start startEntry ) throws IOException
+        public void startEntry( LogEntryStart startEntry ) throws IOException
         {
             delegate.startEntry( startEntry );
         }
 
         @Override
-        public void onePhaseCommitEntry( LogEntry.OnePhaseCommit onePhaseCommitEntry ) throws IOException
+        public void onePhaseCommitEntry( OnePhaseCommit onePhaseCommitEntry ) throws IOException
         {
             delegate.onePhaseCommitEntry( onePhaseCommitEntry );
         }
 
         @Override
-        public void commandEntry( LogEntry.Command commandEntry ) throws IOException
+        public void commandEntry( LogEntryCommand commandEntry ) throws IOException
         {
             delegate.commandEntry( commandEntry );
         }

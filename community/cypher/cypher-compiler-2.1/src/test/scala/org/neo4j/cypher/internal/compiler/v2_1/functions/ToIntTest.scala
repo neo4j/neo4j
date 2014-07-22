@@ -19,20 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.functions
 
-import org.junit.Test
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class ToIntTest extends FunctionTestBase("toInt")  {
 
-  @Test
-  def shouldAcceptCorrectTypes() {
+  test("shouldAcceptCorrectTypes") {
     testValidTypes(CTString)(CTInteger)
     testValidTypes(CTFloat)(CTInteger)
     testValidTypes(CTInteger)(CTInteger)
   }
 
-  @Test
-  def shouldFailTypeCheckForIncompatibleArguments() {
+  test("shouldFailTypeCheckForIncompatibleArguments") {
     testInvalidApplication(CTCollection(CTAny))(
       "Type mismatch: expected Float, Integer or String but was Collection<Any>"
     )
@@ -42,8 +39,7 @@ class ToIntTest extends FunctionTestBase("toInt")  {
     )
   }
 
-  @Test
-  def shouldFailIfWrongNumberOfArguments() {
+  test("shouldFailIfWrongNumberOfArguments") {
     testInvalidApplication()(
       "Insufficient parameters for function 'toInt'"
     )

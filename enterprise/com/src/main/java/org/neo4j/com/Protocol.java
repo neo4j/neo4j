@@ -19,8 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -32,6 +30,7 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -40,14 +39,17 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.util.Cursors;
 
 /**
  * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
@@ -98,7 +100,11 @@ public class Protocol
             {
                 LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
                 NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
-                exhaustAndClose( new PhysicalTransactionCursor( channel, reader, visitor ) );
+
+                try (PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, reader ))
+                {
+                    while (cursor.next() && visitor.visit( cursor.get() ));
+                }
             }
         };
         return new Response<PAYLOAD>( response, storeId, transactions, channelReleaser );
@@ -274,9 +280,9 @@ public class Protocol
 
             channel.get( header, headerLength );
 
-            LogEntry.Command entryRead;
+            LogEntryCommand entryRead;
             List<Command> commands = new LinkedList<>();
-            while (  (entryRead = (LogEntry.Command) reader.readLogEntry( channel )) != null )
+            while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
             {
                 commands.add( entryRead.getXaCommand() );
             }
@@ -296,9 +302,7 @@ public class Protocol
         {
             LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
             NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
-            AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>();
-            exhaustAndClose( new PhysicalTransactionCursor( channel, reader, accumulator ) );
-            return accumulator.getAccumulator();
+            return Cursors.iterable( new PhysicalTransactionCursor( channel, reader ) );
         }
     };
 
@@ -318,12 +322,12 @@ public class Protocol
             LogEntryWriterv1 writer = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
             for ( CommittedTransactionRepresentation tx : txs )
             {
-                LogEntry.Start startEntry = tx.getStartEntry();
+                LogEntryStart startEntry = tx.getStartEntry();
                 writer.writeStartEntry( startEntry.getMasterId(), startEntry.getLocalId(),
                         startEntry.getTimeWritten(), startEntry.getLastCommittedTxWhenTransactionStarted(),
                         startEntry.getAdditionalHeader() );
                 writer.serialize( tx.getTransactionRepresentation() );
-                LogEntry.Commit commitEntry = tx.getCommitEntry();
+                LogEntryCommit commitEntry = tx.getCommitEntry();
                 writer.writeCommitEntry( commitEntry.getTxId(), commitEntry.getTimeWritten() );
             }
         }

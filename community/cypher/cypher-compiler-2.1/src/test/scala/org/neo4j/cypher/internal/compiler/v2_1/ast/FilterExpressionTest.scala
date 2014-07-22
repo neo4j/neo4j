@@ -19,38 +19,34 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Assert._
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class FilterExpressionTest extends Assertions {
+class FilterExpressionTest extends CypherFunSuite {
 
   val dummyExpression = DummyExpression(
     possibleTypes = CTCollection(CTNode) | CTBoolean | CTCollection(CTString)
   )
 
-  @Test
-  def shouldHaveCollectionTypesOfInnerExpression() {
+  test("shouldHaveCollectionTypesOfInnerExpression") {
     val filter = FilterExpression(
       identifier = Identifier("x")(DummyPosition(5)),
       expression = dummyExpression,
       innerPredicate = Some(True()(DummyPosition(5)))
     )(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(), result.errors)
-    assertEquals(CTCollection(CTNode) | CTCollection(CTString), filter.types(result.state))
+    result.errors shouldBe empty
+    filter.types(result.state) should equal(CTCollection(CTNode) | CTCollection(CTString))
   }
 
-  @Test
-  def shouldRaiseSyntaxErrorIfMissingPredicate() {
+  test("shouldRaiseSyntaxErrorIfMissingPredicate") {
     val filter = FilterExpression(
       identifier = Identifier("x")(DummyPosition(5)),
       expression = dummyExpression,
       innerPredicate = None
     )(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("filter(...) requires a WHERE predicate", DummyPosition(0))), result.errors)
+    result.errors should equal(Seq(SemanticError("filter(...) requires a WHERE predicate", DummyPosition(0))))
   }
 }

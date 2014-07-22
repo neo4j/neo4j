@@ -28,7 +28,6 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -41,6 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReaderLogVersionBridge;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.String.format;
@@ -57,7 +57,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.DEFAULT;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
-import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 class RebuildFromLogs
 {
@@ -79,23 +78,20 @@ class RebuildFromLogs
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( sourceDir, FS );
         int startVersion = 0;
-        File logFile = logFiles.getVersionFileName( startVersion ); // assume we always start from version 0?
+        File logFile = logFiles.getLogFileForVersion( startVersion ); // assume we always start from version 0?
         LogVersionBridge versionBridge = new ReaderLogVersionBridge( FS, logFiles );
         ReadableLogChannel logChannel = new ReadAheadLogChannel(
                 new PhysicalLogVersionedStoreChannel( FS.open( logFile, "R" ), startVersion ),
                 versionBridge, DEFAULT_READ_AHEAD_SIZE );
-        Visitor<CommittedTransactionRepresentation, IOException> visitor = new Visitor<CommittedTransactionRepresentation, IOException>()
+
+        try (IOCursor<CommittedTransactionRepresentation> cursor = new PhysicalTransactionCursor( logChannel,new VersionAwareLogEntryReader( DEFAULT ) ) )
         {
-            @Override
-            public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
+            while (cursor.next())
             {
-                storeApplier.apply( transaction.getTransactionRepresentation(),
-                        transaction.getCommitEntry().getTxId(), true );
-                return true;
+                storeApplier.apply( cursor.get().getTransactionRepresentation(), cursor.get().getCommitEntry().getTxId(), true );
             }
-        };
-        exhaustAndClose( new PhysicalTransactionCursor( logChannel,
-                new VersionAwareLogEntryReader( DEFAULT ), visitor ) );
+        }
+
         return this;
     }
 
@@ -184,14 +180,21 @@ class RebuildFromLogs
     private static long findLastTransactionId( PhysicalLogFiles logFiles, long highestVersion )
             throws IOException
     {
-        File logFile = logFiles.getVersionFileName( highestVersion );
+        File logFile = logFiles.getLogFileForVersion( highestVersion );
         ReadableLogChannel logChannel = new ReadAheadLogChannel(
                 new PhysicalLogVersionedStoreChannel( FS.open( logFile, "R" ), highestVersion ),
                 NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
-        TransactionIdSeeker transactionIdSeeker = new TransactionIdSeeker();
-        exhaustAndClose( new PhysicalTransactionCursor( logChannel,
-                new VersionAwareLogEntryReader( DEFAULT ), transactionIdSeeker ) );
-        return transactionIdSeeker.highestSeenTransactionId();
+
+        long lastTransactionId = -1;
+
+        try (IOCursor<CommittedTransactionRepresentation> cursor = new PhysicalTransactionCursor( logChannel, new VersionAwareLogEntryReader( DEFAULT )))
+        {
+            while (cursor.next())
+            {
+                lastTransactionId = cursor.get().getCommitEntry().getTxId();
+            }
+        }
+        return lastTransactionId;
     }
 
     private void checkConsistency() throws ConsistencyCheckIncompleteException
@@ -214,22 +217,5 @@ class RebuildFromLogs
         System.err.println( "WHERE:   <source dir>  is the path for where transactions to rebuild from are stored" );
         System.err.println( "         <target dir>  is the path for where to create the new graph database" );
         System.err.println( "         -full     --  to run a full check over the entire store for each transaction" );
-    }
-
-    private static final class TransactionIdSeeker implements Visitor<CommittedTransactionRepresentation, IOException>
-    {
-        private long lastTransactionId = -1;
-
-        @Override
-        public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
-        {
-            lastTransactionId = transaction.getCommitEntry().getTxId();
-            return true;
-        }
-
-        public long highestSeenTransactionId()
-        {
-            return lastTransactionId;
-        }
     }
 }

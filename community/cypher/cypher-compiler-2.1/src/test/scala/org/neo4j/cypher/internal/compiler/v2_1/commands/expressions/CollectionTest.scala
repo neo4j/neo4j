@@ -1,11 +1,3 @@
-package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
-
-import org.scalatest.Assertions
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_1.symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.AnyType
-
 /**
  * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -25,19 +17,21 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols.AnyType
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-class CollectionTest extends Assertions {
-  @Test
-  def empty_collection_should_have_any_type() {
-    assert(Collection().getType(SymbolTable()) === CTCollection(CTAny))
+package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
+
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+
+class CollectionTest extends CypherFunSuite {
+  test("empty_collection_should_have_any_type") {
+    Collection().getType(SymbolTable()) should equal(CTCollection(CTAny))
   }
 
-  @Test
-  def collection_with_one_item_should_be_typed_for_that_items_type() {
-    assert(Collection(Literal(1)).getType(SymbolTable()) === CTCollection(CTNumber))
+  test("collection_with_one_item_should_be_typed_for_that_items_type") {
+    Collection(Literal(1)).getType(SymbolTable()) should equal(CTCollection(CTNumber))
   }
 
-  @Test
-  def collection_with_several_items_should_be_typed_for_their_common_supertype(){
-    assert(Collection(Literal(1), Literal(true)).getType(SymbolTable()) === CTCollection(CTAny))
+  test("collection_with_several_items_should_be_typed_for_their_common_supertype"){
+    Collection(Literal(1), Literal(true)).getType(SymbolTable()) should equal(CTCollection(CTAny))
   }
 }

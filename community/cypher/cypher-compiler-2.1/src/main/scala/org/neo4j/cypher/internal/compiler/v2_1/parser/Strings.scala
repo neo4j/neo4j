@@ -47,6 +47,7 @@ trait Strings extends Base {
   }
 
   protected def Unicode = rule { ch('u') ~ group(HexDigit ~ HexDigit ~ HexDigit ~ HexDigit) ~> (java.lang.Integer.parseInt(_, 16)) }
+  private def HexDigit = rule { "0" - "9" | "a" - "f" | "A" - "F" }
 
   protected def appendToStringBuffer(c: Any): Context[Any] => Unit = { ctx =>
     ctx.getValueStack.peek.asInstanceOf[StringBuilder].append(c)

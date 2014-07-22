@@ -19,62 +19,54 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import org.scalatest.Assertions
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{MatchRelationship, MatchPattern}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{MatchPattern, MatchRelationship}
 
-class MatchPatternTest extends Assertions {
+class MatchPatternTest extends CypherFunSuite {
 
-  @Test
-  def should_find_disjoint_graph_with_single_nodes() {
+  test("should_find_disjoint_graph_with_single_nodes") {
     // Given
     val pattern = new MatchPattern(Seq("A", "B"), Seq())
 
     // When and then
-    assert( pattern.disconnectedPatterns === Seq(
+    pattern.disconnectedPatterns should equal(Seq(
       new MatchPattern(Seq("A"), Seq()),
-      new MatchPattern(Seq("B"), Seq())))
-
+      new MatchPattern(Seq("B"), Seq()))
+    )
   }
 
-  @Test
-  def should_be_non_empty_if_it_contains_a_node() {
+  test("should_be_non_empty_if_it_contains_a_node") {
     // When and then
-    assert( new MatchPattern(Seq("A"), Seq()).nonEmpty === true)
+    new MatchPattern(Seq("A"), Seq()).nonEmpty should equal(true)
   }
 
-  @Test
-  def should_find_single_graph_for_simple_rel() {
+  test("should_find_single_graph_for_simple_rel") {
     // Given
     val pattern = new MatchPattern(Seq("A", "B"), Seq(MatchRelationship(None, "A", "B")))
 
     // When and then
-    assert( pattern.disconnectedPatterns === Seq(pattern))
-
+    pattern.disconnectedPatterns should equal(Seq(pattern))
   }
 
-  @Test
-  def should_find_deeply_nested_disjoint_graphs() {
+  test("should_find_deeply_nested_disjoint_graphs") {
     // Given
     val pattern = new MatchPattern(Seq("A", "B", "C", "D"),
         Seq(MatchRelationship(None, "A", "B"), MatchRelationship(None, "B", "D")))
 
     // When and then
-    assert( pattern.disconnectedPatterns === Seq(
+    pattern.disconnectedPatterns should equal(Seq(
       new MatchPattern(Seq("A", "B", "D"), Seq(MatchRelationship(None, "A", "B"), MatchRelationship(None, "B", "D"))),
-      new MatchPattern(Seq("C"), Seq())))
-
+      new MatchPattern(Seq("C"), Seq()))
+    )
   }
 
-  @Test
-  def should_list_subgraphs_without_specified_points() {
+  test("should_list_subgraphs_without_specified_points") {
     // Given
     val pattern = new MatchPattern(Seq("A", "B", "C"), Seq(MatchRelationship(None, "A", "B")))
 
     // When and then
-    assert( pattern.disconnectedPatternsWithout(Seq("B")) === Seq(
-      new MatchPattern(Seq("C"), Seq())))
-
+    pattern.disconnectedPatternsWithout(Seq("B")) should equal(Seq(
+      new MatchPattern(Seq("C"), Seq()))
+    )
   }
-
 }

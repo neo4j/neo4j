@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.scalatest.Assertions
-import org.junit.Test
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class ExtractFunctionTest extends Assertions {
-  @Test def apa() {
+class ExtractFunctionTest extends CypherFunSuite {
+
+  test("function type") {
     //GIVEN
     val collection = Literal(List(1, 2, 3))
     val func = new ExtractFunction(collection, "x", StrFunction(Identifier("x")))
@@ -35,6 +34,6 @@ class ExtractFunctionTest extends Assertions {
     val typ = func.evaluateType(CTCollection(CTString), symbols)
 
     //THEN
-    assert(typ === CTCollection(CTString))
+    typ should equal(CTCollection(CTString))
   }
 }

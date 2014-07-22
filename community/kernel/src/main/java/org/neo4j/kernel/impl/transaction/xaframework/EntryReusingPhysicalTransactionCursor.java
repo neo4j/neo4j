@@ -19,22 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
 
 public class EntryReusingPhysicalTransactionCursor extends PhysicalTransactionCursor
 {
     private final List<Command> entries = new ArrayList<>();
 
     public EntryReusingPhysicalTransactionCursor( ReadableLogChannel channel,
-            LogEntryReader<ReadableLogChannel> entryReader,
-            Visitor<CommittedTransactionRepresentation, IOException> visitor )
+            LogEntryReader<ReadableLogChannel> entryReader)
     {
-        super( channel, entryReader, visitor );
+        super( channel, entryReader);
     }
 
     @Override

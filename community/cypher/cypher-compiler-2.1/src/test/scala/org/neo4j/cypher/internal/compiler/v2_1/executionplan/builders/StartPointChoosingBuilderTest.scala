@@ -19,26 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands._
-import commands.expressions._
-import commands.values.TokenType._
-import commands.values.{KeyToken, TokenType}
-import executionplan.PartiallySolvedQuery
-import mutation.UpdateAction
-import pipes.FakePipe
-import spi.PlanContext
-import symbols._
+import org.mockito.Matchers
+import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.UpdateAction
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.FakePipe
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.junit.Test
-import org.junit.Assert.assertEquals
-import org.mockito.Mockito._
-import org.scalatest.mock.MockitoSugar
-import org.mockito.Matchers
 
-class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
+class StartPointChoosingBuilderTest extends BuilderTest {
   def builder = new StartPointChoosingBuilder
 
   context = mock[PlanContext]
@@ -51,8 +47,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   val otherPropertyKey = PropertyKey(otherProperty)
   val expression = Literal(42)
 
-  @Test
-  def should_create_multiple_start_points_for_disjoint_graphs() {
+  test("should_create_multiple_start_points_for_disjoint_graphs") {
     // Given
     val query = q(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier))
@@ -62,12 +57,11 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList === Seq(Unsolved(AllNodes(identifier)),
+    plan.query.start.toList should equal(Seq(Unsolved(AllNodes(identifier)),
       Unsolved(AllNodes(otherIdentifier))))
   }
 
-  @Test
-  def should_not_create_start_points_tail_query() {
+  test("should_not_create_start_points_tail_query") {
     // Given
     val query = q(
       patterns = Seq(SingleNode(identifier)),
@@ -80,12 +74,11 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList === Seq(Unsolved(AllNodes(identifier))))
-    assert(plan.query.tail.get.start.toList === Seq())
+    plan.query.start.toList should equal(Seq(Unsolved(AllNodes(identifier))))
+    plan.query.tail.get.start.toList should equal(Seq())
   }
 
-  @Test
-  def should_create_multiple_index_start_points_when_available_for_disjoint_graphs() {
+  test("should_create_multiple_index_start_points_when_available_for_disjoint_graphs") {
     // Given
     val query = q(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier)),
@@ -100,13 +93,12 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList === Seq(
+    plan.query.start.toList should equal(Seq(
       Unsolved(SchemaIndex(identifier, "Person", "prop1", AnyIndex, None)),
       Unsolved(AllNodes(otherIdentifier))))
   }
 
-  @Test
-  def should_not_accept_queries_with_start_items_on_all_levels() {
+  test("should_not_accept_queries_with_start_items_on_all_levels") {
     assertRejects(
       q(start = Seq(NodeById("n", 0)))
     )
@@ -116,8 +108,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     )
   }
 
-  @Test
-  def should_pick_an_index_if_only_one_possible_exists() {
+  test("should_pick_an_index_if_only_one_possible_exists") {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
@@ -133,112 +124,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList === Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
+    plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
   }
 
-  @Test
-  def should_pick_an_uniqueness_constraint_index_if_only_one_possible_exists() {
-    // Given
-    val query = q(where = Seq(
-      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(Property(Identifier(identifier), propertyKey), expression)
-    ), patterns = Seq(
-      SingleNode(identifier)
-    ))
-
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(context.getUniquenessConstraint( "Person", "prop" )).thenReturn(Some(new UniquenessConstraint(123,456)))
-
-    // When
-    val plan = assertAccepts(query)
-
-    // Then
-    assert(plan.query.start.toList === Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
-  }
-
-
-  @Test
-  def should_pick_an_index_if_only_one_possible_exists_other_side() {
-    // Given
-    val query = q(where = Seq(
-      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(expression, Property(Identifier(identifier), propertyKey))
-    ), patterns = Seq(
-      SingleNode(identifier)
-    ))
-
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
-
-    // When
-    val plan = assertAccepts(query)
-
-    // Then
-    assert(plan.query.start.toList === List(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
-  }
-
-  @Test
-  def should_pick_an_uniqueness_constraint_index_if_only_one_possible_exists_other_side() {
-    // Given
-    val query = q(where = Seq(
-      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(expression, Property(Identifier(identifier), propertyKey))
-    ), patterns = Seq(
-      SingleNode(identifier)
-    ))
-
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(context.getUniquenessConstraint( "Person", "prop" )).thenReturn(Some(new UniquenessConstraint(123,456)))
-
-    // When
-    val plan = assertAccepts(query)
-
-    // Then
-    assert(plan.query.start.toList === Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
-  }
-
-  @Test
-  def should_pick_an_index_if_only_one_possible_nullable_property_exists() {
-    // Given
-    val query = q(where = Seq(
-      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(Property(Identifier(identifier), propertyKey), expression)
-    ), patterns = Seq(
-      SingleNode(identifier)
-    ))
-
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
-
-    // When
-    val plan = assertAccepts(query)
-
-    // Then
-    assert(plan.query.start.toList === Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
-  }
-
-  @Test
-  def should_pick_an_index_if_only_one_possible_nullable_property_exists_other_side() {
-    // Given
-    val query = q(where = Seq(
-      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(expression, Property(Identifier(identifier), propertyKey))
-    ), patterns = Seq(
-      SingleNode(identifier)
-    ))
-
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
-
-    // When
-    val plan = assertAccepts(query)
-
-    // Then
-    assert(plan.query.start.toList === Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
-  }
-
-  @Test
-  def should_pick_an_uniqueness_constraint_index_if_only_one_possible_nullable_property_exists() {
+  test("should_pick_an_uniqueness_constraint_index_if_only_one_possible_exists") {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
@@ -254,11 +143,106 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList === Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
+    plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
   }
 
-  @Test
-  def should_pick_any_index_available() {
+
+  test("should_pick_an_index_if_only_one_possible_exists_other_side") {
+    // Given
+    val query = q(where = Seq(
+      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
+      Equals(expression, Property(Identifier(identifier), propertyKey))
+    ), patterns = Seq(
+      SingleNode(identifier)
+    ))
+
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    plan.query.start.toList should equal(List(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
+  }
+
+  test("should_pick_an_uniqueness_constraint_index_if_only_one_possible_exists_other_side") {
+    // Given
+    val query = q(where = Seq(
+      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
+      Equals(expression, Property(Identifier(identifier), propertyKey))
+    ), patterns = Seq(
+      SingleNode(identifier)
+    ))
+
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getUniquenessConstraint( "Person", "prop" )).thenReturn(Some(new UniquenessConstraint(123,456)))
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
+  }
+
+  test("should_pick_an_index_if_only_one_possible_nullable_property_exists") {
+    // Given
+    val query = q(where = Seq(
+      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
+      Equals(Property(Identifier(identifier), propertyKey), expression)
+    ), patterns = Seq(
+      SingleNode(identifier)
+    ))
+
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
+  }
+
+  test("should_pick_an_index_if_only_one_possible_nullable_property_exists_other_side") {
+    // Given
+    val query = q(where = Seq(
+      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
+      Equals(expression, Property(Identifier(identifier), propertyKey))
+    ), patterns = Seq(
+      SingleNode(identifier)
+    ))
+
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
+  }
+
+  test("should_pick_an_uniqueness_constraint_index_if_only_one_possible_nullable_property_exists") {
+    // Given
+    val query = q(where = Seq(
+      HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
+      Equals(Property(Identifier(identifier), propertyKey), expression)
+    ), patterns = Seq(
+      SingleNode(identifier)
+    ))
+
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getUniquenessConstraint( "Person", "prop" )).thenReturn(Some(new UniquenessConstraint(123,456)))
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
+  }
+
+  test("should_pick_any_index_available") {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
@@ -276,11 +260,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val result = assertAccepts(query).query
 
     // Then
-    assert(result.start.exists(_.token.isInstanceOf[SchemaIndex]))
+    result.start.exists(_.token.isInstanceOf[SchemaIndex]) should equal(true)
   }
 
-  @Test
-  def should_prefer_uniqueness_constraint_indexes_over_other_indexes() {
+  test("should_prefer_uniqueness_constraint_indexes_over_other_indexes") {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
@@ -299,11 +282,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val result = assertAccepts(query).query
 
     // Then
-    assertEquals(Some(Unsolved(SchemaIndex(identifier, label, otherProperty, AnyIndex, None))), result.start.find(_.token.isInstanceOf[SchemaIndex]))
+    result.start.find(_.token.isInstanceOf[SchemaIndex]) should equal(Some(Unsolved(SchemaIndex(identifier, label, otherProperty, AnyIndex, None))))
   }
 
-  @Test
-  def should_prefer_uniqueness_constraint_indexes_over_other_indexes_other_side() {
+  test("should_prefer_uniqueness_constraint_indexes_over_other_indexes_other_side") {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
@@ -322,11 +304,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val result = assertAccepts(query).query
 
     // Then
-    assertEquals(Some(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))), result.start.find(_.token.isInstanceOf[SchemaIndex]))
+    result.start.find(_.token.isInstanceOf[SchemaIndex]) should equal(Some(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
   }
 
-  @Test
-  def should_produce_label_start_points_when_no_property_predicate_is_used() {
+  test("should_produce_label_start_points_when_no_property_predicate_is_used") {
     // Given MATCH n:Person
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label))
@@ -337,11 +318,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // When
     val plan = assertAccepts(query)
 
-    assert(plan.query.start.toList === List(Unsolved(NodeByLabel("n", "Person"))))
+    plan.query.start.toList should equal(List(Unsolved(NodeByLabel("n", "Person"))))
   }
 
-  @Test
-  def should_identify_start_points_with_id_from_where() {
+  test("should_identify_start_points_with_id_from_where") {
     // Given MATCH n WHERE id(n) == 0
     val nodeId = 0
     val query = q(where = Seq(
@@ -353,11 +333,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // When
     val plan = assertAccepts(query)
 
-    assert(plan.query.start.toList === List(Unsolved(NodeByIdOrEmpty(identifier, Literal(nodeId)))))
+    plan.query.start.toList should equal(List(Unsolved(NodeByIdOrEmpty(identifier, Literal(nodeId)))))
   }
 
-  @Test
-  def should_identify_start_points_with_id_from_expression_over_bound_identifier() {
+  test("should_identify_start_points_with_id_from_expression_over_bound_identifier") {
     // Given ... WITH n MATCH p WHERE id(p) = n.otherId
 
     val propertyLookup: Property = Property(Identifier(identifier), PropertyKey("otherId"))
@@ -370,12 +349,11 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val pipe = new FakePipe(Seq.empty, identifier -> CTNode)
     val plan = assertAccepts(pipe, query)
 
-    assert(plan.query.start.toList === List(Unsolved(NodeByIdOrEmpty(otherIdentifier, propertyLookup))))
-    assert(plan.query.where === Seq(Solved(equalityPredicate)))
+    plan.query.start.toList should equal(List(Unsolved(NodeByIdOrEmpty(otherIdentifier, propertyLookup))))
+    plan.query.where should equal(Seq(Solved(equalityPredicate)))
   }
 
-  @Test
-  def should_identify_start_points_with_id_from_collection_expression_over_bound_identifier() {
+  test("should_identify_start_points_with_id_from_collection_expression_over_bound_identifier") {
     // Given ... WITH n MATCH p WHERE id(p) IN n.collection
 
     val propertyLookup: Property = Property(Identifier(identifier), PropertyKey("collection"))
@@ -389,12 +367,11 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val pipe = new FakePipe(Seq.empty, identifier -> CTNode)
     val plan = assertAccepts(pipe, query)
 
-    assert(plan.query.start.toList === List(Unsolved(NodeByIdOrEmpty(otherIdentifier, propertyLookup))))
-    assert(plan.query.where === Seq(Solved(collectionPredicate)))
+    plan.query.start.toList should equal(List(Unsolved(NodeByIdOrEmpty(otherIdentifier, propertyLookup))))
+    plan.query.where should equal(Seq(Solved(collectionPredicate)))
   }
 
-  @Test
-  def should_produce_label_start_points_when_no_matching_index_exist() {
+  test("should_produce_label_start_points_when_no_matching_index_exist") {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
@@ -410,11 +387,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList === Seq(Unsolved(NodeByLabel("n", "Person"))))
+    plan.query.start.toList should equal(Seq(Unsolved(NodeByLabel("n", "Person"))))
   }
 
-  @Test
-  def should_pick_a_global_start_point_if_nothing_else_is_possible() {
+  test("should_pick_a_global_start_point_if_nothing_else_is_possible") {
     // Given
     val query = PartiallySolvedQuery().copy(
       patterns = Seq(Unsolved(SingleNode(identifier)))
@@ -423,11 +399,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList === Seq(Unsolved(AllNodes(identifier))))
+    plan.query.start.toList should equal(Seq(Unsolved(AllNodes(identifier))))
   }
 
-  @Test
-  def should_be_able_to_figure_out_shortest_path_patterns() {
+  test("should_be_able_to_figure_out_shortest_path_patterns") {
     // Given
     val expression1 = Literal(42)
     val expression2 = Literal(666)
@@ -450,13 +425,12 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList === Seq(
+    plan.query.start.toList should equal(Seq(
       Unsolved(NodeByLabel(identifier, label)),
       Unsolved(AllNodes(otherIdentifier))))
   }
 
-  @Test
-  def should_find_start_items_for_all_patterns() {
+  test("should_find_start_items_for_all_patterns") {
     // Given
 
     // START a=node(0) MATCH a-[x]->b, c-[x]->d
@@ -472,11 +446,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.contains(Unsolved(AllNodes("c"))))
+    plan.query.start.contains(Unsolved(AllNodes("c"))) should equal(true)
   }
 
-  @Test
-  def should_not_introduce_start_points_if_provided_by_last_pipe() {
+  test("should_not_introduce_start_points_if_provided_by_last_pipe") {
     // Given
     val pipe = new FakePipe(Iterator.empty, identifier -> CTNode)
     val query = q(
@@ -487,11 +460,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(pipe, query)
 
     // Then
-    assert(plan.query.start.toList === Seq(Unsolved(AllNodes(otherIdentifier))))
+    plan.query.start.toList should equal(Seq(Unsolved(AllNodes(otherIdentifier))))
   }
 
-  @Test
-  def should_not_introduce_start_points_if_relationship_is_bound() {
+  test("should_not_introduce_start_points_if_relationship_is_bound") {
     // Given
     val query = q(
       start = Seq(RelationshipById("r", 123)),
