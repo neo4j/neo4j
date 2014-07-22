@@ -157,7 +157,7 @@ public class TransactionHandleTest
 
         ServerExecutionEngine executionEngine = mock( ServerExecutionEngine.class );
         ExecutionResult executionResult = mock( ExecutionResult.class );
-        when( executionEngine.isPeriodicCommitQuery( queryText) ).thenReturn( true );
+        when( executionEngine.isPeriodicCommit( queryText) ).thenReturn( true );
         when( executionEngine.execute( queryText ) ).thenReturn( executionResult );
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
@@ -170,7 +170,7 @@ public class TransactionHandleTest
         handle.commit(statements(statement), output, true);
 
         // then
-        verify( executionEngine ).isPeriodicCommitQuery(queryText);
+        verify( executionEngine ).isPeriodicCommit( queryText );
         verify( executionEngine ).execute(queryText, map());
 
         InOrder outputOrder = inOrder( output );

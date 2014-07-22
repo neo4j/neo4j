@@ -985,8 +985,6 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
       buildPlannerQuery("MATCH (row) WITH collect(row) AS rows UNWIND rows AS node RETURN node", normalize = true)
 
-    println(query)
-
     query.graph.patternNodes should equal(Set(IdName("row")))
 
     val functionName: FunctionName = FunctionName("collect") _

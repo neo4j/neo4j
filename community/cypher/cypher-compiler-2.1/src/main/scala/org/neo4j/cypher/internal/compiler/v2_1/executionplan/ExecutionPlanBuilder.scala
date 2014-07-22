@@ -50,13 +50,13 @@ trait NewQueryPlanSuccessRateMonitor {
 }
 
 trait PipeBuilder {
-  def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo
 }
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService,
                            pipeBuilder: PipeBuilder) extends PatternGraphBuilder {
 
-  def build(planContext: PlanContext, inputQuery: ParsedQuery): ExecutionPlan = {
+  def build(planContext: PlanContext, inputQuery: PreparedQuery): ExecutionPlan = {
     val abstractQuery = inputQuery.abstractQuery
 
     val PipeInfo(pipe, isUpdating, periodicCommitInfo) = pipeBuilder.producePlan(inputQuery, planContext)
@@ -68,6 +68,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
 
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new UpdateCountingQueryContext(queryContext), params, true)
+      def isPeriodicCommit = periodicCommitInfo.isDefined
     }
   }
 
@@ -126,8 +127,6 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
             new PipeExecutionResult(closingIterator, columns, state, descriptor)
       }
     }
-
-  private def containsLoadCsv(pipe: Pipe): Boolean = pipe.exists(_.isInstanceOf[LoadCSVPipe])
 }
 
 class ExecutionWorkflowBuilder(initialQueryContext: QueryContext) {

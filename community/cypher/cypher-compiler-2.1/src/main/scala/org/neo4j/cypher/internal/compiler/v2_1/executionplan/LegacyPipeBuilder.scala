@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{Monitors, ParsedQuery}
+import org.neo4j.cypher.internal.compiler.v2_1.{Monitors, PreparedQuery}
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 trait ExecutionPlanInProgressRewriter {
@@ -38,7 +38,7 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
-  def producePlan(in: ParsedQuery, planContext: PlanContext): PipeInfo = in.abstractQuery match {
+  def producePlan(in: PreparedQuery, planContext: PlanContext): PipeInfo = in.abstractQuery match {
     case q: PeriodicCommitQuery =>
       producePlan(in.copy(abstractQuery = q.query), planContext).
       copy(periodicCommit = Some(PeriodicCommitInfo(q.batchSize)))
