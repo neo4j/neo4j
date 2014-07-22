@@ -136,7 +136,10 @@ public enum HeartbeatState
                                 long lastLearned = Long.parseLong( message.getHeader( "last-learned" ) );
                                 if ( lastLearned > context.getLastKnownLearnedInstanceInCluster() )
                                 {
-                                    outgoing.offer( internal( LearnerMessage.catchUp, lastLearned ) );
+                                    Message<LearnerMessage> catchUpMessage = message.copyHeadersTo(
+                                            internal( LearnerMessage.catchUp, lastLearned ),
+                                            Message.FROM );
+                                    outgoing.offer( catchUpMessage );
                                 }
                             }
 
