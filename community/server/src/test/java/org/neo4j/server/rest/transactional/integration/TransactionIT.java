@@ -245,6 +245,33 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
+    public void begin_and_execute_cypher_21_periodic_commit_that_returns_data_and_commit() throws Exception
+    {
+        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL() {
+            @Override
+            public void execute( String url ) throws Exception
+            {
+                long nodesInDatabaseBeforeTransaction = countNodes();
+
+                // begin and execute and commit
+                Response response = http.POST(
+                        "/db/data/transaction/commit",
+                        quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.1 USING PERIODIC COMMIT LOAD CSV FROM \\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
+                );
+
+                assertThat( response.status(), equalTo( 200 ) );
+
+                assertThat( response, containsNoErrors() );
+
+                JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
+                assertThat(columns.toString(), equalTo("[\"n\"]"));
+
+                assertThat(countNodes(), equalTo(nodesInDatabaseBeforeTransaction + 1));
+            }
+        } );
+    }
+
+    @Test
     public void begin_and_execute_periodic_commit_followed_by_another_statement_and_commit() throws Exception
     {
         ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()

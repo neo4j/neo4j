@@ -42,7 +42,7 @@ case class Planner(monitors: Monitors,
 
   val executionPlanBuilder:PipeExecutionPlanBuilder = maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(monitors))
 
-  def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo =
     producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)
 
   private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo = {

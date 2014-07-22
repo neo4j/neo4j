@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.kernel.monitoring.Monitors
-import org.neo4j.kernel.impl.api.Kernel
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
+import org.neo4j.cypher.internal.compiler.v2_1.commands.AbstractQuery
+import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
 
-class CypherCompilerTest extends CypherFunSuite {
+case class PreparedQuery(statement: Statement,
+                         abstractQuery: AbstractQuery,
+                         semanticTable: SemanticTable,
+                         queryText: String,
+                         extractedParams: Map[String, Any]) {
 
-  test("isPeriodicCommit handles versioned queries") {
-    val gds = mock[GraphDatabaseService]
-    val kernel = mock[Kernel]
-    val compiler = new CypherCompiler(gds, kernel, new Monitors)
-    compiler.isPeriodicCommit("CYPHER 2.1 USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE ()") should equal(true)
+  def isPeriodicCommit = statement match {
+    case ast.Query(Some(_), _) => true
+    case _ => false
   }
+
 }

@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_1.ParsedQuery
+import org.neo4j.cypher.internal.compiler.v2_1.PreparedQuery
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
 class LegacyVsNewPipeBuilder(oldBuilder: PipeBuilder,
                              newBuilder: PipeBuilder,
                              monitor: NewQueryPlanSuccessRateMonitor) extends PipeBuilder {
-  def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo = {
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
     val queryText = inputQuery.queryText
     try {
       monitor.newQuerySeen(queryText, inputQuery.statement)
