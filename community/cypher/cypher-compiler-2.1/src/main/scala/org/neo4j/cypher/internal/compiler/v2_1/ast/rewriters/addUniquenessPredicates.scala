@@ -28,24 +28,30 @@ object addUniquenessPredicates extends Rewriter {
 
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 
+  case class UniqueRel(name: String, types: Set[RelTypeName]) {
+    def isAlwaysDifferentFrom(other: UniqueRel) =
+      types.nonEmpty && other.types.nonEmpty && (types intersect other.types).isEmpty
+  }
+
   private val instance: Rewriter = Rewriter.lift {
 
     case m@Match(_, pattern: Pattern, _, where: Option[Where]) =>
-      val relNames: Seq[String] = pattern.treeFold(Seq.empty[String]) {
+      val uniqueRels: Seq[UniqueRel] = pattern.treeFold(Seq.empty[UniqueRel]) {
         case _: ShortestPaths =>
           (acc, _) => acc
 
-        case RelationshipChain(_, RelationshipPattern(r, _, _, None, _, _), _) =>
+        case RelationshipChain(_, RelationshipPattern(r, _, types, None, _, _), _) =>
           (acc, children) => {
             val relName: String = r.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns")).name
-            children(acc :+ relName)
+            val rel = UniqueRel(relName, types.toSet)
+            children(acc :+ rel)
           }
       }
 
-      if (relNames.size < 2) {
+      if (uniqueRels.size < 2) {
         m
       } else {
-        val maybePredicate: Option[Expression] = createPredicateFor(relNames, m.position)
+        val maybePredicate: Option[Expression] = createPredicateFor(uniqueRels, m.position)
         val newWhere: Option[Where] = (where, maybePredicate) match {
           case (Some(oldWhere), Some(newPredicate)) =>
             Some(oldWhere.copy(expression = And(oldWhere.expression, newPredicate)(m.position))(m.position))
@@ -59,11 +65,11 @@ object addUniquenessPredicates extends Rewriter {
       }
   }
 
-  private def createPredicateFor(relNames: Seq[String], pos: InputPosition): Option[Expression] = {
+  private def createPredicateFor(uniqueRels: Seq[UniqueRel], pos: InputPosition): Option[Expression] = {
     val predicates: Seq[Expression] = for {
-      x <- relNames
-      y <- relNames if x < y
-    } yield NotEquals(Identifier(x)(pos), Identifier(y)(pos))(pos)
+      x <- uniqueRels
+      y <- uniqueRels if x.name < y.name && !x.isAlwaysDifferentFrom(y)
+    } yield NotEquals(Identifier(x.name)(pos), Identifier(y.name)(pos))(pos)
 
     predicates.reduceOption(And(_, _)(pos))
   }

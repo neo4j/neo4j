@@ -45,6 +45,24 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
       "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) WHERE r1 <> r2 AND r1 <> r3 AND r2 <> r3 RETURN *")
   }
 
+  test("no uniqueness check between relationships of different type") {
+    assertRewrite(
+      "MATCH (a)-[r1:X]->(b)-[r2:Y]->(c) RETURN *",
+      "MATCH (a)-[r1:X]->(b)-[r2:Y]->(c) RETURN *")
+
+    assertRewrite(
+      "MATCH (a)-[r1:X]->(b)-[r2:X|Y]->(c) RETURN *",
+      "MATCH (a)-[r1:X]->(b)-[r2:X|Y]->(c) WHERE r1 <> r2 RETURN *")
+
+    assertRewrite(
+      "MATCH (a)-[r1]->(b)-[r2:X]->(c) RETURN *",
+      "MATCH (a)-[r1]->(b)-[r2:X]->(c) WHERE r1 <> r2 RETURN *")
+
+    assertRewrite(
+      "MATCH (a)-[r1]->(b)-[r2]->(c) RETURN *",
+      "MATCH (a)-[r1]->(b)-[r2]->(c) WHERE r1 <> r2 RETURN *")
+  }
+
   test("ignores shortestPath relationships for uniqueness") {
     assertRewrite(
       "MATCH (a)-[r1]->(b), shortestPath((a)-[r]->(b)) RETURN *",
