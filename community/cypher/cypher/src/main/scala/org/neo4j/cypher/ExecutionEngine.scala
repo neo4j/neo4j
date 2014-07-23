@@ -27,10 +27,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
 import scala.collection.JavaConverters._
 import java.util.{Map => JavaMap}
-import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.cypher.internal.compiler.v2_1.{MonitoringCacheAccessor, CypherCacheMonitor}
+import org.neo4j.cypher.internal.compiler.v2_2.{MonitoringCacheAccessor, CypherCacheMonitor}
 
 import org.neo4j.cypher.internal.CypherCompiler
 import org.neo4j.cypher.internal.TransactionInfo
