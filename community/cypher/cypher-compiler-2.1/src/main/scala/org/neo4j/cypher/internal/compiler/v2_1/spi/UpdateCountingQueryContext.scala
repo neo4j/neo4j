@@ -120,7 +120,6 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
       inner.delete(obj)
     }
 
-
     override def removeProperty(id: Long, propertyKeyId: Int) {
       propertiesSet.increase()
       inner.removeProperty(id, propertyKeyId)

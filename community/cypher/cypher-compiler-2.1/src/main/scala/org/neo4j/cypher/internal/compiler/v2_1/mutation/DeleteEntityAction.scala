@@ -43,16 +43,15 @@ case class DeleteEntityAction(elementToDelete: Expression)
   }
 
   private def delete(x: PropertyContainer, state: QueryState) {
-    val nodeManager: NodeManager = state.graphDatabaseAPI.getDependencyResolver.resolveDependency(classOf[NodeManager])
-
     x match {
-      case n: Node if !nodeManager.isDeleted(n) =>
+      case n: Node if !state.query.nodeOps.isDeleted(n)=>
         state.query.nodeOps.delete(n)
 
-      case r: Relationship if !nodeManager.isDeleted(r) =>
+      case r: Relationship if !state.query.relationshipOps.isDeleted(r) =>
         state.query.relationshipOps.delete(r)
 
-      case _ => // Entity is already deleted. No need to do anything
+      case _ =>
+        // Entity is already deleted. No need to do anything
     }
   }
 

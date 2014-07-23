@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.spi
 
 import org.neo4j.graphdb.{Relationship, PropertyContainer, Direction, Node}
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.kernel.InternalAbstractGraphDatabase
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
@@ -128,4 +126,6 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   def indexQuery(name: String, query: Any): Iterator[T] = manyDbHits(inner.indexQuery(name, query))
 
   def all: Iterator[T] = manyDbHits(inner.all)
+
+  def isDeleted(obj: T): Boolean = inner.isDeleted(obj)
 }
