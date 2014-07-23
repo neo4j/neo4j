@@ -58,6 +58,8 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
         repairUsing( kit );
 
         // Then
+        cluster.await( masterAvailable() );
+        cluster.await( allSeesAllAsAvailable() );
         assertEquals( 3, cluster.size() );
     }
 
@@ -88,7 +90,5 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
                 service.start();
             }
         }
-        cluster.await( masterAvailable() );
-        cluster.await( allSeesAllAsAvailable() );
     }
 }

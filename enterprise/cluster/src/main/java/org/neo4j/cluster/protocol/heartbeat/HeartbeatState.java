@@ -94,8 +94,7 @@ public enum HeartbeatState
                     {
                         case i_am_alive:
                         {
-                            HeartbeatMessage.IAmAliveState state = (HeartbeatMessage.IAmAliveState) message
-                                    .getPayload();
+                            HeartbeatMessage.IAmAliveState state = message.getPayload();
 
                             if (context.isMe( state.getServer() ) )
                             {
@@ -136,6 +135,9 @@ public enum HeartbeatState
                                 long lastLearned = Long.parseLong( message.getHeader( "last-learned" ) );
                                 if ( lastLearned > context.getLastKnownLearnedInstanceInCluster() )
                                 {
+                                    // Need to pass the FROM header to catchUp state,
+                                    // as the instance in catchUp state should be aware of at least one
+                                    // alive member of the cluster (can use FROM as such instance)
                                     Message<LearnerMessage> catchUpMessage = message.copyHeadersTo(
                                             internal( LearnerMessage.catchUp, lastLearned ),
                                             Message.FROM );
