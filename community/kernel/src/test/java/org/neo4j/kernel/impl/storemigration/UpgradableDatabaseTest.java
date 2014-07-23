@@ -39,7 +39,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
-public class UpgradableDatabaseTestIT
+public class UpgradableDatabaseTest
 {
     @Test
     public void shouldAcceptTheStoresInTheSampleDatabaseAsBeingEligibleForUpgrade()

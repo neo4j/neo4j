@@ -26,6 +26,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.consistency.store.StoreAssertions;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -45,6 +46,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.allow_store_upgrade;
@@ -149,39 +151,6 @@ public class TestMigrateToDenseNodeSupport
         }
     }
 
-    private void createSparseNode( GraphDatabaseService db, Node refNode )
-    {
-        Node node = db.createNode();
-        refNode.createRelationshipTo( node, Types.SPARSE );
-        createRelationships( db, node, 3, Types.OTHER );
-        setProperties( node );
-    }
-
-    private void createDenseNode( GraphDatabaseService db, Node refNode )
-    {
-        Node node = db.createNode();
-        refNode.createRelationshipTo( node, Types.DENSE );
-        createRelationships( db, node, 100, Types.OTHER );
-        createRelationships( db, node, 2, Types.FOURTH );
-        setProperties( node );
-    }
-
-    private void createRelationships( GraphDatabaseService db, Node node, int count, RelationshipType type )
-    {
-        for ( int i = 0; i < count; i++ )
-        {
-            node.createRelationshipTo( db.createNode(), type );
-        }
-    }
-
-    private void setProperties( Node node )
-    {
-        for ( Properties properties : Properties.values() )
-        {
-            node.setProperty( properties.name(), properties.getValue() );
-        }
-    }
-
     @Test
     public void migrateDbWithDenseNodes() throws Exception
     {
@@ -212,6 +181,8 @@ public class TestMigrateToDenseNodeSupport
             tx.success();
         }
         db.shutdown();
+
+        assertConsistentStore( dir );
     }
 
     private void verifyDenseNode( GraphDatabaseService db, Node node )
@@ -247,5 +218,38 @@ public class TestMigrateToDenseNodeSupport
                 NeoStoreProvider.class ).evaluate();
         NodeRecord record = neoStore.getNodeStore().getRecord( node.getId() );
         assertEquals( dense, record.isDense() );
+    }
+
+    private void createSparseNode( GraphDatabaseService db, Node refNode )
+    {
+        Node node = db.createNode();
+        refNode.createRelationshipTo( node, Types.SPARSE );
+        createRelationships( db, node, 3, Types.OTHER );
+        setProperties( node );
+    }
+
+    private void createDenseNode( GraphDatabaseService db, Node refNode )
+    {
+        Node node = db.createNode();
+        refNode.createRelationshipTo( node, Types.DENSE );
+        createRelationships( db, node, 100, Types.OTHER );
+        createRelationships( db, node, 2, Types.FOURTH );
+        setProperties( node );
+    }
+
+    private void createRelationships( GraphDatabaseService db, Node node, int count, RelationshipType type )
+    {
+        for ( int i = 0; i < count; i++ )
+        {
+            node.createRelationshipTo( db.createNode(), type );
+        }
+    }
+
+    private void setProperties( Node node )
+    {
+        for ( Properties properties : Properties.values() )
+        {
+            node.setProperty( properties.name(), properties.getValue() );
+        }
     }
 }
