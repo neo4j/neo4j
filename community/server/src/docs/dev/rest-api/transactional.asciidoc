@@ -1,5 +1,5 @@
 [[rest-api-transactional]]
-== Transactional HTTP endpoint ==
+== Transactional HTTP endpoint for Cypher ==
 
 The Neo4j transactional HTTP endpoint allows you to execute a series of Cypher statements within the scope of a
 transaction. The transaction may be kept open across multiple HTTP requests, until the client chooses to commit or roll
