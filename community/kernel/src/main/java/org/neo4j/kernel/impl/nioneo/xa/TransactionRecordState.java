@@ -74,11 +74,12 @@ import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLab
  */
 public class TransactionRecordState
 {
-    private RecordChanges<Long, NeoStoreRecord, Void> neoStoreRecord;
-    private final long lastCommittedTxWhenTransactionStarted;
     private final NeoStore neoStore;
     private final IntegrityValidator integrityValidator;
     private final NeoStoreTransactionContext context;
+
+    private RecordChanges<Long, NeoStoreRecord, Void> neoStoreRecord;
+    private long lastCommittedTxWhenTransactionStarted;
     private boolean prepared;
 
     /**
@@ -99,6 +100,16 @@ public class TransactionRecordState
         this.neoStore = neoStore;
         this.integrityValidator = integrityValidator;
         this.context = context;
+    }
+
+    /**
+     * Set this record state to a pristine state, acting as if it had never been used.
+     */
+    public void initialize( long lastCommittedTxWhenTransactionStarted )
+    {
+        this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
+        context.initialize();
+        prepared = false;
     }
 
     public boolean isReadOnly()
@@ -125,6 +136,7 @@ public class TransactionRecordState
                            context.getRelationshipTypeTokenRecords().changeSize() +
                            context.getRelGroupRecords().changeSize() +
                            (neoStoreRecord != null ? neoStoreRecord.changeSize() : 0);
+
         List<Command> commands = new ArrayList<>( noOfCommands );
         for ( RecordProxy<Integer, LabelTokenRecord, Void> record : context.getLabelTokenRecords().changes() )
         {

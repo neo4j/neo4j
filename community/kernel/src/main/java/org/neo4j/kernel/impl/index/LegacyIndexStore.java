@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -52,9 +53,9 @@ public class LegacyIndexStore
     private final IndexConfigStore indexStore;
     private final Config config;
     private final ProviderLookup indexProviders;
-    private final KernelAPI kernel;
+    private final Provider<KernelAPI> kernel;
 
-    public LegacyIndexStore( Config config, IndexConfigStore indexStore, KernelAPI kernel,
+    public LegacyIndexStore( Config config, IndexConfigStore indexStore, Provider<KernelAPI> kernel,
             LegacyIndexApplier.ProviderLookup indexProviders )
     {
         this.config = config;
@@ -236,7 +237,7 @@ public class LegacyIndexStore
         public Object call()
                 throws Exception
         {
-            try ( KernelTransaction transaction = kernel.newTransaction();
+            try ( KernelTransaction transaction = kernel.instance().newTransaction();
                     Statement statement = transaction.acquireStatement() )
             {
                 transaction.getLegacyIndexTransactionState().createIndex( entityType, indexName, config );

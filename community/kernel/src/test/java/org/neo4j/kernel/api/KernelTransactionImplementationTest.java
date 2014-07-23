@@ -21,7 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.junit.Before;
 import org.junit.Test;
-
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
@@ -32,12 +32,8 @@ import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.test.DoubleLatch;
 
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class KernelTransactionImplementationTest
 {
@@ -317,6 +313,6 @@ public class KernelTransactionImplementationTest
     {
         return new KernelTransactionImplementation( null, false, null, null, null, null, recordState,
                 null, neoStore, new NoOpClient(), hooks, null, null, null, transactionMonitor, neoStore,
-                null, null, legacyIndexState );
+                null, null, legacyIndexState, mock(Pool.class));
     }
 }

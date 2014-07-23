@@ -240,4 +240,14 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
     {
         return defineCommand == null;
     }
+
+    /** Set this datastructure to it's initial state, allowing it to be re-used as if it had just been new'ed up. */
+    public LegacyIndexTransactionState initialize()
+    {
+        transactions.clear();
+        defineCommand = null;
+        nodeCommands = null;
+        relationshipCommands = null;
+        return this;
+    }
 }

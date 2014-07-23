@@ -19,18 +19,7 @@
  */
 package org.neo4j.collection.pool;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 import org.junit.Test;
-import org.neo4j.collection.pool.MarshlandPool;
-import org.neo4j.collection.pool.Pool;
-import org.neo4j.function.Factory;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -76,6 +65,27 @@ public class MarshlandPoolTest
         // Then
         verify( delegatePool, times(3) ).acquire();
         verify( delegatePool, times(2) ).release( any() );
+        verifyNoMoreInteractions( delegatePool );
+    }
+
+    @Test
+    public void shouldReleaseAllSlotsOnClose() throws Exception
+    {
+        // Given
+        Pool<Object> delegatePool = mock(Pool.class);
+        when(delegatePool.acquire()).thenReturn( 1337 );
+
+        final MarshlandPool<Object> pool = new MarshlandPool<>(delegatePool);
+
+        Object first  = pool.acquire();
+        pool.release( first );
+
+        // When
+        pool.close();
+
+        // Then
+        verify( delegatePool, times(1) ).acquire();
+        verify( delegatePool, times(1) ).release( any() );
         verifyNoMoreInteractions( delegatePool );
     }
 

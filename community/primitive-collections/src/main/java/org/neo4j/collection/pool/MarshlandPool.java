@@ -19,8 +19,8 @@
  */
 package org.neo4j.collection.pool;
 
-import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -121,9 +121,41 @@ public class MarshlandPool<T> implements Pool<T>
     }
 
     /**
+     * Dispose of all objects in this pool, releasing them back to the delegate pool
+     */
+    public void disposeAll()
+    {
+        for ( LocalSlotReference slotReference : slotReferences )
+        {
+            LocalSlot<T> slot = (LocalSlot) slotReference.get();
+            if(slot != null)
+            {
+                T obj = slot.object;
+                if(obj != null)
+                {
+                    slot.set( null );
+                    pool.release( obj );
+                }
+            }
+        }
+
+        for(LocalSlotReference<T> reference = (LocalSlotReference) objectsFromDeadThreads.poll();
+            reference != null;
+            reference = (LocalSlotReference) objectsFromDeadThreads.poll() )
+        {
+            pool.release( reference.object );
+        }
+    }
+
+    public void close()
+    {
+        disposeAll();
+    }
+
+    /**
      * This is used to trigger the GC to notify us whenever the thread local has been garbage collected.
      */
-    private static class LocalSlotReference<T> extends PhantomReference<LocalSlot>
+    private static class LocalSlotReference<T> extends WeakReference<LocalSlot>
     {
         private T object;
 

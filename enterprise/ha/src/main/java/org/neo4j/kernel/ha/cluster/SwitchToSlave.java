@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -77,6 +74,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 public class SwitchToSlave
 {
@@ -141,6 +141,8 @@ public class SwitchToSlave
         }
 
         NeoStoreXaDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreXaDataSource.class );
+        nioneoDataSource.afterModeSwitch();
+
         checkDataConsistency( resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri );
 
         URI slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri );

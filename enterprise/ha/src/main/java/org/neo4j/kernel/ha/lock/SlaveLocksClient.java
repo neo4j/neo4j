@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.ha.lock;
 
-import static org.neo4j.kernel.impl.transaction.LockType.READ;
-import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +36,17 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.transaction.LockManager;
 
+import static org.neo4j.kernel.impl.transaction.LockType.READ;
+import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
+
+/**
+ * The slave locks client is responsible for managing locks on behalf of some actor on a slave machine. An actor
+ * could be a transaction or some other job that runs in the database.
+ *
+ * The client maintains a local "real" lock client, backed by some regular Locks implementation, but it also coordinates
+ * with the master for certain types of locks. If you grab a lock on a node, for instance, this class will grab a
+ * cluster-global lock by talking to the master machine, and then grab that same lock locally before returning.
+ */
 class SlaveLocksClient implements Locks.Client
 {
     private final Master master;
@@ -228,6 +236,11 @@ class SlaveLocksClient implements Locks.Client
     {
         sharedLocks.clear();
         exclusiveLocks.clear();
+        if ( initialized )
+        {
+            master.finishTransaction( requestContextFactory.newRequestContext( (int) client.getIdentifier() ), true );
+            initialized = false;
+        }
         client.releaseAll();
     }
 

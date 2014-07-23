@@ -24,29 +24,27 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
-
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.Kernel;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.*;
+import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -507,6 +505,32 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertFalse( schemaStateContains("my key") );
+    }
+
+    @Test
+    public void shouldKillTransactionsOnShutdown() throws Throwable
+    {
+        // Given
+        assumeThat(kernel, instanceOf( Kernel.class ));
+        KernelTransaction tx = kernel.newTransaction();
+
+        // When
+        ((Kernel)kernel).stop();
+
+        // Then
+        try
+        {
+            tx.acquireStatement().readOperations().nodeExists( 0l );
+            fail("Should have been terminated.");
+        }
+        catch(TransactionTerminatedException e)
+        {
+            // Success
+        }
+        finally
+        {
+            tx.close();
+        }
     }
 
     private IndexDescriptor createIndex( SchemaWriteOperations schemaWriteOperations ) throws SchemaKernelException
