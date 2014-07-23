@@ -53,7 +53,6 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.DaemonThreadFactory;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
@@ -174,9 +173,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.Functions.identity;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
@@ -281,7 +278,6 @@ public abstract class InternalAbstractGraphDatabase
     protected TransactionHeaderInformation transactionHeaderInformation;
     protected DataSourceManager dataSourceManager;
     private StartupStatisticsProvider startupStatistics;
-    private CacheProvider cacheProvider;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
     {
@@ -299,7 +295,7 @@ public abstract class InternalAbstractGraphDatabase
                 getDependencyResolver(),
                 fail() );
         this.storeDir = config.get( Configuration.store_dir );
-        accessTimeout = 1 * 1000; // TODO make configurable
+        accessTimeout = 1_000; // TODO make configurable
     }
 
     private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
@@ -424,7 +420,7 @@ public abstract class InternalAbstractGraphDatabase
         boolean readOnly = config.get( Configuration.read_only );
 
         String cacheTypeName = config.get( Configuration.cache_type );
-        cacheProvider = cacheProviders.get( cacheTypeName );
+        CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
         if ( cacheProvider == null )
         {
             throw new IllegalArgumentException( "No provider for cache type '" + cacheTypeName + "'. " +
@@ -434,8 +430,7 @@ public abstract class InternalAbstractGraphDatabase
                     "been caused by either such a missing registration, or by the lack of the provider class itself." );
         }
 
-        jobScheduler =
-            life.add( new Neo4jJobScheduler( this.toString() ));
+        jobScheduler = life.add( new Neo4jJobScheduler( this.toString() ));
 
         pageCache = createPageCache();
         life.add( pageCache );
@@ -806,7 +801,7 @@ public abstract class InternalAbstractGraphDatabase
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                 lockManager, this, transactionEventHandlers,
-                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
+                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
                 storeMigrationProcess, transactionMonitor, kernelHealth, txIdGenerator,
                 createHeaderInformationFactory(), startupStatistics, caches, nodeManager, guard, indexStore,
                 getCommitProcessFactory() );
@@ -835,18 +830,6 @@ public abstract class InternalAbstractGraphDatabase
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()
     {
         return TransactionHeaderInformationFactory.DEFAULT;
-    }
-
-    protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
-    {
-        return new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
-        {
-            @Override
-            public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
-            {
-                return identity();
-            }
-        };
     }
 
     @Override
