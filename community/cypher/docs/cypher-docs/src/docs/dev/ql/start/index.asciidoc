@@ -4,15 +4,15 @@ Start
 
 Every query describes a pattern, and in that pattern one can have multiple starting points.
 A starting point is a relationship or a node where a pattern is anchored.
-You can either introduce starting points by id, or by index lookups.
-Note that trying to use an index that doesn't exist will generate an error.
+You can either introduce starting points by id, or by legacy index lookups.
+Note that trying to use a legacy index that doesn't exist will generate an error.
 
 [NOTE]
-+START+ is optional.
++START+ is deprecated and going to be removed in the future.
 If you do not specify explicit starting points, Cypher will try and infer starting points from your query.
 This is done based on node labels and predicates contained in your query.
 See <<cypher-schema>> for more information.
-In general, the +START+ clause is only really needed when using legacy indexes.
+The +START+ clause is only needed when using legacy indexes as all other start points are correctly inferred by Cypher.
 
 This is the graph the examples are using:
 
