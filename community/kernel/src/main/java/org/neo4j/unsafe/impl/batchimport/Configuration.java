@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
-import static java.lang.Math.max;
 import static java.lang.Math.round;
 
 /**
@@ -46,17 +45,7 @@ public interface Configuration
      */
     int workAheadSize();
 
-    /**
-     * The number of relationships threshold for considering a node dense.
-     */
     int denseNodeThreshold();
-
-    /**
-     * Max number of I/O threads doing file write operations. Optimal value for this setting is heavily
-     * dependent on hard drive. A spinning disk is most likely best off with 1, where an SSD may see
-     * better performance with a handful of threads writing to it simultaneously.
-     */
-    int numberOfIoThreads();
 
     public static class Default implements Configuration
     {
@@ -95,12 +84,6 @@ public interface Configuration
         public int denseNodeThreshold()
         {
             return Integer.parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
-        }
-
-        @Override
-        public int numberOfIoThreads()
-        {
-            return max( 2, Runtime.getRuntime().availableProcessors()/3 );
         }
     }
 
@@ -144,12 +127,6 @@ public interface Configuration
         public int denseNodeThreshold()
         {
             return config.get( GraphDatabaseSettings.dense_node_threshold );
-        }
-
-        @Override
-        public int numberOfIoThreads()
-        {
-            return defaults.numberOfIoThreads();
         }
     }
 

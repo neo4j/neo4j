@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static java.util.Arrays.binarySearch;
+import static java.util.Arrays.copyOf;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.CREATE;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.DELETE;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.UPDATE;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -93,14 +100,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
-
-import static java.util.Arrays.binarySearch;
-import static java.util.Arrays.copyOf;
-
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.CREATE;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.DELETE;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.UPDATE;
 
 /**
  * Transaction containing {@link org.neo4j.kernel.impl.nioneo.xa.command.Command commands} reflecting the operations
@@ -1566,10 +1565,9 @@ public class NeoStoreTransaction extends XaTransaction
             }
             else
             {
-                throw new InvalidRecordException( "While loading relationships for Node[" + nodeId +
-                        "] a Relationship[" + relRecord.getId() + "] was encountered that had startNode: " + firstNode +
-                        " and endNode: " + secondNode + ", i.e. which had neither start nor end node as the node we're " +
-                        "loading relationships for" );
+                throw new InvalidRecordException( "Node[" + nodeId +
+                        "] is neither firstNode[" + firstNode +
+                        "] nor secondNode[" + secondNode + "] for Relationship[" + relRecord.getId() + "]" );
             }
             position = loadPosition.nextPosition( next, direction, types );
         }

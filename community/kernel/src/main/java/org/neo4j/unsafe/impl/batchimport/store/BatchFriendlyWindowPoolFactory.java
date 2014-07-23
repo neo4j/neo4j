@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.helpers.Factory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
@@ -33,8 +32,6 @@ import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
-import org.neo4j.unsafe.impl.batchimport.store.io.Ring;
 
 import static java.lang.Math.min;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -45,7 +42,7 @@ import static java.nio.ByteBuffer.allocateDirect;
  * crossed. As part of moving the window the written data in the window (residing in a buffer) is written
  * to the channel.
  */
-public class BatchingWindowPoolFactory implements WindowPoolFactory
+public class BatchFriendlyWindowPoolFactory implements WindowPoolFactory
 {
     /* Used for zeroing the data in a buffer. This is a direct buffer and the target buffer is
      * also direct, so put(ByteBuffer) will result in unsafe memory copy. */
@@ -61,28 +58,22 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
      */
     public interface Writer
     {
-        void write( ByteBuffer byteBuffer, long position, Ring<ByteBuffer> ring ) throws IOException;
+        void write( ByteBuffer byteBuffer, long position ) throws IOException;
     }
 
     public static final WriterFactory SYNCHRONOUS = new WriterFactory()
     {
         @Override
-        public Writer create( final File file, final StoreChannel channel, final Monitor monitor )
+        public Writer create( File file, final StoreChannel channel, final Monitor monitor )
         {
             return new Writer()
             {
                 @Override
-                public void write( ByteBuffer data, long position, Ring<ByteBuffer> ring ) throws IOException
+                public void write( ByteBuffer data, long position ) throws IOException
                 {
-                    try
-                    {
-                        int written = channel.write( data, position );
-                        monitor.dataWritten( written );
-                    }
-                    finally
-                    {
-                        ring.free( data );
-                    }
+                    channel.position( position );
+                    int written = channel.write( data );
+                    monitor.dataWritten( written );
                 }
             };
         }
@@ -115,7 +106,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
     private final Mode mode;
     private final WriterFactory writerFactory;
 
-    public BatchingWindowPoolFactory( int windowTargetSize, Monitor monitor, Mode mode,
+    public BatchFriendlyWindowPoolFactory( int windowTargetSize, Monitor monitor, Mode mode,
             WriterFactory writerFactory )
     {
         this.windowTargetSize = windowTargetSize;
@@ -194,8 +185,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         private final File storageFileName;
         private final int recordSize;
         private final StoreChannel channel;
-        private Ring<ByteBuffer> bufferRing;
-        private Buffer currentBuffer;
+        private Buffer reusableBuffer;
         private int maxRecordsInBuffer;
         protected long firstIdInWindow;
         protected long lastIdInWindow;
@@ -222,17 +212,8 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         protected void allocateBuffer()
         {
             // TODO 4k align instead
-            final int capacity = roundedToNearestRecordSize( windowTargetSize );
-            this.maxRecordsInBuffer = capacity / recordSize; // It's even at this point
-            bufferRing = new Ring<>( 2, new Factory<ByteBuffer>()
-            {
-                @Override
-                public ByteBuffer newInstance()
-                {
-                    return allocateDirect( capacity );
-                }
-            } );
-            this.currentBuffer = new Buffer( this, bufferRing.next() );
+            this.reusableBuffer = new Buffer( this, allocateDirect( roundedToNearestRecordSize( windowTargetSize ) ) );
+            this.maxRecordsInBuffer = reusableBuffer.getBuffer().capacity() / recordSize; // It's even at this point
         }
 
         private int roundedToNearestRecordSize( int targetSize )
@@ -282,8 +263,8 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         {
             // Duplicate for thread safety
             ByteBuffer zeros = ZEROS.duplicate();
-            currentBuffer.reset();
-            ByteBuffer buffer = currentBuffer.getBuffer();
+            reusableBuffer.reset();
+            ByteBuffer buffer = reusableBuffer.getBuffer();
 
             while ( buffer.hasRemaining() )
             {
@@ -317,8 +298,8 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
                     " is outside the current window. At this point acquire should have been called previously" +
                     " with the same id. First id in window " + firstIdInWindow + ", last " + lastIdInWindow;
 
-            currentBuffer.setOffset( (int) ((id-firstIdInWindow) * recordSize) );
-            return currentBuffer;
+            reusableBuffer.setOffset( (int) ((id-firstIdInWindow) * recordSize) );
+            return reusableBuffer;
         }
 
         @Override
@@ -361,9 +342,8 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         {
             try
             {
-                writer.write( prepared( currentBuffer.getBuffer() ), firstIdInWindow*recordSize, bufferRing );
-                currentBuffer = new Buffer( this, bufferRing.next() );
-                currentBuffer.reset();
+                writer.write( prepared( reusableBuffer.getBuffer() ), firstIdInWindow*recordSize );
+                reusableBuffer.reset();
             }
             catch ( IOException e )
             {
@@ -375,7 +355,8 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         {
             try
             {
-                channel.read( prepared( currentBuffer.getBuffer() ), firstIdInWindow*recordSize );
+                channel.position( firstIdInWindow*recordSize );
+                channel.read( prepared( reusableBuffer.getBuffer() ) );
             }
             catch ( IOException e )
             {

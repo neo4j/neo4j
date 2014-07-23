@@ -48,46 +48,36 @@ public class DetailedExecutionMonitor extends PollingExecutionMonitor
     }
 
     @Override
-    protected void start( StageExecution[] executions )
+    protected void start( StageExecution execution )
     {
-        StringBuilder names = new StringBuilder();
-        for ( StageExecution execution : executions )
-        {
-            names.append( names.length() > 0 ? ", " : "" ).append( execution.getStageName() );
-        }
-        out.println( format( "%n>>>>> EXECUTING STAGE(s) %s <<<<<%n", names ) );
+        out.println( format( "%n>>>>> EXECUTING STAGE %s <<<<<%n", execution.getStageName() ) );
     }
 
     @Override
-    protected void end( StageExecution[] executions, long totalTimeMillis )
+    protected void end( StageExecution execution, long totalTimeMillis )
     {
         out.println( "Stage total time " + duration( totalTimeMillis ) );
     }
 
     @Override
-    protected void poll( StageExecution[] executions )
+    protected void poll( StageExecution execution )
     {
-        boolean first = true;
-        for ( StageExecution execution : executions )
-        {
-            printStats( execution, first );
-            first = false;
-        }
+        printStats( execution );
     }
 
     @Override
-    public void done( long totalTimeMillis )
+    public void done()
     {
-        out.println( "IMPORT DONE. Took: " + duration( totalTimeMillis ) );
+        out.println( "IMPORT DONE" );
     }
 
-    private void printStats( StageExecution execution, boolean first )
+    private void printStats( StageExecution execution )
     {
         StringBuilder builder = new StringBuilder();
         int i = 0;
         for ( StepStats stats : execution.stats() )
         {
-            builder.append( i > 0 ? format( "%n  " ) : (first ? "--" : " -") )
+            builder.append( i > 0 ? format( "%n" ) : "" )
                    .append( stats.toString() )
                    ;
             i++;

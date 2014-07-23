@@ -45,7 +45,7 @@ public class NodeRelationshipLinkImplTest
     public void shouldReportCorrectNumberOfDenseNodes() throws Exception
     {
         // GIVEN
-        NodeRelationshipLink cache = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, 5 );
+        NodeRelationshipLink cache = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, 100, 5 );
         increment( cache, 2, 10 );
         increment( cache, 5, 2 );
         increment( cache, 7, 12 );
@@ -68,7 +68,7 @@ public class NodeRelationshipLinkImplTest
     {
         // GIVEN
         int nodeCount = 10;
-        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.OFF_HEAP, 20 );
+        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.OFF_HEAP, nodeCount, 20 );
         incrementRandomCounts( link, nodeCount, nodeCount*20 );
 
         // Test sparse node semantics
@@ -90,8 +90,9 @@ public class NodeRelationshipLinkImplTest
     public void shouldAddGroupAfterTheFirst() throws Exception
     {
         // GIVEN a dense node
+        int nodeCount = 10;
         long denseNode = 0;
-        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, 1 );
+        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, nodeCount, 1 );
         link.incrementCount( denseNode );
         link.getAndPutRelationship( denseNode, 0, Direction.OUTGOING, 0, true );
 
@@ -114,8 +115,9 @@ public class NodeRelationshipLinkImplTest
     public void shouldAddGroupBeforeTheFirst() throws Exception
     {
         // GIVEN a dense node
+        int nodeCount = 10;
         long denseNode = 0;
-        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, 1 );
+        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, nodeCount, 1 );
         link.incrementCount( denseNode );
         link.getAndPutRelationship( denseNode, 1, Direction.INCOMING, 1, true );
 
@@ -138,8 +140,9 @@ public class NodeRelationshipLinkImplTest
     public void shouldAddGroupInTheMiddleIfTwo() throws Exception
     {
         // GIVEN a dense node
+        int nodeCount = 10;
         long denseNode = 0;
-        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, 1 );
+        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, nodeCount, 1 );
         link.incrementCount( denseNode );
         link.getAndPutRelationship( denseNode, 0, Direction.OUTGOING, 0, true );
         link.getAndPutRelationship( denseNode, 2, Direction.OUTGOING, 1, true );

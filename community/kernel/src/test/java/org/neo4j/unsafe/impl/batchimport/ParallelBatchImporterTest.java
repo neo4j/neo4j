@@ -75,7 +75,7 @@ public class ParallelBatchImporterTest
 
         // WHEN
         int nodeCount = 100_000;
-        int relationshipCount = nodeCount*10;
+        int relationshipCount = nodeCount * 10;
         inserter.doImport( nodes( nodeCount ), relationships( relationshipCount, nodeCount ), IdMappers.actualIds() );
         inserter.shutdown();
 
@@ -133,12 +133,13 @@ public class ParallelBatchImporterTest
                 {
                     private final Random random = new Random( seed );
                     private int cursor = 0;
-                    private final Object[] properties = new Object[] {
+                    private final Object[] properties = new Object[]{
                             "name", "Nisse " + cursor,
                             "age", 10,
-                            "long-string", "OK here goes... a long string that will certainly end up in a dynamic record1234567890!@#$%^&*()_|",
-                            "array", new long[] { 1234567890123L, 987654321987L, 123456789123L, 987654321987L }
-                            };
+                            "long-string", "OK here goes... a long string that will certainly end up in a dynamic " +
+                            "record1234567890!@#$%^&*()_|",
+                            "array", new long[]{1234567890123L, 987654321987L, 123456789123L, 987654321987L}
+                    };
 
                     @Override
                     protected InputRelationship fetchNextOrNull()
@@ -173,12 +174,13 @@ public class ParallelBatchImporterTest
                 return new PrefetchingIterator<InputNode>()
                 {
                     private int cursor = 0;
-                    private final Object[] properties = new Object[] {
+                    private final Object[] properties = new Object[]{
                             "name", "Nisse " + cursor,
                             "age", 10,
-                            "long-string", "OK here goes... a long string that will certainly end up in a dynamic record1234567890!@#$%^&*()_|",
-                            "array", new long[] { 1234567890123L, 987654321987L, 123456789123L, 987654321987L }
-                            };
+                            "long-string", "OK here goes... a long string that will certainly end up in a dynamic " +
+                            "record1234567890!@#$%^&*()_|",
+                            "array", new long[]{1234567890123L, 987654321987L, 123456789123L, 987654321987L}
+                    };
 
                     @Override
                     protected InputNode fetchNextOrNull()

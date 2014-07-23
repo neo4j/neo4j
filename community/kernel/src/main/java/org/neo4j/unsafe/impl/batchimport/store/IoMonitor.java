@@ -17,9 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store.io;
-
-import java.util.concurrent.atomic.AtomicLong;
+package org.neo4j.unsafe.impl.batchimport.store;
 
 import org.neo4j.helpers.Format;
 import org.neo4j.unsafe.impl.batchimport.stats.GenericStatsProvider;
@@ -31,13 +29,11 @@ import static java.lang.System.currentTimeMillis;
 
 /**
  * {@link Monitor} exposed as a {@link StatsProvider}.
- *
- * Assumes that I/O is busy all the time.
  */
 public class IoMonitor extends GenericStatsProvider implements Monitor
 {
     private volatile long startTime = currentTimeMillis();
-    private final AtomicLong totalWritten = new AtomicLong();
+    private volatile long totalWritten;
 
     public IoMonitor()
     {
@@ -55,7 +51,7 @@ public class IoMonitor extends GenericStatsProvider implements Monitor
             {
                 long totalTime = currentTimeMillis()-startTime;
                 int seconds = (int) (totalTime/1000);
-                return seconds > 0 ? totalWritten.get()/seconds : -1;
+                return seconds > 0 ? totalWritten/seconds : -1;
             }
         } );
     }
@@ -63,13 +59,13 @@ public class IoMonitor extends GenericStatsProvider implements Monitor
     @Override
     public void dataWritten( int bytes )
     {
-        totalWritten.addAndGet( bytes );
+        totalWritten += bytes;
     }
 
     public void reset()
     {
         startTime = currentTimeMillis();
-        totalWritten.set( 0 );
+        totalWritten = 0;
     }
 
     public long startTime()
@@ -79,6 +75,6 @@ public class IoMonitor extends GenericStatsProvider implements Monitor
 
     public long totalBytesWritten()
     {
-        return totalWritten.get();
+        return totalWritten;
     }
 }
