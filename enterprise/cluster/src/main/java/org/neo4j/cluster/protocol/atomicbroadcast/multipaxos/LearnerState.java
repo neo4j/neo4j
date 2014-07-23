@@ -240,7 +240,7 @@ public enum LearnerState
 
                         case catchUp:
                         {
-                            long catchUpTo = message.getPayload();
+                            long catchUpTo = message.<Long>getPayload();
 
                             if ( context.getLastKnownLearnedInstanceInCluster() < catchUpTo )
                             {
