@@ -31,8 +31,7 @@ public interface LongArrayFactory
     LongArray newLongArray( long length );
 
     /**
-     * @param chunkSize the size of each array (number of items). Where new chunks are added when needed.
-     * @param initialValue initial value to set all default values to, {@link LongArray#setAll(long)}.
+     * @param chunkSize the size of each array. Where new chunks are added when needed.
      */
     LongArray newDynamicLongArray( long chunkSize );
 

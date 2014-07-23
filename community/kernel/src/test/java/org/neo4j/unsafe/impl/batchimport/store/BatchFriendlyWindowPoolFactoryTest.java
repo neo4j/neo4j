@@ -20,15 +20,13 @@
 package org.neo4j.unsafe.impl.batchimport.store;
 
 import static java.nio.ByteBuffer.wrap;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.SYNCHRONOUS;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.SYNCHRONOUS;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,7 +39,6 @@ import java.util.Arrays;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
@@ -51,8 +48,7 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.Mode;
-import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
+import org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode;
 
 public class BatchFriendlyWindowPoolFactoryTest
 {
@@ -216,7 +212,7 @@ public class BatchFriendlyWindowPoolFactoryTest
     private WindowPool pool( Monitor monitor, Mode mode ) throws IOException
     {
         channel = new TrackingStoreChannel( openChannel() );
-        WindowPoolFactory factory = new BatchingWindowPoolFactory( windowSize, monitor, mode, SYNCHRONOUS );
+        WindowPoolFactory factory = new BatchFriendlyWindowPoolFactory( windowSize, monitor, mode, SYNCHRONOUS );
         return factory.create( file, recordSize, channel, new Config(), StringLogger.DEV_NULL, 0 );
     }
 

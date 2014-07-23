@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
-import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -46,29 +45,24 @@ public class CoarseBoundedProgressExecutionMonitor extends PollingExecutionMonit
     }
 
     @Override
-    protected void poll( StageExecution[] executions )
+    protected void poll( StageExecution execution )
     {
-        updatePercent( executions );
+        updatePercent( execution );
     }
 
-    private void updatePercent( StageExecution[] executions )
+    private void updatePercent( StageExecution execution )
     {
-        int highestPercentThere = previousPercent;
-        for ( StageExecution execution : executions )
-        {
-            // This calculation below is aware of internals of the parallell importer and may
-            // be wrong for other importers.
-            long maxNumberOfBatches =
-                    (highNodeId/execution.getConfig().batchSize()) * 2 + // node records encountered twice
-                    (highRelationshipId/execution.getConfig().batchSize()) * 3; // rel records encountered three times;
+        // This calculation below is aware of internals of the parallell importer and may
+        // be wrong for other importers.
+        long maxNumberOfBatches =
+                (highNodeId/execution.getConfig().batchSize()) * 2 + // node records encountered twice
+                (highRelationshipId/execution.getConfig().batchSize()) * 3; // rel records encountered three times;
 
-            long doneBatches = totalDoneBatches + doneBatches( execution );
-            int percentThere = (int) ((doneBatches*100D)/maxNumberOfBatches);
-            percentThere = min( percentThere, 100 );
-            highestPercentThere = max( percentThere, highestPercentThere );
-        }
+        long doneBatches = totalDoneBatches + doneBatches( execution );
+        int percentThere = (int) ((doneBatches*100D)/maxNumberOfBatches);
+        percentThere = min( percentThere, 100 );
 
-        applyPercentage( highestPercentThere );
+        applyPercentage( percentThere );
     }
 
     private void applyPercentage( int percentThere )
@@ -94,16 +88,13 @@ public class CoarseBoundedProgressExecutionMonitor extends PollingExecutionMonit
     }
 
     @Override
-    protected void end( StageExecution[] executions, long totalTimeMillis )
+    protected void end( StageExecution execution, long totalTimeMillis )
     {
-        for ( StageExecution execution : executions )
-        {
-            this.totalDoneBatches += doneBatches( execution );
-        }
+        this.totalDoneBatches += doneBatches( execution );
     }
 
     @Override
-    public void done( long totalTimeMillis )
+    public void done()
     {
         applyPercentage( 100 );
     }
