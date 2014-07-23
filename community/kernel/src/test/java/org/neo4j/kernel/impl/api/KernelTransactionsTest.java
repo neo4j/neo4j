@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorImpl;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -62,6 +63,40 @@ public class KernelTransactionsTest
 
         // Then
         assertThat( asUniqueSet(registry.activeTransactions()), equalTo(asSet( second, third )) );
+    }
+
+    @Test
+    public void shouldDisposeTransactionsWhenAsked() throws Exception
+    {
+        // Given
+        LifeSupport life = new LifeSupport();
+        life.start();
+
+        Locks locks = mock( Locks.class );
+        when(locks.newClient()).thenReturn( mock( Locks.Client.class ) );
+
+        KernelTransactions registry = new KernelTransactions(
+                new MockContextSupplier(), mock(NeoStore.class), locks, null, null, null, null, null, null,
+                null, null, TransactionHeaderInformationFactory.DEFAULT, null, null,  mock(Provider.class), null, null,
+                new TransactionHooks(), new TransactionMonitorImpl(), life, false );
+
+        registry.disposeAll();
+
+        KernelTransaction first  = registry.newInstance();
+        KernelTransaction second  = registry.newInstance();
+        KernelTransaction leftOpen  = registry.newInstance();
+        first.close();
+        second.close();
+
+        // When
+        registry.disposeAll();
+
+        // Then
+        KernelTransaction postDispose = registry.newInstance();
+        assertThat( postDispose, not( equalTo( first ) ) );
+        assertThat( postDispose, not( equalTo( second ) ) );
+
+        assertTrue(leftOpen.shouldBeTerminated());
     }
 
     private static class MockContextSupplier extends NeoStoreTransactionContextSupplier
