@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.helpers.TxCounts
 import java.io.PrintWriter
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
 
 class PeriodicCommitLoadCsvAcceptanceTest
   extends ExecutionEngineFunSuite with CreateTempFileTestSupport with TxCountsTrackingTestSupport {

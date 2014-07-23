@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.RewindableExecutionResult
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
