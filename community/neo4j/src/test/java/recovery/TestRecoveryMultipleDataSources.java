@@ -20,14 +20,18 @@
 package recovery;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Runtime.getRuntime;
@@ -74,7 +78,7 @@ public class TestRecoveryMultipleDataSources
         }
     }
 
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( dir );
         Transaction tx = db.beginTx();
@@ -82,8 +86,11 @@ public class TestRecoveryMultipleDataSources
         tx.success();
         tx.close();
 
-        // TODO 2.2-future
-//        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
+        NeoStoreXaDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        DependencyResolver dependencyResolver = dataSource.getDependencyResolver();
+        PhysicalLogFile physicalLogFile = dependencyResolver.resolveDependency( PhysicalLogFile.class );
+        physicalLogFile.forceRotate();
+
         tx = db.beginTx();
         db.index().forNodes( "index" ).add( db.createNode(), dir, db.createNode() );
         tx.success();
