@@ -44,18 +44,16 @@ case class DeleteEntityAction(elementToDelete: Expression)
   }
 
   private def delete(x: PropertyContainer, state: QueryState) {
-    val nodeManager: ThreadToStatementContextBridge = state.graphDatabaseAPI.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-
-    val statement : KernelStatement = nodeManager.getKernelTransactionBoundToThisThread( true ).acquireStatement().asInstanceOf[KernelStatement]
 
     x match {
-      case n: Node if !statement.txState().nodeIsDeletedInThisTx(n.getId) =>
+      case n: Node if !state.query.nodeOps.isDeleted(n)=>
         state.query.nodeOps.delete(n)
 
-      case r: Relationship if !statement.txState().relationshipIsDeletedInThisTx(r.getId) =>
+      case r: Relationship if !state.query.relationshipOps.isDeleted(r) =>
         state.query.relationshipOps.delete(r)
 
-      case _ => // Entity is already deleted. No need to do anything
+      case _ =>
+        // Entity is already deleted. No need to do anything
     }
   }
 

@@ -4,6 +4,10 @@ o Adds support for Octal literals (using a preceding 0, e.g. 03517)
 o Adds support for Hexadecimal literals (using a preceding 0x, e.g. 0xF0071E55)
 o Add `exists(...)` predicate function for checking patterns and properties
 o Ensure `toString(...)` only does type conversion
+o No longer introduces eagerness in some trivially decidable cases, such as
+  MATCH a, b CREATE (a)-[r:X]->(b)
+o Avoids opening two transactions per single request REST transaction by
+  introducing caching of PreparedQueries in ExecutionEngine.
 
 2.1.2
 -----
