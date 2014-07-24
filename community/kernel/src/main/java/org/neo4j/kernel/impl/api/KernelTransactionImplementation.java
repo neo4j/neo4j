@@ -281,7 +281,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( !hasTxState() )
         {
-            txState = new TxStateImpl( recordState, legacyIndexTransactionState );
+            txState = new TxStateImpl( legacyIndexTransactionState );
         }
         return txState;
     }
@@ -349,6 +349,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     {
                         DefinedProperty prop = added.next();
                         recordState.nodeAddProperty( id, prop.propertyKeyId(), prop.value() );
+                    }
+                }
+
+                @Override
+                public void visitNodeLabelChanges( long nodeId, Iterator<Integer> added, Iterator<Integer> removed )
+                {
+                    while(removed.hasNext())
+                    {
+                        recordState.removeLabelFromNode( removed.next(), nodeId );
+                    }
+                    while(added.hasNext())
+                    {
+                        recordState.addLabelToNode( added.next(), nodeId );
                     }
                 }
 
