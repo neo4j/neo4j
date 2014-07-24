@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
-import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
+import org.neo4j.unsafe.impl.batchimport.store.IoMonitor;
 
 /**
  * Writes {@link RecordBatch entity batches} to the underlying stores.

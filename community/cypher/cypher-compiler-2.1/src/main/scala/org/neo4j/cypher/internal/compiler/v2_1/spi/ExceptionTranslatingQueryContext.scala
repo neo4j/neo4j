@@ -143,6 +143,9 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
 
     override def all: Iterator[T] =
       translateException(super.all)
+
+    override def isDeleted(obj: T): Boolean =
+      translateException(super.isDeleted(obj))
   }
 
   private def translateException[A](f: => A) = try {

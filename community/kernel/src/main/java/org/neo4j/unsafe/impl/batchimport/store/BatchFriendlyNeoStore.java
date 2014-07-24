@@ -37,23 +37,22 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Mode;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
-import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
 import static java.lang.String.valueOf;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
 /**
  * Creator and accessor of {@link NeoStore} with some logic to provide very batch friendly services to the
  * {@link NeoStore} when instantiating it. Different services for specific purposes.
  */
-public class BatchingNeoStore implements AutoCloseable
+public class BatchFriendlyNeoStore implements AutoCloseable
 {
     private final LifeSupport life = new LifeSupport();
     private final ChannelReusingFileSystemAbstraction fileSystem;
@@ -66,18 +65,15 @@ public class BatchingNeoStore implements AutoCloseable
     private final Config neo4jConfig;
     private final Configuration config;
     private final Monitor writeMonitor;
-    private final WriterFactory writerFactory;
 
-    public BatchingNeoStore( FileSystemAbstraction fileSystem, String storeDir,
+    public BatchFriendlyNeoStore( FileSystemAbstraction fileSystem, String storeDir,
                                   Configuration config, Monitor writeMonitor, Logging logging,
-                                  WriterFactory writerFactory, Monitors monitors )
+                                  Monitors monitors )
     {
         this.config = config;
         this.writeMonitor = writeMonitor;
-        this.writerFactory = writerFactory;
         this.monitors = monitors;
         this.fileSystem = life.add( new ChannelReusingFileSystemAbstraction( fileSystem ) );
-
         this.logger = logging.getMessagesLog( getClass() );
         this.neo4jConfig = configForStoreDir(
                 new Config( stringMap( dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ) ),
@@ -107,7 +103,7 @@ public class BatchingNeoStore implements AutoCloseable
     private BatchingPageCache batchingPageCache( Mode mode )
     {
         return new BatchingPageCache( fileSystem, config.fileChannelBufferSize(),
-                writerFactory, writeMonitor, mode );
+                SYNCHRONOUS, writeMonitor, mode );
     }
 
     private NeoStore newReverseUpdatingNeoStore()
@@ -171,7 +167,7 @@ public class BatchingNeoStore implements AutoCloseable
 
     public void flushAll()
     {
-        if(neoStore != null)
+        if ( neoStore != null )
         {
             neoStore.flush();
         }
