@@ -183,7 +183,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
          * This is the minimum amount of pages to keep around, we will stop
          * evicting pages once we reach this threshold.
          */
-        final int minLoadedPages = (int) Math.round(pages.length * PAGE_UTILISATION_RATIO );
+        final int minLoadedPages = (int) Math.round( pages.length * PAGE_UTILISATION_RATIO );
         int maxPagesToEvict = Math.max( pages.length - minLoadedPages, 1 );
         int clockHand = 0;
 
@@ -281,7 +281,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
         int loadedPages;
         outerLoop: do
         {
-            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 5 ) );
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
             if(Thread.currentThread().isInterrupted() || freeList.get() == null)
             {
                 return;

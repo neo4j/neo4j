@@ -48,9 +48,9 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public void read( long pageId, Page page ) throws IOException
+    public void read( long filePageId, Page page ) throws IOException
     {
-        long offset = pageIdToPosition( pageId );
+        long offset = pageIdToPosition( filePageId );
         if ( offset < channel.size() )
         {
             page.swapIn( channel, offset, filePageSize );
@@ -58,16 +58,16 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public void write( long pageId, Page page ) throws IOException
+    public void write( long filePageId, Page page ) throws IOException
     {
-        long offset = pageIdToPosition( pageId );
+        long offset = pageIdToPosition( filePageId );
         page.swapOut( channel, offset, filePageSize );
     }
 
     @Override
-    public void evicted( long pageId )
+    public void evicted( long filePageId )
     {
-        onEviction.onEvict( pageId );
+        onEviction.onEvict( filePageId );
     }
 
     @Override

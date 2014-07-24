@@ -222,7 +222,6 @@ public class BatchingPageCache implements PageCache
             return pageSize;
         }
 
-        @Override
         public void close() throws IOException
         {
             flush();

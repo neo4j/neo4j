@@ -58,6 +58,11 @@ class UnsafeUtil
         return unsafe.getAndAddInt( obj, offset, delta );
     }
 
+    public static boolean compareAndSwapLong( Object obj, long offset, long expected, long update )
+    {
+        return unsafe.compareAndSwapLong( obj, offset, expected, update );
+    }
+
     public static long malloc( long sizeInBytes )
     {
         long pointer = unsafe.allocateMemory( sizeInBytes );
@@ -67,7 +72,6 @@ class UnsafeUtil
 
     public static void free( long pointer )
     {
-        assert pointer != 0: "free of null pointer";
         unsafe.freeMemory( pointer );
     }
 
@@ -109,5 +113,10 @@ class UnsafeUtil
     public static void putShort( long address, short value )
     {
         unsafe.putShort( address, value );
+    }
+
+    public static void putOrderedInt( Object obj, int address, int value )
+    {
+        unsafe.putOrderedInt( obj, address, value );
     }
 }

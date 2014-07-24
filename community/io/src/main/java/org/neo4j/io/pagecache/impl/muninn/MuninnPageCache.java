@@ -21,48 +21,55 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapperFactory;
 
-/*
-                                                                     ....
-                                                               .;okKNWMUWN0ko,
-       O'er Mithgarth Hugin and Munin both                   ;0WMUNINNMUNINNMUNOdc'.
-       Each day set forth to fly;                          .OWMUNINNMUNI  00WMUNINNXko;.
-       For Hugin I fear lest he come not home,            .KMUNINNMUNINNMWKKWMUNINNMUNIN0l.
-       But for Munin my care is more.                    .KMUNINNMUNINNMUNINNWKkdlc:::::::,
-                                                       .lXMUNINNMUNINNMUNINXo.
-                                                   .,lONMUNINNMUNINNMUNINNk.
-                                             .,cox0NMUNINNMUNINNMUNINNMUNI:
-                                        .;dONMUNINNMUNINNMUNINNMUNINNMUNIN'
-                                  .';okKWMUNINNMUNINNMUNINNMUNINNMUNINNMUx
-                             .:dkKNWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNN'
-                       .';lONMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNWl
-                      .:okXWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNM0.
-                  .,oONMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNo
-            .';lx0NMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUN0.
-         ;kKWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMWx.
-       .,kWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMXd'
-  .;lkKNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMNx;.
-  .oNMUNINNMWNKOxoc;,,;:cdkKNWMUNINNMUNINNMUNINNMUNINNMUNINWKx;.
-   lkOkkdl:,.                .':lkWMUNINNMUNINNMUNINN0kdoc;.
-                                 c0WMUNINNMUNINNMUWx.
-                                  .;ccllllxNMUNIXo'
-                                          lWMUWkK;   .
-                                          OMUNK.dNdc,....
-                                          cWMUNlkWWWO:cl;.
-                                           ;kWO,....',,,.
-                                             cNd
-                                              :Nk.
-                                               cWK,
-                                            .,ccxXWd.
-                                                  dWNkxkOdc::;.
-                                                   cNNo:ldo:.
-                                                    'xo.   ..
-*/
 /**
+ * The Muninn {@link org.neo4j.io.pagecache.PageCache page cache} implementation.
+ * <pre>
+ *                                                                      ....
+ *                                                                .;okKNWMUWN0ko,
+ *        O'er Mithgarth Hugin and Munin both                   ;0WMUNINNMUNINNMUNOdc'.
+ *        Each day set forth to fly;                          .OWMUNINNMUNI  00WMUNINNXko;.
+ *        For Hugin I fear lest he come not home,            .KMUNINNMUNINNMWKKWMUNINNMUNIN0l.
+ *        But for Munin my care is more.                    .KMUNINNMUNINNMUNINNWKkdlc:::::::,
+ *                                                        .lXMUNINNMUNINNMUNINXo.
+ *                                                    .,lONMUNINNMUNINNMUNINNk.
+ *                                              .,cox0NMUNINNMUNINNMUNINNMUNI:
+ *                                         .;dONMUNINNMUNINNMUNINNMUNINNMUNIN'
+ *                                   .';okKWMUNINNMUNINNMUNINNMUNINNMUNINNMUx
+ *                              .:dkKNWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNN'
+ *                        .';lONMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNWl
+ *                       .:okXWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNM0.
+ *                   .,oONMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNo
+ *             .';lx0NMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUN0.
+ *          ;kKWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMWx.
+ *        .,kWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMXd'
+ *   .;lkKNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMNx;.
+ *   .oNMUNINNMWNKOxoc;,,;:cdkKNWMUNINNMUNINNMUNINNMUNINNMUNINWKx;.
+ *    lkOkkdl:,.                .':lkWMUNINNMUNINNMUNINN0kdoc;.
+ *                                  c0WMUNINNMUNINNMUWx.
+ *                                   .;ccllllxNMUNIXo'
+ *                                           lWMUWkK;   .
+ *                                           OMUNK.dNdc,....
+ *                                           cWMUNlkWWWO:cl;.
+ *                                            ;kWO,....',,,.
+ *                                              cNd
+ *                                               :Nk.
+ *                                                cWK,
+ *                                             .,ccxXWd.
+ *                                                   dWNkxkOdc::;.
+ *                                                    cNNo:ldo:.
+ *                                                     'xo.   ..
+ * </pre>
  * <p>
  *     In Norse mythology, Huginn (from Old Norse "thought") and Muninn (Old Norse
  *     "memory" or "mind") are a pair of ravens that fly all over the world, Midgard,
@@ -70,44 +77,73 @@ import org.neo4j.io.pagecache.PagedFile;
  * </p>
  * <p>
  *     This implementation of {@link org.neo4j.io.pagecache.PageCache} is optimised for
- *     configurations with large memory capacities and large stores, and uses Sequence-
+ *     configurations with large memory capacities and large stores, and uses sequence
  *     locks to make uncontended reads and writes fast.
  * </p>
  */
 public class MuninnPageCache implements PageCache, Runnable
 {
-    private final FileSystemAbstraction fs;
-    private final int pageSize;
-    private final MuninnPage[] pages;
+    // Keep this many pages free and ready for use in faulting.
+    // This will be truncated to be no more than half of the number of pages
+    // in the cache.
+    private static final int pagesToKeepFree = Integer.getInteger(
+            "org.neo4j.io.pagecache.impl.muninn.pagesToKeepFree", 30 );
+
+    private final PageSwapperFactory swapperFactory;
+    private final int cachePageSize;
+    final MuninnPage[] pages;
+
+    // Linked list of free pages
+    private final AtomicReference<MuninnPage> freelist;
 
     // Linked list of mappings - guarded by synchronized(this)
     private volatile FileMapping mappedFiles;
 
-    // Linked list of free pages - accessed through atomics (unsafe)
-    private volatile MuninnPage freelist;
-
     // The thread that runs the eviction algorithm. We unpark this when we've run out of
     // free pages to grab.
     private volatile Thread evictorThread;
+    private volatile IOException evictorException;
+
+    // Flag for when page cache is closed - guarded by synchronized(this)
+    private boolean closed;
 
     public MuninnPageCache( FileSystemAbstraction fs, int maxPages, int pageSize )
     {
-        this.fs = fs;
-        this.pageSize = pageSize;
+        this( new SingleFilePageSwapperFactory( fs ), maxPages, pageSize );
+    }
+
+    public MuninnPageCache(
+            PageSwapperFactory swapperFactory,
+            int maxPages,
+            int cachePageSize )
+    {
+        this.swapperFactory = swapperFactory;
+        this.cachePageSize = cachePageSize;
         this.pages = new MuninnPage[maxPages];
 
-        for ( int i = 0; i < maxPages; i++ )
+        MuninnPage pageList = null;
+        int cachePageId = maxPages;
+        while ( cachePageId --> 0 )
         {
-            MuninnPage page = new MuninnPage( pageSize );
-            pages[i] = page;
-            page.nextFree = freelist;
-            freelist = page;
+            MuninnPage page = new MuninnPage( cachePageId, cachePageSize );
+            pages[cachePageId] = page;
+            page.nextFree = pageList;
+            pageList = page;
         }
+        freelist = new AtomicReference<>( pageList );
     }
 
     @Override
-    public synchronized PagedFile map( File file, int pageSize ) throws IOException
+    public synchronized PagedFile map( File file, int filePageSize ) throws IOException
     {
+        assertHealthy();
+        if ( filePageSize > cachePageSize )
+        {
+            throw new IllegalArgumentException( "Cannot map files with a filePageSize (" +
+                    filePageSize + ") that is greater than the cachePageSize (" +
+                    cachePageSize + ")" );
+        }
+
         FileMapping current = mappedFiles;
 
         // find an existing mapping
@@ -123,7 +159,12 @@ public class MuninnPageCache implements PageCache, Runnable
         }
 
         // there was no existing mapping
-        MuninnPagedFile pagedFile = new MuninnPagedFile( pages, pageSize );
+        MuninnPagedFile pagedFile = new MuninnPagedFile(
+                file,
+                this,
+                filePageSize,
+                swapperFactory,
+                freelist );
         current = new FileMapping( file, pagedFile );
         current.next = mappedFiles;
         mappedFiles = current;
@@ -133,6 +174,7 @@ public class MuninnPageCache implements PageCache, Runnable
     @Override
     public synchronized void unmap( File file ) throws IOException
     {
+        assertHealthy();
         FileMapping prev = null;
         FileMapping current = mappedFiles;
 
@@ -163,27 +205,83 @@ public class MuninnPageCache implements PageCache, Runnable
     }
 
     @Override
-    public void flush() throws IOException
+    public synchronized void flush() throws IOException
     {
+        assertHealthy();
+        flushAllPages();
+    }
 
+    private void flushAllPages() throws IOException
+    {
+        for ( int i = 0; i < pages.length; i++ )
+        {
+            MuninnPage page = pages[i];
+            long stamp = page.writeLock();
+            try
+            {
+                page.flush();
+            }
+            finally
+            {
+                page.unlockWrite( stamp );
+            }
+        }
     }
 
     @Override
-    public void close() throws IOException
+    public synchronized void close() throws IOException
     {
+        if ( closed )
+        {
+            return;
+        }
 
+        closed = true;
+        FileMapping file = mappedFiles;
+        while ( file != null )
+        {
+            file.pagedFile.close();
+            file = file.next;
+        }
+
+        for ( int i = 0; i < pages.length; i++ )
+        {
+            pages[i].freeBuffer();
+        }
+    }
+
+    private void assertHealthy() throws IOException
+    {
+        if ( closed )
+        {
+            throw new IllegalStateException( "The PageCache has been shut down" );
+        }
+        IOException exception = evictorException;
+        if ( exception != null )
+        {
+            throw new IOException( "The page eviction thread is dead.", exception );
+        }
     }
 
     @Override
     public int pageSize()
     {
-        return pageSize;
+        return cachePageSize;
     }
 
     @Override
     public int maxCachedPages()
     {
         return pages.length;
+    }
+
+    void unparkEvictor()
+    {
+        Thread thread = evictorThread;
+        if ( thread != null )
+        {
+            LockSupport.unpark( thread );
+        }
     }
 
     /**
@@ -198,5 +296,100 @@ public class MuninnPageCache implements PageCache, Runnable
         // Once we have enough free pages, we park our thread. Page-faulting will
         // unpark our thread as needed.
         evictorThread = Thread.currentThread();
+        try
+        {
+            continuouslySweepPages();
+        }
+        catch ( IOException e )
+        {
+            evictorException = e;
+        }
+    }
+
+    private void continuouslySweepPages() throws IOException
+    {
+        int keepFree = Math.min( pagesToKeepFree, pages.length / 2 );
+        int clockArm = 0;
+
+        while ( !Thread.interrupted() )
+        {
+            int pageCountToEvict = parkUntilEvictionRequired( keepFree );
+            clockArm = evictPages( pageCountToEvict, clockArm );
+        }
+    }
+
+    private int parkUntilEvictionRequired( int keepFree )
+    {
+        // Park until we're either interrupted, or the number of free pages drops
+        // bellow keepFree.
+        long parkNanos = TimeUnit.MILLISECONDS.toNanos( 10 );
+        int availablePages;
+        do
+        {
+            LockSupport.parkNanos( parkNanos );
+            if ( Thread.currentThread().isInterrupted() )
+            {
+                return 0;
+            }
+            availablePages = 0;
+            MuninnPage page = freelist.get();
+            while ( page != null && availablePages < keepFree )
+            {
+                availablePages++;
+                page = page.nextFree;
+            }
+        } while ( availablePages == keepFree );
+        return keepFree - availablePages;
+    }
+
+    int evictPages( int pageCountToEvict, int clockArm ) throws IOException
+    {
+        while ( pageCountToEvict > 0 ) {
+            if ( clockArm == pages.length )
+            {
+                clockArm = 0;
+            }
+            MuninnPage page = pages[clockArm];
+
+            if ( page.isLoaded() && page.decrementUsage() )
+            {
+                long stamp = page.tryWriteLock();
+                if ( stamp != 0 )
+                {
+                    // We got the lock.
+                    // We have to grab the swapper and the filePageId, because
+                    // we cannot do the onEviction notification while holding
+                    // the lock on the page. The reason is that the
+                    // notification will take a lock on the translation table,
+                    // and that is the wrong lock order. We must always first
+                    // lock on the translation table, and then on the page.
+                    // Never the other way around. Otherwise we risk
+                    // dead-locking
+                    PageSwapper swapper = page.getSwapper();
+                    long filePageId = page.getFilePageId();
+                    try
+                    {
+                        page.evict();
+                        pageCountToEvict--;
+                    }
+                    finally
+                    {
+                        page.unlockWrite( stamp );
+                    }
+                    swapper.evicted( filePageId );
+
+                    MuninnPage next;
+                    do
+                    {
+                        next = freelist.get();
+                        page.nextFree = next;
+                    }
+                    while ( !freelist.compareAndSet( next, page ) );
+                }
+            }
+
+            clockArm++;
+        }
+        return clockArm;
     }
 }

@@ -151,15 +151,14 @@ public class StandardPagedFile implements PagedFile
         }
     }
 
-    void unpin( PageCursor cursor )
+    void unpin( StandardPageCursor cursor )
     {
-        StandardPageCursor standardCursor = (StandardPageCursor) cursor;
-        PageLock lock = standardCursor.lockType();
-        PinnablePage page = standardCursor.page();
+        PageLock lock = cursor.lockType();
+        PinnablePage page = cursor.page();
         long pageId = page.pageId();
-        page.unpin( standardCursor.flags() );
+        page.unpin( cursor.flags() );
         monitor.unpin( lock, pageId, swapper );
-        standardCursor.reset( null, null );
+        cursor.reset( null, null );
     }
 
     @Override

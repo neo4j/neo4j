@@ -29,13 +29,15 @@ abstract class MuninnPageCursor implements PageCursor
     public MuninnPageCursor nextFree;
 
     protected MuninnPagedFile pagedFile;
+    protected MuninnPage page;
     protected long pageId;
     protected int pf_flags;
     protected long currentPageId;
     protected long nextPageId;
+    protected long lastPageId;
+    protected long lockStamp;
 
     private int offset;
-    private MuninnPage page;
 
     public MuninnPageCursor( MuninnCursorFreelist freelist )
     {
@@ -48,6 +50,45 @@ abstract class MuninnPageCursor implements PageCursor
         this.pageId = pageId;
         this.pf_flags = pf_flags;
     }
+
+    @Override
+    public void rewind() throws IOException
+    {
+        nextPageId = pageId;
+        currentPageId = UNBOUND_PAGE_ID;
+        lastPageId = pagedFile.getLastPageId();
+    }
+
+    public void reset( MuninnPage page )
+    {
+        this.page = page;
+        this.offset = 0;
+    }
+
+    @Override
+    public boolean next( long pageId ) throws IOException
+    {
+        nextPageId = pageId;
+        return next();
+    }
+
+    @Override
+    public void close()
+    {
+        unpinCurrentPage();
+        pagedFile = null;
+        freelist.returnCursor( this );
+    }
+
+    @Override
+    public long getCurrentPageId()
+    {
+        return currentPageId;
+    }
+
+    protected abstract void unpinCurrentPage();
+
+    // --- IO methods:
 
     @Override
     public byte getByte()
@@ -139,24 +180,5 @@ abstract class MuninnPageCursor implements PageCursor
     public int getOffset()
     {
         return offset;
-    }
-
-    @Override
-    public long getCurrentPageId()
-    {
-        return currentPageId;
-    }
-
-    @Override
-    public void rewind() throws IOException
-    {
-        currentPageId = UNBOUND_PAGE_ID;
-        nextPageId = pageId;
-    }
-
-    @Override
-    public void close()
-    {
-        freelist.returnCursor( this );
     }
 }

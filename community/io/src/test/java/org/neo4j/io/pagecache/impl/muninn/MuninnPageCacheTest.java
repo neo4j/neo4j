@@ -24,10 +24,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 
+import org.junit.Test;
+
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCacheTest;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 {
@@ -55,5 +62,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         {
             future.cancel( true );
         }
+    }
+
+    @Test
+    public void primitiveLongIntMapReturnsMinusOneForKeysNotFound()
+    {
+        PrimitiveLongIntMap map = Primitive.longIntMap( 5 );
+        assertThat( map.get( 42 ), is( -1 ) );
     }
 }

@@ -143,9 +143,14 @@ public abstract class PageCacheTest<T extends PageCache>
             actualPageContents.position( recordSize * i );
             actualPageContents.put( record );
         }
-        assertThat( "Page id: " + pageId,
+        assertThat( "Page id: " + pageId + " (estimated page id of record: " + estimateId( record ) + ")",
                 actualPageContents.array(),
                 byteArray( expectedPageContents.array() ) );
+    }
+
+    private int estimateId( byte[] record )
+    {
+        return ByteBuffer.wrap( record ).getInt();
     }
 
     private void writeRecords( PageCursor cursor )
@@ -408,7 +413,12 @@ public abstract class PageCacheTest<T extends PageCache>
             generateRecordForId( i, buf );
             observation.position( 0 );
             channel.read( observation );
-            assertThat( "Record id: " + i, observation.array(), byteArray( buf.array() ) );
+            byte[] observedBytes = observation.array();
+            int estimateId = estimateId( observedBytes );
+            assertThat(
+                    "Record id: " + i + " (estimated record id: " + estimateId + ")",
+                    observedBytes,
+                    byteArray( buf.array() ) );
         }
         channel.close();
     }
@@ -1141,6 +1151,7 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
 
+    // TODO lots of tests where more than one file is mapped
     // TODO must collect all exceptions from closing file channels when the cache is closed
     // TODO figure out what should happen when the last reference to a file is unmapped, while pages are still pinned
     // TODO figure out how closing the cache should work when there are still mapped files

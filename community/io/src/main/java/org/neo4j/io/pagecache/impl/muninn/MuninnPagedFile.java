@@ -19,37 +19,79 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.StampedLock;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageEvictionCallback;
+import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 
 class MuninnPagedFile implements PagedFile
 {
+    static final int translationTableStripeLevel = 1 << 8;
+    static final int translationTableStripeMask = translationTableStripeLevel - 1;
+
     private static final long referenceCounterOffset =
             UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "referenceCounter" );
+    private static final long lastPageIdOffset =
+            UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "lastPageId" );
 
-    // these are the globally shared pages of the cache:
-    private final MuninnPage[] cachePages;
-    // this is the table where we translate file-page-ids to cache-page-ids:
-    private final PrimitiveLongIntMap translationTable;
-    private final int pageSize;
+    final MuninnPageCache pageCache;
+    // These are the globally shared pages of the cache:
+    final MuninnPage[] cachePages;
+    // This is the table where we translate file-page-ids to cache-page-ids:
+    final int pageSize;
+    // Global linked list of free pages
+    final AtomicReference<MuninnPage> freelist;
+
+    final PrimitiveLongIntMap[] translationTables;
+    final StampedLock[] translationTableLocks;
+
+    final PageSwapper swapper;
+    final PageFlusher flusher;
     private final MuninnCursorFreelist readCursors;
     private final MuninnCursorFreelist writeCursors;
 
-    // accessed via Unsafe
+    // Accessed via Unsafe
     private volatile int referenceCounter;
+    private volatile long lastPageId;
 
-    MuninnPagedFile( MuninnPage[] pages, int pageSize )
+    MuninnPagedFile(
+            File file,
+            MuninnPageCache pageCache,
+            int pageSize,
+            PageSwapperFactory swapperFactory,
+            AtomicReference<MuninnPage> freelist ) throws IOException
     {
-        this.cachePages = pages;
+        this.pageCache = pageCache;
+        this.cachePages = pageCache.pages;
         this.pageSize = pageSize;
-        // the initial capacity of our translation table is one quarter
-        // the number of pages in the cache in total, because we're most
-        // likely not going to be the only mapped file.
-        translationTable = Primitive.longIntMap( pages.length / 4 );
+        this.freelist = freelist;
+
+        // The translation table and its locks are striped to reduce lock
+        // contention.
+        // This is important as both eviction and page faulting will grab
+        // these locks, and will hold them for the duration of their respective
+        // operation.
+        translationTables = new PrimitiveLongIntMap[translationTableStripeLevel];
+        translationTableLocks = new StampedLock[translationTableStripeLevel];
+        for ( int i = 0; i < translationTableStripeLevel; i++ )
+        {
+            translationTables[i] = Primitive.longIntMap( 32 );
+            translationTableLocks[i] = new StampedLock();
+        }
+        PageEvictionCallback onEviction = new MuninnPageEvictionCallback(
+                translationTables, translationTableLocks );
+        swapper = swapperFactory.createPageSwapper( file, pageSize, onEviction );
+        flusher = new PageFlusher( cachePages, swapper );
+        lastPageId = swapper.getLastPageId();
+
         readCursors = new MuninnCursorFreelist()
         {
             @Override
@@ -105,32 +147,78 @@ class MuninnPagedFile implements PagedFile
 
     public void close() throws IOException
     {
-        force();
-
+        flush();
+        swapper.close();
     }
 
     @Override
     public int numberOfCachedPages()
     {
-        return translationTable.size();
+        int count = 0;
+        for ( int i = 0; i < translationTableStripeLevel; i++ )
+        {
+            PrimitiveLongIntMap translationTable = translationTables[i];
+            StampedLock translationTableLock = translationTableLocks[i];
+
+            long stamp = translationTableLock.readLock();
+            try
+            {
+                count += translationTable.size();
+            }
+            finally
+            {
+                translationTableLock.unlockRead( stamp );
+            }
+        }
+        return count;
     }
 
     @Override
     public void flush() throws IOException
     {
+        for ( int i = 0; i < translationTableStripeLevel; i++ )
+        {
+            PrimitiveLongIntMap translationTable = translationTables[i];
+            StampedLock translationTableLock = translationTableLocks[i];
 
+            long stamp = translationTableLock.readLock();
+            try
+            {
+                translationTable.visitEntries( flusher );
+            }
+            finally
+            {
+                translationTableLock.unlockRead( stamp );
+            }
+        }
+        force();
     }
 
     @Override
     public void force() throws IOException
     {
-
+        swapper.force();
     }
 
     @Override
     public long getLastPageId() throws IOException
     {
-        return 0;
+        return lastPageId;
+    }
+
+    /**
+     * Make sure that the lastPageId is at least the given pageId
+     */
+    long increaseLastPageIdTo( long newLastPageId )
+    {
+        long current;
+        do
+        {
+            current = lastPageId;
+        }
+        while ( current < newLastPageId
+                && !UnsafeUtil.compareAndSwapLong( this, lastPageIdOffset, current, newLastPageId ) );
+        return lastPageId;
     }
 
     /**
@@ -149,6 +237,6 @@ class MuninnPagedFile implements PagedFile
     {
         // compares with 1 because getAndAdd returns the old value, and a 1
         // means the value is now 0.
-        return UnsafeUtil.getAndAddInt( this, referenceCounterOffset, -1 ) == 1;
+        return UnsafeUtil.getAndAddInt( this, referenceCounterOffset, -1 ) <= 1;
     }
 }
