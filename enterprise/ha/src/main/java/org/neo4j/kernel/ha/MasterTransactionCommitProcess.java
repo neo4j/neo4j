@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -29,16 +30,17 @@ import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
-public class MasterTransactionCommitProcess extends TransactionRepresentationCommitProcess
+public class MasterTransactionCommitProcess implements TransactionCommitProcess
 {
     private final TransactionPropagator pusher;
     private final NeoStoreInjectedTransactionValidator validator;
+    private final TransactionRepresentationCommitProcess inner;
 
-    public MasterTransactionCommitProcess( LogicalTransactionStore logicalTransactionSTore, KernelHealth kernelHealth,
-                                           NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-                                           TransactionPropagator pusher, NeoStoreInjectedTransactionValidator validator )
+    public MasterTransactionCommitProcess( TransactionRepresentationCommitProcess commitProcess,
+                                           TransactionPropagator pusher,
+                                           NeoStoreInjectedTransactionValidator validator )
     {
-        super( logicalTransactionSTore, kernelHealth, neoStore, storeApplier, false );
+        this.inner = commitProcess;
         this.pusher = pusher;
         this.validator = validator;
     }
@@ -48,7 +50,7 @@ public class MasterTransactionCommitProcess extends TransactionRepresentationCom
     {
         validator.assertInjectionAllowed( representation.getLatestCommittedTxWhenStarted() );
 
-        long result = super.commit( representation );
+        long result = inner.commit( representation );
 
         pusher.committed( result, representation.getAuthorId() );
 
