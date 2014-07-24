@@ -50,7 +50,7 @@ public class SlaveTransactionCommitProcess extends TransactionRepresentationComm
     }
 
     @Override
-    public long commit( TransactionRepresentation representation ) throws TransactionFailureException
+    public synchronized long commit( TransactionRepresentation representation ) throws TransactionFailureException
     {
         // TODO Oh my gawd, my eyes, fix this
         /*

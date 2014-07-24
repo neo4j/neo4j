@@ -85,13 +85,18 @@ import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.DenseNodeTransactionTranslator;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.CommitProcessFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -403,20 +408,29 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected CommitProcessFactory getCommitProcessFactory()
     {
-        final DelegateInvocationHandler<CommitProcessFactory> commitProcessFactoryDelegate =
-                new DelegateInvocationHandler<>( CommitProcessFactory.class );
-
-        final CommitProcessFactory commitProcessFactory =
-                (CommitProcessFactory) Proxy.newProxyInstance( CommitProcessFactory.class.getClassLoader(),
-                        new Class[]{ CommitProcessFactory.class }, commitProcessFactoryDelegate );
+        final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
+                new DelegateInvocationHandler<>( TransactionCommitProcess.class );
 
         slaves = life.add( new HighAvailabilitySlaves( members, clusterClient,
                 this.slaveFactory = new DefaultSlaveFactory( logging, monitors, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
+
         final TransactionPropagator pusher = life.add (new TransactionPropagator( TransactionPropagator.from( config ),
                 msgLog, slaves, new CommitPusher( jobScheduler ) ) );
 
-        new CommitProcessFactorySwitcher( pusher,
-                master, commitProcessFactoryDelegate, requestContextFactory, memberStateMachine, unpacker );
+        final CommitProcessFactory commitProcessFactory = new CommitProcessFactory()
+        {
+            @Override
+            public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore, KernelHealth
+                    kernelHealth, NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier, NeoStoreInjectedTransactionValidator validator, boolean recovery )
+            {
+                new CommitProcessSwitcher( pusher,
+                        master, commitProcessDelegate, requestContextFactory, memberStateMachine, unpacker,
+                        logicalTransactionStore, kernelHealth, neoStore, storeApplier, validator);
+
+                return (TransactionCommitProcess) Proxy.newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
+                        new Class[]{ TransactionCommitProcess.class }, commitProcessDelegate );
+            }
+        };
 
         return commitProcessFactory;
     }

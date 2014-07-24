@@ -51,7 +51,7 @@ public class KernelTransactionsTest
 
         KernelTransactions registry = new KernelTransactions(
                 new MockContextSupplier(), mock(NeoStore.class), locks, null, null, null, null, null, null,
-                null, null, TransactionHeaderInformationFactory.DEFAULT, null, null,  mock(Provider.class), null, null,
+                null, null, TransactionHeaderInformationFactory.DEFAULT, null, null,  mock(TransactionCommitProcess.class), null, null,
                 new TransactionHooks(), new TransactionMonitorImpl(), life, false );
 
         // When
@@ -77,7 +77,7 @@ public class KernelTransactionsTest
 
         KernelTransactions registry = new KernelTransactions(
                 new MockContextSupplier(), mock(NeoStore.class), locks, null, null, null, null, null, null,
-                null, null, TransactionHeaderInformationFactory.DEFAULT, null, null,  mock(Provider.class), null, null,
+                null, null, TransactionHeaderInformationFactory.DEFAULT, null, null,  mock(TransactionCommitProcess.class), null, null,
                 new TransactionHooks(), new TransactionMonitorImpl(), life, false );
 
         registry.disposeAll();

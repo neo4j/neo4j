@@ -50,7 +50,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     }
 
     @Override
-    public long commit( TransactionRepresentation representation ) throws TransactionFailureException
+    public synchronized long commit( TransactionRepresentation representation ) throws TransactionFailureException
     {
         long transactionId = persistTransaction( representation );
         // apply changes to the store

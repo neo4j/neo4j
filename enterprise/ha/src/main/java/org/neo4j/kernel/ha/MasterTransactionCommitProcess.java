@@ -44,7 +44,7 @@ public class MasterTransactionCommitProcess extends TransactionRepresentationCom
     }
 
     @Override
-    public long commit( TransactionRepresentation representation ) throws TransactionFailureException
+    public synchronized long commit( TransactionRepresentation representation ) throws TransactionFailureException
     {
         validator.assertInjectionAllowed( representation.getLatestCommittedTxWhenStarted() );
 

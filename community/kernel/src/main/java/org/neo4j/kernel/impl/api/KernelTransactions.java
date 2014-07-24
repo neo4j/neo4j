@@ -28,7 +28,6 @@ import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -76,7 +75,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final PersistenceCache persistenceCache;
     private final StoreReadLayer storeLayer;
-    private final Provider<TransactionCommitProcess> commitProcessProvider;
+    private final TransactionCommitProcess transactionCommitProcess;
     private final IndexConfigStore indexConfigStore;
     private final LegacyIndexApplier.ProviderLookup legacyIndexProviderLookup;
     private final TransactionHooks hooks;
@@ -119,7 +118,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                     statementOperations, readOnly, schemaWriteGuard,
                     labelScanStore, indexingService, updateableSchemaState, neoStoreTransaction, providerMap,
                     neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory.create(),
-                    commitProcessProvider.instance(), transactionMonitor, neoStore, persistenceCache, storeLayer,
+                    transactionCommitProcess, transactionMonitor, neoStore, persistenceCache, storeLayer,
                     legacyIndexTransactionState, localTxPool );
 
             allTransactions.add( tx );
@@ -156,7 +155,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                                UpdateableSchemaState updateableSchemaState, SchemaWriteGuard schemaWriteGuard,
                                SchemaIndexProviderMap providerMap, TransactionHeaderInformationFactory txHeaderFactory,
                                PersistenceCache persistenceCache, StoreReadLayer storeLayer,
-                               Provider<TransactionCommitProcess> commitProcessProvider,
+                               TransactionCommitProcess transactionCommitProcess,
                                IndexConfigStore indexConfigStore, LegacyIndexApplier.ProviderLookup legacyIndexProviderLookup,
                                TransactionHooks hooks, TransactionMonitor transactionMonitor, LifeSupport dataSourceLife, boolean readOnly )
     {
@@ -174,7 +173,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         this.transactionHeaderInformationFactory = txHeaderFactory;
         this.persistenceCache = persistenceCache;
         this.storeLayer = storeLayer;
-        this.commitProcessProvider = commitProcessProvider;
+        this.transactionCommitProcess = transactionCommitProcess;
         this.indexConfigStore = indexConfigStore;
         this.legacyIndexProviderLookup = legacyIndexProviderLookup;
         this.hooks = hooks;

@@ -488,18 +488,10 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     LogicalTransactionStore.class, new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
                             transactionMetadataCache, logEntryReader, neoStore ));
 
-            Provider<TransactionCommitProcess> commitProcesProvider = new Provider<TransactionCommitProcess>()
-            {
-                @Override
-                public TransactionCommitProcess instance()
-                {
-                    return dependencies.satisfyDependency( TransactionCommitProcess.class,
-                            commitProcessFactory.create( logicalTransactionStore, kernelHealth,
-                                    neoStore, storeApplier,
-                                    new NeoStoreInjectedTransactionValidator( integrityValidator ), false )
-                    );
-                }
-            };
+            TransactionCommitProcess transactionCommitProcess = dependencies.satisfyDependency( TransactionCommitProcess.class,
+                                        commitProcessFactory.create( logicalTransactionStore, kernelHealth,
+                                                neoStore, storeApplier,
+                                                new NeoStoreInjectedTransactionValidator( integrityValidator ), false ));
 
             /*
              * This is used by two legacy indexes and constraint indexes whenever a transaction is to be spawned
@@ -525,7 +517,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             kernelTransactions = life.add(new KernelTransactions( neoStoreTransactionContextSupplier,
                     neoStore, locks, integrityValidator, constraintIndexCreator, indexingService, labelScanStore,
                     statementOperations, updateableSchemaState, schemaWriteGuard, providerMap,
-                    transactionHeaderInformationFactory, persistenceCache, storeLayer, commitProcesProvider, indexConfigStore,
+                    transactionHeaderInformationFactory, persistenceCache, storeLayer, transactionCommitProcess, indexConfigStore,
                     legacyIndexProviderLookup, hooks, transactionMonitor, life, readOnly ));
 
             kernel = new Kernel( statisticsService, kernelTransactions, hooks, kernelHealth, transactionMonitor );

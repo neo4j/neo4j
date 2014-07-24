@@ -101,10 +101,10 @@ public class NeoTransactionIndexApplier extends NeoCommandHandler.Adapter
 
     private void updateLabelScanStore()
     {
+        Collections.sort(labelUpdates, nodeLabelUpdateComparator );
+
         try ( LabelScanWriter writer = labelScanStore.newWriter() )
         {
-            Collections.sort(labelUpdates, nodeLabelUpdateComparator );
-
             for ( NodeLabelUpdate update : labelUpdates )
             {
                 writer.write( update );

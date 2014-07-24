@@ -339,7 +339,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         ChannelPipeline pipeline = Channels.pipeline();
         addLengthFieldPipes( pipeline, frameLength );
         BlockingReadHandler<ChannelBuffer> reader = new BlockingReadHandler<>(
-                new ArrayBlockingQueue<ChannelEvent>( 3, false ) );
+                new ArrayBlockingQueue<ChannelEvent>( 100, false ) );
         pipeline.addLast( "blockingHandler", reader );
         return pipeline;
     }
