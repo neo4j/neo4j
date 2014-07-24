@@ -56,4 +56,17 @@ public class ServerExecutionEngineTest
         // THEN
         assertFalse( "Did detect non-periodic commit query as periodic commit query", result );
     }
+
+    @Test
+    public void shouldNotDetectInvalidQueriesAsPeriodicCommitQueries() throws Exception
+    {
+        // GIVEN
+        ServerExecutionEngine engine = new ServerExecutionEngine( rule.getGraphDatabaseService() );
+
+        // WHEN
+        boolean result = engine.isPeriodicCommit("MATCH n RETURN m");
+
+        // THEN
+        assertFalse( "Did detect an invalid query as periodic commit query", result );
+    }
 }

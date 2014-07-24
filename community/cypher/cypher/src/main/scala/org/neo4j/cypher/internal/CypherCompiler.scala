@@ -39,6 +39,8 @@ import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryCon
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.monitoring.{Monitors=>KernelMonitors}
 
+import scala.util.Try
+
 object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
 
@@ -66,26 +68,26 @@ class CypherCompiler(graph: GraphDatabaseService,
 
     version match {
       case CypherVersion.experimental =>
-        val preparedQueryForV_experimental = ronjaCompiler2_1.prepareQuery(remainingQueryText)
+        val preparedQueryForV_experimental = Try(ronjaCompiler2_1.prepareQuery(remainingQueryText))
         new PreparedQuery(queryText, version) {
-          def isPeriodicCommit = preparedQueryForV_experimental.isPeriodicCommit
+          def isPeriodicCommit = preparedQueryForV_experimental.map(_.isPeriodicCommit).getOrElse(false)
           def plan(context: GraphDatabaseService, statement: Statement) = {
             val planContext = new PlanContext_v2_1(statement, kernelAPI, context)
-            val (planImpl, extractedParameters) = ronjaCompiler2_1.planPreparedQuery(preparedQueryForV_experimental, planContext)
+            val (planImpl, extractedParameters) = ronjaCompiler2_1.planPreparedQuery(preparedQueryForV_experimental.get, planContext)
             (new ExecutionPlanWrapperForV2_1( planImpl ), extractedParameters)
           }
         }
 
       case CypherVersion.v2_1 =>
         new PreparedQuery(queryText, version) {
-          val preparedQueryForV_2_1 = ronjaCompiler2_1.prepareQuery(remainingQueryText)
+          val preparedQueryForV_2_1 = Try(ronjaCompiler2_1.prepareQuery(remainingQueryText))
           override def plan(context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any]) = {
             val planContext = new PlanContext_v2_1(statement, kernelAPI, context)
-            val (planImpl, extractedParameters) = legacyCompiler2_1.planPreparedQuery(preparedQueryForV_2_1, planContext)
+            val (planImpl, extractedParameters) = legacyCompiler2_1.planPreparedQuery(preparedQueryForV_2_1.get, planContext)
             (new ExecutionPlanWrapperForV2_1( planImpl ), extractedParameters)
           }
 
-          override def isPeriodicCommit: Boolean = preparedQueryForV_2_1.isPeriodicCommit
+          override def isPeriodicCommit: Boolean = preparedQueryForV_2_1.map(_.isPeriodicCommit).getOrElse(false)
         }
 
       case CypherVersion.v2_0 =>
