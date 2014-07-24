@@ -19,7 +19,9 @@
  */
 package recovery;
 
+import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
@@ -27,16 +29,20 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -52,8 +58,6 @@ import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 /**
  * Arbitrary recovery scenarios boiled down to as small tests as possible
  */
-// TODO 2.2-future fix me
-@Ignore
 public class TestRecoveryScenarios
 {
     @Test
@@ -222,16 +226,18 @@ public class TestRecoveryScenarios
         db.shutdown();
     }
 
-    private void rotateLog()
+    private void rotateLog() throws IOException
     {
-//        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
+        NeoStoreXaDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        DependencyResolver dependencyResolver = dataSource.getDependencyResolver();
+        PhysicalLogFile physicalLogFile = dependencyResolver.resolveDependency( PhysicalLogFile.class );
+        physicalLogFile.forceRotate();
     }
 
-    @SuppressWarnings("deprecation")
     private void flushAll()
     {
-//        db.getDependencyResolver().resolveDependency(
-//                XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().flush();
+        NeoStoreXaDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        dataSource.forceEverything();
     }
 
     private void deleteNode( Node node )
