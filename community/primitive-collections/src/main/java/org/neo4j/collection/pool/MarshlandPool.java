@@ -143,7 +143,9 @@ public class MarshlandPool<T> implements Pool<T>
             reference != null;
             reference = (LocalSlotReference) objectsFromDeadThreads.poll() )
         {
-            pool.release( reference.object );
+            T instance = reference.object;
+            if (instance != null)
+                pool.release( instance );
         }
     }
 
