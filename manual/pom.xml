@@ -348,7 +348,7 @@
               <excludeTransitive>true</excludeTransitive>
               <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact>
               <stripVersion>true</stripVersion>
-              <excludes>META-INF,META-INF/**</excludes>
+              <excludes>META-INF,META-INF/**,org/neo4j/kernel/impl/storemigration/legacystore/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.test-sources}</outputDirectory>
               <includeArtifactIds>neo4j-cypher-docs,neo4j-examples,neo4j-server,neo4j-lucene-index,neo4j-backup,neo4j-kernel</includeArtifactIds>
