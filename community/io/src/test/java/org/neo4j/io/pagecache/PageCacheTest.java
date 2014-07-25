@@ -174,6 +174,7 @@ public abstract class PageCacheTest<T extends PageCache>
 
     private void writeRecords( PageCursor cursor )
     {
+        cursor.setOffset( 0 );
         for ( int i = 0; i < recordsPerFilePage; i++ )
         {
             long recordId = (cursor.getCurrentPageId() * recordsPerFilePage) + i;
@@ -1229,6 +1230,21 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( buf.get(), is( (byte) 47 ) );
     }
 
+    @Test( timeout = 1000, expected = IllegalArgumentException.class )
+    public void mappingFileSecondTimeWithLesserPageSizeMustThrow() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        pageCache.map( file, filePageSize );
+        pageCache.map( file, filePageSize - 1 );
+    }
+
+    @Test( timeout = 1000, expected = IllegalArgumentException.class )
+    public void mappingFileSecondTimeWithGreaterPageSizeMutThrow() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        pageCache.map( file, filePageSize );
+        pageCache.map( file, filePageSize + 1 );
+    }
 
     // TODO lots of tests where more than one file is mapped
     // TODO tests that use the monitor

@@ -182,6 +182,15 @@ public class MuninnPageCache implements PageCache, Runnable
             if ( current.file.equals( file ) )
             {
                 MuninnPagedFile pagedFile = current.pagedFile;
+                if ( pagedFile.pageSize() != filePageSize )
+                {
+                    String msg = "Cannot map file " + file + " with " +
+                            "filePageSize " + filePageSize + " bytes, " +
+                            "because it has already been mapped with a " +
+                            "filePageSize of " + pagedFile.pageSize() +
+                            " bytes.";
+                    throw new IllegalArgumentException( msg );
+                }
                 pagedFile.incrementReferences();
                 return pagedFile;
             }
