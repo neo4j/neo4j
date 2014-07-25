@@ -15,7 +15,7 @@ Any Cypher query that doesn't explicitly say anything else, will get the parser 
 
 The other way is on a query by query basis.
 By simply putting +"CYPHER 1.9"+ at the beginning, that particular query will be parsed with the 1.9 version of the parser.
-Example:
+Below is an example using the deprecated +START+ clause:
 
 [source,cypher]
 ----
