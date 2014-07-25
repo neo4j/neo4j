@@ -31,7 +31,6 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.util.DiffSets;
 
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -369,7 +368,7 @@ public class TxStateTest
     @Before
     public void before() throws Exception
     {
-        state = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexTransactionState.class )
+        state = new TxStateImpl( mock( LegacyIndexTransactionState.class )
         );
     }
 }

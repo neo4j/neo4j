@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 import static java.util.Arrays.asList;
 
@@ -60,7 +59,7 @@ public class TxStateTransactionDataViewTest
     private final ThreadToStatementContextBridge bridge = mock(ThreadToStatementContextBridge.class);
     private final Statement stmt = mock(Statement.class);
     private final StoreReadLayer ops = mock(StoreReadLayer.class);
-    private final TxState state = new TxStateImpl( mock( TransactionRecordState.class ),
+    private final TxState state = new TxStateImpl(
             mock( LegacyIndexTransactionState.class) );
 
 

@@ -96,7 +96,7 @@ public class DiffSetsTest
         actual.add( 1L );
 
         // THEN
-        assertEquals( asSet( 1L ), actual.getAdded() );
+        assertTrue( actual.getAdded().isEmpty() );
         assertTrue( actual.getRemoved().isEmpty() );
     }
 

@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.impl.core.Token;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertThat;
 
@@ -63,5 +64,33 @@ public class LabelIT extends KernelIntegrationTest
             assertThat(asCollection( labelIdsAfterCommit ) ,
                     hasItems( new Token( "label1", label1Id ), new Token( "label2", label2Id ) ));
         }
+    }
+
+    @Test
+    public void addingAndRemovingLabelInSameTxShouldHaveNoEffect() throws Exception
+    {
+        // Given a node with a label
+        int label;
+        long node;
+        {
+            DataWriteOperations stmt = dataWriteOperationsInNewTransaction();
+            label = stmt.labelGetOrCreateForName( "Label 1" );
+            node = stmt.nodeCreate();
+            stmt.nodeAddLabel( node, label );
+            commit();
+        }
+
+        // When I add and remove that label in the same tx
+        {
+            DataWriteOperations stmt = dataWriteOperationsInNewTransaction();
+            stmt.nodeRemoveLabel( node, label );
+            stmt.nodeAddLabel( node, label );
+        }
+
+        // Then commit should not throw exceptions
+        commit();
+
+        // And then the node should have the label
+        assertTrue( readOperationsInNewTransaction().nodeHasLabel( node, label ) );
     }
 }
