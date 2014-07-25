@@ -162,7 +162,7 @@ public class CypherSqlDocIT extends ImpermanentGraphJavaDocTestBase
      *
      * @@RecursiveJoin-cypher-result
      *
-     * The * after the relationship type means that there can be multiple hops across +belongs_to+ relationships between group and user.
+     * The `*` after the relationship type means that there can be multiple hops across +belongs_to+ relationships between group and user.
      * Some SQL dialects have recursive abilities, that allow the expression of queries like this, but you may have a hard time wrapping your head around those.
      * Expressing something like this in SQL is hugely impractical if not practically impossible.
      *

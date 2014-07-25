@@ -31,16 +31,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.index.Index;
 
 public class CypherSql
 {
@@ -81,6 +83,11 @@ public class CypherSql
         createGroups();
         createEmail();
 
+        try (Transaction tx = graphdb.beginTx())
+        {
+            graphdb.schema().awaitIndexesOnline( 30, TimeUnit.SECONDS );
+            tx.success();
+        }
         /*
 
         CREATE TABLE "Person"(name VARCHAR(20), id INT PRIMARY KEY, age INT, hair VARCHAR(20));
@@ -298,18 +305,12 @@ public class CypherSql
         try ( Transaction tx = graphdb.beginTx() )
         {
             RelationshipType type = DynamicRelationshipType.withName( relationshipType );
-            Index<Node> sourceIndex = graphdb.index()
-                    .forNodes( sourceEntity );
-            Index<Node> targetIndex = graphdb.index()
-                    .forNodes( targetEntity );
             for ( Object[] relationship : relationships )
             {
-                Node sourceNode = sourceIndex.get( sourceMatchAttribute,
-                        relationship[0] )
-                        .getSingle();
-                Node targetNode = targetIndex.get( targetMatchAttribute,
-                        relationship[1] )
-                        .getSingle();
+                Node sourceNode = graphdb.findNodesByLabelAndProperty( DynamicLabel.label( sourceEntity ),
+                        sourceMatchAttribute, relationship[0] ).iterator().next();
+                Node targetNode = graphdb.findNodesByLabelAndProperty( DynamicLabel.label( targetEntity ),
+                        targetMatchAttribute, relationship[1] ).iterator().next();
                 sourceNode.createRelationshipTo( targetNode, type );
             }
             tx.success();
@@ -330,18 +331,15 @@ public class CypherSql
     {
         try ( Transaction tx = graphdb.beginTx() )
         {
-            Index<Node> index = graphdb.index()
-                    .forNodes( tableName );
+            Label label = DynamicLabel.label( tableName );
+            graphdb.schema().indexFor( label );
             for ( Object[] value : values )
             {
                 Node node = graphdb.createNode();
+                node.addLabel( label );
                 for ( int i = 0; i < fields.length; i++ )
                 {
                     node.setProperty( fields[i], value[i] );
-                    if ( i == 0 )
-                    {
-                        index.add( node, fields[i], value[i] );
-                    }
                 }
             }
 
