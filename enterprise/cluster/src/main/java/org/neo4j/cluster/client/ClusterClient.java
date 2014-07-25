@@ -87,6 +87,7 @@ public class ClusterClient extends LifecycleAdapter
 {
     public static final Setting<Long> clusterJoinTimeout = Settings.setting( "ha.cluster_join_timeout",
             Settings.DURATION, "0s" );
+    private final Monitors monitors;
 
     public interface Configuration
     {
@@ -260,11 +261,12 @@ public class ClusterClient extends LifecycleAdapter
 
     private final ProtocolServer server;
 
-    public ClusterClient( Monitors monitors, final Configuration config, final Logging logging,
+    public ClusterClient( final Monitors monitors, final Configuration config, final Logging logging,
                           ElectionCredentialsProvider electionCredentialsProvider,
                           ObjectInputStreamFactory objectInputStreamFactory,
                           ObjectOutputStreamFactory objectOutputStreamFactory )
     {
+        this.monitors = monitors;
         MessageTimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy(
                 new FixedTimeoutStrategy( config.defaultTimeout() ) )
                 .timeout( HeartbeatMessage.sendHeartbeat, config.heartbeatInterval() )
@@ -330,7 +332,7 @@ public class ClusterClient extends LifecycleAdapter
             @Override
             public ExecutorService newInstance()
             {
-                return Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine" ) );
+                return Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine", monitors.newMonitor(NamedThreadFactory.Monitor.class) ) );
             }
         } );
 
@@ -571,7 +573,7 @@ public class ClusterClient extends LifecycleAdapter
         public void start() throws Throwable
         {
             scheduler = Executors.newSingleThreadScheduledExecutor(
-                    new DaemonThreadFactory( "timeout-clusterClient" ) );
+                    new NamedThreadFactory( "timeout-clusterClient", monitors.newMonitor(NamedThreadFactory.Monitor.class) ).setDaemon(true) );
 
             tickFuture = scheduler.scheduleWithFixedDelay( new Runnable()
             {

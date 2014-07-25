@@ -117,7 +117,7 @@ public class NetworkedServerFactory
             @Override
             public ExecutorService newInstance()
             {
-                return Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine" ) );
+                return Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine", monitors.newMonitor(NamedThreadFactory.Monitor.class) ) );
             }
         } );
 
@@ -169,7 +169,7 @@ public class NetworkedServerFactory
             public void start()
                     throws Throwable
             {
-                scheduler = Executors.newSingleThreadScheduledExecutor( new DaemonThreadFactory( "timeout" ) );
+                scheduler = Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "timeout" ) );
 
                 scheduler.scheduleWithFixedDelay( new Runnable()
                 {

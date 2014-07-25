@@ -300,7 +300,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterClient = new ClusterClient( monitors, ClusterClient.adapt( config ), logging,
                 electionCredentialsProvider,
                 objectStreamFactory, objectStreamFactory );
-        PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
+        PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( monitors, clusterClient, clusterClient,
                 clusterClient, clusterClient, logging, new Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
         {
             @Override
