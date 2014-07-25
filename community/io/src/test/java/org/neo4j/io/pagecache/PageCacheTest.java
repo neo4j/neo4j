@@ -1166,10 +1166,72 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
+    @Test(timeout = 1000)
+    public void writesOfDifferentUnitsMustHaveCorrectEndianess() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, 20 );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            byte[] data = { 42, 43, 44, 45, 46 };
+
+            cursor.putLong( 41 );          //  0+8 = 8
+            cursor.putInt( 41 );           //  8+4 = 12
+            cursor.putShort( (short) 41 ); // 12+2 = 14
+            cursor.putByte( (byte) 41 );   // 14+1 = 15
+            cursor.putBytes( data );       // 15+5 = 20
+        }
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            long a = cursor.getLong();  //  8
+            int b = cursor.getInt();    // 12
+            short c = cursor.getShort();// 14
+            byte[] data = new byte[] {
+                    cursor.getByte(),   // 15
+                    cursor.getByte(),   // 16
+                    cursor.getByte(),   // 17
+                    cursor.getByte(),   // 18
+                    cursor.getByte(),   // 19
+                    cursor.getByte()    // 20
+            };
+            cursor.setOffset( 0 );
+            cursor.putLong( 1 + a );
+            cursor.putInt( 1 + b );
+            cursor.putShort( (short) (1 + c) );
+            for ( int i = 0; i < data.length; i++ )
+            {
+                byte d = data[i];
+                d++;
+                cursor.putByte( d );
+            }
+        }
+
+        pageCache.unmap( file );
+
+        StoreChannel channel = fs.open( file, "r" );
+        ByteBuffer buf = ByteBuffer.allocate( 20 );
+        channel.read( buf );
+        buf.flip();
+
+        assertThat( buf.getLong(), is( 42L ) );
+        assertThat( buf.getInt(), is( 42 ) );
+        assertThat( buf.getShort(), is( (short) 42 ) );
+        assertThat( buf.get(), is( (byte) 42 ) );
+        assertThat( buf.get(), is( (byte) 43 ) );
+        assertThat( buf.get(), is( (byte) 44 ) );
+        assertThat( buf.get(), is( (byte) 45 ) );
+        assertThat( buf.get(), is( (byte) 46 ) );
+        assertThat( buf.get(), is( (byte) 47 ) );
+    }
+
 
     // TODO lots of tests where more than one file is mapped
     // TODO tests that use the monitor
-    // TODO tests that read and write stuff other than bytes
     // TODO must collect all exceptions from closing file channels when the cache is closed
     // TODO figure out what should happen when the last reference to a file is unmapped, while pages are still pinned
     // TODO figure out how closing the cache should work when there are still mapped files

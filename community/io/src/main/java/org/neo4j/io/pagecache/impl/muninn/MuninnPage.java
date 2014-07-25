@@ -73,16 +73,19 @@ class MuninnPage extends StampedLock implements Page
 
     public byte getByte( int offset )
     {
+        assert offset + 1 <= cachePageSize;
         return UnsafeUtil.getByte( pointer + offset );
     }
 
     public void putByte( byte value, int offset )
     {
+        assert offset + 1 <= cachePageSize;
         UnsafeUtil.putByte( pointer + offset, value );
     }
 
     public long getLong( int offset )
     {
+        assert offset + 8 <= cachePageSize;
         if ( littleEndian )
         {
             return Long.reverseBytes( UnsafeUtil.getLong( pointer + offset ) );
@@ -92,6 +95,7 @@ class MuninnPage extends StampedLock implements Page
 
     public void putLong( long value, int offset )
     {
+        assert offset + 8 <= cachePageSize;
         if ( littleEndian )
         {
             UnsafeUtil.putLong( pointer + offset, Long.reverseBytes( value ) );
@@ -104,17 +108,31 @@ class MuninnPage extends StampedLock implements Page
 
     public int getInt( int offset )
     {
+        assert offset + 4 <= cachePageSize;
+        if ( littleEndian )
+        {
+            return Integer.reverseBytes( UnsafeUtil.getInt( pointer + offset ) );
+        }
         return UnsafeUtil.getInt( pointer + offset );
     }
 
     public void putInt( int value, int offset )
     {
-        UnsafeUtil.putInt( pointer + offset, value );
+        assert offset + 4 <= cachePageSize;
+        if ( littleEndian )
+        {
+            UnsafeUtil.putInt( pointer + offset, Integer.reverseBytes( value ) );
+        }
+        else
+        {
+            UnsafeUtil.putInt( pointer + offset, value );
+        }
     }
 
     @Override
     public void getBytes( byte[] data, int offset )
     {
+        assert offset + data.length <= cachePageSize;
         long address = pointer + offset;
         for ( int i = 0; i < data.length; i++ )
         {
@@ -126,6 +144,7 @@ class MuninnPage extends StampedLock implements Page
     @Override
     public void putBytes( byte[] data, int offset )
     {
+        assert offset + data.length <= cachePageSize;
         long address = pointer + offset;
         for ( int i = 0; i < data.length; i++ )
         {
@@ -136,12 +155,25 @@ class MuninnPage extends StampedLock implements Page
 
     public short getShort( int offset )
     {
+        assert offset + 2 <= cachePageSize;
+        if ( littleEndian )
+        {
+            return Short.reverseBytes( UnsafeUtil.getShort( pointer + offset ) );
+        }
         return UnsafeUtil.getShort( pointer + offset );
     }
 
     public void putShort( short value, int offset )
     {
-        UnsafeUtil.putShort( pointer + offset, value );
+        assert offset + 2 <= cachePageSize;
+        if ( littleEndian )
+        {
+            UnsafeUtil.putShort( pointer + offset, Short.reverseBytes( value ) );
+        }
+        else
+        {
+            UnsafeUtil.putShort( pointer + offset, value );
+        }
     }
 
     /** Increment the usage stamp to at most 5. */
