@@ -21,33 +21,36 @@ package synchronization;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.index.IndexWriter;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
 
-// TODO 2.2-future use new APIs
-@Ignore
 public class TestConcurrentRotation extends AbstractSubProcessTestBase
 {
     private final CountDownLatch barrier1 = new CountDownLatch( 1 ), barrier2 = new CountDownLatch( 1 );
-    
+
     private DebuggedThread thread;
-    
+
     private final BreakPoint commitIndexWriter = new BreakPoint( IndexWriter.class, "commit" )
     {
         private int counter = 0;
-        
+
         @Override
         protected void callback( DebugInterface debug ) throws KillSubProcess
         {
@@ -75,21 +78,21 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
             barrier2.countDown();
         }
     };
-    
+
     static void resumeFlushThread()
     {   // Activates breakpoint
     }
-    
+
     static void rotateDone()
     {   // Activate breakpoint
     }
-    
+
     @Override
     protected BreakPoint[] breakpoints( int id )
     {
         return new BreakPoint[] { commitIndexWriter, resumeFlushThread.enable(), done.enable() };
     }
-    
+
     @Test
     public void rotateLogAtTheSameTimeInitializeIndexWriters() throws Exception
     {
@@ -105,7 +108,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         barrier2.await();
         run( new Verifier() );
     }
-    
+
     private static class Verifier implements Task
     {
         @Override
@@ -132,7 +135,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
             }
         }
     }
-    
+
     private static class LoadIndexesTask implements Task
     {
         private final int count;
@@ -154,7 +157,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
             if ( resume ) resumeFlushThread();
         }
     }
-    
+
     private static class RotateIndexLogTask implements Task
     {
         @Override
@@ -162,9 +165,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         {
             try
             {
-                // TODO use new API to do this
-//                graphdb.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-//                        .getXaDataSource( LuceneDataSource.DEFAULT_NAME ).rotateLogicalLog();
+                rotateLogicalLog( graphdb );
                 setSuccess( graphdb, true );
             }
             catch ( Exception e )
@@ -177,7 +178,15 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
                 rotateDone();
             }
         }
-        
+
+        private void rotateLogicalLog( GraphDatabaseAPI graphdb ) throws IOException
+        {
+            NeoStoreXaDataSource dataSource = graphdb.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+            DependencyResolver dependencyResolver = dataSource.getDependencyResolver();
+            PhysicalLogFile physicalLogFile = dependencyResolver.resolveDependency( PhysicalLogFile.class );
+            physicalLogFile.forceRotate();
+        }
+
         private void setSuccess( GraphDatabaseAPI graphdb, boolean success )
         {
             try(Transaction tx = graphdb.beginTx())
