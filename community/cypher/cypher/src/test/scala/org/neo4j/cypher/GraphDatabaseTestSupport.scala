@@ -21,9 +21,9 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.CypherCompiler
 import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundPlanContext
 import org.neo4j.graphdb._
 import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge

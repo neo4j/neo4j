@@ -26,8 +26,8 @@ import org.junit.{After, Before}
 import org.neo4j.cypher.example.JavaExecutionEngineDocTest
 import org.neo4j.cypher.export.{DatabaseSubGraph, SubGraphExporter}
 import org.neo4j.cypher.internal.ServerExecutionEngine
-import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_2.RewindableExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
 import org.neo4j.cypher.internal.helpers.{GraphIcing, Materialized}
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.{CypherException, ExecutionResult}
