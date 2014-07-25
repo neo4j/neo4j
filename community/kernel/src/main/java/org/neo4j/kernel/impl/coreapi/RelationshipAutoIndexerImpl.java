@@ -43,14 +43,15 @@ public class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relatio
 
     static final String RELATIONSHIP_AUTO_INDEX = "relationship_auto_index";
     private Config config;
-    private IndexManagerImpl indexManager;
+    private IndexProvider indexProvider;
     private NodeManager nodeManager;
 
-    public RelationshipAutoIndexerImpl( Config config, IndexManagerImpl indexManager, NodeManager nodeManager )
+    public RelationshipAutoIndexerImpl( Config config, IndexProvider indexProvider,
+                                        NodeManager nodeManager )
     {
         super();
         this.config = config;
-        this.indexManager = indexManager;
+        this.indexProvider = indexProvider;
         this.nodeManager = nodeManager;
     }
 
@@ -82,7 +83,7 @@ public class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relatio
     @Override
     protected RelationshipIndex getIndexInternal()
     {
-        return indexManager.getOrCreateRelationshipIndex(
+        return indexProvider.getOrCreateRelationshipIndex(
                 RELATIONSHIP_AUTO_INDEX, null );
     }
 

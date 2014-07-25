@@ -120,6 +120,8 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
+import org.neo4j.kernel.impl.coreapi.IndexProvider;
+import org.neo4j.kernel.impl.coreapi.IndexProviderImpl;
 import org.neo4j.kernel.impl.coreapi.LegacyIndexProxy;
 import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
@@ -248,7 +250,7 @@ public abstract class InternalAbstractGraphDatabase
     protected PropertyKeyTokenHolder propertyKeyTokenHolder;
     protected LabelTokenHolder labelTokenHolder;
     protected NodeManager nodeManager;
-    protected IndexManagerImpl indexManager;
+    protected IndexManager indexManager;
     protected Schema schema;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
     protected KernelHealth kernelHealth;
@@ -420,9 +422,6 @@ public abstract class InternalAbstractGraphDatabase
 
         new JvmChecker( msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
-        // Instantiate all services - some are overridable by subclasses
-        boolean readOnly = config.get( Configuration.read_only );
-
         String cacheTypeName = config.get( Configuration.cache_type );
         cacheProvider = cacheProviders.get( cacheTypeName );
         if ( cacheProvider == null )
@@ -496,14 +495,11 @@ public abstract class InternalAbstractGraphDatabase
 
         schema = new SchemaImpl( threadToTransactionBridge );
 
-        LegacyIndexProxy.Lookup indexLookup = createIndexLookup();
-        indexManager = new IndexManagerImpl( indexLookup, threadToTransactionBridge );
-        nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexManager, nodeManager ) );
-        relAutoIndexer = life.add( new RelationshipAutoIndexerImpl( config, indexManager, nodeManager ) );
-
-        // TODO This cyclic dependency should be resolved
-        indexManager.setNodeAutoIndexer( nodeAutoIndexer );
-        indexManager.setRelAutoIndexer( relAutoIndexer );
+        final LegacyIndexProxy.Lookup indexLookup = createIndexLookup();
+        final IndexProvider indexProvider = new IndexProviderImpl( indexLookup, threadToTransactionBridge );
+        nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexProvider, nodeManager ) );
+        relAutoIndexer = life.add( new RelationshipAutoIndexerImpl( config, indexProvider, nodeManager ) );
+        indexManager = new IndexManagerImpl( threadToTransactionBridge, indexProvider, nodeAutoIndexer, relAutoIndexer);
 
         recoveryVerifier = createRecoveryVerifier();
 

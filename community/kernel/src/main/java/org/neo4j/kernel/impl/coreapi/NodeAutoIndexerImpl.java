@@ -42,15 +42,14 @@ public class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
 
     static final String NODE_AUTO_INDEX = "node_auto_index";
     private Config config;
-    private IndexManagerImpl indexManager;
+    private IndexProvider indexProvider;
     private NodeManager nodeManager;
 
-    public NodeAutoIndexerImpl( Config config, IndexManagerImpl indexManager, NodeManager nodeManager )
+    public NodeAutoIndexerImpl( Config config, IndexProvider indexProvider, NodeManager nodeManager )
     {
         super();
-
         this.config = config;
-        this.indexManager = indexManager;
+        this.indexProvider = indexProvider;
         this.nodeManager = nodeManager;
     }
 
@@ -82,7 +81,7 @@ public class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
     @Override
     protected Index<Node> getIndexInternal()
     {
-        return indexManager.getOrCreateNodeIndex(
+        return indexProvider.getOrCreateNodeIndex(
                 NODE_AUTO_INDEX, null );
     }
 
