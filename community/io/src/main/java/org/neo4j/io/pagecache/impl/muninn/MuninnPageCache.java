@@ -27,6 +27,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
@@ -91,6 +92,7 @@ public class MuninnPageCache implements PageCache, Runnable
 
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
+    private final PageCacheMonitor monitor;
     final MuninnPage[] pages;
 
     // Linked list of free pages
@@ -107,19 +109,27 @@ public class MuninnPageCache implements PageCache, Runnable
     // Flag for when page cache is closed - guarded by synchronized(this)
     private boolean closed;
 
-    public MuninnPageCache( FileSystemAbstraction fs, int maxPages, int pageSize )
+    public MuninnPageCache(
+            FileSystemAbstraction fs,
+            int maxPages,
+            int pageSize,
+            PageCacheMonitor monitor )
     {
-        this( new SingleFilePageSwapperFactory( fs ), maxPages, pageSize );
+        this( new SingleFilePageSwapperFactory( fs ), maxPages, pageSize, monitor );
     }
 
     public MuninnPageCache(
             PageSwapperFactory swapperFactory,
             int maxPages,
-            int cachePageSize )
+            int cachePageSize,
+            PageCacheMonitor monitor )
     {
+        verifyHacks();
+
         this.swapperFactory = swapperFactory;
         this.cachePageSize = cachePageSize;
         this.pages = new MuninnPage[maxPages];
+        this.monitor = monitor;
 
         MuninnPage pageList = null;
         int cachePageId = maxPages;
@@ -131,6 +141,26 @@ public class MuninnPageCache implements PageCache, Runnable
             pageList = page;
         }
         freelist = new AtomicReference<>( pageList );
+    }
+
+    static void verifyHacks()
+    {
+        // Make sure that we can do unaligned get* and put*
+        // See java.nio.Bits.unaligned()
+        String arch = System.getProperty( "os.arch", "?" );
+        if ( !arch.equals( "x86_64" ) && !arch.equals( "i386" )
+                && !arch.equals( "x86" ) && !arch.equals( "amd64" ) )
+        {
+            throw new IllegalStateException(
+                    "MuninnPageCache cannot be guaranteed to work on CPU architecture '" + arch + "' " +
+                            "where support for unaligned word access is unknown." );
+        }
+
+        // Make sure that we have access to theUnsafe
+        if ( !UnsafeUtil.hasUnsafe() )
+        {
+            throw new IllegalStateException( "Muninn requires access to sun.misc.Unsafe" );
+        }
     }
 
     @Override
@@ -164,7 +194,8 @@ public class MuninnPageCache implements PageCache, Runnable
                 this,
                 filePageSize,
                 swapperFactory,
-                freelist );
+                freelist,
+                monitor );
         current = new FileMapping( file, pagedFile );
         current.next = mappedFiles;
         mappedFiles = current;
@@ -377,6 +408,7 @@ public class MuninnPageCache implements PageCache, Runnable
                         page.unlockWrite( stamp );
                     }
                     swapper.evicted( filePageId );
+                    monitor.evict( filePageId, swapper );
 
                     MuninnPage next;
                     do

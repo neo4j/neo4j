@@ -42,10 +42,7 @@ public class PageFlusher implements PrimitiveLongIntVisitor
         long stamp = page.writeLock();
         try
         {
-            assert filePageId == page.getFilePageId(): "expected page to be" +
-                    " bound to filePageId = " + filePageId + " but it was" +
-                    " instead bound to filePageId = " +page.getFilePageId();
-            page.flush( swapper );
+            page.flush( swapper, filePageId );
         }
         catch ( IOException e )
         {

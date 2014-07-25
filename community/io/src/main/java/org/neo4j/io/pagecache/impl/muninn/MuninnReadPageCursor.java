@@ -38,11 +38,20 @@ class MuninnReadPageCursor extends MuninnPageCursor
     @Override
     protected void unpinCurrentPage()
     {
-        if ( page != null && !optimisticLock )
+        MuninnPage p = page;
+        page = null;
+
+        if ( p != null )
         {
-            assert page.isReadLocked(): "page pinned for pessimistic read was not read locked: " + page;
-            page.unlockRead( lockStamp );
+            assert optimisticLock || p.isReadLocked() :
+                    "pinned page wasn't really locked; not even optimistically: " + p;
         }
+
+        if ( p != null && !optimisticLock )
+        {
+            p.unlockRead( lockStamp );
+        }
+        lockStamp = 0;
     }
 
     @Override
@@ -180,7 +189,6 @@ class MuninnReadPageCursor extends MuninnPageCursor
         page.initBuffer();
         page.incrementUsage();
         reset( page );
-        this.page = page;
     }
 
     /**
@@ -222,6 +230,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
         optimisticLock = false; // We're using a pessimistic read lock
         translationTable.put( filePageId, page.cachePageId );
         pinCursorToPage( page );
+        pagedFile.monitor.pageFault( filePageId, swapper );
     }
 
     @Override
@@ -232,6 +241,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
         {
             setOffset( 0 );
             lockStamp = page.readLock();
+            optimisticLock = false;
         }
         return needsRetry;
     }

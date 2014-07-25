@@ -26,6 +26,7 @@ import java.util.concurrent.locks.StampedLock;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -49,6 +50,7 @@ class MuninnPagedFile implements PagedFile
     final int pageSize;
     // Global linked list of free pages
     final AtomicReference<MuninnPage> freelist;
+    final PageCacheMonitor monitor;
 
     final PrimitiveLongIntMap[] translationTables;
     final StampedLock[] translationTableLocks;
@@ -67,12 +69,14 @@ class MuninnPagedFile implements PagedFile
             MuninnPageCache pageCache,
             int pageSize,
             PageSwapperFactory swapperFactory,
-            AtomicReference<MuninnPage> freelist ) throws IOException
+            AtomicReference<MuninnPage> freelist,
+            PageCacheMonitor monitor ) throws IOException
     {
         this.pageCache = pageCache;
         this.cachePages = pageCache.pages;
         this.pageSize = pageSize;
         this.freelist = freelist;
+        this.monitor = monitor;
 
         // The translation table and its locks are striped to reduce lock
         // contention.

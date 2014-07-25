@@ -41,6 +41,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
         {
             assert page.isWriteLocked(): "page pinned for writing was not write locked: " + page;
             page.unlockWrite( lockStamp );
+            page = null;
         }
         lockStamp = 0;
     }
@@ -183,11 +184,11 @@ class MuninnWritePageCursor extends MuninnPageCursor
 
     private void pinCursorToPage( MuninnPage page )
     {
+        this.page = page;
         page.initBuffer();
         page.incrementUsage();
         reset( page );
         page.markAsDirty();
-        this.page = page;
     }
 
     /**
@@ -225,6 +226,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
         page.fault( swapper, filePageId );
         translationTable.put( filePageId, page.cachePageId );
         pinCursorToPage( page );
+        pagedFile.monitor.pageFault( filePageId, swapper );
     }
 
     @Override

@@ -29,16 +29,18 @@ class UnsafeUtil
 
     static
     {
+        Unsafe theUnsafe = null;
         try
         {
             Field unsafeField = Unsafe.class.getDeclaredField( "theUnsafe" );
             unsafeField.setAccessible( true );
-            unsafe = (Unsafe) unsafeField.get( null );
+            theUnsafe = (Unsafe) unsafeField.get( null );
         }
         catch ( NoSuchFieldException | IllegalAccessException e )
         {
-            throw new RuntimeException( e );
+            e.printStackTrace();
         }
+        unsafe = theUnsafe;
     }
 
     public static long getFieldOffset( Class<?> type, String field )
@@ -118,5 +120,10 @@ class UnsafeUtil
     public static void putOrderedInt( Object obj, int address, int value )
     {
         unsafe.putOrderedInt( obj, address, value );
+    }
+
+    public static boolean hasUnsafe()
+    {
+        return unsafe != null;
     }
 }

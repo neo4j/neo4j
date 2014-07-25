@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.locks.StampedLock;
 
 import org.neo4j.io.fs.StoreChannel;
@@ -31,6 +32,7 @@ import org.neo4j.io.pagecache.PageSwapper;
 
 class MuninnPage extends StampedLock implements Page
 {
+    private static final boolean littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
     private static final Constructor<?> directBufferConstructor;
     private static final long usageStampOffset = UnsafeUtil.getFieldOffset( MuninnPage.class, "usageStamp" );
     static {
@@ -81,12 +83,23 @@ class MuninnPage extends StampedLock implements Page
 
     public long getLong( int offset )
     {
+        if ( littleEndian )
+        {
+            return Long.reverseBytes( UnsafeUtil.getLong( pointer + offset ) );
+        }
         return UnsafeUtil.getLong( pointer + offset );
     }
 
     public void putLong( long value, int offset )
     {
-        UnsafeUtil.putLong( pointer + offset, value );
+        if ( littleEndian )
+        {
+            UnsafeUtil.putLong( pointer + offset, Long.reverseBytes( value ) );
+        }
+        else
+        {
+            UnsafeUtil.putLong( pointer + offset, value );
+        }
     }
 
     public int getInt( int offset )
@@ -185,7 +198,7 @@ class MuninnPage extends StampedLock implements Page
         assert isWriteLocked() : "swapOut requires write lock";
         bufferProxy.clear();
         bufferProxy.limit( length );
-        channel.writeAll( bufferProxy );
+        channel.writeAll( bufferProxy, offset );
     }
 
     /**
@@ -204,9 +217,9 @@ class MuninnPage extends StampedLock implements Page
     /**
      * NOTE: This method must be called while holding the page write lock.
      */
-    public void flush( PageSwapper swapper ) throws IOException
+    public void flush( PageSwapper swapper, long filePageId ) throws IOException
     {
-        if ( this.swapper == swapper && dirty )
+        if ( dirty && this.swapper == swapper && this.filePageId == filePageId )
         {
             // The page is bound to the given swapper and has stuff to flush
             swapper.write( filePageId, this );
