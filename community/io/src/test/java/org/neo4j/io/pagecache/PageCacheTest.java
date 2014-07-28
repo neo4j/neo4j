@@ -1509,7 +1509,133 @@ public abstract class PageCacheTest<T extends PageCache>
                         .and( lessThan( pagesToGenerate ) ) );
     }
 
-    // TODO test that lastPageId is updated correctly
+    @Test
+    public void lastPageIdOfEmptyFileIsMinusOne() throws IOException
+    {
+        fs.create( file ).close();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+        assertThat( pagedFile.getLastPageId(), is( -1L ) );
+    }
+
+    @Test
+    public void lastPageIdOfFileWithOneByteIsZero() throws IOException
+    {
+        StoreChannel channel = fs.create( file );
+        channel.write( ByteBuffer.wrap( new byte[]{1} ) );
+        channel.close();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+        assertThat( pagedFile.getLastPageId(), is( 0L ) );
+    }
+
+    @Test
+    public void lastPageIdOfFileWithExactlyTwoPagesWorthOfDataIsOne() throws IOException
+    {
+        int twoPagesWorthOfRecords = recordsPerFilePage * 2;
+        generateFileWithRecords( file, twoPagesWorthOfRecords, recordSize );
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+        assertThat( pagedFile.getLastPageId(), is( 1L ) );
+    }
+
+    @Test
+    public void lastPageIdOfFileWithExactlyTwoPagesAndOneByteWorthOfDataIsTwo() throws IOException
+    {
+        int twoPagesWorthOfRecords = recordsPerFilePage * 2;
+        generateFileWithRecords( file, twoPagesWorthOfRecords, recordSize );
+        OutputStream outputStream = fs.openAsOutputStream( file, true );
+        outputStream.write( 'a' );
+        outputStream.close();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+        assertThat( pagedFile.getLastPageId(), is( 2L ) );
+    }
+
+    @Test
+    public void lastPageIdMustNotIncreaseWhenReadingToEndWithSharedLock() throws IOException
+    {
+        generateFileWithRecords( file, recordCount, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        long initialLastPageId = pagedFile.getLastPageId();
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        {
+            while ( cursor.next() )
+            {
+                // scan through the lot
+            }
+        }
+        long resultingLastPageId = pagedFile.getLastPageId();
+
+        assertThat( resultingLastPageId, is( initialLastPageId ) );
+    }
+
+    @Test
+    public void lastPageIdMustNotIncreaseWhenReadingToEndWithNoGrowAndExclusiveLock()
+            throws IOException
+    {
+        generateFileWithRecords( file, recordCount, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        long initialLastPageId = pagedFile.getLastPageId();
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            while ( cursor.next() )
+            {
+                // scan through the lot
+            }
+        }
+        long resultingLastPageId = pagedFile.getLastPageId();
+
+        assertThat( resultingLastPageId, is( initialLastPageId ) );
+    }
+
+    @Test
+    public void lastPageIdMustIncreaseWhenScanningPastEndWithExclusiveLock()
+            throws IOException
+    {
+        generateFileWithRecords( file, recordsPerFilePage * 10, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        assertThat( pagedFile.getLastPageId(), is( 9L ) );
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            for ( int i = 0; i < 15; i++ )
+            {
+                assertTrue( cursor.next() );
+            }
+        }
+        assertThat( pagedFile.getLastPageId(), is( 14L ) );
+    }
+
+    @Test
+    public void lastPageIdMustIncreaseWhenJumpingPastEndWithExclusiveLock()
+            throws IOException
+    {
+        generateFileWithRecords( file, recordsPerFilePage * 10, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        assertThat( pagedFile.getLastPageId(), is( 9L ) );
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next( 15 ) );
+        }
+        assertThat( pagedFile.getLastPageId(), is( 15L ) );
+    }
+
     // TODO cursor offset must be updated by read and write
     // TODO cursor getUnsignedInt
     // TODO lots of tests where more than one file is mapped
