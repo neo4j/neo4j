@@ -51,7 +51,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
-  private val preparedQueries = new LRUCache[String, PreparedQuery](getPlanCacheSize)
+  private val parsedQueries = new LRUCache[String, ParsedQuery](getPlanCacheSize)
 
   @throws(classOf[SyntaxException])
   def profile(query: String): ExecutionResult = profile(query, Map[String, Any]())
@@ -78,9 +78,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   }
 
   @throws(classOf[SyntaxException])
-  protected def prepareQuery(queryText: String): PreparedQuery = preparedQueries.getOrElseUpdate( queryText,
-    compiler.prepareQuery( queryText )
-  )
+  protected def parseQuery(queryText: String): ParsedQuery =
+    parsedQueries.getOrElseUpdate( queryText, compiler.parseQuery( queryText ) )
 
   @throws(classOf[SyntaxException])
   protected def planQuery(queryText: String): (ExecutionPlan, Map[String, Any], TransactionInfo) = {
@@ -100,8 +99,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         })
         cacheAccessor.getOrElseUpdate(cache)(queryText, {
           touched = true
-          val preparedQuery = prepareQuery(queryText)
-          val queryPlan = preparedQuery.plan(graph, statement)
+          val parsedQuery = parseQuery(queryText)
+          val queryPlan = parsedQuery.plan(statement)
           queryPlan
         })
       }

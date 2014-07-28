@@ -26,16 +26,15 @@ import org.neo4j.cypher.internal.compiler.v2_1.InvalidInputErrorFormatter
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-final case class CypherQueryWithOptions(query: String, options: Seq[CypherOption] = Seq.empty)
+final case class CypherQueryWithOptions(statement: String, options: Seq[CypherOption] = Seq.empty)
 
-object CypherOptionParser extends Parser with Base {
-
+trait CypherOptionParser extends Parser with Base {
   def QueryWithOptions: Rule1[CypherQueryWithOptions] =
     AllOptions ~ optional(WS) ~ AnySomething ~~> ( (options: Seq[CypherOption], text: String) => CypherQueryWithOptions(text, options) )
 
   def AllOptions: Rule1[Seq[CypherOption]] = zeroOrMore(AnyCypherOption, WS)
 
-  def AnyCypherOption: Rule1[CypherOption] = Version | Profile | Explain
+  def AnyCypherOption: Rule1[CypherOption] = Version //TODO: Enable in 2.2  | Profile | Explain
 
   def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
 
@@ -45,7 +44,7 @@ object CypherOptionParser extends Parser with Base {
     }
 
   def VersionNumber =
-    rule("Version") { group(Digits ~ "." ~ Digits ~ optional(VersionName) ) ~> VersionOption }
+    rule("Version") { group(Digits ~ "." ~ Digits ~ optional("." ~ VersionName) ) ~> VersionOption }
 
   def Digits =
     oneOrMore("0" - "9")
@@ -56,6 +55,9 @@ object CypherOptionParser extends Parser with Base {
   def Profile = keyword("PROFILE") ~ push(ProfileOption)
 
   def Explain = keyword("EXPLAIN") ~ push(ExplainOption)
+}
+
+object CypherOptionParser extends CypherOptionParser {
 
   def apply(input: String): CypherQueryWithOptions = {
     val parsingResult = ReportingParseRunner(CypherOptionParser.QueryWithOptions).run(input)
