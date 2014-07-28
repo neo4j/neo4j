@@ -23,7 +23,7 @@ import org.neo4j.graphdb.Path;
 
 /**
  * A {@link Path} that has an associated weight.
- *
+ * 权重路径
  * @author Tobias Ivarsson
  */
 public interface WeightedPath extends Path
