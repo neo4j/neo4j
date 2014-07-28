@@ -1,35 +1,36 @@
 [[rest-api-transactional]]
-== Transactional HTTP endpoint for Cypher ==
+== Transactional Cypher HTTP endpoint ==
 
-The Neo4j transactional HTTP endpoint allows you to execute a series of Cypher statements within the scope of a
-transaction. The transaction may be kept open across multiple HTTP requests, until the client chooses to commit or roll
-back. Each HTTP request can include a list of statements, and for convenience you can include statements along with a
-request to begin or commit a transaction.
+The Neo4j transactional HTTP endpoint allows you to execute a series of Cypher statements within the scope of a transaction.
+The transaction may be kept open across multiple HTTP requests, until the client chooses to commit or roll back.
+Each HTTP request can include a list of statements, and for convenience you can include statements along with a request to begin or commit a transaction.
 
-The server guards against orphaned transactions by using a timeout. If there are no requests for a given transaction
-within the timeout period, the server will roll it back. You can configure the timeout in the server configuration, by
-setting 'org.neo4j.server.transaction.timeout' to the number of seconds before timeout. The default timeout is 60
-seconds.
+The server guards against orphaned transactions by using a timeout.
+If there are no requests for a given transaction within the timeout period, the server will roll it back.
+You can configure the timeout in the server configuration, by setting 'org.neo4j.server.transaction.timeout' to the number of seconds before timeout.
+The default timeout is 60 seconds.
 
-The key difference between the transactional HTTP endpoint and the Cypher endpoint (see <<rest-api-cypher>>) is the ability to
-use the same transaction across multiple HTTP requests. The cypher endpoint always attempts to commit a transaction at
-the end of each HTTP request.
+The key difference between the transactional HTTP endpoint for Cypher and the Cypher endpoint (see <<rest-api-cypher>>) is the ability to use the same transaction across multiple HTTP requests.
+The Cypher endpoint always attempts to commit a transaction at the end of each HTTP request.
+Theere has also been improvements to the serialization format.
 
 [NOTE]
-The serialization format for cypher results is mostly the same as the <<rest-api-cypher,cypher endpoint>>.
+The serialization format for Cypher results is mostly the same as the <<rest-api-cypher,Cypher endpoint>>.
 However, the format for raw entities is slightly less verbose and does not include hypermedia links.
 
 [NOTE]
-Open transactions are not shared among members of an HA cluster. Therefore, if you use this endpoint in an HA cluster,
-you must ensure that all requests for a given transaction are sent to the same Neo4j instance.
+Open transactions are not shared among members of an HA cluster.
+Therefore, if you use this endpoint in an HA cluster, you must ensure that all requests for a given transaction are sent to the same Neo4j instance.
 
 [NOTE]
-Cypher queries with +USING PERIODIC COMMIT+ may only be executed when creating a new transaction and immediately committing it
-with a single HTTP request (see <<query-periodic-commit>>).
+Cypher queries with +USING PERIODIC COMMIT+  (see <<query-periodic-commit>>) may only be executed when creating a new transaction and immediately committing it with a single HTTP request (see <<rest-api-begin-and-commit-a-transaction-in-one-request>> for how to do that).
 
 [TIP]
-In order to speed up queries in repeated scenarios, try not to use literals but replace them with parameters wherever
-possible in order to let the server cache query plans.
+In order to speed up queries in repeated scenarios, try not to use literals but replace them with parameters wherever possible.
+This will let the server cache query plans.
+See <<cypher-parameters>> for more information.
+
+include::begin-and-commit-a-transaction-in-one-request.asciidoc[]
 
 include::begin-a-transaction.asciidoc[]
 
@@ -42,8 +43,6 @@ include::reset-transaction-timeout-of-an-open-transaction.asciidoc[]
 include::commit-an-open-transaction.asciidoc[]
 
 include::rollback-an-open-transaction.asciidoc[]
-
-include::begin-and-commit-a-transaction-in-one-request.asciidoc[]
 
 include::return-results-in-graph-format.asciidoc[]
 
