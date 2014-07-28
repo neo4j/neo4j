@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -68,12 +69,12 @@ public class IoQueueTest
         StoreChannel channel = spy( fs.create( file ) );
         Monitor monitor = mock( Monitor.class );
         Writer writer = queue.create( file, channel, monitor );
-        Ring<ByteBuffer> ring = mock( Ring.class );
+        Pool<ByteBuffer> pool = mock( Pool.class );
         ByteBuffer buffer = ByteBuffer.allocate( 10 );
         int position = 100;
 
         // WHEN
-        writer.write( buffer, position, ring );
+        writer.write( buffer, position, pool );
         verify( executor, times( 1 ) ).submit( any( Callable.class ) );
 
         // THEN
@@ -97,15 +98,15 @@ public class IoQueueTest
         Monitor monitor = mock( Monitor.class );
         Writer writer1 = queue.create( file1, channel1, monitor );
         Writer writer2 = queue.create( file2, channel2, monitor );
-        Ring<ByteBuffer> ring1 = mock( Ring.class );
-        Ring<ByteBuffer> ring2 = mock( Ring.class );
+        Pool<ByteBuffer> pool1 = mock( Pool.class );
+        Pool<ByteBuffer> pool2 = mock( Pool.class );
         ByteBuffer buffer = ByteBuffer.allocate( 10 );
         int position1 = 100, position2 = position1 + buffer.capacity(), position3 = 50;
 
         // WHEN
-        writer1.write( buffer, position1, ring1 );
-        writer1.write( buffer, position2, ring1 );
-        writer2.write( buffer, position3, ring2 );
+        writer1.write( buffer, position1, pool1 );
+        writer1.write( buffer, position2, pool1 );
+        writer2.write( buffer, position3, pool2 );
         // Depending on race between executor and the job offers, it should be 2-3 invocations
         verify( executor, atLeast( 2 ) ).submit( any( Callable.class ) );
         verify( executor, atMost( 3 ) ).submit( any( Callable.class ) );

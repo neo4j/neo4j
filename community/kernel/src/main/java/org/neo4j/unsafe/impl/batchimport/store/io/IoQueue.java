@@ -22,12 +22,11 @@ package org.neo4j.unsafe.impl.batchimport.store.io;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
@@ -42,7 +41,6 @@ import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRON
 public class IoQueue implements WriterFactory
 {
     private final ExecutorService executor;
-    private final Map<File, WriteQueue> queues = new HashMap<>();
 
     public IoQueue( int maxIOThreads )
     {
@@ -58,7 +56,6 @@ public class IoQueue implements WriterFactory
     public Writer create( File file, StoreChannel channel, Monitor monitor )
     {
         WriteQueue queue = new WriteQueue( executor );
-        queues.put( file, queue );
         return new Funnel( file, channel, monitor, queue );
     }
 
@@ -87,10 +84,10 @@ public class IoQueue implements WriterFactory
         }
 
         @Override
-        public void write( ByteBuffer byteBuffer, long position, Ring<ByteBuffer> ringToFreeBufferIn )
+        public void write( ByteBuffer byteBuffer, long position, Pool<ByteBuffer> poolToReleaseBufferIn )
                 throws IOException
         {
-            queue.offer( new WriteJob( writer, byteBuffer, position, ringToFreeBufferIn ) );
+            queue.offer( new WriteJob( writer, byteBuffer, position, poolToReleaseBufferIn ) );
         }
     }
 }

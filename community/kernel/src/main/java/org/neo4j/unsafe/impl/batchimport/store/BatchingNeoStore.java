@@ -105,7 +105,7 @@ public class BatchingNeoStore implements AutoCloseable
 
     private BatchingPageCache batchingPageCache( Mode mode )
     {
-        return new BatchingPageCache( fileSystem, config.fileChannelBufferSize(), writerFactory, writeMonitor, mode );
+        return new BatchingPageCache( fileSystem, config, writerFactory, writeMonitor, mode );
     }
 
     private NeoStore newReverseUpdatingNeoStore()
@@ -165,14 +165,6 @@ public class BatchingNeoStore implements AutoCloseable
 
         // Open store optimized for reverse update batching
         neoStore = newReverseUpdatingNeoStore();
-    }
-
-    public void flushAll()
-    {
-        if ( neoStore != null )
-        {
-            neoStore.flush();
-        }
     }
 
     @Override

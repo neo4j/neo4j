@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Mode;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -57,7 +58,8 @@ public class BatchingPageCacheTest
     {
         // GIVEN
         int numberOfRecords = 100;
-        PageCache pageCache = new BatchingPageCache( fs, numberOfRecords, SYNCHRONOUS, NO_MONITOR, Mode.APPEND_ONLY );
+        PageCache pageCache = new BatchingPageCache(
+                fs, configWithPageSize( numberOfRecords ), SYNCHRONOUS, NO_MONITOR, Mode.APPEND_ONLY );
         File file = directory.file( "store" );
         PagedFile pagedFile = pageCache.map( file, RECORD_SIZE * RECORDS_PER_PAGE /* =90 */ );
 
@@ -87,7 +89,8 @@ public class BatchingPageCacheTest
         int pageSize = 100;
         File file = directory.file( "store" );
         fillFileWithByteContents( file );
-        PageCache pageCache = new BatchingPageCache( fs, pageSize, SYNCHRONOUS, NO_MONITOR, Mode.UPDATE );
+        PageCache pageCache =
+                new BatchingPageCache( fs, configWithPageSize( pageSize ), SYNCHRONOUS, NO_MONITOR, Mode.UPDATE );
         PagedFile pagedFile = pageCache.map( file, pageSize );
 
         // WHEN
@@ -193,5 +196,17 @@ public class BatchingPageCacheTest
             bytes[i] = (byte) (start + i);
         }
         return bytes;
+    }
+
+    private static Configuration configWithPageSize( final int size )
+    {
+        return new Configuration.Default()
+        {
+            @Override
+            public int fileChannelBufferSize()
+            {
+                return size;
+            }
+        };
     }
 }

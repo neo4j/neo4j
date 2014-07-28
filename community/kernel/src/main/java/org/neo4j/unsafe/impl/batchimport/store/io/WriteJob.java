@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.store.io;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 
 class WriteJob
@@ -29,18 +30,18 @@ class WriteJob
     private final ByteBuffer byteBuffer;
     private final long position;
     private final Writer writer;
-    private final Ring<ByteBuffer> ringToFreeBufferIn;
+    private final Pool<ByteBuffer> poolToReleaseBufferIn;
 
-    WriteJob( Writer writer, ByteBuffer byteBuffer, long position, Ring<ByteBuffer> ringToFreeBufferIn )
+    WriteJob( Writer writer, ByteBuffer byteBuffer, long position, Pool<ByteBuffer> poolToReleaseBufferIn )
     {
         this.writer = writer;
         this.byteBuffer = byteBuffer;
         this.position = position;
-        this.ringToFreeBufferIn = ringToFreeBufferIn;
+        this.poolToReleaseBufferIn = poolToReleaseBufferIn;
     }
 
     public void execute() throws IOException
     {
-        writer.write( byteBuffer, position, ringToFreeBufferIn );
+        writer.write( byteBuffer, position, poolToReleaseBufferIn );
     }
 }
