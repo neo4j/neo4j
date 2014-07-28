@@ -21,6 +21,8 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
@@ -38,11 +41,18 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -71,7 +81,6 @@ public abstract class PageCacheTest<T extends PageCache>
     protected int filePageSize = 18;
     protected int recordsPerFilePage = filePageSize / recordSize;
     protected ByteBuffer bufA = ByteBuffer.allocate( recordSize );
-    protected ByteBuffer bufB = ByteBuffer.allocate( recordSize );
 
     protected EphemeralFileSystemAbstraction fs;
 
@@ -364,7 +373,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( timeout = 1000 )
+    @Test//( timeout = 1000 )
     public void rewindMustStartScanningOverFromTheBeginning() throws IOException
     {
         int numberOfRewindsToTest = 10;
@@ -391,7 +400,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
 
         assertThat( actualPageCounter, is( expectedPageCounterResult ) );
-    }
+    } // TODO Muninn might get stuck on this one
 
     @Test( timeout = 1000 )
     public void mustCloseFileChannelWhenTheLastHandleIsUnmapped() throws Exception
@@ -595,6 +604,23 @@ public abstract class PageCacheTest<T extends PageCache>
             assertThat( cursor.getCurrentPageId(), is( 0L ) );
             assertTrue( cursor.next() );
             assertThat( cursor.getCurrentPageId(), is( 1L ) );
+        }
+    }
+
+    @Test( timeout = 1000 )
+    public void nextToSpecificPageIdMustAdvanceFromThatPointOn() throws IOException
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 1L ) );
+            assertTrue( cursor.next( 4L ) );
+            assertThat( cursor.getCurrentPageId(), is( 4L ) );
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 5L ) );
         }
     }
 
@@ -1246,13 +1272,188 @@ public abstract class PageCacheTest<T extends PageCache>
         pageCache.map( file, filePageSize + 1 );
     }
 
-    // TODO lots of tests where more than one file is mapped
+    @Test( timeout = 1000)
+    public void mustNotFlushCleanPagesWhenEvicting() throws Exception
+    {
+        generateFileWithRecords( file, recordCount, recordSize );
+
+        final AtomicBoolean observedWrite = new AtomicBoolean();
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs ) {
+            @Override
+            public StoreChannel open( File fileName, String mode ) throws IOException
+            {
+                StoreChannel channel = super.open( fileName, mode );
+                return new DelegatingStoreChannel( channel ) {
+                    @Override
+                    public int write( ByteBuffer src, long position ) throws IOException
+                    {
+                        observedWrite.set( true );
+                        throw new IOException( "not allowed" );
+                    }
+
+                    @Override
+                    public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
+                    {
+                        observedWrite.set( true );
+                        throw new IOException( "not allowed" );
+                    }
+
+                    @Override
+                    public void writeAll( ByteBuffer src, long position ) throws IOException
+                    {
+                        observedWrite.set( true );
+                        throw new IOException( "not allowed" );
+                    }
+
+                    @Override
+                    public void writeAll( ByteBuffer src ) throws IOException
+                    {
+                        observedWrite.set( true );
+                        throw new IOException( "not allowed" );
+                    }
+
+                    @Override
+                    public int write( ByteBuffer src ) throws IOException
+                    {
+                        observedWrite.set( true );
+                        throw new IOException( "not allowed" );
+                    }
+
+                    @Override
+                    public long write( ByteBuffer[] srcs ) throws IOException
+                    {
+                        observedWrite.set( true );
+                        throw new IOException( "not allowed" );
+                    }
+                };
+            }
+        };
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        try( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        {
+            while ( cursor.next() )
+            {
+                verifyRecordsMatchExpected( cursor );
+            }
+        }
+
+        assertFalse( observedWrite.get() );
+    }
+
+    @Test( timeout = 1000 )
+    public void evictionMustFlushPagesToTheRightFiles() throws IOException
+    {
+        generateFileWithRecords( file, recordCount, recordSize );
+
+        int filePageSize2 = filePageSize - 3; // diff. page size just to be difficult
+        long maxPageIdCursor1 = recordCount / recordsPerFilePage;
+        File file2 = new File( "b" );
+        OutputStream outputStream = fs.openAsOutputStream( file2, false );
+        long file2sizeBytes = (maxPageIdCursor1 + 17) * filePageSize2;
+        for ( int i = 0; i < file2sizeBytes; i++ )
+        {
+            // We will ues the page cache to change these 'a's into 'b's.
+            outputStream.write( 'a' );
+        }
+        outputStream.flush();
+        outputStream.close();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+
+        PagedFile pagedFile1 = pageCache.map( file, filePageSize );
+        PagedFile pagedFile2 = pageCache.map( file2, filePageSize2 );
+
+        try ( PageCursor cursor1 = pagedFile1.io( 0, PF_EXCLUSIVE_LOCK );
+              PageCursor cursor2 = pagedFile2.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertThat( cursor1, not( sameInstance( cursor2 ) ) );
+            boolean moreWorkToDo;
+            do {
+                boolean cursorReady1 = cursor1.getCurrentPageId() < maxPageIdCursor1 && cursor1.next();
+                boolean cursorReady2 = cursor2.next();
+                moreWorkToDo = cursorReady1 || cursorReady2;
+
+                if ( cursorReady1 )
+                {
+                    writeRecords( cursor1 );
+                }
+
+                if ( cursorReady2 )
+                {
+                    do {
+                        for ( int i = 0; i < filePageSize2; i++ )
+                        {
+                            cursor2.putByte( (byte) 'b' );
+                        }
+                    }
+                    while ( cursor2.retry() );
+                }
+            }
+            while ( moreWorkToDo );
+        }
+
+        pageCache.unmap( file );
+        pageCache.unmap( file2 );
+
+        // Verify the file contents
+        assertThat( fs.getFileSize( file2 ), is( file2sizeBytes ) );
+        InputStream inputStream = fs.openAsInputStream( file2 );
+        for ( int i = 0; i < file2sizeBytes; i++ )
+        {
+            int b = inputStream.read();
+            assertThat( b, is( (int) 'b' ) );
+        }
+        assertThat( inputStream.read(), is( -1 ) );
+        inputStream.close();
+
+        StoreChannel channel = fs.open( file, "r" );
+        ByteBuffer bufB = ByteBuffer.allocate( recordSize );
+        for ( int i = 0; i < recordCount; i++ )
+        {
+            bufA.clear();
+            channel.read( bufA );
+            bufA.flip();
+            bufB.clear();
+            generateRecordForId( i, bufB );
+            assertThat( bufB.array(), byteArray( bufA.array() ) );
+        }
+    }
+
+    @Test
+    public void monitorMustBeNotifiedAboutPinUnpinFaultAndEvictEventsWhenReading() throws IOException
+    {
+        CountingPageCacheMonitor monitor = new CountingPageCacheMonitor();
+        generateFileWithRecords( file, recordCount, recordSize );
+
+        getPageCache( fs, maxPages, pageCachePageSize, monitor );
+
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        int countedPages = 0;
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        {
+            while ( cursor.next() )
+            {
+                assertTrue( cursor.next( cursor.getCurrentPageId() ) );
+                countedPages++;
+            }
+        }
+
+        assertThat( monitor.countPins(), is( countedPages * 2 ) );
+        assertThat( monitor.countUnpins(), is( countedPages * 2 ) );
+        assertThat( monitor.countFaults(), is( countedPages ) );
+        assertThat( monitor.countEvictions(),
+                both( greaterThanOrEqualTo( countedPages - maxPages ) )
+                        .and( lessThan( countedPages ) ) );
+    }
+
     // TODO tests that use the monitor
+    // TODO lots of tests where more than one file is mapped
     // TODO must collect all exceptions from closing file channels when the cache is closed
     // TODO figure out what should happen when the last reference to a file is unmapped, while pages are still pinned
     // TODO figure out how closing the cache should work when there are still mapped files
-    // TODO mapping a file twice with different page size must throw
-
 
 
 

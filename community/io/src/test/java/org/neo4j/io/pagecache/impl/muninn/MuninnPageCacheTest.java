@@ -37,7 +37,7 @@ import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.standard.RecordingPageCacheMonitor;
+import org.neo4j.io.pagecache.RecordingPageCacheMonitor;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
@@ -48,8 +48,8 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.io.pagecache.impl.standard.RecordingPageCacheMonitor.Evict;
-import static org.neo4j.io.pagecache.impl.standard.RecordingPageCacheMonitor.Fault;
+import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Evict;
+import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Fault;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 {

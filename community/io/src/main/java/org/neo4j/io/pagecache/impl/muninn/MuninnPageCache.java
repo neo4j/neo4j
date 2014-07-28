@@ -38,26 +38,26 @@ import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapperFactory;
  * <pre>
  *                                                                      ....
  *                                                                .;okKNWMUWN0ko,
- *        O'er Mithgarth Hugin and Munin both                   ;0WMUNINNMUNINNMUNOdc'.
+ *        O'er Mithgarth Hugin and Munin both                   ;0WMUNINNMUNINNMUNOdc:.
  *        Each day set forth to fly;                          .OWMUNINNMUNI  00WMUNINNXko;.
  *        For Hugin I fear lest he come not home,            .KMUNINNMUNINNMWKKWMUNINNMUNIN0l.
- *        But for Munin my care is more.                    .KMUNINNMUNINNMUNINNWKkdlc:::::::,
- *                                                        .lXMUNINNMUNINNMUNINXo.
- *                                                    .,lONMUNINNMUNINNMUNINNk.
+ *        But for Munin my care is more.                    .KMUNINNMUNINNMUNINNWKkdlc:::::::'
+ *                                                        .lXMUNINNMUNINNMUNINXo'
+ *                                                    .,lONMUNINNMUNINNMUNINNk'
  *                                              .,cox0NMUNINNMUNINNMUNINNMUNI:
  *                                         .;dONMUNINNMUNINNMUNINNMUNINNMUNIN'
  *                                   .';okKWMUNINNMUNINNMUNINNMUNINNMUNINNMUx
  *                              .:dkKNWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNN'
  *                        .';lONMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNWl
- *                       .:okXWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNM0.
+ *                       .:okXWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNM0'
  *                   .,oONMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNo
- *             .';lx0NMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUN0.
- *          ;kKWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMWx.
+ *             .';lx0NMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUN0'
+ *          ;kKWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMWx'
  *        .,kWMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMXd'
- *   .;lkKNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMNx;.
- *   .oNMUNINNMWNKOxoc;,,;:cdkKNWMUNINNMUNINNMUNINNMUNINNMUNINWKx;.
- *    lkOkkdl:,.                .':lkWMUNINNMUNINNMUNINN0kdoc;.
- *                                  c0WMUNINNMUNINNMUWx.
+ *   .;lkKNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMUNINNMNx;'
+ *   .oNMUNINNMWNKOxoc;'';:cdkKNWMUNINNMUNINNMUNINNMUNINNMUNINWKx;'
+ *    lkOkkdl:'´                `':lkWMUNINNMUNINNMUNINN0kdoc;'
+ *                                  c0WMUNINNMUNINNMUWx'
  *                                   .;ccllllxNMUNIXo'
  *                                           lWMUWkK;   .
  *                                           OMUNK.dNdc,....

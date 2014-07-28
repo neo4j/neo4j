@@ -43,6 +43,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
 
         if ( p != null )
         {
+            pagedFile.monitor.unpin( false, currentPageId, pagedFile.swapper );
             assert optimisticLock || p.isReadLocked() :
                     "pinned page wasn't really locked; not even optimistically: " + p;
         }
@@ -133,7 +134,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
             // Our translation table was also up to date, and the page is bound to
             // our file, and we could pin it since its not in the process of
             // eviction.
-            pinCursorToPage( page );
+            pinCursorToPage( page, filePageId, swapper );
             optimisticLock = true;
             return;
         }
@@ -162,7 +163,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
                 lockStamp = page.readLock();
                 if ( page.pin( swapper, filePageId ) )
                 {
-                    pinCursorToPage( page );
+                    pinCursorToPage( page, filePageId, swapper );
                     optimisticLock = false;
                     return;
                 }
@@ -184,11 +185,12 @@ class MuninnReadPageCursor extends MuninnPageCursor
         }
     }
 
-    private void pinCursorToPage( MuninnPage page )
+    private void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper )
     {
         page.initBuffer();
         page.incrementUsage();
         reset( page );
+        pagedFile.monitor.pin( false, filePageId, swapper );
     }
 
     /**
@@ -229,7 +231,8 @@ class MuninnReadPageCursor extends MuninnPageCursor
         lockStamp = stamp;
         optimisticLock = false; // We're using a pessimistic read lock
         translationTable.put( filePageId, page.cachePageId );
-        pinCursorToPage( page );
+        pinCursorToPage( page, filePageId, swapper );
+        page.incrementUsage(); // Add a second usage increment as a fault-bonus.
         pagedFile.monitor.pageFault( filePageId, swapper );
     }
 

@@ -17,16 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.standard;
+package org.neo4j.io.pagecache;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.hamcrest.Matcher;
-
-import org.neo4j.io.pagecache.PageCacheMonitor;
-import org.neo4j.io.pagecache.PageSwapper;
 
 public class RecordingPageCacheMonitor implements PageCacheMonitor
 {
@@ -112,12 +109,12 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
         }
     }
 
-    static abstract class Event
+    public static abstract class Event
     {
         public final PageSwapper io;
         public final long pageId;
 
-        Event( PageSwapper io, long pageId )
+        public Event( PageSwapper io, long pageId )
         {
             this.io = io;
             this.pageId = pageId;
@@ -159,7 +156,7 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
 
     public static class Fault extends Event
     {
-        Fault( PageSwapper io, long pageId )
+        public Fault( PageSwapper io, long pageId )
         {
             super( io, pageId );
         }
@@ -167,7 +164,7 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
 
     public static class Evict extends Event
     {
-        Evict( PageSwapper io, long pageId )
+        public Evict( PageSwapper io, long pageId )
         {
             super( io, pageId );
         }

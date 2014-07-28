@@ -184,10 +184,9 @@ class MuninnWritePageCursor extends MuninnPageCursor
 
     private void pinCursorToPage( MuninnPage page )
     {
-        this.page = page;
+        reset( page );
         page.initBuffer();
         page.incrementUsage();
-        reset( page );
         page.markAsDirty();
     }
 

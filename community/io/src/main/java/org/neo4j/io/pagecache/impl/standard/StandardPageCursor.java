@@ -81,8 +81,6 @@ public class StandardPageCursor extends OffsetTrackingCursor
         if ( checkNoGrow() )
         {
             pinNextPage();
-
-            nextPageId++;
             return true;
         }
 
@@ -131,6 +129,7 @@ public class StandardPageCursor extends OffsetTrackingCursor
     private void pinNextPage() throws IOException
     {
         currentPageId = nextPageId;
+        nextPageId++;
         try
         {
             pagedFile.pin( this, pf_flags, currentPageId );

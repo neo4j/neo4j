@@ -49,7 +49,7 @@ public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
             int pageSize,
             PageCacheMonitor monitor )
     {
-        StandardPageCache pageCache = new StandardPageCache( fs, maxPages, pageSize );
+        StandardPageCache pageCache = new StandardPageCache( fs, maxPages, pageSize, monitor );
         Future<?> future = executor.submit( pageCache );
         futures.put( pageCache, future );
         return pageCache;
