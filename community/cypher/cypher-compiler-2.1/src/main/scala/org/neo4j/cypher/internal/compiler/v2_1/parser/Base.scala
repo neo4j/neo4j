@@ -97,6 +97,18 @@ trait Base extends Parser {
 
   def position = withContext((_: IndexRange, ctx: Context[Any]) => ContextPosition(ctx))
 
+  def SymbolicNameString: Rule1[String] = UnescapedSymbolicNameString | EscapedSymbolicNameString
+
+  def UnescapedSymbolicNameString: Rule1[String] = rule("an identifier") {
+    group(IdentifierStart ~ zeroOrMore(IdentifierPart)) ~> (_.toString) ~ !IdentifierPart
+  }
+
+  def EscapedSymbolicNameString: Rule1[String] = rule("an identifier") {
+    (oneOrMore(
+      ch('`') ~ zeroOrMore(!ch('`') ~ ANY) ~> (_.toString) ~ ch('`')
+    ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
+  }
+
   implicit class RichRule0(r: Rule0) {
     def ~~(other: Rule0): Rule0 = r ~ WS ~ other
     def ~~[A](other: Rule1[A]): Rule1[A] = r ~ WS ~ other
