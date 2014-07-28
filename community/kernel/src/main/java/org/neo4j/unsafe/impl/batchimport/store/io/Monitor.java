@@ -17,21 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.staging;
+package org.neo4j.unsafe.impl.batchimport.store.io;
 
 /**
- * Monitors a {@link StageExecution}. An {@link ExecutionMonitor}, providing or displaying statistics
- * about the execution as it progresses.
+ * Monitoring bytes written to a channel.
  */
-public interface ExecutionMonitor
+public interface Monitor
 {
-    /**
-     * Called when a {@link Stage} has started its execution. This method should not return until all
-     * {@link Step steps} in the {@link Stage} have {@link Step#isCompleted() completed} their processing.
-     *
-     * @param executions execution of a {@link Stage}.
-     */
-    void monitor( StageExecution... executions );
+    void dataWritten( int bytes );
 
-    void done( long totalTimeMillis );
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+        @Override
+        public void dataWritten( int bytes )
+        {   // Do nothing
+        }
+    };
 }

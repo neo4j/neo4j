@@ -30,6 +30,7 @@ public class DynamicLongArray implements LongArray
     private final LongArrayFactory factory;
     private final long chunkSize;
     private LongArray[] chunks = new LongArray[0];
+    private Long setAllValue;
 
     public DynamicLongArray( LongArrayFactory factory, long chunkSize )
     {
@@ -47,7 +48,12 @@ public class DynamicLongArray implements LongArray
     public long get( long index )
     {
         int chunkIndex = chunkIndex( index );
-        return chunkIndex < chunks.length ? chunks[chunkIndex].get( index( index ) ) : 0;
+        return chunkIndex < chunks.length ? chunks[chunkIndex].get( index( index ) ) : defaultValue();
+    }
+
+    private long defaultValue()
+    {
+        return setAllValue != null ? setAllValue.longValue() : 0;
     }
 
     @Override
@@ -79,7 +85,12 @@ public class DynamicLongArray implements LongArray
     private void addChunk()
     {
         chunks = Arrays.copyOf( chunks, chunks.length+1 );
-        chunks[chunks.length-1] = factory.newLongArray( chunkSize );
+        LongArray newLongArray = factory.newLongArray( chunkSize );
+        if ( setAllValue != null )
+        {
+            newLongArray.setAll( setAllValue );
+        }
+        chunks[chunks.length-1] = newLongArray;
     }
 
     @Override
@@ -89,6 +100,7 @@ public class DynamicLongArray implements LongArray
         {
             chunk.setAll( value );
         }
+        setAllValue = value;
     }
 
     @Override
