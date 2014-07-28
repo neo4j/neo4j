@@ -400,7 +400,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
 
         assertThat( actualPageCounter, is( expectedPageCounterResult ) );
-    } // TODO Muninn might get stuck on this one
+    }
 
     @Test( timeout = 1000 )
     public void mustCloseFileChannelWhenTheLastHandleIsUnmapped() throws Exception
@@ -1421,7 +1421,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test
+    @Test( timeout = 1000 )
     public void monitorMustBeNotifiedAboutPinUnpinFaultAndEvictEventsWhenReading() throws IOException
     {
         CountingPageCacheMonitor monitor = new CountingPageCacheMonitor();
@@ -1443,7 +1443,10 @@ public abstract class PageCacheTest<T extends PageCache>
 
         assertThat( monitor.countPins(), is( countedPages * 2 ) );
         assertThat( monitor.countUnpins(), is( countedPages * 2 ) );
-        assertThat( monitor.countFaults(), is( countedPages ) );
+        // We might be unlucky and fault in the second next call, on the page
+        // we brought up in the first next call. That's why we assert that we
+        // have observed *at least* the countedPages number of faults.
+        assertThat( monitor.countFaults(), greaterThanOrEqualTo( countedPages ) );
         assertThat( monitor.countEvictions(),
                 both( greaterThanOrEqualTo( countedPages - maxPages ) )
                         .and( lessThan( countedPages ) ) );

@@ -44,14 +44,28 @@ public class MuninnPageEvictionCallback implements PageEvictionCallback
         StampedLock translationTableLock = translationTableLocks[stripe];
         PrimitiveLongIntMap translationTable = translationTables[stripe];
 
-        long stamp = translationTableLock.writeLock();
-        try
+        // We use tryWriteLock here, because this call is in the way of
+        // releasing new pages to the freelist. This means that threads might
+        // be holding the translation table locks while they are in the middle
+        // of a page fault, waiting for a free page to become available. In
+        // that case, we would dead-lock with that thread, if we were to try
+        // and take the lock for real.
+        // On the other hand, it is perfectly fine for pinning threads to
+        // discover that a translation table has gone stale. In that case they
+        // will do a page fault, and fix the translation table themselves.
+        // As such, doing this clean up on eviction is not strictly necessary,
+        // though it helps keep the tables small.
+        long stamp = translationTableLock.tryWriteLock();
+        if ( stamp != 0 )
         {
-            translationTable.remove( pageId );
-        }
-        finally
-        {
-            translationTableLock.unlockWrite( stamp );
+            try
+            {
+                translationTable.remove( pageId );
+            }
+            finally
+            {
+                translationTableLock.unlockWrite( stamp );
+            }
         }
     }
 }
