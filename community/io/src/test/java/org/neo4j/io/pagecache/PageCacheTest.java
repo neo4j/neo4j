@@ -192,6 +192,35 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
+    private void generateFileWithRecords(
+            File file,
+            int recordCount,
+            int recordSize ) throws IOException
+    {
+        StoreChannel channel = fs.open( file, "w" );
+        ByteBuffer buf = ByteBuffer.allocate( recordSize );
+        for ( int i = 0; i < recordCount; i++ )
+        {
+            generateRecordForId( i, buf );
+            channel.writeAll( buf );
+        }
+        channel.close();
+    }
+
+    @Test
+    public void mustReportConfiguredMaxPages() throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        assertThat( pageCache.maxCachedPages(), is( maxPages ) );
+    }
+
+    @Test
+    public void mustReportConfiguredCachePageSize() throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        assertThat( pageCache.pageSize(), is( pageCachePageSize ) );
+    }
+
     @Test( timeout = 1000 )
     public void mustReadExistingData() throws IOException
     {
@@ -211,21 +240,6 @@ public abstract class PageCacheTest<T extends PageCache>
         }
 
         assertThat( recordId, is( recordCount ) );
-    }
-
-    private void generateFileWithRecords(
-            File file,
-            int recordCount,
-            int recordSize ) throws IOException
-    {
-        StoreChannel channel = fs.open( file, "w" );
-        ByteBuffer buf = ByteBuffer.allocate( recordSize );
-        for ( int i = 0; i < recordCount; i++ )
-        {
-            generateRecordForId( i, buf );
-            channel.writeAll( buf );
-        }
-        channel.close();
     }
 
     @Test( timeout = 1000 )
@@ -1495,7 +1509,9 @@ public abstract class PageCacheTest<T extends PageCache>
                         .and( lessThan( pagesToGenerate ) ) );
     }
 
-    // TODO tests that use the monitor
+    // TODO test that lastPageId is updated correctly
+    // TODO cursor offset must be updated by read and write
+    // TODO cursor getUnsignedInt
     // TODO lots of tests where more than one file is mapped
     // TODO must collect all exceptions from closing file channels when the cache is closed
     // TODO figure out what should happen when the last reference to a file is unmapped, while pages are still pinned

@@ -117,11 +117,6 @@ class UnsafeUtil
         unsafe.putShort( address, value );
     }
 
-    public static void putOrderedInt( Object obj, int address, int value )
-    {
-        unsafe.putOrderedInt( obj, address, value );
-    }
-
     public static boolean hasUnsafe()
     {
         return unsafe != null;

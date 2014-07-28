@@ -229,12 +229,6 @@ public class BatchingPageCache implements PageCache
         }
 
         @Override
-        public int numberOfCachedPages()
-        {
-            return 1;
-        }
-
-        @Override
         public void flush() throws IOException
         {
             singleCursor.flush();

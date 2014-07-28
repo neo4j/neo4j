@@ -167,7 +167,6 @@ public class StandardPagedFile implements PagedFile
         return filePageSize;
     }
 
-    @Override
     public int numberOfCachedPages()
     {
         return filePages.size();

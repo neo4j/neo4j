@@ -74,7 +74,7 @@ public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
         int pagesKeptInUse = (int) (pagesInCache * ClockSweepPageTable.PAGE_UTILISATION_RATIO);
 
         StandardPageCache cache = getPageCache( fs, pagesInCache, filePageSize, PageCacheMonitor.NULL );
-        PagedFile pagedFile = cache.map( file, filePageSize );
+        StandardPagedFile pagedFile = (StandardPagedFile) cache.map( file, filePageSize );
 
         // When I pin and unpin a series of pages
         try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )

@@ -156,28 +156,6 @@ class MuninnPagedFile implements PagedFile
     }
 
     @Override
-    public int numberOfCachedPages()
-    {
-        int count = 0;
-        for ( int i = 0; i < translationTableStripeLevel; i++ )
-        {
-            PrimitiveLongIntMap translationTable = translationTables[i];
-            StampedLock translationTableLock = translationTableLocks[i];
-
-            long stamp = translationTableLock.readLock();
-            try
-            {
-                count += translationTable.size();
-            }
-            finally
-            {
-                translationTableLock.unlockRead( stamp );
-            }
-        }
-        return count;
-    }
-
-    @Override
     public void flush() throws IOException
     {
         for ( int i = 0; i < translationTableStripeLevel; i++ )
