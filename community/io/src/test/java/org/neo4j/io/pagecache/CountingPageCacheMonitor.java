@@ -27,6 +27,10 @@ public class CountingPageCacheMonitor implements PageCacheMonitor
     private final AtomicInteger evictions = new AtomicInteger();
     private final AtomicInteger pins = new AtomicInteger();
     private final AtomicInteger unpins = new AtomicInteger();
+    private final AtomicInteger takenExclusiveLocks = new AtomicInteger();
+    private final AtomicInteger takenSharedLocks = new AtomicInteger();
+    private final AtomicInteger releasedExclusiveLocks = new AtomicInteger();
+    private final AtomicInteger releasedSharedLocks = new AtomicInteger();
 
     @Override
     public void pageFault( long filePageId, PageSwapper swapper )
@@ -44,12 +48,28 @@ public class CountingPageCacheMonitor implements PageCacheMonitor
     public void pin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
     {
         pins.getAndIncrement();
+        if ( exclusiveLock )
+        {
+            takenExclusiveLocks.getAndIncrement();
+        }
+        else
+        {
+            takenSharedLocks.getAndIncrement();
+        }
     }
 
     @Override
     public void unpin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
     {
         unpins.getAndIncrement();
+        if ( exclusiveLock )
+        {
+            releasedExclusiveLocks.getAndIncrement();
+        }
+        else
+        {
+            releasedSharedLocks.getAndIncrement();
+        }
     }
 
     public int countFaults()
@@ -70,5 +90,25 @@ public class CountingPageCacheMonitor implements PageCacheMonitor
     public int countUnpins()
     {
         return unpins.get();
+    }
+
+    public int countTakenExclusiveLocks()
+    {
+        return takenExclusiveLocks.get();
+    }
+
+    public int countTakenSharedLocks()
+    {
+        return takenSharedLocks.get();
+    }
+
+    public int countReleasedExclusiveLocks()
+    {
+        return releasedExclusiveLocks.get();
+    }
+
+    public int countReleasedSharedLocks()
+    {
+        return releasedSharedLocks.get();
     }
 }

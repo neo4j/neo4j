@@ -187,9 +187,9 @@ class MuninnReadPageCursor extends MuninnPageCursor
 
     private void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper )
     {
+        reset( page );
         page.initBuffer();
         page.incrementUsage();
-        reset( page );
         pagedFile.monitor.pin( false, filePageId, swapper );
     }
 

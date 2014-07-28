@@ -1443,6 +1443,10 @@ public abstract class PageCacheTest<T extends PageCache>
 
         assertThat( monitor.countPins(), is( countedPages * 2 ) );
         assertThat( monitor.countUnpins(), is( countedPages * 2 ) );
+        assertThat( monitor.countTakenExclusiveLocks(), is( 0 ) );
+        assertThat( monitor.countTakenSharedLocks(), is( countedPages * 2 ) );
+        assertThat( monitor.countReleasedExclusiveLocks(), is( 0 ) );
+        assertThat( monitor.countReleasedSharedLocks(), is( countedPages * 2 ) );
         // We might be unlucky and fault in the second next call, on the page
         // we brought up in the first next call. That's why we assert that we
         // have observed *at least* the countedPages number of faults.
@@ -1450,6 +1454,45 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( monitor.countEvictions(),
                 both( greaterThanOrEqualTo( countedPages - maxPages ) )
                         .and( lessThan( countedPages ) ) );
+    }
+
+    @Test( timeout = 1000 )
+    public void monitorMustBeNotifiedAboutPinUnpinFaultAndEvictionEventsWhenWriting() throws IOException
+    {
+        int pagesToGenerate = 142;
+        CountingPageCacheMonitor monitor = new CountingPageCacheMonitor();
+        fs.create( file ).close();
+
+        getPageCache( fs, maxPages, pageCachePageSize, monitor );
+
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            for ( long i = 0; i < pagesToGenerate; i++ )
+            {
+                assertTrue( cursor.next() );
+                assertThat( cursor.getCurrentPageId(), is( i ) );
+                assertTrue( cursor.next( i ) );
+                assertThat( cursor.getCurrentPageId(), is( i ) );
+
+                writeRecords( cursor );
+            }
+        }
+
+        assertThat( monitor.countPins(), is( pagesToGenerate * 2 ) );
+        assertThat( monitor.countTakenExclusiveLocks(), is( pagesToGenerate * 2 ) );
+        assertThat( monitor.countTakenSharedLocks(), is( 0 ) );
+        assertThat( monitor.countReleasedExclusiveLocks(), is( pagesToGenerate * 2 ) );
+        assertThat( monitor.countReleasedSharedLocks(), is( 0 ) );
+        assertThat( monitor.countUnpins(), is( pagesToGenerate * 2 ) );
+        // We might be unlucky and fault in the second next call, on the page
+        // we brought up in the first next call. That's why we assert that we
+        // have observed *at least* the countedPages number of faults.
+        assertThat( monitor.countFaults(), greaterThanOrEqualTo( pagesToGenerate ) );
+        assertThat( monitor.countEvictions(),
+                both( greaterThanOrEqualTo( pagesToGenerate - maxPages ) )
+                        .and( lessThan( pagesToGenerate ) ) );
     }
 
     // TODO tests that use the monitor

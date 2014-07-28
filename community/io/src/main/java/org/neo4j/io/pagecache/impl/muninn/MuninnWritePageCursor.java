@@ -39,6 +39,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
     {
         if ( page != null )
         {
+            pagedFile.monitor.unpin( true, currentPageId, pagedFile.swapper );
             assert page.isWriteLocked(): "page pinned for writing was not write locked: " + page;
             page.unlockWrite( lockStamp );
             page = null;
@@ -132,7 +133,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
             // Our translation table was also up to date, and the page is bound to
             // our file, and we could pin it since its not in the process of
             // eviction.
-            pinCursorToPage( page );
+            pinCursorToPage( page, filePageId, swapper );
             return;
         }
         page.unlockWrite( lockStamp );
@@ -161,7 +162,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
                 lockStamp = page.writeLock();
                 if ( page.pin( swapper, filePageId ) )
                 {
-                    pinCursorToPage( page );
+                    pinCursorToPage( page, filePageId, swapper );
                     return;
                 }
                 page.unlockWrite( lockStamp );
@@ -182,12 +183,13 @@ class MuninnWritePageCursor extends MuninnPageCursor
         }
     }
 
-    private void pinCursorToPage( MuninnPage page )
+    private void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper )
     {
         reset( page );
         page.initBuffer();
         page.incrementUsage();
         page.markAsDirty();
+        pagedFile.monitor.pin( true, filePageId, swapper );
     }
 
     /**
@@ -224,7 +226,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
         page.initBuffer();
         page.fault( swapper, filePageId );
         translationTable.put( filePageId, page.cachePageId );
-        pinCursorToPage( page );
+        pinCursorToPage( page, filePageId, swapper );
         pagedFile.monitor.pageFault( filePageId, swapper );
     }
 
