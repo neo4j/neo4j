@@ -28,6 +28,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.Token;
 
@@ -37,6 +38,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.kernel.api.properties.Property.property;
 
 public class PropertyIT extends KernelIntegrationTest
 {
@@ -394,13 +396,47 @@ public class PropertyIT extends KernelIntegrationTest
             try
             {
                 statement.nodeRemoveProperty( node, prop1 );
-                fail("Should have failed.");
+                fail( "Should have failed." );
             }
-            catch(IllegalStateException e)
+            catch ( IllegalStateException e )
             {
-                assertThat(e.getMessage(),
-                        equalTo("Node " + node + " has been deleted"));
+                assertThat( e.getMessage(),
+                        equalTo( "Node " + node + " has been deleted" ) );
             }
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToRemoveResetAndTwiceRemoveProperty() throws Exception
+    {
+        // given
+        long node;
+        int prop;
+        {
+            DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+            prop = ops.propertyKeyGetOrCreateForName( "foo" );
+
+            node = ops.nodeCreate();
+            ops.nodeSetProperty( node, property( prop, "bar" ) );
+
+            commit();
+        }
+
+        // when
+        {
+            DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+            ops.nodeRemoveProperty( node, prop );
+            ops.nodeSetProperty( node, property( prop, "bar" ) );
+            ops.nodeRemoveProperty( node, prop );
+            ops.nodeRemoveProperty( node, prop );
+
+            commit();
+        }
+
+        // then
+        {
+            ReadOperations ops = readOperationsInNewTransaction();
+            assertFalse(ops.nodeGetProperty( node, prop ).isDefined());
         }
     }
 

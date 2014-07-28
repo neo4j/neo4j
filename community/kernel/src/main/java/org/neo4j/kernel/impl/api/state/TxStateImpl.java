@@ -553,7 +553,6 @@ public final class TxStateImpl implements TxState
     {
         labelStateNodeDiffSets( labelId ).add( nodeId );
         nodeStateLabelDiffSets( nodeId ).add( labelId );
-        persistenceManager.addLabelToNode( labelId, nodeId );
         hasChanges = true;
     }
 
@@ -562,7 +561,6 @@ public final class TxStateImpl implements TxState
     {
         labelStateNodeDiffSets( labelId ).remove( nodeId );
         nodeStateLabelDiffSets( nodeId ).remove( labelId );
-        persistenceManager.removeLabelFromNode( labelId, nodeId );
         hasChanges = true;
     }
 

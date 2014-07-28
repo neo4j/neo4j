@@ -391,6 +391,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 @Override
                 public void visitNodeLabelChanges( long id, Iterator<Integer> added, Iterator<Integer> removed )
                 {
+                    while(removed.hasNext())
+                    {
+                        persistenceManager.removeLabelFromNode( removed.next(), id );
+                    }
+
+                    while(added.hasNext())
+                    {
+                        persistenceManager.addLabelToNode( added.next(), id );
+                    }
                 }
 
                 @Override
