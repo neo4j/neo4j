@@ -19,8 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import java.util.Random;
+
+import org.junit.Test;
+import org.mockito.InOrder;
+
+import org.neo4j.graphdb.Direction;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink.GroupVisitor;
+
 import static java.lang.Math.max;
-import static java.lang.System.currentTimeMillis;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -29,21 +37,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import java.util.Random;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink.GroupVisitor;
-
 public class NodeRelationshipLinkImplTest
 {
+    private static final Random random = new Random();
+
     @Test
     public void shouldReportCorrectNumberOfDenseNodes() throws Exception
     {
         // GIVEN
-        NodeRelationshipLink cache = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, 100, 5 );
+        NodeRelationshipLink cache = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, 5 );
         increment( cache, 2, 10 );
         increment( cache, 5, 2 );
         increment( cache, 7, 12 );
@@ -66,8 +68,8 @@ public class NodeRelationshipLinkImplTest
     {
         // GIVEN
         int nodeCount = 10;
-        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.OFF_HEAP, nodeCount, 20 );
-        incrementRandomCounts( link, nodeCount, nodeCount*20 );
+        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.OFF_HEAP, 20 );
+        incrementRandomCounts( link, nodeCount, nodeCount * 20 );
 
         // Test sparse node semantics
         {
@@ -88,9 +90,8 @@ public class NodeRelationshipLinkImplTest
     public void shouldAddGroupAfterTheFirst() throws Exception
     {
         // GIVEN a dense node
-        int nodeCount = 10;
         long denseNode = 0;
-        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, nodeCount, 1 );
+        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, 1 );
         link.incrementCount( denseNode );
         link.getAndPutRelationship( denseNode, 0, Direction.OUTGOING, 0, true );
 
@@ -104,7 +105,7 @@ public class NodeRelationshipLinkImplTest
         GroupVisitor visitor = mock( GroupVisitor.class );
         assertEquals( 0L, link.getFirstRel( denseNode, visitor ) );
         InOrder order = inOrder( visitor );
-        order.verify( visitor ).visit( denseNode, 0,  1L, 0L, 2L, -1L );
+        order.verify( visitor ).visit( denseNode, 0, 1L, 0L, 2L, -1L );
         order.verify( visitor ).visit( denseNode, 1, -1L, 3L, 1L, -1L );
         order.verifyNoMoreInteractions();
     }
@@ -113,9 +114,8 @@ public class NodeRelationshipLinkImplTest
     public void shouldAddGroupBeforeTheFirst() throws Exception
     {
         // GIVEN a dense node
-        int nodeCount = 10;
         long denseNode = 0;
-        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, nodeCount, 1 );
+        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, 1 );
         link.incrementCount( denseNode );
         link.getAndPutRelationship( denseNode, 1, Direction.INCOMING, 1, true );
 
@@ -129,7 +129,7 @@ public class NodeRelationshipLinkImplTest
         GroupVisitor visitor = mock( GroupVisitor.class );
         assertEquals( 0L, link.getFirstRel( denseNode, visitor ) );
         InOrder order = inOrder( visitor );
-        order.verify( visitor ).visit( denseNode, 0,  1L, 0L, 2L, -1L );
+        order.verify( visitor ).visit( denseNode, 0, 1L, 0L, 2L, -1L );
         order.verify( visitor ).visit( denseNode, 1, -1L, 3L, 1L, -1L );
         order.verifyNoMoreInteractions();
     }
@@ -138,9 +138,8 @@ public class NodeRelationshipLinkImplTest
     public void shouldAddGroupInTheMiddleIfTwo() throws Exception
     {
         // GIVEN a dense node
-        int nodeCount = 10;
         long denseNode = 0;
-        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, nodeCount, 1 );
+        NodeRelationshipLink link = new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, 1 );
         link.incrementCount( denseNode );
         link.getAndPutRelationship( denseNode, 0, Direction.OUTGOING, 0, true );
         link.getAndPutRelationship( denseNode, 2, Direction.OUTGOING, 1, true );
@@ -156,8 +155,8 @@ public class NodeRelationshipLinkImplTest
         // THEN
         GroupVisitor visitor = mock( GroupVisitor.class );
         assertEquals( 0L, link.getFirstRel( denseNode, visitor ) );
-        verify( visitor ).visit( denseNode, 0,  2L, 0L, 3L, -1L );
-        verify( visitor ).visit( denseNode, 1,  1L, 4L, 2L,  6L );
+        verify( visitor ).visit( denseNode, 0, 2L, 0L, 3L, -1L );
+        verify( visitor ).visit( denseNode, 1, 1L, 4L, 2L, 6L );
         verify( visitor ).visit( denseNode, 2, -1L, 1L, 5L, -1L );
         verifyNoMoreInteractions( visitor );
     }
@@ -185,21 +184,12 @@ public class NodeRelationshipLinkImplTest
     private int incrementRandomCounts( NodeRelationshipLink link, int nodeCount, int i )
     {
         int highestSeenCount = 0;
-        while ( i --> 0 )
+        while ( i-- > 0 )
         {
             long node = random.nextInt( nodeCount );
             highestSeenCount = max( highestSeenCount, link.incrementCount( node ) );
         }
         return highestSeenCount;
-    }
-
-    private Random random;
-
-    @Before
-    public void before()
-    {
-        long seed = currentTimeMillis();
-        random = new Random( seed );
     }
 
     private void increment( NodeRelationshipLink cache, long node, int count )

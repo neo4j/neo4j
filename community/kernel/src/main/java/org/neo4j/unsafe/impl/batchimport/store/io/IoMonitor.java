@@ -17,7 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store;
+package org.neo4j.unsafe.impl.batchimport.store.io;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.helpers.Format;
 import org.neo4j.unsafe.impl.batchimport.stats.GenericStatsProvider;
@@ -29,11 +31,13 @@ import static java.lang.System.currentTimeMillis;
 
 /**
  * {@link Monitor} exposed as a {@link StatsProvider}.
+ * <p/>
+ * Assumes that I/O is busy all the time.
  */
 public class IoMonitor extends GenericStatsProvider implements Monitor
 {
     private volatile long startTime = currentTimeMillis();
-    private volatile long totalWritten;
+    private final AtomicLong totalWritten = new AtomicLong();
 
     public IoMonitor()
     {
@@ -49,9 +53,9 @@ public class IoMonitor extends GenericStatsProvider implements Monitor
             @Override
             public long asLong()
             {
-                long totalTime = currentTimeMillis()-startTime;
-                int seconds = (int) (totalTime/1000);
-                return seconds > 0 ? totalWritten/seconds : -1;
+                long totalTime = currentTimeMillis() - startTime;
+                int seconds = (int) (totalTime / 1000);
+                return seconds > 0 ? totalWritten.get() / seconds : -1;
             }
         } );
     }
@@ -59,13 +63,13 @@ public class IoMonitor extends GenericStatsProvider implements Monitor
     @Override
     public void dataWritten( int bytes )
     {
-        totalWritten += bytes;
+        totalWritten.addAndGet( bytes );
     }
 
     public void reset()
     {
         startTime = currentTimeMillis();
-        totalWritten = 0;
+        totalWritten.set( 0 );
     }
 
     public long startTime()
@@ -75,6 +79,6 @@ public class IoMonitor extends GenericStatsProvider implements Monitor
 
     public long totalBytesWritten()
     {
-        return totalWritten;
+        return totalWritten.get();
     }
 }

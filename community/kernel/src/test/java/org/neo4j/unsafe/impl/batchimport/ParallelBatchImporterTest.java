@@ -36,7 +36,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.impl.batchimport.cache.IdMappers;
@@ -52,8 +51,11 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class ParallelBatchImporterTest
 {
-    private static final long seed = 12345L;
     protected static final String[] LABELS = new String[]{"Person", "Guy"};
+
+    private static final long SEED = 12345L;
+
+    private final File directory = TargetDirectory.forTest( getClass() ).cleanDirectory( "import" );
 
     @Test
     public void shouldImportCsvData() throws Exception
@@ -68,9 +70,9 @@ public class ParallelBatchImporterTest
                 return 30;
             }
         };
-        BatchImporter inserter = new ParallellBatchImporter( directory.getAbsolutePath(),
+        BatchImporter inserter = new ParallelBatchImporter( directory.getAbsolutePath(),
                 new DefaultFileSystemAbstraction(), config,
-                Iterables.<KernelExtensionFactory<?>>empty(), new DetailedExecutionMonitor() );
+                new DetailedExecutionMonitor() );
 
         // WHEN
         int nodeCount = 100_000;
@@ -107,7 +109,7 @@ public class ParallelBatchImporterTest
 
         // Sample some nodes for deeper inspection of their contents
         Random random = new Random();
-        for ( int i = 0; i < 10; i++ )
+        for ( int i = 0; i < nodeCount / 10; i++ )
         {
             Node node = db.getNodeById( random.nextInt( nodeCount ) );
             int count = count( node.getRelationships() );
@@ -130,8 +132,8 @@ public class ParallelBatchImporterTest
             {
                 return new PrefetchingIterator<InputRelationship>()
                 {
-                    private final Random random = new Random( seed );
-                    private int cursor = 0;
+                    private final Random random = new Random( SEED );
+                    private int cursor;
                     private final Object[] properties = new Object[]{
                             "name", "Nisse " + cursor,
                             "age", 10,
@@ -172,7 +174,7 @@ public class ParallelBatchImporterTest
             {
                 return new PrefetchingIterator<InputNode>()
                 {
-                    private int cursor = 0;
+                    private int cursor;
                     private final Object[] properties = new Object[]{
                             "name", "Nisse " + cursor,
                             "age", 10,
@@ -201,6 +203,4 @@ public class ParallelBatchImporterTest
             }
         };
     }
-
-    public final File directory = TargetDirectory.forTest( getClass() ).cleanDirectory( "import" );
 }

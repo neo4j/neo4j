@@ -19,13 +19,14 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.Format.duration;
-
 import java.io.PrintStream;
 
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
+
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.helpers.Format.duration;
 
 /**
  * An {@link ExecutionMonitor} that prints very detailed information about each {@link Stage} and the
@@ -47,36 +48,46 @@ public class DetailedExecutionMonitor extends PollingExecutionMonitor
     }
 
     @Override
-    protected void start( StageExecution execution )
+    protected void start( StageExecution[] executions )
     {
-        out.println( format( "%n>>>>> EXECUTING STAGE %s <<<<<%n", execution.getStageName() ) );
+        StringBuilder names = new StringBuilder();
+        for ( StageExecution execution : executions )
+        {
+            names.append( names.length() > 0 ? ", " : "" ).append( execution.getStageName() );
+        }
+        out.println( format( "%n>>>>> EXECUTING STAGE(s) %s <<<<<%n", names ) );
     }
 
     @Override
-    protected void end( StageExecution execution, long totalTimeMillis )
+    protected void end( StageExecution[] executions, long totalTimeMillis )
     {
         out.println( "Stage total time " + duration( totalTimeMillis ) );
     }
 
     @Override
-    protected void poll( StageExecution execution )
+    protected void poll( StageExecution[] executions )
     {
-        printStats( execution );
+        boolean first = true;
+        for ( StageExecution execution : executions )
+        {
+            printStats( execution, first );
+            first = false;
+        }
     }
 
     @Override
-    public void done()
+    public void done( long totalTimeMillis )
     {
-        out.println( "IMPORT DONE" );
+        out.println( "IMPORT DONE. Took: " + duration( totalTimeMillis ) );
     }
 
-    private void printStats( StageExecution execution )
+    private void printStats( StageExecution execution, boolean first )
     {
         StringBuilder builder = new StringBuilder();
         int i = 0;
         for ( StepStats stats : execution.stats() )
         {
-            builder.append( i > 0 ? format( "%n" ) : "" )
+            builder.append( i > 0 ? format( "%n  " ) : (first ? "--" : " -") )
                    .append( stats.toString() )
                    ;
             i++;
