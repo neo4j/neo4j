@@ -31,16 +31,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.index.Index;
 
 public class CypherSql
 {
@@ -81,6 +83,11 @@ public class CypherSql
         createGroups();
         createEmail();
 
+        try (Transaction tx = graphdb.beginTx())
+        {
+            graphdb.schema().awaitIndexesOnline( 30, TimeUnit.SECONDS );
+            tx.success();
+        }
         /*
 
         CREATE TABLE "Person"(name VARCHAR(20), id INT PRIMARY KEY, age INT, hair VARCHAR(20));
@@ -131,25 +138,25 @@ public class CypherSql
                         "Start",
                         "SELECT * FROM `Person` WHERE name = 'Anakin'".replace(
                                 "`", identifierQuoteString ),
-                        "START person=node:Person(name = 'Anakin') RETURN person",
+                        "MATCH (person:Person {name: 'Anakin'}) RETURN person",
                         "Anakin", "20", "1 row" ) );
                 add( new TestData(
                         "Match",
                         "SELECT `Email`.* FROM `Person` JOIN `Email` ON `Person`.id = `Email`.person_id WHERE `Person`.name = 'Anakin'".replace(
                                 "`", identifierQuoteString ),
-                        "START person=node:Person(name = 'Anakin') MATCH person-[:email]->email RETURN email",
+                        "MATCH (person:Person {name: 'Anakin'})-[:email]->(email) RETURN email",
                         "anakin@example.com", "anakin@example.org", "2 rows" ) );
                 add( new TestData(
                         "JoinEntity",
                         "SELECT `Group`.*, `Person_Group`.* FROM `Person` JOIN `Person_Group` ON `Person`.id = `Person_Group`.person_id JOIN `Group` ON `Person_Group`.Group_id=`Group`.id WHERE `Person`.name = 'Bridget'".replace(
                                 "`", identifierQuoteString ),
-                        "START person=node:Person(name = 'Bridget') MATCH person-[r:belongs_to]->group RETURN group, r",
+                        "MATCH (person:Person {name: 'Bridget'})-[r:belongs_to]->(group) RETURN group, r",
                         "Admin", "1 row" ) );
                 add( new TestData(
                         "LeftJoin",
                         "SELECT `Person`.name, `Email`.address FROM `Person` LEFT JOIN `Email` ON `Person`.id = `Email`.person_id".replace(
                                 "`", identifierQuoteString ),
-                        "START person=node:Person('name: *') OPTIONAL MATCH person-[:email]->email RETURN person.name, email.address",
+                        "MATCH (person:Person) WHERE has(person.name) OPTIONAL MATCH (person)-[:email]->(email) RETURN person.name, email.address",
                         "Anakin", "anakin@example.org", "Bridget", "<null>",
                         "3 rows" ) );
                 add( new TestData(
@@ -163,20 +170,19 @@ public class CypherSql
                           + "WHERE parent.id = child.belongs_to_group_id "
                           + ") SELECT * FROM TransitiveGroup" ).replace( "`",
                                 identifierQuoteString )*/,
-                        "START person=node:Person('name: Bridget') "
-                                + "MATCH person-[:belongs_to*]->group RETURN person.name, group.name",
+                        "MATCH (person:Person {name: 'Bridget'})-[:belongs_to*]->(group) RETURN person.name, group.name",
                         "Bridget", "Admin", "Technichian", "User", "3 rows" ) );
                 add( new TestData(
                         "Where",
                         "SELECT * FROM `Person` WHERE `Person`.age > 35 AND `Person`.hair = 'blonde'".replace(
                                 "`", identifierQuoteString ),
-                        "START person=node:Person('name: *') WHERE person.age > 35 AND person.hair = 'blonde' RETURN person",
+                        "MATCH (person:Person) WHERE has(person.name) AND person.age > 35 AND person.hair = 'blonde' RETURN person",
                         "Bridget", "blonde", "1 row" ) );
                 add( new TestData(
                         "Return",
                         "SELECT `Person`.name, count(*) FROM `Person` GROUP BY `Person`.name ORDER BY `Person`.name".replace(
                                 "`", identifierQuoteString ),
-                        "START person=node:Person('name: *') RETURN person.name, count(*) ORDER BY person.name",
+                        "MATCH (person:Person) WHERE has(person.name) RETURN person.name, count(*) ORDER BY person.name",
                         "Bridget", "Anakin", "2 rows" ) );
             }
         };
@@ -299,18 +305,12 @@ public class CypherSql
         try ( Transaction tx = graphdb.beginTx() )
         {
             RelationshipType type = DynamicRelationshipType.withName( relationshipType );
-            Index<Node> sourceIndex = graphdb.index()
-                    .forNodes( sourceEntity );
-            Index<Node> targetIndex = graphdb.index()
-                    .forNodes( targetEntity );
             for ( Object[] relationship : relationships )
             {
-                Node sourceNode = sourceIndex.get( sourceMatchAttribute,
-                        relationship[0] )
-                        .getSingle();
-                Node targetNode = targetIndex.get( targetMatchAttribute,
-                        relationship[1] )
-                        .getSingle();
+                Node sourceNode = graphdb.findNodesByLabelAndProperty( DynamicLabel.label( sourceEntity ),
+                        sourceMatchAttribute, relationship[0] ).iterator().next();
+                Node targetNode = graphdb.findNodesByLabelAndProperty( DynamicLabel.label( targetEntity ),
+                        targetMatchAttribute, relationship[1] ).iterator().next();
                 sourceNode.createRelationshipTo( targetNode, type );
             }
             tx.success();
@@ -331,18 +331,15 @@ public class CypherSql
     {
         try ( Transaction tx = graphdb.beginTx() )
         {
-            Index<Node> index = graphdb.index()
-                    .forNodes( tableName );
+            Label label = DynamicLabel.label( tableName );
+            graphdb.schema().indexFor( label );
             for ( Object[] value : values )
             {
                 Node node = graphdb.createNode();
+                node.addLabel( label );
                 for ( int i = 0; i < fields.length; i++ )
                 {
                     node.setProperty( fields[i], value[i] );
-                    if ( i == 0 )
-                    {
-                        index.add( node, fields[i], value[i] );
-                    }
                 }
             }
 
@@ -625,7 +622,7 @@ public class CypherSql
 
         /**
          * Create a sql/cypher test.
-         * 
+         *
          * @param name the name of the test
          * @param sql the sql query string
          * @param cypher the cypher query string
