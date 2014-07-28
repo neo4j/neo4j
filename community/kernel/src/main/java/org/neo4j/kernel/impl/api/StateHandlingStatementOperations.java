@@ -603,9 +603,9 @@ public class StateHandlingStatementOperations implements
         if ( existingProperty.isDefined() )
         {
             legacyPropertyTrackers.nodeRemoveStoreProperty( nodeId, (DefinedProperty) existingProperty );
+            state.txState().nodeDoRemoveProperty( nodeId, existingProperty );
             state.neoStoreTransaction.nodeRemoveProperty( nodeId, propertyKeyId );
         }
-        state.txState().nodeDoRemoveProperty( nodeId, existingProperty );
         return existingProperty;
     }
 
@@ -618,9 +618,9 @@ public class StateHandlingStatementOperations implements
         {
             legacyPropertyTrackers.relationshipRemoveStoreProperty( relationshipId, (DefinedProperty)
                     existingProperty );
+            state.txState().relationshipDoRemoveProperty( relationshipId, existingProperty );
             state.neoStoreTransaction.relRemoveProperty( relationshipId, propertyKeyId );
         }
-        state.txState().relationshipDoRemoveProperty( relationshipId, existingProperty );
         return existingProperty;
     }
 
