@@ -25,20 +25,23 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.function.Factory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
+import org.neo4j.unsafe.impl.batchimport.store.io.Ring;
 
 import static java.lang.Math.min;
 
 /**
-* {@link PageCache} that is optimized for single threaded batched access.
-* There's only one cursor that moves with the supposedly sequential access when page boundaries are
-* crossed. As part of moving the window the data in the page (residing in a {@link ByteBuffer}) is written
-* to the channel.
-*/
+ * {@link PageCache} that is optimized for single threaded batched access.
+ * There's only one cursor that moves with the supposedly sequential access when page boundaries are
+ * crossed. As part of moving the window the data in the page (residing in a {@link ByteBuffer}) is written
+ * to the channel.
+ */
 public class BatchingPageCache implements PageCache
 {
     public interface WriterFactory
@@ -51,7 +54,7 @@ public class BatchingPageCache implements PageCache
      */
     public interface Writer
     {
-        void write( ByteBuffer byteBuffer, long position ) throws IOException;
+        void write( ByteBuffer byteBuffer, long position, Ring<ByteBuffer> ring ) throws IOException;
     }
 
     public static final WriterFactory SYNCHRONOUS = new WriterFactory()
@@ -62,11 +65,17 @@ public class BatchingPageCache implements PageCache
             return new Writer()
             {
                 @Override
-                public void write( ByteBuffer data, long position ) throws IOException
+                public void write( ByteBuffer data, long position, Ring<ByteBuffer> ring ) throws IOException
                 {
-                    channel.position( position );
-                    int written = channel.write( data );
-                    monitor.dataWritten( written );
+                    try
+                    {
+                        int written = channel.write( data, position );
+                        monitor.dataWritten( written );
+                    }
+                    finally
+                    {
+                        ring.free( data );
+                    }
                 }
             };
         }
@@ -75,21 +84,21 @@ public class BatchingPageCache implements PageCache
     public static enum Mode
     {
         APPEND_ONLY
-        {
-            @Override
-            boolean canReadFrom( long pageId )
-            {
-                return pageId == 0;
-            }
-        },
+                {
+                    @Override
+                    boolean canReadFrom( long pageId )
+                    {
+                        return pageId == 0;
+                    }
+                },
         UPDATE
-        {
-            @Override
-            boolean canReadFrom( long pageId )
-            {
-                return true;
-            }
-        };
+                {
+                    @Override
+                    boolean canReadFrom( long pageId )
+                    {
+                        return true;
+                    }
+                };
 
         abstract boolean canReadFrom( long pageId );
     }
@@ -101,8 +110,10 @@ public class BatchingPageCache implements PageCache
     private final Monitor monitor;
     private final Mode mode;
 
+    private static final ByteBuffer ZEROS = ByteBuffer.allocateDirect( 1024 * 4 );
+
     public BatchingPageCache( FileSystemAbstraction fs, int pageSize, WriterFactory writerFactory,
-            Monitor monitor, Mode mode )
+                              Monitor monitor, Mode mode )
     {
         this.fs = fs;
         this.pageSize = pageSize;
@@ -224,6 +235,7 @@ public class BatchingPageCache implements PageCache
 
     static class BatchingPageCursor implements PageCursor
     {
+        private final Ring<ByteBuffer> bufferRing;
         private ByteBuffer currentBuffer;
         private final StoreChannel channel;
         private final Writer writer;
@@ -239,8 +251,16 @@ public class BatchingPageCache implements PageCache
             this.writer = writer;
             this.pageSize = pageSize;
             this.mode = mode;
-            this.currentBuffer = ByteBuffer.allocateDirect( pageSize );
-            highestKnownPageId = channel.size() / pageSize;
+            this.bufferRing = new Ring<>( 2, new Factory<ByteBuffer>()
+            {
+                @Override
+                public ByteBuffer newInstance()
+                {
+                    return ByteBuffer.allocateDirect( pageSize );
+                }
+            } );
+            this.currentBuffer = bufferRing.next();
+            this.highestKnownPageId = channel.size() / pageSize;
         }
 
         @Override
@@ -337,7 +357,7 @@ public class BatchingPageCache implements PageCache
         @Override
         public boolean next() throws IOException
         {
-            return next( currentPageId+1 );
+            return next( currentPageId + 1 );
         }
 
         @Override
@@ -395,7 +415,7 @@ public class BatchingPageCache implements PageCache
 
         private void readFromChannelIntoBuffer( long pageId ) throws IOException
         {
-            channel.read( prepared( currentBuffer ), pageId*pageSize );
+            channel.read( prepared( currentBuffer ), pageId * pageSize );
         }
 
         private void flush() throws IOException
@@ -405,7 +425,8 @@ public class BatchingPageCache implements PageCache
                 return;
             }
 
-            writer.write( prepared( currentBuffer ), currentPageId * pageSize );
+            writer.write( prepared( currentBuffer ), currentPageId * pageSize, bufferRing );
+            currentBuffer = bufferRing.next();
             currentBuffer.clear();
             currentPageId = -1;
         }
@@ -422,8 +443,6 @@ public class BatchingPageCache implements PageCache
             return highestKnownPageId;
         }
     }
-
-    private static final ByteBuffer ZEROS = ByteBuffer.allocateDirect( 1024*4 );
 
     private static void zeroBuffer( ByteBuffer buffer )
     {

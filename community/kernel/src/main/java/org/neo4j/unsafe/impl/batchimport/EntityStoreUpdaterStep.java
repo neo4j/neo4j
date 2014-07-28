@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
-import org.neo4j.unsafe.impl.batchimport.store.IoMonitor;
+import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 /**
  * Writes {@link RecordBatch entity batches} to the underlying stores.
@@ -42,7 +42,7 @@ public class EntityStoreUpdaterStep<T extends PrimitiveRecord> extends ExecutorS
     private final IoMonitor monitor;
 
     EntityStoreUpdaterStep( StageControl control, String name, AbstractRecordStore<T> entityStore,
-            PropertyStore propertyStore, IoMonitor monitor )
+                            PropertyStore propertyStore, IoMonitor monitor )
     {
         super( control, name, 1, 1 ); // work-ahead doesn't matter, we're the last one
         this.entityStore = entityStore;
@@ -57,7 +57,7 @@ public class EntityStoreUpdaterStep<T extends PrimitiveRecord> extends ExecutorS
         for ( T entityRecord : batch.getEntityRecords() )
         {
             // +1 since "high id" is the next id to return, i.e. "high id" is "highest id in use"+1
-            entityStore.setHighId( entityRecord.getId()+1 );
+            entityStore.setHighId( entityRecord.getId() + 1 );
             entityStore.updateRecord( entityRecord );
         }
         for ( PropertyRecord propertyRecord : batch.getPropertyRecords() )

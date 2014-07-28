@@ -17,21 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.staging;
+package org.neo4j.unsafe.impl.batchimport.store.io;
 
-/**
- * Monitors a {@link StageExecution}. An {@link ExecutionMonitor}, providing or displaying statistics
- * about the execution as it progresses.
- */
-public interface ExecutionMonitor
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
+
+class WriteJob
 {
-    /**
-     * Called when a {@link Stage} has started its execution. This method should not return until all
-     * {@link Step steps} in the {@link Stage} have {@link Step#isCompleted() completed} their processing.
-     *
-     * @param executions execution of a {@link Stage}.
-     */
-    void monitor( StageExecution... executions );
+    private final ByteBuffer byteBuffer;
+    private final long position;
+    private final Writer writer;
+    private final Ring<ByteBuffer> ringToFreeBufferIn;
 
-    void done( long totalTimeMillis );
+    WriteJob( Writer writer, ByteBuffer byteBuffer, long position, Ring<ByteBuffer> ringToFreeBufferIn )
+    {
+        this.writer = writer;
+        this.byteBuffer = byteBuffer;
+        this.position = position;
+        this.ringToFreeBufferIn = ringToFreeBufferIn;
+    }
+
+    public void execute() throws IOException
+    {
+        writer.write( byteBuffer, position, ringToFreeBufferIn );
+    }
 }

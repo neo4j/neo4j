@@ -40,18 +40,26 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
-import static org.neo4j.unsafe.impl.batchimport.store.Monitor.NO_MONITOR;
+import static org.neo4j.unsafe.impl.batchimport.store.io.Monitor.NO_MONITOR;
 
 public class BatchingPageCacheTest
 {
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+
+    private static final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+
+    private static final int RECORD_SIZE = 15;
+    private static final int RECORDS_PER_PAGE = 6;
+
     @Test
     public void shouldAppendThroughMultiplePages() throws Exception
     {
         // GIVEN
         int numberOfRecords = 100;
-        PageCache pageCache = new BatchingPageCache( FS, numberOfRecords, SYNCHRONOUS, NO_MONITOR, Mode.APPEND_ONLY );
+        PageCache pageCache = new BatchingPageCache( fs, numberOfRecords, SYNCHRONOUS, NO_MONITOR, Mode.APPEND_ONLY );
         File file = directory.file( "store" );
-        PagedFile pagedFile = pageCache.map( file, recordSize*recordsPerPage /* =90 */ );
+        PagedFile pagedFile = pageCache.map( file, RECORD_SIZE * RECORDS_PER_PAGE /* =90 */ );
 
         // WHEN
         try ( PageCursor cursor = pagedFile.io( 0, 0 ) )
@@ -59,9 +67,9 @@ public class BatchingPageCacheTest
             cursor.next();
             for ( int i = 0; i < numberOfRecords; i++ )
             {
-                if ( i > 0 && i%recordsPerPage == 0 )
+                if ( i > 0 && i % RECORDS_PER_PAGE == 0 )
                 {
-                    cursor.next(); // no need for looping here in the batching thingie
+                    cursor.next(); // no need for looping here in the batching thingy
                 }
                 writeRecord( cursor, i );
             }
@@ -79,7 +87,7 @@ public class BatchingPageCacheTest
         int pageSize = 100;
         File file = directory.file( "store" );
         fillFileWithByteContents( file );
-        PageCache pageCache = new BatchingPageCache( FS, pageSize, SYNCHRONOUS, NO_MONITOR, Mode.UPDATE );
+        PageCache pageCache = new BatchingPageCache( fs, pageSize, SYNCHRONOUS, NO_MONITOR, Mode.UPDATE );
         PagedFile pagedFile = pageCache.map( file, pageSize );
 
         // WHEN
@@ -92,7 +100,7 @@ public class BatchingPageCacheTest
                 {
                     int offset = cursor.getOffset();
                     byte value = cursor.getByte();
-                    if ( i%3 == 0 )
+                    if ( i % 3 == 0 )
                     {
                         cursor.setOffset( offset );
                         value++;
@@ -109,7 +117,7 @@ public class BatchingPageCacheTest
 
     private void assertByteContentsAreCorrect( File file ) throws IOException
     {
-        try ( StoreChannel channel = FS.open( file, "r" ) )
+        try ( StoreChannel channel = fs.open( file, "r" ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( 255 );
             int read = channel.read( buffer );
@@ -122,7 +130,7 @@ public class BatchingPageCacheTest
                 {
                     byte value = buffer.get();
                     byte expectedValue = (byte) counter++;
-                    if ( j%3 == 0 )
+                    if ( j % 3 == 0 )
                     {
                         expectedValue++;
                     }
@@ -134,7 +142,7 @@ public class BatchingPageCacheTest
 
     private void fillFileWithByteContents( File file ) throws IOException
     {
-        try ( StoreChannel channel = FS.open( file, "rw" ) )
+        try ( StoreChannel channel = fs.open( file, "rw" ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( 256 );
             for ( int i = 0; i < buffer.capacity(); i++ )
@@ -148,9 +156,9 @@ public class BatchingPageCacheTest
 
     private void assertRecordsAreCorrect( File file, int numberOfRecords ) throws IOException
     {
-        try ( StoreChannel channel = FS.open( file, "r" ) )
+        try ( StoreChannel channel = fs.open( file, "r" ) )
         {
-            ByteBuffer buffer = ByteBuffer.allocate( recordSize );
+            ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
             for ( int i = 0; i < numberOfRecords; i++ )
             {
                 buffer.clear();
@@ -164,7 +172,7 @@ public class BatchingPageCacheTest
     private void assertRecord( int i, ByteBuffer buffer )
     {
         assertEquals( i, buffer.getLong() );
-        int length = recordSize-8;
+        int length = RECORD_SIZE - 8;
         byte[] readBytes = new byte[length];
         buffer.get( readBytes );
         assertArrayEquals( bytesStartingAt( length, i ), readBytes );
@@ -173,7 +181,7 @@ public class BatchingPageCacheTest
     private void writeRecord( PageCursor cursor, int index )
     {
         cursor.putLong( index );
-        cursor.putBytes( bytesStartingAt( recordSize-8, index ) );
+        cursor.putBytes( bytesStartingAt( RECORD_SIZE - 8, index ) );
         // = 15
     }
 
@@ -182,13 +190,8 @@ public class BatchingPageCacheTest
         byte[] bytes = new byte[length];
         for ( int i = 0; i < length; i++ )
         {
-            bytes[i] = (byte) (start+i);
+            bytes[i] = (byte) (start + i);
         }
         return bytes;
     }
-
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    private final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
-    private final int recordSize = 15;
-    private final int recordsPerPage = 6;
 }
