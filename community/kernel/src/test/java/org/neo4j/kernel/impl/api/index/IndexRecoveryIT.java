@@ -52,6 +52,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -70,11 +72,11 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-// TODO 2.2-future fix this
-@Ignore("should revisit for 2.2")
 public class IndexRecoveryIT
 {
     @Test
@@ -171,7 +173,8 @@ public class IndexRecoveryIT
         // Then
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.ONLINE ) ) );
-        verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ) );
+        verify( mockedIndexProvider, times( 1 ) )
+                .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ) );
         int onlineAccessorInvocationCount = 2; // once when we create the index, and once when we restart the db
         verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
                 .getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) );
@@ -281,10 +284,12 @@ public class IndexRecoveryIT
         }
     }
 
-    private void rotateLogs()
+    private void rotateLogs() throws IOException
     {
-        // TODO 2.2-future find a way to force log rotation
-//        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
+        NeoStoreXaDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        DependencyResolver dependencyResolver = dataSource.getDependencyResolver();
+        PhysicalLogFile physicalLogFile = dependencyResolver.resolveDependency( PhysicalLogFile.class );
+        physicalLogFile.forceRotate();
     }
 
     private void createIndexAndAwaitPopulation( Label label )
