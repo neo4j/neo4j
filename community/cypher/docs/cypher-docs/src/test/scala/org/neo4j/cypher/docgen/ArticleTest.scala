@@ -34,8 +34,8 @@ import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.tooling.GlobalGraphOperations
-import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_2.RewindableExecutionResult
 
 /*
 Use this base class for tests that are more flowing text with queries intersected in the middle of the text.

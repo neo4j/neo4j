@@ -32,6 +32,7 @@ object CypherVersion {
   case object v1_9 extends CypherVersion("1.9")
   case object v2_0 extends CypherVersion("2.0")
   case object v2_1 extends CypherVersion("2.1")
+  case object v2_2 extends CypherVersion("2.2")
   case object experimental extends CypherVersion("2.1.experimental")
 
   def apply(versionName: String) = findVersionByExactName(CypherVersionName.asCanonicalName(versionName)).getOrElse {
@@ -40,6 +41,6 @@ object CypherVersion {
 
   def findVersionByExactName(versionName: String) = allVersions.find( _.name == versionName )
 
-  val vDefault = v2_1
-  val allVersions = Seq(v1_9,  v2_0, v2_1, experimental)
+  val vDefault = v2_2
+  val allVersions = Seq(v1_9,  v2_0, v2_1, v2_2, experimental)
 }

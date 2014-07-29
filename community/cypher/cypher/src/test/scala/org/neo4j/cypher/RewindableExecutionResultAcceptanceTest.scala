@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.graphdb.Node
-import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.RewindableExecutionResult
 
 class RewindableExecutionResultAcceptanceTest extends ExecutionEngineFunSuite {
   test("can do toList twice and get the same result") {

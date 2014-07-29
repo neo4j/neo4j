@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_1
+import org.neo4j.cypher.internal.compiler.v2_2
 import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.PlanDescription.Arguments.{DbHits, Rows}
-import org.neo4j.cypher.internal.compiler.v2_1.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
 
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport {
 
@@ -229,7 +229,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   override def profile(q: String, params: (String, Any)*): ExecutionResult = {
     val result = super.profile(q, params: _*)
-    val planDescription: v2_1.planDescription.PlanDescription = result.executionPlanDescription().asInstanceOf[v2_1.planDescription.PlanDescription]
+    val planDescription: v2_2.planDescription.PlanDescription = result.executionPlanDescription().asInstanceOf[v2_2.planDescription.PlanDescription]
     planDescription.toSeq.foreach {
       p =>
         if (!p.arguments.exists(_.isInstanceOf[DbHits])) fail("Found plan that was not profiled with DbHits: " + p.name)
@@ -238,13 +238,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result
   }
 
-  private def getArgument[A <: Argument](plan: v2_1.planDescription.PlanDescription)(implicit manifest: Manifest[A]): A = plan.arguments.collectFirst {
+  private def getArgument[A <: Argument](plan: v2_2.planDescription.PlanDescription)(implicit manifest: Manifest[A]): A = plan.arguments.collectFirst {
     case x: A => x
   }.getOrElse(fail(s"Failed to find plan description argument where expected. Wanted ${manifest.toString} but only found ${plan.arguments}"))
 
-  private def getPlanDescriptions(result: ExecutionResult, names: Seq[String]): Seq[v2_1.planDescription.PlanDescription] = {
+  private def getPlanDescriptions(result: ExecutionResult, names: Seq[String]): Seq[v2_2.planDescription.PlanDescription] = {
     result.toList
-    val description = result.executionPlanDescription().asInstanceOf[v2_1.planDescription.PlanDescription]
+    val description = result.executionPlanDescription().asInstanceOf[v2_2.planDescription.PlanDescription]
     if (names.isEmpty)
       description.toSeq
     else {

@@ -23,17 +23,22 @@ import org.neo4j.cypher._
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
+import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory => CypherCompilerFactory2_2}
 import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompilerFactory => CypherCompilerFactory2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.{CypherCompiler => CypherCompiler2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => ExecutionPlan_v2_2}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
+import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundQueryContext => QueryContext_v2_2}
 import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundQueryContext => QueryContext_v2_1}
 import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundQueryContext => QueryContext_v2_0}
 import org.neo4j.cypher.internal.spi.v1_9.{GDSBackedQueryContext => QueryContext_v1_9}
+import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundPlanContext => PlanContext_v2_2}
 import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundPlanContext => PlanContext_v2_1}
 import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundPlanContext => PlanContext_v2_0}
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_2}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_0}
 import org.neo4j.kernel.api.{KernelAPI, Statement}
@@ -57,7 +62,8 @@ class CypherCompiler(graph: GraphDatabaseService,
   private val queryCache2_0 = new LRUCache[Object, Object](queryCacheSize)
   private val queryCache1_9 = new LRUCache[String, Object](queryCacheSize)
 
-  val ronjaCompiler2_1 = CypherCompilerFactory2_1.ronjaCompiler(graph, queryCacheSize, kernelMonitors)
+  val ronjaCompiler2_2 = CypherCompilerFactory2_2.ronjaCompiler(graph, queryCacheSize, kernelMonitors)
+  val legacyCompiler2_2 = CypherCompilerFactory2_2.legacyCompiler(graph, queryCacheSize, kernelMonitors)
   val legacyCompiler2_1 = CypherCompilerFactory2_1.legacyCompiler(graph, queryCacheSize, kernelMonitors)
   val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache2_0.getOrElseUpdate(q, f))
   val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
@@ -68,19 +74,31 @@ class CypherCompiler(graph: GraphDatabaseService,
 
     version match {
       case CypherVersion.experimental =>
-        val preparedQueryForV_experimental = Try(ronjaCompiler2_1.prepareQuery(remainingQueryText))
+        val preparedQueryForV_experimental = Try(ronjaCompiler2_2.prepareQuery(remainingQueryText))
         new PreparedQuery(queryText, version) {
           def isPeriodicCommit = preparedQueryForV_experimental.map(_.isPeriodicCommit).getOrElse(false)
           def plan(context: GraphDatabaseService, statement: Statement) = {
-            val planContext = new PlanContext_v2_1(statement, kernelAPI, context)
-            val (planImpl, extractedParameters) = ronjaCompiler2_1.planPreparedQuery(preparedQueryForV_experimental.get, planContext)
-            (new ExecutionPlanWrapperForV2_1( planImpl ), extractedParameters)
+            val planContext = new PlanContext_v2_2(statement, kernelAPI, context)
+            val (planImpl, extractedParameters) = ronjaCompiler2_2.planPreparedQuery(preparedQueryForV_experimental.get, planContext)
+            (new ExecutionPlanWrapperForV2_2( planImpl ), extractedParameters)
+          }
+        }
+
+      case CypherVersion.v2_2 =>
+        new PreparedQuery(queryText, version) {
+          val preparedQueryForV_2_2 = Try(legacyCompiler2_2.prepareQuery(remainingQueryText))
+          def isPeriodicCommit = preparedQueryForV_2_2.map(_.isPeriodicCommit).getOrElse(false)
+
+          def plan(context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any]) = {
+            val planContext = new PlanContext_v2_2(statement, kernelAPI, context)
+            val (planImpl, extractedParameters) = legacyCompiler2_2.planPreparedQuery(preparedQueryForV_2_2.get, planContext)
+            (new ExecutionPlanWrapperForV2_2( planImpl ), extractedParameters)
           }
         }
 
       case CypherVersion.v2_1 =>
         new PreparedQuery(queryText, version) {
-          val preparedQueryForV_2_1 = Try(ronjaCompiler2_1.prepareQuery(remainingQueryText))
+          val preparedQueryForV_2_1 = Try(legacyCompiler2_1.prepareQuery(remainingQueryText))
           override def plan(context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any]) = {
             val planContext = new PlanContext_v2_1(statement, kernelAPI, context)
             val (planImpl, extractedParameters) = legacyCompiler2_1.planPreparedQuery(preparedQueryForV_2_1.get, planContext)
@@ -129,6 +147,22 @@ class CypherCompiler(graph: GraphDatabaseService,
   private def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
     case (db: T) => db
   }
+}
+
+class ExecutionPlanWrapperForV2_2(inner: ExecutionPlan_v2_2) extends ExecutionPlan {
+
+  private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
+    val ctx = new QueryContext_v2_2(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
+    new ExceptionTranslatingQueryContext_v2_2(ctx)
+  }
+
+  def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
+    inner.profile(queryContext(graph, txInfo), params)
+
+  def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
+    inner.execute(queryContext(graph, txInfo), params)
+
+  def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 }
 
 class ExecutionPlanWrapperForV2_1(inner: ExecutionPlan_v2_1) extends ExecutionPlan {

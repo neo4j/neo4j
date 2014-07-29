@@ -120,11 +120,16 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-2.1</artifactId>
+      <version>2.2-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-compiler-2.2</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-2.1</artifactId>
+      <artifactId>neo4j-cypher-compiler-2.2</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
