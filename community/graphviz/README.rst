@@ -8,4 +8,4 @@ Also includes a tool for visualizing an entire graph database.
 
 ## Command-line interface
 
-Run `./neoviz --help` for information on use.
+Run `./graphviz --help` for information on use.
