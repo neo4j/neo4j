@@ -93,24 +93,6 @@ public class GraphDatabaseBuilder
             config.put( name, value );
         }
         return this;
-
-/* TODO When all settings are in GraphDatabaseSettings, then use this instead
-        try
-        {
-            GraphDatabaseSetting setting = (GraphDatabaseSetting) CommunityGraphDatabaseSetting.class.getField( name
-            ).get( null );
-            setConfig( setting, value );
-            return this;
-        }
-        catch( IllegalAccessException e )
-        {
-            throw new IllegalArgumentException( "Unknown configuration setting:"+name );
-        }
-        catch( NoSuchFieldException e )
-        {
-            throw new IllegalArgumentException( "Unknown configuration setting:"+name );
-        }
-*/
     }
 
     /**

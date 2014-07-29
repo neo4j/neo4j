@@ -547,7 +547,7 @@ public abstract class InternalAbstractGraphDatabase
 
         storeMigrationProcess.addParticipant( new StoreMigrator(
                 new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrator.class ), System.out ),
-                new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), config ) );
+                new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), config, logging ) );
 
         persistenceSource = life.add( new NioNeoDbPersistenceSource( xaDataSourceManager ) );
 
