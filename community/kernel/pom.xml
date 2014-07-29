@@ -172,23 +172,6 @@ the relevant Commercial Agreement.
             <plugin>
               <artifactId>maven-javadoc-plugin</artifactId>
               <configuration>
-                <additionnalDependencies>
-                  <additionnalDependency>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-classic</artifactId>
-                    <version>${logback-classic.version}</version>
-                  </additionnalDependency>
-                  <additionnalDependency>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-core</artifactId>
-                    <version>${logback-classic.version}</version>
-                  </additionnalDependency>
-                  <additionnalDependency>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                    <version>${slf4j-api.version}</version>
-                  </additionnalDependency>
-                </additionnalDependencies>
                 <detectJavaApiLink>true</detectJavaApiLink>
                 <detectLinks>true</detectLinks>
                 <quiet>true</quiet>
@@ -227,23 +210,6 @@ the relevant Commercial Agreement.
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <additionnalDependencies>
-            <additionnalDependency>
-              <groupId>ch.qos.logback</groupId>
-              <artifactId>logback-classic</artifactId>
-              <version>${logback-classic.version}</version>
-            </additionnalDependency>
-            <additionnalDependency>
-              <groupId>ch.qos.logback</groupId>
-              <artifactId>logback-core</artifactId>
-              <version>${logback-classic.version}</version>
-            </additionnalDependency>
-            <additionnalDependency>
-              <groupId>org.slf4j</groupId>
-              <artifactId>slf4j-api</artifactId>
-              <version>${slf4j-api.version}</version>
-            </additionnalDependency>
-          </additionnalDependencies>
           <excludePackageNames>org.neo4j.kernel,*.impl.*</excludePackageNames>
           <groups>
             <group>

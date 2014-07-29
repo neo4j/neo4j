@@ -191,23 +191,6 @@ the relevant Commercial Agreement.
             <phase>${attach-javadoc-phase}</phase>
             <goals><goal>jar</goal></goals>
             <configuration>
-              <additionnalDependencies>
-                <additionnalDependency>
-                  <groupId>ch.qos.logback</groupId>
-                  <artifactId>logback-classic</artifactId>
-                  <version>1.0.0</version>
-                </additionnalDependency>
-                <additionnalDependency>
-                  <groupId>ch.qos.logback</groupId>
-                  <artifactId>logback-core</artifactId>
-                  <version>1.0.0</version>
-                </additionnalDependency>
-                <additionnalDependency>
-                  <groupId>org.slf4j</groupId>
-                  <artifactId>slf4j-api</artifactId>
-                  <version>1.6.4</version>
-                </additionnalDependency>
-              </additionnalDependencies>
               <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
               <header>${project.name}</header>
