@@ -66,7 +66,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
 
     @Override
     public IOCursor<CommittedTransactionRepresentation> getTransactions( final long transactionIdToStartFrom )
-            throws NoSuchTransactionException, IOException
+            throws IOException
     {
         // look up in position cache
         try

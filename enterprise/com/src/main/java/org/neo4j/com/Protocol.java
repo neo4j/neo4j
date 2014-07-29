@@ -306,33 +306,6 @@ public class Protocol
         }
     };
 
-    public static class CommittedTransactionRepresentationSerializer implements Serializer
-    {
-        private final Iterable<CommittedTransactionRepresentation> txs;
-
-        public CommittedTransactionRepresentationSerializer( Iterable<CommittedTransactionRepresentation> txs )
-        {
-            this.txs = txs;
-        }
-
-        @Override
-        public void write( ChannelBuffer buffer ) throws IOException
-        {
-            NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
-            LogEntryWriterv1 writer = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
-            for ( CommittedTransactionRepresentation tx : txs )
-            {
-                LogEntryStart startEntry = tx.getStartEntry();
-                writer.writeStartEntry( startEntry.getMasterId(), startEntry.getLocalId(),
-                        startEntry.getTimeWritten(), startEntry.getLastCommittedTxWhenTransactionStarted(),
-                        startEntry.getAdditionalHeader() );
-                writer.serialize( tx.getTransactionRepresentation() );
-                LogEntryCommit commitEntry = tx.getCommitEntry();
-                writer.writeCommitEntry( commitEntry.getTxId(), commitEntry.getTimeWritten() );
-            }
-        }
-    }
-
     public static void addLengthFieldPipes( ChannelPipeline pipeline, int frameLength )
     {
         pipeline.addLast( "frameDecoder",
