@@ -38,7 +38,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
@@ -205,6 +204,19 @@ public abstract class PageCacheTest<T extends PageCache>
             channel.writeAll( buf );
         }
         channel.close();
+    }
+
+    private static void generateRecordForId( long id, ByteBuffer buf )
+    {
+        buf.position( 0 );
+        int x = (int) (id + 1);
+        buf.putInt( x );
+        while ( buf.position() < buf.limit() )
+        {
+            x++;
+            buf.put( (byte) (x & 0xFF) );
+        }
+        buf.position( 0 );
     }
 
     @Test
@@ -1765,30 +1777,5 @@ public abstract class PageCacheTest<T extends PageCache>
         verify( channel1, atLeast( 1 ) ).force( false );
         verify( channel1 ).close();
         verifyNoMoreInteractions( channel1, channel2, fs );
-    }
-
-
-    private static void generateRecordForId( long id, ByteBuffer buf )
-    {
-        buf.position( 0 );
-        int x = (int) (id + 1);
-        buf.putInt( x );
-        while ( buf.position() < buf.limit() )
-        {
-            x++;
-            buf.put( (byte) (x & 0xFF) );
-        }
-        buf.position( 0 );
-    }
-
-    @Ignore( "A meta-test that verifies that the byteArray matcher works as expected." +
-             "Ignored because it is intentionally failing." )
-    @Test
-    public void metatestForByteArrayMatcher()
-    {
-        byte[] a = new byte[] { 1, -2, 3 };
-        byte[] b = new byte[] { 1, 3, -2 };
-        assertThat( "a == a", a, byteArray( a ) );
-        assertThat( "a != b", a, byteArray( b ) ); // this must fail
     }
 }
