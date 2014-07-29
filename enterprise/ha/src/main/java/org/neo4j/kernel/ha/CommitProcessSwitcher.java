@@ -28,6 +28,7 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
@@ -72,17 +73,15 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
     @Override
     protected TransactionCommitProcess getSlaveImpl( URI serverHaUri )
     {
-        SlaveTransactionCommitProcess slaveTransactionCommitProcess = new SlaveTransactionCommitProcess(
-                master, requestContextFactory, logicalTransactionStore,
-                kernelHealth, neoStore, storeApplier, unpacker, false );
-        return slaveTransactionCommitProcess;
+        return new SlaveTransactionCommitProcess( master, requestContextFactory, unpacker );
     }
 
     @Override
     protected TransactionCommitProcess getMasterImpl()
     {
-        return new MasterTransactionCommitProcess( logicalTransactionStore, kernelHealth, neoStore,
-                storeApplier,
-                pusher, validator );
+        TransactionRepresentationCommitProcess transactionRepresentationCommitProcess =
+                new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
+                        neoStore, storeApplier, false );
+        return new MasterTransactionCommitProcess( transactionRepresentationCommitProcess, pusher, validator );
     }
 }

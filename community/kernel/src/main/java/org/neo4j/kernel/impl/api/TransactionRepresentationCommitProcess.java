@@ -72,7 +72,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         return transactionId;
     }
 
-    protected long persistTransaction( TransactionRepresentation tx ) throws TransactionFailureException
+    private long persistTransaction( TransactionRepresentation tx ) throws TransactionFailureException
     {
         // write it to the log
         Future<Long> commitFuture;
