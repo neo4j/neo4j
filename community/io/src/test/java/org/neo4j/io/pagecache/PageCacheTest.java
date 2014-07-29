@@ -171,7 +171,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 "Page id: " + pageId + " " +
                         "(based on record data, it should have been " +
                         estimatedPageId + ", a difference of " +
-                        Math.abs(pageId - estimatedPageId) + ")",
+                        Math.abs( pageId - estimatedPageId ) + ")",
                 actualBytes,
                 byteArray( expectedBytes ) );
     }
@@ -1636,8 +1636,91 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( pagedFile.getLastPageId(), is( 15L ) );
     }
 
-    // TODO cursor offset must be updated by read and write
-    // TODO cursor getUnsignedInt
+    @Test
+    public void cursorOffsetMustBeUpdatedReadAndWrite() throws IOException
+    {
+        fs.create( file ).close();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            verifyWriteOffsets( cursor );
+
+            cursor.setOffset( 0 );
+            verifyReadOffsets( cursor );
+        }
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            verifyReadOffsets( cursor );
+        }
+    }
+
+    private void verifyWriteOffsets( PageCursor cursor )
+    {
+        assertThat( cursor.getOffset(), is( 0 ) );
+        cursor.putLong( 1 );
+        assertThat( cursor.getOffset(), is( 8 ) );
+        cursor.putInt( 1 );
+        assertThat( cursor.getOffset(), is( 12 ) );
+        cursor.putShort( (short) 1 );
+        assertThat( cursor.getOffset(), is( 14 ) );
+        cursor.putByte( (byte) 1 );
+        assertThat( cursor.getOffset(), is( 15 ) );
+        cursor.putBytes( new byte[]{ 1, 2, 3 } );
+        assertThat( cursor.getOffset(), is( 18 ) );
+    }
+
+    private void verifyReadOffsets( PageCursor cursor )
+    {
+        assertThat( cursor.getOffset(), is( 0 ) );
+        cursor.getLong();
+        assertThat( cursor.getOffset(), is( 8 ) );
+        cursor.getInt();
+        assertThat( cursor.getOffset(), is( 12 ) );
+        cursor.getShort();
+        assertThat( cursor.getOffset(), is( 14 ) );
+        cursor.getByte();
+        assertThat( cursor.getOffset(), is( 15 ) );
+        cursor.getBytes( new byte[3] );
+        assertThat( cursor.getOffset(), is( 18 ) );
+
+        byte[] expectedBytes = new byte[] {
+                0, 0, 0, 0, 0, 0, 0, 1, // first; long
+                0, 0, 0, 1, // second; int
+                0, 1, // third; short
+                1, // fourth; byte
+                1, 2, 3 // lastly; more bytes
+        };
+        byte[] actualBytes = new byte[18];
+        cursor.setOffset( 0 );
+        cursor.getBytes( actualBytes );
+        assertThat( actualBytes, byteArray( expectedBytes ) );
+    }
+
+    @Test
+    public void cursorCanReadUnsignedIntGreaterThanMaxInt() throws IOException
+    {
+        fs.create( file ).close();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            long greaterThanMaxInt = (1L << 40) - 1;
+            cursor.putLong( greaterThanMaxInt );
+            cursor.setOffset( 0 );
+            assertThat( cursor.getInt(), is( (1 << 8) - 1 ) );
+            assertThat( cursor.getUnsignedInt(), is( (1L << 32) - 1 ) );
+        }
+    }
+
     // TODO lots of tests where more than one file is mapped
     // TODO must collect all exceptions from closing file channels when the cache is closed
     // TODO figure out what should happen when the last reference to a file is unmapped, while pages are still pinned
