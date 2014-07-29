@@ -35,7 +35,9 @@ import org.neo4j.io.pagecache.PagedFile;
 
 class MuninnPagedFile implements PagedFile
 {
-    static final int translationTableStripeLevel = 1 << 8;
+    private static int stripeFactor = Integer.getInteger(
+            "org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.stripeFactor", 8 );
+    static final int translationTableStripeLevel = 1 << stripeFactor;
     static final int translationTableStripeMask = translationTableStripeLevel - 1;
 
     private static final long referenceCounterOffset =
