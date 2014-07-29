@@ -19,18 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan._
-import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.AbstractQuery
-import org.neo4j.cypher.internal.LRUCache
-import org.neo4j.cypher.internal.compiler.v2_1.planner.PlanningMonitor
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan._
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{Planner, PlanningMonitor}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Planner
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{SimpleMetricsFactory, CachedMetricsFactory}
 
 trait SemanticCheckMonitor {
   def startSemanticCheck(query: String)
@@ -61,7 +60,7 @@ object CypherCompilerFactory {
 
   def ronjaCompiler(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
-    val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
+    val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
     val planBuilderMonitor = monitors.newMonitor[NewQueryPlanSuccessRateMonitor](monitorTag)
@@ -79,7 +78,7 @@ object CypherCompilerFactory {
 
   def legacyCompiler(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
-    val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
+    val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
     val pipeBuilder = new LegacyPipeBuilder(monitors)

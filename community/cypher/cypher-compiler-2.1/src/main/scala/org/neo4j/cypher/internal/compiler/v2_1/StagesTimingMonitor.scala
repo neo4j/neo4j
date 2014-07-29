@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.cypher.internal.compiler.v2_1.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
-import org.parboiled.errors.ParseError
-import collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_1.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_1.planner.PlanningMonitor
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
+import org.parboiled.errors.ParseError
+
+import scala.collection.mutable
 
 trait StagesTimingMonitor {
   def parsingTimeElapsed(query: String, ms: Long)
@@ -46,7 +47,7 @@ class StagesTimingListener(monitors: Monitors, monitor: StagesTimingMonitor) {
   monitors.addMonitorListener(new TimingSemanticCheckMonitor)
   monitors.addMonitorListener(new TimingPlanningMonitor)
 
-  private class TimingParserMonitor extends ParserMonitor with TimingMonitor[String] {
+  private class TimingParserMonitor extends ParserMonitor[Statement] with TimingMonitor[String] {
 
     def finishParsingError(query: String, errors: Seq[ParseError]) {}
 
@@ -100,8 +101,6 @@ class StagesTimingListener(monitors: Monitors, monitor: StagesTimingMonitor) {
 }
 
 trait TimingMonitor[T] {
-
-
   def currentTime: Long = System.currentTimeMillis()
 
   val timeMap = mutable.Map[T, Long]()

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
@@ -31,7 +32,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 
 class LegacyPipeBuilderTest extends CypherFunSuite {
   val planContext: PlanContext = mock[PlanContext]
-  val parser = new CypherParser(mock[ParserMonitor])
+  val parser = new CypherParser(mock[ParserMonitor[Statement]])
   val planBuilder = new LegacyPipeBuilder(mock[Monitors])
 
   test("should_use_distinct_pipe_for_distinct") {

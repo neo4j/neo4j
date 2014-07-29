@@ -56,7 +56,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   var kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
   var monitors = new Monitors(kernelMonitors)
   var monitorTag = "compiler2.1"
-  var parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
+  var parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
   var semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
   var astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
   var tokenResolver = new SimpleTokenResolver()

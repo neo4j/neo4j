@@ -38,7 +38,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
   val monitors = new Monitors(kernelMonitors)
   val monitorTag = "compiler2.1"
-  val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
+  val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
   val semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
   val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
   val mockRel = newPatternRelationship("a", "b", "r")
