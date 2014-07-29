@@ -1,5 +1,10 @@
 [[rest-api-cypher]]
-== Cypher queries via REST ==
+== Legacy Cypher HTTP endpoint ==
+
+[NOTE]
+This endpoint is deprecated.
+Please transition to using the new transactional endpoint (see <<rest-api-transactional>>).
+Among other things it allows you to run multiple Cypher statements in the same transaction.
 
 The Neo4j REST API allows querying with Cypher, see <<cypher-query-lang>>.
 The results are returned as a list of string headers (+columns+), and a +data+ part,

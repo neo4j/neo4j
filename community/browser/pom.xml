@@ -128,6 +128,9 @@
               <execution>
                 <id>generate-dummy-javadocs-jar</id>
                 <phase>package</phase>
+		            <goals>
+		              <goal>jar</goal>
+		            </goals>
                 <configuration>
                   <classifier>javadoc</classifier>
                   <excludes>

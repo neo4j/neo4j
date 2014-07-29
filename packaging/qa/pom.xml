@@ -13,7 +13,7 @@
   <groupId>org.neo4j.qa</groupId>
   <artifactId>neo4j-server-qa</artifactId>
   <packaging>jar</packaging>
-  
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>

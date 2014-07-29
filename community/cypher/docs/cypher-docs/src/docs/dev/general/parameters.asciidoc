@@ -10,8 +10,8 @@ Parameters can not be used as for property names, relationship types and labels,
 
 Accepted names for parameters are letters and numbers, and any combination of these.
 
+For details on using parameters via the Neo4j REST API, see <<rest-api-transactional>>.
 For details on parameters when using the Neo4j embedded Java API, see <<tutorials-cypher-parameters-java>>.
-For details on using parameters via the Neo4j REST API, see <<rest-api-cypher>>.
 
 Below follows a comprehensive set of examples of parameter usage.
 The parameters are given as JSON here.

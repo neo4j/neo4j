@@ -1,7 +1,7 @@
 [[query-tuning]]
 
 Query Tuning
-==========
+============
 
 A short introduction of query tuning in Cypher. In particular we explain basic concept of how to make sure that
 your queries run as fast as possible by using all the feature given by Neo4j.

@@ -31,7 +31,7 @@
     <license-text.header>GPL-3-header.txt</license-text.header>
 
     <buildnumber>0</buildnumber>
-    
+
     <neo4j.debian.maintainer>Admins &lt;admins@neotechnology.com&gt;</neo4j.debian.maintainer>
     <licensing.phase>none</licensing.phase>
   </properties>
@@ -157,7 +157,7 @@
       </plugin>
     </plugins>
   </build>
-  
+
   <profiles>
     <profile>
       <!-- This project expects standalone neo4j

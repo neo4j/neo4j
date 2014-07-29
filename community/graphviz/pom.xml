@@ -7,14 +7,14 @@
     <version>2.2-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
-  
+
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-graphviz</artifactId>
   <version>2.2-SNAPSHOT</version>
 
   <name>Neo4j - Graphviz generation</name>
   <description>Utility component to generate Graphviz .dot notation from Neo4j graphs.</description>
-  
+
   <properties>
     <version-package>visualization.graphviz.impl</version-package>
     <bundle.namespace>org.neo4j.visualization</bundle.namespace>
