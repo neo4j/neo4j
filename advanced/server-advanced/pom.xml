@@ -46,7 +46,7 @@
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
 
-    <!-- Run integration tests against a server that is started elsewhere This is used in ServerIntegrationTestFacade, 
+    <!-- Run integration tests against a server that is started elsewhere This is used in ServerIntegrationTestFacade,
       which currently assumes external servers to be running at http://localhost:7474/ -->
     <testWithExternalServer>false</testWithExternalServer>
 
@@ -339,8 +339,8 @@
     </profile>
 
     <profile>
-      <!-- An execution that adds src/main/resources to the classpath. Allows changing static files and 
-        seeing results without restarting server. Done with ant b/c of problems adding local directory to classpath 
+      <!-- An execution that adds src/main/resources to the classpath. Allows changing static files and
+        seeing results without restarting server. Done with ant b/c of problems adding local directory to classpath
         when using exec. -->
       <id>webdev-exec</id>
       <build>

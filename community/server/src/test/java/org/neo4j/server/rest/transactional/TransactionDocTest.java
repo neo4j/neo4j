@@ -200,8 +200,6 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      *
      * If there is no need to keep a transaction open across multiple HTTP requests, you can begin a transaction,
      * execute statements, and commit with just a single HTTP request.
-     *
-     * Note: Cypher queries with +USING PERIODIC COMMIT+ may only be executed using single request transactions (see [query-periodic-commit]).
      */
     @Test
     @Documented

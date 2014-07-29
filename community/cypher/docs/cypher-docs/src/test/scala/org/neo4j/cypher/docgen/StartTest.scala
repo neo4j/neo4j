@@ -36,11 +36,17 @@ class StartTest extends DocumentingTestBase {
   @Test def nodes_by_id() {
     testQuery(
       title = "Node by id",
-      text = "Binding a node as a starting point is done with the `node(*)` function. \n" +
-        "[NOTE]\n" +
-        "Neo4j reuses its internal ids when nodes and relationships are deleted, " +
-        "which means it's bad practice to refer to them this way. " +
-        "Instead, use application generated ids.",
+      text = """
+Binding a node as a starting point is done with the `node(*)` function.
+
+[NOTE]
+Neo4j reuses its internal ids when nodes and relationships are deleted,
+which means it's bad practice to refer to them in this way.
+Instead, use application generated ids.
+
+[TIP]
+The preferred way to do this is to use the `id` function (see <<functions-id>>) together with `MATCH`.
+""",
       queryText = "start n=node(%A%) return n",
       optionalResultExplanation = "The corresponding node is returned.",
       (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(node("A"))))
@@ -49,8 +55,13 @@ class StartTest extends DocumentingTestBase {
   @Test def relationships_by_id() {
     testQuery(
       title = "Relationship by id",
-      text = "Binding a relationship as a starting point is done with the `relationship(*)` function, which can also be abbreviated `rel(*)`." +
-        " See <<start-node-by-id>> for more information on Neo4j ids.",
+      text = """
+Binding a relationship as a starting point is done with the `relationship(*)` function, which can also be abbreviated `rel(*)`.
+See <<start-node-by-id>> for more information on Neo4j ids.
+
+[TIP]
+The preferred way to do this is to use the `id` function (see <<functions-id>>) together with `MATCH`.
+""",
       queryText = "start r=relationship(0) return r",
       optionalResultExplanation = "The relationship with id +0+ is returned.",
       (p) => assertThat(p.columnAs[Relationship]("r").toList.asJava, hasItem(rel(0))))
@@ -59,7 +70,12 @@ class StartTest extends DocumentingTestBase {
   @Test def multiple_nodes_by_id() {
     testQuery(
       title = "Multiple nodes by id",
-      text = "Multiple nodes are selected by listing them separated by commas.",
+      text = """
+Multiple nodes are selected by listing them separated by commas.
+
+[TIP]
+The preferred way to do this is to use the `id` function (see <<functions-id>>) together with `MATCH` and the `IN` operator (see <<query-operators-collection>>).
+""",
       queryText = "start n=node(%A%, %B%, %C%) return n",
       optionalResultExplanation = "This returns the nodes listed in the `START` statement.",
       (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))

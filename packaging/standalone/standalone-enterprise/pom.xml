@@ -17,7 +17,7 @@
   <version>2.2-SNAPSHOT</version>
 
   <description>This project assembles the Neo4j Enterprise stand-alone distribution,
-    pulling together all the deliverable artifacts and packaging them 
+    pulling together all the deliverable artifacts and packaging them
       into a downloadable installer.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 

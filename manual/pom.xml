@@ -28,7 +28,7 @@
     <doctools.version>18</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
   </properties>
-  
+
   <modules>
     <module>javadocs</module>
   </modules>
@@ -776,7 +776,7 @@
       </plugin>
     </plugins>
   </build>
-  
+
   <profiles>
     <profile>
       <id>debug-asciidoc</id>

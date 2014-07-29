@@ -17,14 +17,14 @@
   <version>2.2-SNAPSHOT</version>
 
   <description>This project assembles the Neo4j stand-alone distribution,
-    pulling together all the deliverable artifacts and packaging them 
+    pulling together all the deliverable artifacts and packaging them
       into a downloadable installer.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
 	  <url>https://github.com/neo4j/neo4j/tree/master/packaging/standalone</url>
   </scm>
-  
+
   <modules>
     <module>standalone-community</module>
     <module>standalone-advanced</module>
@@ -42,12 +42,12 @@
     <neo4j.version>${project.version}</neo4j.version>
     <windows-wrapper.version>5</windows-wrapper.version>
     <windows-wrapper.filename>windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.filename>
-    
+
     <!-- conf/neo4j-server.properties filter properties -->
     <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>
     <org.neo4j.server.webserver.http.enabled>true</org.neo4j.server.webserver.http.enabled>
     <org.neo4j.webserver.port>7474</org.neo4j.webserver.port>
-    
+
     <org.neo4j.server.webserver.https.enabled>true</org.neo4j.server.webserver.https.enabled>
     <org.neo4j.webserver.https.port>7473</org.neo4j.webserver.https.port>
     <org.neo4j.server.webserver.https.cert.location>conf/ssl/snakeoil.cert</org.neo4j.server.webserver.https.cert.location>
@@ -300,7 +300,7 @@ terms of the relevant Commercial Agreement.
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
       <version>${neo4j.version}</version>
-      <classifier>static-web</classifier> 
+      <classifier>static-web</classifier>
     </dependency>
 
     <dependency>
