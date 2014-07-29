@@ -19,34 +19,37 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.cypher.internal.{CypherQueryWithOptions, VersionOption, _}
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.CypherQueryWithOptions
-import org.neo4j.cypher.internal.VersionOption
+import org.neo4j.cypher.internal.compiler.v2_1.parser.ParserMonitor
 
 class CypherOptionParserTest extends CypherFunSuite {
 
+  def parse(arg:String): CypherQueryWithOptions = {
+    CypherOptionParser(mock[ParserMonitor[CypherQueryWithOptions]]).apply(arg)
+  }
+
   test("should parse version") {
-    CypherOptionParser("CYPHER 1.9 MATCH") should equal(CypherQueryWithOptions("MATCH", Seq(VersionOption("1.9"))))
-    CypherOptionParser("CYPHER 2.0 THAT") should equal(CypherQueryWithOptions("THAT", Seq(VersionOption("2.0"))))
-    CypherOptionParser("CYPHER 2.1 YO") should equal(CypherQueryWithOptions("YO", Seq(VersionOption("2.1"))))
+    parse("CYPHER 1.9 MATCH") should equal(CypherQueryWithOptions("MATCH", Seq(VersionOption("1.9"))))
+    parse("CYPHER 2.0 THAT") should equal(CypherQueryWithOptions("THAT", Seq(VersionOption("2.0"))))
+    parse("CYPHER 2.1 YO") should equal(CypherQueryWithOptions("YO", Seq(VersionOption("2.1"))))
   }
 
   ignore("should parse profile") {
-    CypherOptionParser("PROFILE THINGS") should equal(CypherQueryWithOptions("THINGS", Seq(ProfileOption)))
+    parse("PROFILE THINGS") should equal(CypherQueryWithOptions("THINGS", Seq(ProfileOption)))
   }
 
   ignore("should parse explain") {
-    CypherOptionParser("EXPLAIN THIS") should equal(CypherQueryWithOptions("THIS", Seq(ExplainOption)))
+    parse("EXPLAIN THIS") should equal(CypherQueryWithOptions("THIS", Seq(ExplainOption)))
   }
 
   ignore("should parse multiple options") {
-    CypherOptionParser("CYPHER 2.1.experimental PROFILE PATTERN") should equal(CypherQueryWithOptions("PATTERN", Seq(VersionOption("2.1.experimental"), ProfileOption)))
-    CypherOptionParser("EXPLAIN PROFILE CYPHER 2.1 YALL") should equal(CypherQueryWithOptions("YALL", Seq(ExplainOption, ProfileOption, VersionOption("2.1"))))
+    parse("CYPHER 2.1.experimental PROFILE PATTERN") should equal(CypherQueryWithOptions("PATTERN", Seq(VersionOption("2.1.experimental"), ProfileOption)))
+    parse("EXPLAIN PROFILE CYPHER 2.1 YALL") should equal(CypherQueryWithOptions("YALL", Seq(ExplainOption, ProfileOption, VersionOption("2.1"))))
   }
 
   ignore("should require whitespace between option and query") {
-    CypherOptionParser("explainmatch") should equal(CypherQueryWithOptions("explainmatch"))
-    CypherOptionParser("explain match") should equal(CypherQueryWithOptions("match", Seq(ExplainOption)))
+    parse("explainmatch") should equal(CypherQueryWithOptions("explainmatch"))
+    parse("explain match") should equal(CypherQueryWithOptions("match", Seq(ExplainOption)))
   }
 }

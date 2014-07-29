@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.helpers.ThisShouldNotHappenError
 import org.parboiled.Context
+import org.parboiled.errors.{InvalidInputError, ParseError}
 import org.parboiled.scala._
 import org.parboiled.support.IndexRange
 
@@ -107,6 +110,37 @@ trait Base extends Parser {
     (oneOrMore(
       ch('`') ~ zeroOrMore(!ch('`') ~ ANY) ~> (_.toString) ~ ch('`')
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
+  }
+
+  def parseOrThrow[T](input: String, rule: Rule1[T], monitor: Option[ParserMonitor[T]]): T = {
+    monitor.foreach(_.startParsing(input))
+
+    val parsingResult = ReportingParseRunner(rule).run(input)
+
+    parsingResult.result match {
+      case Some(result) =>
+        monitor.foreach(_.finishParsingSuccess(input, result))
+
+        result
+
+      case _ =>
+        val parseErrors: List[ParseError] = parsingResult.parseErrors
+        parseErrors.map {
+          error =>
+            val message = if (error.getErrorMessage != null) {
+              error.getErrorMessage
+            } else {
+              error match {
+                case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
+                case _ => error.getClass.getSimpleName
+              }
+            }
+            val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
+            throw new SyntaxException(s"$message ($position)", input, position.offset)
+        }
+
+        throw new ThisShouldNotHappenError("stefan & andres", "Parsing failed but no parse errors were provided")
+    }
   }
 
   implicit class RichRule0(r: Rule0) {

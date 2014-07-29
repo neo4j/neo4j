@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
@@ -110,7 +111,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
     }
   }
 
-  private val parser = new CypherParser(mock[ParserMonitor])
+  private val parser = new CypherParser(mock[ParserMonitor[Statement]])
 
   private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parse(text).asQuery.asInstanceOf[Query])
 }

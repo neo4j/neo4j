@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler.v2_1.parser.{BufferPosition, Base, IdentifierStart, IdentifierPart}
+import org.neo4j.cypher.internal.compiler.v2_1.parser._
 import org.parboiled.scala._
-import org.parboiled.errors.{InvalidInputError, ParseError}
-import org.neo4j.cypher.internal.compiler.v2_1.InvalidInputErrorFormatter
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 final case class CypherQueryWithOptions(statement: String, options: Seq[CypherOption] = Seq.empty)
 
-trait CypherOptionParser extends Parser with Base {
+case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) extends Parser with Base {
+  def apply(input: String): CypherQueryWithOptions = parseOrThrow(input, QueryWithOptions, Some(monitor))
+
   def QueryWithOptions: Rule1[CypherQueryWithOptions] =
     AllOptions ~ optional(WS) ~ AnySomething ~~> ( (options: Seq[CypherOption], text: String) => CypherQueryWithOptions(text, options) )
 
@@ -55,34 +53,4 @@ trait CypherOptionParser extends Parser with Base {
   def Profile = keyword("PROFILE") ~ push(ProfileOption)
 
   def Explain = keyword("EXPLAIN") ~ push(ExplainOption)
-}
-
-object CypherOptionParser extends CypherOptionParser {
-
-  def apply(input: String): CypherQueryWithOptions = {
-    val parsingResult = ReportingParseRunner(CypherOptionParser.QueryWithOptions).run(input)
-
-    parsingResult.result match {
-      case Some(result) =>
-        result
-
-      case _ =>
-        val parseErrors: List[ParseError] = parsingResult.parseErrors
-        parseErrors.map {
-          error =>
-            val message = if (error.getErrorMessage != null) {
-              error.getErrorMessage
-            } else {
-              error match {
-                case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
-                case _ => error.getClass.getSimpleName
-              }
-            }
-            val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
-            throw new SyntaxException(s"$message ($position)", input, position.offset)
-        }
-
-        throw new ThisShouldNotHappenError("boggle", "Option parsing failed but no parse errors were provided")
-    }
-  }
 }
