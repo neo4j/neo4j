@@ -36,7 +36,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.impl.batchimport.cache.IdMappers;
@@ -52,8 +51,11 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class ParallelBatchImporterTest
 {
-    private static final long seed = 12345L;
+    private static final long SEED = 12345L;
+
     protected static final String[] LABELS = new String[]{"Person", "Guy"};
+
+    private final File directory = TargetDirectory.forTest( getClass() ).cleanDirectory( "import" );
 
     @Test
     public void shouldImportCsvData() throws Exception
@@ -69,13 +71,13 @@ public class ParallelBatchImporterTest
                 return 30;
             }
         };
-        BatchImporter inserter = new ParallellBatchImporter( directory.getAbsolutePath(),
+        BatchImporter inserter = new ParallelBatchImporter( directory.getAbsolutePath(),
                 new DefaultFileSystemAbstraction(), config,
-                Iterables.<KernelExtensionFactory<?>>empty(), new DetailedExecutionMonitor() );
+                new DetailedExecutionMonitor() );
 
         // WHEN
         int nodeCount = 100_000;
-        int relationshipCount = nodeCount*10;
+        int relationshipCount = nodeCount * 10;
         inserter.doImport( nodes( nodeCount ), relationships( relationshipCount, nodeCount ), IdMappers.actualIds() );
         inserter.shutdown();
 
@@ -108,7 +110,7 @@ public class ParallelBatchImporterTest
 
         // Sample some nodes for deeper inspection of their contents
         Random random = new Random();
-        for ( int i = 0; i < 10; i++ )
+        for ( int i = 0; i < nodeCount / 10; i++ )
         {
             Node node = db.getNodeById( random.nextInt( nodeCount ) );
             int count = count( node.getRelationships() );
@@ -122,7 +124,7 @@ public class ParallelBatchImporterTest
         }
     }
 
-    private Iterable<InputRelationship> relationships( final long count, final long maxNodeId )
+    private static Iterable<InputRelationship> relationships( final long count, final long maxNodeId )
     {
         return new Iterable<InputRelationship>()
         {
@@ -131,14 +133,14 @@ public class ParallelBatchImporterTest
             {
                 return new PrefetchingIterator<InputRelationship>()
                 {
-                    private final Random random = new Random( seed );
-                    private int cursor = 0;
+                    private final Random random = new Random( SEED );
+                    private int cursor;
                     private final Object[] properties = new Object[] {
                             "name", "Nisse " + cursor,
                             "age", 10,
                             "long-string", "OK here goes... a long string that will certainly end up in a dynamic record1234567890!@#$%^&*()_|",
                             "array", new long[] { 1234567890123L, 987654321987L, 123456789123L, 987654321987L }
-                            };
+                    };
 
                     @Override
                     protected InputRelationship fetchNextOrNull()
@@ -163,7 +165,7 @@ public class ParallelBatchImporterTest
         };
     }
 
-    private Iterable<InputNode> nodes( final long count )
+    private static Iterable<InputNode> nodes( final long count )
     {
         return new Iterable<InputNode>()
         {
@@ -172,13 +174,13 @@ public class ParallelBatchImporterTest
             {
                 return new PrefetchingIterator<InputNode>()
                 {
-                    private int cursor = 0;
+                    private int cursor;
                     private final Object[] properties = new Object[] {
                             "name", "Nisse " + cursor,
                             "age", 10,
                             "long-string", "OK here goes... a long string that will certainly end up in a dynamic record1234567890!@#$%^&*()_|",
                             "array", new long[] { 1234567890123L, 987654321987L, 123456789123L, 987654321987L }
-                            };
+                    };
 
                     @Override
                     protected InputNode fetchNextOrNull()
@@ -200,6 +202,4 @@ public class ParallelBatchImporterTest
             }
         };
     }
-
-    public final File directory = TargetDirectory.forTest( getClass() ).cleanDirectory( "import" );
 }

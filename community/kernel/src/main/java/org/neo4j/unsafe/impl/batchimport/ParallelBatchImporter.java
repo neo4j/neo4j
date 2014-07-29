@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
@@ -56,7 +55,7 @@ import static org.neo4j.kernel.logging.DefaultLogging.createDefaultLogging;
  * Goes through multiple stages where each stage has one or more steps executing in parallel, passing
  * batches downstream.
  */
-public class ParallellBatchImporter implements BatchImporter
+public class ParallelBatchImporter implements BatchImporter
 {
     private final String storeDir;
     private final FileSystemAbstraction fileSystem;
@@ -68,8 +67,8 @@ public class ParallellBatchImporter implements BatchImporter
     private final LifeSupport life = new LifeSupport();
     private final IoQueue writerFactory;
 
-    public ParallellBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
-            Iterable<KernelExtensionFactory<?>> kernelExtensions, ExecutionMonitor executionMonitor )
+    public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
+                                  Configuration config, ExecutionMonitor executionMonitor )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
@@ -85,7 +84,7 @@ public class ParallellBatchImporter implements BatchImporter
 
     @Override
     public void doImport( Iterable<InputNode> nodes, Iterable<InputRelationship> relationships,
-            IdMapper idMapper ) throws IOException
+                          IdMapper idMapper ) throws IOException
     {
         // TODO log about import starting
 
@@ -100,7 +99,7 @@ public class ParallellBatchImporter implements BatchImporter
             NodeRelationshipLink nodeRelationshipLink = new NodeRelationshipLinkImpl(
                     LongArrayFactory.AUTO, config.denseNodeThreshold() );
             CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage(
-                    relationships.iterator(), neoStore, nodeRelationshipLink );
+                    relationships.iterator(), nodeRelationshipLink );
             executeStages( nodeStage, calculateDenseNodesStage );
 
             // Stage 3 -- relationships, properties
@@ -117,7 +116,7 @@ public class ParallellBatchImporter implements BatchImporter
             nodeRelationshipLink.clearRelationships();
             executeStages( new RelationshipLinkbackStage( neoStore, nodeRelationshipLink ) );
 
-            executionMonitor.done( currentTimeMillis()-startTime );
+            executionMonitor.done( currentTimeMillis() - startTime );
 
             logger.log( "Import completed [TODO import stats]" );
         }
@@ -168,8 +167,7 @@ public class ParallellBatchImporter implements BatchImporter
 
     public class CalculateDenseNodesStage extends Stage
     {
-        public CalculateDenseNodesStage( Iterator<InputRelationship> input,
-                BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
+        public CalculateDenseNodesStage( Iterator<InputRelationship> input, NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Calculate dense nodes", config );
             input( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );
@@ -181,7 +179,7 @@ public class ParallellBatchImporter implements BatchImporter
     public class RelationshipStage extends Stage
     {
         public RelationshipStage( Iterator<InputRelationship> input, BatchingNeoStore neoStore,
-                NodeRelationshipLink nodeRelationshipLink )
+                                  NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Relationships", config );
             input( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );

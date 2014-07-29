@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
-import org.neo4j.unsafe.impl.batchimport.store.io.Ring;
+import org.neo4j.unsafe.impl.batchimport.store.io.SimplePool;
 
 import static java.lang.Math.min;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -49,7 +49,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
 {
     /* Used for zeroing the data in a buffer. This is a direct buffer and the target buffer is
      * also direct, so put(ByteBuffer) will result in unsafe memory copy. */
-    private static final ByteBuffer ZEROS = ByteBuffer.allocateDirect( 1024*4 );
+    private static final ByteBuffer ZEROS = ByteBuffer.allocateDirect( 1024 * 4 );
 
     public interface WriterFactory
     {
@@ -61,7 +61,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
      */
     public interface Writer
     {
-        void write( ByteBuffer byteBuffer, long position, Ring<ByteBuffer> ring ) throws IOException;
+        void write( ByteBuffer byteBuffer, long position, SimplePool<ByteBuffer> pool ) throws IOException;
     }
 
     public static final WriterFactory SYNCHRONOUS = new WriterFactory()
@@ -72,7 +72,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
             return new Writer()
             {
                 @Override
-                public void write( ByteBuffer data, long position, Ring<ByteBuffer> ring ) throws IOException
+                public void write( ByteBuffer data, long position, SimplePool<ByteBuffer> pool ) throws IOException
                 {
                     try
                     {
@@ -81,7 +81,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
                     }
                     finally
                     {
-                        ring.free( data );
+                        pool.release( data );
                     }
                 }
             };
@@ -91,21 +91,21 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
     public static enum Mode
     {
         APPEND_ONLY
-        {
-            @Override
-            boolean canReadFrom( long windowIndex )
-            {
-                return windowIndex == 0;
-            }
-        },
+                {
+                    @Override
+                    boolean canReadFrom( long windowIndex )
+                    {
+                        return windowIndex == 0;
+                    }
+                },
         UPDATE
-        {
-            @Override
-            boolean canReadFrom( long windowIndex )
-            {
-                return true;
-            }
-        };
+                {
+                    @Override
+                    boolean canReadFrom( long windowIndex )
+                    {
+                        return true;
+                    }
+                };
 
         abstract boolean canReadFrom( long windowIndex );
     }
@@ -116,7 +116,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
     private final WriterFactory writerFactory;
 
     public BatchingWindowPoolFactory( int windowTargetSize, Monitor monitor, Mode mode,
-            WriterFactory writerFactory )
+                                      WriterFactory writerFactory )
     {
         this.windowTargetSize = windowTargetSize;
         this.monitor = monitor;
@@ -126,9 +126,9 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
 
     @Override
     public WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel, Config configuration,
-            StringLogger log, int numberOfReservedLowIds )
+                              StringLogger log, int numberOfReservedLowIds )
     {
-        return new SingleWindowPool( storageFileName, recordSize, fileChannel, numberOfReservedLowIds );
+        return new SingleWindowPool( storageFileName, recordSize, fileChannel );
     }
 
     private class SingleWindowPool implements WindowPool
@@ -136,12 +136,11 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         private final SingleWindow window;
         private final File storageFileName;
 
-        public SingleWindowPool( File storageFileName, int recordSize, StoreChannel channel,
-                int numberOfReservedLowIds )
+        public SingleWindowPool( File storageFileName, int recordSize, StoreChannel channel )
         {
             this.storageFileName = storageFileName;
-            this.window = createSingleWindow( storageFileName, recordSize, channel,
-                    numberOfReservedLowIds );
+            this.window = createSingleWindow( storageFileName, recordSize, channel
+            );
             window.allocateBuffer();
             window.placeWindowFor( 0 );
         }
@@ -183,8 +182,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         }
     }
 
-    protected SingleWindow createSingleWindow( File storageFileName, int recordSize, StoreChannel channel,
-            int numberOfReservedLowIds )
+    protected SingleWindow createSingleWindow( File storageFileName, int recordSize, StoreChannel channel )
     {
         return new SingleWindow( storageFileName, recordSize, channel );
     }
@@ -194,17 +192,13 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         private final File storageFileName;
         private final int recordSize;
         private final StoreChannel channel;
-        private Ring<ByteBuffer> bufferRing;
+        private SimplePool<ByteBuffer> bufferPool;
         private Buffer currentBuffer;
         private int maxRecordsInBuffer;
         protected long firstIdInWindow;
         protected long lastIdInWindow;
         private final Writer writer;
 
-        /**
-         * @param mode whether or not to read window data when moving the window to a new location,
-         * if {@code false} then only the first window will be read (since it may contain reserved header information).
-         */
         protected SingleWindow( File storageFileName, int recordSize, StoreChannel channel )
         {
             this.storageFileName = storageFileName;
@@ -224,7 +218,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
             // TODO 4k align instead
             final int capacity = roundedToNearestRecordSize( windowTargetSize );
             this.maxRecordsInBuffer = capacity / recordSize; // It's even at this point
-            bufferRing = new Ring<>( 2, new Factory<ByteBuffer>()
+            bufferPool = new SimplePool<>( 2, new Factory<ByteBuffer>()
             {
                 @Override
                 public ByteBuffer newInstance()
@@ -232,7 +226,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
                     return allocateDirect( capacity );
                 }
             } );
-            this.currentBuffer = new Buffer( this, bufferRing.next() );
+            this.currentBuffer = new Buffer( this, bufferPool.acquire() );
         }
 
         private int roundedToNearestRecordSize( int targetSize )
@@ -244,7 +238,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         protected PersistenceWindow acquire( long id, OperationType operationType )
         {
             assert operationType == OperationType.WRITE ||
-                   (operationType == OperationType.READ && mode.canReadFrom( windowIndex( id ) ));
+                    (operationType == OperationType.READ && mode.canReadFrom( windowIndex( id ) ));
 
             boolean isInCurrentWindow = idIsWithinCurrentWindow( id );
             if ( !isInCurrentWindow )
@@ -258,8 +252,8 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         private void placeWindowFor( long id )
         {
             long windowIndex = windowIndex( id );
-            firstIdInWindow = windowIndex*maxRecordsInBuffer;
-            lastIdInWindow = firstIdInWindow+maxRecordsInBuffer-1;
+            firstIdInWindow = windowIndex * maxRecordsInBuffer;
+            lastIdInWindow = firstIdInWindow + maxRecordsInBuffer - 1;
 
             // If we're not in append-only mode, i.e. if we're in update mode
             // OR if this is the first window index we read the contents.
@@ -296,7 +290,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
 
         private long windowIndex( long id )
         {
-            return id/maxRecordsInBuffer;
+            return id / maxRecordsInBuffer;
         }
 
         private boolean idIsWithinCurrentWindow( long id )
@@ -317,7 +311,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
                     " is outside the current window. At this point acquire should have been called previously" +
                     " with the same id. First id in window " + firstIdInWindow + ", last " + lastIdInWindow;
 
-            currentBuffer.setOffset( (int) ((id-firstIdInWindow) * recordSize) );
+            currentBuffer.setOffset( (int) ((id - firstIdInWindow) * recordSize) );
             return currentBuffer;
         }
 
@@ -361,8 +355,8 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         {
             try
             {
-                writer.write( prepared( currentBuffer.getBuffer() ), firstIdInWindow*recordSize, bufferRing );
-                currentBuffer = new Buffer( this, bufferRing.next() );
+                writer.write( prepared( currentBuffer.getBuffer() ), firstIdInWindow * recordSize, bufferPool );
+                currentBuffer = new Buffer( this, bufferPool.acquire() );
                 currentBuffer.reset();
             }
             catch ( IOException e )
@@ -375,7 +369,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         {
             try
             {
-                channel.read( prepared( currentBuffer.getBuffer() ), firstIdInWindow*recordSize );
+                channel.read( prepared( currentBuffer.getBuffer() ), firstIdInWindow * recordSize );
             }
             catch ( IOException e )
             {
@@ -386,7 +380,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         private ByteBuffer prepared( ByteBuffer buffer )
         {
             buffer.flip();
-            buffer.limit( (int) ((lastIdInWindow-firstIdInWindow+1) * recordSize) );
+            buffer.limit( (int) ((lastIdInWindow - firstIdInWindow + 1) * recordSize) );
             return buffer;
         }
 

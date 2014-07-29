@@ -199,7 +199,6 @@ public class NodeRelationshipLinkImplTest
     {
         long seed = currentTimeMillis();
         random = new Random( seed );
-        System.out.println( "Seed:" + seed );
     }
 
     private void increment( NodeRelationshipLink cache, long node, int count )

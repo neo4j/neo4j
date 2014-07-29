@@ -27,56 +27,85 @@ import org.junit.Test;
 import org.neo4j.helpers.Factory;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
-import org.neo4j.unsafe.impl.batchimport.store.io.Ring;
+import org.neo4j.unsafe.impl.batchimport.store.io.SimplePool;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
-public class RingTest
+public class SimplePoolTest
 {
+    @Rule
+    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+
+    private final Factory<Item> ITEM_FACTORY = new Factory<Item>()
+    {
+        int itemIndex;
+
+        @Override
+        public Item newInstance()
+        {
+            return new Item( itemIndex++ );
+        }
+    };
+
     @Test
     public void shouldWaitForFreeItem() throws Exception
     {
         // GIVEN
-        final Ring<Item> ring = new Ring<>( 2, new Factory<Item>()
-        {
-            @Override
-            public Item newInstance()
-            {
-                return new Item();
-            }
-        } );
+        final SimplePool<Item> pool = new SimplePool<>( 2, ITEM_FACTORY );
 
         // WHEN/THEN
-        Item first = ring.next();
+        Item first = pool.acquire();
         assertEquals( 0, first.id );
-        Item second = ring.next();
+        Item second = pool.acquire();
         assertEquals( 1, second.id );
-        Future<Item> thirdFuture = t2.execute( new WorkerCommand<Void,Item>()
+        Future<Item> thirdFuture = t2.execute( new WorkerCommand<Void, Item>()
         {
             @Override
             public Item doWork( Void state ) throws Exception
             {
-                return ring.next();
+                return pool.acquire();
             }
         } );
         assertThat( t2, OtherThreadRule.isThreadState( Thread.State.TIMED_WAITING ) );
-        ring.free( first );
+        pool.release( first );
         Item third = thirdFuture.get();
         assertEquals( 0, third.id );
     }
 
-    private int itemIndex;
-
-    private class Item
+    @Test
+    public void shouldNotRelyOnAcquireReleaseOrdering()
     {
-        private final int id;
+        // Given
+        SimplePool<Item> pool = new SimplePool<>( 2, ITEM_FACTORY );
 
-        public Item()
-        {
-            this.id = itemIndex++;
-        }
+        // When
+        Item first = pool.acquire();
+        Item second = pool.acquire();
+        pool.release( second );
+
+        // Then
+        assertNotEquals( first, pool.acquire() );
     }
 
-    public final @Rule OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldThrowWhenNonPooledObjectIsReleased()
+    {
+        // Given
+        SimplePool<Item> pool = new SimplePool<>( 2, ITEM_FACTORY );
+
+        // When/Then throw
+        pool.release( new Item( 42 ) );
+    }
+
+    private static class Item
+    {
+        final int id;
+
+        Item( int id )
+        {
+            this.id = id;
+        }
+    }
 }
