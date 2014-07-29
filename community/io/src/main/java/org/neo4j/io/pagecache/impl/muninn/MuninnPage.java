@@ -23,12 +23,12 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.concurrent.locks.StampedLock;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
 class MuninnPage extends StampedLock implements Page
 {

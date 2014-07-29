@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.StampedLock;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
@@ -32,6 +31,7 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
 class MuninnPagedFile implements PagedFile
 {

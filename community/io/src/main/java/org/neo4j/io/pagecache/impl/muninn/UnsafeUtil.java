@@ -57,7 +57,17 @@ class UnsafeUtil
 
     public static int getAndAddInt( Object obj, long offset, int delta )
     {
-        return unsafe.getAndAddInt( obj, offset, delta );
+        // The Java 8 specific version:
+//        return unsafe.getAndAddInt( obj, offset, delta );
+
+        // The Java 7 version:
+        int x;
+        do
+        {
+            x = unsafe.getIntVolatile( obj, offset );
+        }
+        while ( !unsafe.compareAndSwapInt( obj, offset, x, x + delta ) );
+        return x;
     }
 
     public static boolean compareAndSwapLong( Object obj, long offset, long expected, long update )

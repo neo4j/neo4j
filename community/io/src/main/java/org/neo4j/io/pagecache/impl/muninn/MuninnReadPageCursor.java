@@ -21,10 +21,10 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.StampedLock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
 class MuninnReadPageCursor extends MuninnPageCursor
 {

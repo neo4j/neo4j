@@ -146,20 +146,31 @@ public class MuninnPageCache implements PageCache, Runnable
     static void verifyHacks()
     {
         // Make sure that we can do unaligned get* and put*
-        // See java.nio.Bits.unaligned()
+        // See java.nio.Bits.unaligned().
         String arch = System.getProperty( "os.arch", "?" );
         if ( !arch.equals( "x86_64" ) && !arch.equals( "i386" )
                 && !arch.equals( "x86" ) && !arch.equals( "amd64" ) )
         {
-            throw new IllegalStateException(
+            throw new AssertionError(
                     "MuninnPageCache cannot be guaranteed to work on CPU architecture '" + arch + "' " +
                             "where support for unaligned word access is unknown." );
         }
 
-        // Make sure that we have access to theUnsafe
+        // Make sure that we have access to theUnsafe.
         if ( !UnsafeUtil.hasUnsafe() )
         {
-            throw new IllegalStateException( "Muninn requires access to sun.misc.Unsafe" );
+            throw new AssertionError( "MuninnPageCache requires access to sun.misc.Unsafe" );
+        }
+
+        // Make sure that we are running Java 7, because our backported
+        // StampedLock relies on undocumented memory fence side-effects of
+        // Unsafe.getXVolatile, and these might go away in Java 8 and beyond.
+        // When we migrate to Java 8, remove this check, along with the
+        // org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock and its test.
+        // Also remember to remove it from the licensing-requirements-base.xml.
+        if ( !System.getProperty( "java.specification.version" ).equals( "1.7" ) )
+        {
+            throw new AssertionError( "MuninnPageCache only supports Java 7." );
         }
     }
 

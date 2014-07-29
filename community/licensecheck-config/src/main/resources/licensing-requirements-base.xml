@@ -34,6 +34,9 @@
     <artifact id="org.apache.zookeeper:zookeeper:jar:3.3.2">
       <license>ASL2.0</license>
     </artifact>
+    <artifact id="jsr166e:StampedLock">
+      <license>Public Domain - StampedLock</license>
+    </artifact>
   </missing-licenses>
   <override-licenses>
     <artifact id="org.slf4j:jcl-over-slf4j:">

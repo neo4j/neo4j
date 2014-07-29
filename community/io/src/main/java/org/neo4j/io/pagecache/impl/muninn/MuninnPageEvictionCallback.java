@@ -19,10 +19,9 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import java.util.concurrent.locks.StampedLock;
-
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.io.pagecache.PageEvictionCallback;
+import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
 public class MuninnPageEvictionCallback implements PageEvictionCallback
 {
