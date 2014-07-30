@@ -20,20 +20,23 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
-import org.neo4j.helpers.Provider;
+
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransactionContextSupplier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
@@ -52,7 +55,7 @@ public class KernelTransactionsTest
         KernelTransactions registry = new KernelTransactions(
                 new MockContextSupplier(), mock(NeoStore.class), locks, null, null, null, null, null, null,
                 null, null, TransactionHeaderInformationFactory.DEFAULT, null, null,  mock(TransactionCommitProcess.class), null, null,
-                new TransactionHooks(), new TransactionMonitorImpl(), life, false );
+                new TransactionHooks(), mock( TransactionMonitor.class ), life, false );
 
         // When
         KernelTransaction first  = registry.newInstance();
@@ -78,7 +81,7 @@ public class KernelTransactionsTest
         KernelTransactions registry = new KernelTransactions(
                 new MockContextSupplier(), mock(NeoStore.class), locks, null, null, null, null, null, null,
                 null, null, TransactionHeaderInformationFactory.DEFAULT, null, null,  mock(TransactionCommitProcess.class), null, null,
-                new TransactionHooks(), new TransactionMonitorImpl(), life, false );
+                new TransactionHooks(), mock( TransactionMonitor.class ), life, false );
 
         registry.disposeAll();
 

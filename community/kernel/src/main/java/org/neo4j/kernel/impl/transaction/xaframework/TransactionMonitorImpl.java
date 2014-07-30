@@ -41,7 +41,8 @@ public class TransactionMonitorImpl implements TransactionMonitor
     @Override
     public void transactionFinished( boolean successful )
     {
-        activeTransactionCount.decrementAndGet();
+        int count = activeTransactionCount.decrementAndGet();
+        assert count >= 0;
         if ( !successful )
         {
             rolledBackTransactionCount.incrementAndGet();

@@ -154,7 +154,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformatio
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -175,6 +174,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
@@ -271,7 +271,7 @@ public abstract class InternalAbstractGraphDatabase
     protected JobScheduler jobScheduler;
     protected UpdateableSchemaState updateableSchemaState;
     protected Monitors monitors;
-    protected TransactionMonitor transactionMonitor;
+    protected TransactionMonitor transactionMonitor = new TransactionMonitorImpl();
     protected final LifeSupport life = new LifeSupport();
     private final Map<String, CacheProvider> cacheProviders;
     protected AvailabilityGuard availabilityGuard;
@@ -504,7 +504,6 @@ public abstract class InternalAbstractGraphDatabase
         startupStatistics = new StartupStatisticsProvider();
 
         transactionHeaderInformation = createTransactionHeaderInformation();
-        transactionMonitor = new TransactionMonitorImpl();
         createNeoDataSource();
 
         life.add( new MonitorGc( config, msgLog ) );
