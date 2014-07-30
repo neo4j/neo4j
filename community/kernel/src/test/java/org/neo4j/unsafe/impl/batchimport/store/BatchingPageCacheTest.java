@@ -22,10 +22,10 @@ package org.neo4j.unsafe.impl.batchimport.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
@@ -35,12 +35,15 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Mode;
+import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
-import static org.neo4j.unsafe.impl.batchimport.store.Monitor.NO_MONITOR;
+import static org.neo4j.unsafe.impl.batchimport.store.io.Monitor.NO_MONITOR;
 
 public class BatchingPageCacheTest
 {
@@ -105,6 +108,74 @@ public class BatchingPageCacheTest
 
         // THEN
         assertByteContentsAreCorrect( file );
+    }
+
+    @Test
+    public void shouldWriteChangesBeforeMovingWindow() throws Exception
+    {
+        // GIVEN
+        byte[] someBytes = new byte[] { 1, 2, 3, 4, 5 };
+        byte[] someOtherBytes = new byte[] { 6, 7, 8, 9, 10 };
+        int pageSize = 100;
+        Monitor monitor = mock( Monitor.class );
+        File file = directory.file( "store" );
+        fillFileWithByteContents( file );
+
+        PageCache pageCache = new BatchingPageCache( FS, pageSize, SYNCHRONOUS, monitor, Mode.APPEND_ONLY );
+        PagedFile pagedFile = pageCache.map( file, pageSize );
+
+        // WHEN
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
+        {
+            cursor.putBytes( someBytes );
+        }
+        verify( monitor, times(0) ).dataWritten( 0 );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
+        {
+            cursor.setOffset( 16 );
+            cursor.putBytes( someBytes );
+        }
+        verify( monitor, times(0) ).dataWritten( 0 );
+
+        // THEN
+        try ( PageCursor ignored = pagedFile.io( 1, PagedFile.PF_EXCLUSIVE_LOCK ) )
+        {
+            verify( monitor, times(1) ).dataWritten( anyInt() );
+        }
+    }
+
+    @Test
+    public void shouldZeroOutBufferBetweenUses() throws Exception
+    {
+        // GIVEN
+        int pageSize = 100;
+        File file = directory.file( "store" );
+        fillFileWithByteContents( file );
+
+        byte[] someBytes = new byte[]{1, 2, 3, 4, 5};
+        PageCache pageCache = new BatchingPageCache( FS, pageSize, SYNCHRONOUS, NO_MONITOR, Mode.APPEND_ONLY );
+        PagedFile pagedFile = pageCache.map( file, pageSize );
+
+        // And Given I've used the cursor a bit
+        try ( PageCursor cursor = pagedFile.io( 1, PagedFile.PF_EXCLUSIVE_LOCK ) )
+        {
+            cursor.putBytes( someBytes );
+        }
+
+
+        // WHEN I read empty data from the file
+        try ( PageCursor cursor = pagedFile.io( 2, PagedFile.PF_EXCLUSIVE_LOCK ) )
+        {
+            byte[] readBack = new byte[someBytes.length];
+            cursor.getBytes( readBack );
+
+
+            // THEN the buffer should be zero-filled
+            byte[] zeros = new byte[someBytes.length];
+            Arrays.fill( zeros, (byte) 0 );
+            assertArrayEquals( zeros, readBack );
+        }
     }
 
     private void assertByteContentsAreCorrect( File file ) throws IOException

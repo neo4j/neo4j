@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -278,7 +277,7 @@ public class LabelTransactionStateTest
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
 
-        txState = new TxStateImpl( mock( TransactionRecordState.class ),
+        txState = new TxStateImpl(
                 mock( LegacyIndexTransactionState.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
