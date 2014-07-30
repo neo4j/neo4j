@@ -19,82 +19,110 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.mockito.Mockito.mock;
-
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Ignore;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Matchers;
+
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.protocol.election.Election;
+import org.neo4j.com.RequestContext;
+import org.neo4j.com.Response;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-@Ignore
-// TODO 2.2-future implement this properly
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
 public class UpdatePullerTest
-{/*
+{
+    private final InstanceId myId = new InstanceId( 1 );
+    private final CapturingHighAvailabilityMemberStateMachine stateMachine =
+            new CapturingHighAvailabilityMemberStateMachine( myId );
+
+    private final OnDemandCallScheduler scheduler = new OnDemandCallScheduler();
+    private final Config config = mock( Config.class );
+    private final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
+    private final LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
+    private final Master master = mock( Master.class );
+    private final TransactionCommittingResponseUnpacker unpacker = mock( TransactionCommittingResponseUnpacker.class );
+    private final StringLogger stringLogger = mock( StringLogger.class );
+    private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
+
+    @Before
+    public void setup()
+    {
+        when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000l );
+        when( config.get( ClusterSettings.server_id ) ).thenReturn( myId );
+        when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
+    }
+
     @Test
     public void shouldNotStartPullingUpdatesUntilStartIsCalled() throws Throwable
     {
-        OnDemandCallScheduler scheduler = new OnDemandCallScheduler();
-        Config config = mock( Config.class );
-        InstanceId myId = new InstanceId( 1 );
-        when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000l );
-        when( config.get( ClusterSettings.server_id ) ).thenReturn( myId );
+        // GIVEN
+        final UpdatePuller puller = new UpdatePuller(
+                stateMachine,
+                master,
+                requestContextFactory,
+                availabilityGuard,
+                lastUpdateTime,
+                config,
+                scheduler,
+                stringLogger,
+                unpacker );
 
-        LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
-        AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
-        when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
-        HaXaDataSourceManager dataSourceManager = mock( HaXaDataSourceManager.class );
-        Master master = mock( Master.class );
-
-        UpdatePuller puller = new UpdatePuller( mock( HighAvailabilityMemberStateMachine.class),  dataSourceManager,
-                master, mock( RequestContextFactory.class ), mock( AbstractTransactionManager.class ),
-                availabilityGuard, lastUpdateTime, config,
-                scheduler, mock( StringLogger.class ) );
-
+        // WHEN
         puller.init();
 
+        // THEN
         // Asserts the puller set the job
         assertNotNull( scheduler.getJob() );
-
         scheduler.runJob();
-
-        verifyZeroInteractions( lastUpdateTime, availabilityGuard, dataSourceManager );
+        verifyZeroInteractions( lastUpdateTime, availabilityGuard, unpacker );
     }
 
     @Test
     public void shouldStartAndStopPullingUpdatesWhenStartAndStopIsCalled() throws Throwable
     {
-        OnDemandCallScheduler scheduler = new OnDemandCallScheduler();
-        Config config = mock( Config.class );
-        InstanceId myId = new InstanceId( 1 );
-        when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000l );
-        when( config.get( ClusterSettings.server_id ) ).thenReturn( myId );
+        // GIVEN
+        final UpdatePuller puller = new UpdatePuller(
+                stateMachine,
+                master,
+                requestContextFactory,
+                availabilityGuard,
+                lastUpdateTime,
+                config,
+                scheduler,
+                stringLogger,
+                unpacker );
 
-        LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
-        AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
-        when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
-        HaXaDataSourceManager dataSourceManager = mock( HaXaDataSourceManager.class );
-        Master master = mock( Master.class );
-
-        UpdatePuller puller = new UpdatePuller( mock( HighAvailabilityMemberStateMachine.class), dataSourceManager,
-                master, mock( RequestContextFactory.class ), mock( AbstractTransactionManager.class ),
-                availabilityGuard, lastUpdateTime, config,
-                scheduler, mock( StringLogger.class ) );
-
+        // WHEN
         puller.init();
 
+        // THEN
         // Asserts the puller set the job
         assertNotNull( scheduler.getJob() );
 
@@ -103,82 +131,74 @@ public class UpdatePullerTest
 
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( dataSourceManager, times( 1 ) ).applyTransactions( Matchers.<Response>any() );
+        verify( unpacker, times( 1 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
         puller.stop();
         scheduler.runJob();
 
-        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard, dataSourceManager );
+        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard, unpacker );
     }
 
     @Test
     public void shouldStopPullingUpdatesWhenThisInstanceBecomesTheMaster() throws Throwable
     {
-        OnDemandCallScheduler scheduler = new OnDemandCallScheduler();
-        Config config = mock( Config.class );
-        InstanceId myId = new InstanceId( 1 );
-        when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000l );
-        when( config.get( ClusterSettings.server_id ) ).thenReturn( myId );
+        // GIVEN
+        final UpdatePuller puller = new UpdatePuller(
+                stateMachine,
+                master,
+                requestContextFactory,
+                availabilityGuard,
+                lastUpdateTime,
+                config,
+                scheduler,
+                stringLogger,
+                unpacker );
 
-        LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
-        AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
-        when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
-        HaXaDataSourceManager dataSourceManager = mock( HaXaDataSourceManager.class );
-        Master master = mock( Master.class );
-
-        CapturingHighAvailabilityMemberStateMachine memberStateMachine = new
-                CapturingHighAvailabilityMemberStateMachine( myId );
-        UpdatePuller puller = new UpdatePuller( memberStateMachine, dataSourceManager,
-                master, mock( RequestContextFactory.class ), mock( AbstractTransactionManager.class ),
-                availabilityGuard, lastUpdateTime, config,
-                scheduler, mock( StringLogger.class ) );
-
+        // WHEN
         puller.init();
         puller.start();
         scheduler.runJob();
 
+        // THEN
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( dataSourceManager, times( 1 ) ).applyTransactions( Matchers.<Response>any() );
+        verify( unpacker, times( 1 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
-        memberStateMachine.switchInstanceToMaster();
+        stateMachine.switchInstanceToMaster();
 
         scheduler.runJob();
 
-        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard, dataSourceManager );
+        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard, unpacker );
     }
 
     @Test
     public void shouldKeepPullingUpdatesWhenThisInstanceBecomesASlave() throws Throwable
     {
-        OnDemandCallScheduler scheduler = new OnDemandCallScheduler();
-        Config config = mock( Config.class );
-        InstanceId myId = new InstanceId( 1 );
-        when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000l );
-        when( config.get( ClusterSettings.server_id ) ).thenReturn( myId );
+        // GIVEN
+        final CapturingHighAvailabilityMemberStateMachine memberStateMachine =
+                new CapturingHighAvailabilityMemberStateMachine( myId );
+        final UpdatePuller puller = new UpdatePuller(
+                memberStateMachine,
+                master,
+                requestContextFactory,
+                availabilityGuard,
+                lastUpdateTime,
+                config,
+                scheduler,
+                stringLogger,
+                unpacker );
 
-        LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
-        AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
-        when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
-        HaXaDataSourceManager dataSourceManager = mock( HaXaDataSourceManager.class );
-        Master master = mock( Master.class );
-
-        CapturingHighAvailabilityMemberStateMachine memberStateMachine = new
-                CapturingHighAvailabilityMemberStateMachine( myId );
-        UpdatePuller puller = new UpdatePuller( memberStateMachine, dataSourceManager,
-                master, mock( RequestContextFactory.class ), mock( AbstractTransactionManager.class ),
-                availabilityGuard, lastUpdateTime, config,
-                scheduler, mock( StringLogger.class ) );
-
+        // WHEN
         puller.init();
         puller.start();
         scheduler.runJob();
 
+        // THEN
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( dataSourceManager, times( 1 ) ).applyTransactions( Matchers.<Response>any() );
+        verify( unpacker, times( 1 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
         memberStateMachine.switchInstanceToSlave();
@@ -187,39 +207,36 @@ public class UpdatePullerTest
 
         verify( lastUpdateTime, times( 2 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 2 ) ).isAvailable( anyLong() );
-        verify( dataSourceManager, times( 2 ) ).applyTransactions( Matchers.<Response>any() );
+        verify( unpacker, times( 2 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 2 ) ).pullUpdates( Matchers.<RequestContext>any() );
     }
 
     @Test
     public void shouldResumePullingUpdatesWhenThisInstanceSwitchesFromMasterToSlave() throws Throwable
     {
-        OnDemandCallScheduler scheduler = new OnDemandCallScheduler();
-        Config config = mock( Config.class );
-        InstanceId myId = new InstanceId( 1 );
-        when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000l );
-        when( config.get( ClusterSettings.server_id ) ).thenReturn( myId );
+        // GIVEN
+        final CapturingHighAvailabilityMemberStateMachine memberStateMachine =
+                new CapturingHighAvailabilityMemberStateMachine( myId );
+        final UpdatePuller puller = new UpdatePuller(
+                memberStateMachine,
+                master,
+                requestContextFactory,
+                availabilityGuard,
+                lastUpdateTime,
+                config,
+                scheduler,
+                stringLogger,
+                unpacker );
 
-        LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
-        AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
-        when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
-        HaXaDataSourceManager dataSourceManager = mock( HaXaDataSourceManager.class );
-        Master master = mock( Master.class );
-
-        CapturingHighAvailabilityMemberStateMachine memberStateMachine = new
-                CapturingHighAvailabilityMemberStateMachine( myId );
-        UpdatePuller puller = new UpdatePuller( memberStateMachine, dataSourceManager,
-                master, mock( RequestContextFactory.class ), mock( AbstractTransactionManager.class ),
-                availabilityGuard, lastUpdateTime, config,
-                scheduler, mock( StringLogger.class ) );
-
+        // WHEN
         puller.init();
         puller.start();
         scheduler.runJob();
 
+        // THEN
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( dataSourceManager, times( 1 ) ).applyTransactions( Matchers.<Response>any() );
+        verify( unpacker, times( 1 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
         memberStateMachine.switchInstanceToMaster();
@@ -232,31 +249,25 @@ public class UpdatePullerTest
 
         verify( lastUpdateTime, times( 2 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 2 ) ).isAvailable( anyLong() );
-        verify( dataSourceManager, times( 2 ) ).applyTransactions( Matchers.<Response>any() );
+        verify( unpacker, times( 2 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 2 ) ).pullUpdates( Matchers.<RequestContext>any() );
     }
 
     @Test
     public void shouldResumePullingUpdatesWhenThisInstanceSwitchesFromSlaveToMaster() throws Throwable
     {
-        OnDemandCallScheduler scheduler = new OnDemandCallScheduler();
-        Config config = mock( Config.class );
-        InstanceId myId = new InstanceId( 1 );
-        when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000l );
-        when( config.get( ClusterSettings.server_id ) ).thenReturn( myId );
-
-        LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
-        AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
-        when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
-        HaXaDataSourceManager dataSourceManager = mock( HaXaDataSourceManager.class );
-        Master master = mock( Master.class );
-
         CapturingHighAvailabilityMemberStateMachine memberStateMachine = new
                 CapturingHighAvailabilityMemberStateMachine( myId );
-        UpdatePuller puller = new UpdatePuller( memberStateMachine, dataSourceManager,
-                master, mock( RequestContextFactory.class ), mock( AbstractTransactionManager.class ),
-                availabilityGuard, lastUpdateTime, config,
-                scheduler, mock( StringLogger.class ) );
+        UpdatePuller puller = new UpdatePuller(
+                memberStateMachine,
+                master,
+                requestContextFactory,
+                availabilityGuard,
+                lastUpdateTime,
+                config,
+                scheduler,
+                stringLogger,
+                unpacker );
 
         puller.init();
         puller.start();
@@ -264,7 +275,7 @@ public class UpdatePullerTest
 
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( dataSourceManager, times( 1 ) ).applyTransactions( Matchers.<Response>any() );
+        verify( unpacker, times( 1 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
         memberStateMachine.switchInstanceToSlave();
@@ -273,13 +284,13 @@ public class UpdatePullerTest
 
         verify( lastUpdateTime, times( 2 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 2 ) ).isAvailable( anyLong() );
-        verify( dataSourceManager, times( 2 ) ).applyTransactions( Matchers.<Response>any() );
+        verify( unpacker, times( 2 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 2 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
         memberStateMachine.switchInstanceToMaster();
 
-        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard, dataSourceManager );
-    }*/
+        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard, unpacker );
+    }
 
     private static class OnDemandCallScheduler extends LifecycleAdapter implements JobScheduler
     {
