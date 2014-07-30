@@ -27,13 +27,17 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.MasterServer;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.helpers.collection.Iterables.iterable;
 
 
 public class MetricsLogExtension implements Lifecycle
@@ -41,16 +45,19 @@ public class MetricsLogExtension implements Lifecycle
     private Monitors monitors;
     private Config config;
     private FileSystemAbstraction fileSystemAbstraction;
+    private final TransactionMonitor transactionMonitor;
     private ByteCounterMetrics networkCounterMetrics;
     private ByteCounterMetrics diskCounterMetrics;
     private ScheduledExecutorService executor;
     private CSVFile csv;
 
-    public MetricsLogExtension( Monitors monitors, Config config, FileSystemAbstraction fileSystemAbstraction )
+    public MetricsLogExtension( Monitors monitors, Config config, FileSystemAbstraction fileSystemAbstraction,
+                                TransactionMonitor transactionMonitor)
     {
         this.monitors = monitors;
         this.config = config;
         this.fileSystemAbstraction = fileSystemAbstraction;
+        this.transactionMonitor = transactionMonitor;
     }
 
     @Override
@@ -73,7 +80,11 @@ public class MetricsLogExtension implements Lifecycle
 
         OutputStream file = fileSystemAbstraction.openAsOutputStream( path, false );
 
-        csv = new CSVFile( file, Iterables.<String, String>iterable( "timestamp", "diskWritten", "diskRead", "networkWritten", "networkRead", "committedTx" ) );
+        csv = new CSVFile( file,
+                Iterables.<String, String>iterable(
+                        "timestamp", "diskWritten", "diskRead", "networkWritten", "networkRead", "committedTx"
+                )
+        );
 
         executor = Executors.newSingleThreadScheduledExecutor();
         executor.scheduleWithFixedDelay( new Runnable()
@@ -84,14 +95,15 @@ public class MetricsLogExtension implements Lifecycle
                 try
                 {
                     csv.print( System.currentTimeMillis(),
-                            diskCounterMetrics.getBytesWritten(), diskCounterMetrics.getBytesRead(),
-                            networkCounterMetrics.getBytesWritten(), networkCounterMetrics.getBytesRead()
-                            // TODO 2.2-future provide a corresponding monitor here
-                            //, txManager.getCommittedTxCount()
+                            diskCounterMetrics.getBytesWritten(),
+                            diskCounterMetrics.getBytesRead(),
+                            networkCounterMetrics.getBytesWritten(),
+                            networkCounterMetrics.getBytesRead(),
+                            transactionMonitor.getNumberOfCommittedTransactions()
                             );
-                    System.out.println( config.get( ClusterSettings.server_id ) + " bytes written:" +
-                            networkCounterMetrics
-                            .getBytesWritten() );
+                    System.out.println( config.get( ClusterSettings.server_id ) +
+                            " bytes written:" +
+                            networkCounterMetrics.getBytesWritten() );
                 }
                 catch ( IOException e )
                 {
