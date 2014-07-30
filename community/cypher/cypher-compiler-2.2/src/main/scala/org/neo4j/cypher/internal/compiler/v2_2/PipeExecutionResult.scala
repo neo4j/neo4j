@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import commands.expressions.StringHelper
+import org.neo4j.cypher.internal.Normal
 import pipes.QueryState
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
@@ -173,5 +174,7 @@ class PipeExecutionResult(val result: ClosingIterator,
   def close() {
     result.close()
   }
+
+  def planType = Normal
 }
 

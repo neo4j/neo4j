@@ -17,31 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.helpers
+package org.neo4j.cypher.internal
 
-import scala.collection.mutable
-
-
-trait MappingBuilder[T] extends mutable.Builder[T => T, T] {
-  def reset(f: => T): this.type
-}
-
-class EagerMappingBuilder[T <: AnyRef](initial: T = null) extends MappingBuilder[T] {
-  private var current: T = initial
-
-  def +=(f: T => T) = {
-    current = f(current)
-    this
-  }
-
-  def result() = current
-
-  def reset(f: => T) = {
-    current = f
-    this
-  }
-
-  def clear() {
-    current = initial
-  }
-}
+sealed trait PlanType
+case object Normal extends PlanType
+case object Explained extends PlanType

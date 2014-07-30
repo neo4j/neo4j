@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import java.io.PrintWriter
+import org.neo4j.cypher.internal.PlanType
 import org.neo4j.graphdb.ResourceIterator
 
 trait ExecutionResult extends Iterator[Map[String, Any]] {
@@ -32,6 +33,7 @@ trait ExecutionResult extends Iterator[Map[String, Any]] {
   def dumpToString(): String
   def queryStatistics(): QueryStatistics
   def executionPlanDescription(): PlanDescription
+  def planType: PlanType
   def close()
 }
 

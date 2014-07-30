@@ -19,22 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import builders._
 import org.neo4j.cypher.internal.compiler.v2_2._
-import commands._
-import pipes._
-import profiler.Profiler
-import org.neo4j.cypher.{CypherException, PeriodicCommitInOpenTransactionException}
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{UpdateCountingQueryContext, CSVResources, PlanContext}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.PeriodicCommitQuery
-import org.neo4j.cypher.internal.compiler.v2_2.commands.Union
-import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.{EagerMappingBuilder, MappingBuilder}
+import org.neo4j.cypher.internal.compiler.v2_2.commands._
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders._
+import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_2.profiler.Profiler
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{PlanContext, QueryContext, UpdateCountingQueryContext}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
+import org.neo4j.cypher.{ExecutionResult, PeriodicCommitInOpenTransactionException}
+import org.neo4j.graphdb.GraphDatabaseService
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -59,14 +54,15 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
   def build(planContext: PlanContext, inputQuery: PreparedQuery): ExecutionPlan = {
     val abstractQuery = inputQuery.abstractQuery
 
-    val PipeInfo(pipe, isUpdating, periodicCommitInfo) = pipeBuilder.producePlan(inputQuery, planContext)
+    val pipeInfo = pipeBuilder.producePlan(inputQuery, planContext)
+    val PipeInfo(pipe, _, periodicCommitInfo) = pipeInfo
 
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
-    val func = getExecutionPlanFunction(pipe, columns, periodicCommitInfo, isUpdating, abstractQuery.getQueryText)
+    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns)
+    val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, resultBuilderFactory)
 
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
-
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new UpdateCountingQueryContext(queryContext), params, true)
       def isPeriodicCommit = periodicCommitInfo.isDefined
     }
@@ -95,14 +91,13 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
       List.empty
   }
 
-  private def getExecutionPlanFunction(pipe: Pipe,
-                                       columns: List[String],
-                                       periodicCommit: Option[PeriodicCommitInfo],
-                                       updating: Boolean,
-                                       queryId: AnyRef) =
+  private def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
+                                       queryId: AnyRef,
+                                       resultBuilderFactory: ExecutionResultBuilderFactory):
+  (QueryContext, Map[String, Any], Boolean) => ExecutionResult =
     (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
-
-      val builder = new ExecutionWorkflowBuilder(queryContext)
+      val builder = resultBuilderFactory.create()
+      builder.setQueryContext(new UpdateCountingQueryContext(queryContext))
 
       if (periodicCommit.isDefined) {
         if (!queryContext.isTopLevelTx)
@@ -110,74 +105,9 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
         builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)
       }
 
-      builder.transformQueryContext(new UpdateCountingQueryContext(_))
-
       if (profile)
         builder.setPipeDecorator(new Profiler())
 
-      builder.runWithQueryState(graph, queryId, params) {
-        state =>
-          val results = pipe.createResults(state)
-          val closingIterator = builder.buildClosingIterator(results)
-          val descriptor = builder.buildDescriptor(pipe, closingIterator.isEmpty)
-
-          if (updating)
-            new EagerPipeExecutionResult(closingIterator, columns, state, descriptor)
-          else
-            new PipeExecutionResult(closingIterator, columns, state, descriptor)
-      }
+      builder.build(graph, queryId, params)
     }
-}
-
-class ExecutionWorkflowBuilder(initialQueryContext: QueryContext) {
-  private val taskCloser = new TaskCloser
-  private var externalResource: ExternalResource = new CSVResources(taskCloser)
-  private val queryContextBuilder: MappingBuilder[QueryContext] = new EagerMappingBuilder(initialQueryContext)
-  private var pipeDecorator: PipeDecorator = NullPipeDecorator
-  private var exceptionDecorator: CypherException => CypherException = identity
-
-  def transformQueryContext(f: QueryContext => QueryContext) {
-    queryContextBuilder += f
-  }
-
-  def setLoadCsvPeriodicCommitObserver(batchRowCount: Long) {
-    val observer = new LoadCsvPeriodicCommitObserver(batchRowCount, externalResource, queryContext)
-    externalResource = observer
-    setExceptionDecorator(observer)
-  }
-
-  def setPipeDecorator(newDecorator: PipeDecorator) {
-    pipeDecorator = newDecorator
-  }
-
-  def setExceptionDecorator(newDecorator: CypherException => CypherException) {
-    exceptionDecorator = newDecorator
-  }
-
-  def buildClosingIterator(results: Iterator[ExecutionContext]) =
-    new ClosingIterator(results, taskCloser, exceptionDecorator)
-
-  def buildDescriptor(pipe: Pipe, isProfileReady: => Boolean) =
-    () => pipeDecorator.decorate(pipe.planDescription, isProfileReady)
-
-  def runWithQueryState[T](graph: GraphDatabaseService, queryId: AnyRef, params: Map[String, Any])(f: QueryState => T) = {
-    taskCloser.addTask(queryContext.close)
-    val state = new QueryState(graph, queryContext, externalResource, params, pipeDecorator, queryId = queryId)
-    try {
-      try {
-        f(state)
-      }
-      catch {
-        case e: CypherException =>
-          throw exceptionDecorator(e)
-      }
-    }
-    catch {
-      case (t: Throwable) =>
-        taskCloser.close(success = false)
-        throw t
-    }
-  }
-
-  private def queryContext = queryContextBuilder.result()
 }

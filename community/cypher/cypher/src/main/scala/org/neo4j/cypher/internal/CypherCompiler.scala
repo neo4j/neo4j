@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.spi.v1_9.{GDSBackedQueryContext => QueryContext
 import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundPlanContext => PlanContext_v2_0, TransactionBoundQueryContext => QueryContext_v2_0}
 import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundPlanContext => PlanContext_v2_1, TransactionBoundQueryContext => QueryContext_v2_1}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundPlanContext => PlanContext_v2_2, TransactionBoundQueryContext => QueryContext_v2_2}
+
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.{KernelAPI, Statement}
@@ -47,7 +48,7 @@ object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
 }
 
-case class PreParsedQuery(statement: String, version: CypherVersion)
+case class PreParsedQuery(statement: String, version: CypherVersion, typ: PlanType)
 
 class CypherCompiler(graph: GraphDatabaseService,
                      kernelAPI: KernelAPI,
@@ -69,7 +70,7 @@ class CypherCompiler(graph: GraphDatabaseService,
   @throws(classOf[SyntaxException])
   def parseQuery(queryText: String): ParsedQuery = {
     val queryWithOptions = optionParser(queryText)
-    val preParsedQuery = preParse(queryWithOptions)
+    val preParsedQuery: PreParsedQuery = preParse(queryWithOptions)
     val version = preParsedQuery.version
     val statementAsText = preParsedQuery.statement
 
@@ -97,7 +98,7 @@ class CypherCompiler(graph: GraphDatabaseService,
           }
         }
 
-      case CypherVersion.v2_1 =>
+      case CypherVersion.v2_1 if preParsedQuery.typ == Normal =>
         new ParsedQuery {
           val preparedQueryForV_2_1 = Try(legacyCompiler2_1.prepareQuery(statementAsText))
           override def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {
@@ -106,7 +107,7 @@ class CypherCompiler(graph: GraphDatabaseService,
             (new ExecutionPlanWrapperForV2_1( planImpl ), extractedParameters)
           }
 
-          override def isPeriodicCommit: Boolean = preparedQueryForV_2_1.map(_.isPeriodicCommit).getOrElse(false)
+          def isPeriodicCommit = preparedQueryForV_2_1.map(_.isPeriodicCommit).getOrElse(false)
         }
 
       case CypherVersion.v2_0 =>
@@ -116,17 +117,17 @@ class CypherCompiler(graph: GraphDatabaseService,
             (new ExecutionPlanWrapperForV2_0(planImpl), Map.empty)
           }
 
-          override def isPeriodicCommit: Boolean = false
+          def isPeriodicCommit = false
         }
 
       case CypherVersion.v1_9 =>
         new ParsedQuery {
-          override def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {
+          def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {
             val planImpl = compiler1_9.prepare(statementAsText)
             (new ExecutionPlanWrapperForV1_9(planImpl), Map.empty)
           }
 
-          override def isPeriodicCommit: Boolean = false
+          def isPeriodicCommit = false
         }
     }
   }
@@ -138,7 +139,12 @@ class CypherCompiler(graph: GraphDatabaseService,
       case Right(None)    => defaultVersion
       case Left(versions) => throw new SyntaxException(s"You must specify only one version for a query (found: $versions)")
     }
-    PreParsedQuery(queryWithOption.statement, version)
+
+    val planType: PlanType = queryWithOption.options.collectFirst {
+      case ExplainOption => Explained
+    }.getOrElse(Normal)
+
+    PreParsedQuery(queryWithOption.statement, version, planType)
   }
 
   private def collectSingle[A, B](input: Seq[A])(pf: PartialFunction[A, B]): Either[Seq[B], Option[B]] =

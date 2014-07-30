@@ -40,18 +40,30 @@ import org.neo4j.graphdb.ResourceIterator;
  */
 public class ExecutionResult implements ResourceIterable<Map<String,Object>>
 {
+    public static enum Type
+    {
+        NORMAL,
+        EXPLAINED
+    }
+
     private org.neo4j.cypher.ExecutionResult inner;
 
     /**
      * Constructor used by the Cypher framework. End-users should not
      * create an ExecutionResult directly, but instead use the result
      * returned from calling {@link ExecutionEngine#execute(String)}.
-     *
-     * @param projection
      */
     public ExecutionResult( org.neo4j.cypher.ExecutionResult projection )
     {
         inner = projection;
+    }
+
+    /**
+     * @return The type of execution result plan available.
+     */
+    public Type planDescriptionType()
+    {
+        return Type.NORMAL;
     }
 
     /**
