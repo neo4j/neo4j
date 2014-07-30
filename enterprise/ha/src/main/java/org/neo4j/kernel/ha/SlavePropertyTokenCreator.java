@@ -19,40 +19,23 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.core.TokenCreator;
 
-public class SlavePropertyTokenCreator implements TokenCreator
+public class SlavePropertyTokenCreator extends AbstractTokenCreator
 {
-    private final Master master;
-    private final RequestContextFactory requestContextFactory;
-    private final TransactionCommittingResponseUnpacker unpacker;
-
-    // TODO 2.2-future write some tests for this, especially the application part
     public SlavePropertyTokenCreator( Master master, RequestContextFactory requestContextFactory,
                                       TransactionCommittingResponseUnpacker unpacker )
     {
-        this.master = master;
-        this.requestContextFactory = requestContextFactory;
-        this.unpacker = unpacker;
+        super( master, requestContextFactory, unpacker );
     }
 
     @Override
-    public int getOrCreate( String name )
+    protected Response<Integer> create( Master master, RequestContext context, String name )
     {
-        Response<Integer> response = master.createPropertyKey( requestContextFactory.newRequestContext(), name );
-        try
-        {
-            return unpacker.unpackResponse( response );
-        }
-        catch( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return master.createPropertyKey( context, name );
     }
 }
