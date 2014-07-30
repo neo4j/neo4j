@@ -46,18 +46,6 @@ trait Literals extends Parser
   def RelTypeName: Rule1[ast.RelTypeName] =
     rule("a rel type name") { SymbolicNameString ~~>> (ast.RelTypeName(_) ) }.memoMismatches
 
-  private def SymbolicNameString: Rule1[String] = UnescapedSymbolicNameString | EscapedSymbolicNameString
-
-  private def UnescapedSymbolicNameString: Rule1[String] = rule("an identifier") {
-    group(IdentifierStart ~ zeroOrMore(IdentifierPart)) ~> (_.toString) ~ !IdentifierPart
-  }
-
-  private def EscapedSymbolicNameString: Rule1[String] = rule("an identifier") {
-    (oneOrMore(
-      ch('`') ~ zeroOrMore(!ch('`') ~ ANY) ~> (_.toString) ~ ch('`')
-    ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
-  }
-
   def Operator: Rule1[ast.Identifier] = rule {
     oneOrMore(OpChar) ~>>> (ast.Identifier(_: String)) ~ !OpChar
   }

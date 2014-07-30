@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.Statement
-import org.neo4j.cypher.CypherVersion
 
-abstract class PreparedQuery(val queryText: String, val version: CypherVersion) {
+trait ParsedQuery {
   def isPeriodicCommit: Boolean
-  def plan(context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any])
+  def plan(statement: Statement): (ExecutionPlan, Map[String, Any])
 }
