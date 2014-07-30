@@ -33,35 +33,8 @@ class CypherParser(monitor: ParserMonitor[ast.Statement]) extends Parser
 
 
   @throws(classOf[SyntaxException])
-  def parse(queryText: String): ast.Statement = {
-    monitor.startParsing(queryText)
-    val parsingResult = ReportingParseRunner(CypherParser.SingleStatement).run(queryText)
-
-    parsingResult.result match {
-      case Some(statement: ast.Statement) =>
-        monitor.finishParsingSuccess(queryText, statement)
-        statement
-
-      case _ =>
-        val parseErrors: List[ParseError] = parsingResult.parseErrors
-        monitor.finishParsingError(queryText, parseErrors)
-        parseErrors.map {
-          error =>
-            val message = if (error.getErrorMessage != null) {
-              error.getErrorMessage
-            } else {
-              error match {
-                case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
-                case _ => error.getClass.getSimpleName
-              }
-            }
-            val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
-            throw new SyntaxException(s"$message ($position)", queryText, position.offset)
-        }
-
-        throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
-    }
-  }
+  def parse(queryText: String): ast.Statement =
+    parseOrThrow(queryText, CypherParser.SingleStatement, Some(monitor))
 }
 
 object CypherParser extends Parser with Statement with Expressions {

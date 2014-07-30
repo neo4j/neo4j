@@ -48,7 +48,7 @@ object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
 }
 
-case class PreParsedQuery(statement: String, version: CypherVersion, typ: PlanType)
+case class PreParsedQuery(statement: String, version: CypherVersion, planType: PlanType)
 
 class CypherCompiler(graph: GraphDatabaseService,
                      kernelAPI: KernelAPI,
@@ -76,7 +76,7 @@ class CypherCompiler(graph: GraphDatabaseService,
 
     version match {
       case CypherVersion.experimental =>
-        val preparedQueryForV_experimental = Try(ronjaCompiler2_2.prepareQuery(statementAsText))
+        val preparedQueryForV_experimental = Try(ronjaCompiler2_2.prepareQuery(statementAsText, preParsedQuery.planType))
         new ParsedQuery {
           def isPeriodicCommit = preparedQueryForV_experimental.map(_.isPeriodicCommit).getOrElse(false)
           def plan(statement: Statement) = {
@@ -88,7 +88,7 @@ class CypherCompiler(graph: GraphDatabaseService,
 
       case CypherVersion.v2_2 =>
         new ParsedQuery {
-          val preparedQueryForV_2_2 = Try(legacyCompiler2_2.prepareQuery(statementAsText))
+          val preparedQueryForV_2_2 = Try(legacyCompiler2_2.prepareQuery(statementAsText, preParsedQuery.planType))
           def isPeriodicCommit = preparedQueryForV_2_2.map(_.isPeriodicCommit).getOrElse(false)
 
           def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {
@@ -98,7 +98,7 @@ class CypherCompiler(graph: GraphDatabaseService,
           }
         }
 
-      case CypherVersion.v2_1 if preParsedQuery.typ == Normal =>
+      case CypherVersion.v2_1 if preParsedQuery.planType == Normal =>
         new ParsedQuery {
           val preparedQueryForV_2_1 = Try(legacyCompiler2_1.prepareQuery(statementAsText))
           override def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {

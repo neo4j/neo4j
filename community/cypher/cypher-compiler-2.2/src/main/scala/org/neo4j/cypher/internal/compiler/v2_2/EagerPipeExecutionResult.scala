@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import org.neo4j.cypher.internal.PlanType
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
 import pipes.QueryState
 import org.neo4j.cypher.ExecutionResult
@@ -26,8 +27,9 @@ import org.neo4j.cypher.ExecutionResult
 class EagerPipeExecutionResult(result: ClosingIterator,
                                columns: List[String],
                                state: QueryState,
-                               planDescriptor: () => PlanDescription)
-  extends PipeExecutionResult(result, columns, state, planDescriptor) {
+                               planDescriptor: () => PlanDescription,
+                               planType: PlanType)
+  extends PipeExecutionResult(result, columns, state, planDescriptor, planType) {
 
   override val eagerResult = result.toList
   val inner = eagerResult.iterator
@@ -45,7 +47,7 @@ object RewindableExecutionResult {
   def apply(inner: ExecutionResult) = inner match {
     case _: EagerPipeExecutionResult => inner
     case other: PipeExecutionResult =>
-      new EagerPipeExecutionResult(other.result, other.columns, other.state, other.executionPlanBuilder)
+      new EagerPipeExecutionResult(other.result, other.columns, other.state, other.executionPlanBuilder, other.planType)
     case _ => inner
   }
 }

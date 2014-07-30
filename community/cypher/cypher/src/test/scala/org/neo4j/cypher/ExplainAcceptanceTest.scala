@@ -17,23 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2
+package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.PlanType
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_2.commands.AbstractQuery
-import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
+import org.neo4j.cypher.internal.{Explained, Normal}
 
-case class PreparedQuery(statement: Statement,
-                         abstractQuery: AbstractQuery,
-                         semanticTable: SemanticTable,
-                         queryText: String,
-                         extractedParams: Map[String, Any],
-                         planType: PlanType) {
+class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
+  test("normal query is marked as such") {
+    createNode()
+    val result = execute("match n return n")
 
-  def isPeriodicCommit = statement match {
-    case ast.Query(Some(_), _) => true
-    case _ => false
+    result.planType should equal(Normal)
+    result shouldNot be(empty)
   }
 
+  test("explain query is marked as such") {
+    createNode()
+    val result = execute("explain match n return n")
+
+    result.planType should equal(Explained)
+    result should be(empty)
+  }
 }

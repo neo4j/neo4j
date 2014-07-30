@@ -19,23 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import commands.expressions.StringHelper
-import org.neo4j.cypher.internal.Normal
-import pipes.QueryState
-import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.graphdb.ResourceIterator
-import scala.collection.JavaConverters._
-import java.io.{StringWriter, PrintWriter}
-import collection.immutable.{Map => ImmutableMap}
-import collection.Map
+import java.io.{PrintWriter, StringWriter}
 import java.util
-import org.neo4j.cypher.internal.helpers.CollectionSupport
+
+import org.neo4j.cypher._
+import org.neo4j.cypher.internal.PlanType
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
+import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.graphdb.ResourceIterator
+
+import scala.collection.JavaConverters._
+import scala.collection.Map
+import scala.collection.immutable.{Map => ImmutableMap}
 
 class PipeExecutionResult(val result: ClosingIterator,
                           val columns: List[String], val state: QueryState,
-                          val executionPlanBuilder: () => PlanDescription)
+                          val executionPlanBuilder: () => PlanDescription,
+                          val planType: PlanType)
   extends ExecutionResult
   with CollectionSupport
   with StringHelper {
@@ -174,7 +177,5 @@ class PipeExecutionResult(val result: ClosingIterator,
   def close() {
     result.close()
   }
-
-  def planType = Normal
 }
 

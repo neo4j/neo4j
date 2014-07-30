@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import org.neo4j.cypher.internal.Normal
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ExecutionPlan
@@ -47,7 +48,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.planQuery("return 42", planContext) }
+    graph.inTx { compiler.planQuery("return 42", planContext, Normal) }
 
     counter.counts should equal(CacheCounts(hits = 0, misses = 1, flushes = 1))
   }
@@ -57,8 +58,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.planQuery("return 42", planContext) }
-    graph.inTx { compiler.planQuery("return 42", planContext) }
+    graph.inTx { compiler.planQuery("return 42", planContext, Normal) }
+    graph.inTx { compiler.planQuery("return 42", planContext, Normal) }
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
@@ -68,9 +69,9 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.planQuery("return 42", planContext) }
+    graph.inTx { compiler.planQuery("return 42", planContext, Normal) }
     graph.createConstraint("Person", "id")
-    graph.inTx { compiler.planQuery("return 42", planContext) }
+    graph.inTx { compiler.planQuery("return 42", planContext, Normal) }
 
     counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 2))
   }

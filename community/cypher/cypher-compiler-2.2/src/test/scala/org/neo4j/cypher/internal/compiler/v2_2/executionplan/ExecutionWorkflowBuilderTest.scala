@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.neo4j.cypher.ExecutionResult
+import org.neo4j.cypher.internal.{Explained, Normal}
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.EagerPipeExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.{ExplainExecutionResult, EagerPipeExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.graphdb.GraphDatabaseService
@@ -36,7 +37,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val graph = mock[GraphDatabaseService]
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None), List.empty)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None), List.empty, Normal)
 
     // WHEN
     val builder = builderFactory.create()
@@ -53,7 +54,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val graph = mock[GraphDatabaseService]
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None), List.empty)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None), List.empty, Normal)
 
     // WHEN
     val builder = builderFactory.create()
@@ -62,5 +63,22 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     // THEN
     val result: ExecutionResult = builder.build(graph, "42", Map.empty)
     result should not be an [EagerPipeExecutionResult]
+  }
+
+  test("produces explain results for EXPLAIN queries") {
+    // GIVEN
+    val pipe = mock[Pipe]
+    when(pipe.createResults(any())).thenReturn(Iterator.empty)
+    val graph = mock[GraphDatabaseService]
+    val context = mock[QueryContext]
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None), List.empty, Explained)
+
+    // WHEN
+    val builder = builderFactory.create()
+    builder.setQueryContext(context)
+
+    // THEN
+    val result: ExecutionResult = builder.build(graph, "42", Map.empty)
+    result shouldBe a [ExplainExecutionResult]
   }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
+import org.neo4j.cypher.internal.PlanType
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
@@ -58,7 +59,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
     val PipeInfo(pipe, _, periodicCommitInfo) = pipeInfo
 
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
-    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns)
+    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, inputQuery.planType)
     val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, resultBuilderFactory)
 
     new ExecutionPlan {

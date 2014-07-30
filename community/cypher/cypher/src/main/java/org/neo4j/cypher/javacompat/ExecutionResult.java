@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cypher.internal.Normal$;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
@@ -40,12 +41,6 @@ import org.neo4j.graphdb.ResourceIterator;
  */
 public class ExecutionResult implements ResourceIterable<Map<String,Object>>
 {
-    public static enum Type
-    {
-        NORMAL,
-        EXPLAINED
-    }
-
     private org.neo4j.cypher.ExecutionResult inner;
 
     /**
@@ -59,11 +54,11 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>
     }
 
     /**
-     * @return The type of execution result plan available.
+     * @return Whether the query is requesting a plan description to be returned.
      */
-    public Type planDescriptionType()
+    public boolean planDescriptionRequested()
     {
-        return Type.NORMAL;
+        return inner.planType() != Normal$.MODULE$;
     }
 
     /**

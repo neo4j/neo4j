@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 
-import org.neo4j.cypher.internal.LRUCache
+import org.neo4j.cypher.internal.{PlanType, LRUCache}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.AbstractQuery
@@ -101,16 +101,16 @@ case class CypherCompiler(parser: CypherParser,
                           cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[ast.Statement, ExecutionPlan]],
                           monitors: Monitors) {
 
-  def planQuery(queryText: String, context: PlanContext): (ExecutionPlan, Map[String, Any]) =
-    planPreparedQuery(prepareQuery(queryText), context)
+  def planQuery(queryText: String, context: PlanContext, planType: PlanType): (ExecutionPlan, Map[String, Any]) =
+    planPreparedQuery(prepareQuery(queryText, planType), context)
 
-  def prepareQuery(queryText: String): PreparedQuery = {
+  def prepareQuery(queryText: String, planType: PlanType): PreparedQuery = {
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, parsedStatement)
     val table = semanticChecker.check(queryText, parsedStatement)
     val query: AbstractQuery = rewrittenStatement.asQuery.setQueryText(queryText)
-    PreparedQuery(rewrittenStatement, query, table, queryText, extractedParams)
+    PreparedQuery(rewrittenStatement, query, table, queryText, extractedParams, planType)
   }
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
