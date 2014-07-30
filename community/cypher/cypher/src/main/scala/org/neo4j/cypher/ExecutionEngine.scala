@@ -19,21 +19,20 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal._
-import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
-import org.neo4j.kernel.api
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.impl.util.StringLogger
-import scala.collection.JavaConverters._
 import java.util.{Map => JavaMap}
-import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.graphdb.config.Setting
-import org.neo4j.cypher.internal.compiler.v2_2.{MonitoringCacheAccessor, CypherCacheMonitor}
 
-import org.neo4j.cypher.internal.CypherCompiler
-import org.neo4j.cypher.internal.TransactionInfo
+import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserMonitor
+import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_2.{CypherCacheMonitor, MonitoringCacheAccessor}
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.util.StringLogger
+import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api}
+
+import scala.collection.JavaConverters._
 
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 
@@ -51,7 +50,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
-  private val preparedQueries = new LRUCache[String, PreparedQuery](getPlanCacheSize)
+  private val parsedQueries = new LRUCache[String, ParsedQuery](getPlanCacheSize)
 
   @throws(classOf[SyntaxException])
   def profile(query: String): ExecutionResult = profile(query, Map[String, Any]())
@@ -78,9 +77,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   }
 
   @throws(classOf[SyntaxException])
-  protected def prepareQuery(queryText: String): PreparedQuery = preparedQueries.getOrElseUpdate( queryText,
-    compiler.prepareQuery( queryText )
-  )
+  protected def parseQuery(queryText: String): ParsedQuery =
+    parsedQueries.getOrElseUpdate( queryText, compiler.parseQuery( queryText ) )
 
   @throws(classOf[SyntaxException])
   protected def planQuery(queryText: String): (ExecutionPlan, Map[String, Any], TransactionInfo) = {
@@ -100,8 +98,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         })
         cacheAccessor.getOrElseUpdate(cache)(queryText, {
           touched = true
-          val preparedQuery = prepareQuery(queryText)
-          val queryPlan = preparedQuery.plan(graph, statement)
+          val parsedQuery = parseQuery(queryText)
+          val queryPlan = parsedQuery.plan(statement)
           queryPlan
         })
       }
@@ -148,7 +146,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     val version = optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name
     )
-    new CypherCompiler(graph, kernel, kernelMonitors, CypherVersion(version))
+    val optionParser = CypherOptionParser(kernelMonitors.newMonitor(classOf[ParserMonitor[CypherQueryWithOptions]]))
+    new CypherCompiler(graph, kernel, kernelMonitors, CypherVersion(version), optionParser)
   }
 
   private def getPlanCacheSize: Int =

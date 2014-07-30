@@ -258,7 +258,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
         |RETURN reduce(weight=0, r in relationships(topRoute) : weight+r.cost) AS score
         |ORDER BY score ASC LIMIT 1
       """.stripMargin,
-      "reduce(...) requires '| expression' (an accumulation expression) (line 4, column 8)"
+      "reduce(...) requires '| expression' (an accumulation expression) (line 3, column 8)"
     )
   }
 

@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.parser
 
-import org.neo4j.cypher.internal.compiler.v2_2._
+
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.compiler.v2_2.{ast, _}
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.parboiled.errors.{InvalidInputError, ParseError}
 import org.parboiled.scala._
 import org.parboiled.errors.{ParseError, InvalidInputError}
-import org.neo4j.cypher.internal.compiler.v2_2.ast
 
-class CypherParser(monitor: ParserMonitor) extends Parser
+class CypherParser(monitor: ParserMonitor[ast.Statement]) extends Parser
   with Statement
   with Expressions {
 
@@ -69,8 +70,8 @@ object CypherParser extends Parser with Statement with Expressions {
   }
 }
 
-trait ParserMonitor {
+trait ParserMonitor[T] {
   def startParsing(query: String)
-  def finishParsingSuccess(query: String, statement: ast.Statement)
+  def finishParsingSuccess(query: String, result: T)
   def finishParsingError(query:String, errors: Seq[ParseError])
 }

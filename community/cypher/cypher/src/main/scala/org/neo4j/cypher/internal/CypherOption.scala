@@ -19,19 +19,10 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.impl.util.StringLogger
-import org.neo4j.cypher.ExecutionEngine
+sealed trait CypherOption
 
-/**
- * This is used by {@link org.neo4j.cypher.javacompat.internal.ServerExecutionEngine} to provide additional
- * API to REST server
- *
- */
-class ServerExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL)
-  extends ExecutionEngine(graph, logger) {
-
-  def isPeriodicCommit(query: String) = parseQuery(query).isPeriodicCommit
-}
+final case class VersionOption(version: String) extends CypherOption
+case object ProfileOption extends CypherOption
+case object ExplainOption extends CypherOption
 
 
