@@ -22,11 +22,9 @@ package org.neo4j.kernel.ha;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -48,7 +46,6 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Factory;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.DatabaseAvailability;
@@ -82,7 +79,6 @@ import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
 import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
-import org.neo4j.kernel.ha.transaction.DenseNodeTransactionTranslator;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -98,7 +94,6 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -200,20 +195,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected void createDatabaseAvailability()
     {
         // Skip this, it's done manually in create() to ensure it is as late as possible
-    }
-
-    @Override
-    protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
-    {
-        return new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
-
-        {
-            @Override
-            public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
-            {
-                return new DenseNodeTransactionTranslator( neoStore );
-            }
-        };
     }
 
     public void start()

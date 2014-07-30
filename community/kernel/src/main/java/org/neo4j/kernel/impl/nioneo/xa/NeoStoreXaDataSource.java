@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,7 +35,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -300,7 +298,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                  RelationshipTypeTokenHolder relationshipTypeTokens, Locks lockManager,
                                  SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
                                  IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
-                                 Function <NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory,
                                  StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
                                  KernelHealth kernelHealth, TxIdGenerator txIdGenerator,
                                  TransactionHeaderInformationFactory transactionHeaderInformationFactory,
@@ -494,7 +491,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                                 new NeoStoreInjectedTransactionValidator( integrityValidator ), false ));
 
             /*
-             * This is used by two legacy indexes and constraint indexes whenever a transaction is to be spawned
+             * This is used by legacy indexes and constraint indexes whenever a transaction is to be spawned
              * from within an existing transaction. It smells, and we should look over alternatives when time permits.
              */
             Provider<KernelAPI> kernelProvider = new Provider<KernelAPI>()

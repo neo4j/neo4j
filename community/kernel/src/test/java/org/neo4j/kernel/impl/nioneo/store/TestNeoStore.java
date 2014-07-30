@@ -109,6 +109,8 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
 
@@ -220,14 +222,7 @@ public class TestNeoStore
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
                 mock( RelationshipTypeTokenHolder.class), locks,
                 mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class), IndexingService.NO_MONITOR, fs,
-                new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
-                {
-                    @Override
-                    public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
-                    {
-                        return Functions.<List<LogEntry>>identity();
-                    }
-                }, mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), kernelHealth,
+                mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), kernelHealth,
                 new DefaultTxIdGenerator( new Provider<TransactionIdStore>()
                 {
                     @Override
