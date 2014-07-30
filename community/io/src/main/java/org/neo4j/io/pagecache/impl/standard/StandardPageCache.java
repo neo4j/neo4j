@@ -135,7 +135,7 @@ public class StandardPageCache implements PageCache, Runnable
             throw new IllegalStateException(
                     "Cannot close the PageCache while files are still mapped." );
         }
-        
+
         closed = true;
     }
 

@@ -179,18 +179,30 @@ class MuninnPage extends StampedLock implements Page
     /** Increment the usage stamp to at most 5. */
     public void incrementUsage()
     {
-        if ( usageStamp < 5 )
+        int usage = UnsafeUtil.getIntVolatile( this, usageStampOffset );
+        if ( usage < 5 )
         {
-            UnsafeUtil.getAndAddInt( this, usageStampOffset, 1 );
+            // A Java 8 alternative:
+//            UnsafeUtil.getAndAddInt( this, usageStampOffset, 1 );
+
+            // Java 7:
+            UnsafeUtil.putIntVolatile( this, usageStampOffset, usage + 1 );
         }
     }
 
     /** Decrement the usage stamp. Returns true if it reaches 0. */
     public boolean decrementUsage()
     {
-        if ( usageStamp > 0 )
+        int usage = UnsafeUtil.getIntVolatile( this, usageStampOffset );
+        if ( usage > 0 )
         {
-            return UnsafeUtil.getAndAddInt( this, usageStampOffset, -1 ) <= 1;
+            // A Java 8 alternative:
+//            return UnsafeUtil.getAndAddInt( this, usageStampOffset, -1 ) <= 1;
+
+            // Java 7:
+            usage--;
+            UnsafeUtil.putIntVolatile( this, usageStampOffset, usage );
+            return usage == 0;
         }
         return true;
     }

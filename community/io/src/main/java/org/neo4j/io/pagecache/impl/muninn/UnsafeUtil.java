@@ -136,4 +136,14 @@ class UnsafeUtil
     {
         unsafe.putLong( obj, offset, value );
     }
+
+    public static int getIntVolatile( Object obj, long offset )
+    {
+        return unsafe.getIntVolatile( obj, offset );
+    }
+
+    public static void putIntVolatile( Object obj, long offset, int value )
+    {
+        unsafe.putIntVolatile( obj, offset, value );
+    }
 }
