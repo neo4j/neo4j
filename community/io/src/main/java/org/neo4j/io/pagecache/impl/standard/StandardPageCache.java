@@ -84,6 +84,7 @@ public class StandardPageCache implements PageCache, Runnable
 
         if ( pagedFile.pageSize() != filePageSize )
         {
+            pagedFile.releaseReference(); // Oops, can't use it after all.
             String msg = "Cannot map file " + file + " with " +
                     "filePageSize " + filePageSize + " bytes, " +
                     "because it has already been mapped with a " +
@@ -124,16 +125,18 @@ public class StandardPageCache implements PageCache, Runnable
     @Override
     public synchronized void close() throws IOException
     {
-        // TODO what do we do if people still have files mapped and are using them?
-        // We can't just close their files out from under them. It would be rude.
-        // We also cannot just wait for them to unmap their files, because this method
-        // synchronises on the same lock that unmap does.
-        closed = true;
-        table.flush();
-        for ( StandardPagedFile file : pagedFiles.values() )
+        if ( closed )
         {
-            file.close();
+            return;
         }
+
+        if ( !pagedFiles.isEmpty() )
+        {
+            throw new IllegalStateException(
+                    "Cannot close the PageCache while files are still mapped." );
+        }
+        
+        closed = true;
     }
 
     private void assertNotClosed()

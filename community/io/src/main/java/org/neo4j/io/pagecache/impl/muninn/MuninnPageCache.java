@@ -287,13 +287,13 @@ public class MuninnPageCache implements PageCache, Runnable
             return;
         }
 
-        closed = true;
-        FileMapping file = mappedFiles;
-        while ( file != null )
+        if ( mappedFiles != null )
         {
-            file.pagedFile.close();
-            file = file.next;
+            throw new IllegalStateException(
+                    "Cannot close the PageCache while files are still mapped." );
         }
+
+        closed = true;
 
         for ( int i = 0; i < pages.length; i++ )
         {

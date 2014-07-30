@@ -131,4 +131,9 @@ class UnsafeUtil
     {
         return unsafe != null;
     }
+
+    public static void putLong( Object obj, long offset, long value )
+    {
+        unsafe.putLong( obj, offset, value );
+    }
 }

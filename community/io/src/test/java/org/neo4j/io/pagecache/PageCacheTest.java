@@ -250,6 +250,10 @@ public abstract class PageCacheTest<T extends PageCache>
                 recordId += recordsPerFilePage;
             }
         }
+        finally
+        {
+            cache.unmap( file );
+        }
 
         assertThat( recordId, is( recordCount ) );
     }
@@ -272,6 +276,10 @@ public abstract class PageCacheTest<T extends PageCache>
                 verifyRecordsMatchExpected( cursor );
                 recordId += recordsPerFilePage;
             }
+        }
+        finally
+        {
+            cache.unmap( file );
         }
 
         assertThat( recordId, is( recordCount - (10 * recordsPerFilePage) ) );
@@ -298,6 +306,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
 
         pagedFile.flush();
+        pageCache.unmap( file );
 
         StoreChannel channel = fs.open( file, "r" );
         ByteBuffer observation = ByteBuffer.allocate( recordSize );
@@ -332,7 +341,7 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
 
-        cache.flush();
+        cache.unmap( file );
 
         StoreChannel channel = fs.open( file, "r" );
         ByteBuffer observation = ByteBuffer.allocate( recordSize );
@@ -349,12 +358,16 @@ public abstract class PageCacheTest<T extends PageCache>
     @Test( timeout = 1000 )
     public void firstNextCallMustReturnFalseWhenTheFileIsEmptyAndNoGrowIsSpecified() throws IOException
     {
-        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
-        PagedFile pagedFile = cache.map( file, filePageSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
         {
             assertFalse( cursor.next() );
+        }
+        finally
+        {
+            pageCache.unmap( file );
         }
     }
 
@@ -373,6 +386,7 @@ public abstract class PageCacheTest<T extends PageCache>
             verifyRecordsMatchExpected( cursor );
             assertFalse( cursor.next() );
         }
+        cache.unmap( file );
     }
 
     @Test( timeout = 1000 )
@@ -384,22 +398,29 @@ public abstract class PageCacheTest<T extends PageCache>
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
 
-        //noinspection EmptyTryBlock
-        try ( PageCursor ignore = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        try
         {
-            // No call to next, so the page should never get pinned in the first place, nor
-            // should the page corruption take place.
-        }
+            //noinspection EmptyTryBlock
+            try ( PageCursor ignore = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+            {
+                // No call to next, so the page should never get pinned in the first place, nor
+                // should the page corruption take place.
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            {
+                // We didn't call next before, so the page and its records should still be fine
+                cursor.next();
+                verifyRecordsMatchExpected( cursor );
+            }
+        }
+        finally
         {
-            // We didn't call next before, so the page and its records should still be fine
-            cursor.next();
-            verifyRecordsMatchExpected( cursor );
+            pageCache.unmap( file );
         }
     }
 
-    @Test//( timeout = 1000 )
+    @Test( timeout = 1000 )
     public void rewindMustStartScanningOverFromTheBeginning() throws IOException
     {
         int numberOfRewindsToTest = 10;
@@ -424,6 +445,10 @@ public abstract class PageCacheTest<T extends PageCache>
                 cursor.rewind();
             }
         }
+        finally
+        {
+            pageCache.unmap( file );
+        }
 
         assertThat( actualPageCounter, is( expectedPageCounterResult ) );
     }
@@ -443,8 +468,8 @@ public abstract class PageCacheTest<T extends PageCache>
     public void dirtyPagesMustBeFlushedWhenTheCacheIsClosed() throws IOException
     {
         ByteBuffer buf = ByteBuffer.allocate( recordSize );
-        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
-        PagedFile pagedFile = cache.map( file, filePageSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
 
         long startPageId = 0;
         long endPageId = recordCount / recordsPerFilePage;
@@ -458,8 +483,11 @@ public abstract class PageCacheTest<T extends PageCache>
                 } while ( cursor.retry() );
             }
         }
-
-        cache.close();
+        finally
+        {
+            pageCache.unmap( file );
+            pageCache.close();
+        }
 
         StoreChannel channel = fs.open( file, "r" );
         ByteBuffer observation = ByteBuffer.allocate( recordSize );
@@ -509,7 +537,14 @@ public abstract class PageCacheTest<T extends PageCache>
     {
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
-        pagedFile.io( 0, 0 ); // this must throw
+        try
+        {
+            pagedFile.io( 0, 0 ); // this must throw
+        }
+        finally
+        {
+            cache.unmap( file );
+        }
     }
 
     @Test( timeout = 1000, expected = IllegalArgumentException.class )
@@ -517,7 +552,14 @@ public abstract class PageCacheTest<T extends PageCache>
     {
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
-        pagedFile.io( 0, PF_NO_FAULT ); // this must throw
+        try
+        {
+            pagedFile.io( 0, PF_NO_FAULT ); // this must throw
+        }
+        finally
+        {
+            cache.unmap( file );
+        }
     }
 
     @Test( timeout = 1000, expected = IllegalArgumentException.class )
@@ -525,7 +567,14 @@ public abstract class PageCacheTest<T extends PageCache>
     {
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
-        pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK ); // this must throw
+        try
+        {
+            pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK ); // this must throw
+        }
+        finally
+        {
+            cache.unmap( file );
+        }
     }
 
     @Test( timeout = 1000 )
@@ -563,8 +612,12 @@ public abstract class PageCacheTest<T extends PageCache>
         try ( PageCursor cursorB = pagedFile.io( 1, PF_EXCLUSIVE_LOCK ) )
         {
             assertTrue( cursorB.next() );
+            unpinLatch.countDown();
         }
-        unpinLatch.countDown();
+        finally
+        {
+            pageCache.unmap( file );
+        }
         Exception e = exceptionRef.get();
         if ( e != null )
         {
@@ -616,6 +669,7 @@ public abstract class PageCacheTest<T extends PageCache>
             } while ( cursor.retry() );
             assertThat( bytes, byteArray( new byte[]{5, 6, 7, 8} ) );
         }
+        cache.unmap( file );
     }
 
     @Test( timeout = 1000 )
@@ -630,6 +684,10 @@ public abstract class PageCacheTest<T extends PageCache>
             assertThat( cursor.getCurrentPageId(), is( 0L ) );
             assertTrue( cursor.next() );
             assertThat( cursor.getCurrentPageId(), is( 1L ) );
+        }
+        finally
+        {
+            cache.unmap( file );
         }
     }
 
@@ -648,6 +706,10 @@ public abstract class PageCacheTest<T extends PageCache>
             assertTrue( cursor.next() );
             assertThat( cursor.getCurrentPageId(), is( 5L ) );
         }
+        finally
+        {
+            cache.unmap( file );
+        }
     }
 
     @Test( timeout = 1000 )
@@ -664,6 +726,10 @@ public abstract class PageCacheTest<T extends PageCache>
             cursor.rewind();
             assertThat( cursor.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
         }
+        finally
+        {
+            cache.unmap( file );
+        }
     }
 
     @Test( timeout = 1000 )
@@ -674,50 +740,57 @@ public abstract class PageCacheTest<T extends PageCache>
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
 
-        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        try
         {
-            assertTrue( cursor.next() );
-            assertTrue( cursor.next() );
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                assertTrue( cursor.next() );
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK ) )
-        {
-            assertTrue( cursor.next() );
-            assertTrue( cursor.next() );
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
-        {
-            assertTrue( cursor.next() );
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 1L, PF_SHARED_LOCK ) )
-        {
-            assertTrue( cursor.next() );
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 1L, PF_SHARED_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 2L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
-        {
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 2L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 2L, PF_SHARED_LOCK ) )
-        {
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 2L, PF_SHARED_LOCK ) )
+            {
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 3L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
-        {
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 3L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 3L, PF_SHARED_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 3L, PF_SHARED_LOCK ) )
+            {
+                assertFalse( cursor.next() );
+            }
+        }
+        finally
         {
-            assertFalse( cursor.next() );
+            cache.unmap( file );
         }
     }
 
@@ -774,6 +847,8 @@ public abstract class PageCacheTest<T extends PageCache>
         {
             assertFalse( cursor.next() );
         }
+
+        cache.unmap( file );
     }
 
     @Test( timeout = 1000 )
@@ -784,26 +859,33 @@ public abstract class PageCacheTest<T extends PageCache>
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
 
-        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        try
         {
-            assertTrue( cursor.next() );
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK ) )
-        {
-            assertTrue( cursor.next() );
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
-        {
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 1L, PF_SHARED_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 1L, PF_SHARED_LOCK ) )
+            {
+                assertFalse( cursor.next() );
+            }
+        }
+        finally
         {
-            assertFalse( cursor.next() );
+            pageCache.unmap( file );
         }
     }
 
@@ -815,26 +897,33 @@ public abstract class PageCacheTest<T extends PageCache>
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
 
-        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        try
         {
-            assertTrue( cursor.next() );
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK ) )
-        {
-            assertTrue( cursor.next() );
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
-        {
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 1L, PF_SHARED_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 1L, PF_SHARED_LOCK ) )
+            {
+                assertFalse( cursor.next() );
+            }
+        }
+        finally
         {
-            assertFalse( cursor.next() );
+            pageCache.unmap( file );
         }
     }
 
@@ -844,26 +933,33 @@ public abstract class PageCacheTest<T extends PageCache>
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
 
-        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        try
         {
-            assertFalse( cursor.next() );
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                assertFalse( cursor.next() );
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK ) )
-        {
-            assertFalse( cursor.next() );
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK ) )
+            {
+                assertFalse( cursor.next() );
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
-        {
-            assertFalse( cursor.next() );
-        }
+            try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                assertFalse( cursor.next() );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 1L, PF_SHARED_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 1L, PF_SHARED_LOCK ) )
+            {
+                assertFalse( cursor.next() );
+            }
+        }
+        finally
         {
-            assertFalse( cursor.next() );
+            pageCache.unmap( file );
         }
     }
 
@@ -910,6 +1006,7 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
         assertThat( pagesChecked, is( initialPages + pagesToAdd ) );
+        cache.unmap( file );
     }
 
     @Test( timeout = 1000 )
@@ -928,6 +1025,10 @@ public abstract class PageCacheTest<T extends PageCache>
             {
                 pagesChecked++;
             }
+        }
+        finally
+        {
+            cache.unmap( file );
         }
         assertThat( pagesChecked, is( initialPages ) );
     }
@@ -1003,6 +1104,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
 
         writerFuture.cancel( true );
+        pageCache.unmap( file );
     }
 
     @Test( timeout = 1000 )
@@ -1024,6 +1126,10 @@ public abstract class PageCacheTest<T extends PageCache>
                 verifyRecordsMatchExpected( cursor );
             }
         }
+        finally
+        {
+            pageCache.unmap( file );
+        }
     }
 
     @Test( timeout = 1000 )
@@ -1034,16 +1140,23 @@ public abstract class PageCacheTest<T extends PageCache>
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        try
         {
-            assertFalse( cursor.next( 2 ) );
-            assertTrue( cursor.next( 1 ) );
-        }
+            try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                assertFalse( cursor.next( 2 ) );
+                assertTrue( cursor.next( 1 ) );
+            }
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            {
+                assertFalse( cursor.next( 2 ) );
+                assertTrue( cursor.next( 1 ) );
+            }
+        }
+        finally
         {
-            assertFalse( cursor.next( 2 ) );
-            assertTrue( cursor.next( 1 ) );
+            cache.unmap( file );
         }
     }
 
@@ -1087,6 +1200,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 verifyRecordsMatchExpected( cursor );
             }
         }
+        cache.unmap( file );
     }
 
     @Test( timeout = 10000 )
@@ -1217,6 +1331,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 future.cancel( true );
             }
         }
+        cache.unmap( file );
     }
 
     @Test(timeout = 1000)
@@ -1287,7 +1402,14 @@ public abstract class PageCacheTest<T extends PageCache>
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         pageCache.map( file, filePageSize );
-        pageCache.map( file, filePageSize - 1 );
+        try
+        {
+            pageCache.map( file, filePageSize - 1 );
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
     }
 
     @Test( timeout = 1000, expected = IllegalArgumentException.class )
@@ -1295,7 +1417,14 @@ public abstract class PageCacheTest<T extends PageCache>
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         pageCache.map( file, filePageSize );
-        pageCache.map( file, filePageSize + 1 );
+        try
+        {
+            pageCache.map( file, filePageSize + 1 );
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
     }
 
     @Test( timeout = 1000)
@@ -1364,7 +1493,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 verifyRecordsMatchExpected( cursor );
             }
         }
-
+        pageCache.unmap( file );
         assertFalse( observedWrite.get() );
     }
 
@@ -1480,6 +1609,7 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( monitor.countEvictions(),
                 both( greaterThanOrEqualTo( countedPages - maxPages ) )
                         .and( lessThan( countedPages ) ) );
+        pageCache.unmap( file );
     }
 
     @Test( timeout = 1000 )
@@ -1505,6 +1635,10 @@ public abstract class PageCacheTest<T extends PageCache>
                 writeRecords( cursor );
             }
         }
+        finally
+        {
+            pageCache.unmap( file );
+        }
 
         assertThat( monitor.countPins(), is( pagesToGenerate * 2 ) );
         assertThat( monitor.countTakenExclusiveLocks(), is( pagesToGenerate * 2 ) );
@@ -1529,7 +1663,14 @@ public abstract class PageCacheTest<T extends PageCache>
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
 
         PagedFile pagedFile = pageCache.map( file, filePageSize );
-        assertThat( pagedFile.getLastPageId(), is( -1L ) );
+        try
+        {
+            assertThat( pagedFile.getLastPageId(), is( -1L ) );
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
     }
 
     @Test
@@ -1543,6 +1684,7 @@ public abstract class PageCacheTest<T extends PageCache>
 
         PagedFile pagedFile = pageCache.map( file, filePageSize );
         assertThat( pagedFile.getLastPageId(), is( 0L ) );
+        pageCache.unmap( file );
     }
 
     @Test
@@ -1554,7 +1696,14 @@ public abstract class PageCacheTest<T extends PageCache>
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
 
         PagedFile pagedFile = pageCache.map( file, filePageSize );
-        assertThat( pagedFile.getLastPageId(), is( 1L ) );
+        try
+        {
+            assertThat( pagedFile.getLastPageId(), is( 1L ) );
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
     }
 
     @Test
@@ -1569,7 +1718,14 @@ public abstract class PageCacheTest<T extends PageCache>
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
 
         PagedFile pagedFile = pageCache.map( file, filePageSize );
-        assertThat( pagedFile.getLastPageId(), is( 2L ) );
+        try
+        {
+            assertThat( pagedFile.getLastPageId(), is( 2L ) );
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
     }
 
     @Test
@@ -1588,7 +1744,7 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
         long resultingLastPageId = pagedFile.getLastPageId();
-
+        pageCache.unmap( file );
         assertThat( resultingLastPageId, is( initialLastPageId ) );
     }
 
@@ -1610,7 +1766,14 @@ public abstract class PageCacheTest<T extends PageCache>
         }
         long resultingLastPageId = pagedFile.getLastPageId();
 
-        assertThat( resultingLastPageId, is( initialLastPageId ) );
+        try
+        {
+            assertThat( resultingLastPageId, is( initialLastPageId ) );
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
     }
 
     @Test
@@ -1629,7 +1792,14 @@ public abstract class PageCacheTest<T extends PageCache>
                 assertTrue( cursor.next() );
             }
         }
-        assertThat( pagedFile.getLastPageId(), is( 14L ) );
+        try
+        {
+            assertThat( pagedFile.getLastPageId(), is( 14L ) );
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
     }
 
     @Test
@@ -1645,7 +1815,14 @@ public abstract class PageCacheTest<T extends PageCache>
         {
             assertTrue( cursor.next( 15 ) );
         }
-        assertThat( pagedFile.getLastPageId(), is( 15L ) );
+        try
+        {
+            assertThat( pagedFile.getLastPageId(), is( 15L ) );
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
     }
 
     @Test
@@ -1656,19 +1833,26 @@ public abstract class PageCacheTest<T extends PageCache>
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = pageCache.map( file, filePageSize );
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        try
         {
-            assertTrue( cursor.next() );
-            verifyWriteOffsets( cursor );
+            try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                verifyWriteOffsets( cursor );
 
-            cursor.setOffset( 0 );
-            verifyReadOffsets( cursor );
+                cursor.setOffset( 0 );
+                verifyReadOffsets( cursor );
+            }
+
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                verifyReadOffsets( cursor );
+            }
         }
-
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        finally
         {
-            assertTrue( cursor.next() );
-            verifyReadOffsets( cursor );
+            pageCache.unmap( file );
         }
     }
 
@@ -1731,12 +1915,39 @@ public abstract class PageCacheTest<T extends PageCache>
             assertThat( cursor.getInt(), is( (1 << 8) - 1 ) );
             assertThat( cursor.getUnsignedInt(), is( (1L << 32) - 1 ) );
         }
+        finally
+        {
+            pageCache.unmap( file );
+        }
     }
+
+    @Test( timeout = 1000, expected = IllegalStateException.class )
+    public void pageCacheCloseMustThrowIfFilesAreStillMapped() throws IOException
+    {
+        fs.create( file ).close();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        pageCache.map( file, filePageSize );
+
+        try
+        {
+            pageCache.close();
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
+    }
+
+    // TODO something similar for cursors
+    // TODO especially: prevent use-after-free where a cursor *has* taken an optimistic read lock on a page, after which the page is unmapped and the page cache is shut down
+
+    // TODO tests for what happens if we run out of memory
+    // TODO tests for what happens if we run out of storage space
 
     // TODO lots of tests where more than one file is mapped
     // TODO must collect all exceptions from closing file channels when the cache is closed
     // TODO figure out what should happen when the last reference to a file is unmapped, while pages are still pinned
-    // TODO figure out how closing the cache should work when there are still mapped files
 
 
 
@@ -1771,6 +1982,8 @@ public abstract class PageCacheTest<T extends PageCache>
         verifyNoMoreInteractions( channel1, channel2, fs );
 
         // And When
+        cache.unmap( file1Name );
+        cache.unmap( file1Name );
         cache.close();
 
         // Then

@@ -96,7 +96,7 @@ class MuninnPagedFile implements PagedFile
                 translationTables, translationTableLocks );
         swapper = swapperFactory.createPageSwapper( file, pageSize, onEviction );
         flusher = new PageFlusher( cachePages, swapper );
-        lastPageId = swapper.getLastPageId();
+        initialiseLastPageId( swapper.getLastPageId() );
 
         readCursors = new MuninnCursorFreelist()
         {
@@ -188,6 +188,11 @@ class MuninnPagedFile implements PagedFile
     public long getLastPageId() throws IOException
     {
         return lastPageId;
+    }
+
+    private void initialiseLastPageId( long lastPageIdFromFile )
+    {
+        UnsafeUtil.putLong( this, lastPageIdOffset, lastPageIdFromFile );
     }
 
     /**

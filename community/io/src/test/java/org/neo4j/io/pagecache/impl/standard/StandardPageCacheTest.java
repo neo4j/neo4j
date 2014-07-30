@@ -89,5 +89,6 @@ public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
         Thread.sleep( 50 );
         assertThat( pagedFile.numberOfCachedPages(),
                 allOf( greaterThanOrEqualTo( pagesKeptInUse ), lessThanOrEqualTo( pagesInCache ) ) );
+        cache.unmap( file );
     }
 }
