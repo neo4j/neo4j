@@ -1017,21 +1017,25 @@ public class ClusterManager
             }
         };
     }
-    
-    private static String printState(ManagedCluster cluster)
+
+    public static String printState( ManagedCluster cluster )
     {
-        StringBuilder buf = new StringBuilder();
+        StringBuilder buf = new StringBuilder( "\n" );
         for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
         {
+            ClusterClient client = database.getDependencyResolver().resolveDependency( ClusterClient.class );
+            buf.append( "Instance " ).append( client.getServerId() )
+                    .append( "(" ).append( client.getClusterServer() ).append( "):" ).append( "\n" );
+
             ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
 
             for ( ClusterMember clusterMember : members.getMembers() )
             {
-                buf.append( clusterMember.getInstanceId() ).append( ":" ).append( clusterMember.getHARole() )
-                   .append( "\n" );
+                buf.append( "  " ).append( clusterMember.getInstanceId() ).append( ":" )
+                        .append( clusterMember.getHARole() )
+                        .append( " (is alive = " ).append( clusterMember.isAlive() ).append( ")" )
+                        .append( "\n" );
             }
-
-            buf.append( "\n" );
         }
 
         return buf.toString();
