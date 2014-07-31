@@ -276,16 +276,19 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             }, availableMembers ) );
         }
 
-        public void unavailableMember( final URI member, final String role )
+        public void unavailableMember( final URI member, final InstanceId id, final String role )
         {
-            availableMembers = toList( filter(new Predicate<MemberIsAvailable>()
+            availableMembers = toList( filter( new Predicate<MemberIsAvailable>()
             {
                 @Override
                 public boolean accept( MemberIsAvailable item )
                 {
-                    return !(item.getClusterUri().equals( member ) && item.getRole().equals( role ));
+                    boolean matchByUriOrId = item.getClusterUri().equals( member ) || item.getInstanceId().equals( id );
+                    boolean matchByRole = item.getRole().equals( role );
+
+                    return !(matchByUriOrId && matchByRole);
                 }
-            }, availableMembers));
+            }, availableMembers ) );
         }
 
         public Iterable<MemberIsAvailable> getCurrentAvailableMembers()
@@ -389,7 +392,9 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
                     final MemberIsUnavailable memberIsUnavailable = (MemberIsUnavailable) value;
 
                     // Update snapshot
-                    clusterMembersSnapshot.unavailableMember( memberIsUnavailable.getClusterUri(),
+                    clusterMembersSnapshot.unavailableMember(
+                            memberIsUnavailable.getClusterUri(),
+                            memberIsUnavailable.getInstanceId(),
                             memberIsUnavailable.getRole() );
 
                     Listeners.notifyListeners( listeners, new Listeners.Notification<ClusterMemberListener>()
