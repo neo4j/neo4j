@@ -64,7 +64,7 @@ public class MigrationTestUtils
         return longArray;
     }
 
-    static String makeLongString()
+    public static String makeLongString()
     {
         StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < 100; i++ )
@@ -74,7 +74,7 @@ public class MigrationTestUtils
         return builder.toString();
     }
 
-    static void changeVersionNumber( FileSystemAbstraction fileSystem, File storeFile, String versionString )
+    public static void changeVersionNumber( FileSystemAbstraction fileSystem, File storeFile, String versionString )
             throws IOException
     {
         byte[] versionBytes = UTF8.encode( versionString );
@@ -84,7 +84,7 @@ public class MigrationTestUtils
         fileChannel.close();
     }
 
-    static void truncateFile( FileSystemAbstraction fileSystem, File storeFile,
+    public static void truncateFile( FileSystemAbstraction fileSystem, File storeFile,
             String suffixToDetermineTruncationLength ) throws IOException
     {
         byte[] versionBytes = UTF8.encode( suffixToDetermineTruncationLength );
@@ -93,7 +93,16 @@ public class MigrationTestUtils
         fileChannel.close();
     }
 
-    static void truncateToFixedLength( FileSystemAbstraction fileSystem, File storeFile, int newLength )
+    public static void truncateAllFiles( FileSystemAbstraction fileSystem, File workingDirectory ) throws IOException
+    {
+        for ( StoreFile20 storeFile : StoreFile20.legacyStoreFiles() )
+        {
+            truncateFile( fileSystem, new File( workingDirectory, storeFile.storeFileName() ),
+                    storeFile.legacyVersion() );
+        }
+    }
+
+    public static void truncateToFixedLength( FileSystemAbstraction fileSystem, File storeFile, int newLength )
             throws IOException
     {
         StoreChannel fileChannel = fileSystem.open( storeFile, "rw" );

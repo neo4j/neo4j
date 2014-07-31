@@ -17,41 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.containsAnyStoreFiles;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.isolatedMigrationDirectoryOf;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
-import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
+package upgrade;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.Mockito;
+
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
+import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -59,10 +47,27 @@ import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
-public class StoreUpgraderTestIT
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.containsAnyStoreFiles;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.isolatedMigrationDirectoryOf;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateAllFiles;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
+import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
+
+public class StoreUpgraderTest
 {
     @Test
-    public void shouldUpgradeAnOldFormatStore() throws IOException
+    public void shouldUpgradeAnOldFormatStore() throws IOException, ConsistencyCheckIncompleteException
     {
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, Legacy20Store.LEGACY_VERSION ) );
 
@@ -74,24 +79,11 @@ public class StoreUpgraderTestIT
         // We leave logical logs in place since the new version can read the old
 
         assertFalse( containsAnyStoreFiles( fileSystem, isolatedMigrationDirectoryOf( dbDirectory ) ) );
-    }
-
-    @Ignore( "This is no longer the case" )
-    @Test
-    public void shouldLeaveACopyOfOriginalStoreFilesInBackupDirectory() throws IOException
-    {
-        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
-                .migrateIfNeeded( dbDirectory );
-
-        File backupDirectory = new File( dbDirectory, "upgrade_backup" );
-
-        verifyFilesHaveSameContent( fileSystem, MigrationTestUtils.find20FormatStoreDirectory(), backupDirectory );
-
-        // We leave logical logs in place since the new version can read the old
+        assertConsistentStore( dbDirectory );
     }
 
     @Test
-    public void shouldBackupOriginalStoreEvenIfMessagesLogIsMissing()
+    public void shouldBackupOriginalStoreEvenIfMessagesLogIsMissing() throws ConsistencyCheckIncompleteException
     {
         // given
         fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
@@ -104,6 +96,7 @@ public class StoreUpgraderTestIT
         File backupDirectory = new File( dbDirectory, "upgrade_backup" );
         assertFalse( fileSystem.fileExists( new File( dbDirectory, StringLogger.DEFAULT_NAME ) ) );
         assertFalse( fileSystem.fileExists( new File( backupDirectory, StringLogger.DEFAULT_NAME ) ) );
+        assertConsistentStore( dbDirectory );
     }
 
     @Test
@@ -120,7 +113,8 @@ public class StoreUpgraderTestIT
 
         try
         {
-            newUpgrader( vetoingUpgradeConfiguration, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
+            newUpgrader( vetoingUpgradeConfiguration, new StoreMigrator( new SilentMigrationProgressMonitor(),
+                    fileSystem ) )
                     .migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
@@ -131,9 +125,10 @@ public class StoreUpgraderTestIT
     }
 
     @Test
-    public void shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound() throws IOException
+    public void shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound()
+            throws IOException, ConsistencyCheckIncompleteException
     {
-        File comparisonDirectory = new File( "target/" + StoreUpgraderTestIT.class.getSimpleName()
+        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName()
                 + "shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound-comparison" );
 
         changeVersionNumber( fileSystem, new File( dbDirectory, "neostore.nodestore.db" ), "v0.9.5" );
@@ -155,9 +150,10 @@ public class StoreUpgraderTestIT
     }
 
     @Test
-    public void shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly() throws IOException
+    public void shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly()
+            throws IOException, ConsistencyCheckIncompleteException
     {
-        File comparisonDirectory = new File( "target/" + StoreUpgraderTestIT.class.getSimpleName()
+        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName()
                 + "shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly-comparison" );
 
         truncateFile( fileSystem, new File( dbDirectory, "neostore.propertystore.db.index.keys" ),
@@ -179,9 +175,10 @@ public class StoreUpgraderTestIT
     }
 
     @Test
-    public void shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly() throws IOException
+    public void shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly()
+            throws IOException, ConsistencyCheckIncompleteException
     {
-        File comparisonDirectory = new File( "target/" + StoreUpgraderTestIT.class.getSimpleName()
+        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName()
                 + "shouldRefuseToUpgradeIfAllOfTheStoresWeNotShutDownCleanly-comparison" );
 
         truncateAllFiles( fileSystem, dbDirectory );
@@ -223,22 +220,23 @@ public class StoreUpgraderTestIT
         }
 
         // AND WHEN
-        Monitor monitor = mock( Monitor.class );
+        Monitor monitor = Mockito.mock( Monitor.class );
         upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, monitor );
         upgrader.addParticipant( participant( "p1", "one", "two" ) );
-        StoreMigrationParticipant observingParticipant = mock( StoreMigrationParticipant.class );
-        when( observingParticipant.needsMigration(
-                any( FileSystemAbstraction.class ), any( File.class ) ) ).thenReturn( true );
+        StoreMigrationParticipant observingParticipant = Mockito.mock( StoreMigrationParticipant.class );
+        Mockito.when( observingParticipant.needsMigration(
+                Matchers.any( FileSystemAbstraction.class ), Matchers.any( File.class ) ) ).thenReturn( true );
         upgrader.addParticipant( observingParticipant );
         upgrader.migrateIfNeeded( dbDirectory );
 
         // THEN
-        verify( observingParticipant, times( 0 ) ).migrate( any( FileSystemAbstraction.class ),
-                any( File.class ), any( File.class ), any( DependencyResolver.class ) );
-        verify( observingParticipant, times( 1 ) ).moveMigratedFiles( eq( fileSystem ),
-                any( File.class ), any( File.class ), any( File.class ) );
-        verify( observingParticipant, times( 1 ) ).cleanup( eq( fileSystem ), any( File.class ) );
-        verify( monitor ).migrationCompleted();
+        Mockito.verify( observingParticipant, Mockito.times( 0 ) ).migrate( Matchers.any( FileSystemAbstraction.class ),
+                Matchers.any( File.class ), Matchers.any( File.class ), Matchers.any( DependencyResolver.class ) );
+        Mockito.verify( observingParticipant, Mockito.times( 1 ) ).moveMigratedFiles( Matchers.eq( fileSystem ),
+                Matchers.any( File.class ), Matchers.any( File.class ), Matchers.any( File.class ) );
+        Mockito.verify( observingParticipant, Mockito.times( 1 ) ).cleanup( Matchers.eq( fileSystem ), Matchers.any(
+                File.class ) );
+        Mockito.verify( monitor ).migrationCompleted();
     }
 
     private StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )
@@ -252,7 +250,8 @@ public class StoreUpgraderTestIT
             }
 
             @Override
-            public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir, File storeDir, File leftOversDir )
+            public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir, File storeDir,
+                                           File leftOversDir )
                     throws IOException
             {
                 throw new IOException( failureMessage );
@@ -260,7 +259,7 @@ public class StoreUpgraderTestIT
 
             @Override
             public void migrate( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
-                    DependencyResolver dependencies ) throws IOException, UnsatisfiedDependencyException
+                                 DependencyResolver dependencies ) throws IOException, UnsatisfiedDependencyException
             {   // Do nothing in particular
             }
         };
@@ -278,7 +277,7 @@ public class StoreUpgraderTestIT
 
             @Override
             public void migrate( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
-                    DependencyResolver dependencies ) throws IOException, UnsatisfiedDependencyException
+                                 DependencyResolver dependencies ) throws IOException, UnsatisfiedDependencyException
             {
                 File dir = new File( migrationDir, directory );
                 fileSystem.mkdirs( dir );
@@ -290,7 +289,7 @@ public class StoreUpgraderTestIT
 
             @Override
             public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir, File storeDir,
-                    File leftOversDir ) throws IOException
+                                           File leftOversDir ) throws IOException
             {
                 for ( File file : fileSystem.listFiles( new File( migrationDir, directory ) ) )
                 {
@@ -308,19 +307,13 @@ public class StoreUpgraderTestIT
         }
     }
 
-    public static void truncateAllFiles( FileSystemAbstraction fileSystem, File workingDirectory ) throws IOException
-    {
-        for ( StoreFile20 storeFile : StoreFile20.legacyStoreFiles() )
-        {
-            truncateFile( fileSystem, new File( workingDirectory, storeFile.storeFileName() ),
-                    storeFile.legacyVersion() );
-        }
-    }
-
-    public final @Rule TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
+    public final
+    @Rule
+    TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
     private File dbDirectory;
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-    @SuppressWarnings( "deprecation" )
+
+    @SuppressWarnings("deprecation")
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator )
     {
