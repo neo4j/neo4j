@@ -86,6 +86,7 @@ terms of the relevant Commercial Agreement.
                   <excludes>
                     <exclude>org.neo4j:neo4j-cypher-compiler-1.9</exclude>
                     <exclude>org.neo4j:neo4j-cypher-compiler-2.0</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-compiler-2.1</exclude>
                   </excludes>
                 </configuration>
               </execution>
