@@ -27,6 +27,7 @@ import org.neo4j.cypher.export.CypherResultSubGraph;
 import org.neo4j.cypher.export.DatabaseSubGraph;
 import org.neo4j.cypher.export.SubGraph;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -89,7 +90,7 @@ public class Dump extends Start
     }
 
     @Override
-    protected void handleResult( Output out, ExecutionResult result, long startTime, Session session, AppCommandParser parser ) throws RemoteException, ShellException
+    protected void handleResult( Output out, ExtendedExecutionResult result, long startTime ) throws RemoteException, ShellException
     {
         final SubGraph subGraph = CypherResultSubGraph.from(result, getServer().getDb(), false);
         export( subGraph, out);

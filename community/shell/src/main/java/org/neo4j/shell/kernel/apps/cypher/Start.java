@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
@@ -68,8 +68,8 @@ public class Start extends TransactionProvidingApp
             try
             {
                 final long startTime = System.currentTimeMillis();
-                ExecutionResult result = getResult( trimQuery( query ), getParameters( session ) );
-                handleResult( out, result, startTime, session, parser );
+                ExtendedExecutionResult result = getResult( trimQuery( query ), getParameters( session ) );
+                handleResult( out, result, startTime );
             }
             catch ( CypherException e )
             {
@@ -83,7 +83,7 @@ public class Start extends TransactionProvidingApp
         }
     }
 
-    protected ExecutionResult getResult( String query, Map<String, Object> parameters ) throws ShellException,
+    protected ExtendedExecutionResult getResult( String query, Map<String, Object> parameters ) throws ShellException,
             RemoteException
     {
         return getEngine().execute( query, parameters );
@@ -94,16 +94,20 @@ public class Start extends TransactionProvidingApp
         return query.substring( 0, query.lastIndexOf( ";" ) );
     }
 
-    protected void handleResult( Output out, ExecutionResult result, long startTime, Session session,
-            AppCommandParser parser ) throws RemoteException, ShellException
+    protected void handleResult( Output out, ExtendedExecutionResult result, long startTime ) throws RemoteException, ShellException
     {
         printResult( out, result, startTime );
     }
 
-    private void printResult( Output out, ExecutionResult result, long startTime ) throws RemoteException
+    private void printResult( Output out, ExtendedExecutionResult result, long startTime ) throws RemoteException
     {
         result.toString( new PrintWriter( new OutputAsWriter( out ) ) );
         out.println( (now() - startTime) + " ms" );
+        if ( result.planDescriptionRequested() )
+        {
+            out.println();
+            out.println( result.executionPlanDescription().toString() );
+        }
     }
 
     protected StringLogger getCypherLogger()

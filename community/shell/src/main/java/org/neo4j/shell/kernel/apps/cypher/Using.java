@@ -22,7 +22,7 @@ package org.neo4j.shell.kernel.apps.cypher;
 import java.rmi.RemoteException;
 import java.util.Map;
 
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -35,7 +35,7 @@ import org.neo4j.shell.ShellException;
 public class Using extends Start
 {
     @Override
-    protected ExecutionResult getResult( String query, Map<String, Object> parameters )
+    protected ExtendedExecutionResult getResult( String query, Map<String, Object> parameters )
             throws ShellException, RemoteException
     {
         GraphDatabaseAPI graphDatabaseAPI = getServer().getDb();
