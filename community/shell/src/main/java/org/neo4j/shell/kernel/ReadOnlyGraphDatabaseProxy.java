@@ -99,7 +99,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     {
         return readOnly();
     }
-    
+
     @Override
     public Node createNode( Label... labels )
     {
@@ -329,7 +329,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         {
             readOnly();
         }
-        
+
         @Override
         public void removeLabel( Label label )
         {
@@ -341,7 +341,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         {
             return actual.hasLabel( label );
         }
-        
+
         @Override
         public Iterable<Label> getLabels()
         {
@@ -913,7 +913,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         {
             return actual.getIndexState( index );
         }
-        
+
         @Override
         public String getIndexFailure( IndexDefinition index )
         {

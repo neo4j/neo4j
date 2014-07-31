@@ -37,20 +37,24 @@ import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.LegacyIndexProxy.Lookup;
-import org.neo4j.kernel.impl.coreapi.LegacyIndexProxy.Type;
 
 public class IndexManagerImpl implements IndexManager
 {
-    private NodeAutoIndexerImpl nodeAutoIndexer;
-    private RelationshipAutoIndexerImpl relAutoIndexer;
-    private final ThreadToStatementContextBridge transactionBridge;
-    private final Lookup lookup;
 
-    public IndexManagerImpl( LegacyIndexProxy.Lookup lookup, ThreadToStatementContextBridge transactionBridge )
+    private final ThreadToStatementContextBridge transactionBridge;
+    private final IndexProvider provider;
+    private final AutoIndexer<Node> nodeAutoIndexer;
+    private final RelationshipAutoIndexer relAutoIndexer;
+
+    public IndexManagerImpl( ThreadToStatementContextBridge bridge,
+                             IndexProvider provider,
+                             AutoIndexer<Node> nodeAutoIndexer,
+                             RelationshipAutoIndexer relAutoIndexer )
     {
-        this.lookup = lookup;
-        this.transactionBridge = transactionBridge;
+        this.transactionBridge = bridge;
+        this.provider = provider;
+        this.nodeAutoIndexer = nodeAutoIndexer;
+        this.relAutoIndexer = relAutoIndexer;
     }
 
     @Override
@@ -76,7 +80,7 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public Index<Node> forNodes( String indexName, Map<String, String> customConfiguration )
     {
-        Index<Node> toReturn = getOrCreateNodeIndex( indexName, customConfiguration );
+        Index<Node> toReturn = provider.getOrCreateNodeIndex( indexName, customConfiguration );
 
         // TODO 2.2-future move this into kernel layer
         if ( NodeAutoIndexerImpl.NODE_AUTO_INDEX.equals( indexName ) )
@@ -84,47 +88,6 @@ public class IndexManagerImpl implements IndexManager
             toReturn = new AbstractAutoIndexerImpl.ReadOnlyIndexToIndexAdapter<Node>( toReturn );
         }
         return toReturn;
-    }
-
-    Index<Node> getOrCreateNodeIndex(
-            String indexName, Map<String, String> customConfiguration )
-    {
-        try ( Statement statement = transactionBridge.instance() )
-        {
-            // TODO 2.2-future there's a sub-o-meta thing here where we create index config,
-            // and the index will itself share the same IndexConfigStore as us and pick up and use
-            // that. We should pass along config somehow with calls.
-            statement.dataWriteOperations().nodeLegacyIndexCreateLazily( indexName, customConfiguration );
-            return new LegacyIndexProxy<>( indexName, Type.NODE, lookup, transactionBridge );
-        }
-        catch ( InvalidTransactionTypeKernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
-        }
-    }
-
-    RelationshipIndex getOrCreateRelationshipIndex( String indexName, Map<String, String> customConfiguration )
-    {
-        try ( Statement statement = transactionBridge.instance() )
-        {
-            // TODO 2.2-future there's a sub-o-meta thing here where we create index config,
-            // and the index will itself share the same IndexConfigStore as us and pick up and use
-            // that. We should pass along config somehow with calls.
-            statement.dataWriteOperations().relationshipLegacyIndexCreateLazily( indexName, customConfiguration );
-            return new RelationshipLegacyIndexProxy( indexName, lookup, transactionBridge );
-        }
-        catch ( InvalidTransactionTypeKernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
-        }
     }
 
     @Override
@@ -160,14 +123,12 @@ public class IndexManagerImpl implements IndexManager
     public RelationshipIndex forRelationships( String indexName,
                                                Map<String, String> customConfiguration )
     {
-        RelationshipIndex toReturn = getOrCreateRelationshipIndex( indexName,
-                customConfiguration );
+        RelationshipIndex toReturn = provider.getOrCreateRelationshipIndex( indexName, customConfiguration );
 
         // TODO 2.2-future move this into kernel layer
         if ( RelationshipAutoIndexerImpl.RELATIONSHIP_AUTO_INDEX.equals( indexName ) )
         {
-            toReturn = new RelationshipAutoIndexerImpl.RelationshipReadOnlyIndexToIndexAdapter(
-                    toReturn );
+            toReturn = new RelationshipAutoIndexerImpl.RelationshipReadOnlyIndexToIndexAdapter( toReturn );
         }
         return toReturn;
     }
@@ -264,17 +225,6 @@ public class IndexManagerImpl implements IndexManager
         {
             throw new NotFoundException( e );
         }
-    }
-
-    // TODO These setters/getters stick. Why are these indexers exposed!?
-    public void setNodeAutoIndexer( NodeAutoIndexerImpl nodeAutoIndexer )
-    {
-        this.nodeAutoIndexer = nodeAutoIndexer;
-    }
-
-    public void setRelAutoIndexer( RelationshipAutoIndexerImpl relAutoIndexer )
-    {
-        this.relAutoIndexer = relAutoIndexer;
     }
 
     @Override

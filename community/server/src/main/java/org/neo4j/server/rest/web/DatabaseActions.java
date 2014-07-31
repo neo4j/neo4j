@@ -1062,15 +1062,13 @@ public class DatabaseActions
 
     public Representation getAutoIndexedRelationships( String key, String value )
     {
-        ReadableRelationshipIndex index = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
-
+        final ReadableIndex<Relationship> index = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
         return toListRelationshipRepresentation( index.get( key, value ), null );
     }
 
     public ListRepresentation getAutoIndexedRelationshipsByQuery( String query )
     {
-        ReadableRelationshipIndex index = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
-
+        final ReadableIndex<Relationship> index = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
         final IndexHits<Relationship> results = query != null ? index.query( query ) : null;
         return toListRelationshipRepresentation( results, null );
     }
