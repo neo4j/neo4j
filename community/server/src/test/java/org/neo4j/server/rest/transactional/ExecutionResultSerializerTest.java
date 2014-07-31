@@ -572,7 +572,6 @@ public class ExecutionResultSerializerTest
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
                 output, URI.create( "http://base.uri/" ), StringLogger.DEV_NULL );
 
-        // when
         String operatorType = "Ich habe einen Plan";
 
         // This is the full set of types that we allow in plan arguments
@@ -585,6 +584,7 @@ public class ExecutionResultSerializerTest
         args.put( "listOfLongs", asList(1L, 2L, 3L) );
         args.put( "listOfListOfLongs", asList( asList(1L, 2L, 3L) ) );
 
+        // when
         PlanDescription planDescription = mock( PlanDescription.class );
         when( planDescription.getChildren() ).thenReturn( Collections.<PlanDescription>emptyList() );
         when( planDescription.getName() ).thenReturn( operatorType );
