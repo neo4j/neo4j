@@ -104,6 +104,11 @@ public class Start extends TransactionProvidingApp
     {
         result.toString( new PrintWriter( new OutputAsWriter( out ) ) );
         out.println( (now() - startTime) + " ms" );
+        if ( result.planDescriptionRequested() )
+        {
+            out.println();
+            out.println( result.executionPlanDescription().toString() );
+        }
     }
 
     protected StringLogger getCypherLogger()
