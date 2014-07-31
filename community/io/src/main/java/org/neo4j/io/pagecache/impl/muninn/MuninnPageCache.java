@@ -90,6 +90,10 @@ public class MuninnPageCache implements PageCache, Runnable
     private static final int pagesToKeepFree = Integer.getInteger(
             "org.neo4j.io.pagecache.impl.muninn.pagesToKeepFree", 30 );
 
+    // Set this to true, to disable the Java version check in verifyHacks:
+    private static final boolean allowAllJavaVersions = Boolean.getBoolean(
+            "org.neo4j.io.pagecache.impl.muninn.allowAllJavaVersions" );
+
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
     private final PageCacheMonitor monitor;
@@ -168,7 +172,8 @@ public class MuninnPageCache implements PageCache, Runnable
         // When we migrate to Java 8, remove this check, along with the
         // org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock and its test.
         // Also remember to remove it from the licensing-requirements-base.xml.
-        if ( !System.getProperty( "java.specification.version" ).equals( "1.7" ) )
+        if ( !System.getProperty( "java.specification.version" ).equals( "1.7" )
+                && !allowAllJavaVersions )
         {
             throw new AssertionError( "MuninnPageCache only supports Java 7." );
         }

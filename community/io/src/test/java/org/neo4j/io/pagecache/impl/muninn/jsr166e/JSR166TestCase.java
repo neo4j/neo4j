@@ -120,7 +120,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  *
  * </ul>
  */
-public class JSR166TestCase extends TestCase {
+public abstract class JSR166TestCase extends TestCase {
     private static final boolean useSecurityManager =
         Boolean.getBoolean("jsr166.useSecurityManager");
 

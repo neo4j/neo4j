@@ -21,24 +21,21 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongIntVisitor;
+import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.io.pagecache.PageSwapper;
 
-public class PageFlusher implements PrimitiveLongIntVisitor
+public class PageFlusher implements PrimitiveLongObjectVisitor<MuninnPage>
 {
-    private final MuninnPage[] cachePages;
     private final PageSwapper swapper;
 
-    public PageFlusher( MuninnPage[] cachePages, PageSwapper swapper )
+    public PageFlusher( PageSwapper swapper )
     {
-        this.cachePages = cachePages;
         this.swapper = swapper;
     }
 
     @Override
-    public void visited( long filePageId, int cachePageId )
+    public void visited( long filePageId, MuninnPage page )
     {
-        MuninnPage page = cachePages[cachePageId];
         long stamp = page.writeLock();
         try
         {

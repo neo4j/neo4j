@@ -1217,6 +1217,7 @@ public abstract class PageCacheTest<T extends PageCache>
         final int pageCount = 100;
         int writerThreads = 8;
         final CountDownLatch startLatch = new CountDownLatch( writerThreads );
+        final CountDownLatch writersDoneLatch = new CountDownLatch( writerThreads );
         List<Future<?>> writers = new ArrayList<>();
 
         final PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
@@ -1285,6 +1286,10 @@ public abstract class PageCacheTest<T extends PageCache>
                 {
                     throw new RuntimeException( e );
                 }
+                finally
+                {
+                    writersDoneLatch.countDown();
+                }
             }
         };
 
@@ -1332,6 +1337,7 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
         cache.unmap( file );
+        writersDoneLatch.await();
     }
 
     @Test(timeout = 1000)

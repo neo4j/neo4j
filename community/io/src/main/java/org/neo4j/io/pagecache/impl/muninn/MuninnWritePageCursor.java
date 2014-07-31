@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.collection.primitive.PrimitiveLongIntMap;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
@@ -72,21 +72,20 @@ class MuninnWritePageCursor extends MuninnPageCursor
     {
         int stripe = (int) (filePageId & MuninnPagedFile.translationTableStripeMask);
         StampedLock translationTableLock = pagedFile.translationTableLocks[stripe];
-        PrimitiveLongIntMap translationTable = pagedFile.translationTables[stripe];
+        PrimitiveLongObjectMap<MuninnPage> translationTable = pagedFile.translationTables[stripe];
         PageSwapper swapper = pagedFile.swapper;
-        MuninnPage[] cachePages = pagedFile.cachePages;
         AtomicReference<MuninnPage> freelist = pagedFile.freelist;
         MuninnPage page;
 
         long stamp = translationTableLock.tryOptimisticRead();
-        int cachePageId = translationTable.get( filePageId );
+        page = translationTable.get( filePageId );
         if ( !translationTableLock.validate( stamp ) )
         {
             // The optimistic lock failed... Try again with a proper read lock.
             stamp = translationTableLock.readLock();
             try
             {
-                cachePageId = translationTable.get( filePageId );
+                page = translationTable.get( filePageId );
             }
             finally
             {
@@ -94,19 +93,19 @@ class MuninnWritePageCursor extends MuninnPageCursor
             }
         }
 
-        // The PrimitiveLongIntMap returns -1 for unmapped keys, so in that case we
+        // The PrimitiveLongObjectMap returns null for unmapped keys, so in that case we
         // know with high probability that we are going to page fault.
         // The only reason this might not happen, is that we are racing on the same
         // exact fault with another thread, and that thread ends up winning the race.
-        if ( cachePageId == -1 )
+        if ( page == null )
         {
             // Because of the race, we have to check the table again once we have
             // the write lock.
             stamp = translationTableLock.writeLock();
             try
             {
-                cachePageId = translationTable.get( filePageId );
-                if ( cachePageId == -1 )
+                page = translationTable.get( filePageId );
+                if ( page == null )
                 {
                     // Our translation table is still outdated. Go ahead and page
                     // fault.
@@ -126,7 +125,6 @@ class MuninnWritePageCursor extends MuninnPageCursor
             }
         }
 
-        page = cachePages[cachePageId];
         lockStamp = page.writeLock();
         if ( page.pin( swapper, filePageId ) )
         {
@@ -151,12 +149,11 @@ class MuninnWritePageCursor extends MuninnPageCursor
         {
             // Someone might have completed the page fault ahead of us, so we need
             // to check again if the translation table is still outdated.
-            cachePageId = translationTable.get( filePageId );
-            if ( cachePageId != -1 )
+            page = translationTable.get( filePageId );
+            if ( page != null )
             {
                 // Either someone completed the page fault, or eviction has not yet
                 // cleared out our translation table entry.
-                page = cachePages[cachePageId];
                 // If we can pin the page now, someone already completed the page
                 // fault ahead of us.
                 lockStamp = page.writeLock();
@@ -198,7 +195,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
      */
     void pageFault(
             long filePageId,
-            PrimitiveLongIntMap translationTable,
+            PrimitiveLongObjectMap<MuninnPage> translationTable,
             AtomicReference<MuninnPage> freelist,
             PageSwapper swapper ) throws IOException
     {
@@ -225,7 +222,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
         lockStamp = page.writeLock();
         page.initBuffer();
         page.fault( swapper, filePageId );
-        translationTable.put( filePageId, page.cachePageId );
+        translationTable.put( filePageId, page );
         pinCursorToPage( page, filePageId, swapper );
         pagedFile.monitor.pageFault( filePageId, swapper );
     }

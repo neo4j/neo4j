@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIntMap;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
@@ -54,7 +54,7 @@ class MuninnPagedFile implements PagedFile
     final AtomicReference<MuninnPage> freelist;
     final PageCacheMonitor monitor;
 
-    final PrimitiveLongIntMap[] translationTables;
+    final PrimitiveLongObjectMap<MuninnPage>[] translationTables;
     final StampedLock[] translationTableLocks;
 
     final PageSwapper swapper;
@@ -85,17 +85,17 @@ class MuninnPagedFile implements PagedFile
         // This is important as both eviction and page faulting will grab
         // these locks, and will hold them for the duration of their respective
         // operation.
-        translationTables = new PrimitiveLongIntMap[translationTableStripeLevel];
+        translationTables = new PrimitiveLongObjectMap[translationTableStripeLevel];
         translationTableLocks = new StampedLock[translationTableStripeLevel];
         for ( int i = 0; i < translationTableStripeLevel; i++ )
         {
-            translationTables[i] = Primitive.longIntMap( 32 );
+            translationTables[i] = Primitive.longObjectMap( 32 );
             translationTableLocks[i] = new StampedLock();
         }
         PageEvictionCallback onEviction = new MuninnPageEvictionCallback(
                 translationTables, translationTableLocks );
         swapper = swapperFactory.createPageSwapper( file, pageSize, onEviction );
-        flusher = new PageFlusher( cachePages, swapper );
+        flusher = new PageFlusher( swapper );
         initialiseLastPageId( swapper.getLastPageId() );
 
         readCursors = new MuninnCursorFreelist()
@@ -162,7 +162,7 @@ class MuninnPagedFile implements PagedFile
     {
         for ( int i = 0; i < translationTableStripeLevel; i++ )
         {
-            PrimitiveLongIntMap translationTable = translationTables[i];
+            PrimitiveLongObjectMap<MuninnPage> translationTable = translationTables[i];
             StampedLock translationTableLock = translationTableLocks[i];
 
             long stamp = translationTableLock.readLock();

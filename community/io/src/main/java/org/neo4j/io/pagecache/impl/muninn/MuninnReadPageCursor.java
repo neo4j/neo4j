@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.collection.primitive.PrimitiveLongIntMap;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
@@ -46,12 +46,13 @@ class MuninnReadPageCursor extends MuninnPageCursor
             pagedFile.monitor.unpin( false, currentPageId, pagedFile.swapper );
             assert optimisticLock || p.isReadLocked() :
                     "pinned page wasn't really locked; not even optimistically: " + p;
+
+            if ( !optimisticLock )
+            {
+                p.unlockRead( lockStamp );
+            }
         }
 
-        if ( p != null && !optimisticLock )
-        {
-            p.unlockRead( lockStamp );
-        }
         lockStamp = 0;
     }
 
@@ -73,21 +74,20 @@ class MuninnReadPageCursor extends MuninnPageCursor
     {
         int stripe = (int) (filePageId & MuninnPagedFile.translationTableStripeMask);
         StampedLock translationTableLock = pagedFile.translationTableLocks[stripe];
-        PrimitiveLongIntMap translationTable = pagedFile.translationTables[stripe];
+        PrimitiveLongObjectMap<MuninnPage> translationTable = pagedFile.translationTables[stripe];
         PageSwapper swapper = pagedFile.swapper;
-        MuninnPage[] cachePages = pagedFile.cachePages;
         AtomicReference<MuninnPage> freelist = pagedFile.freelist;
         MuninnPage page;
 
         long stamp = translationTableLock.tryOptimisticRead();
-        int cachePageId = translationTable.get( filePageId );
+        page = translationTable.get( filePageId );
         if ( !translationTableLock.validate( stamp ) )
         {
             // The optimistic lock failed... Try again with a proper read lock.
             stamp = translationTableLock.readLock();
             try
             {
-                cachePageId = translationTable.get( filePageId );
+                page = translationTable.get( filePageId );
             }
             finally
             {
@@ -95,19 +95,19 @@ class MuninnReadPageCursor extends MuninnPageCursor
             }
         }
 
-        // The PrimitiveLongIntMap returns -1 for unmapped keys, so in that case we
+        // The PrimitiveLongObjectMap returns null for unmapped keys, so in that case we
         // know with high probability that we are going to page fault.
         // The only reason this might not happen, is that we are racing on the same
         // exact fault with another thread, and that thread ends up winning the race.
-        if ( cachePageId == -1 )
+        if ( page == null )
         {
             // Because of the race, we have to check the table again once we have
             // the write lock.
             stamp = translationTableLock.writeLock();
             try
             {
-                cachePageId = translationTable.get( filePageId );
-                if ( cachePageId == -1 )
+                page = translationTable.get( filePageId );
+                if ( page == null )
                 {
                     // Our translation table is still outdated. Go ahead and page
                     // fault.
@@ -127,7 +127,6 @@ class MuninnReadPageCursor extends MuninnPageCursor
             }
         }
 
-        page = cachePages[cachePageId];
         lockStamp = page.tryOptimisticRead();
         if ( page.pin( swapper, filePageId ) )
         {
@@ -152,12 +151,11 @@ class MuninnReadPageCursor extends MuninnPageCursor
         {
             // Someone might have completed the page fault ahead of us, so we need
             // to check again if the translation table is still outdated.
-            cachePageId = translationTable.get( filePageId );
-            if ( cachePageId != -1 )
+            page = translationTable.get( filePageId );
+            if ( page != null )
             {
                 // Either someone completed the page fault, or eviction has not yet
                 // cleared out our translation table entry.
-                page = cachePages[cachePageId];
                 // If we can pin the page now, someone already completed the page
                 // fault ahead of us.
                 lockStamp = page.readLock();
@@ -199,7 +197,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
      */
     void pageFault(
             long filePageId,
-            PrimitiveLongIntMap translationTable,
+            PrimitiveLongObjectMap<MuninnPage> translationTable,
             AtomicReference<MuninnPage> freelist,
             PageSwapper swapper ) throws IOException
     {
@@ -230,7 +228,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
         assert stamp != 0: "Converting a write lock to a read lock should always succeed";
         lockStamp = stamp;
         optimisticLock = false; // We're using a pessimistic read lock
-        translationTable.put( filePageId, page.cachePageId );
+        translationTable.put( filePageId, page );
         pinCursorToPage( page, filePageId, swapper );
         page.incrementUsage(); // Add a second usage increment as a fault-bonus.
         pagedFile.monitor.pageFault( filePageId, swapper );

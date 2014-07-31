@@ -19,17 +19,17 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.neo4j.collection.primitive.PrimitiveLongIntMap;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
 public class MuninnPageEvictionCallback implements PageEvictionCallback
 {
-    private final PrimitiveLongIntMap[] translationTables;
+    private final PrimitiveLongObjectMap<MuninnPage>[] translationTables;
     private final StampedLock[] translationTableLocks;
 
     public MuninnPageEvictionCallback(
-            PrimitiveLongIntMap[] translationTables,
+            PrimitiveLongObjectMap<MuninnPage>[] translationTables,
             StampedLock[] translationTableLocks )
     {
         this.translationTables = translationTables;
@@ -41,7 +41,7 @@ public class MuninnPageEvictionCallback implements PageEvictionCallback
     {
         int stripe = (int) (pageId & MuninnPagedFile.translationTableStripeMask);
         StampedLock translationTableLock = translationTableLocks[stripe];
-        PrimitiveLongIntMap translationTable = translationTables[stripe];
+        PrimitiveLongObjectMap<MuninnPage> translationTable = translationTables[stripe];
 
         // We use tryWriteLock here, because this call is in the way of
         // releasing new pages to the freelist. This means that threads might
