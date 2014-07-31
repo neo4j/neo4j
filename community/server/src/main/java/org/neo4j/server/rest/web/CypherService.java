@@ -69,7 +69,7 @@ public class CypherService
     }
 
     @POST
-    @SuppressWarnings({ "unchecked" })
+    @SuppressWarnings({"unchecked", "ParameterCanBeLocal"})
     public Response cypher(String body,
                            @QueryParam( INCLUDE_STATS_PARAM ) boolean includeStats,
                            @QueryParam( INCLUDE_PLAN_PARAM ) boolean includePlan,
@@ -112,6 +112,7 @@ public class CypherService
             else
             {
                 result = executionEngine.execute( query, params );
+                includePlan = result.planDescriptionRequested();
             }
 
             if ( periodicCommitQuery )
