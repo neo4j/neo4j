@@ -39,7 +39,6 @@ class CypherCompiler(graph: GraphDatabaseService,
                      kernelMonitors: KernelMonitors,
                      defaultVersion: CypherVersion = CypherVersion.vDefault,
                      optionParser: CypherOptionParser) {
-
   private val queryCacheSize: Int = getQueryCacheSize
   private val compatibilityFor1_9 = CompatibilityFor1_9(graph, queryCacheSize)
   private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize)
