@@ -41,9 +41,10 @@ case class ExplainExecutionResult(columns: List[String], executionPlanDescriptio
   }
 
   val dumpToString: String =
-    """+--------------------------------------------+
+     """+--------------------------------------------+
        || No data returned, and nothing was changed. |
-       |+--------------------------------------------+""".stripMargin
+       |+--------------------------------------------+
+       |""".stripMargin
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new EmptyResourceIterator
 
