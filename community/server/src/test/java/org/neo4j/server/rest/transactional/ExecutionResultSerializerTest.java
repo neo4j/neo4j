@@ -22,6 +22,7 @@ package org.neo4j.server.rest.transactional;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,9 +42,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.test.mocking.GraphMock;
 import org.neo4j.test.mocking.Link;
@@ -61,6 +64,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
+import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.mocking.GraphMock.link;
 import static org.neo4j.test.mocking.GraphMock.node;
@@ -319,10 +323,10 @@ public class ExecutionResultSerializerTest
         Relationship r = relationship( 1, properties( property( "baz", "quux" ) ), a, "FRAZZLE", b );
         ExecutionResult executionResult = mockExecutionResult( map(
                 "nested", map(
-                "node", a,
-                "edge", r,
-                "path", path( a, link(r, b) )
-        ) ) );
+                        "node", a,
+                        "edge", r,
+                        "path", path( a, link( r, b ) )
+                ) ) );
 
         // when
         serializer.statementResult( executionResult, false );
@@ -565,7 +569,7 @@ public class ExecutionResultSerializerTest
     }
 
     @Test
-    public void shouldSerializePlanWithoutChildButAllKindsOfArguments() throws Exception
+    public void shouldSerializePlanWithoutChildButAllKindsOfSupportedArguments() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -579,22 +583,76 @@ public class ExecutionResultSerializerTest
         Map<String, Object> args = new HashMap<>();
         args.put( "string", "A String" );
         args.put( "bool", true );
-        args.put( "long", 1L );
+        args.put( "number", 1 );
         args.put( "double", 2.3 );
-        args.put( "listOfLongs", asList(1L, 2L, 3L) );
-        args.put( "listOfListOfLongs", asList( asList(1L, 2L, 3L) ) );
+        args.put( "listOfInts", asList(1, 2, 3) );
+        args.put( "listOfListOfInts", asList( asList(1, 2, 3) ) );
 
         // when
-        PlanDescription planDescription = mock( PlanDescription.class );
-        when( planDescription.getChildren() ).thenReturn( Collections.<PlanDescription>emptyList() );
-        when( planDescription.getName() ).thenReturn( operatorType );
-        when( planDescription.getArguments() ).thenReturn( args );
-
+        PlanDescription planDescription = mockedPlanDescription( operatorType, args, Collections.<PlanDescription>emptyList() );
         serializer.statementResult( mockExecutionResult( planDescription ), false, ResultDataContent.rest );
+        serializer.finish();
+        String resultString = output.toString( "UTF-8" );
+
+        // then
+        assertIsPlanRoot( resultString );
+        Map<String, ?> rootMap = planRootMap( resultString );
+
+        assertEquals( asSet( "operatorType", "children", "string", "bool", "number", "double", "listOfInts", "listOfListOfInts"), rootMap.keySet() );
+
+        assertEquals( operatorType, rootMap.get( "operatorType" ) );
+        assertEquals( args.get( "string" ), rootMap.get( "string" ) );
+        assertEquals( args.get( "bool" ), rootMap.get( "bool" ) );
+        assertEquals( args.get( "number" ), rootMap.get( "number" ) );
+        assertEquals( args.get( "double" ), rootMap.get( "double" ) );
+        assertEquals( args.get( "listOfInts" ), rootMap.get( "listOfInts" ) );
+        assertEquals( args.get( "listOfListOfInts" ), rootMap.get( "listOfListOfInts" ) );
+    }
+
+    @Test
+    public void shouldSerializePlanWithChildren() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer(
+                output, URI.create( "http://base.uri/" ), StringLogger.DEV_NULL );
+
+        // when
+        PlanDescription plan1 = mockedPlanDescription( "child", MapUtil.map( "id", 1 ), Collections.<PlanDescription>emptyList() );
+        PlanDescription plan2 = mockedPlanDescription( "child", MapUtil.map( "id", 2 ), Collections.<PlanDescription>emptyList() );
+        PlanDescription plan0 = mockedPlanDescription( "parent", MapUtil.map( "id", 0 ), asList( plan1, plan2 ) );
+
+        serializer.statementResult( mockExecutionResult( plan0 ), false, ResultDataContent.rest );
         serializer.finish();
 
         // then
         String result = output.toString( "UTF-8" );
+        JsonNode root = assertIsPlanRoot( result );
+
+        assertEquals( "parent", root.get( "operatorType" ).getTextValue() );
+        assertEquals( 0, root.get( "id" ).asLong() );
+
+        Set<Integer> childIds = new HashSet<>();
+        for (JsonNode child : root.get( "children" ) )
+        {
+            assertTrue( "Expected object", child.isObject() );
+            assertEquals( "child", child.get( "operatorType" ).getTextValue() );
+            childIds.add( child.get( "id" ).asInt() );
+        }
+        assertEquals( asSet( 1, 2 ), childIds );
+    }
+
+    private PlanDescription mockedPlanDescription( String operatorType, Map<String, Object> args, List<PlanDescription> children )
+    {
+        PlanDescription planDescription = mock( PlanDescription.class );
+        when( planDescription.getChildren() ).thenReturn( children );
+        when( planDescription.getName() ).thenReturn( operatorType );
+        when( planDescription.getArguments() ).thenReturn( args );
+        return planDescription;
+    }
+
+    private JsonNode assertIsPlanRoot( String result ) throws UnsupportedEncodingException, JsonParseException
+    {
         JsonNode json = jsonNode( result );
         JsonNode results = json.get( "results" ).get( 0 );
 
@@ -604,48 +662,15 @@ public class ExecutionResultSerializerTest
         JsonNode root = plan.get( "root" );
         assertTrue( "Expected plan to be an object", root != null && root.isObject() );
 
-        assertEquals( operatorType, root.get( "operatorType" ).getTextValue() );
+        return root;
+    }
 
-        Map<String, JsonNode> argsMap = new HashMap<>();
-        Iterator<String> fieldNames = root.getFieldNames();
-        while ( fieldNames.hasNext() )
-        {
-            String fieldName = fieldNames.next();
-            argsMap.put( fieldName, root.get( fieldName ) );
-        }
-
-        assertEquals( asSet( "operatorType", "string", "bool", "long", "double", "listOfLongs", "listOfListOfLongs" ), argsMap.keySet() );
-        assertEquals( "A String", argsMap.get( "string" ).asText() );
-        assertTrue( "Expected true", argsMap.get( "bool" ).asBoolean() );
-        assertEquals( 1L, argsMap.get( "long" ).asLong() );
-        assertEquals( 2.3d, argsMap.get( "double" ).asDouble(), 0.0001 );
-
-        List<Long> listOfLongs = new ArrayList<>();
-        {
-            Iterator<JsonNode> elements = argsMap.get( "listOfLongs" ).getElements();
-            while ( elements.hasNext() )
-            {
-                listOfLongs.add( elements.next().asLong() );
-            }
-        }
-        assertEquals( asList( 1L, 2L, 3L ), listOfLongs );
-
-        List<List<Long>> listOfListOfLongs = new ArrayList<>();
-        {
-            Iterator<JsonNode> elements = argsMap.get( "listOfListOfLongs" ).getElements();
-            while ( elements.hasNext() )
-            {
-                JsonNode inner = elements.next();
-
-                List<Long> innerList = new ArrayList<>();
-                for ( JsonNode anInner : inner )
-                {
-                    innerList.add( anInner.asLong() );
-                }
-                listOfListOfLongs.add( innerList );
-            }
-        }
-        assertEquals( asList( asList( 1L, 2L, 3L ) ), listOfListOfLongs );
+    @SuppressWarnings("unchecked")
+    private Map<String, ?> planRootMap( String resultString ) throws JsonParseException
+    {
+        Map<String, ?> resultMap = (Map<String, ?>) ((List<?>) ((Map<String, ?>) (readJson( resultString ))).get("results")).get( 0 );
+        Map<String, ?> planMap = (Map<String, ?>) (resultMap.get("plan"));
+        return (Map<String, ?>) (planMap.get("root"));
     }
 
     @Test
