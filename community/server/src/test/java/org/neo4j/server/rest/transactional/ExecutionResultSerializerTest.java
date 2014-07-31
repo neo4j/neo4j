@@ -24,17 +24,19 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
-
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.PlanDescription;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -47,7 +49,6 @@ import org.neo4j.test.mocking.GraphMock;
 import org.neo4j.test.mocking.Link;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -56,7 +57,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
@@ -564,6 +565,90 @@ public class ExecutionResultSerializerTest
     }
 
     @Test
+    public void shouldSerializePlanWithoutChildButAllKindsOfArguments() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer(
+                output, URI.create( "http://base.uri/" ), StringLogger.DEV_NULL );
+
+        // when
+        String operatorType = "Ich habe einen Plan";
+
+        // This is the full set of types that we allow in plan arguments
+
+        Map<String, Object> args = new HashMap<>();
+        args.put( "string", "A String" );
+        args.put( "bool", true );
+        args.put( "long", 1L );
+        args.put( "double", 2.3 );
+        args.put( "listOfLongs", asList(1L, 2L, 3L) );
+        args.put( "listOfListOfLongs", asList( asList(1L, 2L, 3L) ) );
+
+        PlanDescription planDescription = mock( PlanDescription.class );
+        when( planDescription.getChildren() ).thenReturn( Collections.<PlanDescription>emptyList() );
+        when( planDescription.getName() ).thenReturn( operatorType );
+        when( planDescription.getArguments() ).thenReturn( args );
+
+        serializer.statementResult( mockExecutionResult( planDescription ), false, ResultDataContent.rest );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        JsonNode json = jsonNode( result );
+        JsonNode results = json.get( "results" ).get( 0 );
+
+        JsonNode plan = results.get( "plan" );
+        assertTrue( "Expected plan to be an object", plan != null && plan.isObject() );
+
+        JsonNode root = plan.get( "root" );
+        assertTrue( "Expected plan to be an object", root != null && root.isObject() );
+
+        assertEquals( operatorType, root.get( "operatorType" ).getTextValue() );
+
+        Map<String, JsonNode> argsMap = new HashMap<>();
+        Iterator<String> fieldNames = root.getFieldNames();
+        while ( fieldNames.hasNext() )
+        {
+            String fieldName = fieldNames.next();
+            argsMap.put( fieldName, root.get( fieldName ) );
+        }
+
+        assertEquals( asSet( "operatorType", "string", "bool", "long", "double", "listOfLongs", "listOfListOfLongs" ), argsMap.keySet() );
+        assertEquals( "A String", argsMap.get( "string" ).asText() );
+        assertTrue( "Expected true", argsMap.get( "bool" ).asBoolean() );
+        assertEquals( 1L, argsMap.get( "long" ).asLong() );
+        assertEquals( 2.3d, argsMap.get( "double" ).asDouble(), 0.0001 );
+
+        List<Long> listOfLongs = new ArrayList<>();
+        {
+            Iterator<JsonNode> elements = argsMap.get( "listOfLongs" ).getElements();
+            while ( elements.hasNext() )
+            {
+                listOfLongs.add( elements.next().asLong() );
+            }
+        }
+        assertEquals( asList( 1L, 2L, 3L ), listOfLongs );
+
+        List<List<Long>> listOfListOfLongs = new ArrayList<>();
+        {
+            Iterator<JsonNode> elements = argsMap.get( "listOfListOfLongs" ).getElements();
+            while ( elements.hasNext() )
+            {
+                JsonNode inner = elements.next();
+
+                List<Long> innerList = new ArrayList<>();
+                for ( JsonNode anInner : inner )
+                {
+                    innerList.add( anInner.asLong() );
+                }
+                listOfListOfLongs.add( innerList );
+            }
+        }
+        assertEquals( asList( asList( 1L, 2L, 3L ) ), listOfListOfLongs );
+    }
+
+    @Test
     public void shouldLogIOErrors() throws Exception
     {
         // given
@@ -615,6 +700,12 @@ public class ExecutionResultSerializerTest
     @SafeVarargs
     private static ExecutionResult mockExecutionResult( Map<String, Object>... rows )
     {
+        return mockExecutionResult( null, rows );
+    }
+
+    @SafeVarargs
+    private static ExecutionResult mockExecutionResult( PlanDescription planDescription, Map<String, Object>... rows )
+    {
         Set<String> keys = new HashSet<>();
         for ( Map<String, Object> row : rows )
         {
@@ -649,6 +740,11 @@ public class ExecutionResultSerializerTest
                 inner.remove();
             }
         };
+
+        when( executionResult.planDescriptionRequested() ).thenReturn( null != planDescription );
+        if ( executionResult.planDescriptionRequested() ) {
+            when( executionResult.executionPlanDescription() ).thenReturn(planDescription);
+        }
 
         when( executionResult.iterator() ).thenReturn( iterator );
         return executionResult;

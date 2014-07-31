@@ -24,11 +24,13 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 
+import org.neo4j.cypher.javacompat.PlanDescription;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.QueryStatistics;
 import org.neo4j.graphdb.ResourceIterator;
@@ -105,6 +107,9 @@ public class ExecutionResultSerializer
                 {
                     writeStats( result.getQueryStatistics() );
                 }
+                if ( result.planDescriptionRequested() ) {
+                    writePlan( result.executionPlanDescription() );
+                }
             }
             finally
             {
@@ -122,8 +127,8 @@ public class ExecutionResultSerializer
         out.writeObjectFieldStart( "stats" );
         try
         {
-            out.writeBooleanField( "contains_updates", stats.containsUpdates() );
-            out.writeNumberField( "nodes_created", stats.getNodesCreated() );
+            out.writeBooleanField("contains_updates", stats.containsUpdates());
+            out.writeNumberField("nodes_created", stats.getNodesCreated());
             out.writeNumberField( "nodes_deleted", stats.getDeletedNodes() );
             out.writeNumberField( "properties_set", stats.getPropertiesSet() );
             out.writeNumberField( "relationships_created", stats.getRelationshipsCreated() );
@@ -138,6 +143,94 @@ public class ExecutionResultSerializer
         finally
         {
             out.writeEndObject();
+        }
+    }
+
+    private void writePlan( PlanDescription planDescription ) throws IOException {
+        out.writeObjectFieldStart( "plan" );
+        try
+        {
+            out.writeObjectFieldStart( "root" );
+            try
+            {
+                out.writeStringField( "operatorType", planDescription.getName() );
+                writePlanArgs( planDescription );
+            }
+            finally {
+                out.writeEndObject();
+            }
+        }
+        finally {
+            out.writeEndObject();
+        }
+    }
+    private void writePlanArgs( PlanDescription planDescription ) throws IOException
+    {
+        for ( Map.Entry<String, Object> entry : planDescription.getArguments().entrySet() )
+        {
+            String fieldName = entry.getKey();
+            Object fieldValue = entry.getValue();
+
+            out.writeFieldName( fieldName );
+            writeValue( fieldValue );
+        }
+    }
+
+
+    private void writeValue( Object value ) throws IOException
+    {
+        if ( null == value )
+        {
+            out.writeNull();
+        }
+        else if ( value instanceof Long )
+        {
+            out.writeNumber( ((Long) value).longValue() );
+        }
+        else if ( value instanceof Double )
+        {
+            out.writeNumber( (Double) value );
+        }
+        else if ( value instanceof Boolean )
+        {
+            out.writeBoolean( (Boolean) value );
+        }
+        else if ( value instanceof List<?> )
+        {
+            out.writeStartArray();
+            try
+            {
+                for ( Object elem : (List<?>) value )
+                {
+                    writeValue( elem );
+                }
+            }
+            finally
+            {
+                out.writeEndArray();
+            }
+        }
+        else if ( value instanceof Map<?, ?> )
+        {
+            out.writeStartObject();
+            try
+            {
+                for ( Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet() )
+                {
+                    String fieldName = entry.getKey().toString();
+                    Object fieldValue = entry.getValue();
+                    out.writeFieldName( fieldName );
+                    writeValue( fieldValue );
+                }
+            }
+            finally
+            {
+                out.writeEndObject();
+            }
+        }
+        else
+        {
+            out.writeString( value.toString() );
         }
     }
 
