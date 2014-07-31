@@ -303,8 +303,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                     getRelationshipStore().freeId( record.getId() );
                 }
                 removeRelationshipFromCache( record.getId() );
-                patchDeletedRelationshipNodes( record.getId(), record.getFirstNode(), record.getFirstNextRel(),
-                        record.getSecondNode(), record.getSecondNextRel() );
             }
             if ( neoStoreRecord != null )
             {
@@ -374,12 +372,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private void removeRelationshipTypeFromCache( int id )
     {
         state.removeRelationshipTypeFromCache( id );
-    }
-
-    private void patchDeletedRelationshipNodes( long id, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
-                                                long secondNextRelId )
-    {
-        state.patchDeletedRelationshipNodes( id, firstNodeId, firstNodeNextRelId, secondNodeId, secondNextRelId );
     }
 
     private void removeRelationshipFromCache( long id )
