@@ -152,19 +152,6 @@ the relevant Commercial Agreement.
           </jvmArgs>
         </configuration>
       </plugin>
-
-      <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <!-- These particular files are public domain: -->
-            <exclude>src/main/java/org/neo4j/io/pagecache/impl/muninn/jsr166e/StampedLock.java</exclude>
-            <exclude>src/test/java/org/neo4j/io/pagecache/impl/muninn/jsr166e/StampedLockTest.java</exclude>
-            <exclude>src/test/java/org/neo4j/io/pagecache/impl/muninn/jsr166e/JSR166TestCase.java</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 
