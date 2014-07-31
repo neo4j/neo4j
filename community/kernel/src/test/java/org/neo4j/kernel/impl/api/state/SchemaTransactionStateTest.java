@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -250,7 +249,7 @@ public class SchemaTransactionStateTest
     @Before
     public void before() throws Exception
     {
-        txState = new TxStateImpl( mock( TransactionRecordState.class ),
+        txState = new TxStateImpl(
                 mock( LegacyIndexTransactionState.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
 

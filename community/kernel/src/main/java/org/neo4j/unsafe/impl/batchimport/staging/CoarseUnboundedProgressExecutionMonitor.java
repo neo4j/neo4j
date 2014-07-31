@@ -19,7 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import java.io.PrintStream;
+
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
+
+import static java.lang.Math.max;
 
 import static org.neo4j.helpers.collection.IteratorUtil.last;
 
@@ -30,26 +34,30 @@ public class CoarseUnboundedProgressExecutionMonitor extends PollingExecutionMon
 {
     private int prevN = 0;
     private final int dotEveryN;
+    private final PrintStream out;
 
-    public CoarseUnboundedProgressExecutionMonitor( int dotEveryN )
+    public CoarseUnboundedProgressExecutionMonitor( int dotEveryN, PrintStream out )
     {
         super( 100 );
         this.dotEveryN = dotEveryN;
+        this.out = out;
     }
 
     @Override
-    protected void start( StageExecution execution )
+    protected void start( StageExecution[] executions )
     {
         prevN = 0;
     }
 
     @Override
-    protected void poll( StageExecution execution )
+    protected void poll( StageExecution[] executions )
     {
-        long doneBatches = last( execution.stats() ).stat( Keys.done_batches ).asLong();
-        int batchSize = execution.getConfig().batchSize();
-        long amount = doneBatches*batchSize;
-        int n = (int) (amount/dotEveryN);
+        int n = prevN;
+        for ( StageExecution execution : executions )
+        {
+            n = max( n, n( execution ) );
+        }
+
         while ( prevN < n )
         {
             progress();
@@ -57,14 +65,23 @@ public class CoarseUnboundedProgressExecutionMonitor extends PollingExecutionMon
         }
     }
 
+    private int n( StageExecution execution )
+    {
+        long doneBatches = last( execution.stats() ).stat( Keys.done_batches ).asLong();
+        int batchSize = execution.getConfig().batchSize();
+        long amount = doneBatches*batchSize;
+        int n = (int) (amount/dotEveryN);
+        return n;
+    }
+
     protected void progress()
     {
-        System.out.print( "." );
+        out.print( "." );
     }
 
     @Override
-    public void done()
+    public void done( long totalTimeMillis )
     {
-        System.out.println();
+        out.println();
     }
 }

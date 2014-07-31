@@ -706,9 +706,6 @@ public class StateHandlingStatementOperations implements
         if ( existingProperty.isDefined() )
         {
             legacyPropertyTrackers.nodeRemoveStoreProperty( nodeId, (DefinedProperty) existingProperty );
-        }
-        if(existingProperty instanceof DefinedProperty)
-        {
             state.txState().nodeDoRemoveProperty( nodeId, (DefinedProperty)existingProperty );
         }
         return existingProperty;
@@ -723,9 +720,6 @@ public class StateHandlingStatementOperations implements
         {
             legacyPropertyTrackers.relationshipRemoveStoreProperty( relationshipId, (DefinedProperty)
                     existingProperty );
-        }
-        if(existingProperty instanceof DefinedProperty)
-        {
             state.txState().relationshipDoRemoveProperty( relationshipId, (DefinedProperty)existingProperty );
         }
         return existingProperty;
@@ -735,7 +729,7 @@ public class StateHandlingStatementOperations implements
     public Property graphRemoveProperty( KernelStatement state, int propertyKeyId )
     {
         Property existingProperty = graphGetProperty( state, propertyKeyId );
-        if(existingProperty instanceof DefinedProperty)
+        if(existingProperty.isDefined())
         {
             state.txState().graphDoRemoveProperty( (DefinedProperty)existingProperty );
         }

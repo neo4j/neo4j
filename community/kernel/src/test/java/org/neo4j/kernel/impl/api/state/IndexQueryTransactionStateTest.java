@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.Arrays.asList;
@@ -312,7 +311,7 @@ public class IndexQueryTransactionStateTest
     @Before
     public void before() throws Exception
     {
-        TxState txState = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexTransactionState.class ) );
+        TxState txState = new TxStateImpl( mock( LegacyIndexTransactionState.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
 
         int labelId1 = 10, labelId2 = 12;

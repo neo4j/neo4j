@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.util.DiffSets;
 
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -140,17 +139,14 @@ public final class TxStateImpl implements TxState
 
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint;
 
-    private final TransactionRecordState neoStoreTransaction;
     private final LegacyIndexTransactionState legacyChangesIndexProvider;
     private Map<String, LegacyIndex> nodeLegacyIndexChanges;
     private Map<String, LegacyIndex> relationshipLegacyIndexChanges;
 
     private boolean hasChanges;
 
-    public TxStateImpl( TransactionRecordState neoStoreTransaction,
-            LegacyIndexTransactionState legacyChangesIndexProvider )
+    public TxStateImpl( LegacyIndexTransactionState legacyChangesIndexProvider )
     {
-        this.neoStoreTransaction = neoStoreTransaction;
         this.legacyChangesIndexProvider = legacyChangesIndexProvider;
     }
 
@@ -550,7 +546,6 @@ public final class TxStateImpl implements TxState
     {
         labelStateNodeDiffSets( labelId ).add( nodeId );
         nodeStateLabelDiffSets( nodeId ).add( labelId );
-        neoStoreTransaction.addLabelToNode( labelId, nodeId );
         hasChanges = true;
     }
 
@@ -559,7 +554,6 @@ public final class TxStateImpl implements TxState
     {
         labelStateNodeDiffSets( labelId ).remove( nodeId );
         nodeStateLabelDiffSets( nodeId ).remove( labelId );
-        neoStoreTransaction.removeLabelFromNode( labelId, nodeId );
         hasChanges = true;
     }
 
