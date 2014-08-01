@@ -503,7 +503,6 @@ public class SwitchToSlave
                     resolver.resolveDependency( LabelTokenHolder.class ),
                     resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
                     resolver.resolveDependency( PersistenceManager.class ),
-                    resolver.resolveDependency( Locks.class ),
                     resolver.resolveDependency( SchemaWriteGuard.class ),
                     resolver.resolveDependency( TransactionEventHandlers.class ),
                     monitors.newMonitor( IndexingService.Monitor.class ),

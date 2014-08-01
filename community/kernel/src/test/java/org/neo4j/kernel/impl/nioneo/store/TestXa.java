@@ -391,7 +391,7 @@ public class TestXa
                 mock(TokenNameLookup.class),
                 dependencyResolverForNoIndexProvider( nodeManager ), txManager,
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
-                mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), mock(Locks.class),
+                mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class),
                 mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
                 fileSystem,
                 new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()

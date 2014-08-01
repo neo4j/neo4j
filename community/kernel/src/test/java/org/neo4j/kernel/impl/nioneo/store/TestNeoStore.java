@@ -210,7 +210,7 @@ public class TestNeoStore
                 mock(TokenNameLookup.class),
                 dependencyResolverForNoIndexProvider( nodeManager ), mock( AbstractTransactionManager.class),
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
-                mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), locks,
+                mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class),
                 mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class), IndexingService.NO_MONITOR, fs,
                 new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
                 {
