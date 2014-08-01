@@ -148,7 +148,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     private final LabelTokenHolder labelTokens;
     private final RelationshipTypeTokenHolder relationshipTypeTokens;
     private final PersistenceManager persistenceManager;
-    private final Locks lockManager;
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionEventHandlers transactionEventHandlers;
     private final StoreFactory storeFactory;
@@ -172,8 +171,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
     private File storeDir;
     private boolean readOnly;
-
-    private boolean logApplied = false;
 
     private CacheAccessBackDoor cacheAccess;
     private PersistenceCache persistenceCache;
@@ -278,7 +275,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                                  DependencyResolver dependencyResolver, AbstractTransactionManager txManager,
                                  PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
                                  RelationshipTypeTokenHolder relationshipTypeTokens,
-                                 PersistenceManager persistenceManager, Locks lockManager,
+                                 PersistenceManager persistenceManager,
                                  SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
                                  IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs, Function
             <NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory, StoreUpgrader storeMigrationProcess )
@@ -296,7 +293,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         this.labelTokens = labelTokens;
         this.relationshipTypeTokens = relationshipTypeTokens;
         this.persistenceManager = persistenceManager;
-        this.lockManager = lockManager;
         this.schemaWriteGuard = schemaWriteGuard;
         this.transactionEventHandlers = transactionEventHandlers;
         this.indexingServiceMonitor = indexingServiceMonitor;
@@ -509,11 +505,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         }
         life.shutdown();
         xaContainer.close();
-        if ( logApplied )
-        {
-            neoStore.rebuildIdGenerators();
-            logApplied = false;
-        }
         neoStore.close();
         msgLog.info( "NeoStore closed" );
     }

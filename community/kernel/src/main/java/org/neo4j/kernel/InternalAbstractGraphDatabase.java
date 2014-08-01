@@ -977,7 +977,7 @@ public abstract class InternalAbstractGraphDatabase
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
-                persistenceManager, lockManager, this, transactionEventHandlers,
+                persistenceManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(), storeMigrationProcess );
         xaDataSourceManager.registerDataSource( neoDataSource );
     }

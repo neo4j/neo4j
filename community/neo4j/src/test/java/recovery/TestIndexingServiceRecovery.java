@@ -183,7 +183,7 @@ public class TestIndexingServiceRecovery
                                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
                                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
-                                persistenceManager, lockManager, this, transactionEventHandlers, recoveryMonitor,
+                                persistenceManager, this, transactionEventHandlers, recoveryMonitor,
                                 new DefaultFileSystemAbstraction(), new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
 
                         {
