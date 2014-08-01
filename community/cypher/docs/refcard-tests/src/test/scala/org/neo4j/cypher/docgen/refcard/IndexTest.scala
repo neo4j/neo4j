@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
 import org.neo4j.cypher.docgen.RefcardTest
 import org.neo4j.graphdb.DynamicLabel
@@ -29,7 +30,7 @@ class IndexTest extends RefcardTest with QueryStatisticsTestSupport {
   val title = "INDEX"
   val css = "write c4-4 c5-5 c6-3"
 
-  override def assert(name: String, result: ExecutionResult) {
+  override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "create-index" =>
         assert(result.toList.size === 0)

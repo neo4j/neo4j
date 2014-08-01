@@ -95,7 +95,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
   private def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
                                        queryId: AnyRef,
                                        resultBuilderFactory: ExecutionResultBuilderFactory):
-  (QueryContext, Map[String, Any], Boolean) => ExecutionResult =
+  (QueryContext, Map[String, Any], Boolean) => InternalExecutionResult =
     (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
       val builder = resultBuilderFactory.create()
       builder.setQueryContext(new UpdateCountingQueryContext(queryContext))

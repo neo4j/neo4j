@@ -38,7 +38,10 @@ import org.neo4j.graphdb.ResourceIterator;
  * Either iterate directly over the ExecutionResult to retrieve each row of the result
  * set, or use <code>columnAs()</code> to access a single column with result objects
  * cast to a type.
+ *
+ * @deprecated See {@link org.neo4j.cypher.javacompat.ExtendedExecutionResult}
  */
+@Deprecated
 public class ExecutionResult implements ResourceIterable<Map<String,Object>>
 {
     private org.neo4j.cypher.ExecutionResult inner;
@@ -51,14 +54,6 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>
     public ExecutionResult( org.neo4j.cypher.ExecutionResult projection )
     {
         inner = projection;
-    }
-
-    /**
-     * @return Whether the query is requesting a plan description to be returned.
-     */
-    public boolean planDescriptionRequested()
-    {
-        return inner.planType() != Normal$.MODULE$;
     }
 
     /**

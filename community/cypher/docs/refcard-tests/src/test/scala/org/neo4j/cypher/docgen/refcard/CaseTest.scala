@@ -18,8 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
-import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
+
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 
 class CaseTest extends RefcardTest with QueryStatisticsTestSupport {
   def graphDescription = List(
@@ -27,14 +29,14 @@ class CaseTest extends RefcardTest with QueryStatisticsTestSupport {
   val title = "CASE"
   val css = "general c2-1 c3-3 c4-3 c5-4 c6-1"
 
-  override def assert(name: String, result: ExecutionResult) {
+  override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "simple" =>
         assertStats(result, nodesCreated = 0)
-        assert(!result.dumpToString.contains("3"))
+        assert(!result.dumpToString().contains("3"))
       case "generic" =>
         assertStats(result, nodesCreated = 0)
-        assert(!result.dumpToString.contains("3"))
+        assert(!result.dumpToString().contains("3"))
     }
   }
 

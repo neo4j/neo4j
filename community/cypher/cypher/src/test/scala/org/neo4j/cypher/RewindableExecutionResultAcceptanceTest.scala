@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.graphdb.Node
-import org.neo4j.cypher.internal.compiler.v2_2.RewindableExecutionResult
 
 class RewindableExecutionResultAcceptanceTest extends ExecutionEngineFunSuite {
   test("can do toList twice and get the same result") {
     val a = createNode()
     val b = createNode()
 
-    val result = RewindableExecutionResult(eengine.execute("match n return n"))
+    val result = rewindableExecutionResult("match n return n")
 
     result.toList should equal(List(Map("n" -> a), Map("n" -> b)))
     result.toList should equal(List(Map("n" -> a), Map("n" -> b)))
@@ -37,7 +38,7 @@ class RewindableExecutionResultAcceptanceTest extends ExecutionEngineFunSuite {
     val a = createNode("name" -> "Aslan")
     val b = createNode("name" -> "White Queen")
 
-    val result = RewindableExecutionResult(eengine.execute("match n return n"))
+    val result = rewindableExecutionResult("match n return n")
 
     assert(List(Map("n" -> a), Map("n" -> b)) === result.toList)
 
@@ -51,7 +52,7 @@ class RewindableExecutionResultAcceptanceTest extends ExecutionEngineFunSuite {
     val a = createNode("name" -> "Aslan")
     val b = createNode("name" -> "White Queen")
 
-    val result = RewindableExecutionResult(eengine.execute("match n return n"))
+    val result = rewindableExecutionResult("match n return n")
 
     assert(List(Map("n" -> a), Map("n" -> b)) === result.toList)
 
@@ -59,4 +60,7 @@ class RewindableExecutionResultAcceptanceTest extends ExecutionEngineFunSuite {
 
     nodes should equal(List(a,b))
   }
+
+  private def rewindableExecutionResult(query: String): InternalExecutionResult =
+    RewindableExecutionResult(eengine.execute(query))
 }

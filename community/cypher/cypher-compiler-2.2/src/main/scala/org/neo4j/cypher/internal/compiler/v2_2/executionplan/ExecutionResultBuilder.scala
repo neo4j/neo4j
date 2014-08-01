@@ -29,7 +29,7 @@ trait ExecutionResultBuilder {
   def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
   def setPipeDecorator(newDecorator: PipeDecorator)
   def setExceptionDecorator(newDecorator: CypherException => CypherException)
-  def build(graph: GraphDatabaseService, queryId: AnyRef, params: Map[String, Any]): ExecutionResult
+  def build(graph: GraphDatabaseService, queryId: AnyRef, params: Map[String, Any]): InternalExecutionResult
 }
 
 trait ExecutionResultBuilderFactory {

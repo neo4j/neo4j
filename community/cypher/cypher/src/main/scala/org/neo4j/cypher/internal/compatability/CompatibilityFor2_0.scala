@@ -49,10 +49,10 @@ case class CompatibilityFor2_0(graph: GraphDatabaseService, queryCacheSize: Int)
     }
 
     def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      inner.profile(queryContext(graph, txInfo), params)
+      LegacyExecutionResultWrapper(inner.profile(queryContext(graph, txInfo), params))
 
     def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      inner.execute(queryContext(graph, txInfo), params)
+      LegacyExecutionResultWrapper(inner.execute(queryContext(graph, txInfo), params))
 
     def isPeriodicCommit = false
   }

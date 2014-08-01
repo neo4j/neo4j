@@ -53,25 +53,25 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   private val parsedQueries = new LRUCache[String, ParsedQuery](getPlanCacheSize)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String): ExecutionResult = profile(query, Map[String, Any]())
+  def profile(query: String): ExtendedExecutionResult = profile(query, Map[String, Any]())
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, params: JavaMap[String, Any]): ExecutionResult = profile(query, params.asScala.toMap)
+  def profile(query: String, params: JavaMap[String, Any]): ExtendedExecutionResult = profile(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, params: Map[String, Any]): ExecutionResult = {
+  def profile(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
     val (plan, extractedParams, txInfo) = planQuery(query)
     plan.profile(graphAPI, txInfo, params ++ extractedParams)
   }
 
   @throws(classOf[SyntaxException])
-  def execute(query: String): ExecutionResult = execute(query, Map[String, Any]())
+  def execute(query: String): ExtendedExecutionResult = execute(query, Map[String, Any]())
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
+  def execute(query: String, params: JavaMap[String, Any]): ExtendedExecutionResult = execute(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: Map[String, Any]): ExecutionResult = {
+  def execute(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
     val (plan, extractedParams, txInfo) = planQuery(query)
     plan.execute(graphAPI, txInfo, params ++ extractedParams)
   }

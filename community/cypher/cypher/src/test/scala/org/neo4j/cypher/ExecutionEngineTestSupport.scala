@@ -23,8 +23,9 @@ import java.util.concurrent.TimeUnit
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.compiler.v2_2.RewindableExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -45,10 +46,10 @@ trait ExecutionEngineTestSupport extends CypherTestSupport {
     eengine = new ExecutionEngine(graph)
   }
 
-  def execute(q: String, params: (String, Any)*): ExecutionResult =
+  def execute(q: String, params: (String, Any)*): InternalExecutionResult =
     RewindableExecutionResult(eengine.execute(q, params.toMap))
 
-  def profile(q: String, params: (String, Any)*): ExecutionResult =
+  def profile(q: String, params: (String, Any)*): InternalExecutionResult =
     RewindableExecutionResult(eengine.profile(q, params.toMap))
 
   def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =

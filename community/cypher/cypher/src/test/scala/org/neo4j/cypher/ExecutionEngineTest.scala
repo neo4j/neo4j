@@ -529,7 +529,7 @@ order by a.COL1""")
     relate(a, c, "X")
     relate(a, d, "X")
 
-    val result = execute("cypher 1.9 start n = node(0) return n-->()")
+    val result = eengine.execute("cypher 1.9 start n = node(0) return n-->()")
       .columnAs[List[Path]]("n-->()").toList.flatMap(p => p.map(_.endNode()))
 
     result should equal(List(d, c, b))
@@ -540,7 +540,7 @@ order by a.COL1""")
     val b = createNode()
     val r = relate(a, b)
 
-    val resultPath = execute("CYPHER 1.9 START a=node(0), b=node(1) RETURN a-[*]->b as path")
+    val resultPath = eengine.execute("CYPHER 1.9 START a=node(0), b=node(1) RETURN a-[*]->b as path")
       .toList.head("path").asInstanceOf[List[Path]].head
 
     resultPath.startNode() should equal(a)
@@ -554,7 +554,7 @@ order by a.COL1""")
       val b = createNode()
       val r = relate(a, b)
 
-      val result = execute("CYPHER 1.9 start a=node(0) match a-->b RETURN a-[?]->b")
+      val result = eengine.execute("CYPHER 1.9 start a=node(0) match a-->b RETURN a-[?]->b")
       result.toList should equal(List(Map("a-[?]->b" -> List(PathImpl(a, r, b)))))
     }
   }
@@ -567,7 +567,7 @@ order by a.COL1""")
     relate(a,c)
 
     graph.inTx {
-      execute("CYPHER 1.9 start a=node(0) foreach(n in extract(p in a-->() | last(p)) | set n.touched = true) return a-->()").toList
+      eengine.execute("CYPHER 1.9 start a=node(0) foreach(n in extract(p in a-->() | last(p)) | set n.touched = true) return a-->()").toList
     }
   }
 
@@ -1012,7 +1012,7 @@ order by a.COL1""")
       writer.println("1,2,3")
       writer.println("4,5,6")
     }
-    val result = execute(s"cypher 2.1 using periodic commit load csv from '$url' as line create x return x")
+    val result = eengine.execute(s"cypher 2.1 using periodic commit load csv from '$url' as line create x return x")
     result should have size 2
   }
 

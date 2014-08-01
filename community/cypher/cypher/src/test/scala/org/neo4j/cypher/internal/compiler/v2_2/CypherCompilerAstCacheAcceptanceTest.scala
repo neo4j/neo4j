@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.GraphDatabaseTestSupport
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
+  def createCompiler() = CypherCompilerFactory.ronjaCompiler(graph, 128, kernelMonitors)
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0)
 
@@ -44,8 +45,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should monitor cache misses") {
-    val compiler = newCurrentCompiler.ronjaCompiler2_2
     val counter = new CacheCounter()
+    val compiler = createCompiler()
     compiler.monitors.addMonitorListener(counter)
 
     graph.inTx { compiler.planQuery("return 42", planContext, Normal) }
@@ -54,7 +55,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should monitor cache hits") {
-    val compiler = newCurrentCompiler.ronjaCompiler2_2
+    val compiler = createCompiler()
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
@@ -65,7 +66,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should monitor cache flushes") {
-    val compiler = newCurrentCompiler.ronjaCompiler2_2
+    val compiler = createCompiler()
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 

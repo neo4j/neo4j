@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.ExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 
 class CollectionsAndMapsTest extends ArticleTest {
-  def assert(name: String, result: ExecutionResult) {}
+  def assert(name: String, result: InternalExecutionResult) {}
 
   val graphDescription = List()
 
@@ -35,7 +35,7 @@ Collections
 
 Cypher has good support for collections.
 
-== Collections in general ==    
+== Collections in general ==
 
 A literal collection is created by using brackets and separating the elements in the collection with commas.
 

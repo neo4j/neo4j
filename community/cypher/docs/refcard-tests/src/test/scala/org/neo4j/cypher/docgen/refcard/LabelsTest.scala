@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
 import org.neo4j.cypher.docgen.RefcardTest
 
@@ -27,7 +28,7 @@ class LabelsTest extends RefcardTest with QueryStatisticsTestSupport {
   val title = "Labels"
   val css = "general c2-1 c3-2 c4-2 c5-3 c6-4"
 
-  override def assert(name: String, result: ExecutionResult) {
+  override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "related" =>
         assertStats(result, nodesCreated = 0)

@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatability
 
+import java.io.PrintWriter
+
+import org.neo4j.cypher.ExtendedExecutionResult
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => ExecutionPlan_v2_2}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => ExecutionPlan_v2_2, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_2}
 import org.neo4j.cypher.internal.compiler.v2_2.CypherCompilerFactory
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundPlanContext, TransactionBoundQueryContext}
@@ -32,7 +35,13 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.util.Try
 
-abstract class CompatibilityFor2_2(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors, kernelAPI: KernelAPI) {
+trait CompatibilityFor2_2 {
+
+  val graph: GraphDatabaseService
+  val queryCacheSize: Int
+  val kernelMonitors: KernelMonitors
+  val kernelAPI: KernelAPI
+
   protected val compiler: v2_2.CypherCompiler
 
   def produceParsedQuery(statementAsText: String, planType: PlanType) = new ParsedQuery {
@@ -55,25 +64,52 @@ abstract class CompatibilityFor2_2(graph: GraphDatabaseService, queryCacheSize: 
     }
 
     def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      inner.profile(queryContext(graph, txInfo), params)
+      ExecutionResultWrapperFor2_2(inner.profile(queryContext(graph, txInfo), params))
 
     def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      inner.execute(queryContext(graph, txInfo), params)
+      ExecutionResultWrapperFor2_2(inner.execute(queryContext(graph, txInfo), params))
 
     def isPeriodicCommit = inner.isPeriodicCommit
   }
+}
 
+case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult) extends ExtendedExecutionResult {
+  def planDescriptionRequested = inner.planDescriptionRequested
+
+  def javaIterator = inner.javaIterator
+
+  def columnAs[T](column: String) = inner.columnAs[T](column)
+
+  def columns = inner.columns
+
+  def javaColumns = inner.javaColumns
+
+  def queryStatistics() = inner.queryStatistics()
+
+  def dumpToString(writer: PrintWriter) = inner.dumpToString(writer)
+
+  def dumpToString() = inner.dumpToString()
+
+  def javaColumnAs[T](column: String) = inner.javaColumnAs[T](column)
+
+  def executionPlanDescription() = inner.executionPlanDescription()
+
+  def close() = inner.close()
+
+  def next() = inner.next()
+
+  def hasNext = inner.hasNext
 }
 
 case class CompatibilityFor2_2Experimental(graph: GraphDatabaseService,
                                            queryCacheSize: Int,
                                            kernelMonitors: KernelMonitors,
-                                           kernelAPI: KernelAPI) extends CompatibilityFor2_2(graph, queryCacheSize, kernelMonitors, kernelAPI) {
+                                           kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.ronjaCompiler(graph, queryCacheSize, kernelMonitors)
 }
 case class CompatibilityFor2_2Legacy(graph: GraphDatabaseService,
                                            queryCacheSize: Int,
                                            kernelMonitors: KernelMonitors,
-                                           kernelAPI: KernelAPI) extends CompatibilityFor2_2(graph, queryCacheSize, kernelMonitors, kernelAPI) {
+                                           kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.legacyCompiler(graph, queryCacheSize, kernelMonitors)
 }

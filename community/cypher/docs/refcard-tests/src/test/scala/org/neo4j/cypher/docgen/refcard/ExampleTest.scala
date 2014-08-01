@@ -18,9 +18,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
-import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
-import org.neo4j.cypher.docgen.RefcardTest
+
 import org.junit.Ignore
+import org.neo4j.cypher.QueryStatisticsTestSupport
+import org.neo4j.cypher.docgen.RefcardTest
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 
 @Ignore
 class ExamplesTest extends RefcardTest with QueryStatisticsTestSupport {
@@ -28,7 +30,7 @@ class ExamplesTest extends RefcardTest with QueryStatisticsTestSupport {
   val title = "Query Structure"
   val css = "general c2-2 c3-2 c4-2 c5-2"
 
-  override def assert(name: String, result: ExecutionResult) {
+  override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "friends" =>
         assertStats(result, nodesCreated = 0)
