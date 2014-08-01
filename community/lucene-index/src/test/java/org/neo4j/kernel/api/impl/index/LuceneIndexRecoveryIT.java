@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -33,9 +29,9 @@ import java.util.zip.ZipOutputStream;
 import org.apache.lucene.store.Directory;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -46,24 +42,36 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-// TODO 2.2-future fix this
-@Ignore("2.2")
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
+
 public class LuceneIndexRecoveryIT
 {
+    private final static Label myLabel = label( "MyLabel" );
+
     @Test
     public void addShouldBeIdempotentWhenDoingRecovery() throws Exception
     {
         // Given
-        startDb(createLuceneIndexFactory());
-        Label myLabel = label( "MyLabel" );
+        startDb( createLuceneIndexFactory() );
 
-        createIndex( myLabel );
+        IndexDefinition index = createIndex( myLabel );
+        waitForIndex( index );
 
-        createNode( myLabel, 12 );
+        long nodeId = createNode( myLabel, 12 );
+        try(Transaction tx = db.beginTx())
+        {
+            assertNotNull( db.getNodeById( nodeId ) );
+        }
         assertEquals( 1, doIndexLookup( myLabel, 12 ).size() );
 
         // And Given
@@ -73,6 +81,10 @@ public class LuceneIndexRecoveryIT
         startDb( createLuceneIndexFactory() );
 
         // Then
+        try(Transaction tx = db.beginTx())
+        {
+            assertNotNull( db.getNodeById( nodeId ) );
+        }
         assertEquals( 1, doIndexLookup( myLabel, 12 ).size() );
     }
 
@@ -80,12 +92,14 @@ public class LuceneIndexRecoveryIT
     public void changeShouldBeIdempotentWhenDoingRecovery() throws Exception
     {
         // Given
-        startDb(createLuceneIndexFactory());
-        Label myLabel = label( "MyLabel" );
-        createIndex( myLabel );
+        startDb( createLuceneIndexFactory() );
+
+        IndexDefinition indexDefinition = createIndex( myLabel );
+        waitForIndex( indexDefinition );
+
         long node = createNode( myLabel, 12 );
         rotateLogs();
-        
+
         updateNode( node, 13 );
 
         // And Given
@@ -98,17 +112,19 @@ public class LuceneIndexRecoveryIT
         assertEquals( 0, doIndexLookup( myLabel, 12 ).size() );
         assertEquals( 1, doIndexLookup( myLabel, 13 ).size() );
     }
-    
+
     @Test
     public void removeShouldBeIdempotentWhenDoingRecovery() throws Exception
     {
         // Given
-        startDb(createLuceneIndexFactory());
-        Label myLabel = label( "MyLabel" );
-        createIndex( myLabel );
+        startDb( createLuceneIndexFactory() );
+
+        IndexDefinition indexDefinition = createIndex( myLabel );
+        waitForIndex( indexDefinition );
+
         long node = createNode( myLabel, 12 );
         rotateLogs();
-        
+
         deleteNode( node );
 
         // And Given
@@ -120,29 +136,16 @@ public class LuceneIndexRecoveryIT
         // Then
         assertEquals( 0, doIndexLookup( myLabel, 12 ).size() );
     }
-    
-    private void deleteNode( long node )
-    {
-        Transaction tx = db.beginTx();
-        try
-        {
-            db.getNodeById( node ).delete();
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
 
     @Test
     public void shouldNotAddTwiceDuringRecoveryIfCrashedDuringPopulation() throws Exception
     {
         // Given
         startDb( createAlwaysInitiallyPopulatingLuceneIndexFactory() );
-        Label myLabel = label( "MyLabel" );
 
-        createIndex( myLabel );
+        IndexDefinition indexDefinition = createIndex( myLabel );
+        waitForIndex( indexDefinition );
+
         long nodeId = createNode( myLabel, 12 );
         assertEquals( 1, doIndexLookup( myLabel, 12 ).size() );
 
@@ -152,19 +155,14 @@ public class LuceneIndexRecoveryIT
         // When
         startDb( createAlwaysInitiallyPopulatingLuceneIndexFactory() );
 
-        Transaction transaction = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition indexDefinition = db.schema().getIndexes().iterator().next();
-            db.schema().awaitIndexOnline( indexDefinition, 10l, TimeUnit.SECONDS );
+            IndexDefinition index = db.schema().getIndexes().iterator().next();
+            waitForIndex( index );
 
             // Then
             assertEquals( 12, db.getNodeById( nodeId ).getProperty( NUM_BANANAS_KEY ) );
             assertEquals( 1, doIndexLookup( myLabel, 12 ).size() );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -172,13 +170,13 @@ public class LuceneIndexRecoveryIT
     public void shouldNotUpdateTwiceDuringRecovery() throws Exception
     {
         // Given
-        startDb(createLuceneIndexFactory());
-        Label myLabel = label( "MyLabel" );
+        startDb( createLuceneIndexFactory() );
 
-        createIndex( myLabel );
+        IndexDefinition indexDefinition = createIndex( myLabel );
+        waitForIndex( indexDefinition );
 
         long nodeId = createNode( myLabel, 12 );
-        updateNode(nodeId, 14);
+        updateNode( nodeId, 14 );
 
         // And Given
         killDb();
@@ -189,6 +187,22 @@ public class LuceneIndexRecoveryIT
         // Then
         assertEquals( 0, doIndexLookup( myLabel, 12 ).size() );
         assertEquals( 1, doIndexLookup( myLabel, 14 ).size() );
+    }
+
+    @Before
+    public void before()
+    {
+        directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+    }
+
+    @After
+    public void after()
+    {
+        if ( db != null )
+        {
+            db.shutdown();
+        }
+        directoryFactory.close();
     }
 
     private GraphDatabaseAPI db;
@@ -247,78 +261,72 @@ public class LuceneIndexRecoveryIT
        }
     }
 
-    @Before
-    public void before()
+    private void rotateLogs() throws IOException
     {
-        directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+        final NeoStoreXaDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        final PhysicalLogFile pLogFile = ds.getDependencyResolver().resolveDependency( PhysicalLogFile.class );
+        pLogFile.forceRotate();
     }
 
-    @After
-    public void after()
+    private IndexDefinition createIndex( Label label )
     {
-       if ( db != null )
-    {
-        db.shutdown();
-    }
-       directoryFactory.close();
-    }
-
-    private void rotateLogs()
-    {
-//       db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition definition = db.schema().indexFor( label ).on( NUM_BANANAS_KEY ).create();
+            tx.success();
+            return definition;
+        }
     }
 
-    private void createIndex( Label label )
+    private void waitForIndex( IndexDefinition definition )
     {
-        Transaction tx = db.beginTx();
-        IndexDefinition definition = db.schema().indexFor( label ).on( NUM_BANANAS_KEY ).create();
-        tx.success();
-        tx.finish();
-
-        tx = db.beginTx();
-        db.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
+            tx.success();
+        }
     }
 
     private Set<Node> doIndexLookup( Label myLabel, Object value )
     {
-        Transaction tx = db.beginTx();
-        Iterable<Node> iter = db.findNodesByLabelAndProperty( myLabel, NUM_BANANAS_KEY, value );
-        Set<Node> nodes = asUniqueSet( iter );
-        tx.success();
-        tx.finish();
-        return nodes;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Iterable<Node> iter = db.findNodesByLabelAndProperty( myLabel, NUM_BANANAS_KEY, value );
+            Set<Node> nodes = asUniqueSet( iter );
+            tx.success();
+            return nodes;
+        }
     }
 
-    private long createNode( Label label, int number )
-           throws PropertyKeyNotFoundException, LabelNotFoundKernelException
+    private long createNode( Label label, int number ) throws PropertyKeyNotFoundException, LabelNotFoundKernelException
     {
-       Transaction tx = db.beginTx();
-       try
-       {
-           Node node = db.createNode( label );
-           node.setProperty( NUM_BANANAS_KEY, number );
-           tx.success();
-           return node.getId();
-       }
-       finally
-       {
-           tx.finish();
-       }
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label );
+            node.setProperty( NUM_BANANAS_KEY, number );
+            tx.success();
+            return node.getId();
+        }
     }
 
     private void updateNode( long nodeId, int value )
     {
-        Transaction tx = db.beginTx();
-        try
+
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.getNodeById( nodeId );
             node.setProperty( NUM_BANANAS_KEY, value );
             tx.success();
         }
-        finally
+    }
+
+    private void deleteNode( long node )
+    {
+
+        try ( Transaction tx = db.beginTx() )
         {
-            tx.finish();
+            db.getNodeById( node ).delete();
+            tx.success();
         }
     }
 
