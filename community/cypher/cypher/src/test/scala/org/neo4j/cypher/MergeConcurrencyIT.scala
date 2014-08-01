@@ -45,8 +45,12 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       threads.foreach(_.start())
       threads.foreach(_.join())
 
-      // Now check that the list exists and is a single one:
-      val result = execute(s"match p=(:Label {id:1})-[*..1000]->({id:$nodeCount}) return 1")
-      result.size should equal(1)
+      // Check that we haven't created duplicate nodes or duplicate relationships
+      execute("match (a:Label) with a.id as id, count(*) as c where c > 1 return *") shouldBe empty
+      execute("match (a)-[r1]->(b)<-[r2]-(a) where r1 <> r2 return *") shouldBe empty
+
+      val details = "\n" + execute("match (a)-[r]->(b) return a.id, b.id, id(a), id(r), id(b)").dumpToString()
+
+      assert(execute(s"match p=(:Label {id:1})-[*..1000]->({id:$nodeCount}) return 1").size === 1, details)
   }
 }
