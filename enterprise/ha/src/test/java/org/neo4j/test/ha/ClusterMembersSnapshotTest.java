@@ -17,11 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cluster.member.paxos;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+package org.neo4j.test.ha;
 
 import java.net.URI;
 
@@ -29,12 +25,22 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents.ClusterMembersSnapshot;
 
-@Ignore("Ignored temporarily, pending review for extracting useful bits. The bulk of the test is now in HA, HaNewSnapshotFunctionTest")
+import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.member.paxos.MemberIsAvailable;
+import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
+import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents.ClusterMembersSnapshot;
+import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
+
+
 public class ClusterMembersSnapshotTest
 {
     @Test
@@ -42,10 +48,12 @@ public class ClusterMembersSnapshotTest
     {
         // GIVEN
         // -- a snapshot containing one member with a role
-        ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot( new PaxosClusterMemberEvents.UniqueRoleFilter(ROLE_1) );
+        ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot(
+                new PaxosClusterMemberEvents.UniqueRoleFilter( MASTER )
+        );
         URI clusterUri = new URI( URI );
         InstanceId instanceId = new InstanceId( 1 );
-        MemberIsAvailable memberIsAvailable = new MemberIsAvailable( ROLE_1, instanceId, clusterUri, new URI( URI + "?something" ) );
+        MemberIsAvailable memberIsAvailable = new MemberIsAvailable( MASTER, instanceId, clusterUri, new URI( URI + "?something" ) );
         snapshot.availableMember( memberIsAvailable );
 
         // WHEN
@@ -63,53 +71,87 @@ public class ClusterMembersSnapshotTest
                 snapshot.getCurrentAvailableMembers(),
                 CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( memberIsAvailable ) ) );
     }
-    
+
     @Test
-    public void snapshotListCanContainMultipleEventsWithSameMemberWithDifferentRoles() throws Exception
+    public void snapshotListShouldContainOnlyOneEventForARoleWithTheSameIdWhenSwitchingFromMasterToSlave()
+            throws Exception
     {
         // GIVEN
         // -- a snapshot containing one member with a role
-        ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot(null);
+        ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot( new HANewSnapshotFunction() );
         URI clusterUri = new URI( URI );
         InstanceId instanceId = new InstanceId( 1 );
-        MemberIsAvailable event1 = new MemberIsAvailable( ROLE_1, instanceId, clusterUri, new URI( URI + "?something" ) );
+        MemberIsAvailable event1 = new MemberIsAvailable( MASTER, instanceId, clusterUri,
+                new URI( URI + "?something" ) );
         snapshot.availableMember( event1 );
 
         // WHEN
         // -- the same member, although different role, gets added to the snapshot
-        MemberIsAvailable event2 = new MemberIsAvailable( ROLE_2, instanceId, clusterUri, new URI( URI + "?something" ) );
+        MemberIsAvailable event2 = new MemberIsAvailable( SLAVE, instanceId, clusterUri,
+                new URI( URI + "?something" ) );
         snapshot.availableMember( event2 );
 
         // THEN
         // -- getting the snapshot list should reveal both
-        assertEquals( 2, count( snapshot.getCurrentAvailable( instanceId ) ) );
+        assertEquals( 1, count( snapshot.getCurrentAvailable( instanceId ) ) );
         assertThat(
                 snapshot.getCurrentAvailable( instanceId ),
-                CoreMatchers.<MemberIsAvailable>hasItems(
-                        memberIsAvailable( event1 ), memberIsAvailable( event2 ) ) );
-        assertEquals( 2, count( snapshot.getCurrentAvailableMembers() ) );
+                CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( event2 ) ) );
+        assertEquals( 1, count( snapshot.getCurrentAvailableMembers() ) );
         assertThat(
                 snapshot.getCurrentAvailableMembers(),
-                CoreMatchers.<MemberIsAvailable>hasItems(
-                        memberIsAvailable( event1 ), memberIsAvailable( event2 ) ) );
+                CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( event2 ) ) );
     }
-    
+
     @Test
-    public void snapshotListPrunesOtherMemberWithSameRole() throws Exception
+    public void snapshotListShouldContainOnlyOneEventForARoleWithTheSameIdWhenSwitchingFromSlaveToMaster()
+            throws Exception
     {
         // GIVEN
         // -- a snapshot containing one member with a role
-        ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot(null);
+        ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot( new HANewSnapshotFunction() );
         URI clusterUri = new URI( URI );
         InstanceId instanceId = new InstanceId( 1 );
-        MemberIsAvailable event = new MemberIsAvailable( ROLE_1, instanceId, clusterUri, new URI( URI + "?something1" ) );
+        MemberIsAvailable event1 = new MemberIsAvailable( SLAVE, instanceId, clusterUri,
+                new URI( URI + "?something" ) );
+        snapshot.availableMember( event1 );
+
+        // WHEN
+        // -- the same member, although different role, gets added to the snapshot
+        MemberIsAvailable event2 = new MemberIsAvailable( MASTER, instanceId, clusterUri,
+                new URI( URI + "?something" ) );
+        snapshot.availableMember( event2 );
+
+        // THEN
+        // -- getting the snapshot list should reveal both
+        assertEquals( 1, count( snapshot.getCurrentAvailable( instanceId ) ) );
+        assertThat(
+                snapshot.getCurrentAvailable( instanceId ),
+                CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( event2 ) ) );
+        assertEquals( 1, count( snapshot.getCurrentAvailableMembers() ) );
+        assertThat(
+                snapshot.getCurrentAvailableMembers(),
+                CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( event2 ) ) );
+    }
+
+    @Test
+    public void snapshotListPrunesOtherMemberWithSameMasterRole() throws Exception
+    {
+        // GIVEN
+        // -- a snapshot containing one member with a role
+        ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot( new HANewSnapshotFunction() );
+        URI clusterUri = new URI( URI );
+        InstanceId instanceId = new InstanceId( 1 );
+        MemberIsAvailable event = new MemberIsAvailable( MASTER, instanceId, clusterUri,
+                new URI( URI + "?something1" ) );
         snapshot.availableMember( event );
 
         // WHEN
         // -- another member, but with same role, gets added to the snapshot
         URI otherClusterUri = new URI( URI );
         InstanceId otherInstanceId = new InstanceId( 2 );
-        MemberIsAvailable otherEvent = new MemberIsAvailable( ROLE_1, otherInstanceId, otherClusterUri, new URI( URI + "?something2" ) );
+        MemberIsAvailable otherEvent = new MemberIsAvailable( MASTER, otherInstanceId, otherClusterUri,
+                new URI( URI + "?something2" ) );
         snapshot.availableMember( otherEvent );
 
         // THEN
@@ -123,11 +165,37 @@ public class ClusterMembersSnapshotTest
                 snapshot.getCurrentAvailableMembers(),
                 CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( otherEvent ) ) );
     }
-    
+
+    @Test
+    public void snapshotListDoesNotPruneOtherMemberWithSlaveRole() throws Exception
+    {
+        // GIVEN
+        // -- a snapshot containing one member with a role
+        ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot( new HANewSnapshotFunction() );
+        URI clusterUri = new URI( URI );
+        InstanceId instanceId = new InstanceId( 1 );
+        MemberIsAvailable event = new MemberIsAvailable( SLAVE, instanceId, clusterUri,
+                new URI( URI + "?something1" ) );
+        snapshot.availableMember( event );
+
+        // WHEN
+        // -- another member, but with same role, gets added to the snapshot
+        URI otherClusterUri = new URI( URI );
+        InstanceId otherInstanceId = new InstanceId( 2 );
+        MemberIsAvailable otherEvent = new MemberIsAvailable( SLAVE, otherInstanceId, otherClusterUri,
+                new URI( URI + "?something2" ) );
+        snapshot.availableMember( otherEvent );
+
+        // THEN
+        assertEquals( 2, count( snapshot.getCurrentAvailableMembers() ) );
+        assertThat(
+                snapshot.getCurrentAvailableMembers(),
+                CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( event ),
+                        memberIsAvailable( otherEvent ) ) );
+    }
+
     private static final String URI = "http://me";
-    private static final String ROLE_1 = "r1";
-    private static final String ROLE_2 = "r2";
-    
+
     private static Matcher<MemberIsAvailable> memberIsAvailable( final MemberIsAvailable expected )
     {
         return new BaseMatcher<MemberIsAvailable>()
