@@ -118,7 +118,8 @@ public class ParallelBatchImporter implements BatchImporter
 
             executionMonitor.done( currentTimeMillis() - startTime );
 
-            logger.log( "Import completed [TODO import stats]" );
+            // TODO add import starts to this log message
+            logger.log( "Import completed" );
         }
         catch ( Throwable t )
         {
