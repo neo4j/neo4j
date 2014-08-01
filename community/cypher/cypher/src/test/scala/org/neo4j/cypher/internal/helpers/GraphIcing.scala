@@ -76,12 +76,9 @@ trait GraphIcing {
 
     def txCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledbackTransactions, txMonitor.getNumberOfActiveTransactions)
 
-    // TODO 2.2-future
-    private def txMonitor: TransactionMonitor = resolveDependency(classOf[TransactionMonitor])
+    private def txMonitor: TransactionMonitor = graph.getDependencyResolver.resolveDependency(classOf[TransactionMonitor])
 
-    private def txBridge: ThreadToStatementContextBridge = resolveDependency(classOf[ThreadToStatementContextBridge])
-
-    private def resolveDependency[T](clazz: Class[T]): T =graph.getDependencyResolver.resolveDependency(clazz)
+    private def txBridge: ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
   }
 }
 

@@ -19,19 +19,39 @@
  */
 package org.neo4j.ha;
 
-// TODO 2.2-future need to add the monitor somewhere
+import org.junit.Test;
+
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterManager;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.fromXml;
+
 public class TransactionMonitoringIT
-{/*
+{
     @Test
-    public void injectedTransactionCountShouldBeMonitored() throws Throwable
+    public void countersShouldBeUpdatesOnAllMachinesWhenCommittingOnTheMaster() throws Throwable
     {
         // GIVEN
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
+        ClusterManager clusterManager = new ClusterManager(
+                fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
                 TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
-                MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005",
-                        HaSettings.tx_push_factor.name(), "2" ) );
+                MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005", HaSettings.tx_push_factor.name(), "2" )
+        );
 
-
+        TransactionMonitor masterMonitor = null;
+        TransactionMonitor firstSlaveMonitor = null;
+        TransactionMonitor secondSlaveMonitor = null;
         try
         {
             clusterManager.start();
@@ -39,32 +59,25 @@ public class TransactionMonitoringIT
             clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
             GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-            master.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    masterMonitor, "Some proper monitoring point", NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            masterMonitor = master.getDependencyResolver().resolveDependency( TransactionMonitor.class );
 
             HighlyAvailableGraphDatabase firstSlave = clusterManager.getDefaultCluster().getAnySlave();
-            firstSlave.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    firstSlaveMonitor, "Some proper monitoring point", NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            firstSlaveMonitor = firstSlave.getDependencyResolver().resolveDependency( TransactionMonitor.class );
 
             HighlyAvailableGraphDatabase secondSlave = clusterManager.getDefaultCluster().getAnySlave( firstSlave );
-            secondSlave.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    secondSlaveMonitor, "Some proper monitoring point", NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            secondSlaveMonitor = secondSlave.getDependencyResolver().resolveDependency( TransactionMonitor.class );
 
             // WHEN
-            Transaction tx = master.beginTx();
-            master.createNode();
-            tx.success();
-            tx.finish();
+            try ( Transaction tx = master.beginTx() )
+            {
+                master.createNode();
+                tx.success();
+            }
 
-            tx = firstSlave.beginTx();
-            firstSlave.createNode();
-            tx.success();
-            tx.finish();
+            // make sure the slaves pulled updates
+            firstSlave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+            secondSlave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
 
-            tx = secondSlave.beginTx();
-            secondSlave.createNode();
-            tx.success();
-            tx.finish();
         }
         finally
         {
@@ -72,25 +85,29 @@ public class TransactionMonitoringIT
         }
 
         // THEN
-        assertEquals( 3, masterMonitor.getNumberOfCommittedTransactions() );
+        assertNotNull( masterMonitor );
+        assertEquals( 1, masterMonitor.getNumberOfCommittedTransactions() );
 
+        assertNotNull( firstSlaveMonitor );
         assertEquals( 1, firstSlaveMonitor.getNumberOfCommittedTransactions() );
 
+        assertNotNull( secondSlaveMonitor );
         assertEquals( 1, secondSlaveMonitor.getNumberOfCommittedTransactions() );
     }
 
     @Test
-    public void pullUpdatesShouldUpdateCounters() throws Throwable
+    public void countersShouldBeUpdatesOnAllMachinesWhenCommittingOnASlave() throws Throwable
     {
         // GIVEN
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
+        ClusterManager clusterManager = new ClusterManager(
+                fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
                 TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
-                MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005",
-                        HaSettings.tx_push_factor.name(), "0" ) );
+                MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005", HaSettings.tx_push_factor.name(), "2" )
+        );
 
-        EideticTransactionMonitor masterMonitor = new EideticTransactionMonitor();
-        EideticTransactionMonitor firstSlaveMonitor = new EideticTransactionMonitor();
-
+        TransactionMonitor masterMonitor = null;
+        TransactionMonitor firstSlaveMonitor = null;
+        TransactionMonitor secondSlaveMonitor = null;
         try
         {
             clusterManager.start();
@@ -98,24 +115,25 @@ public class TransactionMonitoringIT
             clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
             GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-            master.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    masterMonitor, "Some proper monitoring point", NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            masterMonitor = master.getDependencyResolver().resolveDependency( TransactionMonitor.class );
 
             HighlyAvailableGraphDatabase firstSlave = clusterManager.getDefaultCluster().getAnySlave();
-            firstSlave.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    firstSlaveMonitor, "Some proper monitoring point", NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            firstSlaveMonitor = firstSlave.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+
+            HighlyAvailableGraphDatabase secondSlave = clusterManager.getDefaultCluster().getAnySlave( firstSlave );
+            secondSlaveMonitor = secondSlave.getDependencyResolver().resolveDependency( TransactionMonitor.class );
 
             // WHEN
-            for ( int i = 0; i < 10; i++ )
+            try ( Transaction tx = firstSlave.beginTx() )
             {
-
-                Transaction tx = master.beginTx();
-                master.createNode();
+                firstSlave.createNode();
                 tx.success();
-                tx.finish();
             }
 
+            // make sure the slaves pulled updates
             firstSlave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+            secondSlave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+
         }
         finally
         {
@@ -123,6 +141,13 @@ public class TransactionMonitoringIT
         }
 
         // THEN
-        assertEquals( 10, firstSlaveMonitor.getNumberOfCommittedTransactions() );
-    }*/
+        assertNotNull( masterMonitor );
+        assertEquals( 1, masterMonitor.getNumberOfCommittedTransactions() );
+
+        assertNotNull( firstSlaveMonitor );
+        assertEquals( 1, firstSlaveMonitor.getNumberOfCommittedTransactions() );
+
+        assertNotNull( secondSlaveMonitor );
+        assertEquals( 1, secondSlaveMonitor.getNumberOfCommittedTransactions() );
+    }
 }

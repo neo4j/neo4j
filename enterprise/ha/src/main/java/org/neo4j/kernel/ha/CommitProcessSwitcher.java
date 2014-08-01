@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha;
 import java.net.URI;
 
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 
 public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommitProcess>
 {
@@ -46,6 +48,7 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
     private final NeoStore neoStore;
     private final TransactionRepresentationStoreApplier storeApplier;
     private final NeoStoreInjectedTransactionValidator validator;
+    private final TransactionMonitor transactionMonitor;
 
     public CommitProcessSwitcher( TransactionPropagator pusher,
                                   Master master,
@@ -56,7 +59,8 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
                                   LogicalTransactionStore logicalTransactionStore,
                                   KernelHealth kernelHealth, NeoStore neoStore,
                                   TransactionRepresentationStoreApplier storeApplier,
-                                  NeoStoreInjectedTransactionValidator validator)
+                                  NeoStoreInjectedTransactionValidator validator,
+                                  TransactionMonitor transactionMonitor)
     {
         super( memberStateMachine, delegate );
         this.pusher = pusher;
@@ -68,6 +72,7 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
         this.neoStore = neoStore;
         this.storeApplier = storeApplier;
         this.validator = validator;
+        this.transactionMonitor = transactionMonitor;
     }
 
     @Override
@@ -79,9 +84,9 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
     @Override
     protected TransactionCommitProcess getMasterImpl()
     {
-        TransactionRepresentationCommitProcess transactionRepresentationCommitProcess =
+        TransactionRepresentationCommitProcess commitProcess =
                 new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
                         neoStore, storeApplier, false );
-        return new MasterTransactionCommitProcess( transactionRepresentationCommitProcess, pusher, validator );
+        return new MasterTransactionCommitProcess( commitProcess, pusher, validator, transactionMonitor );
     }
 }

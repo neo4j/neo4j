@@ -19,40 +19,23 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.core.TokenCreator;
 
-public class SlaveLabelTokenCreator implements TokenCreator
+public class SlaveLabelTokenCreator extends AbstractTokenCreator
 {
-    private final Master master;
-    private final RequestContextFactory requestContextFactory;
-    private final TransactionCommittingResponseUnpacker committer;
-
-    // TODO 2.2-future write some tests for this, especially the application part
     public SlaveLabelTokenCreator( Master master, RequestContextFactory requestContextFactory,
                                    TransactionCommittingResponseUnpacker committer )
     {
-        this.master = master;
-        this.requestContextFactory = requestContextFactory;
-        this.committer = committer;
+        super( master, requestContextFactory, committer );
     }
 
     @Override
-    public int getOrCreate( String name )
+    protected Response<Integer> create( Master master, RequestContext context, String name )
     {
-        Response<Integer> response = master.createLabel( requestContextFactory.newRequestContext(), name );
-        try
-        {
-            return committer.unpackResponse( response );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return master.createLabel( context, name );
     }
 }
