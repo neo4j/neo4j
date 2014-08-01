@@ -579,8 +579,6 @@ public class NeoStoreTransaction extends XaTransaction
                     getRelationshipStore().freeId( id );
                 }
                 removeRelationshipFromCache( id );
-                patchDeletedRelationshipNodes( id, record.getFirstNode(), record.getFirstNextRel(),
-                                               record.getSecondNode(), record.getSecondNextRel() );
             }
             if ( neoStoreRecord != null )
             {
@@ -675,12 +673,6 @@ public class NeoStoreTransaction extends XaTransaction
     private void removeRelationshipTypeFromCache( int id )
     {
         cacheAccess.removeRelationshipTypeFromCache( id );
-    }
-
-    private void patchDeletedRelationshipNodes( long id, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
-                                                long secondNextRelId )
-    {
-        cacheAccess.patchDeletedRelationshipNodes( id, firstNodeId, firstNodeNextRelId, secondNodeId, secondNextRelId );
     }
 
     private void removeRelationshipFromCache( long id )
