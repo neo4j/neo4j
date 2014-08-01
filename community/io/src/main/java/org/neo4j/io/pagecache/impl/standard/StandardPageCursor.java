@@ -128,6 +128,10 @@ public class StandardPageCursor extends OffsetTrackingCursor
 
     private void pinNextPage() throws IOException
     {
+        if ( pagedFile.getReferenceCount() == 0 )
+        {
+            throw new IllegalStateException( "File has been unmapped" );
+        }
         currentPageId = nextPageId;
         nextPageId++;
         try

@@ -36,7 +36,7 @@ public class PageFlusher implements PrimitiveLongObjectVisitor<MuninnPage>
     @Override
     public void visited( long filePageId, MuninnPage page )
     {
-        long stamp = page.writeLock();
+        long stamp = page.readLock();
         try
         {
             page.flush( swapper, filePageId );
@@ -48,7 +48,7 @@ public class PageFlusher implements PrimitiveLongObjectVisitor<MuninnPage>
         }
         finally
         {
-            page.unlockWrite( stamp );
+            page.unlockRead( stamp );
         }
     }
 }

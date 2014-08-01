@@ -71,21 +71,30 @@ class MuninnPage extends StampedLock implements Page
         this.cachePageSize = cachePageSize;
     }
 
+    private boolean checkBounds( int position )
+    {
+        if ( position > cachePageSize )
+        {
+            throw new IndexOutOfBoundsException();
+        }
+        return true;
+    }
+
     public byte getByte( int offset )
     {
-        assert offset + 1 <= cachePageSize;
+        assert checkBounds( offset + 1 );
         return UnsafeUtil.getByte( pointer + offset );
     }
 
     public void putByte( byte value, int offset )
     {
-        assert offset + 1 <= cachePageSize;
+        assert checkBounds( offset + 1 );
         UnsafeUtil.putByte( pointer + offset, value );
     }
 
     public long getLong( int offset )
     {
-        assert offset + 8 <= cachePageSize;
+        assert checkBounds( offset + 8 );
         if ( littleEndian )
         {
             return Long.reverseBytes( UnsafeUtil.getLong( pointer + offset ) );
@@ -95,7 +104,7 @@ class MuninnPage extends StampedLock implements Page
 
     public void putLong( long value, int offset )
     {
-        assert offset + 8 <= cachePageSize;
+        assert checkBounds( offset + 8 );
         if ( littleEndian )
         {
             UnsafeUtil.putLong( pointer + offset, Long.reverseBytes( value ) );
@@ -108,7 +117,7 @@ class MuninnPage extends StampedLock implements Page
 
     public int getInt( int offset )
     {
-        assert offset + 4 <= cachePageSize;
+        assert checkBounds( offset + 4 );
         if ( littleEndian )
         {
             return Integer.reverseBytes( UnsafeUtil.getInt( pointer + offset ) );
@@ -118,7 +127,7 @@ class MuninnPage extends StampedLock implements Page
 
     public void putInt( int value, int offset )
     {
-        assert offset + 4 <= cachePageSize;
+        assert checkBounds( offset + 4 );
         if ( littleEndian )
         {
             UnsafeUtil.putInt( pointer + offset, Integer.reverseBytes( value ) );
@@ -132,7 +141,7 @@ class MuninnPage extends StampedLock implements Page
     @Override
     public void getBytes( byte[] data, int offset )
     {
-        assert offset + data.length <= cachePageSize;
+        assert checkBounds( offset + data.length );
         long address = pointer + offset;
         for ( int i = 0; i < data.length; i++ )
         {
@@ -144,7 +153,7 @@ class MuninnPage extends StampedLock implements Page
     @Override
     public void putBytes( byte[] data, int offset )
     {
-        assert offset + data.length <= cachePageSize;
+        assert checkBounds( offset + data.length );
         long address = pointer + offset;
         for ( int i = 0; i < data.length; i++ )
         {
@@ -155,7 +164,7 @@ class MuninnPage extends StampedLock implements Page
 
     public short getShort( int offset )
     {
-        assert offset + 2 <= cachePageSize;
+        assert checkBounds( offset + 2 );
         if ( littleEndian )
         {
             return Short.reverseBytes( UnsafeUtil.getShort( pointer + offset ) );
@@ -165,7 +174,7 @@ class MuninnPage extends StampedLock implements Page
 
     public void putShort( short value, int offset )
     {
-        assert offset + 2 <= cachePageSize;
+        assert checkBounds( offset + 2 );
         if ( littleEndian )
         {
             UnsafeUtil.putShort( pointer + offset, Short.reverseBytes( value ) );
@@ -214,7 +223,7 @@ class MuninnPage extends StampedLock implements Page
     @Override
     public void swapIn( StoreChannel channel, long offset, int length ) throws IOException
     {
-        assert isWriteLocked() : "swapIn requires write lock";
+        assert isReadLocked() || isWriteLocked() : "swapIn requires lock";
         bufferProxy.clear();
         bufferProxy.limit( length );
         int readTotal = 0;
@@ -239,7 +248,7 @@ class MuninnPage extends StampedLock implements Page
     @Override
     public void swapOut( StoreChannel channel, long offset, int length ) throws IOException
     {
-        assert isWriteLocked() : "swapOut requires write lock";
+        assert isReadLocked() || isWriteLocked() : "swapOut requires lock";
         bufferProxy.clear();
         bufferProxy.limit( length );
         channel.writeAll( bufferProxy, offset );
@@ -341,6 +350,14 @@ class MuninnPage extends StampedLock implements Page
     {
         bufferProxy = null;
         UnsafeUtil.free( pointer );
+        pointer = 0;
+    }
+
+    @Override
+    protected void finalize() throws Throwable
+    {
+        super.finalize();
+        freeBuffer();
     }
 
     public PageSwapper getSwapper()

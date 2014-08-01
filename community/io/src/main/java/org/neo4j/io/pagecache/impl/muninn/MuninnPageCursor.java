@@ -173,6 +173,10 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public void setOffset( int offset )
     {
+        if ( offset < 0 )
+        {
+            throw new IndexOutOfBoundsException();
+        }
         this.offset = offset;
     }
 

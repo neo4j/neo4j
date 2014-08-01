@@ -171,7 +171,6 @@ public class MuninnPageCache implements PageCache, Runnable
         // Unsafe.getXVolatile, and these might go away in Java 8 and beyond.
         // When we migrate to Java 8, remove this check, along with the
         // org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock and its test.
-        // Also remember to remove it from the licensing-requirements-base.xml.
         if ( !System.getProperty( "java.specification.version" ).equals( "1.7" )
                 && !allowAllJavaVersions )
         {
@@ -207,7 +206,7 @@ public class MuninnPageCache implements PageCache, Runnable
                             " bytes.";
                     throw new IllegalArgumentException( msg );
                 }
-                pagedFile.incrementReferences();
+                pagedFile.incrementRefCount();
                 return pagedFile;
             }
             current = current.next;
@@ -221,6 +220,7 @@ public class MuninnPageCache implements PageCache, Runnable
                 swapperFactory,
                 freelist,
                 monitor );
+        pagedFile.incrementRefCount();
         current = new FileMapping( file, pagedFile );
         current.next = mappedFiles;
         mappedFiles = current;
@@ -240,7 +240,7 @@ public class MuninnPageCache implements PageCache, Runnable
             if ( current.file.equals( file ) )
             {
                 MuninnPagedFile pagedFile = current.pagedFile;
-                if ( pagedFile.decrementReferences() )
+                if ( pagedFile.decrementRefCount() )
                 {
                     // this was the last reference; boot it from the list
                     if ( prev == null )
@@ -302,8 +302,9 @@ public class MuninnPageCache implements PageCache, Runnable
 
         for ( int i = 0; i < pages.length; i++ )
         {
-            pages[i].freeBuffer();
+            pages[i] = null;
         }
+        System.gc();
     }
 
     private void assertHealthy() throws IOException

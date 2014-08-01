@@ -50,6 +50,10 @@ class MuninnWritePageCursor extends MuninnPageCursor
     @Override
     public boolean next() throws IOException
     {
+        if ( pagedFile.getRefCount() == 0 )
+        {
+            throw new IllegalStateException( "File has been unmapped" );
+        }
         if ( nextPageId > lastPageId )
         {
             if ( (pf_flags & PagedFile.PF_NO_GROW) != 0 )

@@ -79,6 +79,12 @@ public class StandardPagedFile implements PagedFile
     @Override
     public PageCursor io( long pageId, int pf_flags ) throws IOException
     {
+        if ( references.get() == 0 )
+        {
+            throw new IllegalStateException(
+                    "Cannot do IO on an unmapped PagedFile." );
+        }
+
         int lockMask = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
         if ( (pf_flags & lockMask) == 0 )
         {
@@ -195,6 +201,10 @@ public class StandardPagedFile implements PagedFile
     boolean releaseReference()
     {
         return references.decrementAndGet() == 0;
+    }
+
+    int getReferenceCount() {
+        return references.get();
     }
 
     public void close() throws IOException

@@ -119,6 +119,12 @@ class MuninnPagedFile implements PagedFile
     @Override
     public PageCursor io( long pageId, int pf_flags ) throws IOException
     {
+        if ( getRefCount() == 0 )
+        {
+            throw new IllegalStateException(
+                    "Cannot do IO on an unmapped PagedFile." );
+        }
+
         int lockMask = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
         if ( (pf_flags & lockMask) == 0 )
         {
@@ -213,7 +219,7 @@ class MuninnPagedFile implements PagedFile
     /**
      * Atomically increment the reference count for this mapped file.
      */
-    void incrementReferences()
+    void incrementRefCount()
     {
         UnsafeUtil.getAndAddInt( this, referenceCounterOffset, 1 );
     }
@@ -222,10 +228,15 @@ class MuninnPagedFile implements PagedFile
      * Atomically decrement the reference count. Returns true if this was the
      * last reference.
      */
-    boolean decrementReferences()
+    boolean decrementRefCount()
     {
         // compares with 1 because getAndAdd returns the old value, and a 1
         // means the value is now 0.
         return UnsafeUtil.getAndAddInt( this, referenceCounterOffset, -1 ) <= 1;
+    }
+
+    int getRefCount()
+    {
+        return UnsafeUtil.getIntVolatile( this, referenceCounterOffset );
     }
 }
