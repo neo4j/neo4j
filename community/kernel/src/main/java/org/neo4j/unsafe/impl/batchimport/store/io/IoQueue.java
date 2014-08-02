@@ -31,6 +31,8 @@ import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.Writer;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.WriterFactory;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.SYNCHRONOUS;
 
 /**
@@ -40,6 +42,7 @@ import static org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.
 public class IoQueue implements WriterFactory
 {
     private final ExecutorService executor;
+    private final JobMonitor jobMonitor = new JobMonitor();
 
     public IoQueue( int maxIOThreads )
     {
@@ -54,16 +57,38 @@ public class IoQueue implements WriterFactory
     @Override
     public Writer create( File file, StoreChannel channel, Monitor monitor )
     {
-        WriteQueue queue = new WriteQueue( executor );
+        WriteQueue queue = new WriteQueue( executor, jobMonitor);
         return new Funnel( file, channel, monitor, queue );
     }
 
-    public void shutdownAndAwaitEverythingWritten()
+    public void awaitEverythingWritten()
+    {
+        long endTime = System.currentTimeMillis()+MINUTES.toMillis( 10 );
+        while ( jobMonitor.hasActiveJobs() )
+        {
+            try
+            {
+                Thread.sleep( 10 );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
+
+            if ( System.currentTimeMillis() > endTime )
+            {
+                throw new RuntimeException( "Didn't finish within designated time" );
+            }
+        }
+    }
+
+    public void shutdown()
     {
         executor.shutdown();
+        awaitEverythingWritten();
         try
         {
-            executor.awaitTermination( 10, TimeUnit.MINUTES ); // too long?
+            executor.awaitTermination( 1, TimeUnit.MINUTES );
         }
         catch ( InterruptedException e )
         {

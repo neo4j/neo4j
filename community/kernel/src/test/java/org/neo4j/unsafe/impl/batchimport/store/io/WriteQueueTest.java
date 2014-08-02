@@ -24,6 +24,8 @@ import java.util.concurrent.ExecutorService;
 
 import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -39,17 +41,21 @@ public class WriteQueueTest
     {
         // GIVEN
         ExecutorService executor = mock( ExecutorService.class );
-        WriteQueue queue = new WriteQueue( executor );
+        JobMonitor jobMonitor = new JobMonitor();
+        WriteQueue queue = new WriteQueue( executor, jobMonitor );
+        assertFalse( jobMonitor.hasActiveJobs() );
 
         // WHEN/THEN
         WriteJob job1 = mock( WriteJob.class );
         queue.offer( job1 );
         verify( executor, times( 1 ) ).submit( any( Callable.class ) );
+        assertTrue( jobMonitor.hasActiveJobs() );
 
         // WHEN/THEN
         WriteJob job2 = mock( WriteJob.class );
         queue.offer( job2 );
         verifyNoMoreInteractions( executor );
+        assertTrue( jobMonitor.hasActiveJobs() );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -58,7 +64,9 @@ public class WriteQueueTest
     {
         // GIVEN
         ExecutorService executor = mock( ExecutorService.class );
-        WriteQueue queue = new WriteQueue( executor );
+        JobMonitor jobMonitor = new JobMonitor();
+        WriteQueue queue = new WriteQueue( executor, jobMonitor );
+        assertFalse( jobMonitor.hasActiveJobs() );
 
         // WHEN/THEN
         WriteJob job1 = mock( WriteJob.class );
@@ -68,11 +76,13 @@ public class WriteQueueTest
         assertArrayEquals( new WriteJob[] {job1, job2}, queue.drain() );
         verify( executor, times( 1 ) ).submit( any( Callable.class ) );
         reset( executor );
+        assertTrue( jobMonitor.hasActiveJobs() );
 
         // WHEN/THEN
         WriteJob job3 = mock( WriteJob.class );
         queue.offer( job3 );
         assertArrayEquals( new WriteJob[] {job3}, queue.drain() );
         verify( executor, times( 1 ) ).submit( any( Callable.class ) );
+        assertTrue( jobMonitor.hasActiveJobs() );
     }
 }
