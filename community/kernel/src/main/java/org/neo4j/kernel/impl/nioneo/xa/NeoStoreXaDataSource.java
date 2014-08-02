@@ -103,7 +103,6 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
@@ -532,6 +531,13 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 }
             } );
             life.add( statisticsService );
+            life.add( new LifecycleAdapter()
+            {
+                public void start()
+                {
+                    neoStore.makeStoreOk();
+                }
+            } );
             life.add( indexingService );
             life.add( labelScanStore );
 
@@ -548,13 +554,9 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 neoStore.setRecoveredStatus( false );
             }
 
-            neoStore.makeStoreOk();
-
-            propertyKeyTokenHolder.addTokens( ((TokenStore<?>) neoStore.getPropertyKeyTokenStore())
-                    .getTokens( Integer.MAX_VALUE ) );
-            relationshipTypeTokens.addTokens( ((TokenStore<?>) neoStore.getRelationshipTypeTokenStore())
-                    .getTokens( Integer.MAX_VALUE ) );
-            labelTokens.addTokens( ((TokenStore<?>) neoStore.getLabelTokenStore()).getTokens( Integer.MAX_VALUE ) );
+            propertyKeyTokenHolder.addTokens( neoStore.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
+            relationshipTypeTokens.addTokens( neoStore.getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
+            labelTokens.addTokens( neoStore.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
         }
         catch ( Throwable e )
         { // Something unexpected happened during startup
