@@ -77,7 +77,6 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.PropertyReceiver;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
