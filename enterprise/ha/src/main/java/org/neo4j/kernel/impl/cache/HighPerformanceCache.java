@@ -328,9 +328,9 @@ public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cac
                 lastPurgeLogTimestamp = timestamp;
                 long sizeAfter = currentSize.get();
 
-                String sizeBeforeStr = getSize( numberOfEntitiesPurged );
+                String sizeBeforeStr = getSize( sizeBefore );
                 String sizeAfterStr = getSize( sizeAfter );
-                String diffStr = getSize( numberOfEntitiesPurged - sizeAfter );
+                String diffStr = getSize( sizeBefore - sizeAfter );
 
                 String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";
                 String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
@@ -416,19 +416,19 @@ public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cac
         if ( size > ( 1024 * 1024 * 1024 ) )
         {
             float value = size / 1024.0f / 1024.0f / 1024.0f;
-            return value + "Gb";
+            return value + "GiB";
         }
         if ( size > ( 1024 * 1024 ) )
         {
             float value = size / 1024.0f / 1024.0f;
-            return value + "Mb";
+            return value + "MiB";
         }
         if ( size > 1024 )
         {
-            float value = size / 1024.0f / 1024.0f;
-            return value + "kb";
+            float value = size / 1024.0f;
+            return value + "kiB";
         }
-        return size + "b";
+        return size + "B";
     }
 
     @Override

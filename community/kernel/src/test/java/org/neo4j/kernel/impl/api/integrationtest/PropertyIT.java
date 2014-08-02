@@ -26,6 +26,7 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
@@ -36,7 +37,12 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.kernel.api.properties.Property.property;
 
@@ -401,13 +407,42 @@ public class PropertyIT extends KernelIntegrationTest
             catch ( IllegalStateException e )
             {
                 assertThat( e.getMessage(),
-                        equalTo( "Node " + node + " has been deleted" ) );
+                            equalTo( "Node " + node + " has been deleted" ) );
             }
         }
     }
 
     @Test
-    public void shouldBeAbleToRemoveResetAndTwiceRemoveProperty() throws Exception
+    public void shouldNotAllowModifyingPropertiesOnDeletedRelationship() throws Exception
+    {
+        // given
+        int prop1;
+        long rel;
+        {
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            prop1 = statement.propertyKeyGetOrCreateForName( "prop1" );
+            int type = statement.relationshipTypeGetOrCreateForName( "RELATED" );
+            rel = statement.relationshipCreate( type, statement.nodeCreate(), statement.nodeCreate() );
+
+            statement.relationshipSetProperty( rel, Property.stringProperty( prop1, "As" ) );
+            statement.relationshipDelete( rel );
+
+            // When
+            try
+            {
+                statement.relationshipRemoveProperty( rel, prop1 );
+                fail( "Should have failed." );
+            }
+            catch ( IllegalStateException e )
+            {
+                assertThat( e.getMessage(),
+                            equalTo( "Relationship " + rel + " has been deleted" ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnNode() throws Exception
     {
         // given
         long node;
@@ -436,7 +471,42 @@ public class PropertyIT extends KernelIntegrationTest
         // then
         {
             ReadOperations ops = readOperationsInNewTransaction();
-            assertFalse(ops.nodeGetProperty( node, prop ).isDefined());
+            assertThat( ops.nodeGetProperty( node, prop ), not( isDefinedProperty() ) );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnRelationship() throws Exception
+    {
+        // given
+        long rel;
+        int prop;
+        {
+            DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+            prop = ops.propertyKeyGetOrCreateForName( "foo" );
+            int type = ops.relationshipTypeGetOrCreateForName( "RELATED" );
+
+            rel = ops.relationshipCreate( type, ops.nodeCreate(), ops.nodeCreate() );
+            ops.relationshipSetProperty( rel, property( prop, "bar" ) );
+
+            commit();
+        }
+
+        // when
+        {
+            DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+            ops.relationshipRemoveProperty( rel, prop );
+            ops.relationshipSetProperty( rel, property( prop, "bar" ) );
+            ops.relationshipRemoveProperty( rel, prop );
+            ops.relationshipRemoveProperty( rel, prop );
+
+            commit();
+        }
+
+        // then
+        {
+            ReadOperations ops = readOperationsInNewTransaction();
+            assertThat( ops.relationshipGetProperty( rel, prop ), not( isDefinedProperty() ) );
         }
     }
 

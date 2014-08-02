@@ -494,26 +494,24 @@ public class LabelsAcceptanceTest
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
         final Label label = DynamicLabel.label( "A" );
+        try ( Transaction tx = db.beginTx() )
         {
-            final Transaction tx = db.beginTx();
-            final Node node = db.createNode();
+            Node node = db.createNode();
             node.addLabel( label );
             node.setProperty( "name", "bla" );
             tx.success();
-            tx.finish();
         }
 
         // WHEN
+        try ( Transaction tx = db.beginTx() )
         {
-            final Transaction tx = db.beginTx();
             for ( final Node node : GlobalGraphOperations.at( db ).getAllNodes() )
             {
                 node.removeLabel( label ); // remove Label ...
                 node.delete(); // ... and afterwards the node
             }
             tx.success();
-            tx.finish(); // here comes the exception
-        }
+        } // tx.close(); - here comes the exception
 
         // THEN
         Transaction transaction = db.beginTx();
@@ -533,12 +531,8 @@ public class LabelsAcceptanceTest
         {
             Node node = db.createNode( label1, label2 );
 
-            Iterable<Label> labels = node.getLabels();
-            Iterator<Label> labelIterator = labels.iterator();
-
-            while ( labelIterator.hasNext() )
+            for ( Label next : node.getLabels() )
             {
-                Label next = labelIterator.next();
                 node.removeLabel( next );
             }
             tx.success();

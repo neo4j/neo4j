@@ -183,6 +183,7 @@ the relevant Commercial Agreement.
                   <version>1.6.4</version>
                 </additionnalDependency>
               </additionnalDependencies>
+              <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
               <detectLinks>false</detectLinks>
               <header>${project.name}</header>
