@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.index.IndexWriter;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;

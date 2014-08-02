@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import static java.lang.String.format;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,6 +59,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
+import static java.lang.String.format;
+
 /**
  * This is the real master code that executes on a master. The actual
  * communication over network happens in {@link org.neo4j.kernel.ha.com.slave.MasterClient} and
@@ -96,11 +96,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer );
 
-        Response<Void> copyTransactions( String dsName, long startTxId, long endTxId );
-
         <T> Response<T> packResponse( RequestContext context, T response, Predicate<Long> filter );
-
-        void pushTransaction( int eventIdentifier, long tx, int machineId );
 
         int getOrCreateLabel( String name );
 
@@ -338,13 +334,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
     }
 
     @Override
-    public Response<Void> copyTransactions( RequestContext context,
-                                            String dsName, long startTxId, long endTxId )
-    {
-        return spi.copyTransactions( dsName, startTxId, endTxId );
-    }
-
-    @Override
     public Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type, long...
             resourceIds )
     {
@@ -384,13 +373,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             return packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
         }
-    }
-
-    @Override
-    public Response<Void> pushTransaction( RequestContext context, long tx )
-    {
-        // 2.2-future no longer required
-        return null;
     }
 
     // =====================================================================

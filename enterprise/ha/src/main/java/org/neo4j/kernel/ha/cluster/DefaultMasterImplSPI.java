@@ -157,13 +157,6 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
-    public Response<Void> copyTransactions( String dsName, long startTxId, long endTxId )
-    {
-        // 2.2-future unnecessary
-        return null;
-    }
-
-    @Override
     public <T> Response<T> packResponse( RequestContext context, T response, Predicate<Long> filter )
     {
         return responsePacker.packResponse( context, response, wrapLongFilter( filter ) );
@@ -181,12 +174,6 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
                 return filter.accept( transaction.getCommitEntry().getTxId() );
             }
         };
-    }
-
-    @Override
-    public void pushTransaction( int eventIdentifier, long tx, int machineId )
-    {
-        // 2.2-future - unnecessary
     }
 
     private <T> T resolve( Class<T> dependencyType )

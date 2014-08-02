@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha;
 import java.net.URI;
 
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;

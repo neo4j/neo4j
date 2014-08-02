@@ -25,7 +25,6 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyRelationship20StoreReader;
 
 public interface LegacyRelationshipStoreReader extends Closeable
 {

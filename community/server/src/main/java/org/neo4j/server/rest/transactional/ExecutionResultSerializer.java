@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.codehaus.jackson.JsonFactory;

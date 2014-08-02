@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 

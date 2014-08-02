@@ -30,7 +30,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.io.pagecache.PageCacheMonitor;
-import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.PagedFile;
 
 import static org.hamcrest.CoreMatchers.equalTo;

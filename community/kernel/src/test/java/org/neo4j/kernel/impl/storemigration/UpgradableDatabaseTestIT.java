@@ -38,14 +38,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFi
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateToFixedLength;
 import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.LEGACY_VERSION;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Test;
-import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class UpgradableDatabaseTestIT
