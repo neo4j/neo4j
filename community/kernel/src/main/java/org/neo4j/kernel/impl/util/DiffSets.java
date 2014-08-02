@@ -94,9 +94,9 @@ public class DiffSets<T>
 
     public boolean add( T elem )
     {
-        boolean result = added( true ).add( elem );
-        removed( false ).remove( elem );
-        return result;
+        boolean wasRemoved = removed( false ).remove( elem );
+        // Add to the addedElements only if it was not removed from the removedElements
+        return wasRemoved || added( true ).add( elem );
     }
 
     public void replace( T toRemove, T toAdd )
