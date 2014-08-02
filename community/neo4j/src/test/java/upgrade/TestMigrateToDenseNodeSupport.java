@@ -26,7 +26,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.consistency.store.StoreAssertions;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
