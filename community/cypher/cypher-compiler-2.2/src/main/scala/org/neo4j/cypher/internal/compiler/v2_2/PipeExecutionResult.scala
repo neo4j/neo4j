@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import java.io.{PrintWriter, StringWriter}
+import java.io.PrintWriter
 import java.util
+import java.util.Collections
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
@@ -34,151 +34,69 @@ import org.neo4j.graphdb.ResourceIterator
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
-import scala.collection.immutable.{Map => ImmutableMap}
 
-class PipeExecutionResult(val result: ClosingIterator,
-                          val columns: List[String], val state: QueryState,
+class PipeExecutionResult(val result: ResultIterator,
+                          val columns: List[String],
+                          val state: QueryState,
                           val executionPlanBuilder: () => PlanDescription,
                           val planType: PlanType)
   extends InternalExecutionResult
-  with CollectionSupport
-  with StringHelper {
+  with CollectionSupport {
+
+  self =>
+
+  lazy val dumpToString = withDumper(dumper => dumper.dumpToString(_))
+
+  def dumpToString(writer: PrintWriter) { withDumper(dumper => dumper.dumpToString(writer)(_)) }
 
   def executionPlanDescription(): PlanDescription = executionPlanBuilder()
 
   def javaColumns: java.util.List[String] = columns.asJava
 
-  def javaColumnAs[T](column: String): ResourceIterator[T] = {
-    val scalaColumn: Iterator[T] = columnAs[T](column)
-    val javaColumn: util.Iterator[T] = scalaColumn.map(x => makeValueJavaCompatible(x).asInstanceOf[T]).asJava
-    wrapInResourceIterator(javaColumn)
+  def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
+    def hasNext = self.hasNext
+    def next() = makeValueJavaCompatible(getAnyColumn(column, self.next())).asInstanceOf[T]
   }
 
-  def columnAs[T](column: String): Iterator[T] = map {
-    case m => {
-      val item: Any = m.getOrElse(column, throw new EntityNotFoundException("No column named '" + column + "' was found. Found: " + m.keys.mkString("(\"", "\", \"", "\")")))
-      item.asInstanceOf[T]
-    }
+  def columnAs[T](column: String): Iterator[T] = map { case m => getAnyColumn(column, m).asInstanceOf[T] }
+
+  def javaIterator: ResourceIterator[java.util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
+    def hasNext = self.hasNext
+    def next() = self.next().mapValues(makeValueJavaCompatible).asJava
+  }
+
+  override def toList: List[Predef.Map[String, Any]] = result.toList
+
+  def hasNext = result.hasNext
+
+  def next() = result.next()
+
+  def queryStatistics() = state.getStatistics
+
+  def close() { result.close() }
+
+  def planDescriptionRequested = planType == Explained
+
+  private def getAnyColumn[T](column: String, m: Map[String, Any]): Any = {
+    m.getOrElse(column, {
+      throw new EntityNotFoundException("No column named '" + column + "' was found. Found: " + m.keys.mkString("(\"", "\", \"", "\")"))
+    })
   }
 
   private def makeValueJavaCompatible(value: Any): Any = value match {
-    case iter: Seq[_] => iter.map(makeValueJavaCompatible).asJava
+    case iter: Seq[_]    => iter.map(makeValueJavaCompatible).asJava
     case iter: Map[_, _] => iter.mapValues(makeValueJavaCompatible).asJava
-    case x => x
+    case x               => x
   }
 
-  def javaIterator: ResourceIterator[java.util.Map[String, Any]] = {
-    val inner = this.map(m => {
-      m.map(kv => kv._1 -> makeValueJavaCompatible(kv._2)).asJava
-    }).toIterator.asJava
-
-    wrapInResourceIterator(inner)
+  private def withDumper[T](f: (ExecutionResultDumper) => (QueryContext => T)): T = {
+    val result = toList
+    state.query.withAnyOpenQueryContext( qtx => f(ExecutionResultDumper(result, columns, queryStatistics()))(qtx) )
   }
 
-  private def wrapInResourceIterator[T](inner: java.util.Iterator[T]): ResourceIterator[T] =
-    new ResourceIterator[T] {
-      def hasNext: Boolean = inner.hasNext
-
-      def next(): T = inner.next()
-
-      def remove() {
-        inner.remove()
-      }
-
-      def close() {
-        result.close()
-      }
-    }
-
-  private def calculateColumnSizes(result: Seq[Map[String, Any]], qtx: QueryContext): Map[String, Int] = {
-    val columnSizes = new scala.collection.mutable.OpenHashMap[String, Int] ++ columns.map(name => name -> name.size)
-
-    result.foreach((m) => {
-      m.foreach((kv) => {
-        val length = text(kv._2, qtx).size
-        if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
-          columnSizes.put(kv._1, length)
-        }
-      })
-    })
-    columnSizes.toMap
+  private trait WrappingResourceIterator[T] extends ResourceIterator[T] {
+    def remove() { Collections.emptyIterator[T]().remove() }
+    def close() { self.close() }
   }
-
-  def eagerResult = result.toList
-
-  def dumpToString(writer: PrintWriter) {
-    // TODO Fix so that output is generated in same transactions or formatted independent from database access
-
-    // this closes the current query context
-    val result = eagerResult
-    // this wraps a fresh query context around output generation
-    state.query.withAnyOpenQueryContext(dumpToString(result, writer, _))
-  }
-
-  protected def dumpToString(result: List[Map[String, Any]], writer: PrintWriter, qtx: QueryContext) {
-    val columnSizes = calculateColumnSizes(result, qtx)
-
-    if (columns.nonEmpty) {
-      val headers = columns.map((c) => Map[String, Any](c -> Some(c))).reduceLeft(_ ++ _)
-      val headerLine: String = createString(columns, columnSizes, headers, qtx)
-      val lineWidth: Int = headerLine.length - 2
-      val --- = "+" + repeat("-", lineWidth) + "+"
-
-      val row = if (result.size > 1) "rows" else "row"
-      val footer = "%d %s".format(result.size, row)
-
-      writer.println(---)
-      writer.println(headerLine)
-      writer.println(---)
-
-      result.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine, qtx)))
-
-      writer.println(---)
-      writer.println(footer)
-      if (queryStatistics().containsUpdates) {
-        writer.print(queryStatistics().toString)
-      }
-    } else {
-      if (queryStatistics().containsUpdates) {
-        writer.println("+-------------------+")
-        writer.println("| No data returned. |")
-        writer.println("+-------------------+")
-        writer.print(queryStatistics().toString)
-      } else {
-        writer.println("+--------------------------------------------+")
-        writer.println("| No data returned, and nothing was changed. |")
-        writer.println("+--------------------------------------------+")
-      }
-    }
-  }
-
-  lazy val dumpToString: String = {
-    val stringWriter = new StringWriter()
-    val writer = new PrintWriter(stringWriter)
-    dumpToString(writer)
-    writer.close()
-    stringWriter.getBuffer.toString
-  }
-
-  private def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any], qtx: QueryContext): String = {
-    columns.map(c => {
-      val length = columnSizes.get(c).get
-      val txt = text(m.get(c).get, qtx)
-      val value = makeSize(txt, length)
-      value
-    }).mkString("| ", " | ", " |")
-  }
-
-  def hasNext: Boolean = result.hasNext
-
-  def next(): ImmutableMap[String, Any] = result.next().toMap
-
-  def queryStatistics() = QueryStatistics()
-
-  def close() {
-    result.close()
-  }
-
-  def planDescriptionRequested = planType == Explained
 }
 

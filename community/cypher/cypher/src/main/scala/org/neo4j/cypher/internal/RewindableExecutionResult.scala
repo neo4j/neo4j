@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.{InternalException, ExecutionResult}
 import org.neo4j.cypher.internal.compatability.ExecutionResultWrapperFor2_2
+import org.neo4j.cypher.internal.compiler.v2_2.PipeExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_2.{EagerPipeExecutionResult, PipeExecutionResult}
+import org.neo4j.cypher.{ExecutionResult, InternalException}
 
 object RewindableExecutionResult {
   def apply(inner: InternalExecutionResult): InternalExecutionResult = inner match {
-    case _: EagerPipeExecutionResult => inner
     case other: PipeExecutionResult  =>
-      new EagerPipeExecutionResult(other.result, other.columns, other.state, other.executionPlanBuilder, other.planType)
-    case _                           => inner
+      new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder, other.planType)
+    case _ =>
+      inner
   }
 
   def apply(in: ExecutionResult): InternalExecutionResult = in match {

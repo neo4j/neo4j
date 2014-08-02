@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.ExecutionResult
-import org.neo4j.cypher.internal.{Explained, Normal}
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.{ExplainExecutionResult, EagerPipeExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_2.{EagerResultIterator, ExplainExecutionResult, PipeExecutionResult}
+import org.neo4j.cypher.internal.{Explained, Normal}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.mockito.Mockito._
-import org.mockito.Matchers._
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
 
@@ -45,7 +44,8 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
 
     // THEN
     val result = builder.build(graph, "42", Map.empty)
-    result shouldBe a [EagerPipeExecutionResult]
+    result shouldBe a [PipeExecutionResult]
+    result.asInstanceOf[PipeExecutionResult].result shouldBe a[EagerResultIterator]
   }
 
   test("produces lazy results for non-updating queries") {
@@ -62,7 +62,8 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
 
     // THEN
     val result = builder.build(graph, "42", Map.empty)
-    result should not be an [EagerPipeExecutionResult]
+    result shouldBe a [PipeExecutionResult]
+    result.asInstanceOf[PipeExecutionResult].result should not be an[EagerResultIterator]
   }
 
   test("produces explain results for EXPLAIN queries") {
