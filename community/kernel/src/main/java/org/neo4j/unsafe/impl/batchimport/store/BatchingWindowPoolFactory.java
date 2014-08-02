@@ -112,7 +112,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
 
     private final int windowTargetSize;
     private final Monitor monitor;
-    private final Mode mode;
+    private Mode mode;
     private final WriterFactory writerFactory;
 
     public BatchingWindowPoolFactory( int windowTargetSize, Monitor monitor, Mode mode,
@@ -122,6 +122,11 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         this.monitor = monitor;
         this.mode = mode;
         this.writerFactory = writerFactory;
+    }
+
+    void setMode( Mode mode )
+    {
+        this.mode = mode;
     }
 
     @Override
@@ -139,8 +144,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         public SingleWindowPool( File storageFileName, int recordSize, StoreChannel channel )
         {
             this.storageFileName = storageFileName;
-            this.window = createSingleWindow( storageFileName, recordSize, channel
-            );
+            this.window = createSingleWindow( storageFileName, recordSize, channel );
             window.allocateBuffer();
             window.placeWindowFor( 0 );
         }
