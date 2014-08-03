@@ -33,8 +33,9 @@ case class InliningContext(projections: Map[Identifier, Expression] = Map.empty,
       projections
     } else {
       newProjections.foldLeft(projections) {
-        case (m, (k, v)) if seen(k) => m - k
-        case (m, (k, v))            => m + (k -> inlineExpressions(v))
+        case (m, (k, _)) if m.contains(k) && m(k).isInstanceOf[PathExpression] => m
+        case (m, (k, _)) if seen(k)                                            => m - k
+        case (m, (k, v))                                                       => m + (k -> inlineExpressions(v))
       }
     }
     copy(projections = resultProjections, seenIdentifiers = seenIdentifiers ++ newProjections.keySet)
@@ -70,5 +71,8 @@ case class InliningContext(projections: Map[Identifier, Expression] = Map.empty,
     case Some(other: Identifier) => Some(other)
     case _                       => None
   }
+
+  override def toString =
+    s"InliningContext( projections = ${projections.toString()}, seen = (${seenIdentifiers.map(_.name).mkString(",")}) )"
 }
 
