@@ -67,7 +67,6 @@
       <fileMode>0755</fileMode>
       <excludes>
         <exclude>bin/neo4j</exclude>
-        <exclude>bin/neo4j-support-upload</exclude>
         <exclude>**/*.bat</exclude>
         <exclude>**/neo4j-backup*</exclude>
         <exclude>**/neo4j-coord*</exclude>
