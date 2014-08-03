@@ -48,6 +48,10 @@ public class BatchingPageCache implements PageCache
     public interface WriterFactory
     {
         Writer create( File file, StoreChannel channel, Monitor monitor );
+
+        void awaitEverythingWritten();
+
+        void shutdown();
     }
 
     /**
@@ -80,6 +84,16 @@ public class BatchingPageCache implements PageCache
                     }
                 }
             };
+        }
+
+        @Override
+        public void awaitEverythingWritten()
+        {   // no-op
+        }
+
+        @Override
+        public void shutdown()
+        {   // no-op
         }
     };
 
@@ -132,7 +146,7 @@ public class BatchingPageCache implements PageCache
     {
         StoreChannel channel = fs.open( file, "rw" );
         BatchingPagedFile pageFile = new BatchingPagedFile( channel,
-                writerFactory.create( file, channel, monitor ), pageSize, mode );
+                writerFactory.create( file, channel, monitor ), pageSize );
         pagedFiles.put( file, pageFile );
         return pageFile;
     }
@@ -151,6 +165,10 @@ public class BatchingPageCache implements PageCache
     @Override
     public void flush() throws IOException
     {   // no need to do anything here
+        for ( PagedFile file : pagedFiles.values() )
+        {
+            file.flush();
+        }
     }
 
     @Override
@@ -175,17 +193,17 @@ public class BatchingPageCache implements PageCache
         return 1;
     }
 
-    static class BatchingPagedFile implements PagedFile
+    class BatchingPagedFile implements PagedFile
     {
         private final BatchingPageCursor singleCursor;
         private final StoreChannel channel;
         private final int pageSize;
 
-        public BatchingPagedFile( StoreChannel channel, Writer writer, int pageSize, Mode mode ) throws IOException
+        public BatchingPagedFile( StoreChannel channel, Writer writer, int pageSize ) throws IOException
         {
             this.channel = channel;
             this.pageSize = pageSize;
-            this.singleCursor = new BatchingPageCursor( channel, writer, pageSize, mode );
+            this.singleCursor = new BatchingPageCursor( channel, writer, pageSize );
         }
 
         @Override
@@ -208,7 +226,6 @@ public class BatchingPageCache implements PageCache
         public void close() throws IOException
         {
             flush();
-            singleCursor.close();
             channel.close();
         }
 
@@ -222,13 +239,11 @@ public class BatchingPageCache implements PageCache
         public void flush() throws IOException
         {
             singleCursor.flush();
-            force();
         }
 
         @Override
         public void force() throws IOException
-        {
-            channel.force( true );
+        {   // no-op
         }
 
         @Override
@@ -238,24 +253,22 @@ public class BatchingPageCache implements PageCache
         }
     }
 
-    static class BatchingPageCursor implements PageCursor
+    class BatchingPageCursor implements PageCursor
     {
         private ByteBuffer currentBuffer;
         private final SimplePool<ByteBuffer> bufferPool;
         private final StoreChannel channel;
         private final Writer writer;
         private long currentPageId = -1;
-        private final Mode mode;
         private final int pageSize;
         private boolean pinned;
         private long highestKnownPageId;
 
-        BatchingPageCursor( StoreChannel channel, Writer writer, final int pageSize, Mode mode ) throws IOException
+        BatchingPageCursor( StoreChannel channel, Writer writer, final int pageSize ) throws IOException
         {
             this.channel = channel;
             this.writer = writer;
             this.pageSize = pageSize;
-            this.mode = mode;
             bufferPool = new SimplePool<>( 2, new Factory<ByteBuffer>()
             {
                 @Override

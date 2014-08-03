@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -56,7 +55,6 @@ import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Mode.UPD
  */
 public class BatchingNeoStore implements AutoCloseable
 {
-    private final LifeSupport life = new LifeSupport();
     private final FileSystemAbstraction fileSystem;
     private final Monitors monitors;
     private final BatchingPropertyKeyTokenRepository propertyKeyRepository;
@@ -64,9 +62,9 @@ public class BatchingNeoStore implements AutoCloseable
     private final BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
     private final StringLogger logger;
     private final Config neo4jConfig;
-    private final File neoStoreFileName;
     private final BatchingPageCache pageCacheFactory;
-    private NeoStore neoStore;
+    private final NeoStore neoStore;
+    private final WriterFactory writerFactory;
 
     public BatchingNeoStore( FileSystemAbstraction fileSystem, String storeDir,
                                   Configuration config, Monitor writeMonitor, Logging logging,
@@ -74,7 +72,7 @@ public class BatchingNeoStore implements AutoCloseable
     {
         this.fileSystem = fileSystem;
         this.monitors = monitors;
-        this.neoStoreFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
+        this.writerFactory = writerFactory;
         this.logger = logging.getMessagesLog( getClass() );
         this.neo4jConfig = configForStoreDir(
                 new Config( stringMap( dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ) ),
@@ -88,7 +86,6 @@ public class BatchingNeoStore implements AutoCloseable
         this.labelRepository = new BatchingLabelTokenRepository( neoStore.getLabelTokenStore() );
         this.relationshipTypeRepository =
                 new BatchingRelationshipTypeTokenRepository( neoStore.getRelationshipTypeTokenStore() );
-        life.start();
     }
 
     private NeoStore newNeoStore( PageCache pageCache )
@@ -138,25 +135,19 @@ public class BatchingNeoStore implements AutoCloseable
         pageCacheFactory.setMode( UPDATE );
     }
 
-    public void flushAll()
-    {
-        if ( neoStore != null )
-        {
-            neoStore.flush();
-        }
-    }
-
     @Override
     public void close()
     {
+        // Flush out all pending changes
         propertyKeyRepository.close();
         labelRepository.close();
         relationshipTypeRepository.close();
-        if ( neoStore != null )
-        {
-            neoStore.close();
-            neoStore = null;
-        }
-        life.shutdown();
+        neoStore.flush();
+
+        // Await those to be written
+        writerFactory.awaitEverythingWritten();
+
+        // Close the neo store
+        neoStore.close();
     }
 }

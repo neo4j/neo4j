@@ -49,7 +49,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.consistency.store.StoreAssertions.verifyNeoStore;
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
@@ -94,6 +95,15 @@ public class StoreMigratorFrom19IT
         neoStore.close();
 
         assertConsistentStore( storeDir );
+    }
+
+    private static void verifyNeoStore( NeoStore neoStore )
+    {
+        assertEquals( 1405267948320l, neoStore.getCreationTime() );
+        assertEquals( -460827792522586619l, neoStore.getRandomNumber() );
+        assertEquals( 15l, neoStore.getCurrentLogVersion() );
+        assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
+        assertEquals( 1004L + 3, neoStore.getLastCommittingTransactionId() ); // prior verifications add 3 transactions
     }
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();

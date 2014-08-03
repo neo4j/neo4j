@@ -62,6 +62,7 @@ public class IoQueue implements WriterFactory
         return new Funnel( file, channel, monitor, queue );
     }
 
+    @Override
     public void awaitEverythingWritten()
     {
         long endTime = System.currentTimeMillis()+MINUTES.toMillis( 10 );
@@ -83,6 +84,7 @@ public class IoQueue implements WriterFactory
         }
     }
 
+    @Override
     public void shutdown()
     {
         executor.shutdown();

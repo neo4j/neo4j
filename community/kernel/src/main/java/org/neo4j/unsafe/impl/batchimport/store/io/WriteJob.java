@@ -23,8 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.collection.pool.Pool;
-
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 
 class WriteJob
 {

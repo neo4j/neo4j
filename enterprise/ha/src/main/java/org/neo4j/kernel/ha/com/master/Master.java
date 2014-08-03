@@ -81,15 +81,12 @@ public interface Master
      * @return the master id for a given txId, also a checksum for that tx.
      */
     Response<HandshakeResult> handshake( long txId, StoreId myStoreId );
-    Response<Void> pushTransaction( RequestContext context, long tx );
 
     Response<Void> pullUpdates( RequestContext context );
 
     Response<Void> copyStore( RequestContext context, StoreWriter writer );
 
-    Response<Void> copyTransactions( RequestContext context, String dsName,
-                                     long startTxId, long endTxId );
-
     Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type, long... resourceIds );
+
     Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType type, long... resourceIds );
 }
