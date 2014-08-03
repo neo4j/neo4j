@@ -30,6 +30,7 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -46,6 +47,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.count;
 
 @RunWith( Theories.class )
@@ -83,8 +85,8 @@ public class StoreUpgradeTest
 
     @Test
     @Theory
-    public void embeddedDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled(
-            Store store ) throws IOException
+    public void embeddedDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled( Store store )
+            throws IOException, ConsistencyCheckIncompleteException
     {
         File dir = store.prepareDirectory();
 
@@ -103,11 +105,15 @@ public class StoreUpgradeTest
         {
             db.shutdown();
         }
+
+        assertConsistentStore( dir );
     }
 
     @Test
     @Theory
-    public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled( Store store ) throws IOException
+    public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled( Store store )
+            throws IOException, ConsistencyCheckIncompleteException
+
     {
         File dir = store.prepareDirectory();
 
@@ -146,5 +152,8 @@ public class StoreUpgradeTest
         {
             System.clearProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY );
         }
+
+        assertConsistentStore( dir );
     }
+
 }

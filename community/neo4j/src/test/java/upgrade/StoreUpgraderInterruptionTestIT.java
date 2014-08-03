@@ -17,34 +17,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
-import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.LEGACY_VERSION;
+package upgrade;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
+import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
+import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.LEGACY_VERSION;
+
 public class StoreUpgraderInterruptionTestIT
 {
     @Test
-    public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMigration() throws IOException
+    public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMigration()
+            throws IOException, ConsistencyCheckIncompleteException
     {
         File workingDirectory = directory.directory();
         MigrationTestUtils.prepareSampleLegacyDatabase( fileSystem, workingDirectory );
@@ -78,6 +84,7 @@ public class StoreUpgraderInterruptionTestIT
                 .migrateIfNeeded( workingDirectory );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
+        assertConsistentStore( workingDirectory );
     }
 
     private StoreUpgrader newUpgrader( StoreMigrator migrator )
@@ -91,6 +98,4 @@ public class StoreUpgraderInterruptionTestIT
 
     @SuppressWarnings( "deprecation" )
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-    @SuppressWarnings( "deprecation" )
-    private final IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
 }

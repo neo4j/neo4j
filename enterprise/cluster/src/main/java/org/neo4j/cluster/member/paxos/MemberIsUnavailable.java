@@ -42,7 +42,7 @@ public class MemberIsUnavailable
     {
     }
 
-    public MemberIsUnavailable( String role, InstanceId instanceId, URI clusterUri)
+    public MemberIsUnavailable( String role, InstanceId instanceId, URI clusterUri )
     {
         this.role = role;
         this.instanceId = instanceId;
@@ -69,7 +69,10 @@ public class MemberIsUnavailable
     {
         out.writeUTF( role );
         out.writeObject( instanceId );
-        out.writeUTF( clusterUri.toString() );
+        if ( clusterUri != null )
+        {
+            out.writeUTF( clusterUri.toString() );
+        }
     }
 
     @Override
@@ -77,13 +80,16 @@ public class MemberIsUnavailable
     {
         role = in.readUTF();
         instanceId = (InstanceId) in.readObject();
-        clusterUri = URI.create( in.readUTF() );
+        if ( in.available() != 0 )
+        {
+            clusterUri = URI.create( in.readUTF() );
+        }
     }
 
     @Override
     public String toString()
     {
         return String.format( "MemberIsUnavailable[ Role: %s, InstanceId: %s, ClusterURI: %s ]",
-                role, instanceId.toString(), clusterUri.toString() );
+                role, instanceId.toString(), (clusterUri == null) ? null : clusterUri.toString() );
     }
 }

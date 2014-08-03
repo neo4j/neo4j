@@ -36,12 +36,11 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
-
 public class MetricsLogExtension implements Lifecycle
 {
-    private Monitors monitors;
-    private Config config;
-    private FileSystemAbstraction fileSystemAbstraction;
+    private final Monitors monitors;
+    private final Config config;
+    private final FileSystemAbstraction fileSystemAbstraction;
     private final TransactionMonitor transactionMonitor;
     private ByteCounterMetrics networkCounterMetrics;
     private ByteCounterMetrics diskCounterMetrics;
@@ -115,7 +114,9 @@ public class MetricsLogExtension implements Lifecycle
     {
         executor.shutdown();
         if (!executor.awaitTermination( 10, TimeUnit.SECONDS ))
+        {
             executor.shutdownNow();
+        }
 
         csv.close();
 

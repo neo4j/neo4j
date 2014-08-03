@@ -25,14 +25,23 @@ import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
+
 /**
- * Executor that executes the Runnables when drain() is called. Allows asynch jobs to be scheduled, and then
+ * Executor that executes the Runnables when drain() is called. Allows async jobs to be scheduled, and then
  * run in a synchronous fashion.
  */
-public class DelayedDirectExecutor
-        extends AbstractExecutorService
+public class DelayedDirectExecutor extends AbstractExecutorService
 {
-    List<Runnable> runnables = new ArrayList<Runnable>();
+    private List<Runnable> runnables = new ArrayList<Runnable>();
+
+    private final StringLogger log;
+
+    public DelayedDirectExecutor( Logging logging )
+    {
+        this.log = logging.getMessagesLog( getClass() );
+    }
 
     @Override
     public void shutdown()
@@ -64,24 +73,28 @@ public class DelayedDirectExecutor
     }
 
     @Override
-    public void execute( Runnable command )
+    public synchronized void execute( Runnable command )
     {
         runnables.add( command );
     }
 
     public void drain()
     {
-        List<Runnable> current = runnables;
-        runnables = new ArrayList<Runnable>();
-        for ( Runnable runnable : current )
+        List<Runnable> currentRunnables;
+        synchronized ( this )
+        {
+            currentRunnables = runnables;
+            runnables = new ArrayList<Runnable>();
+        }
+        for ( Runnable runnable : currentRunnables )
         {
             try
             {
                 runnable.run();
             }
-            catch ( Throwable e )
+            catch ( Throwable t )
             {
-                e.printStackTrace();
+                log.error( "Runnable failed", t );
             }
         }
     }

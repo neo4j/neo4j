@@ -19,29 +19,24 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store.io;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.collection.pool.Pool;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
-
-class WriteJob
+class JobMonitor
 {
-    private final ByteBuffer byteBuffer;
-    private final long position;
-    private final Writer writer;
-    private final Pool<ByteBuffer> poolToReleaseBufferIn;
+    private final AtomicInteger activeCount = new AtomicInteger();
 
-    WriteJob( Writer writer, ByteBuffer byteBuffer, long position, Pool<ByteBuffer> poolToReleaseBufferIn )
+    void jobQueued()
     {
-        this.writer = writer;
-        this.byteBuffer = byteBuffer;
-        this.position = position;
-        this.poolToReleaseBufferIn = poolToReleaseBufferIn;
+        activeCount.incrementAndGet();
     }
 
-    public void execute() throws IOException
+    void jobExecuted()
     {
-        writer.write( byteBuffer, position, poolToReleaseBufferIn );
+        activeCount.decrementAndGet();
+    }
+
+    boolean hasActiveJobs()
+    {
+        return activeCount.get() > 0;
     }
 }

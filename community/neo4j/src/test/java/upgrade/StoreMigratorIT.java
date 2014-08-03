@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package upgrade;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.junit.Before;
@@ -31,11 +29,9 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,10 +42,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
+import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
@@ -60,33 +57,30 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Integer.MAX_VALUE;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
+import static org.neo4j.consistency.store.StoreAssertions.verifyNeoStore;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
 public class StoreMigratorIT
 {
     @Test
-    public void shouldMigrate() throws IOException
+    public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // WHEN
         upgrader( new StoreMigrator( monitor, fs ) )
                 .migrateIfNeeded( find20FormatStoreDirectory( storeDir ) );
 
         // THEN
-        assertEquals( 100, monitor.events.size() );
-        assertTrue( monitor.started );
-        assertTrue( monitor.finished );
+        assertEquals( 100, monitor.eventSize() );
+        assertTrue( monitor.isStarted() );
+        assertTrue( monitor.isFinished() );
 
         GraphDatabaseService database = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(
                 storeDir.getAbsolutePath() ) );
@@ -94,8 +88,8 @@ public class StoreMigratorIT
         try
         {
             DatabaseContentVerifier verifier = new DatabaseContentVerifier( database );
-            verifier.verifyNodes();
-            verifier.verifyRelationships();
+            verifier.verifyNodes( 501 );
+            verifier.verifyRelationships( 500 );
             verifier.verifyNodeIdsReused();
             verifier.verifyRelationshipIdsReused();
             verifier.verifyLegacyIndex();
@@ -109,13 +103,7 @@ public class StoreMigratorIT
         NeoStore neoStore = cleanup.add( storeFactory.newNeoStore( false ) );
         verifyNeoStore( neoStore );
         neoStore.close();
-    }
-
-    private StoreUpgrader upgrader( StoreMigrator storeMigrator )
-    {
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR );
-        upgrader.addParticipant( storeMigrator );
-        return upgrader;
+        assertConsistentStore( storeDir );
     }
 
     @Test
@@ -130,8 +118,7 @@ public class StoreMigratorIT
 
         // THEN
         // verify that the "name" property for both the involved nodes
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( 
-                storeDir.getAbsolutePath() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
         try
         {
             Node nodeA = getNodeWithName( db, "A" );
@@ -157,6 +144,16 @@ public class StoreMigratorIT
         Token[] tokens = tokenStore.getTokens( MAX_VALUE );
         tokenStore.close();
         assertNoDuplicates( tokens );
+
+        assertConsistentStore( storeDir );
+
+    }
+
+    private StoreUpgrader upgrader( StoreMigrator storeMigrator )
+    {
+        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR );
+        upgrader.addParticipant( storeMigrator );
+        return upgrader;
     }
 
     private void assertNoDuplicates( Token[] tokens )
@@ -209,143 +206,6 @@ public class StoreMigratorIT
                 fs,
                 StringLogger.DEV_NULL,
                 monitors );
-    }
-
-    private void verifyNeoStore( NeoStore neoStore )
-    {
-        assertEquals( 1317392957120L, neoStore.getCreationTime() );
-        assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
-        assertEquals( 3l, neoStore.getCurrentLogVersion() );
-        assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1007l, neoStore.getLastCommittingTransactionId() );
-    }
-
-    private static class DatabaseContentVerifier
-    {
-        private final String longString = MigrationTestUtils.makeLongString();
-        private final int[] longArray = MigrationTestUtils.makeLongArray();
-        private final GraphDatabaseService database;
-
-        public DatabaseContentVerifier( GraphDatabaseService database )
-        {
-            this.database = database;
-        }
-
-        private void verifyRelationships()
-        {
-            try ( Transaction tx = database.beginTx() )
-            {
-                int traversalCount = 0;
-                for ( Relationship rel : GlobalGraphOperations.at( database ).getAllRelationships() )
-                {
-                    traversalCount++;
-                    verifyProperties( rel );
-                }
-                tx.success();
-                assertEquals( 500, traversalCount );
-            }
-        }
-
-        private void verifyNodes()
-        {
-            int nodeCount = 0;
-            try ( Transaction tx = database.beginTx() )
-            {
-                for ( Node node : GlobalGraphOperations.at( database ).getAllNodes() )
-                {
-                    nodeCount++;
-                    if ( node.getId() > 0 )
-                    {
-                        verifyProperties( node );
-                    }
-                }
-                tx.success();
-            }
-            assertEquals( 501, nodeCount );
-        }
-
-        private void verifyProperties( PropertyContainer node )
-        {
-            assertEquals( Integer.MAX_VALUE, node.getProperty( PropertyType.INT.name() ) );
-            assertEquals( longString, node.getProperty( PropertyType.STRING.name() ) );
-            assertEquals( true, node.getProperty( PropertyType.BOOL.name() ) );
-            assertEquals( Double.MAX_VALUE, node.getProperty( PropertyType.DOUBLE.name() ) );
-            assertEquals( Float.MAX_VALUE, node.getProperty( PropertyType.FLOAT.name() ) );
-            assertEquals( Long.MAX_VALUE, node.getProperty( PropertyType.LONG.name() ) );
-            assertEquals( Byte.MAX_VALUE, node.getProperty( PropertyType.BYTE.name() ) );
-            assertEquals( Character.MAX_VALUE, node.getProperty( PropertyType.CHAR.name() ) );
-            assertArrayEquals( longArray, (int[]) node.getProperty( PropertyType.ARRAY.name() ) );
-            assertEquals( Short.MAX_VALUE, node.getProperty( PropertyType.SHORT.name() ) );
-            assertEquals( "short", node.getProperty( PropertyType.SHORT_STRING.name() ) );
-        }
-
-        private void verifyNodeIdsReused()
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
-                database.getNodeById( 1 );
-                fail( "Node 1 should not exist" );
-            }
-            catch ( NotFoundException e )
-            {   // expected
-            }
-
-            try ( Transaction transaction = database.beginTx() )
-            {
-                Node newNode = database.createNode();
-                assertEquals( 1, newNode.getId() );
-                transaction.success();
-            }
-        }
-
-        private void verifyRelationshipIdsReused()
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
-                Node node1 = database.createNode();
-                Node node2 = database.createNode();
-                Relationship relationship1 = node1.createRelationshipTo( node2, withName( "REUSE" ) );
-                assertEquals( 0, relationship1.getId() );
-                transaction.success();
-            }
-        }
-
-        public void verifyLegacyIndex()
-        {
-            try ( Transaction tx = database.beginTx() )
-            {
-                String[] nodeIndexes = database.index().nodeIndexNames();
-                String[] relationshipIndexes = database.index().relationshipIndexNames();
-                assertArrayEquals( new String[] { "nodekey" }, nodeIndexes );
-                assertArrayEquals( new String[] { "relkey" }, relationshipIndexes );
-                tx.success();
-            }
-        }
-    }
-
-    private class ListAccumulatorMigrationProgressMonitor implements MigrationProgressMonitor
-    {
-        private final List<Integer> events = new ArrayList<>();
-        private boolean started = false;
-        private boolean finished = false;
-
-        @Override
-        public void started()
-        {
-            started = true;
-        }
-
-        @Override
-        public void percentComplete( int percent )
-        {
-            events.add( percent );
-        }
-
-        @Override
-        public void finished()
-        {
-            finished = true;
-        }
     }
 
     public final @Rule CleanupRule cleanup = new CleanupRule();

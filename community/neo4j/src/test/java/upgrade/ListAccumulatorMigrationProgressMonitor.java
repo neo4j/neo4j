@@ -17,31 +17,49 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store.io;
+package upgrade;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.neo4j.collection.pool.Pool;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 
-class WriteJob
+public class ListAccumulatorMigrationProgressMonitor implements MigrationProgressMonitor
 {
-    private final ByteBuffer byteBuffer;
-    private final long position;
-    private final Writer writer;
-    private final Pool<ByteBuffer> poolToReleaseBufferIn;
+    private final List<Integer> events = new ArrayList<>();
+    private boolean started = false;
+    private boolean finished = false;
 
-    WriteJob( Writer writer, ByteBuffer byteBuffer, long position, Pool<ByteBuffer> poolToReleaseBufferIn )
+    @Override
+    public void started()
     {
-        this.writer = writer;
-        this.byteBuffer = byteBuffer;
-        this.position = position;
-        this.poolToReleaseBufferIn = poolToReleaseBufferIn;
+        started = true;
     }
 
-    public void execute() throws IOException
+    @Override
+    public void percentComplete( int percent )
     {
-        writer.write( byteBuffer, position, poolToReleaseBufferIn );
+        events.add( percent );
+    }
+
+    @Override
+    public void finished()
+    {
+        finished = true;
+    }
+
+    public int eventSize()
+    {
+        return events.size();
+    }
+
+    public boolean isStarted()
+    {
+        return started;
+    }
+
+    public boolean isFinished()
+    {
+        return finished;
     }
 }

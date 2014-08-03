@@ -19,13 +19,6 @@
  */
 package org.neo4j.test.ha;
 
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.io.fs.FileUtils.copyRecursively;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -49,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
 import org.neo4j.cluster.InstanceId;
@@ -86,7 +78,18 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
 import org.w3c.dom.Document;
+import ch.qos.logback.classic.LoggerContext;
+
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
 public class ClusterManager
         extends LifecycleAdapter
@@ -939,7 +942,9 @@ public class ClusterManager
             public boolean accept( ManagedCluster cluster )
             {
                 if (!allSeesAllAsJoined().accept( cluster ))
+                {
                     return false;
+                }
 
                 for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
                 {
@@ -980,7 +985,9 @@ public class ClusterManager
                     ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
 
                     if ( count( members.getMembers() ) < nrOfMembers)
+                    {
                         return false;
+                    }
                 }
 
                 for ( ClusterMembers clusterMembers : cluster.getArbiters() )
@@ -1025,22 +1032,25 @@ public class ClusterManager
             }
         };
     }
-    
-    private static String printState(ManagedCluster cluster)
+
+    public static String printState( ManagedCluster cluster )
     {
-        StringBuilder buf = new StringBuilder();
+        StringBuilder buf = new StringBuilder( "\n" );
         for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
         {
+            ClusterClient client = database.getDependencyResolver().resolveDependency( ClusterClient.class );
+            buf.append( "Instance " ).append( client.getServerId() )
+                    .append( "(" ).append( client.getClusterServer() ).append( "):" ).append( "\n" );
+
             ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
 
             for ( ClusterMember clusterMember : members.getMembers() )
             {
-                buf.append( clusterMember.getInstanceId() ).append( ":" ).append( clusterMember.getHARole() )
-                   .append(" (is alive = ").append( clusterMember.isAlive() ).append( ")" )
-                   .append( "\n" );
+                buf.append( "  " ).append( clusterMember.getInstanceId() ).append( ":" )
+                        .append( clusterMember.getHARole() )
+                        .append( " (is alive = " ).append( clusterMember.isAlive() ).append( ")" )
+                        .append( "\n" );
             }
-
-            buf.append( "\n" );
         }
 
         return buf.toString();

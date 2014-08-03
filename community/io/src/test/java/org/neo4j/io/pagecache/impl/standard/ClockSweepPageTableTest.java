@@ -31,6 +31,8 @@ import org.junit.Test;
 
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.standard.RecordingPageCacheMonitor.Evict;
+import org.neo4j.io.pagecache.impl.standard.RecordingPageCacheMonitor.Fault;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -39,9 +41,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-
-import static org.neo4j.io.pagecache.impl.standard.RecordingPageCacheMonitor.Fault;
-import static org.neo4j.io.pagecache.impl.standard.RecordingPageCacheMonitor.Evict;
 
 public class ClockSweepPageTableTest
 {

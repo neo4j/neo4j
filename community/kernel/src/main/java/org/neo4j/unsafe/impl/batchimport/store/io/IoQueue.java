@@ -29,10 +29,12 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 
 /**
  * Queue of I/O jobs. A job is basically: "write the contents of ByteBuffer B to channel C starting at position P"
@@ -41,6 +43,7 @@ import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFa
 public class IoQueue implements WriterFactory
 {
     private final ExecutorService executor;
+    private final JobMonitor jobMonitor = new JobMonitor();
 
     public IoQueue( int maxIOThreads )
     {
@@ -55,16 +58,40 @@ public class IoQueue implements WriterFactory
     @Override
     public Writer create( File file, StoreChannel channel, Monitor monitor )
     {
-        WriteQueue queue = new WriteQueue( executor );
+        WriteQueue queue = new WriteQueue( executor, jobMonitor);
         return new Funnel( file, channel, monitor, queue );
     }
 
-    public void shutdownAndAwaitEverythingWritten()
+    @Override
+    public void awaitEverythingWritten()
+    {
+        long endTime = System.currentTimeMillis()+MINUTES.toMillis( 10 );
+        while ( jobMonitor.hasActiveJobs() )
+        {
+            try
+            {
+                Thread.sleep( 10 );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
+
+            if ( System.currentTimeMillis() > endTime )
+            {
+                throw new RuntimeException( "Didn't finish within designated time" );
+            }
+        }
+    }
+
+    @Override
+    public void shutdown()
     {
         executor.shutdown();
+        awaitEverythingWritten();
         try
         {
-            executor.awaitTermination( 10, TimeUnit.MINUTES ); // too long?
+            executor.awaitTermination( 1, TimeUnit.MINUTES );
         }
         catch ( InterruptedException e )
         {

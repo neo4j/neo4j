@@ -42,6 +42,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.IteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.StageExecution;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
 
@@ -67,7 +68,7 @@ public class ParallelBatchImporter implements BatchImporter
     private final ConsoleLogger logger;
     private final LifeSupport life = new LifeSupport();
     private final Monitors monitors;
-    private final IoQueue writerFactory;
+    private final WriterFactory writerFactory;
 
     public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
                                   Configuration config, ExecutionMonitor executionMonitor )
@@ -110,7 +111,8 @@ public class ParallelBatchImporter implements BatchImporter
                     neoStore, nodeRelationshipLink ) );
 
             // Switch to reverse updating mode
-            neoStore.switchNodeAndRelationshipStoresToUpdateMode();
+            writerFactory.awaitEverythingWritten();
+            neoStore.switchToUpdateMode();
 
             // Stage 4 -- set node nextRel fields
             executeStages( new NodeFirstRelationshipStage( neoStore, nodeRelationshipLink ) );
@@ -120,18 +122,15 @@ public class ParallelBatchImporter implements BatchImporter
             executeStages( new RelationshipLinkbackStage( neoStore, nodeRelationshipLink ) );
 
             executionMonitor.done( currentTimeMillis() - startTime );
-
-            logger.log( "Import completed [TODO import stats]" );
         }
         catch ( Throwable t )
         {
             logger.error( "Error during import", t );
             throw Exceptions.launderedException( IOException.class, t );
         }
-        finally
-        {
-            writerFactory.shutdownAndAwaitEverythingWritten();
-        }
+
+        // TODO add import starts to this log message
+        logger.log( "Import completed" );
     }
 
     private synchronized void executeStages( Stage... stages ) throws Exception
