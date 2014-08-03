@@ -31,7 +31,6 @@ import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.management.BranchedStore;

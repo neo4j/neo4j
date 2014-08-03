@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.pagecache.PageCacheMonitor;
-import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.PagedFile;
 
 import static org.neo4j.io.pagecache.PageCursor.UNBOUND_PAGE_ID;

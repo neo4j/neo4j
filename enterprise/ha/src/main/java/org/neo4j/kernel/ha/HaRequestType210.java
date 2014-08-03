@@ -19,16 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
-import static org.neo4j.com.Protocol.LONG_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_SERIALIZER;
-import static org.neo4j.com.Protocol.readBoolean;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
-
 import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
@@ -47,6 +41,13 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
+import static org.neo4j.com.Protocol.LONG_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_SERIALIZER;
+import static org.neo4j.com.Protocol.readBoolean;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
 
 public enum HaRequestType210 implements RequestType<Master>
 {
@@ -207,13 +208,13 @@ public enum HaRequestType210 implements RequestType<Master>
     }, VOID_SERIALIZER ),
 
     // ====
-    COPY_TRANSACTIONS( new TargetCaller<Master, Void>()
+    PLACEHOLDER_FOR_COPY_TRANSACTIONS( new TargetCaller<Master, Void>()
     {
         @Override
         public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
                 final ChannelBuffer target )
         {
-            return master.copyTransactions( context, readString( input ), input.readLong(), input.readLong() );
+            throw new UnsupportedOperationException( "Not used anymore, merely here to keep the ordinal ids of the others" );
         }
 
     }, VOID_SERIALIZER ),
@@ -230,14 +231,13 @@ public enum HaRequestType210 implements RequestType<Master>
     }, VOID_SERIALIZER ),
 
     // ====
-    PUSH_TRANSACTION( new TargetCaller<Master, Void>()
+    PLACEHOLDER_FOR_PUSH_TRANSACTION( new TargetCaller<Master, Void>()
     {
         @Override
         public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            readString( input ); // always neostorexadatasource
-            return master.pushTransaction( context, input.readLong() );
+            throw new UnsupportedOperationException( "Not used anymore, merely here to keep the ordinal ids of the others" );
         }
     }, VOID_SERIALIZER ),
 

@@ -57,7 +57,6 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.ReadableIndex;
-import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.graphdb.index.UniqueFactory;
 import org.neo4j.graphdb.index.UniqueFactory.UniqueEntity;
 import org.neo4j.graphdb.schema.ConstraintCreator;
