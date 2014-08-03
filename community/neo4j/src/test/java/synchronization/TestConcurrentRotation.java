@@ -19,13 +19,10 @@
  */
 package synchronization;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.index.IndexWriter;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -41,6 +38,8 @@ import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
 
+import static org.junit.Assert.assertTrue;
+
 public class TestConcurrentRotation extends AbstractSubProcessTestBase
 {
     private final CountDownLatch barrier1 = new CountDownLatch( 1 ), barrier2 = new CountDownLatch( 1 );
@@ -54,7 +53,10 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         @Override
         protected void callback( DebugInterface debug ) throws KillSubProcess
         {
-            if ( counter++ > 0 ) return;
+            if ( counter++ > 0 )
+            {
+                return;
+            }
             thread = debug.thread().suspend( this );
             this.disable();
             barrier1.countDown();
@@ -130,7 +132,10 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         {
             try(Transaction tx = graphdb.beginTx())
             {
-                for ( int i = 0; i < 3; i++ ) graphdb.index().forNodes( "index" + i ).add( graphdb.createNode(), "name", "" + i );
+                for ( int i = 0; i < 3; i++ )
+                {
+                    graphdb.index().forNodes( "index" + i ).add( graphdb.createNode(), "name", "" + i );
+                }
                 tx.success();
             }
         }
@@ -152,9 +157,15 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         {
             try(Transaction ignored = graphdb.beginTx())
             {
-                for ( int i = 0; i < count; i++ ) graphdb.index().forNodes( "index" + i ).get( "name", i ).getSingle();
+                for ( int i = 0; i < count; i++ )
+                {
+                    graphdb.index().forNodes( "index" + i ).get( "name", i ).getSingle();
+                }
             }
-            if ( resume ) resumeFlushThread();
+            if ( resume )
+            {
+                resumeFlushThread();
+            }
         }
     }
 

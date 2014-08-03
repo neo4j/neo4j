@@ -110,7 +110,7 @@ public class BatchingPageCache implements PageCache
     private final Map<File, BatchingPagedFile> pagedFiles = new HashMap<>();
     private final WriterFactory writerFactory;
     private final Monitor monitor;
-    private final Mode mode;
+    private Mode mode;
 
     public BatchingPageCache( FileSystemAbstraction fs, int pageSize, WriterFactory writerFactory,
             Monitor monitor, Mode mode )
@@ -119,6 +119,11 @@ public class BatchingPageCache implements PageCache
         this.pageSize = pageSize;
         this.writerFactory = writerFactory;
         this.monitor = monitor;
+        this.mode = mode;
+    }
+
+    public void setMode( Mode mode )
+    {
         this.mode = mode;
     }
 

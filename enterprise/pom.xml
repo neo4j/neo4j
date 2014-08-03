@@ -30,7 +30,6 @@
   <modules>
     <module>com</module>
     <module>cluster</module>
-    <module>consistency-check</module>
     <module>backup</module>
     <module>ha</module>
     <module>neo4j-enterprise</module>

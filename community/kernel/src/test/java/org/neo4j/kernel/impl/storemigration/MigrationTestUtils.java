@@ -25,18 +25,17 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.test.Unzip;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -65,7 +64,7 @@ public class MigrationTestUtils
         return longArray;
     }
 
-    static String makeLongString()
+    public static String makeLongString()
     {
         StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < 100; i++ )
@@ -75,7 +74,7 @@ public class MigrationTestUtils
         return builder.toString();
     }
 
-    static void changeVersionNumber( FileSystemAbstraction fileSystem, File storeFile, String versionString )
+    public static void changeVersionNumber( FileSystemAbstraction fileSystem, File storeFile, String versionString )
             throws IOException
     {
         byte[] versionBytes = UTF8.encode( versionString );
@@ -85,7 +84,7 @@ public class MigrationTestUtils
         fileChannel.close();
     }
 
-    static void truncateFile( FileSystemAbstraction fileSystem, File storeFile,
+    public static void truncateFile( FileSystemAbstraction fileSystem, File storeFile,
             String suffixToDetermineTruncationLength ) throws IOException
     {
         byte[] versionBytes = UTF8.encode( suffixToDetermineTruncationLength );
@@ -94,7 +93,16 @@ public class MigrationTestUtils
         fileChannel.close();
     }
 
-    static void truncateToFixedLength( FileSystemAbstraction fileSystem, File storeFile, int newLength )
+    public static void truncateAllFiles( FileSystemAbstraction fileSystem, File workingDirectory ) throws IOException
+    {
+        for ( StoreFile20 storeFile : StoreFile20.legacyStoreFiles() )
+        {
+            truncateFile( fileSystem, new File( workingDirectory, storeFile.storeFileName() ),
+                    storeFile.legacyVersion() );
+        }
+    }
+
+    public static void truncateToFixedLength( FileSystemAbstraction fileSystem, File storeFile, int newLength )
             throws IOException
     {
         StoreChannel fileChannel = fileSystem.open( storeFile, "rw" );

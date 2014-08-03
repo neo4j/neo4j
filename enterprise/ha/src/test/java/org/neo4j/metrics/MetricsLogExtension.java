@@ -27,7 +27,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -37,14 +36,11 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.neo4j.helpers.collection.Iterables.iterable;
-
-
 public class MetricsLogExtension implements Lifecycle
 {
-    private Monitors monitors;
-    private Config config;
-    private FileSystemAbstraction fileSystemAbstraction;
+    private final Monitors monitors;
+    private final Config config;
+    private final FileSystemAbstraction fileSystemAbstraction;
     private final TransactionMonitor transactionMonitor;
     private ByteCounterMetrics networkCounterMetrics;
     private ByteCounterMetrics diskCounterMetrics;
@@ -118,7 +114,9 @@ public class MetricsLogExtension implements Lifecycle
     {
         executor.shutdown();
         if (!executor.awaitTermination( 10, TimeUnit.SECONDS ))
+        {
             executor.shutdownNow();
+        }
 
         csv.close();
 

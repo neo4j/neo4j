@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
-import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.impl.common.Page;
 
 public interface PinnablePage extends Page

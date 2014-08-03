@@ -110,7 +110,8 @@ public class ParallelBatchImporter implements BatchImporter
                     neoStore, nodeRelationshipLink ) );
 
             // Switch to reverse updating mode
-            neoStore.switchNodeAndRelationshipStoresToUpdateMode();
+            writerFactory.awaitEverythingWritten();
+            neoStore.switchToUpdateMode();
 
             // Stage 4 -- set node nextRel fields
             executeStages( new NodeFirstRelationshipStage( neoStore, nodeRelationshipLink ) );
@@ -121,7 +122,8 @@ public class ParallelBatchImporter implements BatchImporter
 
             executionMonitor.done( currentTimeMillis() - startTime );
 
-            logger.log( "Import completed [TODO import stats]" );
+            // TODO add import starts to this log message
+            logger.log( "Import completed" );
         }
         catch ( Throwable t )
         {
@@ -130,7 +132,7 @@ public class ParallelBatchImporter implements BatchImporter
         }
         finally
         {
-            writerFactory.shutdownAndAwaitEverythingWritten();
+            writerFactory.shutdown();
         }
     }
 

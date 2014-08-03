@@ -40,7 +40,6 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
         this.bytesPerEntry = 4+bytesPerKey;
         this.valueMarker = valueMarker;
         this.dataSize = (long)this.capacity*bytesPerEntry;
-        System.out.println( "allocate memory " + dataSize );
         this.address = unsafe.allocateMemory( dataSize );
         clear();
     }

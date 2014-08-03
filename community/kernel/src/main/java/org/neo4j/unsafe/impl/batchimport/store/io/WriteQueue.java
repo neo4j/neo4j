@@ -28,10 +28,12 @@ class WriteQueue implements Callable<Void>
 {
     private final LinkedList<WriteJob> queue = new LinkedList<>();
     private final ExecutorService executor;
+    private final JobMonitor jobMonitor;
 
-    public WriteQueue( ExecutorService executor )
+    public WriteQueue( ExecutorService executor, JobMonitor jobMonitor )
     {
         this.executor = executor;
+        this.jobMonitor = jobMonitor;
     }
 
     synchronized void offer( WriteJob job )
@@ -41,17 +43,25 @@ class WriteQueue implements Callable<Void>
         if ( wasEmpty )
         {
             executor.submit( this );
+            jobMonitor.jobQueued();
         }
     }
 
     @Override
     public Void call() throws IOException
     {
-        for ( WriteJob job : drain() )
+        try
         {
-            job.execute();
+            for ( WriteJob job : drain() )
+            {
+                job.execute();
+            }
+            return null;
         }
-        return null;
+        finally
+        {
+            jobMonitor.jobExecuted();
+        }
     }
 
     synchronized WriteJob[] drain()

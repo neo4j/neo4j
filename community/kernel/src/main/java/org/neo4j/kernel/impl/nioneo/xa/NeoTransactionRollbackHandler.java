@@ -49,8 +49,6 @@ public class NeoTransactionRollbackHandler extends NeoCommandHandler.Adapter
                     getRelationshipStore().freeId( id );
                 }
                 removeRelationshipFromCache( id );
-                patchDeletedRelationshipNodes( id, record.getFirstNode(), record.getFirstNextRel(),
-                                               record.getSecondNode(), record.getSecondNextRel() );
             }
             if ( neoStoreRecord != null )
             {
@@ -184,12 +182,6 @@ public class NeoTransactionRollbackHandler extends NeoCommandHandler.Adapter
             }
             cacheRemover.remove( cacheAccess, record.getKey() );
         }
-    }
-
-    private void patchDeletedRelationshipNodes( long id, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
-                                                long secondNextRelId )
-    {
-        cacheAccess.patchDeletedRelationshipNodes( id, firstNodeId, firstNodeNextRelId, secondNodeId, secondNextRelId );
     }
 
     private void removeRelationshipFromCache( long id )
