@@ -183,7 +183,8 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
 
         @Override
         public void flushAll()
-        {   // Nah
+        {
+            window.force();
         }
 
         @Override
@@ -216,6 +217,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
         protected long firstIdInWindow;
         protected long lastIdInWindow;
         private final Writer writer;
+        private long currentWindowIndex = -1;
 
         protected SingleWindow( File storageFileName, int recordSize, StoreChannel channel )
         {
@@ -286,6 +288,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
             {
                 zeroBuffer();
             }
+            currentWindowIndex = windowIndex;
             // buffer position after we placed the window is irrelevant since every future access
             // will set offset explicitly before use.
         }
@@ -371,11 +374,17 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
 
         private void writeBufferToChannel()
         {
+            if ( currentWindowIndex == -1 )
+            {
+                return;
+            }
+
             try
             {
                 writer.write( prepared( currentBuffer.getBuffer() ), firstIdInWindow * recordSize, bufferPool );
                 currentBuffer = new Buffer( this, bufferPool.acquire() );
                 currentBuffer.reset();
+                currentWindowIndex = -1;
             }
             catch ( IOException e )
             {

@@ -19,17 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
-import static java.nio.ByteBuffer.wrap;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.SYNCHRONOUS;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -54,7 +43,18 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.Mode;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
-public class BatchFriendlyWindowPoolFactoryTest
+import static java.nio.ByteBuffer.wrap;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.SYNCHRONOUS;
+
+public class BatchingWindowPoolFactoryTest
 {
     @Test
     public void shouldOnlyReadFirstWindowInAppendOnlyMode() throws Exception
@@ -169,6 +169,31 @@ public class BatchFriendlyWindowPoolFactoryTest
         Arrays.fill( zeros, (byte) 0 );
 
         assertArrayEquals( zeros, readBack );
+    }
+
+    @Test
+    public void shouldFlushWhenToldTo() throws Exception
+    {
+        // GIVEN
+        Monitor monitor = mock( Monitor.class );
+        WindowPool pool = pool( monitor, Mode.APPEND_ONLY );
+
+        PersistenceWindow window = pool.acquire( 0, OperationType.WRITE );
+        try
+        {
+            Buffer buffer = window.getOffsettedBuffer( 0 );
+            buffer.putInt( 1234 );
+        }
+        finally
+        {
+            pool.release( window );
+        }
+
+        // WHEN
+        pool.flushAll();
+
+        // THEN
+        verify( monitor ).dataWritten( windowSize );
     }
 
     private void verifyData( long recordId, byte[] expectedData ) throws IOException
