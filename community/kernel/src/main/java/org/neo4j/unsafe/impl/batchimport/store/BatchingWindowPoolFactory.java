@@ -54,6 +54,10 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
     public interface WriterFactory
     {
         Writer create( File file, StoreChannel channel, Monitor monitor );
+
+        void awaitEverythingWritten();
+
+        void shutdown();
     }
 
     /**
@@ -85,6 +89,16 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
                     }
                 }
             };
+        }
+
+        @Override
+        public void awaitEverythingWritten()
+        {   // no-op
+        }
+
+        @Override
+        public void shutdown()
+        {   // no-op
         }
     };
 
