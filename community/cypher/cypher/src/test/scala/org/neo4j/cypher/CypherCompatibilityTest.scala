@@ -85,6 +85,15 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
+  test("should not allow EXPLAIN to be used with older compilers") {
+    runWithConfig() {
+      engine =>
+        intercept[InvalidArgumentException](engine.execute("CYPHER 1.9 EXPLAIN MATCH n RETURN n"))
+        intercept[InvalidArgumentException](engine.execute("CYPHER 2.0 EXPLAIN MATCH n RETURN n"))
+        intercept[InvalidArgumentException](engine.execute("CYPHER 2.1 EXPLAIN MATCH n RETURN n"))
+    }
+  }
+
   private def runWithConfig(m: (String, String)*)(run: ExecutionEngine => Unit) = {
     val config: util.Map[String, String] = m.toMap.asJava
 

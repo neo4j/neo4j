@@ -67,10 +67,12 @@ class CypherCompiler(graph: GraphDatabaseService,
 
     import CollectionFrosting._
 
-    val versionOptions = queryWithOption.options.collectSingle({ case VersionOption( v ) => v })
-    val version = versionOptions match {
-      case Right(Some(v)) => CypherVersion(v)
-      case Right(None)    => defaultVersion
+    val versionOptions = queryWithOption.options.collectSingle {
+      case VersionOption(v) => CypherVersion(v)
+    }
+
+    val cypherVersion = versionOptions match {
+      case Right(version) => version.getOrElse(defaultVersion)
       case Left(versions) => throw new SyntaxException(s"You must specify only one version for a query (found: $versions)")
     }
 
@@ -78,7 +80,10 @@ class CypherCompiler(graph: GraphDatabaseService,
       case ExplainOption => Explained
     }.getOrElse(Normal)
 
-    PreParsedQuery(queryWithOption.statement, version, planType)
+    if (planType == Explained && cypherVersion != CypherVersion.v2_2)
+      throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
+
+    PreParsedQuery(queryWithOption.statement, cypherVersion, planType)
   }
 
   private def getQueryCacheSize : Int =
