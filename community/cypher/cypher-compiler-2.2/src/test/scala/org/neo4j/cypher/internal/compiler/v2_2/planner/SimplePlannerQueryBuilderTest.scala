@@ -1,3 +1,5 @@
+package org.neo4j.cypher.internal.compiler.v2_2.planner
+
 /**
  * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -18,12 +20,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.neo4j.cypher.internal.compiler.v2_2.InputPosition
-import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.graphdb.Direction
 
 
 class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {

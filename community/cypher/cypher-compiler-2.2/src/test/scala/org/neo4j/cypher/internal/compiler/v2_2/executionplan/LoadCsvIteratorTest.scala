@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import java.net.URL
+
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class LoadCsvIteratorTest extends CypherFunSuite {
 

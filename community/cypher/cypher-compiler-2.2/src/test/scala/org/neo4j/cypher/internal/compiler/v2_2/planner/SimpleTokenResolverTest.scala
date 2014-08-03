@@ -19,21 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserFixture
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Where
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Match
-import org.neo4j.cypher.internal.compiler.v2_2.ast.SingleQuery
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Query
-import org.neo4j.cypher.internal.compiler.v2_2.{RelTypeId, LabelId, PropertyKeyId}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Match, Query, SingleQuery, Where, _}
+import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserFixture
+import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.graphdb.Direction
 
 class SimpleTokenResolverTest extends CypherFunSuite {
 
-  import ParserFixture._
+  import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserFixture._
 
   val resolver = new SimpleTokenResolver
 

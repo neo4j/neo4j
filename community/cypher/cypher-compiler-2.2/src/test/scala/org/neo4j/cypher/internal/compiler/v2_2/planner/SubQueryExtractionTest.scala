@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{SimplePatternLength, IdName, PatternRelationship}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Expression}
 
 class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  import SimplePlannerQueryBuilder.SubQueryExtraction.extractQueryGraph
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.SimplePlannerQueryBuilder.SubQueryExtraction.extractQueryGraph
 
   val aNode: ast.NodePattern = ast.NodePattern(Some(ast.Identifier("a")(pos)), Seq.empty, None, naked = false)_
   val bNode: ast.NodePattern = ast.NodePattern(Some(ast.Identifier("b")(pos)), Seq.empty, None, naked = false)_

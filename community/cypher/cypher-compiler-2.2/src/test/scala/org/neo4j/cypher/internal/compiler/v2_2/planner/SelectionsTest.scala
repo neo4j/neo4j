@@ -20,12 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.InputPosition
-import org.neo4j.cypher.internal.compiler.v2_2.ast.LabelName
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_2.ast.HasLabels
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Equals, HasLabels, Identifier, LabelName, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 
 class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {

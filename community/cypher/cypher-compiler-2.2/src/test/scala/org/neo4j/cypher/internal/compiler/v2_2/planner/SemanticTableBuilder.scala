@@ -19,11 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
-import org.neo4j.cypher.internal.commons.CypherTestSupport
-import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, DummyPosition, parser}
-import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserFixture
-import org.neo4j.cypher.internal.compiler.v2_2.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.{ExpressionTypeInfo, IdentityMap}
 
-trait AstRewritingTestSupport extends CypherTestSupport with AstConstructionTestSupport {
-  val parser = ParserFixture.parser
+object SemanticTableBuilder {
+  def apply() = new SemanticTableBuilder
 }
+
+class SemanticTableBuilder {
+  val typeBuilder = Seq.newBuilder[(Expression, ExpressionTypeInfo)]
+
+  def withTyping(typing: (Expression, ExpressionTypeInfo)): SemanticTableBuilder = {
+    typeBuilder += typing
+    this
+  }
+
+  def result() = SemanticTable(types = IdentityMap(typeBuilder.result(): _*))
+}
+
+
