@@ -23,7 +23,7 @@ import java.lang.reflect.Field;
 
 import sun.misc.Unsafe;
 
-class UnsafeUtil
+final class UnsafeUtil
 {
     private final static Unsafe unsafe;
 
@@ -95,6 +95,16 @@ class UnsafeUtil
     public static void putByte( long address, byte value )
     {
         unsafe.putByte( address, value );
+    }
+
+    public static byte getByteVolatile( Object obj, long offset )
+    {
+        return unsafe.getByteVolatile( obj, offset );
+    }
+
+    public static void putByteVolatile( Object obj, long offset, byte value )
+    {
+        unsafe.putByteVolatile( obj, offset, value );
     }
 
     public static long getLong( long address )

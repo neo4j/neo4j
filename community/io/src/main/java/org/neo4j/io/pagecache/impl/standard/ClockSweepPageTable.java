@@ -102,13 +102,17 @@ public class ClockSweepPageTable implements PageTable, Runnable
         return page;
     }
 
-    private StandardPinnablePage nextFreePage()
+    private StandardPinnablePage nextFreePage() throws IOException
     {
         StandardPinnablePage page;
         do {
             page = freeList.get();
             if ( page == null )
             {
+                if ( sweeperException != null )
+                {
+                    throw new IOException( sweeperException );
+                }
                 LockSupport.unpark( sweeperThread );
             }
         } while ( page == null || !freeList.compareAndSet( page, page.next ));

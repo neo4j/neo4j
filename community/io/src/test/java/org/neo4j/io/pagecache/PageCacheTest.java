@@ -33,12 +33,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
@@ -2354,6 +2356,47 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    
+    @Ignore
+    @Test( timeout = 1000, expected = IOException.class )
+    public void pageFaultMustThrowIfSweeperThreadIsDead() throws IOException
+    {
+        final AtomicInteger writeCounter = new AtomicInteger();
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
+        {
+            @Override
+            public StoreChannel open( File fileName, String mode ) throws IOException
+            {
+                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                {
+                    @Override
+                    public void writeAll( ByteBuffer src ) throws IOException
+                    {
+                        if ( writeCounter.incrementAndGet() > 10 )
+                        {
+                            throw new IOException( "No space left on device" );
+                        }
+                        super.writeAll( src );
+                    }
+                };
+            }
+        };
+
+        fs.create( file ).close();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            while ( cursor.next() )
+            {
+                // Profound and interesting I/O.
+            }
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
+    }
     // TODO tests for what happens if we run out of storage space
 }

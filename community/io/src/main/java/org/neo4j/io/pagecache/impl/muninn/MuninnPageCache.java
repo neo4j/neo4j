@@ -139,7 +139,7 @@ public class MuninnPageCache implements PageCache, Runnable
         int cachePageId = maxPages;
         while ( cachePageId --> 0 )
         {
-            MuninnPage page = new MuninnPage( cachePageId, cachePageSize );
+            MuninnPage page = new MuninnPage( cachePageSize );
             pages[cachePageId] = page;
             page.nextFree = pageList;
             pageList = page;

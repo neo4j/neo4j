@@ -46,8 +46,6 @@ class MuninnPagedFile implements PagedFile
             UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "lastPageId" );
 
     final MuninnPageCache pageCache;
-    // These are the globally shared pages of the cache:
-    final MuninnPage[] cachePages;
     // This is the table where we translate file-page-ids to cache-page-ids:
     final int pageSize;
     // Global linked list of free pages
@@ -75,7 +73,6 @@ class MuninnPagedFile implements PagedFile
             PageCacheMonitor monitor ) throws IOException
     {
         this.pageCache = pageCache;
-        this.cachePages = pageCache.pages;
         this.pageSize = pageSize;
         this.freelist = freelist;
         this.monitor = monitor;

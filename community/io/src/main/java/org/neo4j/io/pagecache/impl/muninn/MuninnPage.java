@@ -30,10 +30,10 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
-class MuninnPage extends StampedLock implements Page
+final class MuninnPage extends StampedLock implements Page
 {
     private static final boolean littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
-    private static final Constructor<?> directBufferConstructor;
+    private static final Constructor<?> directBufferCtor;
     private static final long usageStampOffset = UnsafeUtil.getFieldOffset( MuninnPage.class, "usageStamp" );
     static {
         Constructor<?> ctor = null;
@@ -47,17 +47,15 @@ class MuninnPage extends StampedLock implements Page
         {
             e.printStackTrace();
         }
-        directBufferConstructor = ctor;
+        directBufferCtor = ctor;
     }
 
-    final int cachePageId;
     final int cachePageSize;
     private long pointer;
-    private ByteBuffer bufferProxy;
 
     // Optimistically incremented; occasionally truncated to a max of 5.
     // accessed through unsafe
-    private volatile int usageStamp;
+    private volatile byte usageStamp;
     // Next pointer in the freelist of available pages
     public volatile MuninnPage nextFree;
 
@@ -65,9 +63,8 @@ class MuninnPage extends StampedLock implements Page
     private long filePageId = PageCursor.UNBOUND_PAGE_ID;
     private boolean dirty;
 
-    public MuninnPage( int cachePageId, int cachePageSize )
+    public MuninnPage( int cachePageSize )
     {
-        this.cachePageId = cachePageId;
         this.cachePageSize = cachePageSize;
     }
 
@@ -188,21 +185,21 @@ class MuninnPage extends StampedLock implements Page
     /** Increment the usage stamp to at most 5. */
     public void incrementUsage()
     {
-        int usage = UnsafeUtil.getIntVolatile( this, usageStampOffset );
+        byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
         if ( usage < 5 )
         {
             // A Java 8 alternative:
 //            UnsafeUtil.getAndAddInt( this, usageStampOffset, 1 );
 
             // Java 7:
-            UnsafeUtil.putIntVolatile( this, usageStampOffset, usage + 1 );
+            UnsafeUtil.putByteVolatile( this, usageStampOffset, (byte) (usage + 1) );
         }
     }
 
     /** Decrement the usage stamp. Returns true if it reaches 0. */
     public boolean decrementUsage()
     {
-        int usage = UnsafeUtil.getIntVolatile( this, usageStampOffset );
+        byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
         if ( usage > 0 )
         {
             // A Java 8 alternative:
@@ -210,7 +207,7 @@ class MuninnPage extends StampedLock implements Page
 
             // Java 7:
             usage--;
-            UnsafeUtil.putIntVolatile( this, usageStampOffset, usage );
+            UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
             return usage == 0;
         }
         return true;
@@ -224,20 +221,33 @@ class MuninnPage extends StampedLock implements Page
     public void swapIn( StoreChannel channel, long offset, int length ) throws IOException
     {
         assert isReadLocked() || isWriteLocked() : "swapIn requires lock";
-        bufferProxy.clear();
-        bufferProxy.limit( length );
-        int readTotal = 0;
-        int read;
-        do
+        try
         {
-            read = channel.read( bufferProxy, offset + readTotal );
-        }
-        while ( read != -1 && (readTotal += read) < length );
+            ByteBuffer bufferProxy = (ByteBuffer) directBufferCtor.newInstance(
+                    pointer, cachePageSize );
+            bufferProxy.clear();
+            bufferProxy.limit( length );
+            int readTotal = 0;
+            int read;
+            do
+            {
+                read = channel.read( bufferProxy, offset + readTotal );
+            }
+            while ( read != -1 && (readTotal += read) < length );
 
-        // Zero-fill the rest.
-        while ( bufferProxy.position() < bufferProxy.limit() )
+            // Zero-fill the rest.
+            while ( bufferProxy.position() < bufferProxy.limit() )
+            {
+                bufferProxy.put( (byte) 0 );
+            }
+        }
+        catch ( IOException e )
         {
-            bufferProxy.put( (byte) 0 );
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            throw new IOException( e );
         }
     }
 
@@ -249,9 +259,22 @@ class MuninnPage extends StampedLock implements Page
     public void swapOut( StoreChannel channel, long offset, int length ) throws IOException
     {
         assert isReadLocked() || isWriteLocked() : "swapOut requires lock";
-        bufferProxy.clear();
-        bufferProxy.limit( length );
-        channel.writeAll( bufferProxy, offset );
+        try
+        {
+            ByteBuffer bufferProxy = (ByteBuffer) directBufferCtor.newInstance(
+                    pointer, cachePageSize );
+            bufferProxy.clear();
+            bufferProxy.limit( length );
+            channel.writeAll( bufferProxy, offset );
+        }
+        catch ( IOException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            throw new IOException( e );
+        }
     }
 
     /**
@@ -326,18 +349,9 @@ class MuninnPage extends StampedLock implements Page
      */
     public void initBuffer()
     {
-        if ( bufferProxy == null )
+        if ( pointer == 0 )
         {
             pointer = UnsafeUtil.malloc( cachePageSize );
-            try
-            {
-                bufferProxy = (ByteBuffer) directBufferConstructor.newInstance(
-                        pointer, cachePageSize );
-            }
-            catch ( Exception e )
-            {
-                throw new AssertionError( e );
-            }
         }
     }
 
@@ -346,9 +360,8 @@ class MuninnPage extends StampedLock implements Page
      * AND it must be guaranteed that no other threads are concurrently
      * accessing the page, e.g. via optimistic read.
      */
-    public void freeBuffer()
+    private void freeBuffer()
     {
-        bufferProxy = null;
         UnsafeUtil.free( pointer );
         pointer = 0;
     }
