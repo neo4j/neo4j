@@ -267,7 +267,6 @@ public class TestCommunication
     }
 
     @Test
-    @Ignore("getting build back to green")
     public void serverStopsStreamingToDeadClient() throws Throwable
     {
         MadeUpServer server = builder.server();

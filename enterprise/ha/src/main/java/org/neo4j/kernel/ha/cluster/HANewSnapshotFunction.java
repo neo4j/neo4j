@@ -27,6 +27,9 @@ import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.helpers.Function2;
 import org.neo4j.helpers.collection.Iterables;
 
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
+
 /*
  * Filters existing events in a snapshot while adding new ones. Ensures that the snapshot is consistent in the
  * face of failures of instances in the cluster.
@@ -41,17 +44,16 @@ public class HANewSnapshotFunction
          * If a master event is received, all events that set to slave that instance should be removed. The same
          * should happen to existing master events and backup events, no matter which instance they are for
          */
-        if ( newMessage.getRole().equals( HighAvailabilityModeSwitcher.MASTER ) )
+        if ( newMessage.getRole().equals( MASTER ) )
         {
-            List<MemberIsAvailable> result = new LinkedList<MemberIsAvailable>();
+            List<MemberIsAvailable> result = new LinkedList<>();
             for ( MemberIsAvailable existing : previousSnapshot )
             {
-                if ( ( existing.getInstanceId().equals( newMessage.getInstanceId() )  &&
-                    existing.getRole().equals( HighAvailabilityModeSwitcher.SLAVE ) ) ||
-                        existing.getRole().equals( HighAvailabilityModeSwitcher.MASTER )
+                if ( ( isSlave( existing ) && sameIds( newMessage, existing ) )
+                        || isMaster( existing )
                         // TODO 2.2-future is this necessary?
                         // TODO 2.2-future please refer back here once we have a decision for the future of HA backup
-//                         || existing.getRole().equals( OnlineBackupKernelExtension.BACKUP )
+//                      || existing.getRole().equals( OnlineBackupKernelExtension.BACKUP )
                         )
                 {
                     continue;
@@ -65,12 +67,12 @@ public class HANewSnapshotFunction
          * If a slave event is received, all existing slave events for that instance should be removed. The same for
          * master and backup, which means remove all events for that instance.
          */
-        else if ( newMessage.getRole().equals( HighAvailabilityModeSwitcher.SLAVE ) )
+        else if ( newMessage.getRole().equals( SLAVE ) )
         {
-            List<MemberIsAvailable> result = new LinkedList<MemberIsAvailable>();
+            List<MemberIsAvailable> result = new LinkedList<>();
             for ( MemberIsAvailable existing : previousSnapshot )
             {
-                if ( existing.getInstanceId().equals( newMessage.getInstanceId() ) )
+                if ( sameIds( newMessage, existing ) )
                 {
                     continue;
                 }
@@ -80,5 +82,20 @@ public class HANewSnapshotFunction
             return result;
         }
         return Iterables.append( newMessage, previousSnapshot );
+    }
+
+    private boolean isMaster( MemberIsAvailable existing )
+    {
+        return existing.getRole().equals( MASTER );
+    }
+
+    private boolean isSlave( MemberIsAvailable existing )
+    {
+        return existing.getRole().equals( SLAVE );
+    }
+
+    private boolean sameIds( MemberIsAvailable newMessage, MemberIsAvailable existing )
+    {
+        return existing.getInstanceId().equals( newMessage.getInstanceId() );
     }
 }
