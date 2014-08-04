@@ -194,7 +194,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private AutoLoadingCache<RelationshipImpl> relationshipCache;
     private SchemaCache schemaCache;
     private LabelScanStore labelScanStore;
-    private CacheLayer storeLayer;
+
+    private StoreReadLayer storeLayer;
     private LogFile logFile;
 
     private final AtomicInteger recoveredCount = new AtomicInteger();
@@ -430,9 +431,19 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     return getNeoStore();
                 }
             };
-            storeLayer = new CacheLayer( new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
-                    new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService ),
-                    persistenceCache, indexingService, schemaCache );
+
+            if(config.get( GraphDatabaseSettings.cache_type ).equals( CacheLayer.EXPERIMENTAL_OFF ))
+            {
+                storeLayer = new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
+                        new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService );
+            }
+            else
+            {
+                storeLayer = new CacheLayer( new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
+                        new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService ),
+                        persistenceCache, indexingService, schemaCache
+                );
+            }
 
             LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
                     nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );

@@ -29,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
@@ -42,13 +43,16 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -79,7 +83,7 @@ import static org.neo4j.kernel.impl.nioneo.store.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
-public class DiskLayer
+public class DiskLayer implements StoreReadLayer
 {
     private static final Function<UniquenessConstraintRule, UniquenessConstraint> UNIQUENESS_CONSTRAINT_TO_RULE =
             new Function<UniquenessConstraintRule, UniquenessConstraint>()
@@ -147,6 +151,7 @@ public class DiskLayer
         this.propertyStoreProvider = new PropertyStoreProvider( neoStoreProvider );
     }
 
+    @Override
     public int labelGetOrCreateForName( String label ) throws TooManyLabelsException
     {
         try
@@ -171,11 +176,13 @@ public class DiskLayer
         }
     }
 
+    @Override
     public int labelGetForName( String label )
     {
         return labelTokenHolder.getIdByName( label );
     }
 
+    @Override
     public boolean nodeHasLabel( long nodeId, int labelId )
     {
         try
@@ -188,6 +195,7 @@ public class DiskLayer
         }
     }
 
+    @Override
     public PrimitiveIntIterator nodeGetLabels( long nodeId )
     {
         try
@@ -224,6 +232,37 @@ public class DiskLayer
         }
     }
 
+    @Override
+    public PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction ) throws EntityNotFoundException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction, int[] relTypes ) throws EntityNotFoundException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String labelGetName( int labelId ) throws LabelNotFoundKernelException
     {
         try
@@ -236,11 +275,20 @@ public class DiskLayer
         }
     }
 
+    @Override
     public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId )
     {
         return state.getLabelScanReader().nodesWithLabel( labelId );
     }
 
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value
+    ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
             throws SchemaRuleNotFoundException
     {
@@ -252,21 +300,25 @@ public class DiskLayer
         return new IndexDescriptor( ruleRecord.getLabel(), ruleRecord.getPropertyKey() );
     }
 
+    @Override
     public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
         return getIndexDescriptorsFor( indexRules( labelId ) );
     }
 
+    @Override
     public Iterator<IndexDescriptor> indexesGetAll()
     {
         return getIndexDescriptorsFor( INDEX_RULES );
     }
 
+    @Override
     public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId )
     {
         return getIndexDescriptorsFor( constraintIndexRules( labelId ) );
     }
 
+    @Override
     public Iterator<IndexDescriptor> uniqueIndexesGetAll()
     {
         return getIndexDescriptorsFor( CONSTRAINT_INDEX_RULES );
@@ -331,23 +383,46 @@ public class DiskLayer
         }, filtered );
     }
 
+    @Override
+    public boolean nodeExists( long nodeId )
+    {
+        return nodeStore.inUse( nodeId );
+    }
+
+    @Override
+    public boolean relationshipExists( long relationshipId )
+    {
+        return relationshipStore.inUse( relationshipId );
+    }
+
+    @Override
     public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getOwningConstraint();
     }
 
-    public long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    @Override
+    public IndexRule indexRule( IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long indexGetCommittedId( IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+            throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getId();
     }
 
+    @Override
     public InternalIndexState indexGetState( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         return indexService.getProxyForRule( indexId( descriptor ) ).getState();
     }
 
+    @Override
     public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getProxyForRule( indexId( descriptor ) ).getPopulationFailure().asString();
@@ -365,6 +440,7 @@ public class DiskLayer
         }
     }
 
+    @Override
     public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( int labelId, final int propertyKeyId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
@@ -378,28 +454,40 @@ public class DiskLayer
         } );
     }
 
+    @Override
     public Iterator<UniquenessConstraint> constraintsGetForLabel( int labelId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
                 labelId, Predicates.<UniquenessConstraintRule>TRUE() );
     }
 
+    @Override
     public Iterator<UniquenessConstraint> constraintsGetAll()
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, SchemaRule.Kind.UNIQUENESS_CONSTRAINT,
                 Predicates.<UniquenessConstraintRule>TRUE() );
     }
 
+    @Override
+    public PrimitiveLongResourceIterator nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index,
+                                                                       Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public int propertyKeyGetOrCreateForName( String propertyKey )
     {
         return propertyKeyTokenHolder.getOrCreateId( propertyKey );
     }
 
+    @Override
     public int propertyKeyGetForName( String propertyKey )
     {
         return propertyKeyTokenHolder.getIdByName( propertyKey );
     }
 
+    @Override
     public String propertyKeyGetName( int propertyKeyId )
             throws PropertyKeyIdNotFoundKernelException
     {
@@ -413,6 +501,31 @@ public class DiskLayer
         }
     }
 
+    @Override
+    public PrimitiveLongIterator relationshipGetPropertyKeys( long relationshipId ) throws EntityNotFoundException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Property relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public PrimitiveLongIterator nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Iterator<DefinedProperty> nodeGetAllProperties( long nodeId )
             throws EntityNotFoundException
     {
@@ -426,6 +539,7 @@ public class DiskLayer
         }
     }
 
+    @Override
     public Iterator<DefinedProperty> relationshipGetAllProperties( long relationshipId )
             throws EntityNotFoundException
     {
@@ -439,6 +553,19 @@ public class DiskLayer
         }
     }
 
+    @Override
+    public PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Property graphGetProperty( int propertyKeyId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Iterator<DefinedProperty> graphGetAllProperties()
     {
         return loadAllPropertiesOf( neoStore.asRecord() );
@@ -481,21 +608,25 @@ public class DiskLayer
         return properties.iterator();
     }
 
-    public Iterable<Token> propertyKeyGetAllTokens()
+    @Override
+    public Iterator<Token> propertyKeyGetAllTokens()
     {
-        return propertyKeyTokenHolder.getAllTokens();
+        return propertyKeyTokenHolder.getAllTokens().iterator();
     }
 
-    public Iterable<Token> labelGetAllTokens()
+    @Override
+    public Iterator<Token> labelsGetAllTokens()
     {
-        return labelTokenHolder.getAllTokens();
+        return labelTokenHolder.getAllTokens().iterator();
     }
 
+    @Override
     public int relationshipTypeGetForName( String relationshipTypeName )
     {
         return relationshipTokenHolder.getIdByName( relationshipTypeName );
     }
 
+    @Override
     public String relationshipTypeGetName( int relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException
     {
         try
@@ -508,16 +639,25 @@ public class DiskLayer
         }
     }
 
+    @Override
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName )
     {
         return relationshipTokenHolder.getOrCreateId( relationshipTypeName );
     }
 
+    @Override
+    public <EXCEPTION extends Exception> void relationshipVisit( long relationshipId, RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long highestNodeIdInUse()
     {
         return nodeStore.getHighestPossibleIdInUse();
     }
 
+    @Override
     public PrimitiveLongIterator nodesGetAll()
     {
         return new PrimitiveLongBaseIterator()
@@ -571,6 +711,7 @@ public class DiskLayer
         };
     }
 
+    @Override
     public PrimitiveLongIterator relationshipsGetAll()
     {
         return new PrimitiveLongBaseIterator()

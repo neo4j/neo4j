@@ -27,16 +27,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class TestCacheBeans
 {
@@ -74,16 +73,17 @@ public class TestCacheBeans
     @Test
     public void canMeasureSizeOfCache() throws Exception
     {
+        Label label = label( "ANode" );
         long[] before = get( CacheBean.CACHE_SIZE );
         long nodeId;
         try ( Transaction tx = graphDb.beginTx() )
         {
-            nodeId = graphDb.createNode().getId();
+            nodeId = graphDb.createNode( label ).getId();
             tx.success();
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.getNodeById( nodeId );
+            graphDb.getNodeById( nodeId ).hasLabel(label);
         }
 
         assertChanged( "cache size not updated", before, get( CacheBean.CACHE_SIZE ) );
@@ -92,9 +92,10 @@ public class TestCacheBeans
     @Test
     public void canMeasureAmountsOfHitsAndMisses() throws Exception
     {
+        Label label = label( "ANode" );
         try(Transaction tx = graphDb.beginTx())
         {
-            graphDb.createNode();
+            graphDb.createNode(label);
             tx.success();
         }
 
@@ -103,8 +104,8 @@ public class TestCacheBeans
         long[] hits = get( CacheBean.HIT_COUNT ), miss = get( CacheBean.MISS_COUNT );
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graphDb.getNodeById(0);
-            graphDb.getNodeById(0);
+            graphDb.getNodeById(0).hasLabel( label );
+            graphDb.getNodeById(0).hasLabel( label );
             transaction.success();
         }
         assertChanged( "hit count not updated", hits, get( CacheBean.HIT_COUNT ) );

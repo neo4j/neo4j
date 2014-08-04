@@ -94,6 +94,10 @@ public class CacheLayer implements StoreReadLayer
             return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
         }
     };
+
+    /* Experimental cache_type setting for disabling this cache layer entirely. */
+    public static final String EXPERIMENTAL_OFF = "experimental-off";
+
     private final CacheLoader<Iterator<DefinedProperty>> nodePropertyLoader = new CacheLoader<Iterator<DefinedProperty>>()
     {
         @Override
@@ -147,16 +151,7 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public boolean nodeExists( long nodeId )
     {
-        // Write a proper implementation later
-        try
-        {
-            persistenceCache.getNode( nodeId );
-            return true;
-        }
-        catch ( EntityNotFoundException e )
-        {
-            return false;
-        }
+        return diskLayer.nodeExists( nodeId );
     }
 
     @Override
@@ -231,7 +226,7 @@ public class CacheLayer implements StoreReadLayer
         {
             return rule.getId();
         }
-        return diskLayer.indexGetCommittedId( index );
+        return diskLayer.indexGetCommittedId( index, kind );
     }
 
     @Override
@@ -403,13 +398,13 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public Iterator<Token> propertyKeyGetAllTokens()
     {
-        return diskLayer.propertyKeyGetAllTokens().iterator();
+        return diskLayer.propertyKeyGetAllTokens();
     }
 
     @Override
     public Iterator<Token> labelsGetAllTokens()
     {
-        return diskLayer.labelGetAllTokens().iterator();
+        return diskLayer.labelsGetAllTokens();
     }
 
     @Override
@@ -501,15 +496,6 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public boolean relationshipExists( long relationshipId )
     {
-        // Write a proper implementation later
-        try
-        {
-            persistenceCache.getRelationship( relationshipId );
-            return true;
-        }
-        catch ( EntityNotFoundException e )
-        {
-            return false;
-        }
+        return diskLayer.relationshipExists( relationshipId );
     }
 }
