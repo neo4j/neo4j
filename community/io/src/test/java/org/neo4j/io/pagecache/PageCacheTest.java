@@ -40,7 +40,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
@@ -2356,9 +2355,8 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Ignore
     @Test( timeout = 1000, expected = IOException.class )
-    public void pageFaultMustThrowIfSweeperThreadIsDead() throws IOException
+    public void pageFaultForWriteMustThrowIfSweeperThreadIsDead() throws IOException
     {
         final AtomicInteger writeCounter = new AtomicInteger();
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
@@ -2369,13 +2367,13 @@ public abstract class PageCacheTest<T extends PageCache>
                 return new DelegatingStoreChannel( super.open( fileName, mode ) )
                 {
                     @Override
-                    public void writeAll( ByteBuffer src ) throws IOException
+                    public void writeAll( ByteBuffer src, long position ) throws IOException
                     {
                         if ( writeCounter.incrementAndGet() > 10 )
                         {
                             throw new IOException( "No space left on device" );
                         }
-                        super.writeAll( src );
+                        super.writeAll( src, position );
                     }
                 };
             }
@@ -2395,8 +2393,66 @@ public abstract class PageCacheTest<T extends PageCache>
         }
         finally
         {
-            pageCache.unmap( file );
+            // Unmapping and closing the PageCache will want to flush,
+            // but we can't do that with a full drive.
+            pageCache = null;
         }
     }
-    // TODO tests for what happens if we run out of storage space
+
+    @Test( timeout = 1000, expected = IOException.class )
+    public void pageFaultForReadMustThrowIfSweeperThreadIsDead() throws IOException
+    {
+        generateFileWithRecords( file, recordCount, recordSize );
+
+        final AtomicInteger writeCounter = new AtomicInteger();
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
+        {
+            @Override
+            public StoreChannel open( File fileName, String mode ) throws IOException
+            {
+                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                {
+                    @Override
+                    public void writeAll( ByteBuffer src, long position ) throws IOException
+                    {
+                        if ( writeCounter.incrementAndGet() >= 1 )
+                        {
+                            throw new IOException( "No space left on device" );
+                        }
+                        super.writeAll( src, position );
+                    }
+                };
+            }
+        };
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        // Create 1 dirty page
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+        }
+
+        // Read pages until the dirty page gets flushed
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        {
+            for (;;)
+            {
+                while ( cursor.next() )
+                {
+                    // Profound and interesting I/O.
+                }
+                // Use rewind if we get to the end, because it is non-
+                // deterministic which pages get evicted and when.
+                cursor.rewind();
+            }
+        }
+        finally
+        {
+            // Unmapping and closing the PageCache will want to flush,
+            // but we can't do that with a full drive.
+            pageCache = null;
+        }
+    }
 }

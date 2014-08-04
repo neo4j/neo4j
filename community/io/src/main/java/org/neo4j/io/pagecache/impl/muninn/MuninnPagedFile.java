@@ -236,4 +236,9 @@ class MuninnPagedFile implements PagedFile
     {
         return UnsafeUtil.getIntVolatile( this, referenceCounterOffset );
     }
+
+    public void unparkEvictor() throws IOException
+    {
+        pageCache.unparkEvictor();
+    }
 }

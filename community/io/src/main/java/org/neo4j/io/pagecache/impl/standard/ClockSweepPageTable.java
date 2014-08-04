@@ -268,7 +268,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
     private void evict( StandardPinnablePage page ) throws IOException
     {
         long pageId = page.pageId();
-        PageSwapper io = page.io();
+        PageSwapper swapper = page.io();
 
         page.flush();
         page.evicted();
@@ -277,7 +277,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
         do {
             page.next = freeList.get();
         } while ( !freeList.compareAndSet( page.next, page ) );
-        monitor.evict( pageId, io );
+        monitor.evict( pageId, swapper );
     }
 
     private void parkUntilEvictionRequired( int minLoadedPages )

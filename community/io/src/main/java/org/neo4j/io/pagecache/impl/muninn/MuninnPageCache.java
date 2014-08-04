@@ -332,8 +332,9 @@ public class MuninnPageCache implements PageCache, Runnable
         return pages.length;
     }
 
-    void unparkEvictor()
+    void unparkEvictor() throws IOException
     {
+        assertHealthy();
         Thread thread = evictorThread;
         if ( thread != null )
         {

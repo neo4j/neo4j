@@ -209,7 +209,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
             page = freelist.get();
             if ( page == null )
             {
-                pagedFile.pageCache.unparkEvictor();
+                pagedFile.unparkEvictor();
                 continue;
             }
             if ( freelist.compareAndSet( page, page.nextFree ) )
