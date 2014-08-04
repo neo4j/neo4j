@@ -50,12 +50,15 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   def effects(symbols: SymbolTable): Effects = {
     var completeEffects = localEffects(symbols)
     visitChildren {
-      case (expr: EffectfulAstNode[_]) =>
-        completeEffects = completeEffects | expr.localEffects
+      case (expr: Effectful)           => completeEffects = completeEffects | expr.localEffects
+      case (expr: EffectfulAstNode[_]) => completeEffects = completeEffects | expr.localEffects
+      case (expr: UpdateAction)        => completeEffects = completeEffects | expr.localEffects(updateSymbols(symbols))
     }
     completeEffects
   }
 
+  // This is here to give FOREACH action a chance to introduce symbols
+  def updateSymbols(symbol: SymbolTable ): SymbolTable = symbol
 
   def localEffects(symbols: SymbolTable): Effects
 }

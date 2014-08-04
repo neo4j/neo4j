@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher
 
+import scala.util.matching.Regex
+
 class EagerizationAcceptanceTest extends ExecutionEngineFunSuite {
-  val EagerRegEx = "Eager".r
+  val EagerRegEx: Regex = "Eager(?!A)".r
 
   test("should not introduce eagerness for MATCH nodes and CREATE relationships") {
     val result = execute("MATCH a, b CREATE (a)-[:KNOWS]->(b)")
@@ -48,6 +50,17 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite {
 
   ignore("should not add eagerness when not writing to nodes") {
     val result = execute("MATCH a, b CREATE (a)-[r:KNOWS]->(b) SET r = { key: 42 }")
+
+    assertNumberOfEagerness(result, 0)
+  }
+
+  test("should understand symbols introduced by FOREACH") {
+    val result = execute(
+      """MATCH (a:Label)
+        |WITH collect(a) as nodes
+        |MATCH (b:Label2)
+        |FOREACH(n in nodes |
+        |  CREATE UNIQUE (n)-[:SELF]->(b))""".stripMargin)
 
     assertNumberOfEagerness(result, 0)
   }
