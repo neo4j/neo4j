@@ -66,7 +66,7 @@ public class MasterServer extends Server<Master, Void>
     {
         try
         {
-            getRequestTarget().finishTransaction( context, false );
+            getRequestTarget().endLockSession( context, false );
         }
         catch ( TransactionNotPresentOnMasterException e )
         {

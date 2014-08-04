@@ -149,7 +149,7 @@ public enum HaRequestType210 implements RequestType<Master>
                 throw new RuntimeException( e );
             }
 
-            return master.commitSingleResourceTransaction( context, tx );
+            return master.commit( context, tx );
         }
     }, LONG_SERIALIZER ),
 
@@ -165,13 +165,13 @@ public enum HaRequestType210 implements RequestType<Master>
     }, VOID_SERIALIZER ),
 
     // ====
-    FINISH( new TargetCaller<Master, Void>()
+    END_LOCK_SESSION( new TargetCaller<Master, Void>()
     {
         @Override
         public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.finishTransaction( context, readBoolean( input ) );
+            return master.endLockSession( context, readBoolean( input ) );
         }
     }, VOID_SERIALIZER ),
 
@@ -220,13 +220,13 @@ public enum HaRequestType210 implements RequestType<Master>
     }, VOID_SERIALIZER ),
 
     // ====
-    INITIALIZE_TX( new TargetCaller<Master, Void>()
+    NEW_LOCK_SESSION( new TargetCaller<Master, Void>()
     {
         @Override
         public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.initializeTx( context );
+            return master.newLockSession( context );
         }
     }, VOID_SERIALIZER ),
 

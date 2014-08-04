@@ -47,31 +47,22 @@ public interface Master
     Response<Integer> createLabel( RequestContext context, String name );
 
     /**
-     * This is a misleading method name. This is the only mechanism available for committing ad-hoc transactions
-     * remotely on a master database. Calling this method will validate, persist to log and apply changes to stores on
+     * Calling this method will validate, persist to log and apply changes to stores on
      * the master.
-     *
-     * TODO: Change the name of this method
      */
-    Response<Long> commitSingleResourceTransaction( RequestContext context, TransactionRepresentation channel ) throws IOException, TransactionFailureException;
+    Response<Long> commit( RequestContext context, TransactionRepresentation channel ) throws IOException, TransactionFailureException;
 
     /**
-     * This is a misleading method name, it has nothing to do with transactions.
-     * Calling this method will create a lock client on the master that can be used on behalf of the callee to grab
-     * cluster-global locks.
-     *
-     * TODO: Change the name of this
+     * Calling this method will create a new session with the cluster lock manager and associate that
+     * session with the provided {@link RequestContext}.
      */
-    Response<Void> initializeTx( RequestContext context );
+    Response<Void> newLockSession( RequestContext context );
 
     /**
-     * This is a misleading method name it has nothing to do with transactions.
-     * Calling this will release all locks held on the master on the behalf of the
-     * specified context. The "success" parameter is ignored.
-     *
-     * TODO: Change the name of this
+     * Calling this will end the current lock session (identified by the {@link RequestContext}),
+     * releasing all cluster-global locks held.
      */
-    Response<Void> finishTransaction( RequestContext context, boolean success );
+    Response<Void> endLockSession( RequestContext context, boolean success );
 
     /**
      * Gets the master id for a given txId, also a checksum for that tx.

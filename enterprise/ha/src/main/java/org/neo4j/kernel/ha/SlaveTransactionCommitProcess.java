@@ -47,7 +47,7 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
     {
         try
         {
-            return unpacker.unpackResponse( master.commitSingleResourceTransaction( requestContextFactory.newRequestContext(), representation ) );
+            return unpacker.unpackResponse( master.commit( requestContextFactory.newRequestContext(), representation ) );
         }
         catch ( IOException e )
         {

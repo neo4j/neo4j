@@ -149,7 +149,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     }
 
     @Override
-    public Response<Void> initializeTx( RequestContext context )
+    public Response<Void> newLockSession( RequestContext context )
     {
         monitor.initializeTx( context );
 
@@ -235,8 +235,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
     }
 
     @Override
-    public Response<Long> commitSingleResourceTransaction( RequestContext context,
-                                                           TransactionRepresentation preparedTransaction ) throws
+    public Response<Long> commit( RequestContext context,
+                                  TransactionRepresentation preparedTransaction ) throws
             IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException
     {
         assertCorrectEpoch( context );
@@ -245,7 +245,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 }
 
     @Override
-    public Response<Void> finishTransaction( RequestContext context, boolean success )
+    public Response<Void> endLockSession( RequestContext context, boolean success )
     {
         assertCorrectEpoch( context );
         // TODO 2.2-future verify the same thing
