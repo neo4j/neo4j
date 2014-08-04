@@ -33,7 +33,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogFileRecoverer;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.Monitor;
@@ -77,8 +76,7 @@ public class PhysicalLogicalTransactionStoreTest
                 transactionIdStore, mock( LogVersionRepository.class), monitor, logRotationControl,
                 positionCache, noRecoveryAsserter() ) );
         TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
-        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache,
-                new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ), transactionIdStore ) );
+        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, transactionIdStore ) );
 
         try
         {
@@ -124,7 +122,7 @@ public class PhysicalLogicalTransactionStoreTest
         final AtomicInteger recoveredTransactions = new AtomicInteger();
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                         transactionIdStore, mock( LogVersionRepository.class), monitor, logRotationControl,
-                        positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ),
+                        positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader(),
                                 new Visitor<CommittedTransactionRepresentation, IOException>()
         {
             @Override
@@ -141,8 +139,7 @@ public class PhysicalLogicalTransactionStoreTest
             }
         } ) ) );
 
-        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, new VersionAwareLogEntryReader(
-                CommandReaderFactory.DEFAULT ), transactionIdStore ) );
+        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, transactionIdStore ) );
 
         // WHEN
         try
@@ -191,7 +188,7 @@ public class PhysicalLogicalTransactionStoreTest
         final AtomicInteger recoveredTransactions = new AtomicInteger();
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                 transactionIdStore, mock( LogVersionRepository.class), monitor, logRotationControl,
-                positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ),
+                positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader(),
                         new Visitor<CommittedTransactionRepresentation, IOException>()
         {
             @Override
@@ -209,7 +206,7 @@ public class PhysicalLogicalTransactionStoreTest
         } )));
 
         LogicalTransactionStore store = life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
-                positionCache, new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ), transactionIdStore ) );
+                positionCache, transactionIdStore ) );
 
         // WHEN
         life.start();

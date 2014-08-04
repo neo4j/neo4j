@@ -54,7 +54,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import static java.lang.String.format;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.DEFAULT;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 
@@ -84,7 +83,8 @@ class RebuildFromLogs
                 new PhysicalLogVersionedStoreChannel( FS.open( logFile, "R" ), startVersion ),
                 versionBridge, DEFAULT_READ_AHEAD_SIZE );
 
-        try (IOCursor<CommittedTransactionRepresentation> cursor = new PhysicalTransactionCursor( logChannel,new VersionAwareLogEntryReader( DEFAULT ) ) )
+        try (IOCursor<CommittedTransactionRepresentation> cursor = new PhysicalTransactionCursor( logChannel,
+                new VersionAwareLogEntryReader() ) )
         {
             while (cursor.next())
             {
@@ -187,7 +187,8 @@ class RebuildFromLogs
 
         long lastTransactionId = -1;
 
-        try (IOCursor<CommittedTransactionRepresentation> cursor = new PhysicalTransactionCursor( logChannel, new VersionAwareLogEntryReader( DEFAULT )))
+        try (IOCursor<CommittedTransactionRepresentation> cursor = new PhysicalTransactionCursor( logChannel,
+                new VersionAwareLogEntryReader() ))
         {
             while (cursor.next())
             {

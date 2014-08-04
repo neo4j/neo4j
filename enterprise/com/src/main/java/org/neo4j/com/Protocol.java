@@ -34,7 +34,6 @@ import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
@@ -96,12 +95,15 @@ public class Protocol
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
             {
-                LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
+                LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader();
                 NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
 
                 try (PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, reader ))
                 {
-                    while (cursor.next() && visitor.visit( cursor.get() ));
+                    while (cursor.next() && visitor.visit( cursor.get() ))
+                    {
+                        ;
+                    }
                 }
             }
         };
@@ -265,7 +267,7 @@ public class Protocol
         public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
                 IOException
         {
-            LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
+            LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader();
             NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
 
             int authorId = channel.getInt();
@@ -298,7 +300,7 @@ public class Protocol
         public Iterable<CommittedTransactionRepresentation> read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
                 throws IOException
         {
-            LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
+            LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader();
             NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
             return Cursors.iterable( new PhysicalTransactionCursor( channel, reader ) );
         }

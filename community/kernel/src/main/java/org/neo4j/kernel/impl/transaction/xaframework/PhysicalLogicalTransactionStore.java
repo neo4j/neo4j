@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
@@ -37,17 +38,15 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     private final TransactionMetadataCache transactionMetadataCache;
     private final TxIdGenerator txIdGenerator;
     private TransactionAppender appender;
-    private final LogEntryReader<ReadableLogChannel> logEntryReader;
     private final TransactionIdStore transactionIdStore;
 
     public PhysicalLogicalTransactionStore( LogFile logFile, TxIdGenerator txIdGenerator,
-            TransactionMetadataCache transactionMetadataCache, LogEntryReader<ReadableLogChannel> logEntryReader,
+            TransactionMetadataCache transactionMetadataCache,
             TransactionIdStore transactionIdStore )
     {
         this.logFile = logFile;
         this.txIdGenerator = txIdGenerator;
         this.transactionMetadataCache = transactionMetadataCache;
-        this.logEntryReader = logEntryReader;
         this.transactionIdStore = transactionIdStore;
     }
 
@@ -73,10 +72,12 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         {
             TransactionMetadataCache.TransactionMetadata transactionMetadata =
                     transactionMetadataCache.getTransactionMetadata( transactionIdToStartFrom );
+            LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader();
             if ( transactionMetadata != null )
             {
                 // we're good
-                return new PhysicalTransactionCursor( logFile.getReader( transactionMetadata.getStartPosition() ), logEntryReader );
+                return new PhysicalTransactionCursor( logFile.getReader( transactionMetadata.getStartPosition() ),
+                        logEntryReader );
             }
 
             // ask LogFile about the version it may be in

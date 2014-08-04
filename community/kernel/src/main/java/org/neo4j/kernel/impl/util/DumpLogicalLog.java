@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.TreeSet;
+
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Args;
@@ -109,7 +110,7 @@ public class DumpLogicalLog
 
     protected CommandReaderFactory instantiateCommandReaderFactory()
     {
-        return CommandReaderFactory.DEFAULT;
+        return new CommandReaderFactory.Default();
     }
 
     protected String getLogPrefix()

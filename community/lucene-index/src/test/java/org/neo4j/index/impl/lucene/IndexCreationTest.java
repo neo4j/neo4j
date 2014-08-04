@@ -38,7 +38,6 @@ import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
@@ -134,7 +133,7 @@ public class IndexCreationTest
 
         ReadableLogChannel logFileChannel = pLogFile.getReader( new LogPosition( version, LOG_HEADER_SIZE ) );
 
-        LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
+        LogDeserializer deserializer = new LogDeserializer();
 
         final AtomicBoolean success = new AtomicBoolean( false );
 

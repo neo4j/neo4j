@@ -434,11 +434,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService ),
                     persistenceCache, indexingService, schemaCache );
 
-            // CHANGE STARTS HERE
-            VersionAwareLogEntryReader logEntryReader =
-                    new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
-            // Recovery process ties log and commit process together
-
             LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
                     nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
             StatisticsService statisticsService =
@@ -458,12 +453,10 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                 @Override
                                 public long getTimestampForVersion( long version ) throws IOException
                                 {
-
                                     try ( ReadableLogChannel channel = logFile.getReader(
                                             new LogPosition( version, VersionAwareLogEntryReader.LOG_HEADER_SIZE ) ) )
                                     {
-                                        LogEntryReader<ReadableLogChannel> reader =
-                                                new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
+                                        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader();
                                         LogEntry entry;
                                         while ( (entry = reader.readLogEntry( channel )) != null )
                                         {
@@ -487,7 +480,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
             RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeApplier, recoveredCount );
             Visitor<ReadableLogChannel, IOException> logFileRecoverer =
-                    new LogFileRecoverer( logEntryReader, recoveryVisitor );
+                    new LogFileRecoverer( new VersionAwareLogEntryReader(), recoveryVisitor );
             logFile = dependencies.satisfyDependency( new PhysicalLogFile( fs, logFiles,
                     config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), logPruneStrategy, neoStore,
                     neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
@@ -495,7 +488,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
             final LogicalTransactionStore logicalTransactionStore = dependencies.satisfyDependency(
                     LogicalTransactionStore.class, new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
-                            transactionMetadataCache, logEntryReader, neoStore ));
+                            transactionMetadataCache, neoStore ));
 
             TransactionCommitProcess transactionCommitProcess = dependencies.satisfyDependency( TransactionCommitProcess.class,
                                         commitProcessFactory.create( logicalTransactionStore, kernelHealth,
@@ -554,8 +547,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             } );
             life.add( indexingService );
             life.add( labelScanStore );
-
-            // ENDS HERE
 
             kernel.registerTransactionHook( transactionEventHandlers );
             neoStore.setRecoveredStatus( true );

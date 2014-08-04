@@ -32,6 +32,11 @@ public class LogDeserializer implements LogReader<ReadableLogChannel>
 {
     private final LogEntryReader<ReadableLogChannel> logEntryReader;
 
+    public LogDeserializer()
+    {
+        this( new CommandReaderFactory.Default() );
+    }
+
     public LogDeserializer( CommandReaderFactory commandReaderFactory )
     {
         logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
