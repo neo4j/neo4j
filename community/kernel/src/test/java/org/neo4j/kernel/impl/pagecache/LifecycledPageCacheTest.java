@@ -21,15 +21,20 @@ package org.neo4j.kernel.impl.pagecache;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_total_size;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_total_size;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LifecycledPageCacheTest
@@ -47,8 +52,10 @@ public class LifecycledPageCacheTest
                 mapped_memory_total_size.name(), Integer.toString(4096 * 16) ) );
 
         // When
-        PageCache cache = new LifecycledPageCache( fsRule.get(), new Neo4jJobScheduler(),
-                config );
+        PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fsRule.get() );
+        PageCache cache = new LifecycledPageCache(
+                pageCacheFactory, swapperFactory, new Neo4jJobScheduler(), config, new Monitors() );
 
         // Then
         assertThat(cache.pageSize(), equalTo(4096));

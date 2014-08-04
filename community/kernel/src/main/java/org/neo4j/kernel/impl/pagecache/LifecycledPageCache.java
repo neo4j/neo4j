@@ -23,28 +23,40 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.helpers.Settings;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
+import org.neo4j.io.pagecache.RunnablePageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_total_size;
 
 public class LifecycledPageCache extends LifecycleAdapter implements PageCache
 {
-    private final StandardPageCache pageCache;
+    private final RunnablePageCache pageCache;
     private final JobScheduler scheduler;
     private volatile JobScheduler.JobHandle pageEvictionJobHandle;
 
-    public LifecycledPageCache( FileSystemAbstraction fs, JobScheduler scheduler, Config config )
+    public LifecycledPageCache(
+            PageCacheFactory pageCacheFactory,
+            PageSwapperFactory swapperFactory,
+            JobScheduler scheduler,
+            Config config,
+            Monitors monitors )
     {
         this.scheduler = scheduler;
-        this.pageCache = new StandardPageCache( fs, calculateMaxPages( config ), calculatePageSize( config ));
+        PageCacheMonitor monitor = monitors.newMonitor( PageCacheMonitor.class );
+        this.pageCache = pageCacheFactory.createPageCache(
+                swapperFactory,
+                calculateMaxPages( config ),
+                calculatePageSize( config ),
+                monitor );
     }
 
     private static int calculateMaxPages( Config config )

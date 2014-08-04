@@ -32,11 +32,16 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.pagecache.PageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.StandardPageCacheFactory;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Conversion;
 import org.neo4j.perftest.enterprise.util.Parameters;
@@ -121,10 +126,14 @@ public class DataGenerator
         }
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
+        PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( new DefaultFileSystemAbstraction() );
         LifecycledPageCache pageCache = new LifecycledPageCache(
-                new DefaultFileSystemAbstraction(),
+                pageCacheFactory,
+                swapperFactory,
                 jobScheduler,
-                new Config() );
+                new Config(),
+                new Monitors() );
         pageCache.start();
         StoreAccess stores = new StoreAccess( pageCache, storeDir );
         try

@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
@@ -140,6 +142,8 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.pagecache.PageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.StandardPageCacheFactory;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -220,6 +224,7 @@ public abstract class InternalAbstractGraphDatabase
 
         // Kept here to have it not be publicly documented.
         public static final Setting<String> lock_manager = setting( "lock_manager", STRING, "" );
+        public static final Setting<String> page_cache = setting( "page_cache", STRING, "" );
         public static final Setting<Boolean> statistics_enabled =
                 setting("statistics_enabled", Settings.BOOLEAN, Settings.FALSE);
 
@@ -618,7 +623,41 @@ public abstract class InternalAbstractGraphDatabase
 
     protected PageCache createPageCache()
     {
-        LifecycledPageCache lifecycledPageCache = new LifecycledPageCache( fileSystem, jobScheduler, config );
+        PageCacheFactory factory = null;
+        String preferredChoice = config.get( Configuration.page_cache );
+
+        List<PageCacheFactory> candidates = Iterables.toList( Service.load( PageCacheFactory.class ) );
+        Collections.sort( candidates, PageCacheFactory.orderByHighestPriorityFirst );
+
+        for ( PageCacheFactory candidate : candidates )
+        {
+            if ( candidate.matches( preferredChoice ) )
+            {
+                factory = candidate;
+                break;
+            }
+        }
+
+        if ( factory == null )
+        {
+            if ( candidates.isEmpty() )
+            {
+                factory = new StandardPageCacheFactory();
+            }
+            else
+            {
+                factory = candidates.get( 0 );
+            }
+        }
+
+        SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
+        LifecycledPageCache lifecycledPageCache = new LifecycledPageCache(
+                factory, swapperFactory, jobScheduler, config, monitors );
+
+        logging.getMessagesLog( InternalAbstractGraphDatabase.class ).info(
+                "Using PageCache implementation " + factory.getImplementationName() +
+                        " based on configureation '" + preferredChoice + "'" );
+
         if ( config.get( GraphDatabaseSettings.dump_configuration ) )
         {
             lifecycledPageCache.dumpConfiguration( logging.getMessagesLog( PageCache.class ) );
@@ -755,7 +794,7 @@ public abstract class InternalAbstractGraphDatabase
     protected Locks createLockManager()
     {
         String key = config.get( Configuration.lock_manager );
-        for ( Locks.Factory candidate : Service.load(Locks.Factory.class) )
+        for ( Locks.Factory candidate : Service.load( Locks.Factory.class ) )
         {
             String candidateId = candidate.getKeys().iterator().next();
             if( candidateId.equals( key ))

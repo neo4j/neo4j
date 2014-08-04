@@ -28,6 +28,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
@@ -39,6 +41,8 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.pagecache.PageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.StandardPageCacheFactory;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -123,7 +127,11 @@ public class ConsistencyPerformanceCheck
         Config tuningConfiguration = buildTuningConfiguration( configuration );
         jobScheduler = new Neo4jJobScheduler();
         fileSystem = new DefaultFileSystemAbstraction();
-        pageCache = new LifecycledPageCache( fileSystem, jobScheduler, tuningConfiguration );
+        PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
+        Monitors monitors = new Monitors();
+        pageCache = new LifecycledPageCache(
+                pageCacheFactory, swapperFactory, jobScheduler, tuningConfiguration, monitors );
         jobScheduler.init();
         pageCache.start();
         DirectStoreAccess directStoreAccess = createScannableStores( configuration.get( DataGenerator.store_dir ),
@@ -138,6 +146,7 @@ public class ConsistencyPerformanceCheck
         }
         finally
         {
+            directStoreAccess.close();
             pageCache.stop();
             jobScheduler.shutdown();
         }

@@ -25,16 +25,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.RunnablePageCache;
 import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapperFactory;
 
 /**
  * Your average run-of-the-mill page cache.
  */
-public class StandardPageCache implements PageCache, Runnable
+public class StandardPageCache implements RunnablePageCache
 {
     private final PageSwapperFactory swapperFactory;
     private final PageCacheMonitor monitor;

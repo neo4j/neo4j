@@ -33,6 +33,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -45,6 +47,8 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.pagecache.PageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.StandardPageCacheFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
@@ -54,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class RsdrMain
 {
@@ -90,7 +95,10 @@ public class RsdrMain
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
-        LifecycledPageCache pageCache = new LifecycledPageCache( files, jobScheduler, config );
+        PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( files );
+        LifecycledPageCache pageCache = new LifecycledPageCache(
+                pageCacheFactory, swapperFactory, jobScheduler, config, new Monitors() );
         pageCache.start();
         StringLogger logger = StringLogger.DEV_NULL;
         StoreFactory factory = new StoreFactory(

@@ -26,11 +26,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.RunnablePageCache;
 import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapperFactory;
 
 /**
@@ -82,7 +82,7 @@ import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapperFactory;
  *     locks to make uncontended reads and writes fast.
  * </p>
  */
-public class MuninnPageCache implements PageCache, Runnable
+public class MuninnPageCache implements RunnablePageCache
 {
     // Keep this many pages free and ready for use in faulting.
     // This will be truncated to be no more than half of the number of pages
