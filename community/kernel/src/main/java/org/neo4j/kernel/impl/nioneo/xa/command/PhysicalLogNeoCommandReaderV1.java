@@ -720,7 +720,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             boolean entityIdNeedsLong = (headerBytes[0] & 0x1) > 0;
             byte indexNameId = (byte) (headerBytes[1] & 0x3F);
 
-            boolean startNodeNeedsLong = (headerBytes[1] & 0x8) > 0;
+            boolean startNodeNeedsLong = (headerBytes[1] & 0x80) > 0;
             boolean endNodeNeedsLong = (headerBytes[1] & 0x40) > 0;
 
             byte keyId = headerBytes[2];
