@@ -41,6 +41,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.IteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.StageExecution;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
@@ -68,8 +69,8 @@ public class ParallelBatchImporter implements BatchImporter
     private final LifeSupport life = new LifeSupport();
     private final WriterFactory writerFactory;
 
-    public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
-                                  Configuration config, ExecutionMonitor executionMonitor )
+    ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
+            Configuration config, ExecutionMonitor executionMonitor, WriterFactory writerFactory )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
@@ -78,9 +79,16 @@ public class ParallelBatchImporter implements BatchImporter
         this.logger = logging.getConsoleLog( getClass() );
         this.executionMonitor = executionMonitor;
         this.writeMonitor = new IoMonitor();
-        this.writerFactory = new IoQueue( config.numberOfIoThreads() );
+        this.writerFactory = writerFactory;
 
         life.start();
+    }
+
+    public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
+                                  Configuration config, ExecutionMonitor executionMonitor )
+    {
+        this( storeDir, fileSystem, config, executionMonitor,
+                new IoQueue( config.numberOfIoThreads(), BatchingWindowPoolFactory.SYNCHRONOUS ) );
     }
 
     @Override

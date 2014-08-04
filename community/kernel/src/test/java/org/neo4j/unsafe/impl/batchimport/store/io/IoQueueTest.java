@@ -47,6 +47,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.SYNCHRONOUS;
+
 public class IoQueueTest
 {
     @Rule
@@ -62,7 +64,7 @@ public class IoQueueTest
     {
         // GIVEN
         ExecutorService executor = cleanupRule.add( spy( Executors.newFixedThreadPool( 3 ) ) );
-        IoQueue queue = new IoQueue( executor );
+        IoQueue queue = new IoQueue( executor, SYNCHRONOUS );
         File file = new File( directory.directory(), "file" );
         StoreChannel channel = spy( fs.create( file ) );
         Monitor monitor = mock( Monitor.class );
@@ -88,7 +90,7 @@ public class IoQueueTest
     {
         // GIVEN
         ExecutorService executor = cleanupRule.add( spy( Executors.newFixedThreadPool( 3 ) ) );
-        IoQueue queue = new IoQueue( executor );
+        IoQueue queue = new IoQueue( executor, SYNCHRONOUS );
         File file1 = new File( directory.directory(), "file1" );
         StoreChannel channel1 = cleanupRule.add( spy( fs.create( file1 ) ) );
         File file2 = new File( directory.directory(), "file2" );
