@@ -42,6 +42,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
             pagedFile.monitor.unpin( true, currentPageId, pagedFile.swapper );
             assert page.isWriteLocked(): "page pinned for writing was not write locked: " + page;
             page.unlockWrite( lockStamp );
+            UnsafeUtil.retainReference( page );
             page = null;
         }
         lockStamp = 0;

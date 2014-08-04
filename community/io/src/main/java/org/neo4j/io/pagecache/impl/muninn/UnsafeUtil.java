@@ -25,22 +25,33 @@ import sun.misc.Unsafe;
 
 final class UnsafeUtil
 {
-    private final static Unsafe unsafe;
+    private static final Unsafe unsafe;
+    private static final Object nullSentinelBase;
+    private static final long nullSentinelOffset;
+    private static Object nullSentinel; // see the retainReference() method
 
     static
     {
         Unsafe theUnsafe = null;
+        Object sentinelBase = null;
+        long sentinelOffset = 0;
         try
         {
             Field unsafeField = Unsafe.class.getDeclaredField( "theUnsafe" );
             unsafeField.setAccessible( true );
             theUnsafe = (Unsafe) unsafeField.get( null );
+
+            Field field = UnsafeUtil.class.getDeclaredField( "nullSentinel" );
+            sentinelBase = theUnsafe.staticFieldBase( field );
+            sentinelOffset = theUnsafe.staticFieldOffset( field );
         }
         catch ( NoSuchFieldException | IllegalAccessException e )
         {
             e.printStackTrace();
         }
         unsafe = theUnsafe;
+        nullSentinelBase = sentinelBase;
+        nullSentinelOffset = sentinelOffset;
     }
 
     public static long getFieldOffset( Class<?> type, String field )
@@ -152,8 +163,33 @@ final class UnsafeUtil
         return unsafe.getIntVolatile( obj, offset );
     }
 
-    public static void putIntVolatile( Object obj, long offset, int value )
+    public static Object getObjectVolatile( Object obj, long offset )
     {
-        unsafe.putIntVolatile( obj, offset, value );
+        return unsafe.getObjectVolatile( obj, offset );
+    }
+
+    public static void putObjectVolatile( Object obj, long offset, Object value )
+    {
+        unsafe.putObjectVolatile( obj, offset, value );
+    }
+
+    /**
+     * This method prevents the given object from becoming finalizable until
+     * this method has been called.
+     * This method will prevent reordering with other reads and writes, and
+     * can as such be used to synchronize the finalization of an object, with
+     * the access of its fields.
+     *
+     * See this email thread for more gory details:
+     * https://groups.google.com/forum/#!topic/mechanical-sympathy/PbVDvcKmm9g
+     */
+    public static void retainReference( Object obj )
+    {
+        Object sentinel = UnsafeUtil.getObjectVolatile( nullSentinelBase, nullSentinelOffset );
+
+        if ( sentinel == obj )
+        {
+            UnsafeUtil.putObjectVolatile( nullSentinelBase, nullSentinelOffset, obj );
+        }
     }
 }

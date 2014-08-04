@@ -52,7 +52,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
                 p.unlockRead( lockStamp );
             }
         }
-
+        UnsafeUtil.retainReference( p );
         lockStamp = 0;
     }
 
