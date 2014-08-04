@@ -238,7 +238,10 @@ public abstract class IndexCommand extends Command
         public String toString()
         {
             return "AddRelationship[index:" + indexNameId + ", id:" + entityId + ", key:" + keyId +
-                    ", value:" + value + "]";
+                    ", value:" + value + "(" + (value != null ? value.getClass().getSimpleName() : "null") + ")" +
+                    ", startNode:" + startNode +
+                    ", endNode:" + endNode +
+                    "]";
         }
     }
 

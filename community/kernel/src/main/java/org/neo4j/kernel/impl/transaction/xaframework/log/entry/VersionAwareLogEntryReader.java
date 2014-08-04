@@ -152,7 +152,8 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
                 case LogEntry.EMPTY:
                     return null;
                 default:
-                    throw new IOException( "Unknown entry[" + type + "] at position " + positionMarker.newPosition() );
+                    throw new IOException( "Unknown entry[" + type + "] at position " + positionMarker.newPosition() +
+                            " and entry version " + version );
             }
         }
         catch ( ReadPastEndException e )
