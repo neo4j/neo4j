@@ -40,19 +40,19 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
 
   test("NONE -> READS need no eagerness") {
     testThatGoingFrom(Effects.NONE)
-    .to(Effects.NONE)
+    .to(Effects.READS_ENTITIES)
     .doesNotIntroduceEagerness()
   }
 
   test("WRITES -> NONE need no eagerness") {
-    testThatGoingFrom(Effects.NONE)
+    testThatGoingFrom(Effects.WRITES_NODES)
     .to(Effects.NONE)
     .doesNotIntroduceEagerness()
   }
 
   test("WRITES -> WRITES need no eagerness") {
     testThatGoingFrom(Effects.WRITES_ENTITIES)
-    .to(Effects.READS_ENTITIES)
+    .to(Effects.WRITES_ENTITIES)
     .doesNotIntroduceEagerness()
   }
 
@@ -62,13 +62,13 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     .doesIntroduceEagerness()
   }
 
-  test("WRITES -> READS needs eagerness") {
+  test("WRITES -> READS needs no eagerness") {
     testThatGoingFrom(Effects.WRITES_ENTITIES)
     .to(Effects.READS_ENTITIES)
     .doesNotIntroduceEagerness()
   }
 
-  test("READS -> READS needs eagerness") {
+  test("READS -> READS needs no eagerness") {
     testThatGoingFrom(Effects.READS_ENTITIES)
     .to(Effects.READS_ENTITIES)
     .doesNotIntroduceEagerness()
