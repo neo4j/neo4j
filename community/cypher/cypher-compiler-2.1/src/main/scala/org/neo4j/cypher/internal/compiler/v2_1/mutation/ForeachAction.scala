@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
@@ -44,6 +45,9 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
 
     Iterator(context)
   }
+
+
+  def localEffects(symbols: SymbolTable) = Effects.NONE
 
   def children = Seq(collection) ++ actions.flatMap(_.children)
 

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.mutation
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.PropertySupport
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.{CypherType, SymbolTable}
@@ -109,6 +110,8 @@ case class MergePatternAction(patterns: Seq[Pattern],
 
     dependencies -- introducedIdentifiers
   }
+
+  def localEffects(symbols: SymbolTable) = Effects.ALL
 }
 
 object MergePatternAction {

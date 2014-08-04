@@ -37,7 +37,7 @@ case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) exte
 
   def symbols = SymbolTable()
 
-  override def localEffects = Effects.NONE
+  override def effects = Effects.NONE
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.graphdb.{PropertyContainer, Path, Relationship, Node}
 import collection.JavaConverters._
-import org.neo4j.kernel.impl.core.NodeManager
 
 case class DeleteEntityAction(elementToDelete: Expression)
   extends UpdateAction {
@@ -62,4 +62,6 @@ case class DeleteEntityAction(elementToDelete: Expression)
   def children = Seq(elementToDelete)
 
   def symbolTableDependencies = elementToDelete.symbolTableDependencies
+
+  def localEffects(symbols: SymbolTable) = Effects.WRITES_ENTITIES
 }

@@ -30,7 +30,9 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
 
   def apply(in: Pipe): Pipe = {
     val sources = in.sources.map(apply).map { source =>
-      if (wouldInterfere(source.effects, in.effects)) {
+      val a = source.effects
+      val b = in.effects
+      if (wouldInterfere(a, b)) {
         new EagerPipe(source)(source.monitor)
       } else {
         source

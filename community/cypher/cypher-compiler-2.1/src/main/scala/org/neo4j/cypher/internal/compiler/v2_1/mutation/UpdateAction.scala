@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.EffectfulAstNode
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{AstNode, EffectfulAstNode}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
@@ -36,7 +36,7 @@ trait Effectful {
   def localEffects: Effects
 }
 
-trait UpdateAction extends TypeSafe with EffectfulAstNode[UpdateAction] {
+trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext]
 
   def identifiers: Seq[(String, CypherType)]
@@ -47,5 +47,15 @@ trait UpdateAction extends TypeSafe with EffectfulAstNode[UpdateAction] {
 
   def arguments: Seq[Argument] = identifiers.map(tuple => IntroducedIdentifier(tuple._1)) :+ UpdateActionName(shortName)
 
-  def localEffects = Effects.READS_ENTITIES | Effects.WRITES_ENTITIES
+  def effects(symbols: SymbolTable): Effects = {
+    var completeEffects = localEffects(symbols)
+    visitChildren {
+      case (expr: EffectfulAstNode[_]) =>
+        completeEffects = completeEffects | expr.localEffects
+    }
+    completeEffects
+  }
+
+
+  def localEffects(symbols: SymbolTable): Effects
 }
