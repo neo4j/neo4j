@@ -123,6 +123,7 @@ public class ByteBufferPage implements Page
     public void swapOut( StoreChannel channel, long offset, int length ) throws IOException
     {
         buffer.position( 0 );
+        buffer.limit( length );
         channel.writeAll( buffer, offset );
     }
 }

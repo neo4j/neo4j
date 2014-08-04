@@ -400,6 +400,40 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
     @Test( timeout = 1000 )
+    public void writesToPagesMustNotBleedIntoAdjecentPages() throws IOException
+    {
+        fs.create( file ).close();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        // Write the pageId+1 to every byte in the file
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            for ( int i = 1; i <= 100; i++ )
+            {
+                assertTrue( cursor.next() );
+                for ( int j = 0; j < filePageSize; j++ )
+                {
+                    cursor.putByte( (byte) i );
+                }
+            }
+        }
+        pageCache.unmap( file );
+
+        // Then check that none of those writes ended up in adjecent pages
+        InputStream inputStream = fs.openAsInputStream( file );
+        for ( int i = 1; i <= 100; i++ )
+        {
+            for ( int j = 0; j < filePageSize; j++ )
+            {
+                assertThat( inputStream.read(), is( i ) );
+            }
+        }
+        inputStream.close();
+    }
+
+    @Test( timeout = 1000 )
     public void firstNextCallMustReturnFalseWhenTheFileIsEmptyAndNoGrowIsSpecified() throws IOException
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
