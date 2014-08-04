@@ -36,7 +36,7 @@ public class DocumentationDocTest extends AbstractJavaDocTestbase
      * 
      * Below you see a number of different ways to generate text from source,
      * inserting it into the JavaDoc documentation (really being Asciidoc markup)
-     * via the +@@+ snippet markers and programmatic adding with runtime data
+     * via the snippet markers (see below) and programmatic adding with runtime data
      * in the Java code.
      * 
      * - The annotated graph as http://www.graphviz.org/[GraphViz]-generated visualization:
