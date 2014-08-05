@@ -33,9 +33,11 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -58,7 +60,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 public class TestConcurrentModificationOfRelationshipChains
 {
     private static final RelationshipType TYPE = withName( "POISON" );
-    private static final int RelationshipGrabSize = 2;
+    private static final int RelationshipGrabSize = 2, DenseNode = 50;
 
     @Rule
     public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule()
@@ -67,6 +69,7 @@ public class TestConcurrentModificationOfRelationshipChains
         protected void configure( GraphDatabaseBuilder builder )
         {
             builder.setConfig( GraphDatabaseSettings.relationship_grab_size, "" + RelationshipGrabSize );
+            builder.setConfig( GraphDatabaseSettings.dense_node_threshold, "" + DenseNode );
         }
     };
 
@@ -198,6 +201,52 @@ public class TestConcurrentModificationOfRelationshipChains
         try ( Transaction tx = graphDb.beginTx() )
         {
             assertEquals( RelationshipGrabSize + 1, count( node1.getRelationships() ) );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldNotInvalidateDenseNodeInCacheOnRollback() throws Exception
+    {
+        // given
+        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        Node node, other;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            node = graphDb.createNode();
+
+            for ( int i = 0; i < DenseNode; i++ )
+            {
+                node.createRelationshipTo( graphDb.createNode(), TYPE );
+            }
+            other = graphDb.createNode();
+
+            other.createRelationshipTo( node, TYPE );
+
+            tx.success();
+        }
+        clearCaches();
+        // make sure the node is in cache, but some relationships not loaded
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            for ( Relationship one : node.getRelationships( TYPE, Direction.OUTGOING ) )
+            {
+                assertNotNull( one );
+            }
+            tx.success();
+        }
+
+        // when
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            other.getSingleRelationship( TYPE, Direction.OUTGOING ).delete();
+            tx.failure();
+        }
+
+        // then
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            assertEquals( DenseNode + 1, IteratorUtil.count( node.getRelationships( TYPE ) ) );
             tx.success();
         }
     }
