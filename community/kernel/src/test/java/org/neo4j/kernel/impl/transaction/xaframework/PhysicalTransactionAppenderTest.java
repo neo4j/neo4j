@@ -27,7 +27,6 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
@@ -66,7 +65,7 @@ public class PhysicalTransactionAppenderTest
         appender.append( transaction );
 
         // THEN
-        try(PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader(CommandReaderFactory.DEFAULT)))
+        try(PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader()))
         {
             reader.next();
             TransactionRepresentation tx = reader.get().getTransactionRepresentation();
@@ -112,8 +111,7 @@ public class PhysicalTransactionAppenderTest
         appender.append( transaction );
 
         // THEN
-        PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader(
-                CommandReaderFactory.DEFAULT ) );
+        PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader() );
         reader.next();
         TransactionRepresentation result = reader.get().getTransactionRepresentation();
         assertArrayEquals( additionalHeader, result.additionalHeader() );

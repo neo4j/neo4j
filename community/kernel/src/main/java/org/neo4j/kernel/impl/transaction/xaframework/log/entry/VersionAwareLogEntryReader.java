@@ -49,6 +49,12 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
     public static final int LOG_HEADER_SIZE = 16;
 
     private final CommandReaderFactory commandReaderFactory;
+    private final LogPositionMarker positionMarker = new LogPositionMarker();
+
+    public VersionAwareLogEntryReader()
+    {
+        this( new CommandReaderFactory.Default() );
+    }
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
     {
@@ -125,10 +131,6 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
     {
         try
         {
-            // TODO: This means we end up creating one additional object per entry we read from the log.
-            // However, we already create a ton of objects during deserialization here. This whole section
-            // needs going over to figure out how to lower (preferrably remove) object allocation entirely.
-            LogPositionMarker positionMarker = new LogPositionMarker();
             channel.getCurrentPosition( positionMarker );
 
             /*

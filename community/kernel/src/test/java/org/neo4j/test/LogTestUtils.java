@@ -24,13 +24,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
@@ -119,7 +119,7 @@ public class LogTestUtils
             VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, true );
 
             // Read all log entries
-            LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
+            LogDeserializer deserializer = new LogDeserializer();
 
             ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel), LogVersionBridge.NO_MORE_CHANNELS, 4096);
 
@@ -191,8 +191,7 @@ public class LogTestUtils
 
             ReadableLogChannel inBuffer = new ReadAheadLogChannel( new PhysicalLogVersionedStoreChannel( in ),
                     LogVersionBridge.NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
-            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader(
-                    CommandReaderFactory.DEFAULT );
+            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader();
             LogEntry entry;
             while ( (entry = entryReader.readLogEntry( inBuffer )) != null )
             {

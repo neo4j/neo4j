@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.util.Arrays.asList;
-import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.index.IndexCommand;
@@ -56,6 +52,13 @@ import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
+import static java.util.Arrays.asList;
+
+import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
+
 /**
  * At any point, a power outage may stop us from writing to the log, which means that, at any point, all our commands
  * need to be able to handle the log ending mid-way through reading it.
@@ -63,8 +66,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEn
 public class LogTruncationTest
 {
     private final InMemoryLogChannel inMemoryChannel = new InMemoryLogChannel();
-    private final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader(
-            CommandReaderFactory.DEFAULT );
+    private final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader();
     private final CommandWriter serializer = new CommandWriter( inMemoryChannel );
     private final LogEntryWriterv1 writer = new LogEntryWriterv1( inMemoryChannel, serializer );
     /** Stores all known commands, and an arbitrary set of different permutations for them */

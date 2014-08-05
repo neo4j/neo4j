@@ -40,18 +40,19 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.DynamicRecordAdder;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.COLLECTION_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 
 public class PhysicalLogNeoCommandReaderV0 implements CommandReader
 {
-    private interface DynamicRecordAdder<T>
-    {
-        void add( T target, DynamicRecord record );
-    }
-
+    private final PhysicalNeoCommandReader reader = new PhysicalNeoCommandReader();
     private ReadableLogChannel channel;
 
     @Override
@@ -66,7 +67,6 @@ public class PhysicalLogNeoCommandReaderV0 implements CommandReader
             commandType = channel.get();
         }
 
-        PhysicalNeoCommandReader reader = new PhysicalNeoCommandReader();
         Command command;
 
         switch ( commandType )
@@ -449,27 +449,6 @@ public class PhysicalLogNeoCommandReaderV0 implements CommandReader
         }
 
 
-        private final DynamicRecordAdder<PropertyBlock> PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER =
-                new DynamicRecordAdder<PropertyBlock>()
-                {
-                    @Override
-                    public void add( PropertyBlock target, DynamicRecord record )
-                    {
-                        record.setCreated();
-                        target.addValueRecord( record );
-                    }
-                };
-
-        private final DynamicRecordAdder<Collection<DynamicRecord>> COLLECTION_DYNAMIC_RECORD_ADDER =
-                new DynamicRecordAdder<Collection<DynamicRecord>>()
-                {
-                    @Override
-                    public void add( Collection<DynamicRecord> target, DynamicRecord record )
-                    {
-                        target.add( record );
-                    }
-                };
-
         private PropertyRecord readPropertyRecord( long id )
                 throws IOException
         {
@@ -604,27 +583,5 @@ public class PhysicalLogNeoCommandReaderV0 implements CommandReader
             }
             return rule;
         }
-
-        private final DynamicRecordAdder<PropertyRecord> PROPERTY_DELETED_DYNAMIC_RECORD_ADDER =
-                new DynamicRecordAdder<PropertyRecord>()
-                {
-                    @Override
-                    public void add( PropertyRecord target, DynamicRecord record )
-                    {
-                        assert !record.inUse() : record + " is kinda weird";
-                        target.addDeletedRecord( record );
-                    }
-                };
-
-        private final DynamicRecordAdder<PropertyKeyTokenRecord> PROPERTY_INDEX_DYNAMIC_RECORD_ADDER =
-                new DynamicRecordAdder<PropertyKeyTokenRecord>()
-                {
-                    @Override
-                    public void add( PropertyKeyTokenRecord target, DynamicRecord record )
-                    {
-                        target.addNameRecord( record );
-                    }
-                };
-
     }
 }

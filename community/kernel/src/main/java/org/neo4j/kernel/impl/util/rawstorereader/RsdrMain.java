@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.transaction.xa.Xid;
 import javax.xml.bind.DatatypeConverter;
 
@@ -42,7 +43,6 @@ import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
@@ -261,7 +261,7 @@ public class RsdrMain
         console.printf( "Logical log version: %s with prev committed tx[%s]%n",
                 logVersion, prevLastCommittedTx );
 
-        LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
+        LogDeserializer deserializer = new LogDeserializer();
 
         PhysicalLogVersionedStoreChannel channel =
                 new PhysicalLogVersionedStoreChannel( fileChannel, logVersion );

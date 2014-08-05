@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
 import javax.transaction.xa.Xid;
 
 import org.hamcrest.Description;
@@ -32,7 +33,6 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
@@ -61,7 +61,7 @@ public class LogMatchers
         VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, true );
 
         // Read all log entries
-        LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
+        LogDeserializer deserializer = new LogDeserializer();
 
         ReadableLogChannel logChannel = new ReadAheadLogChannel(
                 new PhysicalLogVersionedStoreChannel( fileChannel ), LogVersionBridge.NO_MORE_CHANNELS, 4096 );

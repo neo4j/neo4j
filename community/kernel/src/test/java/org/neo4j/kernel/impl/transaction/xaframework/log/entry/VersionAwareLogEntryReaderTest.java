@@ -54,7 +54,7 @@ import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwa
 
 public class VersionAwareLogEntryReaderTest
 {
-    private final CommandReaderFactory commandReaderFactory = CommandReaderFactory.DEFAULT;
+    private final CommandReaderFactory commandReaderFactory = new CommandReaderFactory.Default();
     private final byte version = (byte) -1;
 
     @Test
