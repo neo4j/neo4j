@@ -51,6 +51,7 @@ import static java.lang.System.currentTimeMillis;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.logging.DefaultLogging.createDefaultLogging;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
 /**
  * Overall goals: split up processing cost by parallelizing. Keep CPUs busy, keep I/O busy and writing sequentially.
@@ -70,8 +71,8 @@ public class ParallelBatchImporter implements BatchImporter
     private final Monitors monitors;
     private final WriterFactory writerFactory;
 
-    public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
-                                  Configuration config, ExecutionMonitor executionMonitor )
+    ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
+                           Configuration config, ExecutionMonitor executionMonitor, WriterFactory writerFactory )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
@@ -81,9 +82,15 @@ public class ParallelBatchImporter implements BatchImporter
         this.executionMonitor = executionMonitor;
         this.monitors = new Monitors();
         this.writeMonitor = new IoMonitor();
-        this.writerFactory = new IoQueue( config.numberOfIoThreads() );
+        this.writerFactory = writerFactory;
 
         life.start();
+    }
+
+    public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
+                                  Configuration config, ExecutionMonitor executionMonitor )
+    {
+        this( storeDir, fileSystem, config, executionMonitor, new IoQueue( config.numberOfIoThreads(), SYNCHRONOUS ) );
     }
 
     @Override
@@ -127,6 +134,10 @@ public class ParallelBatchImporter implements BatchImporter
         {
             logger.error( "Error during import", t );
             throw Exceptions.launderedException( IOException.class, t );
+        }
+        finally
+        {
+            writerFactory.shutdown();
         }
 
         // TODO add import starts to this log message

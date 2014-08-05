@@ -27,6 +27,8 @@ import java.util.concurrent.Executors;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -36,8 +38,18 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atMost;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
+
 
 public class IoQueueTest
 {
@@ -50,38 +62,11 @@ public class IoQueueTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldExecuteWriteJob() throws Exception
-    {
-        // GIVEN
-        ExecutorService executor = cleanupRule.add( spy( Executors.newFixedThreadPool( 3 ) ) );
-        IoQueue queue = new IoQueue( executor );
-        File file = new File( directory.directory(), "file" );
-        StoreChannel channel = spy( fs.create( file ) );
-        Monitor monitor = mock( Monitor.class );
-        Writer writer = queue.create( file, channel, monitor );
-        SimplePool<ByteBuffer> pool = mock( SimplePool.class );
-        ByteBuffer buffer = ByteBuffer.allocate( 10 );
-        int position = 100;
-
-        // WHEN
-        writer.write( buffer, position, pool );
-        verify( executor, times( 1 ) ).submit( any( Callable.class ) );
-
-        // THEN
-        executor.shutdown();
-        executor.awaitTermination( 10, SECONDS );
-        verify( channel ).position( 100 );
-        verify( channel ).write( buffer );
-        verifyNoMoreInteractions( channel );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    @Test
     public void shouldExecuteWriteJobsForMultipleFiles() throws Exception
     {
         // GIVEN
         ExecutorService executor = cleanupRule.add( spy( Executors.newFixedThreadPool( 3 ) ) );
-        IoQueue queue = new IoQueue( executor );
+        IoQueue queue = new IoQueue( executor, SYNCHRONOUS );
         File file1 = new File( directory.directory(), "file1" );
         StoreChannel channel1 = cleanupRule.add( spy( fs.create( file1 ) ) );
         File file2 = new File( directory.directory(), "file2" );
@@ -112,5 +97,32 @@ public class IoQueueTest
         verify( channel2 ).write( buffer );
         verifyNoMoreInteractions( channel1 );
         verifyNoMoreInteractions( channel2 );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldExecuteWriteJob() throws Exception
+    {
+        // GIVEN
+        ExecutorService executor = cleanupRule.add( spy( Executors.newFixedThreadPool( 3 ) ) );
+        IoQueue queue = new IoQueue( executor, SYNCHRONOUS );
+        File file = new File( directory.directory(), "file" );
+        StoreChannel channel = spy( fs.create( file ) );
+        Monitor monitor = mock( Monitor.class );
+        Writer writer = queue.create( file, channel, monitor );
+        SimplePool<ByteBuffer> pool = Mockito.mock( SimplePool.class );
+        ByteBuffer buffer = ByteBuffer.allocate( 10 );
+        int position = 100;
+
+        // WHEN
+        writer.write( buffer, position, pool );
+        verify( executor, times( 1 ) ).submit( any( Callable.class ) );
+
+        // THEN
+        executor.shutdown();
+        executor.awaitTermination( 10, SECONDS );
+        verify( channel ).position( 100 );
+        verify( channel ).write( buffer );
+        verifyNoMoreInteractions( channel );
     }
 }
