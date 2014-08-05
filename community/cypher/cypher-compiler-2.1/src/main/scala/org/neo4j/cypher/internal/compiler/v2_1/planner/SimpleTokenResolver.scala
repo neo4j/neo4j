@@ -28,13 +28,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 
 class SimpleTokenResolver {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
-    ast.fold(()) {
-      case token: PropertyKeyName =>
-        _ => resolvePropertyKeyName(token.name)
-      case token: LabelName =>
-        _ => resolveLabelName(token.name)
-      case token: RelTypeName =>
-        _ => resolveRelTypeName(token.name)
+    ast.foreach {
+      case token: PropertyKeyName => resolvePropertyKeyName(token.name)
+      case token: LabelName       => resolveLabelName(token.name)
+      case token: RelTypeName     => resolveRelTypeName(token.name)
     }
   }
 

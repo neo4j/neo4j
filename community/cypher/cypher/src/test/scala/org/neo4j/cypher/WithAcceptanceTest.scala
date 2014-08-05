@@ -128,4 +128,8 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   test("nulls passing through WITH") {
     executeWithNewPlanner("optional match (a:Start) with a match a-->b return *") should be (empty)
   }
+
+  test("path expressions make it safely through WITH") {
+    executeWithNewPlanner("match p=a with p limit 1 return p") should be (empty)
+  }
 }
