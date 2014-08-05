@@ -33,7 +33,7 @@ case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = 
 }
 
 object SemanticState {
-  val clean = SemanticState(Scope.empty, IdentityMap.empty)
+  val clean = SemanticState(Scope.empty, IdentityMap.empty, IdentityMap.empty)
 }
 
 case class Scope(symbolTable: Map[String, Symbol], parent: Option[Scope]) {
@@ -55,8 +55,10 @@ object Scope {
   val empty = Scope(symbolTable = HashMap.empty, parent = None)
 }
 
-case class SemanticState(scope: Scope, typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo]) {
-  def newScope = copy(scope = scope.pushScope)
+case class SemanticState(scope: Scope,
+                         typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo],
+                         identifiers: IdentityMap[ast.Identifier, InputPosition]) {
+  def pushScope = copy(scope = scope.pushScope)
   def popScope = copy(scope = scope.popScope)
 
   def clearSymbols = copy(scope = Scope.empty)
@@ -115,9 +117,12 @@ case class SemanticState(scope: Scope, typeTable: IdentityMap[ast.Expression, Ex
 
   def expressionType(expression: ast.Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
 
-  private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Seq[InputPosition]) =
+  private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Seq[InputPosition]) = {
+    val pos = scope.localSymbol(identifier.name).map(_.positions.head).getOrElse(identifier.position)
     copy(
       scope = scope.updateIdentifier(identifier.name, types, locations),
-      typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types))
+      typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types)),
+      identifiers = identifiers + (identifier -> pos)
     )
+  }
 }

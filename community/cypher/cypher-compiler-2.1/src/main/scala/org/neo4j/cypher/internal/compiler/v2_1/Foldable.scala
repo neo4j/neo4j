@@ -58,6 +58,11 @@ object Foldable {
 
     def exists(f: PartialFunction[Any, Boolean]) =
       existsAcc(mutable.ArrayStack(that), f.lift)
+
+    def foreach(f: PartialFunction[Any, Unit]) =
+        fold(()) {
+          case x if f.isDefinedAt(x) => _ => f(x)
+        }
   }
 
   @tailrec

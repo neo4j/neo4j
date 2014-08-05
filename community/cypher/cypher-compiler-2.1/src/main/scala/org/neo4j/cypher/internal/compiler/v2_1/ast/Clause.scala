@@ -43,7 +43,7 @@ sealed trait ClosingClause extends Clause {
 
   // use a scoped state containing the aliased return items for the sort expressions
   private def checkSortItems: SemanticCheck = s => {
-    val result = (returnItems.declareIdentifiers(s) chain orderBy.semanticCheck)(s.newScope)
+    val result = (returnItems.declareIdentifiers(s) chain orderBy.semanticCheck)(s.pushScope)
     SemanticCheckResult(result.state.popScope, result.errors)
   }
 
