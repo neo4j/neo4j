@@ -20,13 +20,17 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.locks.LockSupport;
 
 import org.junit.Test;
 
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -36,18 +40,24 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.impl.batchimport.cache.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.DetailedExecutionMonitor;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache;
+import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
+import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
+
 
 public class ParallelBatchImporterTest
 {
@@ -57,10 +67,8 @@ public class ParallelBatchImporterTest
 
     private final File directory = TargetDirectory.forTest( getClass() ).cleanDirectory( "import" );
 
-    @Test
-    public void shouldImportCsvData() throws Exception
+    private void shouldImportCsvData0( BatchingPageCache.WriterFactory delegateWriterFactory ) throws Exception
     {
-
         // GIVEN
         Configuration config = new Configuration.Default()
         {
@@ -72,7 +80,7 @@ public class ParallelBatchImporterTest
         };
         BatchImporter inserter = new ParallelBatchImporter( directory.getAbsolutePath(),
                 new DefaultFileSystemAbstraction(), config,
-                new DetailedExecutionMonitor() );
+                new DetailedExecutionMonitor(), new IoQueue( config.numberOfIoThreads(), delegateWriterFactory ) );
 
         // WHEN
         int nodeCount = 100_000;
@@ -81,7 +89,6 @@ public class ParallelBatchImporterTest
         inserter.shutdown();
 
         // THEN
-        System.out.println( "Verifying contents" );
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.getAbsolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
@@ -93,6 +100,47 @@ public class ParallelBatchImporterTest
         {
             db.shutdown();
         }
+    }
+
+    @Test
+    public void shouldImportCsvData() throws Exception
+    {
+        shouldImportCsvData0( SYNCHRONOUS );
+    }
+
+    @Test
+    public void shouldImportCsvDataWhenWritesAreSlow() throws Exception
+    {
+        shouldImportCsvData0( new BatchingPageCache.WriterFactory()
+        {
+            @Override
+            public BatchingPageCache.Writer create( final File file, final StoreChannel channel, final Monitor monitor )
+            {
+                return new BatchingPageCache.Writer()
+                {
+                    final BatchingPageCache.Writer delegate = SYNCHRONOUS.create( file, channel, monitor );
+
+                    @Override
+                    public void write( ByteBuffer data, long position, Pool<ByteBuffer> pool )
+                            throws IOException
+                    {
+                        LockSupport.parkNanos( 50_000_000 ); // slowness comes from here
+                        delegate.write( data, position, pool );
+
+                    }
+                };
+            }
+
+            @Override
+            public void awaitEverythingWritten()
+            {   // no-op
+            }
+
+            @Override
+            public void shutdown()
+            {   // no-op
+            }
+        } );
     }
 
     protected void verifyData( int nodeCount, GraphDatabaseService db )

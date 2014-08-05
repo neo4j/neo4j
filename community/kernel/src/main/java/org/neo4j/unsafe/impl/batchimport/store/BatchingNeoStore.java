@@ -67,8 +67,8 @@ public class BatchingNeoStore implements AutoCloseable
     private final WriterFactory writerFactory;
 
     public BatchingNeoStore( FileSystemAbstraction fileSystem, String storeDir,
-                                  Configuration config, Monitor writeMonitor, Logging logging,
-                                  Monitors monitors, WriterFactory writerFactory )
+                             Configuration config, Monitor writeMonitor, Logging logging,
+                             Monitors monitors, WriterFactory writerFactory )
     {
         this.fileSystem = fileSystem;
         this.monitors = monitors;

@@ -33,9 +33,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
-
 /**
  * Queue of I/O jobs. A job is basically: "write the contents of ByteBuffer B to channel C starting at position P"
  * Calls to public (interface) methods that this class exposes are assumed to be single-threaded.
@@ -44,15 +41,18 @@ public class IoQueue implements WriterFactory
 {
     private final ExecutorService executor;
     private final JobMonitor jobMonitor = new JobMonitor();
+    private final WriterFactory delegateFactory;
 
-    public IoQueue( int maxIOThreads )
+    public IoQueue( int maxIOThreads, WriterFactory delegateFactory )
     {
-        this( Executors.newFixedThreadPool( maxIOThreads, new NamedThreadFactory( "IoQueue I/O thread" ) ) );
+        this( Executors.newFixedThreadPool( maxIOThreads, new NamedThreadFactory( "IoQueue I/O thread" ) ),
+                delegateFactory );
     }
 
-    public IoQueue( ExecutorService executor )
+    public IoQueue( ExecutorService executor, WriterFactory delegateFactory )
     {
         this.executor = executor;
+        this.delegateFactory = delegateFactory;
     }
 
     @Override
@@ -99,14 +99,14 @@ public class IoQueue implements WriterFactory
         }
     }
 
-    private static class Funnel implements Writer
+    private class Funnel implements Writer
     {
         private final Writer writer;
         private final WriteQueue queue;
 
         public Funnel( File file, StoreChannel channel, Monitor monitor, WriteQueue queue )
         {
-            this.writer = SYNCHRONOUS.create( file, channel, monitor );
+            this.writer = delegateFactory.create( file, channel, monitor );
             this.queue = queue;
         }
 
