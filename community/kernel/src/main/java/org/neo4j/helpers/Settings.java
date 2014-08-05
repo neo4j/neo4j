@@ -375,7 +375,7 @@ public final class Settings
 
         public static DirectMemoryUsage directMemoryUsage()
         {
-            return new DirectMemoryUsage(Math.min( maxOffHeapMemory(), totalPhysicalMemory() ), totalFreeMemory() );
+            return new DirectMemoryUsage(Math.min( maxOffHeapMemory(), totalPhysicalMemory() ), totalFreeMemory() - unallocatedJVMMemory() );
         }
 
         public static long totalPhysicalMemory()
@@ -392,6 +392,14 @@ public final class Settings
                     "com.sun.management.OperatingSystemMXBean",
                     "getFreePhysicalMemorySize",
                     /*default=*/Runtime.getRuntime().maxMemory() );
+        }
+
+        /**
+         * Amount of free system RAM that may be taken up by the JVM at a later time.
+         */
+        private static long unallocatedJVMMemory()
+        {
+            return Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory();
         }
 
         private static long maxOffHeapMemory()
