@@ -19,11 +19,8 @@
  */
 package org.neo4j.ha.monitoring;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.fromXml;
-
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -36,6 +33,11 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 public class RemoteRequestMonitoringIT
 {
@@ -59,36 +61,39 @@ public class RemoteRequestMonitoringIT
             clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
             GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-            master.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    masterMonitor );
+            master.getDependencyResolver().
+                    resolveDependency( Monitors.class ).addMonitorListener( masterMonitor );
 
             HighlyAvailableGraphDatabase firstSlave = clusterManager.getDefaultCluster().getAnySlave();
-            firstSlave.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    firstSlaveMonitor );
+            firstSlave.getDependencyResolver().
+                    resolveDependency( Monitors.class ).addMonitorListener( firstSlaveMonitor );
 
             HighlyAvailableGraphDatabase secondSlave = clusterManager.getDefaultCluster().getAnySlave( firstSlave );
-            secondSlave.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    secondSlaveMonitor );
+            secondSlave.getDependencyResolver().
+                    resolveDependency( Monitors.class ).addMonitorListener( secondSlaveMonitor );
 
             // WHEN
-            Transaction tx = master.beginTx();
-            master.createNode();
-            tx.success();
-            tx.finish();
+            try ( Transaction tx = master.beginTx() )
+            {
+                master.createNode();
+                tx.success();
+            }
 
-            tx = firstSlave.beginTx();
-            firstSlave.createNode();
-            tx.success();
-            tx.finish();
+            try ( Transaction tx = firstSlave.beginTx() )
+            {
+                firstSlave.createNode();
+                tx.success();
+            }
 
-            tx = secondSlave.beginTx();
-            secondSlave.createNode();
-            tx.success();
-            tx.finish();
+            try ( Transaction tx = secondSlave.beginTx() )
+            {
+                secondSlave.createNode();
+                tx.success();
+            }
         }
         finally
         {
-            clusterManager.stop();
+            clusterManager.shutdown();
         }
 
         // THEN
@@ -127,17 +132,18 @@ public class RemoteRequestMonitoringIT
             for ( int i = 0; i < 10; i++ )
             {
 
-                Transaction tx = master.beginTx();
-                master.createNode();
-                tx.success();
-                tx.finish();
+                try ( Transaction tx = master.beginTx() )
+                {
+                    master.createNode();
+                    tx.success();
+                }
             }
 
             firstSlave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         }
         finally
         {
-            clusterManager.stop();
+            clusterManager.shutdown();
         }
 
         // THEN
