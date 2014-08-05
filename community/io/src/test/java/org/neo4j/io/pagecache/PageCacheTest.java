@@ -2603,4 +2603,6 @@ public abstract class PageCacheTest<T extends PageCache>
             pageCache.unmap( fileB );
         }
     }
+
+    // TODO specify what should happen if we call pagedFile.flush() while we have an exclusive lock on a page
 }

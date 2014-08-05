@@ -261,7 +261,7 @@ public abstract class InternalAbstractGraphDatabase
     protected IdGeneratorFactory idGeneratorFactory;
     protected IndexConfigStore indexStore;
     protected TxIdGenerator txIdGenerator;
-    protected PageCache pageCache;
+    protected LifecycledPageCache pageCache;
     protected StoreFactory storeFactory;
     protected DiagnosticsManager diagnosticsManager;
     protected NeoStoreXaDataSource neoDataSource;
@@ -621,7 +621,7 @@ public abstract class InternalAbstractGraphDatabase
                 logging.getMessagesLog( StoreFactory.class ), monitors );
     }
 
-    protected PageCache createPageCache()
+    protected LifecycledPageCache createPageCache()
     {
         PageCacheFactory factory = null;
         String preferredChoice = config.get( Configuration.page_cache );
@@ -656,7 +656,7 @@ public abstract class InternalAbstractGraphDatabase
 
         logging.getMessagesLog( InternalAbstractGraphDatabase.class ).info(
                 "Using PageCache implementation " + factory.getImplementationName() +
-                        " based on configureation '" + preferredChoice + "'" );
+                        " based on configuration '" + preferredChoice + "'" );
 
         if ( config.get( GraphDatabaseSettings.dump_configuration ) )
         {
@@ -1214,9 +1214,9 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( fileSystem );
             }
-            else if ( PageCache.class.isAssignableFrom( type ) && type.isInstance( pageCache ) )
+            else if ( PageCache.class.isAssignableFrom( type ) )
             {
-                return type.cast( pageCache );
+                return type.cast( pageCache.unwrap() );
             }
             else if ( Guard.class.isAssignableFrom( type ) && type.isInstance( guard ) )
             {

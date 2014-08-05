@@ -135,4 +135,9 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
 
         messagesLog.info( msg );
     }
+
+    public PageCache unwrap()
+    {
+        return pageCache;
+    }
 }

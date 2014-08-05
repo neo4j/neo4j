@@ -35,7 +35,7 @@ public abstract class PageCacheFactory extends Service
         {
             int p1 = o1.getPriority();
             int p2 = o2.getPriority();
-            return p1 - p2;
+            return p2 - p1;
         }
     };
 
@@ -56,6 +56,9 @@ public abstract class PageCacheFactory extends Service
             int cachePageSize,
             PageCacheMonitor monitor );
 
+    /**
+     * The greater the number, the higher the priority as a default choice, when none has been configured.
+     */
     public abstract int getPriority();
 
     public abstract String getImplementationName();
