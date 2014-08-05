@@ -1281,7 +1281,7 @@ public abstract class PageCacheTest<T extends PageCache>
         cache.unmap( file );
     }
 
-    @Test( timeout = 10000 )
+    @Test( timeout = 60000 )
     public void readsAndWritesMustBeMutuallyConsistent() throws Exception
     {
         // The idea is this: have a range of pages and we set off a bunch of threads to
