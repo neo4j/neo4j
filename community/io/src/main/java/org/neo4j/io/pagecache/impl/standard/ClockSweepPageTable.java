@@ -271,6 +271,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
         PageSwapper swapper = page.io();
 
         page.flush();
+        page.setAllBytesToZero();
         page.evicted();
         page.reset( null, UNBOUND_PAGE_ID );
         page.loaded = false;

@@ -330,6 +330,7 @@ final class MuninnPage extends StampedLock implements Page
     public void evict() throws IOException
     {
         flush();
+        UnsafeUtil.setMemory( pointer, cachePageSize, (byte) 0 );
         filePageId = PageCursor.UNBOUND_PAGE_ID;
         swapper = null;
     }

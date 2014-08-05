@@ -2489,4 +2489,118 @@ public abstract class PageCacheTest<T extends PageCache>
             pageCache = null;
         }
     }
+
+    @Test( timeout = 1000 )
+    public void dataFromDifferentFilesMustNotBleedIntoEachOther() throws IOException
+    {
+        // The idea with this test is, that the pages for fileA are larger than
+        // the pages for fileB, so we can put A-data beyond the end of the B
+        // file pages.
+        // Furthermore, our writes to the B-pages do not overwrite the entire page.
+        // In those cases, the bytes not written to must be zeros.
+
+        File fileA = new File( "a" );
+        File fileB = new File( "b" );
+        fs.create( fileA ).close();
+        fs.create( fileB ).close();
+        int filePageSizeA = pageCachePageSize - 2;
+        int filePageSizeB = pageCachePageSize - 6;
+        int pagesToWriteA = 100;
+        int pagesToWriteB = 3;
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFileA = pageCache.map( fileA, filePageSizeA );
+
+        try ( PageCursor cursor = pagedFileA.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            for ( int i = 0; i < pagesToWriteA; i++ )
+            {
+                assertTrue( cursor.next() );
+                for ( int j = 0; j < filePageSizeA; j++ )
+                {
+                    cursor.putByte( (byte) 42 );
+                }
+            }
+        }
+
+        PagedFile pagedFileB = pageCache.map( fileB, filePageSizeB );
+
+        try ( PageCursor cursor = pagedFileB.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            for ( int i = 0; i < pagesToWriteB; i++ )
+            {
+                assertTrue( cursor.next() );
+                cursor.putByte( (byte) 63 );
+            }
+        }
+
+        pageCache.unmap( fileA );
+        pageCache.unmap( fileB );
+
+        InputStream inputStream = fs.openAsInputStream( fileB );
+        assertThat( "first page first byte", inputStream.read(), is( 63 ) );
+        for ( int i = 0; i < filePageSizeB - 1; i++ )
+        {
+            assertThat( "page 0 byte pos " + i, inputStream.read(), is( 0 ) );
+        }
+        assertThat( "second page first byte", inputStream.read(), is( 63 ) );
+        for ( int i = 0; i < filePageSizeB - 1; i++ )
+        {
+            assertThat( "page 1 byte pos " + i, inputStream.read(), is( 0 ) );
+        }
+        assertThat( "third page first byte", inputStream.read(), is( 63 ) );
+        for ( int i = 0; i < filePageSizeB - 1; i++ )
+        {
+            assertThat( "page 2 byte pos " + i, inputStream.read(), is( 0 ) );
+        }
+        assertThat( "expect EOF", inputStream.read(), is( -1 ) );
+    }
+
+    @Test( timeout = 1000 )
+    public void freshlyCreatedPagesMustContainAllZeros() throws IOException
+    {
+        File fileA = new File( "a" );
+        File fileB = new File( "b" );
+        fs.create( fileA ).close();
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( fileA, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            for ( int i = 0; i < 100; i++ )
+            {
+                assertTrue( cursor.next() );
+                for ( int j = 0; j < filePageSize; j++ )
+                {
+                    cursor.putByte( (byte) rng.nextInt() );
+                }
+            }
+        }
+        pageCache.unmap( fileA );
+        pageCache.close();
+        pageCache = null;
+        System.gc(); // make sure underlying pages are finalizable
+        System.gc(); // make sure underlying pages are finally collected
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        pagedFile = pageCache.map( fileB, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            for ( int i = 0; i < 100; i++ )
+            {
+                assertTrue( cursor.next() );
+                for ( int j = 0; j < filePageSize; j++ )
+                {
+                    assertThat( cursor.getByte(), is( (byte) 0 ) );
+                }
+            }
+        }
+        finally
+        {
+            pageCache.unmap( fileB );
+        }
+    }
 }

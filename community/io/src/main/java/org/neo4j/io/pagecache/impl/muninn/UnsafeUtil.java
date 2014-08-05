@@ -173,6 +173,11 @@ final class UnsafeUtil
         unsafe.putObjectVolatile( obj, offset, value );
     }
 
+    public static void setMemory( long address, long bytes, byte value )
+    {
+        unsafe.setMemory( address, bytes, value );
+    }
+
     /**
      * This method prevents the given object from becoming finalizable until
      * this method has been called.

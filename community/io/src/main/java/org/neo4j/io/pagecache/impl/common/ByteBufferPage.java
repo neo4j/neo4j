@@ -126,4 +126,13 @@ public class ByteBufferPage implements Page
         buffer.limit( length );
         channel.writeAll( buffer, offset );
     }
+
+    public void setAllBytesToZero()
+    {
+        buffer.clear();
+        for ( int i = 0; i < buffer.limit(); i++ )
+        {
+            buffer.put( (byte) 0 );
+        }
+    }
 }
