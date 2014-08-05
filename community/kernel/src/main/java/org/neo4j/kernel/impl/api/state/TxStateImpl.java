@@ -751,6 +751,16 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
+    public PrimitiveLongIterator addedRelationships( long nodeId, int[] types, Direction direction )
+    {
+        if(hasNodeState( nodeId ))
+        {
+            return getOrCreateNodeState( nodeId ).addedRelationships( direction, types );
+        }
+        return null;
+    }
+
+    @Override
     public int augmentNodeDegree( long nodeId, int degree, Direction direction )
     {
         if(hasNodeState( nodeId ))

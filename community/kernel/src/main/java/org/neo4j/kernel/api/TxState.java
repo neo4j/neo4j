@@ -274,6 +274,8 @@ public interface TxState
     PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, int[] relTypes,
                                                 PrimitiveLongIterator stored );
 
+    PrimitiveLongIterator addedRelationships( long nodeId, int[] relTypes, Direction direction );
+
     int augmentNodeDegree( long node, int committedDegree, Direction direction );
 
     int augmentNodeDegree( long node, int committedDegree, Direction direction, int relType );

@@ -28,6 +28,8 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.util.DiffSets;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
+
 public final class NodeState extends PropertyContainerState
 {
     private DiffSets<Integer> labelDiffSets;
@@ -118,6 +120,15 @@ public final class NodeState extends PropertyContainerState
             return relationshipsAdded.augmentRelationships( direction, types, rels );
         }
         return rels;
+    }
+
+    public PrimitiveLongIterator addedRelationships( Direction direction, int[] types )
+    {
+        if( hasAddedRelationships())
+        {
+            return relationshipsAdded.augmentRelationships( direction, types, emptyIterator());
+        }
+        return null;
     }
 
     public int augmentDegree( Direction direction, int degree )

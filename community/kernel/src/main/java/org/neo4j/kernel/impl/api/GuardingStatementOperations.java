@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -34,6 +35,8 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.util.register.NeoRegister;
+import org.neo4j.register.Register;
 
 public class GuardingStatementOperations implements
         EntityWriteOperations,
@@ -321,5 +324,17 @@ public class GuardingStatementOperations implements
     {
         guard.check();
         entityReadDelegate.relationshipVisit( statement, relId, visitor );
+    }
+
+    @Override
+    public Cursor expand( KernelStatement statement, Cursor inputCursor, NeoRegister.Node.In nodeId,
+                          Register.Object.In<int[]> types, Register.Object.In<Direction> expandDirection,
+                          NeoRegister.Relationship.Out relId, NeoRegister.RelType.Out relType,
+                          Register.Object.Out<Direction> direction,
+                          NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId )
+    {
+        guard.check();
+        return entityReadDelegate.expand( statement, inputCursor, nodeId, types, expandDirection,
+                relId, relType, direction, startNodeId, neighborNodeId );
     }
 }
