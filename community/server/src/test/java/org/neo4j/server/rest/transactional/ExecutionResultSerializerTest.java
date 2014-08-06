@@ -36,7 +36,7 @@ import java.util.Set;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.cypher.javacompat.PlanDescription;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -98,7 +98,7 @@ public class ExecutionResultSerializerTest
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
 
-        ExecutionResult executionResult = mockExecutionResult( map(
+        ExtendedExecutionResult executionResult = mockExecutionResult( map(
                 "column1", "value1",
                 "column2", "value2" ) );
 
@@ -120,7 +120,7 @@ public class ExecutionResultSerializerTest
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
 
-        ExecutionResult executionResult = mockExecutionResult( map(
+        ExtendedExecutionResult executionResult = mockExecutionResult( map(
                 "column1", "value1",
                 "column2", "value2" ) );
 
@@ -141,7 +141,7 @@ public class ExecutionResultSerializerTest
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
 
-        ExecutionResult executionResult = mockExecutionResult( map(
+        ExtendedExecutionResult executionResult = mockExecutionResult( map(
                 "column1", "value1",
                 "column2", "value2" ) );
 
@@ -166,7 +166,7 @@ public class ExecutionResultSerializerTest
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
 
-        ExecutionResult executionResult = mockExecutionResult( map(
+        ExtendedExecutionResult executionResult = mockExecutionResult( map(
                 "column1", "value1",
                 "column2", "value2" ) );
 
@@ -241,14 +241,14 @@ public class ExecutionResultSerializerTest
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
 
-        ExecutionResult executionResult = mockExecutionResult( map(
+        ExtendedExecutionResult executionResult = mockExecutionResult( map(
                 "column1", "value1",
                 "column2", "value2" ), map(
                 "column1", "value3",
                 "column2", "value4" ) );
 
         // when
-        serializer.statementResult( executionResult, false );
+        serializer.statementResult(executionResult, false);
         serializer.finish();
 
         // then
@@ -265,16 +265,16 @@ public class ExecutionResultSerializerTest
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
 
-        ExecutionResult executionResult1 = mockExecutionResult( map(
+        ExtendedExecutionResult executionResult1 = mockExecutionResult( map(
                 "column1", "value1",
                 "column2", "value2" ) );
-        ExecutionResult executionResult2 = mockExecutionResult( map(
+        ExtendedExecutionResult executionResult2 = mockExecutionResult( map(
                 "column3", "value3",
                 "column4", "value4" ) );
 
         // when
         serializer.statementResult( executionResult1, false );
-        serializer.statementResult( executionResult2, false );
+        serializer.statementResult(executionResult2, false);
         serializer.finish();
 
         // then
@@ -292,7 +292,7 @@ public class ExecutionResultSerializerTest
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
 
-        ExecutionResult executionResult = mockExecutionResult( map(
+        ExtendedExecutionResult executionResult = mockExecutionResult( map(
                 "node", node( 1, properties(
                 property( "a", 12 ),
                 property( "b", true ),
@@ -301,7 +301,7 @@ public class ExecutionResultSerializerTest
                 property( "e", new String[]{"a", "b", "ääö"} ) ) ) ) );
 
         // when
-        serializer.statementResult( executionResult, false );
+        serializer.statementResult(executionResult, false);
         serializer.finish();
 
         // then
@@ -318,10 +318,10 @@ public class ExecutionResultSerializerTest
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
 
-        Node a = node( 1, properties( property( "foo", 12 ) ) );
+        Node a = node(1, properties(property("foo", 12)));
         Node b = node( 2, properties( property( "bar", false ) ) );
         Relationship r = relationship( 1, properties( property( "baz", "quux" ) ), a, "FRAZZLE", b );
-        ExecutionResult executionResult = mockExecutionResult( map(
+        ExtendedExecutionResult executionResult = mockExecutionResult( map(
                 "nested", map(
                         "node", a,
                         "edge", r,
@@ -329,7 +329,7 @@ public class ExecutionResultSerializerTest
                 ) ) );
 
         // when
-        serializer.statementResult( executionResult, false );
+        serializer.statementResult(executionResult, false);
         serializer.finish();
 
         // then
@@ -346,11 +346,11 @@ public class ExecutionResultSerializerTest
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
 
-        ExecutionResult executionResult = mockExecutionResult( map(
+        ExtendedExecutionResult executionResult = mockExecutionResult( map(
                 "path", mockPath( map( "key1", "value1" ), map( "key2", "value2" ), map( "key3", "value3" ) ) ) );
 
         // when
-        serializer.statementResult( executionResult, false );
+        serializer.statementResult(executionResult, false);
         serializer.finish();
 
         // then
@@ -370,7 +370,7 @@ public class ExecutionResultSerializerTest
         Map<String, Object> data = map(
                 "column1", "value1",
                 "column2", "value2" );
-        ExecutionResult executionResult = mock( ExecutionResult.class );
+        ExtendedExecutionResult executionResult = mock( ExtendedExecutionResult.class );
         when( executionResult.columns() ).thenReturn( new ArrayList<>( data.keySet() ) );
         @SuppressWarnings("unchecked")
         ResourceIterator<Map<String, Object>> iterator = mock( ResourceIterator.class );
@@ -408,7 +408,7 @@ public class ExecutionResultSerializerTest
         Map<String, Object> data = map(
                 "column1", "value1",
                 "column2", "value2" );
-        ExecutionResult executionResult = mock( ExecutionResult.class );
+        ExtendedExecutionResult executionResult = mock( ExtendedExecutionResult.class );
         when( executionResult.columns() ).thenReturn( new ArrayList<>( data.keySet() ) );
         @SuppressWarnings("unchecked")
         ResourceIterator<Map<String, Object>> iterator = mock( ResourceIterator.class );
@@ -554,7 +554,7 @@ public class ExecutionResultSerializerTest
 
         // then
         String result = output.toString( "UTF-8" );
-        JsonNode json = jsonNode( result );
+        JsonNode json = jsonNode(result);
         Map<String, Integer> columns = new HashMap<>();
         int col = 0;
         JsonNode results = json.get( "results" ).get( 0 );
@@ -659,8 +659,8 @@ public class ExecutionResultSerializerTest
         JsonNode plan = results.get( "plan" );
         assertTrue( "Expected plan to be an object", plan != null && plan.isObject() );
 
-        JsonNode root = plan.get( "root" );
-        assertTrue( "Expected plan to be an object", root != null && root.isObject() );
+        JsonNode root = plan.get("root");
+        assertTrue("Expected plan to be an object", root != null && root.isObject());
 
         return root;
     }
@@ -698,9 +698,9 @@ public class ExecutionResultSerializerTest
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, null );
         RuntimeException onCloseException = new IllegalStateException("Iterator closed");
         ResourceIterator iterator = mock( ResourceIterator.class );
-        when( iterator.hasNext() ).thenReturn( true );
+        when( iterator.hasNext() ).thenReturn(true);
         when( iterator.next() ).thenThrow( onCloseException );
-        ExecutionResult result = mock( ExecutionResult.class );
+        ExtendedExecutionResult result = mock(ExtendedExecutionResult.class);
         when( result.iterator() ).thenReturn( iterator );
 
         // when
@@ -719,24 +719,24 @@ public class ExecutionResultSerializerTest
         verify( iterator, times( 1 ) ).hasNext();
         verify( iterator, times( 1 ) ).next();
         verify( iterator, times( 1 ) ).close();
-        verifyNoMoreInteractions( iterator );
+        verifyNoMoreInteractions(iterator);
     }
 
     @SafeVarargs
-    private static ExecutionResult mockExecutionResult( Map<String, Object>... rows )
+    private static ExtendedExecutionResult mockExecutionResult( Map<String, Object>... rows )
     {
         return mockExecutionResult( null, rows );
     }
 
     @SafeVarargs
-    private static ExecutionResult mockExecutionResult( PlanDescription planDescription, Map<String, Object>... rows )
+    private static ExtendedExecutionResult mockExecutionResult( PlanDescription planDescription, Map<String, Object>... rows )
     {
         Set<String> keys = new HashSet<>();
         for ( Map<String, Object> row : rows )
         {
             keys.addAll( row.keySet() );
         }
-        ExecutionResult executionResult = mock( ExecutionResult.class );
+        ExtendedExecutionResult executionResult = mock( ExtendedExecutionResult.class );
         when( executionResult.columns() ).thenReturn( new ArrayList<>( keys ) );
         final Iterator<Map<String, Object>> inner = asList( rows ).iterator();
 

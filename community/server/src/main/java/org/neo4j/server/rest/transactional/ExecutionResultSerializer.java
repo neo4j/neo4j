@@ -30,8 +30,8 @@ import java.util.Map;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.cypher.javacompat.PlanDescription;
-import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.QueryStatistics;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -44,7 +44,7 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
  * order, as follows:
  * <ul>
  * <li>{@link #transactionCommitUri(URI) transactionId}{@code ?}</li>
- * <li>{@link #statementResult(org.neo4j.cypher.javacompat.ExecutionResult, boolean, ResultDataContent...) statementResult}{@code *}</li>
+ * <li>{@link #statementResult(org.neo4j.cypher.javacompat.ExtendedExecutionResult, boolean, ResultDataContent...) statementResult}{@code *}</li>
  * <li>{@link #errors(Iterable) errors}{@code ?}</li>
  * <li>{@link #transactionStatus(long expiryDate)}{@code ?}</li>
  * <li>{@link #finish() finish}</li>
@@ -92,7 +92,7 @@ public class ExecutionResultSerializer
      * Will get called at most once per statement. Throws IOException so that upstream executor can decide whether
      * to execute further statements.
      */
-    public void statementResult( ExecutionResult result, boolean includeStats, ResultDataContent... resultDataContents )
+    public void statementResult( ExtendedExecutionResult result, boolean includeStats, ResultDataContent... resultDataContents )
             throws IOException
     {
         try
@@ -207,11 +207,11 @@ public class ExecutionResultSerializer
 
     private void writeValue( Object value ) throws IOException
     {
-        JsonHelper.writeValue( out, value );
+        JsonHelper.writeValue(out, value);
     }
 
     /**
-     * Will get called once if any errors occurred, after {@link #statementResult(org.neo4j.cypher.javacompat.ExecutionResult, boolean, ResultDataContent...)}  statementResults}
+     * Will get called once if any errors occurred, after {@link #statementResult(org.neo4j.cypher.javacompat.ExtendedExecutionResult, boolean, ResultDataContent...)}  statementResults}
      * has been called This method is not allowed to throw exceptions. If there are network errors or similar, the
      * handler should take appropriate action, but never fail this method.
      */

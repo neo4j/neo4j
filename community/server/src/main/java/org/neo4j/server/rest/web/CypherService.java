@@ -28,7 +28,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.database.CypherExecutor;
@@ -103,7 +103,7 @@ public class CypherService
                 handler.closeTransaction();
             }
 
-            ExecutionResult result;
+            ExtendedExecutionResult result;
             if ( profile )
             {
                 result = executionEngine.profile( query, params );

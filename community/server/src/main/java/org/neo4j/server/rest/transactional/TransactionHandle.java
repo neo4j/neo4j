@@ -27,7 +27,7 @@ import java.util.List;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.InvalidSemanticsException;
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -281,7 +281,7 @@ public class TransactionHandle implements TransactionTerminationHandle
             while ( statements.hasNext() )
             {
                 Statement statement = statements.next();
-                ExecutionResult result;
+                ExtendedExecutionResult result;
                 try
                 {
                     result = engine.execute( statement.statement(), statement.parameters() );
@@ -326,7 +326,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     {
         try
         {
-            ExecutionResult result;
+            ExtendedExecutionResult result;
             try
             {
                 Statement statement = statements.next();
