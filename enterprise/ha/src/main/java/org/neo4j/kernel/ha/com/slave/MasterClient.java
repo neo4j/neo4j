@@ -67,13 +67,13 @@ public interface MasterClient extends Master
     public Response<Integer> createRelationshipType( RequestContext context, final String name );
 
     @Override
-    public Response<Void> initializeTx( RequestContext context );
+    public Response<Void> newLockSession( RequestContext context );
 
     @Override
-    public Response<Long> commitSingleResourceTransaction( RequestContext context, final TransactionRepresentation channel );
+    public Response<Long> commit( RequestContext context, final TransactionRepresentation channel );
 
     @Override
-    public Response<Void> finishTransaction( RequestContext context, final boolean success );
+    public Response<Void> endLockSession( RequestContext context, final boolean success );
 
     public void rollbackOngoingTransactions( RequestContext context );
 

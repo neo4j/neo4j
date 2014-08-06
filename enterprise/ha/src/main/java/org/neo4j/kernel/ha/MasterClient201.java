@@ -188,7 +188,7 @@ public class MasterClient201 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Void> initializeTx( RequestContext context )
+    public Response<Void> newLockSession( RequestContext context )
     {
         return sendRequest( HaRequestType201.INITIALIZE_TX, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
@@ -256,7 +256,7 @@ public class MasterClient201 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Long> commitSingleResourceTransaction( RequestContext context, final TransactionRepresentation tx )
+    public Response<Long> commit( RequestContext context, final TransactionRepresentation tx )
     {
 //        return sendRequest( HaRequestType201.COMMIT, context, new Serializer()
 //                {
@@ -284,7 +284,7 @@ public class MasterClient201 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Void> finishTransaction( RequestContext context, final boolean success )
+    public Response<Void> endLockSession( RequestContext context, final boolean success )
     {
         return sendRequest( HaRequestType201.FINISH, context, new Serializer()
         {

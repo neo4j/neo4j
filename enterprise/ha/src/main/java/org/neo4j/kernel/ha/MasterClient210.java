@@ -187,9 +187,9 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Void> initializeTx( RequestContext context )
+    public Response<Void> newLockSession( RequestContext context )
     {
-        return sendRequest( HaRequestType210.INITIALIZE_TX, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
+        return sendRequest( HaRequestType210.NEW_LOCK_SESSION, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
 
     @Override
@@ -209,7 +209,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Long> commitSingleResourceTransaction( RequestContext context, TransactionRepresentation tx )
+    public Response<Long> commit( RequestContext context, TransactionRepresentation tx )
     {
         return sendRequest( HaRequestType210.COMMIT, context, new Protocol.TransactionSerializer( tx ),
                 new Deserializer<Long>()
@@ -225,9 +225,9 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Void> finishTransaction( RequestContext context, final boolean success )
+    public Response<Void> endLockSession( RequestContext context, final boolean success )
     {
-        return sendRequest( HaRequestType210.FINISH, context, new Serializer()
+        return sendRequest( HaRequestType210.END_LOCK_SESSION, context, new Serializer()
         {
             @Override
             public void write( ChannelBuffer buffer ) throws IOException

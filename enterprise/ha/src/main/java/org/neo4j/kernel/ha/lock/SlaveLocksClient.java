@@ -238,7 +238,7 @@ class SlaveLocksClient implements Locks.Client
         exclusiveLocks.clear();
         if ( initialized )
         {
-            master.finishTransaction( requestContextFactory.newRequestContext( (int) client.getIdentifier() ), true );
+            master.endLockSession( requestContextFactory.newRequestContext( (int) client.getIdentifier() ), true );
             initialized = false;
         }
         client.releaseAll();
@@ -251,7 +251,7 @@ class SlaveLocksClient implements Locks.Client
         exclusiveLocks.clear();
         if ( initialized )
         {
-            master.finishTransaction( requestContextFactory.newRequestContext( (int) client.getIdentifier() ), true );
+            master.endLockSession( requestContextFactory.newRequestContext( (int) client.getIdentifier() ), true );
         }
         client.close();
     }
@@ -323,7 +323,7 @@ class SlaveLocksClient implements Locks.Client
         }
         if ( !initialized )
         {
-            master.initializeTx( requestContextFactory.newRequestContext( (int) client.getIdentifier() ) );
+            master.newLockSession( requestContextFactory.newRequestContext( (int) client.getIdentifier() ) );
             initialized = true;
         }
     }

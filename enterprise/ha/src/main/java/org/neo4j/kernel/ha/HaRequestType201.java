@@ -213,7 +213,7 @@ public enum HaRequestType201 implements RequestType<Master>
         public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.finishTransaction( context, readBoolean( input ) );
+            return master.endLockSession( context, readBoolean( input ) );
         }
     }, VOID_SERIALIZER ),
 
@@ -269,7 +269,7 @@ public enum HaRequestType201 implements RequestType<Master>
         public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.initializeTx( context );
+            return master.newLockSession( context );
         }
     }, VOID_SERIALIZER ),
 
