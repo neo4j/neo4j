@@ -278,7 +278,7 @@ final class MuninnPage extends StampedLock implements Page
     }
 
     /**
-     * NOTE: This method must be called while holding the page write lock.
+     * NOTE: This method must be called while holding a pessimistic lock on the page.
      */
     public void flush() throws IOException
     {
@@ -291,7 +291,7 @@ final class MuninnPage extends StampedLock implements Page
     }
 
     /**
-     * NOTE: This method must be called while holding the page write lock.
+     * NOTE: This method must be called while holding a pessimistic lock on the page.
      */
     public void flush( PageSwapper swapper, long filePageId ) throws IOException
     {
@@ -382,5 +382,12 @@ final class MuninnPage extends StampedLock implements Page
     public long getFilePageId()
     {
         return filePageId;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "MuninnPage@%x[-> %x, filePageId = %s%s]%s",
+                hashCode(), pointer, filePageId, (dirty? ", dirty" : ""), getLockStateString() );
     }
 }

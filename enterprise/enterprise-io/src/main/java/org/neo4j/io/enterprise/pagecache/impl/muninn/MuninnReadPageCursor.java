@@ -190,7 +190,8 @@ class MuninnReadPageCursor extends MuninnPageCursor
     private void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper )
     {
         reset( page );
-        page.initBuffer();
+        // TODO we don't need to initBuffer here because page faulting does this for us:
+        page.initBuffer(); // TODO looks like commenting this line out makes the writesFlushedFromPageFileMustBeExternallyObservable test fail predictably. WTF?!
         page.incrementUsage();
         pagedFile.monitor.pin( false, filePageId, swapper );
     }
@@ -239,14 +240,32 @@ class MuninnReadPageCursor extends MuninnPageCursor
     }
 
     @Override
-    public boolean retry()
+    public boolean retry() throws IOException
     {
         boolean needsRetry = optimisticLock && !page.validate( lockStamp );
         if ( needsRetry )
         {
             setOffset( 0 );
-            lockStamp = page.readLock();
             optimisticLock = false;
+            lockStamp = page.readLock();
+            // We have a pessimistic read lock on the page now. This prevents
+            // writes to the page, and it prevents the page from being evicted.
+            // However, it might have been evicted while we held the optimistic
+            // read lock, so we need to check with page.pin that this is still
+            // the page we're actually interested in:
+            if ( !page.pin( pagedFile.swapper, currentPageId ) )
+            {
+                // This is no longer the page we're interested in, so we have
+                // to release our lock and redo the pinning.
+                // This might in turn lead to a new optimistic lock on a
+                // different page if someone else has taken the page fault for
+                // us. If nobody has done that, we'll take the page fault
+                // ourselves, and in that case we'll end up with first a write
+                // lock during the faulting, and then a read lock once the
+                // fault itself is over.
+                page.unlockRead( lockStamp );
+                pin( currentPageId );
+            }
         }
         return needsRetry;
     }

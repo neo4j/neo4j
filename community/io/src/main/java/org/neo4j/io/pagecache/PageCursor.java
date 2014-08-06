@@ -131,5 +131,5 @@ public interface PageCursor extends AutoCloseable
      * Returns true if the page has entered an inconsistent state since the
      * last call to next() or retry().
      */
-    boolean retry();
+    boolean retry() throws IOException;
 }

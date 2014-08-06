@@ -819,9 +819,19 @@ public class StampedLock implements java.io.Serializable {
     public String toString() {
         long s = state;
         return super.toString() +
-            ((s & ABITS) == 0L ? "[Unlocked]" :
-             (s & WBIT) != 0L ? "[Write-locked]" :
-             "[Read-locks:" + getReadLockCount(s) + "]");
+                getLockStateString( s );
+    }
+
+    private String getLockStateString( long s )
+    {
+        return ((s & ABITS) == 0L ? "[Unlocked]" :
+         (s & WBIT) != 0L ? "[Write-locked]" :
+         "[Read-locks:" + getReadLockCount(s) + "]");
+    }
+
+    protected String getLockStateString()
+    {
+        return getLockStateString( state );
     }
 
     // views

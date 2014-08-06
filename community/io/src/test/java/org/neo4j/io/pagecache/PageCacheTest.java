@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -138,7 +139,7 @@ public abstract class PageCacheTest<T extends PageCache>
      * <p>
      * This does the do-while-retry loop internally.
      */
-    private void verifyRecordsMatchExpected( PageCursor cursor )
+    private void verifyRecordsMatchExpected( PageCursor cursor ) throws IOException
     {
         ByteBuffer expectedPageContents = ByteBuffer.allocate( filePageSize );
         ByteBuffer actualPageContents = ByteBuffer.allocate( filePageSize );
@@ -329,7 +330,7 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( recordId, is( recordCount - (10 * recordsPerFilePage) ) );
     }
 
-    @Test( timeout = 1000 )
+    @Test( timeout = 10000 )
     public void writesFlushedFromPageFileMustBeExternallyObservable() throws IOException
     {
         ByteBuffer buf = ByteBuffer.allocate( recordSize );
@@ -350,19 +351,77 @@ public abstract class PageCacheTest<T extends PageCache>
         }
 
         pagedFile.flush();
-        pageCache.unmap( file );
 
-        StoreChannel channel = fs.open( file, "r" );
-        ByteBuffer observation = ByteBuffer.allocate( recordSize );
-        for ( int i = 0; i < recordCount; i++ )
+        try
         {
-            generateRecordForId( i, buf );
-            observation.position( 0 );
-            channel.read( observation );
-            // TODO racy: might not observe changes to later pages
-            assertRecord( i, observation, buf );
+            StoreChannel channel = fs.open( file, "r" );
+            ByteBuffer observation = ByteBuffer.allocate( recordSize );
+            for ( int i = 0; i < recordCount; i++ )
+            {
+                generateRecordForId( i, buf );
+                observation.position( 0 );
+                channel.read( observation );
+                // TODO racy: might not observe changes to later pages
+                assertRecord( i, observation, buf );
+            }
+            channel.close();
         }
-        channel.close();
+        finally
+        {
+            pageCache.unmap( file );
+        }
+    }
+
+    @Test( timeout = 30000 )
+    public void writesFlushedFromPageFileMustBeObservableEvenWhenRacingWithEviction() throws IOException
+    {
+        // TODO this test was supposed to uncover the race from the test above, but looks like it doesn't :(
+        PageCache cache = getPageCache( fs, 20, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, pageCachePageSize );
+
+        long startPageId = 0;
+        long endPageId = 21;
+        int iterations = 10000;
+        int shortsPerPage = pageCachePageSize / 2;
+
+        try
+        {
+            for ( int i = 1; i <= iterations; i++ )
+            {
+                try ( PageCursor cursor = pagedFile.io( startPageId, PF_EXCLUSIVE_LOCK ) )
+                {
+                    while ( cursor.getCurrentPageId() < endPageId && cursor.next() )
+                    {
+                        for ( int j = 0; j < shortsPerPage; j++ )
+                        {
+                            cursor.putShort( (short) i );
+                        }
+                    }
+                }
+
+                // There are 20 pages in the cache and we've overwritten 20 pages.
+                // This means eviction has probably fallen behind and is likely
+                // running concurrently right now.
+                // Therefor, a flush right now would have a high chance of racing
+                // with eviction.
+                pagedFile.flush();
+
+                // Race or not, a flush should still put all changes in storage,
+                // so we should be able to verify the contents of the file.
+                try ( DataInputStream stream = new DataInputStream( fs.openAsInputStream( file ) ) )
+                {
+                    for ( int j = 0; j < shortsPerPage; j++ )
+                    {
+                        int value = stream.readShort();
+                        assertThat( "short pos = " + j + ", iteration = " + i, value, is( i ) );
+                    }
+                }
+            }
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
     }
 
     @Test( timeout = 1000 )
@@ -2602,6 +2661,100 @@ public abstract class PageCacheTest<T extends PageCache>
         {
             pageCache.unmap( fileB );
         }
+    }
+
+    @Test( timeout = 10000 )
+    public void optimisticReadLockMustFaultOnRetryIfPageHasBeenEvicted() throws Exception
+    {
+        final byte a = 'a';
+        final byte b = 'b';
+        final File fileA = new File( "a" );
+        final File fileB = new File( "b" );
+
+        fs.create( fileA ).close();
+        fs.create( fileB ).close();
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+
+        final PagedFile pagedFileA = pageCache.map( fileA, filePageSize );
+        final PagedFile pagedFileB = pageCache.map( fileB, filePageSize );
+
+        // Fill fileA with some predicable data
+        try ( PageCursor cursor = pagedFileA.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            for ( int i = 0; i < maxPages; i++ )
+            {
+                assertTrue( cursor.next() );
+                for ( int j = 0; j < filePageSize; j++ )
+                {
+                    cursor.putByte( a );
+                }
+            }
+        }
+
+        Runnable fillPagedFileB = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try ( PageCursor cursor = pagedFileB.io( 0, PF_EXCLUSIVE_LOCK ) )
+                {
+                    for ( int i = 0; i < maxPages * 30; i++ )
+                    {
+                        assertTrue( cursor.next() );
+                        for ( int j = 0; j < filePageSize; j++ )
+                        {
+                            cursor.putByte( b );
+                        }
+                    }
+                }
+                catch ( IOException e )
+                {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        try ( PageCursor cursor = pagedFileA.io( 0, PF_SHARED_LOCK ) )
+        {
+            // First, make sure page 0 is in the cache:
+            assertTrue( cursor.next( 0 ) );
+            // If we took a page fault, we'd have a pessimistic lock on page 0.
+            // Move to the next page to release that lock:
+            assertTrue( cursor.next() );
+            // Now go back to page 0. It's still in the cache, so we should get
+            // an optimistic lock, if that's available:
+            assertTrue( cursor.next( 0 ) );
+
+            // Verify the page is all 'a's:
+            for ( int i = 0; i < filePageSize; i++ )
+            {
+                assertThat( cursor.getByte(), is( a ) );
+            }
+
+            // Now fill file B with 'b's... this will cause our current page to be evicted
+            fork( fillPagedFileB ).join();
+            // So if we had an optimistic lock, we should be asked to retry:
+            if ( cursor.retry() )
+            {
+                // When we do reads after the retry() call,  we should fault our page back
+                // and get consistent reads (assuming we don't race any further with eviction)
+                int expected = a * filePageSize;
+                int actual;
+                do
+                {
+                    actual = 0;
+                    for ( int i = 0; i < filePageSize; i++ )
+                    {
+                        actual += cursor.getByte();
+                    }
+                }
+                while ( cursor.retry() );
+                assertThat( actual, is( expected ) );
+            }
+        }
+
+        pageCache.unmap( fileA );
+        pageCache.unmap( fileB );
     }
 
     // TODO specify what should happen if we call pagedFile.flush() while we have an exclusive lock on a page

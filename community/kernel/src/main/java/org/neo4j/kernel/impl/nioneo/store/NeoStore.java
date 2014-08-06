@@ -551,7 +551,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         latestConstraintIntroducingTxField = latestConstraintIntroducingTx;
     }
 
-    private void readAllFields( PageCursor cursor )
+    private void readAllFields( PageCursor cursor ) throws IOException
     {
         do
         {
@@ -575,7 +575,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         return cursor.getLong();
     }
 
-    private void incrementVersion( PageCursor cursor )
+    private void incrementVersion( PageCursor cursor ) throws IOException
     {
         int offset = VERSION_POSITION * getEffectiveRecordSize();
         long value;
