@@ -17,14 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.executionplan
+package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.ExecutionResult
-
-abstract class ExecutionPlan {
-  def execute(queryContext: QueryContext, params: Map[String, Any]): InternalExecutionResult
-  def profile(queryContext: QueryContext, params: Map[String, Any]): InternalExecutionResult
-  def isPeriodicCommit: Boolean
+trait ExtendedExecutionResult extends ExecutionResult {
+  def planDescriptionRequested: Boolean
 }
-

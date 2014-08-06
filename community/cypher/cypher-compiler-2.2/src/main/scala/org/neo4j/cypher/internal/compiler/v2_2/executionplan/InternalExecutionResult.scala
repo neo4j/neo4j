@@ -19,12 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.ExecutionResult
+import java.io.PrintWriter
 
-abstract class ExecutionPlan {
-  def execute(queryContext: QueryContext, params: Map[String, Any]): InternalExecutionResult
-  def profile(queryContext: QueryContext, params: Map[String, Any]): InternalExecutionResult
-  def isPeriodicCommit: Boolean
+import org.neo4j.cypher.QueryStatistics
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
+import org.neo4j.graphdb.ResourceIterator
+
+trait InternalExecutionResult extends Iterator[Map[String, Any]] {
+  def columns: List[String]
+  def javaColumns: java.util.List[String]
+  def javaColumnAs[T](column: String): ResourceIterator[T]
+  def columnAs[T](column: String): Iterator[T]
+  def javaIterator: ResourceIterator[java.util.Map[String, Any]]
+  def dumpToString(writer: PrintWriter)
+  def dumpToString(): String
+  def queryStatistics(): QueryStatistics
+  def executionPlanDescription(): PlanDescription
+  def close()
+  def planDescriptionRequested: Boolean
 }
-

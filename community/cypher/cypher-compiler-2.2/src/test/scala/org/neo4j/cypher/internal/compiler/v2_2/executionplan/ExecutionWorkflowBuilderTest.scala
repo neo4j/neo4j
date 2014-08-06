@@ -44,7 +44,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result: ExecutionResult = builder.build(graph, "42", Map.empty)
+    val result = builder.build(graph, "42", Map.empty)
     result shouldBe a [EagerPipeExecutionResult]
   }
 
@@ -61,7 +61,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result: ExecutionResult = builder.build(graph, "42", Map.empty)
+    val result = builder.build(graph, "42", Map.empty)
     result should not be an [EagerPipeExecutionResult]
   }
 
@@ -78,7 +78,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result: ExecutionResult = builder.build(graph, "42", Map.empty)
+    val result = builder.build(graph, "42", Map.empty)
     result shouldBe a [ExplainExecutionResult]
   }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.scalatest.Assertions
 
 trait QueryStatisticsTestSupport {
@@ -29,13 +30,13 @@ trait QueryStatisticsTestSupport {
       assertResult(expected)(actual)
     }
 
-    def apply(actual: ExecutionResult) {
+    def apply(actual: InternalExecutionResult) {
       apply(actual.queryStatistics())
     }
   }
 
   def assertStats(
-    result: ExecutionResult,
+    result: InternalExecutionResult,
     nodesCreated: Int = 0,
     relationshipsCreated: Int = 0,
     propertiesSet: Int = 0,

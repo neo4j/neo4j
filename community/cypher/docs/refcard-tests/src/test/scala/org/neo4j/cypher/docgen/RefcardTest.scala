@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.docgen
 
+import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.graphdb.index.Index
 import org.junit.Test
 import scala.collection.JavaConverters._
@@ -53,7 +55,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   def title: String
   def css: String
   def section: String = "refcard"
-  def assert(name: String, result: ExecutionResult)
+  def assert(name: String, result: InternalExecutionResult)
   def parameters(name: String): Map[String, Any] = Map()
   def graphDescription: List[String]
   def indexProps: List[String] = List()
@@ -106,15 +108,16 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     queryPart
   }
 
-  def runQuery(query: String, possibleAssertion: Seq[String], parametersChoice: String): ExecutionResult = {
-    var result: ExecutionResult = null
-    db.inTx {
-      if (parametersChoice == null) {
-        result = executeQuery(query, Map.empty)
-      } else {
-        result = executeQuery(query, parameters(parametersChoice))
+  def runQuery(query: String, possibleAssertion: Seq[String], parametersChoice: String): InternalExecutionResult = {
+    val result =
+      db.inTx {
+        if (parametersChoice == null) {
+          RewindableExecutionResult(executeQuery(query, Map.empty))
+        } else {
+          RewindableExecutionResult(executeQuery(query, parameters(parametersChoice)))
+        }
       }
-    }
+
     db.inTx {
       possibleAssertion.foreach(name => {
         try {

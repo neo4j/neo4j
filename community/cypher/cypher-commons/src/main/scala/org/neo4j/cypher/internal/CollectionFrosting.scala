@@ -19,15 +19,25 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.ExtendedExecutionResult
-import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.api.Statement
+object CollectionFrosting {
 
-final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
+  implicit class RichTraversable[T](inner: Traversable[T]) {
+    /**
+     * If a single element matching the description is found, a Right(Some(x)) is returned, with x being the element.
+     *
+     * If no elements matching are found, a Right(None) is returned. If multiple matching elements are found,
+     * a Left(Seq(...)) with all the matching elements is returned
+     * @param pf the partial function to use to match and transform elements
+     * @tparam B the type of the produced projections
+     */
+    def collectSingle[B](pf: PartialFunction[T, B]): Either[Seq[B], Option[B]] = {
+      val collect = inner.collect(pf)
+      collect.toList match {
+        case Nil      => Right(None)
+        case x :: Nil => Right(Some(x))
+        case matches  => Left(matches)
+      }
+    }
+  }
 
-trait ExecutionPlan {
-  def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]): ExtendedExecutionResult
-  def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]): ExtendedExecutionResult
-  def isPeriodicCommit: Boolean
 }

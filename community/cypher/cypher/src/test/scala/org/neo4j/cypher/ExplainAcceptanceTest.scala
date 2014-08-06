@@ -26,7 +26,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
     createNode()
     val result = execute("match n return n")
 
-    result.planType should equal(Normal)
+    result.planDescriptionRequested should equal(false)
     result shouldNot be(empty)
   }
 
@@ -34,7 +34,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
     createNode()
     val result = execute("explain match n return n")
 
-    result.planType should equal(Explained)
+    result.planDescriptionRequested should equal(true)
     result should be(empty)
   }
 }

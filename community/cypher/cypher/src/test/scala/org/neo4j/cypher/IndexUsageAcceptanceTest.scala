@@ -41,7 +41,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite {
 
 
     // When
-    val result = execute("cypher 2.1 MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
+    val result = execute("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
 
     // Then
     result shouldBe empty

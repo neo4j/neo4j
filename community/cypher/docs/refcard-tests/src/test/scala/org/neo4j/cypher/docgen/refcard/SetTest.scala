@@ -18,15 +18,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
-import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
+
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 
 class SetTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A")
   val title = "SET"
   val css = "write c2-2 c4-4 c5-5 c6-3"
 
-  override def assert(name: String, result: ExecutionResult) {
+  override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "set" =>
         assertStats(result, propertiesSet = 2)

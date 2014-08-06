@@ -20,12 +20,13 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.helpers.TxCounts
 
 trait TxCountsTrackingTestSupport extends CypherTestSupport {
   self: CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport =>
 
-  def executeAndTrackTxCounts(queryText: String, params: (String, Any)*): (ExecutionResult, TxCounts) = {
+  def executeAndTrackTxCounts(queryText: String, params: (String, Any)*): (InternalExecutionResult, TxCounts) = {
     val (result, txCounts) = prepareAndTrackTxCounts(execute(queryText, params: _*))
     (result, txCounts)
   }
