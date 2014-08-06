@@ -66,9 +66,9 @@ public class ExecutionEngine
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
      */
-    public ExecutionResult execute( String query ) throws CypherException
+    public ExtendedExecutionResult execute( String query ) throws CypherException
     {
-        return new ExecutionResult( inner.execute( query ) );
+        return new ExtendedExecutionResult( inner.execute( query ) );
     }
 
     /**
@@ -79,9 +79,9 @@ public class ExecutionEngine
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
      */
-    public ExecutionResult execute( String query, Map<String, Object> params) throws CypherException
+    public ExtendedExecutionResult execute( String query, Map<String, Object> params) throws CypherException
     {
-        return new ExecutionResult( inner.execute( query, params ) );
+        return new ExtendedExecutionResult( inner.execute( query, params ) );
     }
 
     /**
@@ -95,9 +95,9 @@ public class ExecutionEngine
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
      */
-    public ExecutionResult profile( String query ) throws CypherException
+    public ExtendedExecutionResult profile( String query ) throws CypherException
     {
-        return new ExecutionResult( inner.profile( query ) );
+        return new ExtendedExecutionResult( inner.profile( query ) );
     }
 
     /**
@@ -112,9 +112,9 @@ public class ExecutionEngine
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
      */
-    public ExecutionResult profile( String query, Map<String, Object> params) throws CypherException
+    public ExtendedExecutionResult profile( String query, Map<String, Object> params) throws CypherException
     {
-        return new ExecutionResult( inner.profile( query, params ) );
+        return new ExtendedExecutionResult( inner.profile( query, params ) );
     }
 
     /**
