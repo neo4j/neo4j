@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.Expression
-import pipes.QueryState
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class ForeachAction(collection: Expression, id: String, actions: Seq[UpdateAction])
@@ -45,7 +46,11 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
     Iterator(context)
   }
 
-  def children = Seq(collection) ++ actions.flatMap(_.children)
+  override def updateSymbols(symbol: SymbolTable) = addInnerIdentifier(symbol)
+
+  def localEffects(symbols: SymbolTable) = Effects.NONE
+
+  def children = collection +: actions
 
   def rewrite(f: (Expression) => Expression) = ForeachAction(f(collection), id, actions.map(_.rewrite(f)))
 

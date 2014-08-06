@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{SortItem, ReturnItem}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.mutation.{UpdateAction, Effectful}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ReturnItem, SortItem}
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.{Effectful, UpdateAction}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
 case class Effects(value: Int)  {
   def &(other: Effects): Effects = Effects(other.value & value)
@@ -64,7 +65,7 @@ object Effects {
   }
 
   implicit class EffectfulUpdateAction(commands: Traversable[UpdateAction]) {
-    def effects: Effects = commands.map(_.effects).reduced
+    def effects(symbols: SymbolTable): Effects = commands.map(_.effects(symbols)).reduced
   }
 
   implicit class MapEffects(m: Map[_, Expression]) {

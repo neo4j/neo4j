@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.Expression
-import pipes.QueryState
-import symbols.CypherType
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.{SymbolTable, CypherType}
 import org.neo4j.cypher.{PatternException, UniquePathNotUniqueException}
 import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -175,6 +175,8 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
   override def symbolTableDependencies = links.flatMap(_.symbolTableDependencies).toSet
 
   override def toString: String = links.mkString(",")
+
+  def localEffects(symbols: SymbolTable) = links.map(_.effects(symbols)).reduced
 }
 
 sealed abstract class CreateUniqueResult

@@ -34,7 +34,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
   implicit val monitor = mock[PipeMonitor]
 
-  val EFFECTS = Map(
+  val EFFECTS: Map[Pipe, Effects] = Map(
     NullPipe()
     -> Effects.NONE,
 
@@ -50,7 +50,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
     -> Effects.WRITES_ENTITIES,
 
     ExecuteUpdateCommandsPipe(NullPipe(), Seq(MergeNodeAction("n", Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)))
-      -> Effects.ALL,
+      -> (Effects.READS_NODES | Effects.WRITES_NODES),
 
     NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]])
       -> Effects.READS_NODES,

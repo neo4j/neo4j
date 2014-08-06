@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.Expression
-import commands.values.KeyToken
-import pipes.QueryState
-import symbols._
-import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
+import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
@@ -60,4 +61,6 @@ case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
   def rewrite(f: (Expression) => Expression) = DeletePropertyAction(element.rewrite(f), propertyKey.rewrite(f))
 
   def symbolTableDependencies = element.symbolTableDependencies
+
+  def localEffects(symbols: SymbolTable) = Effects.WRITES_ENTITIES
 }

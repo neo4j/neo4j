@@ -35,7 +35,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
   with GraphElementPropertyFunctions
   with CollectionSupport {
 
-  override def localEffects = properties.values.foldLeft(Effects.WRITES_NODES)(_ | _.effects)
+  def localEffects(ignored: SymbolTable) = properties.values.foldLeft(Effects.WRITES_NODES)(_ | _.effects)
 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
     def fromAnyToLiteral(x: Map[String, Any]): Map[String, Expression] = x.map {
