@@ -42,7 +42,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite {
     assertNumberOfEagerness(result, 0)
   }
 
-  ignore("should not introduce eagerness for MATCH nodes and MERGE relationships") {
+  test("should not introduce eagerness for MATCH nodes and MERGE relationships") {
     val result = execute("MATCH a, b MERGE (a)-[r:KNOWS]->(b)")
 
     assertNumberOfEagerness(result, 0)
@@ -52,6 +52,12 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite {
     val result = execute("MATCH a, b CREATE (a)-[r:KNOWS]->(b) SET r = { key: 42 }")
 
     assertNumberOfEagerness(result, 0)
+  }
+
+  test("should introduce eagerness when the ON MATCH includes writing to a node") {
+    val result = execute("MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON MATCH SET a.prop = 42")
+
+    assertNumberOfEagerness(result, 1)
   }
 
   test("should understand symbols introduced by FOREACH") {
