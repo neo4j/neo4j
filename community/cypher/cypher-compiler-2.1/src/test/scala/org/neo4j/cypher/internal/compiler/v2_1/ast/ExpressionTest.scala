@@ -53,5 +53,21 @@ class ExpressionTest extends CypherFunSuite {
     result.errors should have size 1
     result.errors.head.position should equal(expression.position)
     expression.types(result.state) shouldBe empty
+    result.errors.head.msg should equal ("Type mismatch: expected String but was Integer or Node")
+  }
+  test("shouldRaiseTypeErrorWithCustomMessageWhenMismatchBetweenSpecifiedTypeAndExpectedType") {
+    val result = (
+      expression.specifyType(CTNode | CTInteger) chain
+      expression.expectType(CTString.covariant, (expected: String, existing: String) => s"lhs was $expected yet rhs was $existing")
+    )(SemanticState.clean)
+
+    result.errors should have size 1
+    result.errors.head.position should equal(expression.position)
+    expression.types(result.state) shouldBe empty
+
+    assert(result.errors.size === 1)
+    assert(result.errors.head.position === expression.position)
+    assert(result.errors.head.msg == "Type mismatch: lhs was String yet rhs was Integer or Node")
+    assert(expression.types(result.state).isEmpty)
   }
 }
