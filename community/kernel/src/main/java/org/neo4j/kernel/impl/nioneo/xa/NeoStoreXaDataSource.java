@@ -199,11 +199,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
     private final AtomicInteger recoveredCount = new AtomicInteger();
     private final Guard guard;
-//=======
-//    private CacheAccessBackDoor cacheAccess;
-//    private PersistenceCache persistenceCache;
-//    private SchemaCache schemaCache;
-//>>>>>>> 2.1-maint
 
     // Legacy index
     private IndexConfigStore indexConfigStore;
@@ -298,12 +293,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                  Logging logging, UpdateableSchemaState updateableSchemaState,
                                  TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
                                  PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
-//<<<<<<< HEAD
                                  RelationshipTypeTokenHolder relationshipTypeTokens, Locks lockManager,
-//=======
-//                                 RelationshipTypeTokenHolder relationshipTypeTokens,
-//                                 PersistenceManager persistenceManager,
-//>>>>>>> 2.1-maint
                                  SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
                                  IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
                                  StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
@@ -321,11 +311,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         this.propertyKeyTokenHolder = propertyKeyTokens;
         this.labelTokens = labelTokens;
         this.relationshipTypeTokens = relationshipTypeTokens;
-//<<<<<<< HEAD
         this.locks = lockManager;
-//=======
-//        this.persistenceManager = persistenceManager;
-//>>>>>>> 2.1-maint
         this.schemaWriteGuard = schemaWriteGuard;
         this.transactionEventHandlers = transactionEventHandlers;
         this.indexingServiceMonitor = indexingServiceMonitor;

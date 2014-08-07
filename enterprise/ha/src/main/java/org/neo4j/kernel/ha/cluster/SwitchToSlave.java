@@ -123,7 +123,7 @@ public class SwitchToSlave
         this.masterClientResolver = new MasterClientResolver( logging,
                 config.get( HaSettings.read_timeout ).intValue(),
                 config.get( HaSettings.lock_read_timeout ).intValue(),
-                config.get( HaSettings.max_concurrent_channels_per_slave ).intValue(),
+                config.get( HaSettings.max_concurrent_channels_per_slave ),
                 config.get( HaSettings.com_chunk_size ).intValue()  );
     }
 
@@ -214,7 +214,7 @@ public class SwitchToSlave
         catch ( MismatchingStoreIdException e )
         {
             console.log( "The store does not represent the same database as master. Will remove and fetch a new one from master" );
-            if ( txIdStore.getLastCommittingTransactionId() == 0 )
+            if ( txIdStore != null && txIdStore.getLastCommittingTransactionId() == 0 )
             {
                 msgLog.warn( "Found and deleting empty store with mismatching store id " + e.getMessage() );
                 stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
@@ -255,7 +255,7 @@ public class SwitchToSlave
 
     private Server.Configuration serverConfig()
     {
-        Server.Configuration serverConfig = new Server.Configuration()
+        return new Server.Configuration()
         {
             @Override
             public long getOldChannelThreshold()
@@ -281,7 +281,6 @@ public class SwitchToSlave
                 return config.get( HaSettings.ha_server );
             }
         };
-        return serverConfig;
     }
 
     private URI createHaURI( URI me, Server<?,?> server )
@@ -348,8 +347,7 @@ public class SwitchToSlave
         List<Class> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
         for ( Class<?> serviceClass : services )
         {
-            Lifecycle service = (Lifecycle) resolver.resolveDependency( serviceClass );
-            service.start();
+            ((Lifecycle) resolver.resolveDependency( serviceClass )).start();
         }
     }
 
@@ -357,9 +355,9 @@ public class SwitchToSlave
     {
         List<Class> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
         Collections.reverse( services );
-        for ( Class<Lifecycle> serviceClass : services )
+        for ( Class serviceClass : services )
         {
-            resolver.resolveDependency( serviceClass ).stop();
+            ((Lifecycle) resolver.resolveDependency( serviceClass )).stop();
         }
 
         handleBranchedStore( branchPolicy );
@@ -376,15 +374,6 @@ public class SwitchToSlave
             throws IOException
     {
         long myLastCommittedTx = transactionIdStore.getLastCommittingTransactionId();
-
-        int myMaster = -1;
-        long myChecksum = 0;
-        TransactionMetadataCache.TransactionMetadata metadata = nioneoDataSource.getDependencyResolver()
-                .resolveDependency( LogicalTransactionStore.class ).getMetadataFor( myLastCommittedTx );
-
-        myMaster = metadata.getMasterId();
-        myChecksum = metadata.getChecksum();
-
         HandshakeResult handshake;
         try ( Response<HandshakeResult> response = master.handshake( myLastCommittedTx, nioneoDataSource.getStoreId() ) )
         {
@@ -415,8 +404,13 @@ public class SwitchToSlave
             throw e;
         }
 
+        final TransactionMetadataCache.TransactionMetadata metadata = nioneoDataSource.getDependencyResolver()
+                .resolveDependency( LogicalTransactionStore.class ).getMetadataFor( myLastCommittedTx );
+
+        int myMaster = metadata.getMasterId();
+        long myChecksum = metadata.getChecksum();
         if ( myMaster != -1 &&
-                (myMaster != handshake.txAuthor() || myChecksum != handshake.txChecksum()) )
+                ( myMaster != handshake.txAuthor() || myChecksum != handshake.txChecksum() ) )
         {
             String msg = "The cluster contains two logically different versions of the database.. This will be " +
                     "automatically resolved. Details: I (machineId:" + config.get( ClusterSettings.server_id ) +

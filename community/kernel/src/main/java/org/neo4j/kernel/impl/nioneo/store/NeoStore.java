@@ -303,7 +303,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public void flushNeoStoreOnly()
     {
-        getLastCommittingTransactionId(); // ensures that field is read
+        checkInitialized( lastCommittedTxField.get() );
         setRecord( LATEST_TX_POSITION, lastCommittedTxField.get() );
         try
         {
@@ -851,7 +851,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public long nextCommittingTransactionId()
     {
-        getLastCommittingTransactionId(); // this ensures that the field is initialized
+        checkInitialized( lastCommittedTxField.get() );
         return lastCommittedTxField.incrementAndGet();
     }
 
@@ -874,7 +874,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public void setLastCommittingAndClosedTransactionId( long transactionId )
     {
-        getLastCommittingTransactionId(); // this ensures that the field is initialized
+        checkInitialized( lastCommittedTxField.get() );
         lastCommittedTxField.set( transactionId );
         lastClosedTx.set( transactionId );
     }

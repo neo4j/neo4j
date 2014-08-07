@@ -109,8 +109,8 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
             return METADATA_FOR_EMPTY_STORE;
         }
 
-        TransactionMetadataCache.TransactionMetadata transactionMetadata = transactionMetadataCache
-                .getTransactionMetadata( transactionId );
+        TransactionMetadataCache.TransactionMetadata transactionMetadata =
+                transactionMetadataCache.getTransactionMetadata( transactionId );
         if ( transactionMetadata == null )
         {
             try (IOCursor<CommittedTransactionRepresentation> cursor = getTransactions( transactionId ))
