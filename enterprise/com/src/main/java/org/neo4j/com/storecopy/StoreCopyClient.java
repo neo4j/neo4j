@@ -19,10 +19,6 @@
  */
 package org.neo4j.com.storecopy;
 
-import static org.neo4j.helpers.Format.bytes;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.writeLogHeader;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -44,7 +40,6 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
@@ -54,9 +49,14 @@ import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
+
+import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
 
 /**
  * Client-side store copier. Deals with issuing a request to a source of a database, which will
@@ -166,7 +166,7 @@ public class StoreCopyClient
                     logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ),
                     logVersionRepository.getCurrentLogVersion(), firstTxId.get() != -1 ? firstTxId.get()-1 : 0 );
 
-            if ( firstTxId == null )
+            if ( firstTxId.get() == -1 )
             {
                 console.warn( "Important: There are no available transaction logs on the target database, which " +
                         "means the backup could not save a point-in-time reference. This means you cannot use this " +
