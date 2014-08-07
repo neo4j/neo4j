@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.kernel.impl.nioneo.store.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
 
 public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
@@ -104,7 +105,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     @Override
     public TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId ) throws IOException
     {
-        if ( transactionId == 0 )
+        if ( transactionId <= BASE_TX_ID )
         {
             return METADATA_FOR_EMPTY_STORE;
         }

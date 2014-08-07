@@ -53,6 +53,7 @@ import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -60,6 +61,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
+
+import static org.neo4j.kernel.impl.nioneo.store.TransactionIdStore.BASE_TX_ID;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -303,7 +306,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<HandshakeResult> handshake( long txId, StoreId storeId )
     {
-        if ( txId == 0 )
+        if ( txId <= BASE_TX_ID )
         {
             return new Response<>( new HandshakeResult( -1, 0, epoch ), spi.storeId(), TransactionStream.EMPTY,
                     ResourceReleaser.NO_OP );

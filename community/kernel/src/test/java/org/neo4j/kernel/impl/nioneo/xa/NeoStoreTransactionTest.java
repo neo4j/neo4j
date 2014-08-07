@@ -82,6 +82,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
@@ -137,6 +138,7 @@ import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+import static org.neo4j.kernel.impl.nioneo.store.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
@@ -1325,7 +1327,7 @@ public class NeoStoreTransactionTest
     	return commitProcess( mockIndexing );
     }
 
-    private long nextTxId = 1;
+    private long nextTxId = BASE_TX_ID + 1;
 
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws InterruptedException, ExecutionException, IOException
     {
