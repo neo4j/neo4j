@@ -20,16 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import commands.expressions.Expression
-import commands.Predicate
-import commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
-import pipes.{QueryState, EntityProducer}
-import symbols._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.{InvalidSemanticsException, MergeConstraintConflictException, InternalException}
-import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.compiler.v2_2.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.PropertySupport
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityProducer, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.cypher.{InternalException, InvalidSemanticsException, MergeConstraintConflictException}
+import org.neo4j.graphdb.Node
 
 final case class IndexNodeProducer(label: KeyToken, propertyKey: KeyToken, producer: EntityProducer[Node]) extends EntityProducer[Node] {
   def producerType: String = s"IndexNodProducer(${producer.producerType})"
@@ -167,4 +168,6 @@ case class MergeNodeAction(identifier: String,
     (expectations.flatMap(_.symbolTableDependencies)
       ++ onCreate.flatMap(_.symbolTableDependencies)
       ++ onMatch.flatMap(_.symbolTableDependencies)).toSet - identifier
+
+  def localEffects(symbols: SymbolTable) = Effects.READS_NODES | Effects.WRITES_NODES
 }

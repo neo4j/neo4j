@@ -160,7 +160,7 @@ abstract class UpdatingStartItem(val updateAction: UpdateAction, name: String) e
   override def children = Seq(updateAction)
   override def symbolTableDependencies = updateAction.symbolTableDependencies
 
-  override def localEffects = updateAction.localEffects
+  def localEffects = updateAction.localEffects(new SymbolTable())
   def identifiers: Seq[(String, CypherType)] = updateAction.identifiers
 }
 

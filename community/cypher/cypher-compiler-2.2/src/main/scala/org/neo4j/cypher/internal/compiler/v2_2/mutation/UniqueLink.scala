@@ -20,16 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import commands._
-import commands.expressions.{Expression, Identifier, Literal}
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator
-import commands.values.KeyToken
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniqueException}
-import org.neo4j.graphdb.{Node, Direction}
-import collection.Map
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.{IsMap, MapSupport}
+import org.neo4j.cypher.internal.compiler.v2_2.commands._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{IsMap, MapSupport, UnNamedNameGenerator}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.cypher.{CypherTypeException, SyntaxException, UniquePathNotUniqueException}
+import org.neo4j.graphdb.{Direction, Node}
+
+import scala.collection.Map
 
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =
@@ -211,4 +212,11 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
       copy(start = s, end = e)
     }
   }
+
+  def effects(symbols: SymbolTable) =
+    if (symbols.hasIdentifierNamed(start.name) &&
+        symbols.hasIdentifierNamed(end.name))
+      Effects.READS_RELATIONSHIPS | Effects.WRITES_RELATIONSHIPS
+    else
+      Effects.ALL
 }

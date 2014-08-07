@@ -28,14 +28,16 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     nodesInterfere || relsInterfere
   }
 
-  def apply(in: Pipe): Pipe = {
-    val sources = in.sources.map(apply).map { source =>
-      if (wouldInterfere(source.effects, in.effects)) {
-        new EagerPipe(source)(source.monitor)
+  def apply(toPipe: Pipe): Pipe = {
+    val sources = toPipe.sources.map(apply).map { fromPipe =>
+      val from = fromPipe.effects
+      val to = toPipe.effects
+      if (wouldInterfere(from, to)) {
+        new EagerPipe(fromPipe)(fromPipe.monitor)
       } else {
-        source
+        fromPipe
       }
     }
-    in.dup(sources.toList)
+    toPipe.dup(sources.toList)
   }
 }
