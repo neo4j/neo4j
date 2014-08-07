@@ -159,7 +159,7 @@ exitonnojava() {
 
 # Resolve the os
 detectos() {
-  DIST_OS=`uname -s | tr [A-Z] [a-z] | tr -d ' '`
+  DIST_OS=`uname -s | tr 'A-Z' 'a-z' | tr -d ' '`
   case "$DIST_OS" in
     'sunos')
       DIST_OS="solaris"
