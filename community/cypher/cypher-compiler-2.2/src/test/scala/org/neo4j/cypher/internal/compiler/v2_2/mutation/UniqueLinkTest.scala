@@ -17,30 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.pipes
+package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.graphdb.Direction
 
-case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
-    while(input.hasNext) {
-      input.next()
-    }
-
-    Iterator.empty
+class UniqueLinkTest extends CypherFunSuite {
+  test("given both end nodes, only claims to write relationships, not nodes") {
+    val link = UniqueLink("a", "b", "r", "X", Direction.OUTGOING)
+    val symbols = new SymbolTable(Map("a" -> CTNode, "b" -> CTNode))
+    link.effects(symbols) should equal(READS_RELATIONSHIPS | WRITES_RELATIONSHIPS)
   }
 
-  override def planDescription = source.planDescription.andThen(this, "EmptyResult")
-
-  def symbols = SymbolTable()
-
-  override def effects = Effects.NONE
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)
+  test("given one end, creates nodes and relationships") {
+    val link = UniqueLink("a", "b", "r", "X", Direction.OUTGOING)
+    val symbols = new SymbolTable(Map("a" -> CTNode))
+    link.effects(symbols) should equal(ALL)
   }
 }

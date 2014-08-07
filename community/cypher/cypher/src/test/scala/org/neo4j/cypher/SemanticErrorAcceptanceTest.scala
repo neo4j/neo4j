@@ -397,6 +397,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("should return custom type error for reduce") {
+    executeAndEnsureError(
+      "RETURN reduce(x = 0, y IN [1,2,3] | x + y^2)",
+      "Type mismatch: accumulator is Integer but expression has type Float (line 1, column 39)"
+    )
+  }
+
   def executeAndEnsureError(query: String, message: String) {
     try {
       execute(query).toList

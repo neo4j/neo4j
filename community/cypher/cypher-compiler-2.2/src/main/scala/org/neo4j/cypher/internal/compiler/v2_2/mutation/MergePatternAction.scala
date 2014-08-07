@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_2.mutation
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.PropertySupport
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CypherType, SymbolTable}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.{InternalException, InvalidSemanticsException}
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -108,6 +109,22 @@ case class MergePatternAction(patterns: Seq[Pattern],
     val introducedIdentifiers = patterns.flatMap(_.identifiers).toSet
 
     dependencies -- introducedIdentifiers
+  }
+
+  private def readEffects(symbols: SymbolTable): Effects =
+    identifiers.collect {
+      case (k, CTNode) if !symbols.hasIdentifierNamed(k) => Effects.READS_NODES
+      case (k, CTRelationship) if !symbols.hasIdentifierNamed(k) => Effects.READS_RELATIONSHIPS
+    }.reduced
+
+  def localEffects(symbols: SymbolTable) = {
+    import Effects._
+
+    val actionEffects = actions.effects(symbols)
+    val onMatchEffects = onMatch.effects(symbols)
+    val updateActionsEffects = updateActions.effects(symbols)
+    val effectsFromReading = readEffects(symbols)
+    actionEffects | onMatchEffects | updateActionsEffects | effectsFromReading
   }
 }
 
