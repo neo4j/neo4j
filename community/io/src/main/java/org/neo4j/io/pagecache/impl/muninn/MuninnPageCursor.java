@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
+import java.lang.Override;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageCursor;
@@ -165,6 +166,12 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
+    public byte getByte( int offset )
+    {
+        return page.getByte( offset );
+    }
+
+    @Override
     public void putByte( byte value )
     {
         page.putByte( value, offset );
@@ -172,11 +179,23 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
-    public final long getLong()
+    public void putByte( int offset, byte value )
+    {
+        page.putByte( value, offset );
+    }
+
+    @Override
+    public long getLong()
     {
         long l = page.getLong( offset );
         offset += 8;
         return l;
+    }
+
+    @Override
+    public long getLong( int offset )
+    {
+        return page.getLong( offset );
     }
 
     @Override
@@ -187,11 +206,23 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
-    public final int getInt()
+    public void putLong( int offset, long value )
+    {
+        page.putLong( value, offset );
+    }
+
+    @Override
+    public int getInt()
     {
         int i = page.getInt( offset );
         offset += 4;
         return i;
+    }
+
+    @Override
+    public int getInt( int offset )
+    {
+        return page.getInt( offset );
     }
 
     @Override
@@ -202,13 +233,25 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
-    public final long getUnsignedInt()
+    public void putInt( int offset, int value )
+    {
+        page.putInt( value, offset );
+    }
+
+    @Override
+    public long getUnsignedInt()
     {
         return getInt() & 0xFFFFFFFFL;
     }
 
     @Override
-    public final void getBytes( byte[] data )
+    public long getUnsignedInt( int offset )
+    {
+        return getInt(offset) & 0xFFFFFFFFL;
+    }
+
+    @Override
+    public void getBytes( byte[] data )
     {
         page.getBytes( data, offset );
         offset += data.length;
@@ -230,6 +273,12 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
+    public short getShort( int offset )
+    {
+        return page.getShort( offset );
+    }
+
+    @Override
     public void putShort( short value )
     {
         page.putShort( value, offset );
@@ -237,7 +286,13 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
-    public final void setOffset( int offset )
+    public void putShort( int offset, short value )
+    {
+        page.putShort( value, offset );
+    }
+
+    @Override
+    public void setOffset( int offset )
     {
         if ( offset < 0 )
         {

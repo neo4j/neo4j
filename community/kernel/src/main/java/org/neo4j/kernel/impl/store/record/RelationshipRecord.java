@@ -45,6 +45,24 @@ public class RelationshipRecord extends PrimitiveRecord
         super( id, Record.NO_NEXT_PROPERTY.intValue() );
     }
 
+    public RelationshipRecord( long id, boolean inUse, long firstNode, long secondNode, int type,
+                               long firstPrevRel, long firstNextRel, long secondPrevRel, long secondNextRel,
+                               boolean firstInFirstChain, boolean firstInSecondChain )
+    {
+        this( id );
+        setInUse( inUse );
+        this.firstNode = firstNode;
+        this.secondNode = secondNode;
+        this.type = type;
+        this.firstPrevRel = firstPrevRel;
+        this.firstNextRel = firstNextRel;
+        this.secondPrevRel = secondPrevRel;
+        this.secondNextRel = secondNextRel;
+        this.firstInFirstChain = firstInFirstChain;
+        this.firstInSecondChain = firstInSecondChain;
+
+    }
+
     public void setLinks( long firstNode, long secondNode, int type )
     {
         this.firstNode = firstNode;

@@ -68,21 +68,30 @@ public interface PageCursor extends AutoCloseable
     long UNBOUND_PAGE_ID = -1;
 
     byte getByte();
+    byte getByte( int offset );
     void putByte( byte value );
+    void putByte( int offset, byte value );
 
     long getLong();
+    long getLong( int offset );
     void putLong( long value );
+    void putLong( int offset, long value );
 
     int getInt();
+    int getInt( int offset );
     void putInt( int value );
+    void putInt( int offset, int value );
 
     long getUnsignedInt();
+    long getUnsignedInt( int offset );
 
     void getBytes( byte[] data );
     void putBytes( byte[] data );
 
     short getShort();
+    short getShort( int offset );
     void putShort( short value );
+    void putShort( int offset, short value );
 
     void setOffset( int offset );
     int getOffset();

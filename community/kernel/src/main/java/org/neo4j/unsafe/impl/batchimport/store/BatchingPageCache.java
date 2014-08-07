@@ -291,9 +291,21 @@ public class BatchingPageCache implements PageCache
         }
 
         @Override
+        public byte getByte(int offset)
+        {
+            return currentBuffer.get(offset);
+        }
+
+        @Override
         public void putByte( byte value )
         {
             currentBuffer.put( value );
+        }
+
+        @Override
+        public void putByte( int offset, byte value )
+        {
+            currentBuffer.put( offset, value );
         }
 
         @Override
@@ -303,9 +315,21 @@ public class BatchingPageCache implements PageCache
         }
 
         @Override
+        public long getLong(int offset)
+        {
+            return currentBuffer.getLong(offset);
+        }
+
+        @Override
         public void putLong( long value )
         {
             currentBuffer.putLong( value );
+        }
+
+        @Override
+        public void putLong( int offset, long value )
+        {
+            currentBuffer.putLong( offset, value );
         }
 
         @Override
@@ -315,15 +339,33 @@ public class BatchingPageCache implements PageCache
         }
 
         @Override
+        public int getInt(int offset)
+        {
+            return currentBuffer.getInt(offset);
+        }
+
+        @Override
         public void putInt( int value )
         {
             currentBuffer.putInt( value );
         }
 
         @Override
+        public void putInt( int offset, int value )
+        {
+            currentBuffer.putInt( offset, value );
+        }
+
+        @Override
         public long getUnsignedInt()
         {
             return getInt() & 0xFFFFFFFFL;
+        }
+
+        @Override
+        public long getUnsignedInt(int offset)
+        {
+            return getInt( offset ) & 0xFFFFFFFFL;
         }
 
         @Override
@@ -345,9 +387,21 @@ public class BatchingPageCache implements PageCache
         }
 
         @Override
+        public short getShort(int offset)
+        {
+            return currentBuffer.getShort(offset);
+        }
+
+        @Override
         public void putShort( short value )
         {
             currentBuffer.putShort( value );
+        }
+
+        @Override
+        public void putShort( int offset, short value )
+        {
+            currentBuffer.putShort( offset, value );
         }
 
         @Override
