@@ -40,7 +40,7 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
   def producePlan(in: PreparedQuery, planContext: PlanContext): PipeInfo = {
-    val rewrite = in.rewrite(reattachAliasedExpressions)
+    val rewrite = in.rewrite(reattachAliasedExpressions(in.semanticTable))
     rewrite.abstractQuery match {
       case PeriodicCommitQuery(q: Query, batchSize) =>
         buildQuery(q, planContext).

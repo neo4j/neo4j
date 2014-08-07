@@ -43,7 +43,7 @@ abstract class IndexLeafPlanner extends LeafPlanner {
       yield {
         val propertyName = propertyKeyName.name
         val hint = qg.hints.collectFirst {
-          case hint @ UsingIndexHint(Identifier(`name`), `labelName`, Identifier(`propertyName`)) => hint
+          case hint @ UsingIndexHint(Identifier(`name`), `labelName`, PropertyKeyName(`propertyName`)) => hint
         }
         val entryConstructor: (Seq[Expression]) => QueryPlan =
           constructPlan(idName, LabelToken(labelName, labelId), PropertyKeyToken(propertyKeyName, propertyKeyName.id.head),

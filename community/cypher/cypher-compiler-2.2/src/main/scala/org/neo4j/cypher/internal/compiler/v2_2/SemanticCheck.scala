@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
+
 object SemanticCheckResult {
   val success: SemanticCheck = SemanticCheckResult(_, Vector())
   def error(state: SemanticState, error: SemanticError): SemanticCheckResult = SemanticCheckResult(state, Vector(error))
@@ -34,17 +36,21 @@ trait SemanticChecking {
     else
       SemanticCheckResult.success(state)
 
-  private val scopeState: SemanticCheck = state => SemanticCheckResult.success(state.newScope)
+  private val scopeState: SemanticCheck = state => SemanticCheckResult.success(state.pushScope)
   private val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
   protected def withScopedState(check: => SemanticCheck): SemanticCheck = scopeState chain check chain popStateScope
 }
 
+trait ScopeStartRegistration {
+  self: ASTNode =>
+
+  def registerScopeStart: SemanticCheck = state => SemanticCheckResult.success(state.registerScopeStart(self.position))
+}
 
 class OptionSemanticChecking[A](val option: Option[A]) extends AnyVal {
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck =
     option.fold(SemanticCheckResult.success)(check)
 }
-
 
 class TraversableOnceSemanticChecking[A](val traversable: TraversableOnce[A]) extends AnyVal {
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck = state => traversable.foldLeft(SemanticCheckResult.success(state)) {
@@ -53,7 +59,6 @@ class TraversableOnceSemanticChecking[A](val traversable: TraversableOnce[A]) ex
       SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
   }
 }
-
 
 class ChainableSemanticCheck(val check: SemanticCheck) extends AnyVal {
   def chain(next: SemanticCheck): SemanticCheck = state => {
@@ -70,7 +75,6 @@ class ChainableSemanticCheck(val check: SemanticCheck) extends AnyVal {
       next(r1.state)
   }
 }
-
 
 trait SemanticCheckable {
   def semanticCheck: SemanticCheck

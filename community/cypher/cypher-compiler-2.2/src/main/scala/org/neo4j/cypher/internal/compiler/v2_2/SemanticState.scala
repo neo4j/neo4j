@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.symbols.TypeSpec
+
 import scala.collection.immutable.HashMap
 
 case class Symbol(name: String, positions: Seq[InputPosition], types: TypeSpec)
@@ -33,7 +34,7 @@ case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = 
 }
 
 object SemanticState {
-  val clean = SemanticState(Scope.empty, IdentityMap.empty)
+  val clean = SemanticState(Scope.empty, IdentityMap.empty, IdentityMap.empty, IdentityMap.empty)
 }
 
 case class Scope(symbolTable: Map[String, Symbol], parent: Option[Scope]) {
@@ -50,15 +51,25 @@ case class Scope(symbolTable: Map[String, Symbol], parent: Option[Scope]) {
   def updateIdentifier(identifier: String, types: TypeSpec, positions: Seq[InputPosition]) =
     copy(symbolTable = symbolTable.updated(identifier, Symbol(identifier, positions, types)))
 
+
   def isEmpty: Boolean = symbolTable.isEmpty && parent.map(_.isEmpty).getOrElse(true)
+
+  def visibleNames: Set[String] = symbolTable.keySet ++ parent.map(_.visibleNames).getOrElse(Set.empty)
 }
 
 object Scope {
   val empty = Scope(symbolTable = HashMap.empty, parent = None)
 }
 
-case class SemanticState(scope: Scope, typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo]) {
-  def newScope = copy(scope = scope.pushScope)
+case class SemanticState(scope: Scope,
+                         typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo],
+                         identifiers: IdentityMap[ast.Identifier, InputPosition],
+                         scopeTable: Map[InputPosition, Scope]) {
+
+  def registerScopeStart(scopeStart: InputPosition) = copy(scopeTable = scopeTable + (scopeStart -> scope))
+
+  def pushScope = copy(scope = scope.pushScope)
+
   def popScope = copy(scope = scope.popScope)
 
   def clearSymbols = copy(scope = Scope.empty)
@@ -122,6 +133,7 @@ case class SemanticState(scope: Scope, typeTable: IdentityMap[ast.Expression, Ex
   private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Seq[InputPosition]) =
     copy(
       scope = scope.updateIdentifier(identifier.name, types, locations),
-      typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types))
+      typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types)),
+      identifiers = identifiers + (identifier -> locations.head)
     )
 }

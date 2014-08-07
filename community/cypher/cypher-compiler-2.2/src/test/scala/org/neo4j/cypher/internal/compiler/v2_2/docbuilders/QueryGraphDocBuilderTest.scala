@@ -115,7 +115,7 @@ class QueryGraphDocBuilderTest extends DocBuilderTestSuite[Any] {
   }
 
   test("renders hints") {
-    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
+    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, PropertyKeyName("name")_)_
 
     format(QueryGraph(hints = Set(hint))) should equal("GIVEN * USING INDEX n:Person(name)")
   }

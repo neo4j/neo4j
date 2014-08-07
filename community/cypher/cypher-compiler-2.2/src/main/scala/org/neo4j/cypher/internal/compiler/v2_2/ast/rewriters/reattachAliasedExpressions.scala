@@ -19,34 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, Rewriter}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, bottomUp, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Return
 
-object reattachAliasedExpressions extends Rewriter {
-  def apply(in: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(in)
+case class reattachAliasedExpressions(table: SemanticTable) extends Rewriter {
+  def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 
-  private val findingRewriter: Rewriter = Rewriter.lift {
-    case r@Return(_, ListedReturnItems(items), orderBy, _, _) =>
-      val innerRewriter = expressionRewriter(items)
-      r.copy(
-        orderBy = r.orderBy.endoRewrite(innerRewriter)
-      )(r.position)
+  private val instance: Rewriter = Rewriter.lift {
 
-    case w@With(_, ListedReturnItems(items), orderBy, _, _, where) =>
-      val innerRewriter = expressionRewriter(items)
-      w.copy(
-        orderBy = w.orderBy.endoRewrite(innerRewriter)
-      )(w.position)
+    case r @ Return(_, ListedReturnItems(items: Seq[ReturnItem]), orderBy, _, _) =>
+      r.copy(orderBy = orderBy.map(reattachOrderByExpressions(projectionsMap(r.position, items))))(r.position)
+
+    case r @ With(_, ListedReturnItems(items: Seq[ReturnItem]), orderBy, _, _, _) =>
+      r.copy(orderBy = orderBy.map(reattachOrderByExpressions(projectionsMap(r.position, items))))(r.position)
   }
 
-  private def expressionRewriter(items: Seq[ReturnItem]): Rewriter = {
-    val aliasedExpressions: Map[String, Expression] = items.map { returnItem =>
-      (returnItem.name, returnItem.expression)
-    }.toMap
+  private def projectionsMap(scopeStart: InputPosition, items: Seq[ReturnItem]) = {
+    val namesInScope = table.scopes(scopeStart)
+    items.collect { case item if !namesInScope.contains(item.name) => item.name -> item.expression }.toMap
+  }
 
-    bottomUp(Rewriter.lift {
-      case id@Identifier(name) if aliasedExpressions.contains(name) => aliasedExpressions(name)
-    })
+  private def reattachOrderByExpressions(projectionsMap: Map[String, Expression])(orderBy: OrderBy): OrderBy = {
+    orderBy.endoRewrite(bottomUp(Rewriter.lift {
+      case Identifier(name) if projectionsMap.contains(name) => projectionsMap(name)
+    }))
   }
 }

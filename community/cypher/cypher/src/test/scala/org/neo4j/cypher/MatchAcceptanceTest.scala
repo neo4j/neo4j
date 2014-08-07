@@ -271,27 +271,27 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("should return relationships by fetching them from the path") {
-    val a = createNode(Map("foo" -> "bar"))
-    val b = createNode(Map("foo" -> "bar"))
-    val c = createNode(Map("foo" -> "bar"))
+    val a = createLabeledNode("Start")
+    val b = createNode()
+    val c = createNode()
 
-    val r1 = relate(a, b, "rel")
-    val r2 = relate(b, c, "rel")
+    val r1 = relate(a, b)
+    val r2 = relate(b, c)
 
-    val result = executeWithNewPlanner("match p = a-[:rel*2..2]->b return RELATIONSHIPS(p)")
+    val result = executeWithNewPlanner("match p = (a:Start)-[*2..2]->b return RELATIONSHIPS(p)")
 
     result.columnAs[Node]("RELATIONSHIPS(p)").toList.head should equal(List(r1, r2))
   }
 
-  test("should return relationships by collectiong the as a list") {
-    val a = createNode(Map("foo" -> "bar"))
-    val b = createNode(Map("foo" -> "bar"))
-    val c = createNode(Map("foo" -> "bar"))
+  test("should return relationships by collecting them as a list") {
+    val a = createLabeledNode("Start")
+    val b = createNode()
+    val c = createNode()
 
-    val r1 = relate(a, b, "rel")
-    val r2 = relate(b, c, "rel")
+    val r1 = relate(a, b)
+    val r2 = relate(b, c)
 
-    val result = executeWithNewPlanner("match a-[r:rel*2..2]->b return r")
+    val result = executeWithNewPlanner("match (a:Start)-[r*2..2]->b return r")
 
     result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
   }

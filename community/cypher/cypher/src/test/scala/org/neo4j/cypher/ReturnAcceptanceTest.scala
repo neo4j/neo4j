@@ -58,6 +58,28 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
     result.columnAs[Node]("n").toList should equal(nodes.drop(2).toList)
   }
 
+  ignore("should start the result from second row with aliasing") { // Need dedup for this
+    val nodes = createNodes("A", "B", "C", "D", "E")
+
+    val result = executeWithNewPlanner(
+      s"match n return n as x order by x.name ASC skip 2"
+    )
+
+    result.columnAs[Node]("x").toList should equal(nodes.drop(2).toList)
+  }
+
+  // TODO: Revisit when finishing deduper
+  test("should not get confused by shadowing anRewrd aliasing in order by") {
+    val nodeA = createNode("num" -> 1)
+    val nodeB = createNode("num" -> 2)
+
+    val result = executeWithNewPlanner(
+      "with -1 as n match a return a.num as num, n*n as n order by a.num * n"
+    ).columnAs[Int]("num")
+
+    result.toList should equal(List(2, 1))
+  }
+
   test("should start the result from second row by param") {
     val nodes = createNodes("A", "B", "C", "D", "E")
 
@@ -490,6 +512,12 @@ return coalesce(a.title, a.name)""")
 
     val result = executeWithNewPlanner("MATCH (a) WITH a.a AS a, count(*) AS count RETURN count")
     result.toList should equal(List(Map("count" -> 2)))
+  }
+
+  test("dedup identifiers should not leak") {
+    val result = executeWithNewPlanner("match n return n")
+
+    result.columns should equal(List("n"))
   }
 
 }

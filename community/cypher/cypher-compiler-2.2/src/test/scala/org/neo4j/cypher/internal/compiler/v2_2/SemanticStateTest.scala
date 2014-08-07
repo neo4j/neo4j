@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import symbols._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 class SemanticStateTest extends CypherFunSuite {
 
@@ -38,7 +38,8 @@ class SemanticStateTest extends CypherFunSuite {
   }
 
   test("should collect all identifiers when implicitly declared") {
-    val identifier1 = ast.Identifier("foo")(DummyPosition(0))
+    val position = DummyPosition(0)
+    val identifier1 = ast.Identifier("foo")(position)
     val identifier2 = ast.Identifier("foo")(DummyPosition(2))
     val identifier3 = ast.Identifier("foo")(DummyPosition(3))
 
@@ -49,6 +50,10 @@ class SemanticStateTest extends CypherFunSuite {
       case Right(state) =>
         val positions = state.scope.localSymbol("foo").map(_.positions).get
         positions should equal(Seq(identifier1.position, identifier2.position, identifier3.position))
+
+        state.identifiers(identifier1) should equal(position)
+        state.identifiers(identifier2) should equal(position)
+        state.identifiers(identifier3) should equal(position)
     }
   }
 
@@ -136,20 +141,43 @@ class SemanticStateTest extends CypherFunSuite {
 
   test("should find symbol in parent") {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
-    val s2 = s1.newScope
+    val s2 = s1.pushScope
     s2.symbolTypes("foo") should equal(CTNode: TypeSpec)
   }
 
   test("should override symbol in parent") {
-    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
-    val s2 = s1.newScope.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTString).right.get
+    val pos1 = DummyPosition(0)
+    val pos2 = DummyPosition(1)
+    val identifier1 = ast.Identifier("foo")(pos1)
+    val identifier2 = ast.Identifier("foo")(pos2)
+    val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
+    val s2 = s1.pushScope.declareIdentifier(identifier2, CTString).right.get
 
     s2.symbolTypes("foo") should equal(CTString: TypeSpec)
+    s2.identifiers(identifier1) should equal(pos1)
+    s2.identifiers(identifier2) should equal(pos2)
+  }
+
+  test("should override symbol in parent (2)") {
+    val pos1 = DummyPosition(0)
+    val pos2 = DummyPosition(1)
+    val pos3 = DummyPosition(2)
+    val identifier1 = ast.Identifier("foo")(pos1)
+    val identifier2 = ast.Identifier("foo")(pos2)
+    val identifier3 = ast.Identifier("foo")(pos3)
+    val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
+    val s2 = s1.implicitIdentifier(identifier2, CTNode).right.get
+    val s3 = s2.pushScope.declareIdentifier(identifier3, CTString).right.get
+
+    s3.symbolTypes("foo") should equal(CTString: TypeSpec)
+    s3.identifiers(identifier1) should equal(pos1)
+    s3.identifiers(identifier2) should equal(pos1)
+    s3.identifiers(identifier3) should equal(pos3)
   }
 
   test("should extend symbol in parent") {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
-    val s2 = s1.newScope.implicitIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTAny.covariant).right.get
+    val s2 = s1.pushScope.implicitIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTAny.covariant).right.get
     s2.symbolTypes("foo") should equal(CTNode: TypeSpec)
   }
 
@@ -182,17 +210,41 @@ class SemanticStateTest extends CypherFunSuite {
   }
 
   test("should return types of later ensured identifier after clear") {
-    val identifier1 = ast.Identifier("foo")(DummyPosition(0))
+    val position = DummyPosition(0)
+    val identifier1 = ast.Identifier("foo")(position)
     val identifier2 = ast.Identifier("foo")(DummyPosition(3))
     val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
     val s2 = s1.ensureIdentifierDefined(identifier2).right.get
     s2.clearSymbols.expressionType(identifier2).actual should equal(CTNode: TypeSpec)
+    s2.identifiers(identifier2) should equal(position)
+    s2.identifiers(identifier1) should equal(position)
   }
 
   test("should not return symbol of identifier after clear") {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
     s1.clearSymbols.symbol("foo") should equal(None)
     s1.clearSymbols.symbolTypes("foo") should equal(TypeSpec.all)
+  }
+
+  test("should not forget identifiers when scope is pushed and later popped") {
+    val position1 = DummyPosition(0)
+    val position2 = DummyPosition(1)
+    val position3 = DummyPosition(2)
+    val position4 = DummyPosition(3)
+    val id1 = ast.Identifier("foo")(position1)
+    val id2 = ast.Identifier("foo")(position2)
+    val id3 = ast.Identifier("foo")(position3)
+    val id4 = ast.Identifier("foo")(position4)
+
+    val s1 = SemanticState.clean.declareIdentifier(id1, CTNode).right.get
+    val s2 = s1.pushScope.declareIdentifier(id2, CTNode).right.get
+    val s3 = s2.implicitIdentifier(id3, CTNode).right.get
+    val result = s3.popScope.implicitIdentifier(id4, CTNode).right.get
+
+    result.identifiers(id1) should equal(position1)
+    result.identifiers(id2) should equal(position2)
+    result.identifiers(id3) should equal(position2)
+    result.identifiers(id4) should equal(position1)
   }
 
   test("should maintain separate TypeInfo for equivalent expressions") {
@@ -211,9 +263,17 @@ class SemanticStateTest extends CypherFunSuite {
 
   test("should gracefully update an identifier") {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
-    val s2: SemanticState = s1.newScope.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTRelationship).right.get
+    val s2: SemanticState = s1.pushScope.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTRelationship).right.get
     s1.symbolTypes("foo") should equal(CTNode.invariant)
     s2.symbolTypes("foo") should equal(CTRelationship.invariant)
+  }
+
+  test("should register scope starts") {
+    val pos = DummyPosition(0)
+    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("n")(pos), CTNode).right.get
+    val s2 = s1.registerScopeStart(pos)
+
+    s2.scopeTable(pos) should equal(s1.scope)
   }
 
   implicit class ChainableSemanticStateEither(either: Either[SemanticError, SemanticState]) {

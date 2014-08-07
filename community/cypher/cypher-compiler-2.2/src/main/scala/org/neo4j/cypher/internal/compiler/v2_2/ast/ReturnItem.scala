@@ -81,7 +81,7 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val po
   }
   val name = alias.map(_.name) getOrElse { inputText.trim }
 }
-
+// RETURN n.prop AS homeAddress
 case class AliasedReturnItem(expression: Expression, identifier: Identifier)(val position: InputPosition) extends ReturnItem {
   val alias = Some(identifier)
   val name = identifier.name

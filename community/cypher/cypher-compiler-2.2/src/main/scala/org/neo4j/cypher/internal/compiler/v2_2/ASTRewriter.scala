@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 
 class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters: Boolean = true) {
 
-  def rewrite(queryText: String, statement: Statement): (Statement, Map[String, Any]) = {
+  def rewrite(queryText: String, statement: Statement, table: SemanticTable): (Statement, Map[String, Any]) = {
     rewritingMonitor.startRewriting(queryText, statement)
 
     val (extractParameters, extractedParameters) = if (shouldExtractParameters)

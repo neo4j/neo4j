@@ -41,7 +41,10 @@ class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {
       error => throw new SyntaxException(s"${error.msg} (${error.position})", queryText, error.position.offset)
     }
 
-    SemanticTable(types = semanticState.typeTable)
+    SemanticTable(
+      types = semanticState.typeTable,
+      symbols = semanticState.identifiers,
+      scopes = semanticState.scopeTable.mapValues(_.visibleNames)
+    )
   }
-
 }
