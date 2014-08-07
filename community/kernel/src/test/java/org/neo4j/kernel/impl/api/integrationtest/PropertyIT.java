@@ -28,15 +28,21 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.Token;
 
-import static junit.framework.TestCase.fail;
-import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.kernel.api.properties.Property.property;
 
 public class PropertyIT extends KernelIntegrationTest
 {
@@ -292,7 +298,8 @@ public class PropertyIT extends KernelIntegrationTest
             statement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, value ) );
 
             // THEN
-            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "StringProperty" ) );
+            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals(
+                    "StringProperty" ) );
 
             // WHEN
             commit();
@@ -301,7 +308,8 @@ public class PropertyIT extends KernelIntegrationTest
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
             // THEN
-            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "LazyStringProperty" ) );
+            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals(
+                    "LazyStringProperty" ) );
             assertEquals( value, statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
             assertEquals( value.hashCode(), statement.nodeGetProperty( nodeId, propertyKeyId ).hashCode() );
             assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).valueEquals( value ) );
@@ -316,7 +324,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         int propertyKeyId;
         long nodeId;
-        int[] value = new int[] {-1,0,1,2,3,4,5,6,7,8,9,10};
+        int[] value = new int[]{-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode();
@@ -327,7 +335,8 @@ public class PropertyIT extends KernelIntegrationTest
             statement.nodeSetProperty( nodeId, Property.intArrayProperty( propertyKeyId, value ) );
 
             // THEN
-            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "IntArrayProperty" ) );
+            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals(
+                    "IntArrayProperty" ) );
 
             // WHEN
             commit();
@@ -336,7 +345,8 @@ public class PropertyIT extends KernelIntegrationTest
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
             // THEN
-            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "LazyArrayProperty" ) );
+            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals(
+                    "LazyArrayProperty" ) );
             assertArrayEquals( value, (int[]) statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
             assertEquals( Arrays.hashCode( value ), statement.nodeGetProperty( nodeId, propertyKeyId ).hashCode() );
             assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).valueEquals( value ) );
@@ -361,7 +371,7 @@ public class PropertyIT extends KernelIntegrationTest
 
             // then
             assertThat( asCollection( propIdsBeforeCommit ),
-                    hasItems( new Token( "prop1", (int) prop1 ), new Token( "prop2", (int) prop2 )) );
+                    hasItems( new Token( "prop1", (int) prop1 ), new Token( "prop2", (int) prop2 ) ) );
 
             // when
             commit();
@@ -371,8 +381,8 @@ public class PropertyIT extends KernelIntegrationTest
             Iterator<Token> propIdsAfterCommit = statement.propertyKeyGetAllTokens();
 
             // then
-            assertThat(asCollection( propIdsAfterCommit ) ,
-                    hasItems( new Token( "prop1", (int) prop1 ), new Token( "prop2", (int) prop2 ) ));
+            assertThat( asCollection( propIdsAfterCommit ),
+                    hasItems( new Token( "prop1", (int) prop1 ), new Token( "prop2", (int) prop2 ) ) );
         }
     }
 
@@ -394,13 +404,111 @@ public class PropertyIT extends KernelIntegrationTest
             try
             {
                 statement.nodeRemoveProperty( node, prop1 );
-                fail("Should have failed.");
+                fail( "Should have failed." );
             }
-            catch(IllegalStateException e)
+            catch ( IllegalStateException e )
             {
-                assertThat(e.getMessage(),
-                        equalTo("Node " + node + " has been deleted"));
+                assertThat( e.getMessage(),
+                        equalTo( "Node[" + node + "] has been deleted in this tx" ) );
             }
+        }
+    }
+
+    @Test
+    public void shouldNotAllowModifyingPropertiesOnDeletedRelationship() throws Exception
+    {
+        // given
+        int prop1;
+        long rel;
+        {
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            prop1 = statement.propertyKeyGetOrCreateForName( "prop1" );
+            int type = statement.relationshipTypeGetOrCreateForName( "RELATED" );
+            rel = statement.relationshipCreate( type, statement.nodeCreate(), statement.nodeCreate() );
+
+            statement.relationshipSetProperty( rel, Property.stringProperty( prop1, "As" ) );
+            statement.relationshipDelete( rel );
+
+            // When
+            try
+            {
+                statement.relationshipRemoveProperty( rel, prop1 );
+                fail( "Should have failed." );
+            }
+            catch ( IllegalStateException e )
+            {
+                assertThat( e.getMessage(),
+                        equalTo( "Relationship[" + rel + "] has been deleted in this tx" ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnNode() throws Exception
+    {
+        // given
+        long node;
+        int prop;
+        {
+            DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+            prop = ops.propertyKeyGetOrCreateForName( "foo" );
+
+            node = ops.nodeCreate();
+            ops.nodeSetProperty( node, property( prop, "bar" ) );
+
+            commit();
+        }
+
+        // when
+        {
+            DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+            ops.nodeRemoveProperty( node, prop );
+            ops.nodeSetProperty( node, property( prop, "bar" ) );
+            ops.nodeRemoveProperty( node, prop );
+            ops.nodeRemoveProperty( node, prop );
+
+            commit();
+        }
+
+        // then
+        {
+            ReadOperations ops = readOperationsInNewTransaction();
+            assertThat( ops.nodeGetProperty( node, prop ), not( isDefinedProperty() ) );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnRelationship() throws Exception
+    {
+        // given
+        long rel;
+        int prop;
+        {
+            DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+            prop = ops.propertyKeyGetOrCreateForName( "foo" );
+            int type = ops.relationshipTypeGetOrCreateForName( "RELATED" );
+
+            rel = ops.relationshipCreate( type, ops.nodeCreate(), ops.nodeCreate() );
+            ops.relationshipSetProperty( rel, property( prop, "bar" ) );
+
+            commit();
+        }
+
+        // when
+        {
+            DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+            ops.relationshipRemoveProperty( rel, prop );
+            ops.relationshipSetProperty( rel, property( prop, "bar" ) );
+            ops.relationshipRemoveProperty( rel, prop );
+            ops.relationshipRemoveProperty( rel, prop );
+
+            commit();
+        }
+
+        // then
+        {
+            ReadOperations ops = readOperationsInNewTransaction();
+            assertThat( ops.relationshipGetProperty( rel, prop ), not( isDefinedProperty() ) );
         }
     }
 
