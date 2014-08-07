@@ -30,6 +30,8 @@ object Expression {
     case object Results extends SemanticContext
   }
 
+  val DefaultTypeMismatchMessageGenerator = (expected: String, existing: String) => s"expected $expected but was $existing"
+
   implicit class SemanticCheckableOption[A <: Expression](option: Option[A]) {
     def semanticCheck(ctx: SemanticContext): SemanticCheck =
       option.fold(SemanticCheckResult.success) { _.semanticCheck(ctx) }
@@ -69,12 +71,15 @@ abstract class Expression extends ASTNode with SemanticChecking {
 
   def expectType(typeGen: TypeGenerator): SemanticState => SemanticCheckResult =
     s => expectType(typeGen(s))(s)
-  def expectType(possibleTypes: => TypeSpec): SemanticState => SemanticCheckResult = s => {
+  def expectType(typeGen: TypeGenerator, messageGen: (String, String) => String): SemanticState => SemanticCheckResult =
+    s => expectType(typeGen(s), messageGen)(s)
+
+  def expectType(possibleTypes: => TypeSpec, messageGen: (String, String) => String = DefaultTypeMismatchMessageGenerator): SemanticState => SemanticCheckResult = s => {
     s.expectType(this, possibleTypes) match {
       case (ss, TypeSpec.none) =>
         val existingTypesString = ss.expressionType(this).specified.mkString(", ", " or ")
         val expectedTypesString = possibleTypes.mkString(", ", " or ")
-        SemanticCheckResult.error(ss, SemanticError(s"Type mismatch: expected $expectedTypesString but was $existingTypesString", position))
+        SemanticCheckResult.error(ss, SemanticError("Type mismatch: " + messageGen(expectedTypesString, existingTypesString), position))
       case (ss, _)             =>
         SemanticCheckResult.success(ss)
     }

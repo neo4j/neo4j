@@ -57,6 +57,20 @@ class ExpressionTest extends Assertions {
 
     assert(result.errors.size === 1)
     assert(result.errors.head.position === expression.position)
+    assert(result.errors.head.msg == "Type mismatch: expected String but was Integer or Node")
+    assert(expression.types(result.state).isEmpty)
+  }
+
+  @Test
+  def shouldRaiseTypeErrorWithCustomMessageWhenMismatchBetweenSpecifiedTypeAndExpectedType() {
+    val result = (
+      expression.specifyType(CTNode | CTInteger) then
+      expression.expectType(CTString.covariant, (expected: String, existing: String) => s"lhs was $expected yet rhs was $existing")
+    )(SemanticState.clean)
+
+    assert(result.errors.size === 1)
+    assert(result.errors.head.position === expression.position)
+    assert(result.errors.head.msg == "Type mismatch: lhs was String yet rhs was Integer or Node")
     assert(expression.types(result.state).isEmpty)
   }
 }
