@@ -399,6 +399,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineJUnitSuite {
     )
   }
 
+  @Test def shouldReturnCustomTypeErrorForReduce() {
+    test(
+      "RETURN reduce(x = 0, y IN [1,2,3] | x + y^2)",
+      "Type mismatch: accumulator is Integer but expression has type Float (line 1, column 39)"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       val result = execute(query)

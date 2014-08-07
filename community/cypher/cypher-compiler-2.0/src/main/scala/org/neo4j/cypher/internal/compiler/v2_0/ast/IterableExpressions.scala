@@ -143,7 +143,13 @@ case class SingleIterablePredicate(identifier: Identifier, expression: Expressio
   val name = "single"
 }
 
+object ReduceExpression {
+  val AccumulatorExpressionTypeMismatchMessageGenerator = (expected: String, existing: String) => s"accumulator is $expected but expression has type $existing"
+}
+
 case class ReduceExpression(accumulator: Identifier, init: Expression, identifier: Identifier, collection: Expression, expression: Expression)(val position: InputPosition) extends Expression {
+  import ReduceExpression._
+
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     init.semanticCheck(ctx) then
     collection.semanticCheck(ctx) then
@@ -156,6 +162,7 @@ case class ReduceExpression(accumulator: Identifier, init: Expression, identifie
       identifier.declare(indexType) then
       accumulator.declare(accType) then
       expression.semanticCheck(SemanticContext.Simple)
-    } then expression.expectType(init.types) then
+    } then
+    expression.expectType(init.types, AccumulatorExpressionTypeMismatchMessageGenerator) then
     this.specifyType(s => init.types(s) mergeUp expression.types(s))
 }
