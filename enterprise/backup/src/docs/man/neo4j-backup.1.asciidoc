@@ -83,8 +83,8 @@ neo4j-backup -from freja:9999 -to /mnt/backup/neo4j-backup
 # Performing a backup from HA cluster, specifying only one cluster member
 ./neo4j-backup -from oden:5002 -to /mnt/backup/neo4j-backup
 
-# Performing a backup from HA cluster, specifying two cluster members
-./neo4j-backup -from oden:5001,loke:5002 -to /mnt/backup/neo4j-backup
+# Performing a backup from HA cluster, specifying two cluster members ('ha://' is optional)
+./neo4j-backup -from ha://oden:5001,loke:5002 -to /mnt/backup/neo4j-backup
 ----
 
 [[neo4j-backup-manpage-restore]]

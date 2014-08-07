@@ -79,10 +79,10 @@ That is, use the value of the +ha.cluster_server+ setting in the configuration.
 [source,shell]
 ----
 # Performing a backup from HA cluster, specifying only one cluster member
-./neo4j-backup -from 192.168.1.15:5001 -to /mnt/backup/neo4j-backup
+./neo4j-backup -from 192.168.1.15:6362 -to /mnt/backup/neo4j-backup
 
-# Performing a backup from HA cluster, specifying two possible cluster members
-./neo4j-backup -from 192.168.1.15:5001,192.168.1.16:5002 -to /mnt/backup/neo4j-backup
+# Performing a backup from HA cluster, specifying two possible cluster members ('ha://' is optional)
+./neo4j-backup -from ha://192.168.1.15:5001,192.168.1.16:5002 -to /mnt/backup/neo4j-backup
 ----
 
 [[backup-restoring]]
