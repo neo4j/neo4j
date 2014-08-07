@@ -42,6 +42,11 @@ public interface PageCacheMonitor
         public void unpin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
         {
         }
+
+        @Override
+        public void flush( long filePageId, PageSwapper swapper )
+        {
+        }
     };
 
     /** A page not in the cache was loaded */
@@ -55,4 +60,7 @@ public interface PageCacheMonitor
 
     /** A page is unpinned */
     void unpin( boolean exclusiveLock, long filePageId, PageSwapper swapper );
+
+    /** A page is flushed to the mapped file */
+    void flush( long filePageId, PageSwapper swapper );
 }

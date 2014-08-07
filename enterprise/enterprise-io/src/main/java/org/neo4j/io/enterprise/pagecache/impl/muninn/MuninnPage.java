@@ -380,7 +380,7 @@ final class MuninnPage extends StampedLock implements Page
     @Override
     public String toString()
     {
-        return String.format( "MuninnPage@%x[-> %x, filePageId = %s%s]%s",
-                hashCode(), pointer, filePageId, (dirty? ", dirty" : ""), getLockStateString() );
+        return String.format( "MuninnPage@%x[-> %x, filePageId = %s%s, swapper = %s]%s",
+                hashCode(), pointer, filePageId, (dirty? ", dirty" : ""), swapper, getLockStateString() );
     }
 }

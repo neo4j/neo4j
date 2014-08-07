@@ -129,4 +129,13 @@ public class SingleFilePageSwapper implements PageSwapper
         long mod = channelSize % filePageSize;
         return mod == 0? div - 1 : div;
     }
+
+    @Override
+    public String toString()
+    {
+        return "SingleFilePageSwapper{" +
+                "filePageSize=" + filePageSize +
+                ", file=" + file +
+                '}';
+    }
 }

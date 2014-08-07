@@ -31,6 +31,7 @@ public class CountingPageCacheMonitor implements PageCacheMonitor
     private final AtomicInteger takenSharedLocks = new AtomicInteger();
     private final AtomicInteger releasedExclusiveLocks = new AtomicInteger();
     private final AtomicInteger releasedSharedLocks = new AtomicInteger();
+    private final AtomicInteger flushes = new AtomicInteger();
 
     @Override
     public void pageFault( long filePageId, PageSwapper swapper )
@@ -72,6 +73,12 @@ public class CountingPageCacheMonitor implements PageCacheMonitor
         }
     }
 
+    @Override
+    public void flush( long filePageId, PageSwapper swapper )
+    {
+        flushes.getAndIncrement();
+    }
+
     public int countFaults()
     {
         return faults.get();
@@ -110,5 +117,10 @@ public class CountingPageCacheMonitor implements PageCacheMonitor
     public int countReleasedSharedLocks()
     {
         return releasedSharedLocks.get();
+    }
+
+    public int countFlushes()
+    {
+        return flushes.get();
     }
 }

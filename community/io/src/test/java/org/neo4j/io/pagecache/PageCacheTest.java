@@ -352,30 +352,44 @@ public abstract class PageCacheTest<T extends PageCache>
 
         pagedFile.flush();
 
-        try
+        StoreChannel channel = fs.open( file, "r" );
+        ByteBuffer observation = ByteBuffer.allocate( recordSize );
+        for ( int i = 0; i < recordCount; i++ )
         {
-            StoreChannel channel = fs.open( file, "r" );
-            ByteBuffer observation = ByteBuffer.allocate( recordSize );
-            for ( int i = 0; i < recordCount; i++ )
-            {
-                generateRecordForId( i, buf );
-                observation.position( 0 );
-                channel.read( observation );
-                // TODO racy: might not observe changes to later pages
-                assertRecord( i, observation, buf );
-            }
-            channel.close();
+            generateRecordForId( i, buf );
+            observation.position( 0 );
+            channel.read( observation );
+            assertRecord( i, observation, buf );
         }
-        finally
+        channel.close();
+        pageCache.unmap( file );
+    }
+
+    @Test( timeout = 60000 )
+    public void repeatablyWritesFlushedFromPageFileMustBeExternallyObservable() throws IOException
+    {
+        // This test exposed a race in the EphemeralFileSystemAbstraction, that made the previous
+        // writesFlushedFromPageFileMustBeExternallyObservable test flaky.
+        for ( int i = 0; i < 100; i++ )
         {
-            pageCache.unmap( file );
+            tearDown();
+            setUp();
+            try
+            {
+                writesFlushedFromPageFileMustBeExternallyObservable();
+            }
+            catch ( Throwable e )
+            {
+                System.err.println( "iteration " + i );
+                System.err.flush();
+                throw e;
+            }
         }
     }
 
     @Test( timeout = 30000 )
     public void writesFlushedFromPageFileMustBeObservableEvenWhenRacingWithEviction() throws IOException
     {
-        // TODO this test was supposed to uncover the race from the test above, but looks like it doesn't :(
         PageCache cache = getPageCache( fs, 20, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, pageCachePageSize );
 
@@ -1756,7 +1770,7 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
     @Test( timeout = 1000 )
-    public void monitorMustBeNotifiedAboutPinUnpinFaultAndEvictionEventsWhenWriting() throws IOException
+    public void monitorMustBeNotifiedAboutPinUnpinFaultFlushAndEvictionEventsWhenWriting() throws IOException
     {
         int pagesToGenerate = 142;
         CountingPageCacheMonitor monitor = new CountingPageCacheMonitor();
@@ -1796,6 +1810,7 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( monitor.countEvictions(),
                 both( greaterThanOrEqualTo( pagesToGenerate - maxPages ) )
                         .and( lessThan( pagesToGenerate ) ) );
+        assertThat( monitor.countFlushes(), is( pagesToGenerate ) );
     }
 
     @Test
@@ -2232,7 +2247,7 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
     @Test( timeout = 1000 )
-    public void poke() throws Exception
+    public void readingAndRetryingOnPageWithOptimisticReadLockingAfterUnmappingMustNotThrow() throws Exception
     {
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
 

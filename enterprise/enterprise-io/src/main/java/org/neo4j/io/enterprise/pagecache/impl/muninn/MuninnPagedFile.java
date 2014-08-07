@@ -91,7 +91,7 @@ class MuninnPagedFile implements PagedFile
         }
         PageEvictionCallback onEviction = new MuninnPageEvictionCallback(
                 translationTables, translationTableLocks );
-        swapper = swapperFactory.createPageSwapper( file, pageSize, onEviction );
+        swapper = new MonitoredPageSwapper( swapperFactory.createPageSwapper( file, pageSize, onEviction ), monitor );
         flusher = new PageFlusher( swapper );
         initialiseLastPageId( swapper.getLastPageId() );
 

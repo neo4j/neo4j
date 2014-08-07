@@ -710,18 +710,19 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             int wanted = src.limit();
             int pending = wanted;
             byte[] scratchPad = SCRATCH_PAD.get();
-            while ( pending > 0 )
-            {
-                int howMuchToWriteThisTime = min( pending, scratchPad.length );
-                src.get( scratchPad, 0, howMuchToWriteThisTime );
-                long pos = fc.pos();
-                fileAsBuffer.put( (int) pos, scratchPad, 0, howMuchToWriteThisTime );
-                fc.pos( pos += howMuchToWriteThisTime );
-                pending -= howMuchToWriteThisTime;
-            }
 
             synchronized ( fileAsBuffer )
             {
+                while ( pending > 0 )
+                {
+                    int howMuchToWriteThisTime = min( pending, scratchPad.length );
+                    src.get( scratchPad, 0, howMuchToWriteThisTime );
+                    long pos = fc.pos();
+                    fileAsBuffer.put( (int) pos, scratchPad, 0, howMuchToWriteThisTime );
+                    fc.pos( pos + howMuchToWriteThisTime );
+                    pending -= howMuchToWriteThisTime;
+                }
+
                 // If we just made a jump in the file fill the rest of the gap with zeros
                 int newSize = max( size, (int) fc.pos() );
                 int intermediaryBytes = newSize - wanted - size;

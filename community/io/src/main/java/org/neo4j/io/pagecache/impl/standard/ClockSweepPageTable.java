@@ -128,7 +128,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
             page.lock(PagedFile.PF_SHARED_LOCK);
             try
             {
-                page.flush();
+                page.flush( monitor );
             }
             finally
             {
@@ -149,7 +149,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
                 if( page.isBackedBy( io ) )
                 {
                     assertNoSweeperException();
-                    page.flush();
+                    page.flush( monitor );
                 }
             }
             finally
@@ -268,9 +268,9 @@ public class ClockSweepPageTable implements PageTable, Runnable
     private void evict( StandardPinnablePage page ) throws IOException
     {
         long pageId = page.pageId();
-        PageSwapper swapper = page.io();
+        PageSwapper swapper = page.swapper();
 
-        page.flush();
+        page.flush( monitor );
         page.setAllBytesToZero();
         page.evicted();
         page.reset( null, UNBOUND_PAGE_ID );
@@ -295,7 +295,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
             loadedPages = 0;
             for ( StandardPinnablePage page : pages )
             {
-                if(page.loaded)
+                if ( page.loaded )
                 {
                     loadedPages++;
                     if( freeList.get() == null )

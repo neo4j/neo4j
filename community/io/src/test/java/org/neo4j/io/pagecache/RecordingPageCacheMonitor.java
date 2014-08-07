@@ -59,6 +59,12 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
         // we currently do not record these
     }
 
+    @Override
+    public void flush( long filePageId, PageSwapper swapper )
+    {
+        // we currently do not record these
+    }
+
     public <T extends Event> T observe( Class<T> type ) throws InterruptedException
     {
         return type.cast( record.take() );
