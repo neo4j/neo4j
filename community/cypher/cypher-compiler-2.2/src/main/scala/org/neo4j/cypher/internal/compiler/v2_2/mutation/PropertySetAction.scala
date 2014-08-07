@@ -23,13 +23,14 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class PropertySetAction(prop: Property, e: Expression)
   extends UpdateAction with GraphElementPropertyFunctions {
 
-  override def localEffects = Effects.WRITES_ENTITIES
+  def localEffects(ignored: SymbolTable) = Effects.WRITES_ENTITIES
 
   val Property(mapExpr, propertyKey) = prop
 
@@ -51,7 +52,6 @@ case class PropertySetAction(prop: Property, e: Expression)
         case value => ops.setProperty(id, propertyKey.getOrCreateId(qtx), value)
       }
     }
-
 
     Iterator(context)
   }

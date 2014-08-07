@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import commands.expressions.Expression
-import pipes.QueryState
-import symbols._
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.graphdb.{PropertyContainer, Path, Relationship, Node}
-import collection.JavaConverters._
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.api.KernelStatement
+import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+
+import scala.collection.JavaConverters._
 
 case class DeleteEntityAction(elementToDelete: Expression)
   extends UpdateAction {
@@ -64,4 +64,6 @@ case class DeleteEntityAction(elementToDelete: Expression)
   def children = Seq(elementToDelete)
 
   def symbolTableDependencies = elementToDelete.symbolTableDependencies
+
+  def localEffects(symbols: SymbolTable) = Effects.WRITES_ENTITIES
 }
