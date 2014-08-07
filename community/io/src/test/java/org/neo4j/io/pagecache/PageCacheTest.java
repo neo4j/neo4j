@@ -459,7 +459,7 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
     @Test( timeout = 1000 )
-    public void writesToPagesMustNotBleedIntoAdjecentPages() throws IOException
+    public void writesToPagesMustNotBleedIntoAdjacentPages() throws IOException
     {
         fs.create( file ).close();
 

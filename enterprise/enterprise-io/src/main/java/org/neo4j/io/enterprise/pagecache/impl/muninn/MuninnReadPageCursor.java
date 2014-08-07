@@ -190,8 +190,6 @@ class MuninnReadPageCursor extends MuninnPageCursor
     private void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper )
     {
         reset( page );
-        // TODO we don't need to initBuffer here because page faulting does this for us:
-        page.initBuffer(); // TODO looks like commenting this line out makes the writesFlushedFromPageFileMustBeExternallyObservable test fail predictably. WTF?!
         page.incrementUsage();
         pagedFile.monitor.pin( false, filePageId, swapper );
     }

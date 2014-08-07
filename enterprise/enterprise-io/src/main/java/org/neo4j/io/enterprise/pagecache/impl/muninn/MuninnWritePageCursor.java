@@ -188,8 +188,6 @@ class MuninnWritePageCursor extends MuninnPageCursor
     private void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper )
     {
         reset( page );
-        // TODO we don't need to initBuffer here because page faulting does this for us:
-        page.initBuffer();
         page.incrementUsage();
         page.markAsDirty();
         pagedFile.monitor.pin( true, filePageId, swapper );

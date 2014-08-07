@@ -315,6 +315,7 @@ final class MuninnPage extends StampedLock implements Page
             PageSwapper swapper,
             long filePageId ) throws IOException
     {
+        assert isWriteLocked(): "Cannot fault page without write-lock";
         if ( this.swapper != null || this.filePageId != PageCursor.UNBOUND_PAGE_ID )
         {
             throw new IllegalStateException( "Cannot fault on bound page" );
@@ -329,6 +330,7 @@ final class MuninnPage extends StampedLock implements Page
      */
     public void evict() throws IOException
     {
+        assert isWriteLocked(): "Cannot evict page without write-lock";
         flush();
         UnsafeUtil.setMemory( pointer, cachePageSize, (byte) 0 );
         filePageId = PageCursor.UNBOUND_PAGE_ID;
@@ -350,28 +352,19 @@ final class MuninnPage extends StampedLock implements Page
      */
     public void initBuffer()
     {
+        assert isWriteLocked(): "Cannot initBuffer without write-lock";
         if ( pointer == 0 )
         {
             pointer = UnsafeUtil.malloc( cachePageSize );
         }
     }
 
-    /**
-     * NOTE: This method MUST be called while holding the page write lock,
-     * AND it must be guaranteed that no other threads are concurrently
-     * accessing the page, e.g. via optimistic read.
-     */
-    private void freeBuffer()
-    {
-        UnsafeUtil.free( pointer );
-        pointer = 0;
-    }
-
     @Override
     protected void finalize() throws Throwable
     {
         super.finalize();
-        freeBuffer();
+        UnsafeUtil.free( pointer );
+        pointer = 0;
     }
 
     public PageSwapper getSwapper()
