@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.cypher.javacompat.PlanDescription;
 import org.neo4j.cypher.javacompat.ProfilerStatistics;
 import org.neo4j.graphdb.ResourceIterator;
@@ -71,7 +72,7 @@ public class CypherResultRepresentationTest
 
         when( plan.getProfilerStatistics() ).thenReturn( stats );
 
-        ExecutionResult result = mock( ExecutionResult.class );
+        ExtendedExecutionResult result = mock( ExtendedExecutionResult.class );
         when( result.iterator() ).thenReturn( EMPTY_ITERATOR );
         when( result.columns() ).thenReturn( new ArrayList<String>() );
         when( result.executionPlanDescription() ).thenReturn( plan );
@@ -98,7 +99,7 @@ public class CypherResultRepresentationTest
     public void shouldNotIncludePlanUnlessAskedFor() throws Exception
     {
         // Given
-        ExecutionResult result = mock( ExecutionResult.class );
+        ExtendedExecutionResult result = mock( ExtendedExecutionResult.class );
         when( result.iterator() ).thenReturn( EMPTY_ITERATOR );
         when( result.columns() ).thenReturn( new ArrayList<String>() );
 
@@ -117,7 +118,7 @@ public class CypherResultRepresentationTest
     public void shouldFormatMapsProperly() throws Exception
     {
         ExecutionEngine executionEngine = new ExecutionEngine( database.getGraphDatabaseService() );
-        ExecutionResult result = executionEngine.execute( "RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}" );
+        ExtendedExecutionResult result = executionEngine.execute( "RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}" );
         CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );
 
         // When
@@ -138,7 +139,7 @@ public class CypherResultRepresentationTest
         {
             ExecutionEngine executionEngine = new ExecutionEngine( database.getGraphDatabaseService() );
             executionEngine.execute( "CREATE (n {name: 'Sally'}), (m {age: 42}), n-[r:FOO {drunk: false}]->m" );
-            ExecutionResult result = executionEngine.execute( "MATCH p=n-[r]->m RETURN n, r, p, {node: n, edge: r, " +
+            ExtendedExecutionResult result = executionEngine.execute( "MATCH p=n-[r]->m RETURN n, r, p, {node: n, edge: r, " +
                     "path: p}" );
             CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );
 

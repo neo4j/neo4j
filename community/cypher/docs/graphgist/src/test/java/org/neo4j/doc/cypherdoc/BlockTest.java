@@ -32,6 +32,7 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -146,7 +147,7 @@ public class BlockTest
                         containsString( "cypherdoc-xyz" ),
                         containsString( ".svg" ), containsString( "neoviz" ) ) );
     }
-   
+
     @Test
     public void graphWithoutId()
     {
@@ -224,7 +225,7 @@ public class BlockTest
         ArgumentCaptor<String> httpQuery = ArgumentCaptor.forClass( String.class );
 
         when( engine.profile( fileQuery.capture() ) ).
-                thenReturn( mock( ExecutionResult.class ) );
+                thenReturn( mock( ExtendedExecutionResult.class ) );
 
         when( engine.prettify( httpQuery.capture() ) ).
                 thenReturn( "apa" );

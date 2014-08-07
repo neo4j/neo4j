@@ -58,7 +58,7 @@ public class JsonHelper
     {
         return (List<Map<String, Object>>) readJson( json );
     }
-    
+
     public static Object readJson( String json ) throws JsonParseException
     {
         try
@@ -102,18 +102,28 @@ public class JsonHelper
         try
         {
             StringWriter writer = new StringWriter();
-            JsonGenerator generator = OBJECT_MAPPER.getJsonFactory()
+            try
+            {
+                JsonGenerator generator = OBJECT_MAPPER.getJsonFactory()
                     .createJsonGenerator( writer )
                     .useDefaultPrettyPrinter();
-            OBJECT_MAPPER.writeValue( generator, data );
-            writer.close();
-            return writer.getBuffer()
-                    .toString();
+                writeValue( generator, data );
+            }
+            finally
+            {
+                writer.close();
+            }
+            return writer.getBuffer().toString();
         }
         catch ( IOException e )
         {
             throw new JsonBuildRuntimeException( e );
         }
+    }
+
+    public static void writeValue( JsonGenerator jgen, Object value ) throws IOException
+    {
+        OBJECT_MAPPER.writeValue( jgen, value );
     }
 
     public static String prettyPrint( Object item ) throws IOException

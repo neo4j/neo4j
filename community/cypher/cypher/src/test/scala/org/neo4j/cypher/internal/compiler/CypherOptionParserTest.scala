@@ -39,16 +39,16 @@ class CypherOptionParserTest extends CypherFunSuite {
     parse("PROFILE THINGS") should equal(CypherQueryWithOptions("THINGS", Seq(ProfileOption)))
   }
 
-  ignore("should parse explain") {
+  test("should parse explain") {
     parse("EXPLAIN THIS") should equal(CypherQueryWithOptions("THIS", Seq(ExplainOption)))
   }
 
-  ignore("should parse multiple options") {
-    parse("CYPHER 2.1.experimental PROFILE PATTERN") should equal(CypherQueryWithOptions("PATTERN", Seq(VersionOption("2.1.experimental"), ProfileOption)))
-    parse("EXPLAIN PROFILE CYPHER 2.1 YALL") should equal(CypherQueryWithOptions("YALL", Seq(ExplainOption, ProfileOption, VersionOption("2.1"))))
+  test("should parse multiple options") {
+//    parse("CYPHER 2.1.experimental PROFILE PATTERN") should equal(CypherQueryWithOptions("PATTERN", Seq(VersionOption("2.1.experimental"), ProfileOption)))
+    parse("EXPLAIN CYPHER 2.1 YALL") should equal(CypherQueryWithOptions("YALL", Seq(ExplainOption, VersionOption("2.1"))))
   }
 
-  ignore("should require whitespace between option and query") {
+  test("should require whitespace between option and query") {
     parse("explainmatch") should equal(CypherQueryWithOptions("explainmatch"))
     parse("explain match") should equal(CypherQueryWithOptions("match", Seq(ExplainOption)))
   }

@@ -27,7 +27,7 @@ import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -52,7 +52,7 @@ public class TransactionHandleTest
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
 
         ServerExecutionEngine executionEngine = mock( ServerExecutionEngine.class );
-        ExecutionResult executionResult = mock( ExecutionResult.class );
+        ExtendedExecutionResult executionResult = mock( ExtendedExecutionResult.class );
         when( executionEngine.execute( "query", map() ) ).thenReturn( executionResult );
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
@@ -85,7 +85,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
 
         ServerExecutionEngine executionEngine = mock( ServerExecutionEngine.class );
-        ExecutionResult executionResult = mock( ExecutionResult.class );
+        ExtendedExecutionResult executionResult = mock( ExtendedExecutionResult.class );
         when( executionEngine.execute( "query", map() ) ).thenReturn( executionResult );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine,
@@ -126,7 +126,7 @@ public class TransactionHandleTest
 
         handle.execute( statements( new Statement( "query", map(), false, (ResultDataContent[])null ) ), output );
         reset( transactionContext, registry, executionEngine, output );
-        ExecutionResult executionResult = mock( ExecutionResult.class );
+        ExtendedExecutionResult executionResult = mock( ExtendedExecutionResult.class );
         when( executionEngine.execute( "query", map() ) ).thenReturn( executionResult );
 
         // when
@@ -156,7 +156,7 @@ public class TransactionHandleTest
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
 
         ServerExecutionEngine executionEngine = mock( ServerExecutionEngine.class );
-        ExecutionResult executionResult = mock( ExecutionResult.class );
+        ExtendedExecutionResult executionResult = mock( ExtendedExecutionResult.class );
         when( executionEngine.isPeriodicCommit( queryText) ).thenReturn( true );
         when( executionEngine.execute( queryText ) ).thenReturn( executionResult );
 
@@ -190,7 +190,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
 
         ServerExecutionEngine engine = mock( ServerExecutionEngine.class );
-        ExecutionResult result = mock( ExecutionResult.class );
+        ExtendedExecutionResult result = mock( ExtendedExecutionResult.class );
         when( engine.execute( "query", map() ) ).thenReturn( result );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( kernel, engine,
@@ -251,7 +251,7 @@ public class TransactionHandleTest
 
         // when
         ServerExecutionEngine engine = mock( ServerExecutionEngine.class );
-        ExecutionResult executionResult = mock( ExecutionResult.class );
+        ExtendedExecutionResult executionResult = mock( ExtendedExecutionResult.class );
         when( engine.execute( "query", map() ) ).thenReturn( executionResult );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( kernel, engine,
@@ -319,7 +319,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
 
         ServerExecutionEngine engine = mock( ServerExecutionEngine.class );
-        ExecutionResult executionResult = mock( ExecutionResult.class );
+        ExtendedExecutionResult executionResult = mock( ExtendedExecutionResult.class );
         when( engine.execute( "query", map() ) ).thenReturn( executionResult );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( kernel, engine, registry, uriScheme, log );
