@@ -73,8 +73,7 @@ public class DiscoveryService
     {
         try
         {
-            return Response.seeOther( new URI( Configurator.BROWSER_PATH ) )
-                    .build();
+            return outputFormat.seeOther( new URI( Configurator.BROWSER_PATH ) );
         }
         catch ( URISyntaxException e )
         {

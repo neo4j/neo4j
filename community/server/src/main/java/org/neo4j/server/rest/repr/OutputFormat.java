@@ -104,6 +104,11 @@ public class OutputFormat
                 .build();
     }
 
+    public Response seeOther( URI uri )
+    {
+        return Response.seeOther( baseUri.resolve( uri ) ).build();
+    }
+
     public Response conflict( Throwable exception )
     {
         return response( Response.status( Status.CONFLICT ), new ExceptionRepresentation( exception ) );

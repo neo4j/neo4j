@@ -35,6 +35,7 @@ import javax.ws.rs.core.Response;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.server.EntityOutputFormat;
@@ -98,5 +99,20 @@ public class DiscoveryServiceTest
         assertThat( json, containsString( "\"management\" : \"" + managementUri + "\"" ) );
         assertThat( json, containsString( "\"data\" : \"" + dataUri + "\"" ) );
 
+    }
+
+    @Test
+    public void shouldReturnRedirectToAbsoluteAPIUsingOutputFormat() throws Exception
+    {
+        Configuration mockConfig = mock( Configuration.class );
+
+        String baseUri = "http://www.example.com:5435";
+        DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
+                baseUri ), null ) );
+
+        Response response = ds.redirectToBrowser();
+
+        assertThat( response.getMetadata().getFirst( "Location" ), is( (Object) new URI( "http://www.example" +
+                ".com:5435/browser" ) ) );
     }
 }
