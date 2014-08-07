@@ -23,9 +23,7 @@ import java.io.PrintWriter
 
 import org.neo4j.cypher.{ExecutionResult, ExtendedExecutionResult}
 
-case class LegacyExecutionResultWrapper(inner: ExecutionResult) extends ExtendedExecutionResult {
-  def planDescriptionRequested = false
-
+case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionRequested: Boolean) extends ExtendedExecutionResult {
   def columns = inner.columns
 
   def javaIterator = inner.javaIterator

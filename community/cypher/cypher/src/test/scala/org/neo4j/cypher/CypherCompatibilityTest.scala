@@ -85,6 +85,15 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
+  test("should handle profile with older versions of the compiler") {
+    runWithConfig() {
+      (engine: ExecutionEngine) =>
+        assertProfiled(engine, "CYPHER 1.9 PROFILE START n=node(*) RETURN n")
+        assertProfiled(engine, "CYPHER 2.0 PROFILE MATCH n RETURN n")
+        assertProfiled(engine, "CYPHER 2.1 PROFILE MATCH n RETURN n")
+    }
+  }
+
   test("should not allow EXPLAIN to be used with older compilers") {
     runWithConfig() {
       engine =>
@@ -92,6 +101,13 @@ class CypherCompatibilityTest extends CypherFunSuite {
         intercept[InvalidArgumentException](engine.execute("CYPHER 2.0 EXPLAIN MATCH n RETURN n"))
         intercept[InvalidArgumentException](engine.execute("CYPHER 2.1 EXPLAIN MATCH n RETURN n"))
     }
+  }
+
+  private def assertProfiled(engine: ExecutionEngine, q: String) {
+    val result = engine.execute(q)
+    val ignored = result.toList
+    assert(result.executionPlanDescription().asJava.hasProfilerStatistics, s"$q was not profiled as expected")
+    assert(result.planDescriptionRequested, s"$q was not flagged for planDescription")
   }
 
   private def runWithConfig(m: (String, String)*)(run: ExecutionEngine => Unit) = {

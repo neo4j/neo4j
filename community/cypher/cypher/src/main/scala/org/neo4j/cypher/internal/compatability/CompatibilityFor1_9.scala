@@ -31,25 +31,27 @@ case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int)
   private val queryCache1_9 = new LRUCache[String, Object](queryCacheSize)
   private val compiler1_9   = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
 
-  def parseQuery(statementAsText: String) = new ParsedQuery {
+  def parseQuery(statementAsText: String, profiled: Boolean) = new ParsedQuery {
     def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {
       val planImpl = compiler1_9.prepare(statementAsText)
-      (new ExecutionPlanWrapper(planImpl), Map.empty)
+      (new ExecutionPlanWrapper(planImpl, profiled), Map.empty)
     }
 
     def isPeriodicCommit = false
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v1_9) extends ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v1_9, profile: Boolean) extends ExecutionPlan {
 
     private def queryContext(graph: GraphDatabaseAPI) =
       new QueryContext_v1_9(graph)
 
     def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      LegacyExecutionResultWrapper(inner.profile(queryContext(graph), txInfo.tx, params))
+      LegacyExecutionResultWrapper(inner.profile(queryContext(graph), txInfo.tx, params), planDescriptionRequested = true)
 
-    def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      LegacyExecutionResultWrapper(inner.execute(queryContext(graph), txInfo.tx, params))
+    def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) = if (profile)
+      profile(graph, txInfo, params)
+    else
+      LegacyExecutionResultWrapper(inner.execute(queryContext(graph), txInfo.tx, params), planDescriptionRequested = false)
 
     def isPeriodicCommit = false
   }

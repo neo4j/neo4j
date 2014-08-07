@@ -107,7 +107,7 @@ class LegacyPipeBuilderTest extends CypherFunSuite {
 
   private def buildExecutionPipe(q: String): Pipe = {
     val statement = parser.parse(q)
-    val parsedQ = PreparedQuery(statement, statement.asQuery, mock[SemanticTable], q, Map.empty, Normal)
+    val parsedQ = PreparedQuery(statement, statement.asQuery, q, Map.empty, Normal)(mock[SemanticTable])
     planBuilder.producePlan(parsedQ, planContext).pipe
   }
 }

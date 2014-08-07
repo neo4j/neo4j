@@ -187,9 +187,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("should handle PERIODIC COMMIT when profiling") {
     val url = createTempFileURL("cypher", ".csv")(writer => {
-      1.to(100).foreach { i =>
-        writer.println(i.toString)
-      }
+      (1 to 100).foreach(writer.println)
     }).cypherEscape
 
     val query = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE()"
@@ -203,7 +201,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = profile(query)
 
     // then
-    graph.txCounts-initialTxCounts should equal(TxCounts(commits = 11))
+
+    val expectedTxCount = 1 + // First tx used to compile the query
+                          1 + // Last tx to close it all down
+                          10  // One per 10 rows of CSV file
+
+    graph.txCounts-initialTxCounts should equal(TxCounts(commits = expectedTxCount))
     result.executionPlanDescription().asJava should not equal null
     result.queryStatistics().containsUpdates should equal(true)
     result.queryStatistics().nodesCreated should equal(100)
@@ -229,7 +232,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   override def profile(q: String, params: (String, Any)*): InternalExecutionResult = {
-    val result = super.profile(q, params: _*)
+    val result = super.execute("profile " + q, params: _*)
     val planDescription: v2_2.planDescription.PlanDescription = result.executionPlanDescription()
     planDescription.toSeq.foreach {
       p =>

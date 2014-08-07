@@ -19,18 +19,8 @@
  */
 package org.neo4j.shell.kernel.apps.cypher;
 
-import java.rmi.RemoteException;
-
-import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
-import org.neo4j.shell.AppCommandParser;
-import org.neo4j.shell.Continuation;
-import org.neo4j.shell.Output;
-import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
 
 @Service.Implementation( App.class )
 public class Profile extends Start
@@ -47,30 +37,5 @@ public class Profile extends Start
                 "Usage: profile <query>\n" +
                 "Example: PROFILE START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name\n" +
                 "where {self} will be replaced with the current location in the graph";
-    }
-
-    @Override
-    protected Continuation exec( AppCommandParser parser, Session session, Output out )
-            throws ShellException, RemoteException
-    {
-        String query = parser.getLineWithoutApp();
-
-        if ( isComplete( query ) )
-        {
-            ExecutionEngine engine = new ExecutionEngine( getServer().getDb(), getCypherLogger() );
-            try
-            {
-                ExecutionResult result = engine.profile( query, getParameters( session ) );
-                out.println( result.dumpToString() );
-                out.println( result.executionPlanDescription().toString() );
-            } catch ( CypherException e )
-            {
-                throw ShellException.wrapCause( e );
-            }
-            return Continuation.INPUT_COMPLETE;
-        } else
-        {
-            return Continuation.INPUT_INCOMPLETE;
-        }
     }
 }

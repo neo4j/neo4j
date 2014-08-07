@@ -34,19 +34,19 @@ import scala.util.Try
 case class CompatibilityFor2_1(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors, kernelAPI: KernelAPI) {
   private val compiler = CypherCompilerFactory.legacyCompiler(graph, queryCacheSize, kernelMonitors)
 
-  def parseQuery(statementAsText: String) = new ParsedQuery {
+  def parseQuery(statementAsText: String, profiled: Boolean) = new ParsedQuery {
     val preparedQueryForV_2_1 = Try(compiler.prepareQuery(statementAsText))
 
     override def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {
       val planContext = new PlanContext_v2_1(statement, kernelAPI, graph)
       val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_1.get, planContext)
-      (new ExecutionPlanWrapper(planImpl), extractedParameters)
+      (new ExecutionPlanWrapper(planImpl, profiled), extractedParameters)
     }
 
     def isPeriodicCommit = preparedQueryForV_2_1.map(_.isPeriodicCommit).getOrElse(false)
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_1) extends ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_1, profile: Boolean) extends ExecutionPlan {
 
     private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
       val ctx = new QueryContext_v2_1(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
@@ -54,10 +54,12 @@ case class CompatibilityFor2_1(graph: GraphDatabaseService, queryCacheSize: Int,
     }
 
     def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      LegacyExecutionResultWrapper(inner.profile(queryContext(graph, txInfo), params))
+      LegacyExecutionResultWrapper(inner.profile(queryContext(graph, txInfo), params), planDescriptionRequested = true)
 
-    def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      LegacyExecutionResultWrapper(inner.execute(queryContext(graph, txInfo), params))
+    def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) = if (profile)
+      profile(graph, txInfo, params)
+    else
+      LegacyExecutionResultWrapper(inner.execute(queryContext(graph, txInfo), params), planDescriptionRequested = false)
 
     def isPeriodicCommit = inner.isPeriodicCommit
   }

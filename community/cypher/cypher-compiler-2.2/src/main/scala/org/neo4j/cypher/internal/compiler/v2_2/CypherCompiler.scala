@@ -54,7 +54,7 @@ trait CypherCacheHitMonitor[T] {
 
 trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor[E]
 
-trait AstCacheMonitor extends CypherCacheMonitor[Statement, CacheAccessor[Statement, ExecutionPlan]]
+trait AstCacheMonitor extends CypherCacheMonitor[PreparedQuery, CacheAccessor[PreparedQuery, ExecutionPlan]]
 
 object CypherCompilerFactory {
   val monitorTag = "cypher2.1"
@@ -70,9 +70,9 @@ object CypherCompilerFactory {
     val planner = new Planner(monitors, metricsFactory, planningMonitor)
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
-    val planCacheFactory = () => new LRUCache[ast.Statement, ExecutionPlan](queryCacheSize)
+    val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
-    val cache = new MonitoringCacheAccessor[ast.Statement, ExecutionPlan](cacheMonitor)
+    val cache = new MonitoringCacheAccessor[PreparedQuery, ExecutionPlan](cacheMonitor)
 
     new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
   }
@@ -84,9 +84,9 @@ object CypherCompilerFactory {
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
     val pipeBuilder = new LegacyPipeBuilder(monitors)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
-    val planCacheFactory = () => new LRUCache[ast.Statement, ExecutionPlan](queryCacheSize)
+    val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
-    val cache = new MonitoringCacheAccessor[ast.Statement, ExecutionPlan](cacheMonitor)
+    val cache = new MonitoringCacheAccessor[PreparedQuery, ExecutionPlan](cacheMonitor)
 
     new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
   }
@@ -96,9 +96,9 @@ case class CypherCompiler(parser: CypherParser,
                           semanticChecker: SemanticChecker,
                           executionPlanBuilder: ExecutionPlanBuilder,
                           astRewriter: ASTRewriter,
-                          cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
-                          planCacheFactory: () => LRUCache[ast.Statement, ExecutionPlan],
-                          cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[ast.Statement, ExecutionPlan]],
+                          cacheAccessor: CacheAccessor[PreparedQuery, ExecutionPlan],
+                          planCacheFactory: () => LRUCache[PreparedQuery, ExecutionPlan],
+                          cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[PreparedQuery, ExecutionPlan]],
                           monitors: Monitors) {
 
   def planQuery(queryText: String, context: PlanContext, planType: PlanType): (ExecutionPlan, Map[String, Any]) =
@@ -110,19 +110,19 @@ case class CypherCompiler(parser: CypherParser,
     val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, parsedStatement)
     val table = semanticChecker.check(queryText, parsedStatement)
     val query: AbstractQuery = rewrittenStatement.asQuery.setQueryText(queryText)
-    PreparedQuery(rewrittenStatement, query, table, queryText, extractedParams, planType)
+    PreparedQuery(rewrittenStatement, query, queryText, extractedParams, planType)(table)
   }
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
     val cache = provideCache(cacheAccessor, cacheMonitor, context)
-    val plan = cacheAccessor.getOrElseUpdate(cache)(parsedQuery.statement, {
+    val plan = cacheAccessor.getOrElseUpdate(cache)(parsedQuery, {
       executionPlanBuilder.build(context, parsedQuery)
     })
     (plan, parsedQuery.extractedParams)
   }
 
-  private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
-                           monitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
+  private def provideCache(cacheAccessor: CacheAccessor[PreparedQuery, ExecutionPlan],
+                           monitor: CypherCacheFlushingMonitor[CacheAccessor[PreparedQuery, ExecutionPlan]],
                            context: PlanContext) =
     context.getOrCreateFromSchemaState(cacheAccessor, {
       monitor.cacheFlushDetected(cacheAccessor)

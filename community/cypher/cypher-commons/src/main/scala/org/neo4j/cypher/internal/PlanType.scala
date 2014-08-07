@@ -22,3 +22,4 @@ package org.neo4j.cypher.internal
 sealed trait PlanType
 case object Normal extends PlanType
 case object Explained extends PlanType
+case object Profiled extends PlanType

@@ -41,7 +41,7 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
 
   def producePlan(in: PreparedQuery, planContext: PlanContext): PipeInfo = in.abstractQuery match {
     case q: PeriodicCommitQuery =>
-      producePlan(in.copy(abstractQuery = q.query), planContext).
+      producePlan(in.copy(abstractQuery = q.query)(in.semanticTable), planContext).
       copy(periodicCommit = Some(PeriodicCommitInfo(q.batchSize)))
 
     case q: Query =>
