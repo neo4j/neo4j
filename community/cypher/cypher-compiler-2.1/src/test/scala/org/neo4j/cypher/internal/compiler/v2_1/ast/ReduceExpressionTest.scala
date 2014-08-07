@@ -98,7 +98,7 @@ class ReduceExpressionTest extends CypherFunSuite {
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should have size 1
-    result.errors.head.msg should equal("Type mismatch: expected Number or String but was Node")
+    result.errors.head.msg should equal("Type mismatch: accumulator is Number or String but expression has type Node")
     result.errors.head.position should equal(reduceExpression.position)
   }
 }
