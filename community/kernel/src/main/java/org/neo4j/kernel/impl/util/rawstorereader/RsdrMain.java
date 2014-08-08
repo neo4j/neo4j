@@ -197,6 +197,10 @@ public class RsdrMain
                 buf.clear();
                 long offset = recordSize * i;
                 int count = channel.read( buf, offset );
+                if ( count == -1 )
+                {
+                    break;
+                }
                 byte[] bytes = new byte[count];
                 buf.clear();
                 buf.get( bytes );
