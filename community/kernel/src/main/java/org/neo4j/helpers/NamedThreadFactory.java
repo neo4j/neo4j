@@ -24,10 +24,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class NamedThreadFactory implements ThreadFactory
 {
+    public interface Monitor
+    {
+        void threadCreated(String threadNamePrefix);
+        void threadFinished(String threadNamePrefix);
+    }
+
     private final ThreadGroup group;
     private final AtomicInteger threadCounter = new AtomicInteger( 1 );
     private String threadNamePrefix;
     private final int priority;
+    private boolean daemon = false;
+    private final Monitor monitor;
 
     public NamedThreadFactory( String threadNamePrefix )
     {
@@ -36,21 +44,65 @@ public class NamedThreadFactory implements ThreadFactory
 
     public NamedThreadFactory( String threadNamePrefix, int priority )
     {
+        this(threadNamePrefix, priority, new Monitor()
+        {
+            @Override
+            public void threadCreated(String threadNamePrefix)
+            {
+
+            }
+
+            @Override
+            public void threadFinished(String threadNamePrefix)
+            {
+
+            }
+        });
+    }
+
+    public NamedThreadFactory( String threadNamePrefix, Monitor monitor )
+    {
+        this( threadNamePrefix, Thread.NORM_PRIORITY, monitor );
+    }
+
+    public NamedThreadFactory( String threadNamePrefix, int priority, Monitor monitor )
+    {
         this.threadNamePrefix = threadNamePrefix;
         SecurityManager securityManager = System.getSecurityManager();
         group = (securityManager != null) ?
                 securityManager.getThreadGroup() :
                 Thread.currentThread().getThreadGroup();
         this.priority = priority;
+        this.monitor = monitor;
+    }
+
+    public NamedThreadFactory setDaemon(boolean daemon)
+    {
+        this.daemon = daemon;
+        return this;
     }
 
     public Thread newThread( Runnable runnable )
     {
         final int id = threadCounter.getAndIncrement();
-        Thread result = new Thread( group, runnable, threadNamePrefix + "-" + id );
+        Thread result = new Thread( group, runnable, threadNamePrefix + "-" + id )
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    super.run();
+                } finally
+                {
+                    monitor.threadFinished(threadNamePrefix);
+                }
+            }
+        };
 
-        result.setDaemon( false );
+        result.setDaemon( daemon );
         result.setPriority( priority );
+        monitor.threadCreated(threadNamePrefix);
         return result;
     }
 

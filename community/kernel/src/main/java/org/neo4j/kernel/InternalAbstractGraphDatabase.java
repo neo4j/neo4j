@@ -52,7 +52,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.DaemonThreadFactory;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
@@ -1345,8 +1345,8 @@ public abstract class InternalAbstractGraphDatabase
     {
         private final ConfigurationChangeListener listener = new ConfigurationChangeListener()
         {
-            Executor executor = Executors.newSingleThreadExecutor( new DaemonThreadFactory( "Database configuration " +
-                    "restart" ) );
+            Executor executor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Database configuration " +
+                    "restart", monitors.newMonitor(NamedThreadFactory.Monitor.class) ).setDaemon(true) );
 
             @Override
             public void notifyConfigurationChanges( final Iterable<ConfigurationChange> change )

@@ -305,7 +305,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 }
                 return true;
             }
-        }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory
+        }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory, monitors
         );
 
         // Force a reelection after we enter the cluster

@@ -107,7 +107,7 @@ public final class HaBackupProvider //extends BackupExtensionService
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, new SystemOutLogging(),
                 Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE(), new HANewSnapshotFunction(),
-                objectStreamFactory, objectStreamFactory ) );
+                objectStreamFactory, objectStreamFactory, new Monitors() ) );
 
         // Refresh the snapshot once we join
         clusterClient.addClusterListener( new ClusterListener.Adapter()
