@@ -2773,4 +2773,5 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
     // TODO specify what should happen if we call pagedFile.flush() while we have an exclusive lock on a page
+    // TODO some tests that verify that the page swapping does not swallow interrupts
 }

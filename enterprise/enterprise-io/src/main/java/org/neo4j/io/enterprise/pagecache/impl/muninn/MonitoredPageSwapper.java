@@ -37,9 +37,9 @@ public class MonitoredPageSwapper implements PageSwapper
     }
 
     @Override
-    public void read( long pageId, Page page ) throws IOException
+    public void read( long filePageId, Page page ) throws IOException
     {
-        pageSwapper.read( pageId, page );
+        pageSwapper.read( filePageId, page );
     }
 
     @Override

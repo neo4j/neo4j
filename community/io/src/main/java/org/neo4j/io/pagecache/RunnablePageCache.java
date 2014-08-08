@@ -19,6 +19,15 @@
  */
 package org.neo4j.io.pagecache;
 
+/**
+ * A PageCache that also implements Runnable.
+ *
+ * The purpose of this is typically for doing page eviction in the background,
+ * and the page cache therefore has be started in a dedicated thread.
+ *
+ * It is implicitly assumed that sending an interrupt to this dedicated thread,
+ * will signal it to shut the page cache down.
+ */
 public interface RunnablePageCache extends PageCache, Runnable
 {
 }

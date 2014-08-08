@@ -405,13 +405,13 @@ public class ClockSweepPageTableTest
         }
 
         @Override
-        public void read( long pageId, Page page ) throws IOException
+        public void read( long filePageId, Page page ) throws IOException
         {
             page.swapIn( channel, 0, buffer.limit() );
         }
 
         @Override
-        public void write( long pageId, Page page ) throws IOException
+        public void write( long filePageId, Page page ) throws IOException
         {
             page.swapOut( channel, 0, buffer.limit() );
         }

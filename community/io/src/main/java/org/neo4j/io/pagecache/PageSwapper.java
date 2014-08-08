@@ -29,9 +29,23 @@ import java.io.IOException;
  */
 public interface PageSwapper
 {
-    void read( long pageId, Page page ) throws IOException;
+    /**
+     * Read the page with the given filePageId, from the concrete file on the
+     * file system, into the given page.
+     *
+     * This should be implemented using the
+     * {@link Page#swapIn(org.neo4j.io.fs.StoreChannel, long, int)} method.
+     */
+    void read( long filePageId, Page page ) throws IOException;
 
-    void write( long pageId, Page page ) throws IOException;
+    /**
+     * Write the contents of the given page, to the concrete file on the file
+     * system, at the located indicated by the given filePageId.
+     *
+     * This should be implemented using the
+     * {@link Page#swapOut(org.neo4j.io.fs.StoreChannel, long, int)} method.
+     */
+    void write( long filePageId, Page page ) throws IOException;
 
     /**
      * Notification that a page has been evicted, used to clean up state in structures
@@ -39,11 +53,25 @@ public interface PageSwapper
      */
     void evicted( long pageId );
 
+    /**
+     * Get the human-readable name for the file that this PageSwapper represents.
+     */
     String fileName();
 
+    /**
+     * Close and release all resources associated with the file underlying this
+     * PageSwapper.
+     */
     void close() throws IOException;
 
+    /**
+     * Synchronise all writes done by this PageSwapper, with the underlying
+     * storage device.
+     */
     void force() throws IOException;
 
+    /**
+     * Get the filePageId of the last page in the concrete file.
+     */
     long getLastPageId() throws IOException;
 }
