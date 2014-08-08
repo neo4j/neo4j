@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.helpers.collection.Iterables.iterable;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
-
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Arrays;
@@ -31,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -105,6 +101,11 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.Iterables.iterable;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
@@ -303,7 +304,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterClient = new ClusterClient( monitors, ClusterClient.adapt( config ), logging,
                 electionCredentialsProvider,
                 objectStreamFactory, objectStreamFactory );
-        PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( monitors, clusterClient, clusterClient,
+        PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging, new Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
         {
             @Override
@@ -326,7 +327,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 }
                 return true;
             }
-        }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory
+        }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory, monitors
         );
 
         // Force a reelection after we enter the cluster

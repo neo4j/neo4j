@@ -84,13 +84,14 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     private ObjectInputStreamFactory lenientObjectInputStream;
     private ObjectOutputStreamFactory lenientObjectOutputStream;
 
-    public PaxosClusterMemberEvents(Monitors monitors, final Snapshot snapshot, Cluster cluster, Heartbeat heartbeat,
+    public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, Heartbeat heartbeat,
                                     AtomicBroadcast atomicBroadcast, Logging logging,
                                     Predicate<ClusterMembersSnapshot> validator,
                                     Function2<Iterable<MemberIsAvailable>, MemberIsAvailable,
-                                            Iterable<MemberIsAvailable>> snapshotFilter,
+                                    Iterable<MemberIsAvailable>> snapshotFilter,
                                     ObjectInputStreamFactory lenientObjectInputStream,
-                                    ObjectOutputStreamFactory lenientObjectOutputStream)
+                                    ObjectOutputStreamFactory lenientObjectOutputStream,
+                                    Monitors monitors )
     {
         this.monitors = monitors;
         this.snapshot = snapshot;
