@@ -9,7 +9,7 @@
       a.toggle-table(ng-class='{active: isActive("table")}', ng-click='setActive("table")') Table
     a.button.fa.fa-download(exportable ng-click='exportJSON(frame.response)', tooltip-placement='bottom', tooltip='Export JSON', ng-show='frame.exportable')
     a.button.fa.fa-expand(ng-click="toggleFullscreen(true)", tooltip-placement='bottom', tooltip='Fullscreen', ng-show='frame.fullscreenable')
-    a.button.fa.fa-times-circle(ng-click='frames.remove(frame)', tooltip-placement='bottom', tooltip='Remove')
+    a.button.fa.fa-times-circle(ng-click='frames.close(frame)', tooltip-placement='bottom', tooltip='Remove')
   .status
     //- div(class="label label-default label-{{frame.type | lowercase}}") {{frame.type | uppercase}}
     span.prompt.code(ng-if='frame.type == "cypher"') $

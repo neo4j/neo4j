@@ -84,7 +84,7 @@ angular.module('neo4jApp.services')
           (result) =>
             if not result
               q.reject()
-            else if result.errors.length > 0
+            else if result.errors && result.errors.length > 0
               q.reject(result.errors)
             else
               results = []
@@ -97,6 +97,7 @@ angular.module('neo4jApp.services')
       class CypherTransaction
         constructor: () ->
           @_reset()
+          delegate = null
 
         _onSuccess: () ->
 
@@ -110,16 +111,17 @@ angular.module('neo4jApp.services')
         begin: (query) ->
           statements = if query then [{statement:query}] else []
           q = $q.defer()
-          Server.transaction(
+          rr = Server.transaction(
             path: ""
             statements: statements
           ).success(
             (r) =>
-              @id = parseId(r.data.commit)
+              @id = parseId(r.commit)
+              @delegate?.transactionStarted.call(@delegate, @id, @)
               q.resolve(r)
             (r) => q.reject(r)
           )
-          promiseResult(q.promise)
+          promiseResult rr
 
         execute: (query) ->
           return @begin(query) unless @id
@@ -134,32 +136,35 @@ angular.module('neo4jApp.services')
           statements = if query then [{statement:query}] else []
           if @id
             q = $q.defer()
-            Server.transaction(
+            rr = Server.transaction(
               path: "/#{@id}/commit"
               statements: statements
             ).success(
               (r) =>
+                @delegate?.transactionFinished.call(@delegate, @id)
                 @_reset()
                 q.resolve(r)
               (r) => q.reject(r)
             )
-            promiseResult(q.promise)
+            promiseResult(rr)
           else
             promiseResult(Server.transaction(
               path: "/commit"
               statements: statements
             ))
 
-        # FIXME: What is wrong?
-        # DELETE http://localhost:7474/db/data/transaction/14 415 (Unsupported Media Type)
         rollback: ->
           return unless @id
           Server.transaction(
             method: 'DELETE'
             path: '/' + @id
+            statements: []
           ).success(=> @_reset())
 
       class CypherService
+        constructor: () ->
+          @_active_requests = {}
+
         profile: (query) ->
           q = $q.defer()
           Server.cypher('?profile=true', {query: query})
@@ -169,9 +174,26 @@ angular.module('neo4jApp.services')
 
         send: (query) -> # Deprecated
           @transaction().commit(query)
+        
+        getTransactionIDs: () ->
+          Object.keys(@_active_requests)
 
         transaction: ->
-          new CypherTransaction()
+          transaction = new CypherTransaction()
+          transaction.delegate = @
+          transaction
+
+        transactionStarted: (id, transaction) ->
+          @_active_requests[id] = transaction
+
+        transactionFinished: (id) ->
+          if @_active_requests[id] != 'undefined'
+            delete @_active_requests[id]
+
+        rollbackAllTransactions: () =>
+          ids = @getTransactionIDs()
+          ids?.forEach (d, i) ->
+            @_active_requests[i].rollback()
 
       window.Cypher = new CypherService()
 ]

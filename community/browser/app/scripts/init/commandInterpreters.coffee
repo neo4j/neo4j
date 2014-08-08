@@ -276,20 +276,26 @@ angular.module('neo4jApp')
       exec: ['Cypher', 'CypherGraphModel', (Cypher, CypherGraphModel) ->
         # Return the function that handles the input
         (input, q) ->
-          Cypher.transaction().commit(input).then(
-            (response) ->
-              if response.size > Settings.maxRows
-                q.reject(error("Resultset too large (over #{Settings.maxRows} rows)"))
-              else
+          current_transaction = Cypher.transaction()
 
-                q.resolve(
-                  table: response
-                  graph: extractGraphModel(response, CypherGraphModel)
-                )
-          ,
-          q.reject
+          r = current_transaction.begin().then(
+            (begin_response) ->
+              current_transaction.commit(input).then(
+                    (response) ->
+                      if response.size > Settings.maxRows
+                        q.reject(error("Resultset too large (over #{Settings.maxRows} rows)"))
+                      else
+                        q.resolve(
+                          table: response
+                          graph: extractGraphModel(response, CypherGraphModel)
+                        )
+                ,
+                q.reject
+              )
+            ,
+            q.reject
           )
-
+          q.promise.transaction = current_transaction
           q.promise
       ]
 

@@ -61,11 +61,19 @@ angular.module('neo4jApp.services')
             @detailedErrorText = no
             @hasErrors = no
             @isLoading = yes
+            @isTerminating = no
             @response  = null
             @templateUrl = intr.templateUrl
             timer = Timer.start()
             @startTime = timer.started()
-            $q.when(intrFn(query, $q.defer())).then(
+            intrPromise = intrFn(query, $q.defer())
+            @terminate = => 
+              @isTerminating = yes
+              intrPromise.transaction?.rollback()?.then( =>
+                @isTerminating = no
+              )
+
+            $q.when(intrPromise).then(
               (result) =>
                 @isLoading = no
                 @response = result
@@ -102,8 +110,12 @@ angular.module('neo4jApp.services')
             if frame
               # Make sure we don't create more frames than allowed
               @add(frame.exec())
-              @remove(@first()) until @length <= Settings.maxFrames
+              @close(@first()) until @length <= Settings.maxFrames
             frame or rv
+
+          close: (frame) ->
+            @remove(frame)
+            frame.terminate()
 
           interpreterFor: (input = '') ->
             intr = null
