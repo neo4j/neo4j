@@ -332,7 +332,7 @@ public abstract class AbstractNeo4jTestCase
                 throw new FileNotFoundException( "Could not find resource '" + resource + "' to unzip" );
             }
             ZipInputStream zipStream = new ZipInputStream( source );
-            ZipEntry entry = null;
+            ZipEntry entry;
             byte[] scratch = new byte[8096];
             while ( (entry = zipStream.getNextEntry()) != null )
             {
@@ -342,8 +342,8 @@ public abstract class AbstractNeo4jTestCase
                 }
                 else
                 {
-                    OutputStream file = new BufferedOutputStream( new FileOutputStream( new File( dir, entry.getName() ) ) );
-                    try
+                    try ( OutputStream file =
+                                  new BufferedOutputStream( new FileOutputStream( new File( dir, entry.getName() ) ) ) )
                     {
                         long toCopy = entry.getSize();
                         while ( toCopy > 0 )
@@ -352,10 +352,6 @@ public abstract class AbstractNeo4jTestCase
                             file.write( scratch, 0, read );
                             toCopy -= read;
                         }
-                    }
-                    finally
-                    {
-                        file.close();
                     }
                 }
                 zipStream.closeEntry();

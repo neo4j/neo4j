@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.nioneo.store.TransactionIdStore.BASE_TX_ID;
 
 /**
 * Factory for Store implementations. Can also be used to create empty stores.
@@ -266,6 +267,7 @@ public class StoreFactory
         neoStore.setCreationTime( storeId.getCreationTime() );
         neoStore.setRandomNumber( storeId.getRandomId() );
         neoStore.setCurrentLogVersion( 0 );
+        neoStore.setLastCommittingAndClosedTransactionId( BASE_TX_ID );
         neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         neoStore.setGraphNextProp( -1 );
 

@@ -22,8 +22,7 @@ package org.neo4j.kernel.lifecycle;
 /**
  * Adapter for Lifecycle interface. Subclass and override methods as needed
  */
-public class LifecycleAdapter
-    implements Lifecycle
+public class LifecycleAdapter implements Lifecycle
 {
     @Override
     public void init()

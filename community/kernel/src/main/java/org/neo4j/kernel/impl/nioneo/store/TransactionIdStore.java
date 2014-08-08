@@ -27,6 +27,9 @@ package org.neo4j.kernel.impl.nioneo.store;
  */
 public interface TransactionIdStore
 {
+    // Tx id counting starting from this value (this value means no transaction in the log)
+    public static final long BASE_TX_ID = 1;
+
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented
      * with each call.

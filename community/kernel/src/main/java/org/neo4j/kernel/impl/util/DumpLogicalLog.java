@@ -134,7 +134,7 @@ public class DumpLogicalLog
 
     public static Printer getPrinter( Args args )
     {
-        boolean toFile = args.getBoolean( "tofile", false, true ).booleanValue();
+        boolean toFile = args.getBoolean( "tofile", false, true );
         return toFile ? new FilePrinter() : SYSTEM_OUT_PRINTER;
     }
 
