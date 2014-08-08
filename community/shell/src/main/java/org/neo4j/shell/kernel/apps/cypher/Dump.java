@@ -26,7 +26,6 @@ import java.rmi.RemoteException;
 import org.neo4j.cypher.export.CypherResultSubGraph;
 import org.neo4j.cypher.export.DatabaseSubGraph;
 import org.neo4j.cypher.export.SubGraph;
-import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
