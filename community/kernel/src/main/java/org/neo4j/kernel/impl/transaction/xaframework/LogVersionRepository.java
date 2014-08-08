@@ -33,8 +33,8 @@ public interface LogVersionRepository
     long getCurrentLogVersion();
 
     /**
-     * Increments and returns the latest log version for this repository. It does so
-     * atomically and can potentially block.
+     * Increments (making sure it is persisted on disk) and returns the latest log version for this repository.
+     * It does so atomically and can potentially block.
      */
     long incrementAndGetVersion() throws IOException;
 }

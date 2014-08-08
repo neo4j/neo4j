@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.lang.System.currentTimeMillis;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -59,6 +58,8 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 
+import static java.lang.System.currentTimeMillis;
+
 /**
  * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
@@ -76,25 +77,26 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final UpdateableSchemaState schemaState;
     private final StatementOperationParts operations;
     private final boolean readOnly;
+    private Locks.Client locks;
 
     // State
-    private final Locks.Client locks;
-    private TransactionType transactionType = TransactionType.ANY;
-    private boolean closing, closed;
-    private TxStateImpl txState;
-    private TransactionHooks.TransactionHooksState hooksState;
     private final TransactionRecordState recordState;
+    private TxStateImpl txState;
+    private TransactionType transactionType = TransactionType.ANY;
+    private TransactionHooks.TransactionHooksState hooksState;
+    private boolean closing, closed;
     private boolean failure, success;
     private volatile boolean terminated;
 
     // For committing
-    private final TransactionHeaderInformation headerInformation;
+    private TransactionHeaderInformation headerInformation;
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final TransactionIdStore transactionIdStore;
     private final PersistenceCache persistenceCache;
     private final StoreReadLayer storeLayer;
     private final LegacyIndexTransactionState legacyIndexTransactionState;
+    private final Pool<KernelTransactionImplementation> pool;
 
     public KernelTransactionImplementation( StatementOperationParts operations, boolean readOnly,
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
@@ -110,7 +112,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionIdStore transactionIdStore,
                                             PersistenceCache persistenceCache,
                                             StoreReadLayer storeLayer,
-                                            LegacyIndexTransactionState legacyIndexTransaction )
+                                            LegacyIndexTransactionState legacyIndexTransaction,
+                                            Pool<KernelTransactionImplementation> pool)
     {
         this.operations = operations;
         this.readOnly = readOnly;
@@ -130,7 +133,21 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.persistenceCache = persistenceCache;
         this.storeLayer = storeLayer;
         this.legacyIndexTransactionState = legacyIndexTransaction;
+        this.pool = pool;
         this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
+    }
+
+    /** Reset this transaction to a vanilla state, turning it into a logically new transaction. */
+    public KernelTransactionImplementation initialize( TransactionHeaderInformation txHeader, long lastCommittedTx )
+    {
+        this.headerInformation = txHeader;
+        this.terminated = closing = closed = failure = success = false;
+        this.transactionType = TransactionType.ANY;
+        this.hooksState = null;
+        this.txState = null; // TODO: Implement txState.clear() instead, to re-use data structures
+        this.legacyIndexTransactionState.initialize();
+        this.recordState.initialize( lastCommittedTx );
+        return this;
     }
 
     @Override
@@ -154,13 +171,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public void markForTermination()
     {
-        failure = true;
-        terminated = true;
-    }
-
-    private void release()
-    {
-        locks.close();
+        if ( !terminated )
+        {
+            failure = true;
+            terminated = true;
+            transactionMonitor.transactionTerminated();
+        }
     }
 
     /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
@@ -265,7 +281,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( !hasTxState() )
         {
-            txState = new TxStateImpl( recordState, legacyIndexTransactionState );
+            txState = new TxStateImpl( legacyIndexTransactionState );
         }
         return txState;
     }
@@ -371,6 +387,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     {
                         DefinedProperty prop = added.next();
                         recordState.graphAddProperty( prop.propertyKeyId(), prop.value() );
+                    }
+                }
+
+                @Override
+                public void visitNodeLabelChanges( long id, Iterator<Integer> added, Iterator<Integer> removed )
+                {
+                    while(removed.hasNext())
+                    {
+                        recordState.removeLabelFromNode( removed.next(), id );
+                    }
+
+                    while(added.hasNext())
+                    {
+                        recordState.addLabelToNode( added.next(), id );
                     }
                 }
 
@@ -646,5 +676,30 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             transactionMonitor.transactionFinished( false );
         }
+    }
+
+    /** Release resources held up by this transaction & return it to the transaction pool. */
+    private void release()
+    {
+        locks.releaseAll();
+        pool.release( this );
+    }
+
+    /**
+     * To be called if this transaction is to be thrown away entirely. This is important, as without this call
+     * lock clients will not be returned to their pool.
+     */
+    public void dispose()
+    {
+        if(locks != null)
+        {
+            locks.close();
+        }
+
+        this.locks = null;
+        this.headerInformation = null;
+        this.transactionType = null;
+        this.hooksState = null;
+        this.txState = null;
     }
 }

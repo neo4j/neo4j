@@ -37,20 +37,13 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
     }
 
     @Override
-    public boolean hasMoreData() throws IOException
-    {
-        return delegate.readableBytes() > 0;
-    }
-
-    @Override
     public byte get() throws IOException
     {
         if ( delegate.readableBytes() < 1 )
         {
             throw new ReadPastEndException();
         }
-        byte value = delegate.readByte();
-        return value;
+        return delegate.readByte();
     }
 
     @Override

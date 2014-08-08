@@ -172,7 +172,7 @@ public class IndexingService extends LifecycleAdapter
             SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
             InternalIndexState initialState = provider.getInitialState( indexId );
 
-            logger.info( format( "IndexingService.initIndexes: index on %s is %s",
+            logger.info( format( "IndexingService.init: index on %s is %s",
                     descriptor.userDescription( tokenNameLookup ), initialState ) );
 
             boolean constraint = indexRule.isConstraintIndex();
@@ -201,7 +201,7 @@ public class IndexingService extends LifecycleAdapter
         indexMapReference.setIndexMap( indexMap );
     }
 
-    // Recovery semantics: This is to be called after initIndexes, and after the database has run recovery.
+    // Recovery semantics: This is to be called after init, and after the database has run recovery.
     @Override
     public void start() throws IOException
     {

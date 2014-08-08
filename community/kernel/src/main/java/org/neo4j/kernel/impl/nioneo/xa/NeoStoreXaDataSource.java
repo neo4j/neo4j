@@ -19,19 +19,15 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
@@ -39,15 +35,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Factory;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -57,7 +50,7 @@ import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;
 import org.neo4j.kernel.impl.api.GuardingStatementOperations;
 import org.neo4j.kernel.impl.api.Kernel;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
@@ -73,7 +66,6 @@ import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.statistics.StatisticsService;
 import org.neo4j.kernel.impl.api.statistics.StatisticsServiceRepository;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
@@ -111,18 +103,12 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
-import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
@@ -134,7 +120,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformatio
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategy;
+import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -146,9 +137,12 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
+    private KernelTransactions kernelTransactions;
 
     @SuppressWarnings( "deprecation" )
     public static abstract class Configuration
@@ -175,21 +169,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private final UpdateableSchemaState updateableSchemaState;
     private final Config config;
     private final LockService lockService;
-    private LifeSupport life;
-    private KernelAPI kernel;
-    private NeoStore neoStore;
-    private IndexingService indexingService;
-    private SchemaIndexProvider indexProvider;
-    private IntegrityValidator integrityValidator;
-    private NeoStoreFileListing fileListing;
-    private File storeDir;
-    private boolean readOnly;
-    private CacheAccessBackDoor cacheAccess;
-    private AutoLoadingCache<NodeImpl> nodeCache;
-    private AutoLoadingCache<RelationshipImpl> relationshipCache;
-    private PersistenceCache persistenceCache;
-    private SchemaCache schemaCache;
-    private LabelScanStore labelScanStore;
+
     private final IndexingService.Monitor indexingServiceMonitor;
     private final FileSystemAbstraction fs;
     private final StoreUpgrader storeMigrationProcess;
@@ -198,25 +178,37 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private final TxIdGenerator txIdGenerator;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final StartupStatisticsProvider startupStatistics;
-    private CacheLayer storeLayer;
     private final Caches cacheProvider;
     private final NodeManager nodeManager;
     private final CommitProcessFactory commitProcessFactory;
 
+    private LifeSupport life;
+    private KernelAPI kernel;
+    private NeoStore neoStore;
+    private IndexingService indexingService;
+    private SchemaIndexProvider indexProvider;
+    private NeoStoreFileListing fileListing;
+    private File storeDir;
+    private boolean readOnly;
+    private AutoLoadingCache<NodeImpl> nodeCache;
+    private AutoLoadingCache<RelationshipImpl> relationshipCache;
+    private SchemaCache schemaCache;
+    private LabelScanStore labelScanStore;
+    private CacheLayer storeLayer;
     private LogFile logFile;
-    private LogicalTransactionStore logicalTransactionStore;
-    private TransactionCommitProcess commitProcess;
 
     private final AtomicInteger recoveredCount = new AtomicInteger();
-    private StatementOperationParts statementOperations;
     private final Guard guard;
+//=======
+//    private CacheAccessBackDoor cacheAccess;
+//    private PersistenceCache persistenceCache;
+//    private SchemaCache schemaCache;
+//>>>>>>> 2.1-maint
 
     // Legacy index
     private IndexConfigStore indexConfigStore;
-    private LegacyIndexStore legacyIndexStore;
     private final Map<String, IndexImplementation> indexProviders = new HashMap<>();
     private final ProviderLookup legacyIndexProviderLookup;
-    private TransactionRepresentationStoreApplier storeApplier;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -306,10 +298,14 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                  Logging logging, UpdateableSchemaState updateableSchemaState,
                                  TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
                                  PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
+//<<<<<<< HEAD
                                  RelationshipTypeTokenHolder relationshipTypeTokens, Locks lockManager,
+//=======
+//                                 RelationshipTypeTokenHolder relationshipTypeTokens,
+//                                 PersistenceManager persistenceManager,
+//>>>>>>> 2.1-maint
                                  SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
                                  IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
-                                 Function <NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory,
                                  StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
                                  KernelHealth kernelHealth, TxIdGenerator txIdGenerator,
                                  TransactionHeaderInformationFactory transactionHeaderInformationFactory,
@@ -325,7 +321,11 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         this.propertyKeyTokenHolder = propertyKeyTokens;
         this.labelTokens = labelTokens;
         this.relationshipTypeTokens = relationshipTypeTokens;
+//<<<<<<< HEAD
         this.locks = lockManager;
+//=======
+//        this.persistenceManager = persistenceManager;
+//>>>>>>> 2.1-maint
         this.schemaWriteGuard = schemaWriteGuard;
         this.transactionEventHandlers = transactionEventHandlers;
         this.indexingServiceMonitor = indexingServiceMonitor;
@@ -408,15 +408,16 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 relationshipLoader( neoStore.getRelationshipStore() ) );
         RelationshipLoader relationshipLoader = new RelationshipLoader( relationshipCache, new RelationshipChainLoader(
                 neoStore ) );
-        persistenceCache = new PersistenceCache( nodeCache, relationshipCache, nodeManager,
+        PersistenceCache persistenceCache = new PersistenceCache( nodeCache, relationshipCache, nodeManager,
                 relationshipLoader, propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
-        cacheAccess = new BridgingCacheAccess( schemaCache, updateableSchemaState, persistenceCache );
+        CacheAccessBackDoor cacheAccess = new BridgingCacheAccess( schemaCache, updateableSchemaState,
+                persistenceCache );
         try
         {
             indexingService = new IndexingService( scheduler, providerMap, new NeoStoreIndexStoreView(
                     lockService, neoStore ), tokenNameLookup, updateableSchemaState, indexRuleLoader(), logging,
                     indexingServiceMonitor ); // TODO 2.2-future What index rules should be
-            integrityValidator = new IntegrityValidator( neoStore, indexingService );
+            final IntegrityValidator integrityValidator = new IntegrityValidator( neoStore, indexingService );
             labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                     LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore();
             fileListing = new NeoStoreFileListing( storeDir, labelScanStore, indexingService,
@@ -432,14 +433,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             storeLayer = new CacheLayer( new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService ),
                     persistenceCache, indexingService, schemaCache );
-
-            // CHANGE STARTS HERE
-            VersionAwareLogEntryReader logEntryReader =
-                    new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
-            // Recovery process ties log and commit process together
-            RecoveryVisitor recoveryVisitor = new RecoveryVisitor();
-            Visitor<ReadableLogChannel, IOException> logFileRecoverer =
-                    new LogFileRecoverer( logEntryReader, recoveryVisitor );
 
             LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
                     nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
@@ -460,18 +453,16 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                 @Override
                                 public long getTimestampForVersion( long version ) throws IOException
                                 {
-
                                     try ( ReadableLogChannel channel = logFile.getReader(
                                             new LogPosition( version, VersionAwareLogEntryReader.LOG_HEADER_SIZE ) ) )
                                     {
-                                        LogEntryReader<ReadableLogChannel> reader =
-                                                new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
+                                        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader();
                                         LogEntry entry;
                                         while ( (entry = reader.readLogEntry( channel )) != null )
                                         {
-                                            if ( entry instanceof LogEntry.Start )
+                                            if ( entry instanceof LogEntryStart )
                                             {
-                                                return ((LogEntry.Start) entry).getTimeWritten();
+                                                return ((LogEntryStart) entry).getTimeWritten();
                                             }
                                         }
                                     }
@@ -482,55 +473,56 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
                     logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
 
+            final TransactionRepresentationStoreApplier storeApplier = dependencies.satisfyDependency( new
+                    TransactionRepresentationStoreApplier(
+                    indexingService, labelScanStore, neoStore,
+                    cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore ) );
+
+            RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeApplier, recoveredCount );
+            Visitor<ReadableLogChannel, IOException> logFileRecoverer =
+                    new LogFileRecoverer( new VersionAwareLogEntryReader(), recoveryVisitor );
             logFile = dependencies.satisfyDependency( new PhysicalLogFile( fs, logFiles,
                     config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), logPruneStrategy, neoStore,
                     neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
                     this, transactionMetadataCache, logFileRecoverer ) );
 
-            logicalTransactionStore = dependencies.satisfyDependency( LogicalTransactionStore.class,
-                    new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
-                            transactionMetadataCache, logEntryReader, neoStore ) );
+            final LogicalTransactionStore logicalTransactionStore = dependencies.satisfyDependency(
+                    LogicalTransactionStore.class, new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
+                            transactionMetadataCache, neoStore ));
 
-            storeApplier = dependencies.satisfyDependency( new TransactionRepresentationStoreApplier(
-                    indexingService, labelScanStore, neoStore,
-                    cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore ) );
+            TransactionCommitProcess transactionCommitProcess = dependencies.satisfyDependency( TransactionCommitProcess.class,
+                                        commitProcessFactory.create( logicalTransactionStore, kernelHealth,
+                                                neoStore, storeApplier,
+                                                new NeoStoreInjectedTransactionValidator( integrityValidator ), false ));
 
-
-
-            Factory<KernelTransaction> transactionFactory = new Factory<KernelTransaction>()
+            /*
+             * This is used by legacy indexes and constraint indexes whenever a transaction is to be spawned
+             * from within an existing transaction. It smells, and we should look over alternatives when time permits.
+             */
+            Provider<KernelAPI> kernelProvider = new Provider<KernelAPI>()
             {
                 @Override
-                public KernelTransaction newInstance()
+                public KernelAPI instance()
                 {
-
-
-                    commitProcess = dependencies.satisfyDependency( TransactionCommitProcess.class,
-                            commitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore, storeApplier,
-                                    new NeoStoreInjectedTransactionValidator( integrityValidator ), false ) );
-
-                    checkIfShutdown();
-                    NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
-                    Locks.Client locksClient = locks.newClient();
-                    context.bind( locksClient );
-                    TransactionRecordState neoStoreTransaction = new TransactionRecordState(
-                            neoStore.getLastCommittingTransactionId(), neoStore, integrityValidator, context );
-                    ConstraintIndexCreator constraintIndexCreator =
-                            new ConstraintIndexCreator( kernel, indexingService );
-                    LegacyIndexTransactionState legacyIndexTransactionState =
-                            new LegacyIndexTransactionState( indexConfigStore, legacyIndexProviderLookup );
-                    return new KernelTransactionImplementation( statementOperations, readOnly, schemaWriteGuard,
-                            labelScanStore, indexingService, updateableSchemaState, neoStoreTransaction, providerMap,
-                            neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory.create(),
-                            commitProcess, transactionMonitor, neoStore, persistenceCache, storeLayer,
-                            legacyIndexTransactionState );
+                    return kernel;
                 }
             };
 
-            kernel = new Kernel( statisticsService, transactionFactory, hooks, kernelHealth, transactionMonitor );
-            legacyIndexStore = new LegacyIndexStore( config, indexConfigStore, kernel, legacyIndexProviderLookup );
+            ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService);
 
-            this.statementOperations = buildStatementOperations( storeLayer, legacyPropertyTrackers,
-                    indexingService, kernel, updateableSchemaState, guard, legacyIndexStore );
+            LegacyIndexStore legacyIndexStore = new LegacyIndexStore( config, indexConfigStore, kernelProvider,
+                    legacyIndexProviderLookup );
+
+            StatementOperationParts statementOperations = buildStatementOperations( storeLayer, legacyPropertyTrackers,
+                    constraintIndexCreator, updateableSchemaState, guard, legacyIndexStore );
+
+            kernelTransactions = life.add(new KernelTransactions( neoStoreTransactionContextSupplier,
+                    neoStore, locks, integrityValidator, constraintIndexCreator, indexingService, labelScanStore,
+                    statementOperations, updateableSchemaState, schemaWriteGuard, providerMap,
+                    transactionHeaderInformationFactory, persistenceCache, storeLayer, transactionCommitProcess, indexConfigStore,
+                    legacyIndexProviderLookup, hooks, transactionMonitor, life, readOnly ));
+
+            kernel = new Kernel( statisticsService, kernelTransactions, hooks, kernelHealth, transactionMonitor );
 
             life.add( logFile );
             life.add( logicalTransactionStore );
@@ -541,43 +533,35 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 {
                     startupStatistics.setNumberOfRecoveredTransactions( recoveredCount.get() );
                     recoveredCount.set( 0 );
-
-                    // Add schema rules
-                    for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAllSchemaRules() ) )
-                    {
-                        schemaCache.addSchemaRule( schemaRule );
-                    }
+                    loadSchemaCache();
                 }
             } );
             life.add( statisticsService );
+            life.add( new LifecycleAdapter()
+            {
+                @Override
+                public void start()
+                {
+                    neoStore.makeStoreOk();
+                }
+            } );
             life.add( indexingService );
             life.add( labelScanStore );
-
-            // ENDS HERE
 
             kernel.registerTransactionHook( transactionEventHandlers );
             neoStore.setRecoveredStatus( true );
             try
             {
-                // Recovery happens in here. Recovery status is needed both in init and start,
-                // init reads which log version to read from.
-                // start reads the log and performs recovery.
-                // Basically.
                 life.start();
-                recoveryVisitor.applyLastCommittedTransactionIdIfRecoveryTookPlace( neoStore );
             }
             finally
             {
                 neoStore.setRecoveredStatus( false );
             }
 
-            neoStore.makeStoreOk();
-
-            propertyKeyTokenHolder.addTokens( ((TokenStore<?>) neoStore.getPropertyKeyTokenStore())
-                    .getTokens( Integer.MAX_VALUE ) );
-            relationshipTypeTokens.addTokens( ((TokenStore<?>) neoStore.getRelationshipTypeTokenStore())
-                    .getTokens( Integer.MAX_VALUE ) );
-            labelTokens.addTokens( ((TokenStore<?>) neoStore.getLabelTokenStore()).getTokens( Integer.MAX_VALUE ) );
+            propertyKeyTokenHolder.addTokens( neoStore.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
+            relationshipTypeTokens.addTokens( neoStore.getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
+            labelTokens.addTokens( neoStore.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
         }
         catch ( Throwable e )
         { // Something unexpected happened during startup
@@ -593,27 +577,12 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         }
     }
 
-    private class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation, IOException>
+    private void loadSchemaCache()
     {
-        private long lastTransactionIdApplied = -1;
-
-        public void applyLastCommittedTransactionIdIfRecoveryTookPlace(
-                TransactionIdStore transactionIdStore )
+        schemaCache.clear();
+        for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAllSchemaRules() ) )
         {
-            if ( lastTransactionIdApplied != -1 )
-            {
-                transactionIdStore.setLastCommittingAndClosedTransactionId( lastTransactionIdApplied );
-            }
-        }
-
-        @Override
-        public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
-        {
-            long txId = transaction.getCommitEntry().getTxId();
-            storeApplier.apply( transaction.getTransactionRepresentation(), txId, true );
-            recoveredCount.incrementAndGet();
-            lastTransactionIdApplied = txId;
-            return true;
+            schemaCache.addSchemaRule( schemaRule );
         }
     }
 
@@ -706,12 +675,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             forceEverything();
         }
         life.shutdown();
-        // TODO 2.2-future
-        //        if ( logApplied )
-        //        {
-        //            neoStore.rebuildIdGenerators();
-        //            logApplied = false;
-        //        }
         neoStore.close();
         msgLog.info( "NeoStore closed" );
     }
@@ -719,13 +682,13 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     @Override
     public void forceEverything()
     {
-        neoStore.flush();
         indexingService.flushAll();
         labelScanStore.force();
         for ( IndexImplementation index : indexProviders.values() )
         {
             index.force();
         }
+        neoStore.flush();
     }
 
     @Override
@@ -832,14 +795,14 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
     private StatementOperationParts buildStatementOperations(
             StoreReadLayer storeReadLayer, LegacyPropertyTrackers legacyPropertyTrackers,
-            IndexingService indexingService, KernelAPI kernel, UpdateableSchemaState updateableSchemaState,
+            ConstraintIndexCreator constraintIndexCreator, UpdateableSchemaState updateableSchemaState,
             Guard guard, LegacyIndexStore legacyIndexStore )
     {
         // Bottom layer: Read-access to committed data
         StoreReadLayer storeLayer = storeReadLayer;
         // + Transaction state handling
         StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations( storeLayer,
-                legacyPropertyTrackers, new ConstraintIndexCreator( kernel, indexingService ),
+                legacyPropertyTrackers, constraintIndexCreator,
                 legacyIndexStore );
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
@@ -869,14 +832,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         return parts;
     }
 
-    private void checkIfShutdown()
-    {
-        if ( !life.isRunning() )
-        {
-            throw new DatabaseShutdownException();
-        }
-    }
-
     @Override
     public void registerIndexProvider( String name, IndexImplementation index )
     {
@@ -891,5 +846,18 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     {
         IndexImplementation removed = indexProviders.remove( name );
         return removed != null;
+    }
+
+    /**
+     * Hook that must be called whenever there is an HA mode switch (eg master/slave switch).
+     * This must only be called when the database is otherwise inaccessible.
+     */
+    public void afterModeSwitch()
+    {
+        loadSchemaCache();
+
+        // Stop all running transactions and get rid of all pooled transactions, as they will otherwise reference
+        // components that have been swapped out during the mode switch.
+        kernelTransactions.disposeAll();
     }
 }

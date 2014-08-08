@@ -30,7 +30,6 @@
   <modules>
     <module>com</module>
     <module>cluster</module>
-    <module>consistency-check</module>
     <module>backup</module>
     <module>ha</module>
     <module>neo4j-enterprise</module>
@@ -86,6 +85,7 @@ terms of the relevant Commercial Agreement.
                   <excludes>
                     <exclude>org.neo4j:neo4j-cypher-compiler-1.9</exclude>
                     <exclude>org.neo4j:neo4j-cypher-compiler-2.0</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-compiler-2.1</exclude>
                   </excludes>
                 </configuration>
               </execution>

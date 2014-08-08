@@ -13,16 +13,17 @@ The object cache caches the nodes, relationships and properties in a format that
 
 .Quick info
 ***********
-* The file buffer cache is sometimes called _low level cache_ or _file system cache_.
+* The file buffer cache is sometimes called _low level cache_, _file system cache_ or _the page cache_.
 * It caches the Neo4j data as stored on the durable media.
 * It uses the operating system memory mapping features when possible.
-* Neo4j will configure the cache automatically as long as the heap size of the JVM is configured properly.
+* Neo4j will configure the cache automatically, but you might want to tune it yourself to get the most out of the available memory.
 ***********
 
 The file buffer cache caches the Neo4j data in the same format as it is represented on the durable storage media.
 The purpose of this cache layer is to improve both read and write performance.
 The file buffer cache improves write performance by writing to the cache and deferring durable write until the logical log is rotated.
 This behavior is safe since all transactions are always durably written to the logical log, which can be used to recover the store files in the event of a crash.
+It also improves write performance by batching up many small writes into fewer page-sized writes.
 
 Since the operation of the cache is tightly related to the data it stores, a short description of the Neo4j durable representation format is necessary background.
 Neo4j stores data in multiple files and relies on the underlying file system to handle this efficiently.
@@ -48,28 +49,14 @@ IMPORTANT: Note that the block sizes can only be configured at store creation ti
 [options="header",cols="<35m,<30,<35"]
 |========================================================
 | Parameter                 | Possible values   | Effect
-| use_memory_mapped_buffers | `true` or `false` |
-  If set to `true` Neo4j will use the operating systems memory mapping functionality for the file buffer cache windows.
-  If set to `false` Neo4j will use its own buffer implementation.
-  In this case the buffers will reside in the JVM heap which needs to be increased accordingly.
-  The default value for this parameter is `true`, except on Windows.
-| neostore.nodestore.db.mapped_memory             .7+^.^|
-  The maximum amount of memory to use for memory mapped buffers for this file buffer cache.
-  The default unit is `MiB`, for other units use any of the following suffixes: `B`, `k`, `M` or `G`.
-  |
-  The maximum amount of memory to use for the file buffer cache of the node storage file.
-| neostore.relationshipstore.db.mapped_memory           |
-  The maximum amount of memory to use for the file buffer cache of the relationship store file.
-| neostore.propertystore.db.index.keys.mapped_memory    |
-  The maximum amount of memory to use for the file buffer cache of the something-something file.
-| neostore.propertystore.db.index.mapped_memory         |
-  The maximum amount of memory to use for the file buffer cache of the something-something file.
-| neostore.propertystore.db.mapped_memory               |
-  The maximum amount of memory to use for the file buffer cache of the property storage file.
-| neostore.propertystore.db.strings.mapped_memory       |
-  The maximum amount of memory to use for the file buffer cache of the string property storage file.
-| neostore.propertystore.db.arrays.mapped_memory        |
-  The maximum amount of memory to use for the file buffer cache of the array property storage file.
+| mapped_memory_total_size  |
+  The maximum amount of memory to use for the file buffer cache, either in bytes
+  (or greater byte-like units, such as `100M` for 100 mega-bytes, or `4G` for 4 giga-bytes)
+  or a percentage of the available amount of memory. |
+  The amount of memory to use for mapping the store files, either in bytes or as a percentage of available memory. This will be clipped at the amount of free memory observed when the database starts, and automatically be rounded down to the nearest whole page. For example, if `500MB` is configured, but only 450MB of memory is free when the database starts, then the database will map at most 450MB. If `50%` is configured, and the system has a capacity of 4GB, then at most 2GB of memory will be mapped, unless the database observes that less than 2GB of memory is free when it starts.
+| mapped_memory_page_size | The number of bytes per page. Preferably a power-of-two that is close to the native sector size or page size of the durable medium. |
+  The size of the pages, in bytes, that the database will use for mapping the store files into memory.
+  Don't change this without carefully measuring the performance implications.
 | string_block_size .2+^.^| The number of bytes per block. |
   Specifies the block size for storing strings.
   This parameter is only honored when the store is created, otherwise it is ignored.
@@ -83,11 +70,11 @@ IMPORTANT: Note that the block sizes can only be configured at store creation ti
 | dump_configuration | `true` or `false` | If set to `true` the current configuration settings will be written to the default system output, mostly the console or the logfiles.
 |========================================================
 
-When memory mapped buffers are used (`use_memory_mapped_buffers = true`) the heap size of the JVM must be smaller than the total available memory of the computer, minus the total amount of memory used for the buffers.
-When heap buffers are used (`use_memory_mapped_buffers = false`) the heap size of the JVM must be large enough to contain all the buffers, plus the runtime heap memory requirements of the application and the object cache.
+When configuring the amount of memory allowed for the file buffers and the JVM heap, make sure to also leave room for the operating systems page cache, and other programs and services the system might want to run.
+It is important to configure the memory usage, such that the Neo4j JVM process won't need to use any swap memory, as this will cause a significant drag on the performance of the system.
 
 When reading the configuration parameters on startup Neo4j will automatically configure the parameters that are not specified.
-The cache sizes will be configured based on the available memory on the computer, how much is used by the JVM heap, and how large the storage files are.
+The cache sizes will be configured based on the available memory on the computer.
 
 == Object cache ==
 
@@ -100,26 +87,26 @@ The cache sizes will be configured based on the available memory on the computer
 The object cache caches individual nodes and relationships and their properties in a form that is optimized for fast traversal of the graph.
 There are two different categories of object caches in Neo4j.
 
-There is the reference caches.
-Here Neo4j will utilize as much as it can out of the allocated heap memory for the JVM for object caching and relies on garbage collection for eviction from the cache in an LRU manner.
-Note however that Neo4j is ``competing'' for the heap space with other objects in the same JVM, such as a your application, if deployed in embedded mode, and Neo4j will let the application ``win'' by using less memory if the application needs more.
+Firstly, there are the _reference caches_.
+With these caches, Neo4j will utilize as much of the allocated JVM heap memory as it can to hold nodes and relationships. It relies on garbage collection for eviction from the cache in an LRU manner.
+Note however that Neo4j is ``competing'' for the heap space with other objects in the same JVM, such as a your application (if deployed in embedded mode) or intermediate objects produced by Cypher queries,
+and Neo4j will yield to the application or query by using less memory for caching.
 
 NOTE: The High-Performance Cache described below is only available in the Neo4j Enterprise Edition.
 
-The other is the _High-Performance Cache_ which gets assigned a certain amount of space in the JVM heap and will purge objects whenever it grows bigger than that.
-It is assigned a maximum amount of memory which the sum of all cached objects in it will not exceed.
-Objects will be evicted from cache when the maximum size is about to be reached, instead of relying on garbage collection (GC) to make that decision.
-Here the competition with other objects in the heap as well as GC-pauses can be better controlled since the cache gets assigned a maximum heap space usage.
+The other is the _High-Performance Cache_ which gets assigned a certain maximum amount of space on the JVM heap and will purge objects whenever it grows bigger than that.
+Objects are evicted from the high performance cache when the maximum size is about to be reached, instead of relying on garbage collection (GC) to make that decision.
+With the high-performance cache, GC-pauses can be better controlled.
 The overhead of the High-Performance Cache is also much smaller as well as insert/lookup times faster than for reference caches.
 
 [TIP]
-The use of heap memory is subject to the java garbage collector -- depending on the cache type some tuning might be needed to play well with the GC at large heap sizes.
+The use of heap memory is subject to the Java Garbage Collector -- depending on the cache type some tuning might be needed to play well with the GC at large heap sizes.
 Therefore, assigning a large heap for Neo4j's sake isn't always the best strategy as it may lead to long GC-pauses.
 Instead leave some space for Neo4j's filesystem caches.
 These are outside of the heap and under under the kernel's direct control, thus more efficiently managed.
 
 The content of this cache are objects with a representation geared towards supporting the Neo4j object API and graph traversals.
-Reading from this cache is 5 to 10 times faster than reading from the file buffer cache.
+Reading from this cache may be 5 to 10 times faster than reading from the file buffer cache.
 This cache is contained in the heap of the JVM and the size is adapted to the current amount of available heap memory.
 
 Nodes and relationships are added to the object cache as soon as they are accessed.
@@ -144,14 +131,14 @@ The available cache types are:
                  Suitable for high performance traversal.
                  May run into GC issues under high load if the frequently accessed parts of the graph does not fit in the cache.
 
-                 This is the default cache implementation.
+                 This is the default cache implementation in Neo4j Community edition.
 | weak         | Provides short life span for cached objects.
                  Suitable for high throughput applications where a larger portion of the graph than what can fit into memory is frequently accessed.
 | strong       | This cache will hold on to *all data* that gets loaded to never release it again.
                  Provides good performance if your graph is small enough to fit in memory.
 | hpc          | The High-Performance Cache. Provides means of assigning a specific amount of memory to dedicate to caching loaded nodes and relationships.
                  Small footprint and fast insert/lookup. Should be the best option for most scenarios. See below on how to configure it.
-                 Note that this option is only available in the Neo4j Enterprise Edition.
+                 Note that this option is only available in Neo4j Enterprise Edition where it is the default implementation.
 |==========================================
 
 === High-Performance Cache ===

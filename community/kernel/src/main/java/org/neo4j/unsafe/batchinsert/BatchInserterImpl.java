@@ -42,7 +42,6 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
@@ -215,7 +214,6 @@ public class BatchInserterImpl implements BatchInserter
     {
         rejectAutoUpgrade( stringParams );
         Map<String, String> params = getDefaultParams();
-        params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), Settings.FALSE );
         params.putAll( stringParams );
         config = StoreFactory.configForStoreDir( new Config( params, GraphDatabaseSettings.class ),
                 new File( storeDir ) );
@@ -288,7 +286,7 @@ public class BatchInserterImpl implements BatchInserter
     private Map<String, String> getDefaultParams()
     {
         Map<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.all_stores_total_mapped_memory_size.name(), "1%" );
+        params.put( GraphDatabaseSettings.mapped_memory_total_size.name(), "1%" );
         return params;
     }
 
@@ -1017,7 +1015,7 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
-        public void assertInTransaction()
+        public void assertInUnterminatedTransaction()
         {
             // BatchInserterImpl always is expected to be running in one big single "transaction"
         }

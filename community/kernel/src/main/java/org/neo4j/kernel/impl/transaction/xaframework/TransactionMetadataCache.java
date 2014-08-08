@@ -23,7 +23,7 @@ import org.neo4j.kernel.impl.cache.LruCache;
 
 public class TransactionMetadataCache
 {
-    private final LruCache<Long, TransactionMetadata> txStartPositionCache;
+    private final LruCache<Long /*tx id*/, TransactionMetadata> txStartPositionCache;
     private final LruCache<Long /*log version*/, Long /*last committed tx*/> logHeaderCache;
 
     public TransactionMetadataCache( int headerCacheSize, int transactionCacheSize )
@@ -46,7 +46,7 @@ public class TransactionMetadataCache
     public long getLogHeader( long logVersion )
     {
         Long value = logHeaderCache.get( logVersion );
-        return value == null ? -1 : value.longValue();
+        return value == null ? -1 : value;
     }
 
     public TransactionMetadata getTransactionMetadata( long txId )
@@ -54,8 +54,8 @@ public class TransactionMetadataCache
         return txStartPositionCache.get( txId );
     }
 
-    public synchronized TransactionMetadata cacheTransactionMetadata( long txId, LogPosition position, int masterId,
-                                                                      int authorId, long checksum )
+    public TransactionMetadata cacheTransactionMetadata( long txId, LogPosition position, int masterId,
+                                                         int authorId, long checksum )
     {
         if ( position.getByteOffset() == -1 )
         {
@@ -111,6 +111,50 @@ public class TransactionMetadataCache
                     ", startPosition=" + startPosition +
                     ", checksum=" + checksum +
                     ']';
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            TransactionMetadata that = (TransactionMetadata) o;
+
+            if ( authorId != that.authorId )
+            {
+                return false;
+            }
+            if ( checksum != that.checksum )
+            {
+                return false;
+            }
+            if ( masterId != that.masterId )
+            {
+                return false;
+            }
+            if ( !startPosition.equals( that.startPosition ) )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = masterId;
+            result = 31 * result + authorId;
+            result = 31 * result + startPosition.hashCode();
+            result = 31 * result + (int) (checksum ^ (checksum >>> 32));
+            return result;
         }
     }
 }

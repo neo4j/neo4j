@@ -335,7 +335,7 @@ return coalesce(a.title, a.name)""")
     relate(a, b)
     relate(b, c)
 
-    val result = executeWithNewPlanner("cypher 1.9 start a=node(0), c=node(2) return shortestPath(a-[*]->c)").columnAs[List[Path]]("shortestPath(a-[*]->c)").toList.head.head
+    val result = eengine.execute("cypher 1.9 start a=node(0), c=node(2) return shortestPath(a-[*]->c)").columnAs[List[Path]]("shortestPath(a-[*]->c)").toList.head.head
     result.endNode() should equal(c)
     result.startNode() should equal(a)
     result.length() should equal(2)

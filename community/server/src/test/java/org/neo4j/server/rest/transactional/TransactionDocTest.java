@@ -200,8 +200,6 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      *
      * If there is no need to keep a transaction open across multiple HTTP requests, you can begin a transaction,
      * execute statements, and commit with just a single HTTP request.
-     *
-     * Note: Cypher queries with +USING PERIODIC COMMIT+ may only be executed using single request transactions (see [query-periodic-commit]).
      */
     @Test
     @Documented
@@ -260,8 +258,8 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     /**
      * Rollback an open transaction
      *
-     * Given that you have an open transaction, you can send a roll back request. The server will roll back the
-     * transaction.
+     * Given that you have an open transaction, you can send a rollback request. The server will rollback the
+     * transaction. Any further statements trying to run in this transaction will fail immediately.
      */
     @Test
     @Documented
@@ -276,7 +274,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .delete( location + "" );
+                .delete( location );
 
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );

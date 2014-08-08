@@ -20,83 +20,71 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compatability._
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
-import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompilerFactory => CypherCompilerFactory2_1}
-import org.neo4j.cypher.internal.compiler.v2_0.{CypherCompiler => CypherCompiler2_0}
-import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1}
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
-import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
-import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundQueryContext => QueryContext_v2_1}
-import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundQueryContext => QueryContext_v2_0}
-import org.neo4j.cypher.internal.spi.v1_9.{GDSBackedQueryContext => QueryContext_v1_9}
-import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundPlanContext => PlanContext_v2_1}
-import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundPlanContext => PlanContext_v2_0}
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_1}
-import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_0}
-import org.neo4j.kernel.api.{KernelAPI, Statement}
-import org.neo4j.kernel.monitoring.{Monitors=>KernelMonitors}
+import org.neo4j.kernel.InternalAbstractGraphDatabase
+import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
-
-  private val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
 }
+
+case class PreParsedQuery(statement: String, version: CypherVersion, planType: PlanType)
+
 
 class CypherCompiler(graph: GraphDatabaseService,
                      kernelAPI: KernelAPI,
                      kernelMonitors: KernelMonitors,
-                     defaultVersion: CypherVersion = CypherVersion.vDefault) {
-
+                     defaultVersion: CypherVersion = CypherVersion.vDefault,
+                     optionParser: CypherOptionParser) {
   private val queryCacheSize: Int = getQueryCacheSize
-
-  private val queryCache2_0 = new LRUCache[Object, Object](queryCacheSize)
-  private val queryCache1_9 = new LRUCache[String, Object](queryCacheSize)
-
-  val ronjaCompiler2_1 = CypherCompilerFactory2_1.ronjaCompiler(graph, queryCacheSize, kernelMonitors)
-  val legacyCompiler2_1 = CypherCompilerFactory2_1.legacyCompiler(graph, queryCacheSize, kernelMonitors)
-  val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache2_0.getOrElseUpdate(q, f))
-  val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
+  private val compatibilityFor1_9 = CompatibilityFor1_9(graph, queryCacheSize)
+  private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize)
+  private val compatibilityFor2_1 = CompatibilityFor2_1(graph, queryCacheSize, kernelMonitors, kernelAPI)
+  private val compatibilityFor2_2Legacy = CompatibilityFor2_2Legacy(graph, queryCacheSize, kernelMonitors, kernelAPI)
+  private val compatibilityFor2_2Experimental = CompatibilityFor2_2Experimental(graph, queryCacheSize, kernelMonitors, kernelAPI)
 
   @throws(classOf[SyntaxException])
-  def prepare(query: String, context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any]) = {
-    val (version, remainingQuery) = versionedQuery(query)
+  def parseQuery(queryText: String): ParsedQuery = {
+    val queryWithOptions = optionParser(queryText)
+    val preParsedQuery: PreParsedQuery = preParse(queryWithOptions)
+    val planType = preParsedQuery.planType
+    val version = preParsedQuery.version
+    val statementAsText = preParsedQuery.statement
 
     version match {
-      case CypherVersion.experimental =>
-        val (plan, extractedParameters) = ronjaCompiler2_1.prepare(remainingQuery, new PlanContext_v2_1(statement, kernelAPI, context))
-        (new ExecutionPlanWrapperForV2_1(plan), extractedParameters)
-
-      case CypherVersion.v2_1 =>
-        val (plan, extractedParameters) = legacyCompiler2_1.prepare(remainingQuery, new PlanContext_v2_1(statement, kernelAPI, context))
-        (new ExecutionPlanWrapperForV2_1(plan), extractedParameters)
-
-      case CypherVersion.v2_0 =>
-        val plan = compiler2_0.prepare(remainingQuery, new PlanContext_v2_0(statement, context))
-        (new ExecutionPlanWrapperForV2_0(plan), Map.empty)
-
-      case CypherVersion.v1_9 =>
-        val plan = compiler1_9.prepare(remainingQuery)
-        (new ExecutionPlanWrapperForV1_9(plan), Map.empty)
+      case CypherVersion.experimental => compatibilityFor2_2Experimental.produceParsedQuery(statementAsText, planType)
+      case CypherVersion.v2_2 => compatibilityFor2_2Legacy.produceParsedQuery(statementAsText, planType)
+      case CypherVersion.v2_1 if planType == Normal => compatibilityFor2_1.parseQuery(statementAsText)
+      case CypherVersion.v2_0 => compatibilityFor2_0.parseQuery(statementAsText)
+      case CypherVersion.v1_9 => compatibilityFor1_9.parseQuery(statementAsText)
     }
   }
 
-  @throws(classOf[SyntaxException])
-  def isPeriodicCommit(query: String): Boolean = {
-    val (version, remainingQuery) = versionedQuery(query)
+  private def preParse(queryWithOption: CypherQueryWithOptions): PreParsedQuery = {
 
-    version match  {
-      case CypherVersion.v2_1 => ronjaCompiler2_1.isPeriodicCommit(remainingQuery)
-      case _                  => false
+    import CollectionFrosting._
+
+    val versionOptions = queryWithOption.options.collectSingle {
+      case VersionOption(v) => CypherVersion(v)
     }
+
+    val cypherVersion = versionOptions match {
+      case Right(version) => version.getOrElse(defaultVersion)
+      case Left(versions) => throw new SyntaxException(s"You must specify only one version for a query (found: $versions)")
+    }
+
+    val planType: PlanType = queryWithOption.options.collectFirst {
+      case ExplainOption => Explained
+    }.getOrElse(Normal)
+
+    if (planType == Explained && cypherVersion != CypherVersion.v2_2)
+      throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
+
+    PreParsedQuery(queryWithOption.statement, cypherVersion, planType)
   }
-
-  private def versionedQuery(query: String): (CypherVersion, String) = query match {
-      case CypherCompiler.hasVersionDefined(versionName, tail) => (CypherVersion(versionName), tail)
-      case _                                                   => (defaultVersion, query)
-    }
 
   private def getQueryCacheSize : Int =
     optGraphAs[InternalAbstractGraphDatabase]
@@ -111,44 +99,3 @@ class CypherCompiler(graph: GraphDatabaseService,
     case (db: T) => db
   }
 }
-
-class ExecutionPlanWrapperForV2_1(inner: ExecutionPlan_v2_1) extends ExecutionPlan {
-
-  private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
-    val ctx = new QueryContext_v2_1(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
-    new ExceptionTranslatingQueryContext_v2_1(ctx)
-  }
-
-  def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-    inner.profile(queryContext(graph, txInfo), params)
-
-  def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-    inner.execute(queryContext(graph, txInfo), params)
-}
-
-class ExecutionPlanWrapperForV2_0(inner: ExecutionPlan_v2_0) extends ExecutionPlan {
-
-  private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
-    val ctx = new QueryContext_v2_0(graph, txInfo.tx, txInfo.statement)
-    new ExceptionTranslatingQueryContext_v2_0(ctx)
-  }
-
-  def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-    inner.profile(queryContext(graph, txInfo), params)
-
-  def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-    inner.execute(queryContext(graph, txInfo), params)
-}
-
-class ExecutionPlanWrapperForV1_9(inner: ExecutionPlan_v1_9) extends ExecutionPlan {
-
-  private def queryContext(graph: GraphDatabaseAPI) =
-    new QueryContext_v1_9(graph)
-
-  def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-    inner.profile(queryContext(graph), txInfo.tx, params)
-
-  def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-    inner.execute(queryContext(graph), txInfo.tx, params)
-}
-

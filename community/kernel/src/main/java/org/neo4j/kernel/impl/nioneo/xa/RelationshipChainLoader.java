@@ -123,8 +123,10 @@ public class RelationshipChainLoader
             }
             else
             {
-                throw new InvalidRecordException( "Node[" + nodeId + "] is neither firstNode[" + firstNode
-                        + "] nor secondNode[" + secondNode + "] for Relationship[" + relRecord.getId() + "]" );
+                throw new InvalidRecordException( "While loading relationships for Node[" + nodeId +
+                        "] a Relationship[" + relRecord.getId() + "] was encountered that had startNode: " + firstNode +
+                        " and endNode: " + secondNode + ", i.e. which had neither start nor end node as the node we're " +
+                        "loading relationships for" );
             }
             position = loadPosition.nextPosition( next, direction, types );
         }

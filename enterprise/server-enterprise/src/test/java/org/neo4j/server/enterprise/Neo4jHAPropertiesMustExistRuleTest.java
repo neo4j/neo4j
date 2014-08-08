@@ -39,9 +39,8 @@ public class Neo4jHAPropertiesMustExistRuleTest
     @Rule
     public TemporaryFolder folder = new TemporaryFolder(  );
 
-    // TODO 2.2-future what are these settings?
-    public static final String CONFIG_KEY_OLD_SERVER_ID = "ha.machine_id";
-    public static final String CONFIG_KEY_OLD_COORDINATORS = "ha.zoo_keeper_servers";
+    // this is used to make sure there are no duplication between the new and old configuration for server ids
+    private static final String CONFIG_KEY_OLD_SERVER_ID = "ha.machine_id";
 
     // TODO: write more tests
 
@@ -86,8 +85,6 @@ public class Neo4jHAPropertiesMustExistRuleTest
                 dbTuningFile.getAbsolutePath(), serverPropertyFile );
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
         ServerTestUtils.writePropertyToFile( CONFIG_KEY_OLD_SERVER_ID, "1", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( CONFIG_KEY_OLD_COORDINATORS,
-                "localhost:0000", dbTuningFile );
 
         assertRulePass( serverPropertyFile );
 

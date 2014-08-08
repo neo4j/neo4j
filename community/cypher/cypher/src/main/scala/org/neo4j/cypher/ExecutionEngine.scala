@@ -19,20 +19,20 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal._
-import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
-import org.neo4j.kernel.api
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.impl.util.StringLogger
-import scala.collection.JavaConverters._
 import java.util.{Map => JavaMap}
-import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+
+import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserMonitor
+import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_2.{CypherCacheMonitor, MonitoringCacheAccessor}
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.CypherCompiler
-import org.neo4j.cypher.internal.TransactionInfo
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.util.StringLogger
+import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api}
+
+import scala.collection.JavaConverters._
 
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 
@@ -50,33 +50,39 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
-  @throws(classOf[SyntaxException])
-  def profile(query: String): ExecutionResult = profile(query, Map[String, Any]())
-  @throws(classOf[SyntaxException])
-  def profile(query: String, params: JavaMap[String, Any]): ExecutionResult = profile(query, params.asScala.toMap)
+  private val parsedQueries = new LRUCache[String, ParsedQuery](getPlanCacheSize)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, params: Map[String, Any]): ExecutionResult = {
-    logger.debug(query)
-    val (plan, extractedParams, txInfo) = prepare(query)
+  def profile(query: String): ExtendedExecutionResult = profile(query, Map[String, Any]())
+
+  @throws(classOf[SyntaxException])
+  def profile(query: String, params: JavaMap[String, Any]): ExtendedExecutionResult = profile(query, params.asScala.toMap)
+
+  @throws(classOf[SyntaxException])
+  def profile(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
+    val (plan, extractedParams, txInfo) = planQuery(query)
     plan.profile(graphAPI, txInfo, params ++ extractedParams)
   }
 
   @throws(classOf[SyntaxException])
-  def execute(query: String): ExecutionResult = execute(query, Map[String, Any]())
+  def execute(query: String): ExtendedExecutionResult = execute(query, Map[String, Any]())
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
+  def execute(query: String, params: JavaMap[String, Any]): ExtendedExecutionResult = execute(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: Map[String, Any]): ExecutionResult = {
-    logger.debug(query)
-    val (plan, extractedParams, txInfo) = prepare(query)
+  def execute(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
+    val (plan, extractedParams, txInfo) = planQuery(query)
     plan.execute(graphAPI, txInfo, params ++ extractedParams)
   }
 
   @throws(classOf[SyntaxException])
-  private def prepare(query: String): (ExecutionPlan, Map[String, Any], TransactionInfo) = {
+  protected def parseQuery(queryText: String): ParsedQuery =
+    parsedQueries.getOrElseUpdate( queryText, compiler.parseQuery( queryText ) )
+
+  @throws(classOf[SyntaxException])
+  protected def planQuery(queryText: String): (ExecutionPlan, Map[String, Any], TransactionInfo) = {
+    logger.debug(queryText)
     var n = 0
     while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
       // create transaction and query context
@@ -90,9 +96,11 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
           cacheMonitor.cacheFlushDetected(statement)
           new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
         })
-        cacheAccessor.getOrElseUpdate(cache)(query, {
+        cacheAccessor.getOrElseUpdate(cache)(queryText, {
           touched = true
-          compiler.prepare(query, graph, statement)
+          val parsedQuery = parseQuery(queryText)
+          val queryPlan = parsedQuery.plan(statement)
+          queryPlan
         })
       }
       catch {
@@ -138,7 +146,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     val version = optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name
     )
-    new CypherCompiler(graph, kernel, kernelMonitors, CypherVersion(version))
+    val optionParser = CypherOptionParser(kernelMonitors.newMonitor(classOf[ParserMonitor[CypherQueryWithOptions]]))
+    new CypherCompiler(graph, kernel, kernelMonitors, CypherVersion(version), optionParser)
   }
 
   private def getPlanCacheSize: Int =

@@ -1,5 +1,27 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
+2.1.3
+-----
+Cypher:
+o Adds support for Octal literals (using a preceding 0, e.g. 03517)
+o Adds support for Hexadecimal literals (using a preceding 0x, e.g. 0xF0071E55)
+o Add `exists(...)` predicate function for checking patterns and properties
+o Ensure `toString(...)` only does type conversion
+o No longer introduces eagerness in some trivially decidable cases, such as
+  MATCH a, b CREATE (a)-[r:X]->(b)
+o Avoids opening two transactions per single request REST transaction by
+  introducing caching of PreparedQueries in ExecutionEngine.
+
+Kernel:
+o Fixed a bug where the BatchInserter would generate inconsistent uniqueness
+  constraints.
+o Fixed a bug where relationships sometimes were not loaded up for nodes that
+  has many relationships in one direction, and none in the other direction.
+o Fixes a memory leak in the object cache when the database was only creating
+  new entities, i.e. when not reading or updating existing entities.
+o Adds support for upgrading directly from 1.9 stores, in addition to the
+  existing ability to upgrade from 2.0 stores.
+
 2.1.2
 -----
 Cypher:
@@ -26,9 +48,32 @@ o Fixes potential leak of transaction state in entity locks that could
 o Fixes "illegal position" errors from persistence window pool
 o Fixes potential race in XaLogicalLog that could lead to duplicate
   entries in the log
+o Fixes a memory leak in DiskLayer that could happen through heavy
+  properties on datasource restarts
+o Index transactional state now properly distinguishes between indexes
+  that refer to the same label but different properties. Previously
+  it was possible to erroneously retrieve indexes that have not been
+  committed yet if asking by label.
+o Properly close IndexReaders, preventing potential file descriptor leaks.
+o Fixes a bug that could cause locks to improperly clean up state
+o Store upgrades will now migrate some transaction logs along with the
+  store, allowing extraction of transactions without requiring
+  new transactions to happen
+
+Server:
+o Ensure transactional endpoint responds with an https location for https
+  calls.
+
+Graph Algo:
+o Ability to return paths with diminishing cost from Dijkstra/Traversal AStar
+
+Cypher:
+o Adds UNWIND
+o Fixes problem where predicates are evaluated wrongly in NOT
+o Fixes problem when WITH introduces a symbol that shadows an existing identifier
 
 2.1.0-RC2
---------- 
+---------
 Kernel:
 o Fixes issue where store upgrade could leave relationship ids to be reused by
   subsequent usage of the database

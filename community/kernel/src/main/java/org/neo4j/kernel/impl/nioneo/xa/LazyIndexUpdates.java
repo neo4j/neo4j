@@ -53,14 +53,16 @@ public class LazyIndexUpdates implements IndexUpdates
 {
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
-    private final Collection<List<PropertyCommand>> propCommands;
+    private final Map<Long, List<PropertyCommand>> propCommands;
     private final Map<Long, NodeCommand> nodeCommands;
     private Collection<NodePropertyUpdate> updates;
     private final PropertyLoader propertyLoader;
 
-    public LazyIndexUpdates( NodeStore nodeStore, PropertyStore propertyStore,
-                             Collection<List<PropertyCommand>> propCommands,
-                             Map<Long, NodeCommand> nodeCommands, PropertyLoader propertyLoader )
+    public LazyIndexUpdates( NodeStore nodeStore,
+                             PropertyStore propertyStore,
+                             Map<Long, List<PropertyCommand>> propCommands,
+                             Map<Long, NodeCommand> nodeCommands,
+                             PropertyLoader propertyLoader )
     {
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
@@ -83,14 +85,7 @@ public class LazyIndexUpdates implements IndexUpdates
     public Set<Long> changedNodeIds()
     {
         Set<Long> nodeIds = new HashSet<>( nodeCommands.keySet() );
-        for ( List<PropertyCommand> propCmd : propCommands )
-        {
-            PropertyRecord record = propCmd.get( 0 ).getAfter();
-            if ( record.isNodeSet() )
-            {
-                nodeIds.add( record.getNodeId() );
-            }
-        }
+        nodeIds.addAll( propCommands.keySet() );
         return nodeIds;
     }
 
@@ -106,7 +101,7 @@ public class LazyIndexUpdates implements IndexUpdates
     private void gatherUpdatesFromPropertyCommands( Collection<NodePropertyUpdate> updates,
                                                     Map<Pair<Long, Integer>, NodePropertyUpdate> propertyLookup )
     {
-        for ( List<PropertyCommand> propertyCommands : propCommands )
+        for ( List<PropertyCommand> propertyCommands : propCommands.values() )
         {
             // Let after state of first command here be representative of the whole group
             PropertyRecord representative = propertyCommands.get( 0 ).getAfter();
@@ -263,5 +258,59 @@ public class LazyIndexUpdates implements IndexUpdates
         {
             return removedLabels;
         }
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        LazyIndexUpdates that = (LazyIndexUpdates) o;
+
+        if ( nodeCommands != null ? !nodeCommands.equals( that.nodeCommands ) : that.nodeCommands != null )
+        {
+            return false;
+        }
+        if ( nodeStore != null ? !nodeStore.equals( that.nodeStore ) : that.nodeStore != null )
+        {
+            return false;
+        }
+        if ( propCommands != null ? !propCommands.equals( that.propCommands ) : that.propCommands != null )
+        {
+            return false;
+        }
+        if ( propertyLoader != null ? !propertyLoader.equals( that.propertyLoader ) : that.propertyLoader != null )
+        {
+            return false;
+        }
+        if ( propertyStore != null ? !propertyStore.equals( that.propertyStore ) : that.propertyStore != null )
+        {
+            return false;
+        }
+        if ( updates != null ? !updates.equals( that.updates ) : that.updates != null )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = nodeStore != null ? nodeStore.hashCode() : 0;
+        result = 31 * result + (propertyStore != null ? propertyStore.hashCode() : 0);
+        result = 31 * result + (propCommands != null ? propCommands.hashCode() : 0);
+        result = 31 * result + (nodeCommands != null ? nodeCommands.hashCode() : 0);
+        result = 31 * result + (updates != null ? updates.hashCode() : 0);
+        result = 31 * result + (propertyLoader != null ? propertyLoader.hashCode() : 0);
+        return result;
     }
 }

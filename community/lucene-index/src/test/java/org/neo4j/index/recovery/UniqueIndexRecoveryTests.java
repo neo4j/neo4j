@@ -29,7 +29,6 @@ import java.util.Random;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,6 +43,8 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -59,8 +60,6 @@ import static org.neo4j.helpers.collection.Iterables.single;
 /**
  * Arbitrary recovery scenarios boiled down to as small tests as possible
  */
-// TODO 2.2-future
-@Ignore("2.2")
 @RunWith(Parameterized.class)
 public class UniqueIndexRecoveryTests
 {
@@ -78,18 +77,6 @@ public class UniqueIndexRecoveryTests
         try ( Transaction tx = db.beginTx() )
         {
             assertFalse( db.schema().getConstraints( LABEL ).iterator().hasNext() );
-            tx.success();
-        }
-    }
-
-    private void dropConstraints()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( ConstraintDefinition constraint : db.schema().getConstraints( LABEL ) )
-            {
-                constraint.drop();
-            }
             tx.success();
         }
     }
@@ -207,6 +194,18 @@ public class UniqueIndexRecoveryTests
         }
     }
 
+    private void dropConstraints()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( ConstraintDefinition constraint : db.schema().getConstraints( LABEL ) )
+            {
+                constraint.drop();
+            }
+            tx.success();
+        }
+    }
+
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> parameters()
     {
@@ -244,16 +243,14 @@ public class UniqueIndexRecoveryTests
         db.shutdown();
     }
 
-    private void rotateLog()
+    private void rotateLog() throws IOException
     {
-//        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
+        NeoStoreXaDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        ds.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).forceRotate();
     }
 
     private void flushAll()
     {
-//        db.getDependencyResolver().resolveDependency(
-//                XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().flush();
-//        db.getDependencyResolver().resolveDependency(
-//                IndexingService.class ).flushAll();
+        db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class ).forceEverything();
     }
 }

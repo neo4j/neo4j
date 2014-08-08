@@ -108,12 +108,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     }
 
     @Override
-    public boolean hasMoreData()
-    {
-        return asReader.hasRemaining();
-    }
-
-    @Override
     public byte get() throws ReadPastEndException
     {
         ensureAvailableToRead( 1 );

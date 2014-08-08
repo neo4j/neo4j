@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
-import static org.neo4j.com.Protocol.writeString;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.Protocol;
@@ -47,11 +44,14 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.com.Protocol.writeString;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
@@ -188,7 +188,7 @@ public class MasterClient201 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Void> initializeTx( RequestContext context )
+    public Response<Void> newLockSession( RequestContext context )
     {
         return sendRequest( HaRequestType201.INITIALIZE_TX, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
@@ -256,7 +256,7 @@ public class MasterClient201 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Long> commitSingleResourceTransaction( RequestContext context, final TransactionRepresentation tx )
+    public Response<Long> commit( RequestContext context, final TransactionRepresentation tx )
     {
 //        return sendRequest( HaRequestType201.COMMIT, context, new Serializer()
 //                {
@@ -284,7 +284,7 @@ public class MasterClient201 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Void> finishTransaction( RequestContext context, final boolean success )
+    public Response<Void> endLockSession( RequestContext context, final boolean success )
     {
         return sendRequest( HaRequestType201.FINISH, context, new Serializer()
         {
@@ -342,39 +342,6 @@ public class MasterClient201 extends Client<Master> implements MasterClient
     {
         return new RequestContext( context.getEpoch(), context.machineId(), context.getEventIdentifier(),
                 0, context.getMasterId(), context.getChecksum() );
-    }
-
-    @Override
-    public Response<Void> copyTransactions( RequestContext context,
-                                            final String ds, final long startTxId, final long endTxId )
-    {
-        context = stripFromTransactions( context );
-        return sendRequest( HaRequestType201.COPY_TRANSACTIONS, context, new Serializer()
-        {
-            @Override
-            public void write( ChannelBuffer buffer )
-                    throws IOException
-            {
-                writeString( buffer, ds );
-                buffer.writeLong( startTxId );
-                buffer.writeLong( endTxId );
-            }
-        }, VOID_DESERIALIZER );
-    }
-
-    @Override
-    public Response<Void> pushTransaction( RequestContext context, final long tx )
-    {
-        context = stripFromTransactions( context );
-        return sendRequest( HaRequestType201.PUSH_TRANSACTION, context, new Serializer()
-        {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-                writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
-                buffer.writeLong( tx );
-            }
-        }, VOID_DESERIALIZER );
     }
 
     protected static IdAllocation readIdAllocation( ChannelBuffer buffer )

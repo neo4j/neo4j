@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import java.io.PrintWriter
+import org.neo4j.cypher.internal.PlanType
 import org.neo4j.graphdb.ResourceIterator
 
 trait ExecutionResult extends Iterator[Map[String, Any]] {

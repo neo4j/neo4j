@@ -4,7 +4,9 @@ Load CSV
 
 +LOAD CSV+ allows you to import data from CSV files.
 It is required to specify an identifier for the CSV data using +AS+.
-See the examples for further details.
+See the examples below for further details.
+
+There is also a worked example, see <<cypherdoc-importing-csv-files-with-cypher>>.
 
 :leveloffset: 3
 

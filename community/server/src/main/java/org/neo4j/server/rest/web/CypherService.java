@@ -28,7 +28,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.database.CypherExecutor;
@@ -69,7 +69,7 @@ public class CypherService
     }
 
     @POST
-    @SuppressWarnings({ "unchecked" })
+    @SuppressWarnings({"unchecked", "ParameterCanBeLocal"})
     public Response cypher(String body,
                            @QueryParam( INCLUDE_STATS_PARAM ) boolean includeStats,
                            @QueryParam( INCLUDE_PLAN_PARAM ) boolean includePlan,
@@ -96,14 +96,14 @@ public class CypherService
         try
         {
             ServerExecutionEngine executionEngine = cypherExecutor.getExecutionEngine();
-            boolean periodicCommitQuery = executionEngine.isPeriodicCommitQuery( query );
+            boolean periodicCommitQuery = executionEngine.isPeriodicCommit( query );
             CommitOnSuccessfulStatusCodeRepresentationWriteHandler handler = (CommitOnSuccessfulStatusCodeRepresentationWriteHandler) this.output.getRepresentationWriteHandler();
             if ( periodicCommitQuery )
             {
                 handler.closeTransaction();
             }
 
-            ExecutionResult result;
+            ExtendedExecutionResult result;
             if ( profile )
             {
                 result = executionEngine.profile( query, params );
@@ -112,6 +112,7 @@ public class CypherService
             else
             {
                 result = executionEngine.execute( query, params );
+                includePlan = result.planDescriptionRequested();
             }
 
             if ( periodicCommitQuery )

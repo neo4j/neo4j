@@ -29,9 +29,9 @@ public interface ExecutionMonitor
      * Called when a {@link Stage} has started its execution. This method should not return until all
      * {@link Step steps} in the {@link Stage} have {@link Step#isCompleted() completed} their processing.
      *
-     * @param execution execution of a {@link Stage}.
+     * @param executions execution of a {@link Stage}.
      */
-    void monitor( StageExecution execution );
+    void monitor( StageExecution... executions );
 
-    void done();
+    void done( long totalTimeMillis );
 }

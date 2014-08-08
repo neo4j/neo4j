@@ -29,18 +29,30 @@ import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adapter implements Lifecycle
 {
+    private static final int NO_SERVER_ID = -1;
+
     private final DependencyResolver resolver;
+    private final int serverId;
+
     private TransactionAppender appender;
     private TransactionRepresentationStoreApplier storeApplier;
     private TransactionIdStore transactionIdStore;
+    private TransactionMonitor transactionMonitor;
 
     public TransactionCommittingResponseUnpacker( DependencyResolver resolver )
     {
+        this( resolver, NO_SERVER_ID );
+    }
+
+    public TransactionCommittingResponseUnpacker( DependencyResolver resolver, int serverId )
+    {
         this.resolver = resolver;
+        this.serverId = serverId;
     }
 
     @Override
@@ -51,21 +63,34 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
             @Override
             public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
             {
-                // TODO why do we synchronize here, read all about it at
-                // TransactionAppender#append(CommittedTransactionRepresentation)
+                // synchronized is needed here:
+                // read all about it at TransactionAppender#append(CommittedTransactionRepresentation)
                 synchronized ( appender )
                 {
                     if ( appender.append( transaction ) )
                     {
-                        long transactionId = transaction.getCommitEntry().getTxId();
+                        final boolean isMyTx = serverId != NO_SERVER_ID &&
+                                serverId == transaction.getTransactionRepresentation().getAuthorId();
+                        final long transactionId = transaction.getCommitEntry().getTxId();
+                        if ( !isMyTx )
+                        {
+                            transactionMonitor.transactionStarted();
+                        }
+                        boolean success = false;
                         try
                         {
-                            storeApplier.apply( transaction.getTransactionRepresentation(), transactionId, true ); // TODO recovery=true needed?
+                            // TODO recovery=true needed?
+                            storeApplier.apply( transaction.getTransactionRepresentation(), transactionId, true );
                             handler.accept( transaction );
+                            success = true;
                         }
                         finally
                         {
                             transactionIdStore.transactionClosed( transactionId );
+                            if ( !isMyTx )
+                            {
+                                transactionMonitor.transactionFinished( success );
+                            }
                         }
                     }
                 }
@@ -87,6 +112,7 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
         this.appender = resolver.resolveDependency( LogicalTransactionStore.class ).getAppender();
         this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class );
         this.transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+        this.transactionMonitor = resolver.resolveDependency( TransactionMonitor.class );
     }
 
     @Override
@@ -95,6 +121,7 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
         this.appender = null;
         this.storeApplier = null;
         this.transactionIdStore = null;
+        this.transactionMonitor = null;
     }
 
     @Override

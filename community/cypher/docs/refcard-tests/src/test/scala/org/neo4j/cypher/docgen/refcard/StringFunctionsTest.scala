@@ -18,15 +18,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
-import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
+
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 
 class StringFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "String Functions"
   val css = "general c2-2 c3-2 c4-1 c5-3 c6-5"
 
-  override def assert(name: String, result: ExecutionResult) {
+  override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "returns-one" =>
         assertStats(result, nodesCreated = 0)
@@ -63,7 +65,7 @@ class StringFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
 ###assertion=returns-one parameters=expression
 RETURN
 
-str({expression})
+toString({expression})
 ###
 
 String representation of the expression.

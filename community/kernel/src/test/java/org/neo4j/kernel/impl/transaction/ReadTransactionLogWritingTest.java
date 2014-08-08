@@ -23,9 +23,9 @@ import java.io.File;
 import java.io.IOException;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -33,15 +33,18 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.LogTestUtils.CountingLogHook;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
@@ -49,7 +52,6 @@ import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 /**
  * Asserts that pure read operations does not write records to logical or transaction logs.
  */
-@Ignore( "Rewrite for 2.2" )
 public class ReadTransactionLogWritingTest
 {
     @Test
@@ -60,50 +62,48 @@ public class ReadTransactionLogWritingTest
         executeTransaction( getProperties() );
         executeTransaction( getById() );
         executeTransaction( getNodesFromRelationship() );
-        
+
         // THEN
-        int actualCount = countLogEntries();
+        long actualCount = countLogEntries();
         assertEquals( "There were " + (actualCount-logEntriesWrittenBeforeReadOperations) +
                 " log entries written during one or more pure read transactions",
                 logEntriesWrittenBeforeReadOperations, actualCount );
     }
-    
+
     public final @Rule DatabaseRule dbr = new ImpermanentDatabaseRule()
     {
         @Override
         protected void configure( GraphDatabaseBuilder builder )
         {
             builder.setConfig( GraphDatabaseSettings.cache_type, "none" );
+            builder.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "5");
         };
     };
-    
+
     private final Label label = label( "Test" );
     private Node node;
     private Relationship relationship;
-    private int logEntriesWrittenBeforeReadOperations;
-    
+    private long logEntriesWrittenBeforeReadOperations;
+
     @Before
-    public void createDataset()
+    public void createDataset() throws IOException
     {
         GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
-        long nodeId, relationshipId;
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode( label );
             node.setProperty( "short", 123 );
             node.setProperty( "long", longString( 300 ) );
-            nodeId = node.getId();
             relationship = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
             relationship.setProperty( "short", 123 );
             relationship.setProperty( "long", longString( 300 ) );
-            relationshipId = relationship.getId();
             tx.success();
         }
-//        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
+        db.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).checkRotation();
         logEntriesWrittenBeforeReadOperations = countLogEntries();
     }
-    
-    private int countLogEntries()
+
+    private long countLogEntries()
     {
         GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
         FileSystemAbstraction fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
@@ -112,15 +112,10 @@ public class ReadTransactionLogWritingTest
         {
             CountingLogHook<LogEntry> logicalLogCounter = new CountingLogHook<>();
             filterNeostoreLogicalLog( fs, storeDir.getPath(), logicalLogCounter );
-            
-            // Not so nice, but there's no other way. We cannot look at the file since log records in the txlog
-            // are buffered and they get flushed for 2PC (at least up until the commit record).
-            // If we're going for a restart instead then we can count them but they will however disappear
-            // for the next session.
-//            int txLogRecordCount = db.getDependencyResolver()
-//                    .resolveDependency( TxManager.class ).getTxLog().getRecordCount();
-            int txLogRecordCount = 0;
-            
+
+            long txLogRecordCount = db.getDependencyResolver()
+                    .resolveDependency( LogFileInformation.class ).getLastCommittedTxId();
+
             return logicalLogCounter.getCount() + txLogRecordCount;
         }
         catch ( IOException e )
@@ -138,7 +133,7 @@ public class ReadTransactionLogWritingTest
         }
         return new String( characters );
     }
-    
+
     private void executeTransaction( Runnable runnable )
     {
         executeTransaction( runnable, true );
@@ -168,7 +163,7 @@ public class ReadTransactionLogWritingTest
             }
         };
     }
-    
+
     private Runnable getNodesFromRelationship()
     {
         return new Runnable()

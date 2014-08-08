@@ -19,15 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
 
 public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
 {
@@ -35,17 +38,15 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     private final TransactionMetadataCache transactionMetadataCache;
     private final TxIdGenerator txIdGenerator;
     private TransactionAppender appender;
-    private final LogEntryReader<ReadableLogChannel> logEntryReader;
     private final TransactionIdStore transactionIdStore;
 
     public PhysicalLogicalTransactionStore( LogFile logFile, TxIdGenerator txIdGenerator,
-            TransactionMetadataCache transactionMetadataCache, LogEntryReader<ReadableLogChannel> logEntryReader,
+            TransactionMetadataCache transactionMetadataCache,
             TransactionIdStore transactionIdStore )
     {
         this.logFile = logFile;
         this.txIdGenerator = txIdGenerator;
         this.transactionMetadataCache = transactionMetadataCache;
-        this.logEntryReader = logEntryReader;
         this.transactionIdStore = transactionIdStore;
     }
 
@@ -63,19 +64,20 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     }
 
     @Override
-    public IOCursor getCursor( final long transactionIdToStartFrom,
-            Visitor<CommittedTransactionRepresentation, IOException> visitor )
-            throws NoSuchTransactionException, IOException
+    public IOCursor<CommittedTransactionRepresentation> getTransactions( final long transactionIdToStartFrom )
+            throws IOException
     {
         // look up in position cache
         try
         {
-            TransactionMetadataCache.TransactionMetadata transactionMetadata = transactionMetadataCache
-                    .getTransactionMetadata( transactionIdToStartFrom );
+            TransactionMetadataCache.TransactionMetadata transactionMetadata =
+                    transactionMetadataCache.getTransactionMetadata( transactionIdToStartFrom );
+            LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader();
             if ( transactionMetadata != null )
             {
                 // we're good
-                return new PhysicalTransactionCursor( logFile.getReader( transactionMetadata.getStartPosition() ), logEntryReader, visitor );
+                return new PhysicalTransactionCursor( logFile.getReader( transactionMetadata.getStartPosition() ),
+                        logEntryReader );
             }
 
             // ask LogFile about the version it may be in
@@ -87,8 +89,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
                     new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );
             logFile.accept( transactionPositionLocator, headerVisitor.getLogPosition() );
             LogPosition position = transactionPositionLocator.getAndCacheFoundLogPosition( transactionMetadataCache );
-            IOCursor cursor = new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader, visitor );
-            return cursor;
+            return new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
         }
         catch ( FileNotFoundException e )
         {
@@ -112,19 +113,29 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
                 .getTransactionMetadata( transactionId );
         if ( transactionMetadata == null )
         {
-            exhaustAndClose( getCursor( transactionId, new TransactionMetadataFiller() ) );
+            try (IOCursor<CommittedTransactionRepresentation> cursor = getTransactions( transactionId ))
+            {
+                while (cursor.next())
+                {
+                    CommittedTransactionRepresentation tx = cursor.get();
+                    transactionMetadataCache.cacheTransactionMetadata( tx.getCommitEntry().getTxId(),
+                            tx.getStartEntry().getStartPosition(), tx.getStartEntry().getMasterId(),
+                            tx.getStartEntry().getLocalId(), LogEntryStart.checksum( tx.getStartEntry() ) );
+
+                };
+            }
         }
         transactionMetadata = transactionMetadataCache.getTransactionMetadata( transactionId );
         return transactionMetadata;
     }
 
-    private static class TransactionPositionLocator implements LogFile.LogFileVisitor
+    public static class TransactionPositionLocator implements LogFile.LogFileVisitor
     {
         private final long startTransactionId;
         private final LogEntryReader<ReadableLogChannel> logEntryReader;
-        private LogEntry.Start startEntryForFoundTransaction;
+        private LogEntryStart startEntryForFoundTransaction;
 
-        TransactionPositionLocator( long startTransactionId, LogEntryReader<ReadableLogChannel> logEntryReader )
+        public TransactionPositionLocator( long startTransactionId, LogEntryReader<ReadableLogChannel> logEntryReader )
         {
             this.startTransactionId = startTransactionId;
             this.logEntryReader = logEntryReader;
@@ -134,16 +145,16 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         public boolean visit( LogPosition position, ReadableLogChannel channel ) throws IOException
         {
             LogEntry logEntry;
-            LogEntry.Start startEntry = null;
+            LogEntryStart startEntry = null;
             while ( (logEntry = logEntryReader.readLogEntry( channel ) ) != null )
             {
                 switch ( logEntry.getType() )
                 {
                     case LogEntry.TX_START:
-                        startEntry = (LogEntry.Start) logEntry;
+                        startEntry = (LogEntryStart) logEntry;
                         break;
                     case LogEntry.TX_1P_COMMIT:
-                        LogEntry.Commit commit = (LogEntry.Commit) logEntry;
+                        LogEntryCommit commit = (LogEntryCommit) logEntry;
                         if ( commit.getTxId() == startTransactionId )
                         {
                             startEntryForFoundTransaction = startEntry;
@@ -156,40 +167,30 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
             return true;
         }
 
-        public LogPosition getAndCacheFoundLogPosition(
-                TransactionMetadataCache transactionMetadataCache ) throws NoSuchTransactionException
+        public LogPosition getAndCacheFoundLogPosition( TransactionMetadataCache transactionMetadataCache )
+                throws NoSuchTransactionException
         {
             if ( startEntryForFoundTransaction == null )
             {
                 throw new NoSuchTransactionException( startTransactionId );
             }
-            transactionMetadataCache.cacheTransactionMetadata( startTransactionId,
+            transactionMetadataCache.cacheTransactionMetadata(
+                    startTransactionId,
                     startEntryForFoundTransaction.getStartPosition(),
                     startEntryForFoundTransaction.getMasterId(),
                     startEntryForFoundTransaction.getLocalId(),
-                    LogEntry.Start.checksum( startEntryForFoundTransaction ) );
+                    LogEntryStart.checksum( startEntryForFoundTransaction )
+            );
             return startEntryForFoundTransaction.getStartPosition();
         }
     }
 
-    private class TransactionMetadataFiller implements Visitor<CommittedTransactionRepresentation, IOException>
-    {
-        @Override
-        public boolean visit( CommittedTransactionRepresentation element ) throws IOException
-        {
-            transactionMetadataCache.cacheTransactionMetadata( element.getCommitEntry().getTxId(),
-                    element.getStartEntry().getStartPosition(), element.getStartEntry().getMasterId(),
-                    element.getStartEntry().getLocalId(), LogEntry.Start.checksum( element.getStartEntry() ) );
-            return true;
-        }
-    }
-
-    private static final class LogVersionLocator implements LogHeaderVisitor
+    public static final class LogVersionLocator implements LogHeaderVisitor
     {
         private final long transactionId;
         private LogPosition foundPosition;
 
-        private LogVersionLocator( long transactionId )
+        public LogVersionLocator( long transactionId )
         {
             this.transactionId = transactionId;
         }

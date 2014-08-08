@@ -28,10 +28,13 @@ public interface TransactionHeaderInformationFactory
     public static final TransactionHeaderInformationFactory DEFAULT =
             new TransactionHeaderInformationFactory()
             {
+                private final TransactionHeaderInformation defaultHeader
+                        = new TransactionHeaderInformation( -1, -1, new byte[0] );
+
                 @Override
                 public TransactionHeaderInformation create()
                 {
-                    return new TransactionHeaderInformation( -1, -1, new byte[0] );
+                    return defaultHeader;
                 }
             };
 }

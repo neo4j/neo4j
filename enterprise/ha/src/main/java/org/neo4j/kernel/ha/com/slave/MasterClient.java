@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.com.Protocol.writeString;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.MismatchingVersionHandler;
 import org.neo4j.com.ObjectSerializer;
@@ -37,10 +35,14 @@ import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.com.Protocol.writeString;
+
 public interface MasterClient extends Master
 {
     static final ObjectSerializer<LockResult> LOCK_SERIALIZER = new ObjectSerializer<LockResult>()
     {
+        @Override
         public void write( LockResult responseObject, ChannelBuffer result ) throws IOException
         {
             result.writeByte( responseObject.getStatus().ordinal() );
@@ -53,6 +55,7 @@ public interface MasterClient extends Master
 
     static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = new Deserializer<LockResult>()
     {
+        @Override
         public LockResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
             LockStatus status = LockStatus.values()[buffer.readByte()];
@@ -60,22 +63,25 @@ public interface MasterClient extends Master
         }
     };
 
+    @Override
     public Response<Integer> createRelationshipType( RequestContext context, final String name );
 
-    public Response<Void> initializeTx( RequestContext context );
+    @Override
+    public Response<Void> newLockSession( RequestContext context );
 
-    public Response<Long> commitSingleResourceTransaction( RequestContext context, final TransactionRepresentation channel );
+    @Override
+    public Response<Long> commit( RequestContext context, final TransactionRepresentation channel );
 
-    public Response<Void> finishTransaction( RequestContext context, final boolean success );
+    @Override
+    public Response<Void> endLockSession( RequestContext context, final boolean success );
 
     public void rollbackOngoingTransactions( RequestContext context );
 
+    @Override
     public Response<Void> pullUpdates( RequestContext context );
 
+    @Override
     public Response<Void> copyStore( RequestContext context, final StoreWriter writer );
-
-    public Response<Void> copyTransactions( RequestContext context, final String ds, final long startTxId,
-            final long endTxId );
 
     public void addMismatchingVersionHandler( MismatchingVersionHandler toAdd );
 }

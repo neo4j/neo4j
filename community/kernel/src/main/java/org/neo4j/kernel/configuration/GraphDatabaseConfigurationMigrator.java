@@ -31,7 +31,7 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
 {
 
     private static final String KEEP_LOGICAL_LOGS = "keep_logical_logs";
-    private static final String ALL_STORES_MAPPED_MEM = "all_stores_total_mapped_memory_size";
+    private static final String MAPPED_MEMORY_TOTAL_SIZE = "mapped_memory_total_size";
 
     {
         add( new SpecificPropertyMigration( "enable_online_backup",
@@ -161,7 +161,7 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
 
         add( new SpecificPropertyMigration("neostore.nodestore.db.mapped_memory",
                 "The neostore.*.db.mapped_memory settings have been replaced by the single '" +
-                 ALL_STORES_MAPPED_MEM + "'. The sum of the old configuration will be used as the" +
+                        MAPPED_MEMORY_TOTAL_SIZE + "'. The sum of the old configuration will be used as the" +
                 " value for the new setting.")
         {
             private final String[] oldKeys = new String[]{
@@ -176,7 +176,7 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
             @Override
             public boolean appliesTo( Map<String, String> rawConfiguration )
             {
-                if(rawConfiguration.containsKey( ALL_STORES_MAPPED_MEM ))
+                if(rawConfiguration.containsKey( MAPPED_MEMORY_TOTAL_SIZE ))
                 {
                     return false;
                 }
@@ -205,7 +205,7 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
 
                 if(total > 0)
                 {
-                    rawConfiguration.put( ALL_STORES_MAPPED_MEM, Long.toString( total ) );
+                    rawConfiguration.put( MAPPED_MEMORY_TOTAL_SIZE, Long.toString( total ) );
                 }
             }
         });

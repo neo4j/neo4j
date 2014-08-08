@@ -32,7 +32,6 @@ import org.junit.Test;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 import static java.util.Arrays.asList;
 
@@ -79,7 +78,7 @@ public class TxStateVisitorTest
     @Before
     public void before() throws Exception
     {
-        state = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexTransactionState.class ) );
+        state = new TxStateImpl( mock( LegacyIndexTransactionState.class ) );
     }
 
     static class GatheringVisitor extends TxState.VisitorAdapter

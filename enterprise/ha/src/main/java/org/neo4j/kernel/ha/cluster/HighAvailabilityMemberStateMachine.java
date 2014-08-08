@@ -71,6 +71,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     public void init() throws Throwable
     {
         events.addClusterMemberListener( eventsListener = new StateMachineClusterEventListener() );
+        // On initial startup, disallow database access
+        availabilityGuard.deny( this );
     }
 
     @Override
@@ -117,7 +119,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     @Override
     public String description()
     {
-        return getClass().getSimpleName() + "[" + getCurrentState() + "]";
+        return "Cluster state is '" + getCurrentState() + "'";
     }
 
     private class StateMachineClusterEventListener extends ClusterMemberListener.Adapter

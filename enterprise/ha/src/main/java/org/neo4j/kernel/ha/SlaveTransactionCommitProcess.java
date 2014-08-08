@@ -25,48 +25,29 @@ import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
-public class SlaveTransactionCommitProcess extends TransactionRepresentationCommitProcess
+public class SlaveTransactionCommitProcess implements TransactionCommitProcess
 {
     private final Master master;
     private final RequestContextFactory requestContextFactory;
     private final TransactionCommittingResponseUnpacker unpacker;
 
     public SlaveTransactionCommitProcess( Master master, RequestContextFactory requestContextFactory,
-                                          LogicalTransactionStore logicalTransactionStore, KernelHealth kernelHealth,
-                                          NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-                                          TransactionCommittingResponseUnpacker unpacker, boolean recovery )
+                                          TransactionCommittingResponseUnpacker unpacker )
     {
-        super( logicalTransactionStore, kernelHealth, neoStore, storeApplier, recovery );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.unpacker = unpacker;
     }
 
     @Override
-    public long commit( TransactionRepresentation representation ) throws TransactionFailureException
-    {
-        // TODO Oh my gawd, my eyes, fix this
-        /*
-         * The separation of the commit process to persist() and commit() is probably wrong, since
-         * both the master and slave processes override the whole method. Revisit this and probably
-         * undo the split
-         */
-        return persistTransaction( representation );
-    }
-
-    @Override
-    public long persistTransaction( TransactionRepresentation representation ) throws TransactionFailureException
+    public synchronized long commit( TransactionRepresentation representation ) throws TransactionFailureException
     {
         try
         {
-            return unpacker.unpackResponse( master.commitSingleResourceTransaction( requestContextFactory.newRequestContext(), representation ) );
+            return unpacker.unpackResponse( master.commit( requestContextFactory.newRequestContext(), representation ) );
         }
         catch ( IOException e )
         {

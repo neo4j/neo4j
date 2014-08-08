@@ -20,6 +20,7 @@
 package org.neo4j.io.fs;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -60,7 +61,9 @@ public interface FileSystemAbstraction
     boolean renameFile( File from, File to ) throws IOException;
     
     File[] listFiles( File directory );
-    
+
+    File[] listFiles( File directory, FilenameFilter filter );
+
     boolean isDirectory( File file );
     
     void moveToDirectory( File file, File toDirectory ) throws IOException;

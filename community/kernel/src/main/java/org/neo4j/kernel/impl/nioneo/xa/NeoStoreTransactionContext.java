@@ -136,6 +136,11 @@ public class NeoStoreTransactionContext
         locker.setLockClient( locksClient );
     }
 
+    public void initialize()
+    {
+        recordChangeSet.close();
+    }
+
     public void close()
     {
         recordChangeSet.close();

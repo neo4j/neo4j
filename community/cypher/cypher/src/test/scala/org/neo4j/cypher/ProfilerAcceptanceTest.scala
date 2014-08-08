@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_1
+import org.neo4j.cypher.internal.compiler.v2_2
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{DbHits, Rows}
-import org.neo4j.cypher.internal.compiler.v2_1.Argument
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
 
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport {
 
@@ -33,7 +34,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result: ExecutionResult = profile("cypher 2.1.experimental match n where n-[:FOO]->() return *")
+    val result = profile("cypher 2.1.experimental match n where n-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("SemiApply")
@@ -47,7 +48,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("PROFILE for Cypher 2.0") {
-    val result = super.profile("cypher 2.0 match n where n-[:FOO]->() return *")
+    val result = eengine.profile("cypher 2.0 match n where n-[:FOO]->() return *")
     result.toList
     result.executionPlanDescription().toString
   }
@@ -57,7 +58,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result: ExecutionResult = profile("cypher 2.1.experimental match n where not n-[:FOO]->() return *")
+    val result = profile("cypher 2.1.experimental match n where not n-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("AntiSemiApply")
@@ -83,7 +84,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("tracks number of rows") {
     //GIVEN
     createNode("foo" -> "bar")
-    val result: ExecutionResult = profile("START n = node(0) RETURN n")
+    val result = profile("START n = node(0) RETURN n")
 
     //WHEN THEN
     assertRows(1)(result)("NodeById")
@@ -93,7 +94,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("tracks number of graph accesses") {
     //GIVEN
     createNode("foo" -> "bar")
-    val result: ExecutionResult = profile("START n = node(0) RETURN n.foo")
+    val result = profile("START n = node(0) RETURN n.foo")
 
     //WHEN THEN
     assertRows(1)(result)("ColumnFilter", "Extract", "NodeById")
@@ -105,7 +106,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("no problem measuring creation") {
     //GIVEN
-    val result: ExecutionResult = profile("CREATE n")
+    val result = profile("CREATE n")
 
     //WHEN THEN
     assertDbHits(0)(result)("EmptyResult")
@@ -115,7 +116,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
 
     //GIVEN
-    val result: ExecutionResult = profile("START n=node(*) RETURN n.foo")
+    val result = profile("START n=node(*) RETURN n.foo")
 
     //WHEN THEN
     assertRows(1)(result)("ColumnFilter")
@@ -132,7 +133,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("tracks optional matches") {
     //GIVEN
     createNode()
-    val result: ExecutionResult = profile("start n=node(*) optional match (n)-->(x) return x")
+    val result = profile("start n=node(*) optional match (n)-->(x) return x")
 
     //WHEN THEN
     assertDbHits(0)(result)("ColumnFilter", "NullableMatch")
@@ -141,7 +142,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("allows optional match to start a query") {
     //GIVEN
-    val result: ExecutionResult = profile("cypher 2.1.experimental optional match (n) return n")
+    val result = profile("cypher 2.1.experimental optional match (n) return n")
 
     //WHEN THEN
     assertRows(1)(result)("Optional")
@@ -215,21 +216,21 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.executionPlanDescription().toString should include("AllNodes")
   }
 
-  private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {
+  private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
     }
   }
 
-  private def assertDbHits(expectedRows: Int)(result: ExecutionResult)(names: String*) {
+  private def assertDbHits(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[DbHits](plan).value, s" wrong db hits for plan: ${plan.name}")
     }
   }
 
-  override def profile(q: String, params: (String, Any)*): ExecutionResult = {
+  override def profile(q: String, params: (String, Any)*): InternalExecutionResult = {
     val result = super.profile(q, params: _*)
-    val planDescription: v2_1.PlanDescription = result.executionPlanDescription().asInstanceOf[v2_1.PlanDescription]
+    val planDescription: v2_2.planDescription.PlanDescription = result.executionPlanDescription()
     planDescription.toSeq.foreach {
       p =>
         if (!p.arguments.exists(_.isInstanceOf[DbHits])) fail("Found plan that was not profiled with DbHits: " + p.name)
@@ -238,13 +239,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result
   }
 
-  private def getArgument[A <: Argument](plan: v2_1.PlanDescription)(implicit manifest: Manifest[A]): A = plan.arguments.collectFirst {
+  private def getArgument[A <: Argument](plan: v2_2.planDescription.PlanDescription)(implicit manifest: Manifest[A]): A = plan.arguments.collectFirst {
     case x: A => x
   }.getOrElse(fail(s"Failed to find plan description argument where expected. Wanted ${manifest.toString} but only found ${plan.arguments}"))
 
-  private def getPlanDescriptions(result: ExecutionResult, names: Seq[String]): Seq[v2_1.PlanDescription] = {
+  private def getPlanDescriptions(result: InternalExecutionResult, names: Seq[String]): Seq[v2_2.planDescription.PlanDescription] = {
     result.toList
-    val description = result.executionPlanDescription().asInstanceOf[v2_1.PlanDescription]
+    val description = result.executionPlanDescription()
     if (names.isEmpty)
       description.toSeq
     else {

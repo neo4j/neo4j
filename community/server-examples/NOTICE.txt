@@ -26,13 +26,10 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons Configuration
   Commons BeanUtils
-  Commons BeanUtils Core
-  Commons Collections
-  Commons Configuration
   Commons Digester
   Commons Lang
-  Commons Logging
 
 Common Development and Distribution License Version 1.1
   jersey-client

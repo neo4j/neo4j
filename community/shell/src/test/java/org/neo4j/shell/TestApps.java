@@ -27,7 +27,6 @@ import java.util.regex.Pattern;
 
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
@@ -49,7 +48,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
@@ -979,6 +977,12 @@ public class TestApps extends AbstractShellTest
     public void shouldAllowQueriesToStartWithOptionalMatch() throws Exception
     {
         executeCommand( "OPTIONAL MATCH (n) RETURN n;" );
+    }
+
+    @Test
+    public void shouldAllowExplainAsStartForACypherQuery() throws Exception
+    {
+        executeCommand( "EXPLAIN OPTIONAL MATCH (n) RETURN n;", "DbHits", "No data returned" );
     }
 
     @Test

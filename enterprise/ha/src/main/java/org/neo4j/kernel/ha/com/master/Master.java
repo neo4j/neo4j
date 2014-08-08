@@ -45,15 +45,24 @@ public interface Master
     Response<Integer> createPropertyKey( RequestContext context, String name );
 
     Response<Integer> createLabel( RequestContext context, String name );
-    
+
     /**
-     * Called when the first write operation of lock is performed for a transaction.
+     * Calling this method will validate, persist to log and apply changes to stores on
+     * the master.
      */
-    Response<Void> initializeTx( RequestContext context );
+    Response<Long> commit( RequestContext context, TransactionRepresentation channel ) throws IOException, TransactionFailureException;
 
-    Response<Long> commitSingleResourceTransaction( RequestContext context, TransactionRepresentation channel ) throws IOException, TransactionFailureException;
+    /**
+     * Calling this method will create a new session with the cluster lock manager and associate that
+     * session with the provided {@link RequestContext}.
+     */
+    Response<Void> newLockSession( RequestContext context );
 
-    Response<Void> finishTransaction( RequestContext context, boolean success );
+    /**
+     * Calling this will end the current lock session (identified by the {@link RequestContext}),
+     * releasing all cluster-global locks held.
+     */
+    Response<Void> endLockSession( RequestContext context, boolean success );
 
     /**
      * Gets the master id for a given txId, also a checksum for that tx.
@@ -63,15 +72,12 @@ public interface Master
      * @return the master id for a given txId, also a checksum for that tx.
      */
     Response<HandshakeResult> handshake( long txId, StoreId myStoreId );
-    Response<Void> pushTransaction( RequestContext context, long tx );
 
     Response<Void> pullUpdates( RequestContext context );
 
     Response<Void> copyStore( RequestContext context, StoreWriter writer );
 
-    Response<Void> copyTransactions( RequestContext context, String dsName,
-                                     long startTxId, long endTxId );
-
     Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type, long... resourceIds );
+
     Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType type, long... resourceIds );
 }

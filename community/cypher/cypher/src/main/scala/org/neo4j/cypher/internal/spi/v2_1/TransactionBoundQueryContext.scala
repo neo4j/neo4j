@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v2_1
 
 import org.neo4j.graphdb._
+import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.{InternalAbstractGraphDatabase, GraphDatabaseAPI}
 import collection.JavaConverters._
 import collection.mutable
@@ -36,7 +37,7 @@ import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.cypher.internal.compiler.v2_1.spi._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.core.{NodeManager, ThreadToStatementContextBridge}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
@@ -170,6 +171,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     def indexQuery(name: String, query: Any): Iterator[Node] =
       graph.index.forNodes(name).query(query).iterator().asScala
+
+    def isDeleted(obj: Node): Boolean = {
+      val statement: KernelStatement = txBridge.getKernelTransactionBoundToThisThread(true).acquireStatement().asInstanceOf[KernelStatement]
+      statement.txState().nodeIsDeletedInThisTx(obj.getId)
+    }
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -204,6 +210,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     def indexQuery(name: String, query: Any): Iterator[Relationship] =
       graph.index.forRelationships(name).query(query).iterator().asScala
+
+    def isDeleted(obj: Relationship): Boolean = {
+      val statement: KernelStatement = txBridge.getKernelTransactionBoundToThisThread(true).acquireStatement().asInstanceOf[KernelStatement]
+      statement.txState().relationshipIsDeletedInThisTx(obj.getId)
+    }
   }
 
   def getOrCreatePropertyKeyId(propertyKey: String) =

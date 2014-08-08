@@ -66,6 +66,20 @@
               <goal>resources</goal>
             </goals>
           </execution>
+          <execution>
+            <id>copy-csv-files</id>
+            <phase>prepare-package</phase>
+            <goals><goal>copy-resources</goal></goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/html5/csv</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.build.directory}/docs/neo4j-cypher-refcard-tests-docs-jar/dev/ql/refcard/csv</directory>
+                  <filtering>false</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -98,25 +112,6 @@
               <excludes>META-INF,META-INF/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.sources}</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-csv-files</id>
-            <phase>prepare-package</phase>
-            <goals><goal>copy-resources</goal></goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/html5/csv</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${project.build.directory}/docs/neo4j-cypher-refcard-tests-docs-jar/dev/ql/refcard/csv</directory>
-                  <filtering>false</filtering>
-                </resource>
-              </resources>
             </configuration>
           </execution>
         </executions>
@@ -193,7 +188,7 @@
       </plugin>
     </plugins>
   </build>
-  
+
   <profiles>
     <profile>
       <id>print</id>
@@ -232,7 +227,7 @@
       </build>
     </profile>
   </profiles>
-  
+
   <repositories>
     <repository>
       <id>neo4j-release-repository</id>

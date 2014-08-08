@@ -21,21 +21,26 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.Iterator;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Triplet;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 /**
  * Tests a specific case of cache poisoning that involves the relationship chain of a node, the index the node has on it
@@ -49,108 +54,220 @@ import static org.neo4j.helpers.collection.Iterables.toList;
  * The cache is now poisoned. The next() call on the relationship iterator of that node will cause it to fail with
  *  a NotFoundException since the relationship chain position for the node points to something that is no longer in
  *  use. Since the load will fail the position is never updated and will always fail.
- *
- *  The tests provided form a matrix. One axis is the deletion happening from the same or different threads. The
- *   other is the read happening from the iterator already acquired or from a node re-read from scratch. A fix should
- *   make all 4 green.
+ * We must also make sure that if the transaction that deleted the relationship rolls back, we should not do anything to
+ *  compensate for it.
  */
 public class TestConcurrentModificationOfRelationshipChains
 {
-    private static final int RelationshipGrabSize = 2;
+    private static final RelationshipType TYPE = withName( "POISON" );
+    private static final int RelationshipGrabSize = 2, DenseNode = 50;
 
     @Rule
-    public ImpermanentDatabaseRule graphDb = new ImpermanentDatabaseRule()
+    public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule()
     {
         @Override
         protected void configure( GraphDatabaseBuilder builder )
         {
-            builder.setConfig( GraphDatabaseSettings.relationship_grab_size, ""+RelationshipGrabSize );
+            builder.setConfig( GraphDatabaseSettings.relationship_grab_size, "" + RelationshipGrabSize );
+            builder.setConfig( GraphDatabaseSettings.dense_node_threshold, "" + DenseNode );
         }
     };
+
+    private Node node1, node2;
+    private Relationship firstFromSecondBatch;
+
+    @Before
+    public void given()
+    {
+        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            node1 = graphDb.createNode();
+            node2 = graphDb.createNode();
+            firstFromSecondBatch = node1.createRelationshipTo( node2, TYPE );
+
+            for ( int i = 0; i < RelationshipGrabSize; i++ )
+            {
+                node1.createRelationshipTo( graphDb.createNode(), TYPE );
+            }
+
+            tx.success();
+        }
+        clearCaches();
+        try ( Transaction tx = graphDb.beginTx() )
+        {// make sure the first batch of relationships are loaded
+            Iterator<Relationship> relationships = node1.getRelationships().iterator();
+            for ( int i = 0; i < RelationshipGrabSize; i++ )
+            {
+                relationships.next();
+            }
+        }
+    }
 
     @Test
     public void relationshipChainPositionCachePoisoningFromSameThreadReReadNode()
     {
-        GraphDatabaseAPI db = graphDb.getGraphDatabaseAPI();
-        Triplet<Iterable<Relationship>, Long, Relationship> relsCreated = setup( db );
-        Relationship firstFromSecondBatch = relsCreated.third();
+        // given
+        GraphDatabaseService graphDb = db.getGraphDatabaseService();
 
-        deleteRelationshipInSameThread( db, firstFromSecondBatch );
+        // when
+        deleteRelationshipInSameThread( firstFromSecondBatch );
 
-        Transaction transaction = db.beginTx();
-        for ( Relationship rel : db.getNodeById( relsCreated.second() ).getRelationships() )
+        // then
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            rel.getId();
+            assertEquals( RelationshipGrabSize, count( node1.getRelationships() ) );
+            tx.success();
         }
-        transaction.finish();
     }
 
     @Test
     public void relationshipChainPositionCachePoisoningFromDifferentThreadReReadNode() throws InterruptedException
     {
-        GraphDatabaseAPI db = graphDb.getGraphDatabaseAPI();
-        Triplet<Iterable<Relationship>, Long, Relationship> relsCreated = setup( db );
-        Relationship firstFromSecondBatch = relsCreated.third();
+        // given
+        GraphDatabaseService graphDb = db.getGraphDatabaseService();
 
-        deleteRelationshipInDifferentThread( db, firstFromSecondBatch );
+        // when
+        deleteRelationshipInDifferentThread( firstFromSecondBatch );
 
-        Transaction transaction = db.beginTx();
-        for ( Relationship rel : db.getNodeById( relsCreated.second() ).getRelationships() )
+        // then
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            rel.getId();
+            assertEquals( RelationshipGrabSize, count( node1.getRelationships() ) );
+            tx.success();
         }
-        transaction.finish();
     }
 
     @Test
     public void relationshipChainPositionCachePoisoningFromSameThread()
     {
-        GraphDatabaseAPI db = graphDb.getGraphDatabaseAPI();
-        Triplet<Iterable<Relationship>, Long, Relationship> relsCreated = setup( db );
-        Iterator<Relationship> rels = relsCreated.first().iterator();
-        Relationship firstFromSecondBatch = relsCreated.third();
+        // given
+        GraphDatabaseService graphDb = db.getGraphDatabaseService();
 
-        deleteRelationshipInSameThread( db, firstFromSecondBatch );
-
-        while ( rels.hasNext() )
+        // when
+        Iterator<Relationship> rels;
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            rels.next();
+            rels = node1.getRelationships().iterator();
+            tx.success();
+        }
+        deleteRelationshipInSameThread( firstFromSecondBatch );
+
+        // then
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            assertEquals( RelationshipGrabSize, count( rels ) );
+            tx.success();
         }
     }
 
     @Test
     public void relationshipChainPositionCachePoisoningFromDifferentThreads() throws InterruptedException
     {
-        GraphDatabaseAPI db = graphDb.getGraphDatabaseAPI();
-        Triplet<Iterable<Relationship>, Long, Relationship> relsCreated = setup( db );
-        Iterator<Relationship> rels = relsCreated.first().iterator();
-        Relationship firstFromSecondBatch = relsCreated.third();
+        // given
+        GraphDatabaseService graphDb = db.getGraphDatabaseService();
 
-        deleteRelationshipInDifferentThread( db, firstFromSecondBatch );
-
-        while ( rels.hasNext() )
+        // when
+        Iterator<Relationship> rels;
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            rels.next();
+            rels = node1.getRelationships().iterator();
+            tx.success();
+        }
+        deleteRelationshipInDifferentThread( firstFromSecondBatch );
+
+        // then
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            assertEquals( RelationshipGrabSize, count( rels ) );
+            tx.success();
         }
     }
 
-    private void deleteRelationshipInSameThread( GraphDatabaseAPI db, Relationship toDelete )
+    @Test
+    public void shouldNotInvalidateNodeInCacheOnRollback() throws Exception
     {
-        Transaction tx = db.beginTx();
-        toDelete.delete();
-        tx.success();
-        tx.finish();
+        // given
+        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+
+        // when
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            node2.getSingleRelationship( TYPE, Direction.INCOMING ).delete();
+            tx.failure();
+        }
+
+        // then
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            assertEquals( RelationshipGrabSize + 1, count( node1.getRelationships() ) );
+            tx.success();
+        }
     }
 
-    private void deleteRelationshipInDifferentThread( final GraphDatabaseAPI db, final Relationship toDelete ) throws
-            InterruptedException
+    @Test
+    public void shouldNotInvalidateDenseNodeInCacheOnRollback() throws Exception
+    {
+        // given
+        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        Node node, other;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            node = graphDb.createNode();
+
+            for ( int i = 0; i < DenseNode; i++ )
+            {
+                node.createRelationshipTo( graphDb.createNode(), TYPE );
+            }
+            other = graphDb.createNode();
+
+            other.createRelationshipTo( node, TYPE );
+
+            tx.success();
+        }
+        clearCaches();
+        // make sure the node is in cache, but some relationships not loaded
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            for ( Relationship one : node.getRelationships( TYPE, Direction.OUTGOING ) )
+            {
+                assertNotNull( one );
+            }
+            tx.success();
+        }
+
+        // when
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            other.getSingleRelationship( TYPE, Direction.OUTGOING ).delete();
+            tx.failure();
+        }
+
+        // then
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            assertEquals( DenseNode + 1, IteratorUtil.count( node.getRelationships( TYPE ) ) );
+            tx.success();
+        }
+    }
+
+    private static void deleteRelationshipInSameThread( Relationship toDelete )
+    {
+        try ( Transaction tx = toDelete.getGraphDatabase().beginTx() )
+        {
+            toDelete.delete();
+            tx.success();
+        }
+    }
+
+    private static void deleteRelationshipInDifferentThread( final Relationship toDelete ) throws InterruptedException
     {
         Runnable deleter = new Runnable()
         {
             @Override
             public void run()
             {
-                deleteRelationshipInSameThread( db,  toDelete);
+                deleteRelationshipInSameThread( toDelete );
             }
         };
         Thread t = new Thread( deleter );
@@ -158,24 +275,8 @@ public class TestConcurrentModificationOfRelationshipChains
         t.join();
     }
 
-    private Triplet<Iterable<Relationship>, Long, Relationship> setup( GraphDatabaseAPI db )
+    private void clearCaches()
     {
-        Transaction tx = db.beginTx();
-        Node node1 = db.createNode();
-        Node node2 = db.createNode();
-        RelationshipType relType = DynamicRelationshipType.withName( "POISON" );
-        Relationship firstFromSecondBatch = node1.createRelationshipTo( node2, relType );
-        for ( int i = 0; i < RelationshipGrabSize; i++ )
-        {
-            node1.createRelationshipTo( node2, relType );
-        }
-        tx.success();
-        tx.finish();
-
-        db.getDependencyResolver().resolveDependency( Caches.class ).clear();
-        Transaction transaction = db.beginTx();
-        Iterable<Relationship> relationships = toList( node1.getRelationships() );
-        transaction.finish();
-        return Triplet.of( relationships, node1.getId(), firstFromSecondBatch );
+        db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 }

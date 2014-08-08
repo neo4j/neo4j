@@ -42,48 +42,20 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.util.DiffSets;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
- * This organizes three disjoint containers of state. The goal is to bring that down to one, but for now, it's three.
- * Those three are:
+ * This class contains transaction-local changes to the graph. These changes can then be used to augment reads from the
+ * committed state of the database (to make the local changes appear in local transaction read operations). At commit
+ * time a visitor is sent into this class to convert the end result of the tx changes into a physical changeset.
  *
- *  * TxState - this class itself, containing HashMaps and DiffSets for changes
- *  * TransactionState - The legacy transaction state, to be refactored into this class.
- *  * WriteTransaction - Maintains changed records and commands for logical log.
- *                       To be refactored into a sub-component of this class.
+ * See {@link org.neo4j.kernel.impl.api.KernelTransactionImplementation} for how this happens.
  *
- * TransactionState is used to change the view of the data within a transaction, eg. see your own writes.
- *
- * WriteTransaction contains the changes that will actually be applied to the store, eg. records and commands.
- *
- * TxState should be a common interface for *updating* both kinds of state, and for *reading* the first kind.
- *
- * So, in ascii art, the current implementation is:
- *
- *      StateHandlingTransactionContext-------StateHandlingStatementContext
- *                   \                                      /
- *                    ---------------------|----------------
- *                                         |
- *                                      TxState
- *                                     /      \
- *                       PersistenceManager   TransactionState
- *
- *
- * We want it to look like:
- *
- *      StateHandlingTransactionContext-------StateHandlingStatementContext
- *                   \                                      /
- *                    ---------------------|----------------
- *                                         |
- *                                      TxState
- *
- *
- * Where, in the end implementation, the state inside TxState can be used both to overlay on the graph, eg. read writes,
- * as well as be applied to the graph through the logical log.
+ * This class is very large, as it has been used as a gathering point to consolidate all transaction state knowledge
+ * into one component. Now that that work is done, this class should be refactored to increase transparency in how it
+ * works.
  */
 public final class TxStateImpl implements TxState
 {
@@ -140,17 +112,14 @@ public final class TxStateImpl implements TxState
 
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint;
 
-    private final TransactionRecordState neoStoreTransaction;
     private final LegacyIndexTransactionState legacyChangesIndexProvider;
     private Map<String, LegacyIndex> nodeLegacyIndexChanges;
     private Map<String, LegacyIndex> relationshipLegacyIndexChanges;
 
     private boolean hasChanges;
 
-    public TxStateImpl( TransactionRecordState neoStoreTransaction,
-            LegacyIndexTransactionState legacyChangesIndexProvider )
+    public TxStateImpl( LegacyIndexTransactionState legacyChangesIndexProvider )
     {
-        this.neoStoreTransaction = neoStoreTransaction;
         this.legacyChangesIndexProvider = legacyChangesIndexProvider;
     }
 
@@ -550,7 +519,6 @@ public final class TxStateImpl implements TxState
     {
         labelStateNodeDiffSets( labelId ).add( nodeId );
         nodeStateLabelDiffSets( nodeId ).add( labelId );
-        neoStoreTransaction.addLabelToNode( labelId, nodeId );
         hasChanges = true;
     }
 
@@ -559,7 +527,6 @@ public final class TxStateImpl implements TxState
     {
         labelStateNodeDiffSets( labelId ).remove( nodeId );
         nodeStateLabelDiffSets( nodeId ).remove( labelId );
-        neoStoreTransaction.removeLabelFromNode( labelId, nodeId );
         hasChanges = true;
     }
 

@@ -116,7 +116,7 @@ class UniqueConstraintValidationAcceptanceTest extends ExecutionEngineFunSuite w
       }
 
       // THEN
-      val result: ExecutionResult = execute("match (n:Label1) where n.key1 = 'value1' return n.seq as seq")
+      val result = execute("match (n:Label1) where n.key1 = 'value1' return n.seq as seq")
       result.columnAs[Int]("seq").toList should equal(List(seq))
       seq += 1
     }
@@ -134,7 +134,7 @@ class UniqueConstraintValidationAcceptanceTest extends ExecutionEngineFunSuite w
     execute("create ( node:Label1 { key2:'value1' } )")
 
     // THEN
-    val result: ExecutionResult = execute("match (n) where id(n) <> 0 return count(*) as nodeCount")
+    val result = execute("match (n) where id(n) <> 0 return count(*) as nodeCount")
     result.columnAs[Int]("nodeCount").toList should equal(List(4))
   }
 }

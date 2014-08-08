@@ -19,18 +19,6 @@
  */
 package org.neo4j.perftest.enterprise.generator;
 
-import static java.util.Arrays.asList;
-import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
-import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
-import static org.neo4j.perftest.enterprise.util.Predicate.integerRange;
-import static org.neo4j.perftest.enterprise.util.Setting.adaptSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.listSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.restrictSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
-import static org.neo4j.perftest.enterprise.windowpool.MemoryMappingConfiguration.addLegacyMemoryMappingConfiguration;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -56,6 +44,18 @@ import org.neo4j.perftest.enterprise.util.Setting;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
+import static java.util.Arrays.asList;
+
+import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
+import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
+import static org.neo4j.perftest.enterprise.util.Predicate.integerRange;
+import static org.neo4j.perftest.enterprise.util.Setting.adaptSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.listSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.restrictSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
+
 public class DataGenerator
 {
     public static final Setting<String> store_dir = stringSetting( "neo4j.store_dir", "target/generated-data/graph.db" );
@@ -74,8 +74,8 @@ public class DataGenerator
     static final Setting<List<PropertySpec>> relationship_properties = listSetting(
             adaptSetting( Setting.stringSetting( "relationship_properties" ), PropertySpec.PARSER ),
             Collections.<PropertySpec>emptyList() );
-    private static final Setting<String> all_stores_total_mapped_memory_size =
-            stringSetting( "all_stores_total_mapped_memory_size", "2G" );
+    private static final Setting<String> mapped_memory_total_size =
+            stringSetting( "mapped_memory_total_size", "2G" );
 
     public static final Random RANDOM = new Random();
     private final boolean reportProgress;
@@ -210,7 +210,7 @@ public class DataGenerator
 
     private Map<String, Object> generate( List<PropertySpec> properties )
     {
-        Map<String, Object> result = new HashMap<String, Object>();
+        Map<String, Object> result = new HashMap<>();
         for ( PropertySpec property : properties )
         {
             result.putAll( property.generate() );
@@ -226,15 +226,10 @@ public class DataGenerator
 
     private static Map<String, String> batchInserterConfig( Configuration configuration )
     {
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( "use_memory_mapped_buffers", "true" );
+        Map<String, String> config = new HashMap<>();
         config.put( "dump_configuration", "true" );
-        config.put( GraphDatabaseSettings.all_stores_total_mapped_memory_size.name(),
-                configuration.get( all_stores_total_mapped_memory_size ) );
-
-        addLegacyMemoryMappingConfiguration( config, configuration.get(
-                all_stores_total_mapped_memory_size ) );
-
+        config.put( GraphDatabaseSettings.mapped_memory_total_size.name(),
+                configuration.get( mapped_memory_total_size ) );
         return config;
     }
 

@@ -74,11 +74,5 @@ public class TransactionRepresentationStoreApplier
         {
             representation.accept( applier );
         }
-
-        // TODO 2.2-future remove updateIdGenerators and setRecovered as a whole
-        if ( applyRecovered )
-        {
-            neoStore.updateIdGenerators();
-        }
     }
 }

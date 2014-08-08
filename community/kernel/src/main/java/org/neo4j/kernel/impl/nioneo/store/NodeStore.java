@@ -195,8 +195,8 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
                     // [    ,   x] in use bit
                     // [    ,xxx ] higher bits for rel id
                     // [xxxx,    ] higher bits for prop id
-                    long inUseByte = cursor.getByte();
-                    isInUse = recordIsInUse( inUseByte );
+                    byte inUseByte = cursor.getByte();
+                    isInUse = isInUse( inUseByte );
                     if ( isInUse )
                     {
                         if ( record == null )
@@ -315,7 +315,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
                 do
                 {
                     cursor.setOffset( offset );
-                    recordIsInUse = recordIsInUse( cursor.getByte() );
+                    recordIsInUse = isInUse( cursor.getByte() );
                 } while ( cursor.retry() );
             }
             return recordIsInUse;
@@ -326,12 +326,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         }
     }
 
-    private boolean recordIsInUse( long inUseByte )
-    {
-        return (inUseByte & 0x1) == Record.IN_USE.intValue();
-    }
-
-    private void readIntoRecord( PageCursor cursor, NodeRecord record, long inUseByte, boolean inUse )
+    private void readIntoRecord( PageCursor cursor, NodeRecord record, byte inUseByte, boolean inUse )
     {
         long nextRel = cursor.getUnsignedInt();
         long nextProp = cursor.getUnsignedInt();
@@ -444,16 +439,5 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     {
         dynamicLabelStore.updateHighId();
         super.updateHighId();
-    }
-
-    public void flushAll()
-    {
-        try
-        {
-            storeFile.flush();
-        } catch(IOException e)
-        {
-            throw new UnderlyingStorageException( e );
-        }
     }
 }

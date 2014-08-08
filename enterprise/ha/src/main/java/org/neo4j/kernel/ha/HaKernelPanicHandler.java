@@ -41,7 +41,6 @@ public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGua
         this.availabilityGuard = availabilityGuard;
         this.logger = logging.getMessagesLog( getClass() );
         this.masterDelegateInvocationHandler = masterDelegateInvocationHandler;
-        availabilityGuard.grant(this);
     }
 
     @Override
@@ -114,6 +113,6 @@ public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGua
     @Override
     public String description()
     {
-        return getClass().getSimpleName();
+        return "Database is handling a kernel panic";
     }
 }

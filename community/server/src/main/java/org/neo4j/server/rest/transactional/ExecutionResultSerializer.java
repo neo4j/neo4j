@@ -24,15 +24,18 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
+import org.neo4j.cypher.javacompat.PlanDescription;
 import org.neo4j.cypher.javacompat.QueryStatistics;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 
@@ -41,7 +44,7 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
  * order, as follows:
  * <ul>
  * <li>{@link #transactionCommitUri(URI) transactionId}{@code ?}</li>
- * <li>{@link #statementResult(org.neo4j.cypher.javacompat.ExecutionResult, boolean, ResultDataContent...) statementResult}{@code *}</li>
+ * <li>{@link #statementResult(org.neo4j.cypher.javacompat.ExtendedExecutionResult, boolean, ResultDataContent...) statementResult}{@code *}</li>
  * <li>{@link #errors(Iterable) errors}{@code ?}</li>
  * <li>{@link #transactionStatus(long expiryDate)}{@code ?}</li>
  * <li>{@link #finish() finish}</li>
@@ -89,7 +92,7 @@ public class ExecutionResultSerializer
      * Will get called at most once per statement. Throws IOException so that upstream executor can decide whether
      * to execute further statements.
      */
-    public void statementResult( ExecutionResult result, boolean includeStats, ResultDataContent... resultDataContents )
+    public void statementResult( ExtendedExecutionResult result, boolean includeStats, ResultDataContent... resultDataContents )
             throws IOException
     {
         try
@@ -104,6 +107,10 @@ public class ExecutionResultSerializer
                 if ( includeStats )
                 {
                     writeStats( result.getQueryStatistics() );
+                }
+                if ( result.planDescriptionRequested() )
+                {
+                    writeRootPlanDescription( result.executionPlanDescription() );
                 }
             }
             finally
@@ -141,8 +148,74 @@ public class ExecutionResultSerializer
         }
     }
 
+    private void writeRootPlanDescription( PlanDescription planDescription ) throws IOException
+    {
+        out.writeObjectFieldStart( "plan" );
+        try
+        {
+            out.writeObjectFieldStart( "root" );
+            try
+            {
+                writePlanDescriptionObjectBody( planDescription );
+            }
+            finally
+            {
+                out.writeEndObject();
+            }
+        }
+        finally
+        {
+            out.writeEndObject();
+        }
+    }
+
+    private void writePlanDescriptionObjectBody( PlanDescription planDescription ) throws IOException
+    {
+        out.writeStringField( "operatorType", planDescription.getName() );
+        writePlanArgs( planDescription );
+
+        List<PlanDescription> children = planDescription.getChildren();
+        out.writeArrayFieldStart( "children" );
+        try
+        {
+            for (PlanDescription child : children )
+            {
+                out.writeStartObject();
+                try
+                {
+                    writePlanDescriptionObjectBody( child );
+                }
+                finally
+                {
+                    out.writeEndObject();
+                }
+            }
+        }
+        finally
+        {
+            out.writeEndArray();
+        }
+    }
+
+    private void writePlanArgs( PlanDescription planDescription ) throws IOException
+    {
+        for ( Map.Entry<String, Object> entry : planDescription.getArguments().entrySet() )
+        {
+            String fieldName = entry.getKey();
+            Object fieldValue = entry.getValue();
+
+            out.writeFieldName( fieldName );
+            writeValue( fieldValue );
+        }
+    }
+
+    private void writeValue( Object value ) throws IOException
+    {
+        JsonHelper.writeValue(out, value);
+    }
+
     /**
-     * Will get called once if any errors occurred, after {@link #statementResult(org.neo4j.cypher.javacompat.ExecutionResult, boolean, ResultDataContent...)}  statementResults}
+     * Will get called once if any errors occurred, after {@link #statementResult(org.neo4j.cypher.javacompat.ExtendedExecutionResult, boolean, ResultDataContent...)}  statementResults}
      * has been called This method is not allowed to throw exceptions. If there are network errors or similar, the
      * handler should take appropriate action, but never fail this method.
      */
@@ -282,7 +355,7 @@ public class ExecutionResultSerializer
         }
     }
 
-    private void writeRows( Iterable<String> columns, Iterator<Map<String, Object>> data,
+    private void writeRows( Iterable<String> columns, ResourceIterator<Map<String, Object>> data,
                             ResultDataContentWriter writer ) throws IOException
     {
         out.writeArrayFieldStart( "data" );
@@ -305,6 +378,7 @@ public class ExecutionResultSerializer
         finally
         {
             out.writeEndArray(); // </data>
+            data.close(); // free associated resources as early a possible
         }
     }
 

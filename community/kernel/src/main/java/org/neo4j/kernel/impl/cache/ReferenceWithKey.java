@@ -32,8 +32,10 @@ public interface ReferenceWithKey<KEY, VALUE>
     }
 
     KEY key();
-    VALUE get();
-    void clear();
-    boolean enqueue();
 
+    VALUE get();
+
+    void clear();
+
+    boolean enqueue();
 }

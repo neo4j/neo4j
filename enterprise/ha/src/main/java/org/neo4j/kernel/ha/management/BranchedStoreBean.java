@@ -30,11 +30,13 @@ import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.ha.BranchedDataPolicy;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.management.BranchedStore;
 import org.neo4j.management.BranchedStoreInfo;
+
+import static org.neo4j.kernel.ha.BranchedDataPolicy.getBranchedDataRootDirectory;
 
 @Service.Implementation(ManagementBeanProvider.class)
 public final class BranchedStoreBean extends ManagementBeanProvider
@@ -71,21 +73,20 @@ public final class BranchedStoreBean extends ManagementBeanProvider
         return management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase;
     }
 
-    private static class BranchedStoreImpl extends Neo4jMBean implements
-            BranchedStore
+    private static class BranchedStoreImpl extends Neo4jMBean implements BranchedStore
     {
-        // TODO 2.2-future need to discover the store path. access to the DS would be a decent way
-        private File storePath;
+        private final File storePath;
 
-        protected BranchedStoreImpl( final ManagementData management )
-                throws NotCompliantMBeanException
+        protected BranchedStoreImpl( final ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
+            storePath = getStorePath( management );
         }
 
         protected BranchedStoreImpl( final ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
+            storePath = getStorePath( management );
         }
 
         @Override
@@ -96,8 +97,8 @@ public final class BranchedStoreBean extends ManagementBeanProvider
                 return new BranchedStoreInfo[0];
             }
 
-            List<BranchedStoreInfo> toReturn = new LinkedList<BranchedStoreInfo>();
-            for ( File branchDirectory : BranchedDataPolicy.getBranchedDataRootDirectory( storePath ).listFiles() )
+            List<BranchedStoreInfo> toReturn = new LinkedList<>();
+            for ( File branchDirectory : getBranchedDataRootDirectory( storePath ).listFiles() )
             {
                 if ( !branchDirectory.isDirectory() )
                 {
@@ -105,15 +106,22 @@ public final class BranchedStoreBean extends ManagementBeanProvider
                 }
                 toReturn.add( parseBranchedStore( branchDirectory ) );
             }
-            return toReturn.toArray( new BranchedStoreInfo[]{} );
+            return toReturn.toArray( new BranchedStoreInfo[toReturn.size()] );
         }
 
         private BranchedStoreInfo parseBranchedStore( File branchDirectory )
         {
-            File neostoreFile = new File( branchDirectory, NeoStore.DEFAULT_NAME );
-            long txId = NeoStore.getTxId( new DefaultFileSystemAbstraction(), neostoreFile );
+            final File neoStoreFile = new File( branchDirectory, NeoStore.DEFAULT_NAME );
+            long txId = NeoStore.getTxId( new DefaultFileSystemAbstraction(), neoStoreFile );
             long timestamp = Long.parseLong( branchDirectory.getName() );
             return new BranchedStoreInfo( branchDirectory.getName(), txId, timestamp );
+        }
+
+        private File getStorePath( ManagementData management )
+        {
+            return management.getKernelData().
+                    getConfig().
+                    get( InternalAbstractGraphDatabase.Configuration.store_dir );
         }
     }
 }

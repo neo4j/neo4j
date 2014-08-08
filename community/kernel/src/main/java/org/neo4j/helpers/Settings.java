@@ -378,7 +378,7 @@ public final class Settings
             return new DirectMemoryUsage(Math.min( maxOffHeapMemory(), totalPhysicalMemory() ), totalFreeMemory() );
         }
 
-        private static long totalPhysicalMemory()
+        public static long totalPhysicalMemory()
         {
             return tryCalling( ManagementFactory.getOperatingSystemMXBean(),
                     "com.sun.management.OperatingSystemMXBean",
@@ -458,9 +458,9 @@ public final class Settings
         @Override
         public String toString()
         {
-            return "a byte size or a percentage of the max direct memory or total RAM (whichever is smallest), for instance '25%'";
+            return "a byte size, such as '4G' for 4 giga-bytes, or a percentage of the max direct memory or total RAM (whichever is smallest), for instance '50%'";
         }
-    };
+    }
 
     public static final Function<String, URI> URI =
             new Function<String, URI>()

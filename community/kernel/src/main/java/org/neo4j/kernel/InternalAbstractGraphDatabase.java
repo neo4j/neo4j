@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.Functions.identity;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,7 +52,6 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.Service;
@@ -103,7 +93,6 @@ import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
-import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -115,14 +104,12 @@ import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.NodeProxy.NodeLookup;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.RelationshipData;
-import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipLookups;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
@@ -132,6 +119,8 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
+import org.neo4j.kernel.impl.coreapi.IndexProvider;
+import org.neo4j.kernel.impl.coreapi.IndexProviderImpl;
 import org.neo4j.kernel.impl.coreapi.LegacyIndexProxy;
 import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
@@ -159,7 +148,6 @@ import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
@@ -184,6 +172,15 @@ import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static java.lang.String.format;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -215,8 +212,6 @@ public abstract class InternalAbstractGraphDatabase
     public static class Configuration
     {
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
-        public static final Setting<Boolean> use_memory_mapped_buffers =
-                GraphDatabaseSettings.use_memory_mapped_buffers;
         public static final Setting<Boolean> execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
         public static final Setting<String> cache_type = GraphDatabaseSettings.cache_type;
         public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
@@ -252,7 +247,7 @@ public abstract class InternalAbstractGraphDatabase
     protected PropertyKeyTokenHolder propertyKeyTokenHolder;
     protected LabelTokenHolder labelTokenHolder;
     protected NodeManager nodeManager;
-    protected IndexManagerImpl indexManager;
+    protected IndexManager indexManager;
     protected Schema schema;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
     protected KernelHealth kernelHealth;
@@ -276,16 +271,15 @@ public abstract class InternalAbstractGraphDatabase
     protected JobScheduler jobScheduler;
     protected UpdateableSchemaState updateableSchemaState;
     protected Monitors monitors;
-    protected TransactionMonitor transactionMonitor;
+    protected TransactionMonitor transactionMonitor = new TransactionMonitorImpl();
     protected final LifeSupport life = new LifeSupport();
     private final Map<String, CacheProvider> cacheProviders;
     protected AvailabilityGuard availabilityGuard;
     protected long accessTimeout;
     protected StoreUpgrader storeMigrationProcess;
     protected TransactionHeaderInformation transactionHeaderInformation;
-    private DataSourceManager dataSourceManager;
+    protected DataSourceManager dataSourceManager;
     private StartupStatisticsProvider startupStatistics;
-    private CacheProvider cacheProvider;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
     {
@@ -303,7 +297,7 @@ public abstract class InternalAbstractGraphDatabase
                 getDependencyResolver(),
                 fail() );
         this.storeDir = config.get( Configuration.store_dir );
-        accessTimeout = 1 * 1000; // TODO make configurable
+        accessTimeout = 1_000; // TODO make configurable
     }
 
     private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
@@ -324,6 +318,7 @@ public abstract class InternalAbstractGraphDatabase
         boolean failed = false;
         try
         {
+            enableAvailabilityLogging(); // Done after create to avoid a redundant "database is now unavailable"
             registerRecovery();
 
             life.start();
@@ -347,6 +342,24 @@ public abstract class InternalAbstractGraphDatabase
     {
         // This is how we lock the entire database to avoid threads using it during lifecycle events
         life.add( new DatabaseAvailability( availabilityGuard, transactionMonitor ) );
+    }
+
+    private void enableAvailabilityLogging()
+    {
+        availabilityGuard.addListener( new AvailabilityGuard.AvailabilityListener()
+        {
+            @Override
+            public void available()
+            {
+                msgLog.info( "Database is now ready" );
+            }
+
+            @Override
+            public void unavailable()
+            {
+                msgLog.info( "Database is now unavailable" );
+            }
+        } );
     }
 
     protected void registerRecovery()
@@ -376,22 +389,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void create()
     {
-        availabilityGuard = createAvailabilityGuard();
-
-        availabilityGuard.addListener( new AvailabilityGuard.AvailabilityListener()
-        {
-            @Override
-            public void available()
-            {
-                msgLog.info( "Database is now ready" );
-            }
-
-            @Override
-            public void unavailable()
-            {
-                msgLog.info( "Database is now unavailable" );
-            }
-        } );
+        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK );
 
         fileSystem = createFileSystemAbstraction();
 
@@ -408,28 +406,7 @@ public abstract class InternalAbstractGraphDatabase
         storeMigrationProcess = new StoreUpgrader( new ConfigMapUpgradeConfiguration( config ), fileSystem,
                 monitors.newMonitor( StoreUpgrader.Monitor.class ) );
 
-        // Apply autoconfiguration for memory settings
-        AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
-                config.get( NeoStoreXaDataSource.Configuration.store_dir ),
-                config.get( Configuration.use_memory_mapped_buffers ),
-                logging.getConsoleLog( AutoConfigurator.class ) );
-        if (config.get( GraphDatabaseSettings.dump_configuration ))
-        {
-            // TODO please, PLEASE pass in a PrintStream instead
-            System.out.println( autoConfigurator.getNiceMemoryInformation() );
-        }
         Map<String, String> configParams = config.getParams();
-        Map<String, String> autoConfiguration = autoConfigurator.configure();
-        for ( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
-        {
-            // Don't override explicit settings
-            String key = autoConfig.getKey();
-            if ( !config.getParams().containsKey( key ) )
-            {
-                configParams.put( key, autoConfig.getValue() );
-            }
-        }
-
         config.applyChanges( configParams );
 
         this.msgLog = logging.getMessagesLog( getClass() );
@@ -441,11 +418,8 @@ public abstract class InternalAbstractGraphDatabase
 
         new JvmChecker( msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
-        // Instantiate all services - some are overridable by subclasses
-        boolean readOnly = config.get( Configuration.read_only );
-
         String cacheTypeName = config.get( Configuration.cache_type );
-        cacheProvider = cacheProviders.get( cacheTypeName );
+        CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
         if ( cacheProvider == null )
         {
             throw new IllegalArgumentException( "No provider for cache type '" + cacheTypeName + "'. " +
@@ -455,8 +429,7 @@ public abstract class InternalAbstractGraphDatabase
                     "been caused by either such a missing registration, or by the lack of the provider class itself." );
         }
 
-        jobScheduler =
-            life.add( new Neo4jJobScheduler( this.toString() ));
+        jobScheduler = life.add( new Neo4jJobScheduler( this.toString() ));
 
         pageCache = createPageCache();
         life.add( pageCache );
@@ -479,7 +452,6 @@ public abstract class InternalAbstractGraphDatabase
         createTxHook();
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
-//        assert guard == null : "Guard not properly implemented for the time being";
 
         updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
 
@@ -498,12 +470,12 @@ public abstract class InternalAbstractGraphDatabase
         relationshipTypeTokenHolder = life.add( new RelationshipTypeTokenHolder( createRelationshipTypeCreator() ) );
 
         caches.configure( cacheProvider, config );
-        Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
-        Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
+        diagnosticsManager.tryAppendProvider( caches.node() );
+        diagnosticsManager.tryAppendProvider( caches.relationship() );
 
         threadToTransactionBridge = life.add( new ThreadToStatementContextBridge() );
 
-        nodeManager = createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
+        nodeManager = createNodeManager();
 
         transactionEventHandlers = new TransactionEventHandlers( createNodeLookup(), createRelationshipLookups(),
                 threadToTransactionBridge  );
@@ -518,14 +490,11 @@ public abstract class InternalAbstractGraphDatabase
 
         schema = new SchemaImpl( threadToTransactionBridge );
 
-        LegacyIndexProxy.Lookup indexLookup = createIndexLookup();
-        indexManager = new IndexManagerImpl( indexLookup, threadToTransactionBridge );
-        nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexManager, nodeManager ) );
-        relAutoIndexer = life.add( new RelationshipAutoIndexerImpl( config, indexManager, nodeManager ) );
-
-        // TODO This cyclic dependency should be resolved
-        indexManager.setNodeAutoIndexer( nodeAutoIndexer );
-        indexManager.setRelAutoIndexer( relAutoIndexer );
+        final LegacyIndexProxy.Lookup indexLookup = createIndexLookup();
+        final IndexProvider indexProvider = new IndexProviderImpl( indexLookup, threadToTransactionBridge );
+        nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexProvider, nodeManager ) );
+        relAutoIndexer = life.add( new RelationshipAutoIndexerImpl( config, indexProvider, nodeManager ) );
+        indexManager = new IndexManagerImpl( threadToTransactionBridge, indexProvider, nodeAutoIndexer, relAutoIndexer);
 
         recoveryVerifier = createRecoveryVerifier();
 
@@ -535,7 +504,6 @@ public abstract class InternalAbstractGraphDatabase
         startupStatistics = new StartupStatisticsProvider();
 
         transactionHeaderInformation = createTransactionHeaderInformation();
-        transactionMonitor = new TransactionMonitorImpl();
         createNeoDataSource();
 
         life.add( new MonitorGc( config, msgLog ) );
@@ -579,11 +547,6 @@ public abstract class InternalAbstractGraphDatabase
         return new Monitors();
     }
 
-    protected AvailabilityGuard createAvailabilityGuard()
-    {
-        return new AvailabilityGuard( Clock.SYSTEM_CLOCK, 1 );
-    }
-
     @Override
     public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
     {
@@ -614,13 +577,13 @@ public abstract class InternalAbstractGraphDatabase
         return new DefaultLabelIdCreator( dataSourceManager, idGeneratorFactory );
     }
 
-    private NodeManager createNodeManager( final boolean readOnly, final CacheProvider cacheType,
-                                           Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
+    private NodeManager createNodeManager()
     {
         NodeLookup nodeLookup = createNodeLookup();
         RelationshipLookups relationshipLookup = createRelationshipLookups();
         return new NodeManager(
-                logging.getMessagesLog( NodeManager.class ), nodeLookup, relationshipLookup,
+                nodeLookup,
+                relationshipLookup,
                 threadToTransactionBridge );
     }
 
@@ -655,7 +618,12 @@ public abstract class InternalAbstractGraphDatabase
 
     protected PageCache createPageCache()
     {
-        return new LifecycledPageCache( fileSystem, jobScheduler, config );
+        LifecycledPageCache lifecycledPageCache = new LifecycledPageCache( fileSystem, jobScheduler, config );
+        if ( config.get( GraphDatabaseSettings.dump_configuration ) )
+        {
+            lifecycledPageCache.dumpConfiguration( logging.getMessagesLog( PageCache.class ) );
+        }
+        return lifecycledPageCache;
     }
 
     protected RecoveryVerifier createRecoveryVerifier()
@@ -828,7 +796,7 @@ public abstract class InternalAbstractGraphDatabase
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                 lockManager, this, transactionEventHandlers,
-                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
+                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
                 storeMigrationProcess, transactionMonitor, kernelHealth, txIdGenerator,
                 createHeaderInformationFactory(), startupStatistics, caches, nodeManager, guard, indexStore,
                 getCommitProcessFactory() );
@@ -857,18 +825,6 @@ public abstract class InternalAbstractGraphDatabase
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()
     {
         return TransactionHeaderInformationFactory.DEFAULT;
-    }
-
-    protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
-    {
-        return new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
-        {
-            @Override
-            public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
-            {
-                return identity();
-            }
-        };
     }
 
     @Override
@@ -1021,7 +977,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( format( "Node %d not found", id ) );
         }
-        threadToTransactionBridge.assertInTransaction();
+        threadToTransactionBridge.assertInUnterminatedTransaction();
         try (Statement statement = threadToTransactionBridge.instance())
         {
             if ( !statement.readOperations().nodeExists( id ) )
@@ -1040,7 +996,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( format( "Relationship %d not found", id));
         }
-        threadToTransactionBridge.assertInTransaction();
+        threadToTransactionBridge.assertInUnterminatedTransaction();
         try (Statement statement = threadToTransactionBridge.instance())
         {
             if ( !statement.readOperations().relationshipExists( id ) )
@@ -1055,14 +1011,14 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public IndexManager index()
     {
-        // TODO: txManager.assertInTransaction();
+        // TODO: txManager.assertInUnterminatedTransaction();
         return indexManager;
     }
 
     @Override
     public Schema schema()
     {
-        threadToTransactionBridge.assertInTransaction();
+        threadToTransactionBridge.assertInUnterminatedTransaction();
         return schema;
     }
 

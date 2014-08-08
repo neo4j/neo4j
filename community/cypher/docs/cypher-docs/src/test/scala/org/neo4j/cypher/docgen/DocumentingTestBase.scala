@@ -25,9 +25,9 @@ import java.util.concurrent.TimeUnit
 import org.junit.{After, Before}
 import org.neo4j.cypher.example.JavaExecutionEngineDocTest
 import org.neo4j.cypher.export.{DatabaseSubGraph, SubGraphExporter}
-import org.neo4j.cypher.internal.ServerExecutionEngine
-import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
+import org.neo4j.cypher.internal.{RewindableExecutionResult, ServerExecutionEngine}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
 import org.neo4j.cypher.internal.helpers.{GraphIcing, Materialized}
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.{CypherException, ExecutionResult}
@@ -143,7 +143,7 @@ trait DocumentationHelper extends GraphIcing {
 
 abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper with GraphIcing {
 
-  def testQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, assertions: (ExecutionResult => Unit)*) {
+  def testQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, assertions: (InternalExecutionResult => Unit)*) {
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, None, assertions: _*)
   }
 
@@ -152,15 +152,15 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     internalTestQuery(title, text, queryText, optionalResultExplanation, Some(classTag), None)
   }
 
-  def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, prepare: => Any, assertions: (ExecutionResult => Unit)*) {
+  def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, prepare: => Any, assertions: (InternalExecutionResult => Unit)*) {
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(() => prepare), assertions: _*)
   }
 
-  def profileQuery(title: String, text: String, queryText: String, assertions: (ExecutionResult => Unit)*) {
+  def profileQuery(title: String, text: String, queryText: String, assertions: (InternalExecutionResult => Unit)*) {
     internalProfileQuery(title, text, "cypher 2.1.experimental " + queryText, None, None, assertions: _*)
   }
 
-  private def internalProfileQuery(title: String, text: String, queryText: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
+  private def internalProfileQuery(title: String, text: String, queryText: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (InternalExecutionResult => Unit)*) {
     parameters = null
     preparationQueries = List()
 
@@ -230,7 +230,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   }
 
 
-  private def internalTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
+  private def internalTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (InternalExecutionResult => Unit)*) {
     parameters = null
     preparationQueries = List()
     //dumpGraphViz(dir, graphvizOptions.trim)
@@ -300,7 +300,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     }
   }
 
-  private def fetchQueryResults(prepare: Option[() => Any], query: String): ExecutionResult =  {
+  private def fetchQueryResults(prepare: Option[() => Any], query: String): InternalExecutionResult =  {
     val results = if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
     RewindableExecutionResult(results)
   }
@@ -333,7 +333,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
   def indexProps: List[String] = List()
 
-  def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: ExecutionResult, consoleData: String) {
+  def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: InternalExecutionResult, consoleData: String) {
     dumpToFile(dir, writer, title, query, returns, text, Right(result), consoleData)
   }
 
@@ -341,7 +341,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     dumpToFile(dir, writer, title, query, returns, text, Left(failure), consoleData)
   }
 
-  private def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: Either[CypherException, ExecutionResult], consoleData: String) {
+  private def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: Either[CypherException, InternalExecutionResult], consoleData: String) {
     val testId = nicefy(section + " " + title)
     writer.println("[[" + testId + "]]")
     if (!noTitle) writer.println("== " + title + " ==")
@@ -381,7 +381,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
   }
 
-  protected def getLabelsFromNode(p: ExecutionResult): Iterable[String] = p.columnAs[Node]("n").next().labels
+  protected def getLabelsFromNode(p: InternalExecutionResult): Iterable[String] = p.columnAs[Node]("n").next().labels
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
     indexProps.foreach((property) => {
@@ -448,7 +448,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     case v: Any => v
   }
 
-  private def dumpQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: Either[CypherException, ExecutionResult], consoleData: String) {
+  private def dumpQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: Either[CypherException, InternalExecutionResult], consoleData: String) {
     if (parameters != null) {
       writer.append(JavaExecutionEngineDocTest.parametersToAsciidoc(mapMapValue(parameters)))
     }

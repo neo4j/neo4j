@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.*;
 
 public class LogFilter implements LogHandler
 {
@@ -46,19 +46,19 @@ public class LogFilter implements LogHandler
     }
 
     @Override
-    public void startEntry( LogEntry.Start startEntry )
+    public void startEntry( LogEntryStart startEntry )
     {
         logEntries.add( startEntry );
     }
 
     @Override
-    public void onePhaseCommitEntry( LogEntry.OnePhaseCommit onePhaseCommitEntry )
+    public void onePhaseCommitEntry( OnePhaseCommit onePhaseCommitEntry )
     {
         logEntries.add( onePhaseCommitEntry );
     }
 
     @Override
-    public void commandEntry( LogEntry.Command commandEntry )
+    public void commandEntry( LogEntryCommand commandEntry )
     {
         logEntries.add( commandEntry );
     }

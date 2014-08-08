@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.util.Cursor;
-
-public interface IOCursor extends Cursor<IOException>
+public interface IOCursor<T> extends Closeable
 {
+    T get();
+
+    boolean next() throws IOException;
 }

@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,14 +39,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
@@ -59,7 +61,10 @@ import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class TestIdGenerator
 {
-    @Rule public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private EphemeralFileSystemAbstraction fs;
 
     @Before
@@ -446,7 +451,6 @@ public class TestIdGenerator
     @Test
     public void testRandomTest()
     {
-        int numberOfCloses = 0;
         java.util.Random random = new java.util.Random( System.currentTimeMillis() );
         int capacity = random.nextInt( 1024 ) + 1024;
         int grabSize = random.nextInt( 128 ) + 128;
@@ -476,7 +480,6 @@ public class TestIdGenerator
                     closeIdGenerator( idGenerator );
                     grabSize = random.nextInt( 128 ) + 128;
                     idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), grabSize, capacity * 2, false, 0 );
-                    numberOfCloses++;
                 }
             }
             closeIdGenerator( idGenerator );
@@ -489,7 +492,6 @@ public class TestIdGenerator
                 assertTrue( file.delete() );
             }
         }
-
     }
 
     @Test
@@ -572,7 +574,7 @@ public class TestIdGenerator
     }
 
     @Test
-    public void makeSureMagicMinusOneIsntReturnedFromNodeIdGenerator() throws Exception
+    public void makeSureMagicMinusOneIsNotReturnedFromNodeIdGenerator() throws Exception
     {
         makeSureMagicMinusOneIsSkipped( IdType.NODE );
         makeSureMagicMinusOneIsSkipped( IdType.RELATIONSHIP );
@@ -700,7 +702,7 @@ public class TestIdGenerator
     }
 
     @Test
-    public void testChurnIdBatchAtGrabsize()
+    public void testChurnIdBatchAtGrabSize()
     {
         IdGenerator idGenerator = null;
         try

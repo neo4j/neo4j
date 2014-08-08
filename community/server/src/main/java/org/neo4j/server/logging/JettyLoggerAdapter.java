@@ -88,6 +88,12 @@ public class JettyLoggerAdapter implements Logger
     }
 
     @Override
+    public void debug( String s, long l )
+    {
+        logger.debug(format(s, l));
+    }
+
+    @Override
     public Logger getLogger( String arg0 )
     {
         Class<?> cls = null;

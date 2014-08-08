@@ -27,6 +27,7 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
+  Jackson
   Lucene Core
   opencsv
   parboiled-core
@@ -41,7 +42,6 @@ Eclipse Public License, Version 1.0
   Logback Core Module
 
 GNU Lesser General Public License, Version 2.1
-  Jackson
   Logback Classic Module
   Logback Core Module
 

@@ -18,10 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
-import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
-import org.neo4j.cypher.docgen.RefcardTest
+
 import java.io.File
-import org.neo4j.cypher.docgen.CsvFile
+
+import org.neo4j.cypher.QueryStatisticsTestSupport
+import org.neo4j.cypher.docgen.{CsvFile, RefcardTest}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 
 class ImportTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List()
@@ -59,7 +61,7 @@ class ImportTest extends RefcardTest with QueryStatisticsTestSupport {
     "%ARTIS_WITH_HEADER%" -> (baseUrl + artistWithHeaders.getName),
     "%ARTIST_WITH_FIELD_DELIMITER%" -> (baseUrl + artistFieldTerminator.getName))
 
-  override def assert(name: String, result: ExecutionResult) {
+  override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "created" =>
         assertStats(result, nodesCreated = 4, labelsAdded = 4, propertiesSet = 8)

@@ -492,6 +492,9 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             {
                 incrementVersion( cursor );
             }
+            // make sure the new version value is persisted
+            // TODO this can be improved by flushing only the page containing that value rather than all pages
+            storeFile.flush();
             return versionField;
         }
         catch ( IOException e )

@@ -223,23 +223,23 @@ public class RelationshipChangesForNode
         switch ( direction )
         {
             case INCOMING:
-                if(incoming != null)
+                if(incoming != null && !incoming.isEmpty())
                 {
                     rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( incoming ) );
                 }
                 break;
             case OUTGOING:
-                if(outgoing != null)
+                if(outgoing != null && !outgoing.isEmpty())
                 {
                     rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( outgoing ) );
                 }
                 break;
             case BOTH:
-                if(outgoing != null)
+                if(outgoing != null && !outgoing.isEmpty())
                 {
                     rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( outgoing ) );
                 }
-                if(incoming != null)
+                if(incoming != null && !incoming.isEmpty())
                 {
                     rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( incoming ) );
                 }
@@ -247,9 +247,9 @@ public class RelationshipChangesForNode
         }
 
         // Loops are always included
-        if(loops != null)
+        if(loops != null && !loops.isEmpty())
         {
-            rels = diffStrategy.augmentPrimitiveIterator( rels, loops.values().iterator() );
+            rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( loops ) );
         }
 
         return rels;

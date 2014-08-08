@@ -33,7 +33,7 @@ public class CommandReaderFactoryTest
     public void testReturnsV0ReaderForVersion0() throws Exception
     {
         // GIVEN
-        CommandReaderFactory factory = CommandReaderFactory.DEFAULT;
+        CommandReaderFactory factory = new CommandReaderFactory.Default();
 
         // WHEN
         CommandReader reader = factory.newInstance( (byte) 0 );
@@ -46,7 +46,7 @@ public class CommandReaderFactoryTest
     public void testReturnsV1ReaderForVersion1() throws Exception
     {
         // GIVEN
-        CommandReaderFactory factory = CommandReaderFactory.DEFAULT;
+        CommandReaderFactory factory = new CommandReaderFactory.Default();
 
         // WHEN
         CommandReader reader = factory.newInstance( (byte) -1 );
@@ -59,7 +59,7 @@ public class CommandReaderFactoryTest
     public void testThrowsExceptionForNonExistingVersion() throws Exception
     {
         // GIVEN
-        CommandReaderFactory factory = CommandReaderFactory.DEFAULT;
+        CommandReaderFactory factory = new CommandReaderFactory.Default();
 
         // WHEN
         try

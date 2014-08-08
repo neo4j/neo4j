@@ -28,6 +28,8 @@ include::none.asciidoc[]
 
 include::single.asciidoc[]
 
+include::exists.asciidoc[]
+
 :leveloffset: 1
 
 [[query-functions-scalar]]
@@ -61,6 +63,8 @@ include::endnode.asciidoc[]
 include::toint.asciidoc[]
 
 include::tofloat.asciidoc[]
+
+include::tostring.asciidoc[]
 
 :leveloffset: 1
 

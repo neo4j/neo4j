@@ -21,6 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.junit.Assert._
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.ExecutionResult
 import org.neo4j.visualization.graphviz.GraphStyle
@@ -95,6 +96,17 @@ class FunctionsTest extends DocumentingTestBase {
       queryText = """match p=(n)-->(b) where n.name='Alice' and SINGLE(var in nodes(p) WHERE var.eyes = "blue") return p""",
       returns = """Exactly one node in every returned path will have the `eyes` property set to `"blue"`.""",
       assertions = (p) => assertEquals(1, p.toSeq.length))
+  }
+
+  @Test def exists() {
+    testThis(
+      title = "EXISTS",
+      syntax = "EXISTS( pattern-or-property )",
+      arguments = List("pattern-or-property" -> "A pattern or a property (in the form 'identifier.prop')."),
+      text = """Returns true if a match for the pattern exists in the graph, or the property exists in the node, relationship or map.""",
+      queryText = """match (n) where EXISTS(n.name) return n.name AS name, EXISTS( (n)-[:MARRIED]->() ) AS is_married""",
+      returns = """This query returns all the nodes with a name property along with a boolean true/false indicating if they are married.""",
+      assertions = (p) => assertEquals(5, p.toSeq.length))
   }
 
   @Test def relationship_type() {
@@ -425,7 +437,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
       title = "HAVERSIN",
       syntax = "HAVERSIN( expression )",
       arguments = List("expression" -> "A numeric expression."),
-      text = "`HAVERSIN` returns the half versine of the expression.",
+      text = "`HAVERSIN` returns half the versine of the expression.",
       queryText = """return haversin(0.5)""",
       returns = "The haversine of 0.5 is returned.",
       assertions = (p) => assertEquals(0.061208719054813, p.toList.head("haversin(0.5)").asInstanceOf[Double], 0.000001)
@@ -475,7 +487,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
       title = "PI",
       syntax = "PI()",
       arguments = List.empty,
-      text = "`PI` returns the mathmatical constant pi.",
+      text = "`PI` returns the mathematical constant pi.",
       queryText = """return pi()""",
       returns = "The constant pi is returned.",
       assertions = (p) => assertEquals(3.141592653589793, p.toList.head("pi()").asInstanceOf[Double], 0.000001)
@@ -755,6 +767,18 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
     )
   }
 
+  @Test def toStringFunc() {
+    testThis(
+      title = "TOSTRING",
+      syntax = "TOSTRING( expression )",
+      arguments = List("expression" -> "An expression that returns anything"),
+      text = "`TOSTRING` converts the argument to a string. It converts integers and floating point numbers to strings, and if called with a string will leave it unchanged.",
+      queryText = "return toString(11.5), toString(\"already a string\")",
+      returns = "",
+      assertions = (p) => assert(List(Map("toString(11.5)" -> "11.5", "toString(\"already a string\")" -> "already a string")) === p.toList)
+    )
+  }
+
   @Test def now() {
     testThis(
       title = "TIMESTAMP",
@@ -796,7 +820,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
       assertions = (p) => assert(p.toList.head("endNode(r)") === node("C")))
   }
 
-  private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
+  private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (InternalExecutionResult => Unit)*) {
     val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s
 

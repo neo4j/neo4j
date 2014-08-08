@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework.log.pruning;
 
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
-
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
+
+import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
 
 public class LogPruneStrategyFactory
 {
@@ -51,7 +49,7 @@ public class LogPruneStrategyFactory
 
     static boolean decidePruneForIllegalLogFormat( IllegalLogFormatException e )
     {
-        if( e.wasNewerLogVersion() )
+        if ( e.wasNewerLogVersion() )
         {
             throw new RuntimeException( "Unable to read database logs, because it contains" +
                     " logs from a newer version of Neo4j.", e );
@@ -76,8 +74,10 @@ public class LogPruneStrategyFactory
      * </ul>
      */
     public static LogPruneStrategy fromConfigValue( FileSystemAbstraction fileSystem,
-                                                    LogFileInformation logFileInformation, PhysicalLogFiles files,
-                                                    LogVersionRepository versionRepo, String configValue )
+                                                    LogFileInformation logFileInformation,
+                                                    PhysicalLogFiles files,
+                                                    LogVersionRepository versionRepo,
+                                                    String configValue )
     {
         String[] tokens = configValue.split( " " );
         if ( tokens.length == 0 )
@@ -85,59 +85,51 @@ public class LogPruneStrategyFactory
             throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue + "'" );
         }
 
-        String numberWithUnit = tokens[0];
-
-        Threshold thresholdToUse;
+        final String boolOrNumber = tokens[0];
 
         if ( tokens.length == 1 )
         {
-            if ( numberWithUnit.equals( "true" ) )
+            switch ( boolOrNumber )
             {
-                return NO_PRUNING;
-            }
-            else if ( numberWithUnit.equals( "false" ) )
-            {
-                return new ThresholdBasedPruneStrategy( fileSystem, logFileInformation, files, versionRepo,
-                        new TransactionCountThreshold( 1 ) );
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
-                        "'. The form is 'all' or '<number><unit> <type>' for example '100k txs' " +
-                        "for the latest 100 000 transactions" );
+                case "true":
+                    return NO_PRUNING;
+                case "false":
+                    final TransactionCountThreshold thresholdToUse = new TransactionCountThreshold( 1 );
+                    return new ThresholdBasedPruneStrategy( fileSystem, logFileInformation, files, versionRepo,
+                            thresholdToUse );
+                default:
+                    throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
+                            "'. The form is 'all' or '<number><unit> <type>' for example '100k txs' " +
+                            "for the latest 100 000 transactions" );
             }
         }
 
-        String[] types = new String[] { "files", "size", "txs", "hours", "days" };
         String type = tokens[1];
-        int number = (int) parseLongWithUnit( numberWithUnit );
-        int typeIndex = 0;
-        if ( type.equals( types[typeIndex++] ) )
-        {
-            thresholdToUse = new FileCountThreshold( number );
-        }
-        else if ( type.equals( types[typeIndex++] ) )
-        {
-            thresholdToUse = new FileSizeThreshold( fileSystem, number );
-        }
-        else if ( type.equals( types[typeIndex++] ) )
-        {
-            thresholdToUse = new TransactionCountThreshold( number );
-        }
-        else if ( type.equals( types[typeIndex++] ) )
-        {
-            thresholdToUse = new TransactionTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.HOURS, number );
-        }
-        else if ( type.equals( types[typeIndex++] ) )
-        {
-            thresholdToUse = new TransactionTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.DAYS, number );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
-                    "'. Invalid type '" + type + "', valid are " + Arrays.asList( types ) );
-        }
+        int number = (int) parseLongWithUnit( boolOrNumber );
 
+        Threshold thresholdToUse;
+        switch ( type )
+        {
+            case "files":
+                thresholdToUse = new FileCountThreshold( number );
+                break;
+            case "size":
+                thresholdToUse = new FileSizeThreshold( fileSystem, number );
+                break;
+            case "txs":
+                thresholdToUse = new TransactionCountThreshold( number );
+                break;
+            case "hours":
+                thresholdToUse = new TransactionTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.HOURS, number );
+                break;
+            case "days":
+                thresholdToUse = new TransactionTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.DAYS, number );
+                break;
+            default:
+                throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
+                        "'. Invalid type '" + type + "', valid are files, size, txs, hours, days." );
+        }
         return new ThresholdBasedPruneStrategy( fileSystem, logFileInformation, files, versionRepo, thresholdToUse );
     }
+
 }

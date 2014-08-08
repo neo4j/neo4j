@@ -39,6 +39,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.PageCacheRule;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
 import org.neo4j.test.subprocess.BreakpointTrigger;
@@ -103,15 +103,10 @@ public class IdGeneratorRebuildFailureEmulationTest
         @BreakpointHandler("setHighId")
         public static void on_setHighId( DebugInterface di, BreakPoint setHighId )
         {
-            if ( setHighId.invocationCount() > 1
-                    || RelationshipTypeTokenStore.class.getName().equals( di.thread().getStackTrace()
-                    [2].getClassName() ) )
-            {
-                setHighId.disable();
-                // emulate a failure in recovery by changing the id parameter to setHighId(id) to an invalid value,
-                // causing an exception to be thrown.
-                di.setLocalVariable( "id", -1 );
-            }
+            setHighId.disable();
+            // emulate a failure in recovery by changing the id parameter to setHighId(id) to an invalid value,
+            // causing an exception to be thrown.
+            di.setLocalVariable( "id", -1 );
         }
     }
 

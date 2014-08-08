@@ -299,9 +299,9 @@ public class IndexingServiceTest
 
         // then
         logger.assertExactly(
-                info( "IndexingService.initIndexes: index on :LabelOne(propertyOne) is ONLINE" ),
-                info( "IndexingService.initIndexes: index on :LabelOne(propertyTwo) is POPULATING" ),
-                info( "IndexingService.initIndexes: index on :LabelTwo(propertyTwo) is FAILED" )
+                info( "IndexingService.init: index on :LabelOne(propertyOne) is ONLINE" ),
+                info( "IndexingService.init: index on :LabelOne(propertyTwo) is POPULATING" ),
+                info( "IndexingService.init: index on :LabelTwo(propertyTwo) is FAILED" )
         );
     }
 

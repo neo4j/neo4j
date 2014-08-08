@@ -21,7 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.junit.Before;
 import org.junit.Test;
-
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
@@ -32,12 +32,8 @@ import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.test.DoubleLatch;
 
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class KernelTransactionImplementationTest
 {
@@ -130,6 +126,7 @@ public class KernelTransactionImplementationTest
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -145,6 +142,7 @@ public class KernelTransactionImplementationTest
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -169,6 +167,7 @@ public class KernelTransactionImplementationTest
         // THEN
         assertTrue( exceptionReceived );
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -185,6 +184,7 @@ public class KernelTransactionImplementationTest
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -198,6 +198,7 @@ public class KernelTransactionImplementationTest
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -210,35 +211,79 @@ public class KernelTransactionImplementationTest
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
+    @Test(expected = TransactionFailureException.class)
+    public void shouldThrowOnTerminationInCommit() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        transaction.success();
+        transaction.markForTermination();
+
+        transaction.close();
+    }
+
     @Test
-    public void shouldAllowTerminateingFromADifferentThread() throws Exception
+    public void shouldIgnoreTerminationDuringRollback() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        transaction.markForTermination();
+        transaction.close();
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    class ChildException
+    {
+        public Exception exception = null;
+    }
+
+    @Test
+    public void shouldAllowTerminatingFromADifferentThread() throws Exception
     {
         // GIVEN
+        final ChildException childException = new ChildException();
         final DoubleLatch latch = new DoubleLatch( 1 );
         final KernelTransaction transaction = newTransaction();
-        Thread thread = new Thread( new Runnable () {
+        Thread thread = new Thread( new Runnable()
+        {
             @Override
             public void run()
             {
-                latch.awaitStart();
-                transaction.markForTermination();
-                latch.finish();
+                try
+                {
+                    latch.awaitStart();
+                    transaction.markForTermination();
+                    latch.finish();
+                }
+                catch ( Exception e )
+                {
+                    childException.exception = e;
+                }
             }
-        });
+        } );
 
         // WHEN
         thread.start();
         transaction.success();
         latch.startAndAwaitFinish();
 
+        if ( childException.exception != null )
+        {
+            throw childException.exception;
+        }
+
         boolean exceptionReceived = false;
         try
         {
             transaction.close();
-        } catch ( TransactionFailureException e )
+        }
+        catch ( TransactionFailureException e )
         {
             // Expected.
             exceptionReceived = true;
@@ -247,6 +292,7 @@ public class KernelTransactionImplementationTest
         // THEN
         assertTrue( exceptionReceived );
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -267,6 +313,6 @@ public class KernelTransactionImplementationTest
     {
         return new KernelTransactionImplementation( null, false, null, null, null, null, recordState,
                 null, neoStore, new NoOpClient(), hooks, null, null, null, transactionMonitor, neoStore,
-                null, null, legacyIndexState );
+                null, null, legacyIndexState, mock(Pool.class));
     }
 }

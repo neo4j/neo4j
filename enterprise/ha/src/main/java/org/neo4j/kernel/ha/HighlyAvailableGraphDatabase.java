@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
@@ -47,12 +46,9 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Factory;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Provider;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -84,17 +80,20 @@ import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
 import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
-import org.neo4j.kernel.ha.transaction.DenseNodeTransactionTranslator;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.CommitProcessFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -157,10 +156,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         masterDelegateInvocationHandler = new DelegateInvocationHandler( Master.class );
         master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
                 masterDelegateInvocationHandler );
-        requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ).toIntegerIndex(),
-                getDependencyResolver() );
+        final int serverId = config.get( ClusterSettings.server_id ).toIntegerIndex();
+        requestContextFactory = new RequestContextFactory( serverId, getDependencyResolver() );
 
-        this.unpacker = new TransactionCommittingResponseUnpacker( dependencyResolver );
+        this.unpacker = new TransactionCommittingResponseUnpacker( dependencyResolver, serverId );
 
         kernelProvider = new Provider<KernelAPI>()
         {
@@ -194,30 +193,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected AvailabilityGuard createAvailabilityGuard()
-    {
-        // 3 conditions: DatabaseAvailability, HighAvailabilityMemberStateMachine, and HA Kernel Panic
-        return new AvailabilityGuard( Clock.SYSTEM_CLOCK, 3 );
-    }
-
-    @Override
     protected void createDatabaseAvailability()
     {
         // Skip this, it's done manually in create() to ensure it is as late as possible
-    }
-
-    @Override
-    protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
-    {
-        return new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
-
-        {
-            @Override
-            public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
-            {
-                return new DenseNodeTransactionTranslator( neoStore );
-            }
-        };
     }
 
     public void start()
@@ -412,28 +390,29 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected CommitProcessFactory getCommitProcessFactory()
     {
-        final DelegateInvocationHandler<CommitProcessFactory> commitProcessFactoryDelegate =
-                new DelegateInvocationHandler<>( CommitProcessFactory.class );
-
-        final CommitProcessFactory commitProcessFactory =
-                (CommitProcessFactory) Proxy.newProxyInstance( CommitProcessFactory.class.getClassLoader(),
-                        new Class[]{ CommitProcessFactory.class }, commitProcessFactoryDelegate );
+        final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
+                new DelegateInvocationHandler<>( TransactionCommitProcess.class );
 
         slaves = life.add( new HighAvailabilitySlaves( members, clusterClient,
                 this.slaveFactory = new DefaultSlaveFactory( logging, monitors, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
+
         final TransactionPropagator pusher = life.add (new TransactionPropagator( TransactionPropagator.from( config ),
                 msgLog, slaves, new CommitPusher( jobScheduler ) ) );
 
-        new CommitProcessFactorySwitcher( pusher,
-                master, commitProcessFactoryDelegate, requestContextFactory, memberStateMachine, unpacker );
+        return new CommitProcessFactory()
+        {
+            @Override
+            public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore, KernelHealth
+                    kernelHealth, NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier, NeoStoreInjectedTransactionValidator validator, boolean recovery )
+            {
+                new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
+                        memberStateMachine, unpacker, logicalTransactionStore, kernelHealth, neoStore, storeApplier,
+                        validator, transactionMonitor );
 
-        return commitProcessFactory;
-    }
-
-    @Override
-    protected void createNeoDataSource()
-    {
-        super.createNeoDataSource();
+                return (TransactionCommitProcess) Proxy.newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
+                        new Class[]{ TransactionCommitProcess.class }, commitProcessDelegate );
+            }
+        };
     }
 
     @Override
@@ -450,7 +429,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, msgLog, this,
                 (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
-                masterDelegateInvocationHandler, clusterMemberAvailability, monitors );
+                masterDelegateInvocationHandler, clusterMemberAvailability, dataSourceManager );
 
         highAvailabilityModeSwitcher =
                 new HighAvailabilityModeSwitcher( switchToSlaveInstance, switchToMasterInstance,

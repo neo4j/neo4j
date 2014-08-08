@@ -31,6 +31,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 
 public abstract class DatabaseRule extends ExternalResource
 {
@@ -181,6 +182,10 @@ public abstract class DatabaseRule extends ExternalResource
 
     public void clearCache()
     {
-        // TODO 2.2-future find a way to clear the cache
+        NeoStoreXaDataSource dataSource =
+                database.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+
+        dataSource.getNodeCache().clear();
+        dataSource.getRelationshipCache().clear();
     }
 }

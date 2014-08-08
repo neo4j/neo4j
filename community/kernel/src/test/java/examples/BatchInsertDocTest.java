@@ -93,7 +93,7 @@ public class BatchInsertDocTest
     {
         // START SNIPPET: configuredInsert
         Map<String, String> config = new HashMap<>();
-        config.put( "neostore.nodestore.db.mapped_memory", "90M" );
+        config.put( "mapped_memory_total_size", "90M" );
         BatchInserter inserter = BatchInserters.inserter(
                 new File("target/batchinserter-example-config").getAbsolutePath(), fileSystem, config );
         // Insert data here ... and then shut down:
@@ -106,11 +106,7 @@ public class BatchInsertDocTest
     {
         try ( Writer fw = fileSystem.openAsWriter( new File( "target/batchinsert-config" ).getAbsoluteFile(), "utf-8", false ) )
         {
-            fw.append( "neostore.nodestore.db.mapped_memory=90M\n"
-                       + "neostore.relationshipstore.db.mapped_memory=3G\n"
-                       + "neostore.propertystore.db.mapped_memory=50M\n"
-                       + "neostore.propertystore.db.strings.mapped_memory=100M\n"
-                       + "neostore.propertystore.db.arrays.mapped_memory=0M" );
+            fw.append( "mapped_memory_total_size=3G" );
         }
 
         // START SNIPPET: configFileInsert

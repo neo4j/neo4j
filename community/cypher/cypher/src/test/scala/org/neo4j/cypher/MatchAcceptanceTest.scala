@@ -1220,4 +1220,15 @@ RETURN a.name""")
     // should give us a single, empty path starting at one end
     result.toList should equal (List(Map("p"-> new PathImpl(node))))
   }
+
+  test("MATCH n RETURN n.prop AS m, count(n) AS count") {
+    // Given a single node
+    val node = createNode("prop" -> "42")
+
+    // when
+    val result = executeWithNewPlanner("MATCH n RETURN n.prop AS n, count(n) AS count")
+
+    // should give us a single, empty path starting at one end
+    result.toList should equal (List(Map("n" -> "42", "count" -> 1)))
+  }
 }

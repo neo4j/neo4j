@@ -114,6 +114,7 @@
     <license name="Common Development and Distribution License Version 1.1 and GNU General Public License, version 2 with the Classpath Exception">
       <aka>CDDL1.1-GPL2/CPE</aka>
       <aka>Dual license consisting of the CDDL v1.1 and GPL v2</aka>
+      <aka>CDDL + GPLv2 with classpath exception</aka>
     </license>
     <license name="Eclipse Public License, Version 1.0">
       <aka>Eclipse Public License - Version 1.0</aka>

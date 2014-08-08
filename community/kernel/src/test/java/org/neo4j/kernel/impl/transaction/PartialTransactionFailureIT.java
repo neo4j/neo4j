@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -54,9 +53,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * Here we are verifying that even if we get an exception from the storage layer during commit,
  * we should still be able to recover to a consistent state.
  */
-@Ignore( "TODO 2.2-future this test hangs since log rotation by definition hangs at the time of ignoring this test,"
-        + "since lastCommitting is incremented before lastApplied and lastApplied is incremented after awaiting"
-        + "applied transactions" )
 public class PartialTransactionFailureIT
 {
     @Rule
@@ -73,8 +69,7 @@ public class PartialTransactionFailureIT
         adversary.disable();
 
         Map<String, String> params = stringMap(
-                "logical_log_rotation_threshold", "1",
-                "use_memory_mapped_buffers", "false");
+                "logical_log_rotation_threshold", "1");
         String storeDir = dir.directory().getAbsolutePath();
         final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, params ) {
             @Override

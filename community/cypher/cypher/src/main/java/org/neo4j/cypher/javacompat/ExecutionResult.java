@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cypher.internal.Normal$;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
@@ -37,7 +38,10 @@ import org.neo4j.graphdb.ResourceIterator;
  * Either iterate directly over the ExecutionResult to retrieve each row of the result
  * set, or use <code>columnAs()</code> to access a single column with result objects
  * cast to a type.
+ *
+ * @deprecated See {@link org.neo4j.cypher.javacompat.ExtendedExecutionResult}
  */
+@Deprecated
 public class ExecutionResult implements ResourceIterable<Map<String,Object>>
 {
     private org.neo4j.cypher.ExecutionResult inner;
@@ -46,8 +50,6 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>
      * Constructor used by the Cypher framework. End-users should not
      * create an ExecutionResult directly, but instead use the result
      * returned from calling {@link ExecutionEngine#execute(String)}.
-     *
-     * @param projection
      */
     public ExecutionResult( org.neo4j.cypher.ExecutionResult projection )
     {

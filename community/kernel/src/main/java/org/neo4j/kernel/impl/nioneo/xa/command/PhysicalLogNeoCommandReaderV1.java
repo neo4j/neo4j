@@ -49,22 +49,24 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.DynamicRecordAdder;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.COLLECTION_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
 public class PhysicalLogNeoCommandReaderV1 implements CommandReader
 {
-    private interface DynamicRecordAdder<T>
-    {
-        void add( T target, DynamicRecord record );
-    }
-
+    private final PhysicalNeoCommandReader reader = new PhysicalNeoCommandReader();
     private ReadableLogChannel channel;
+    private IndexCommandHeader indexCommandHeader;
 
     @Override
     public Command read( ReadableLogChannel channel ) throws IOException
@@ -76,7 +78,6 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
         {
             commandType = channel.get();
         }
-        PhysicalNeoCommandReader reader = new PhysicalNeoCommandReader();
         Command command;
         switch ( commandType )
         {
@@ -476,25 +477,6 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             return numberOfRecords;
         }
 
-        private final DynamicRecordAdder<PropertyBlock> PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER = new DynamicRecordAdder<PropertyBlock>()
-        {
-            @Override
-            public void add( PropertyBlock target, DynamicRecord record )
-            {
-                record.setCreated();
-                target.addValueRecord( record );
-            }
-        };
-
-        private final DynamicRecordAdder<Collection<DynamicRecord>> COLLECTION_DYNAMIC_RECORD_ADDER = new DynamicRecordAdder<Collection<DynamicRecord>>()
-        {
-            @Override
-            public void add( Collection<DynamicRecord> target, DynamicRecord record )
-            {
-                target.add( record );
-            }
-        };
-
         private PropertyRecord readPropertyRecord( long id ) throws IOException
         {
             // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
@@ -616,24 +598,6 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             return rule;
         }
 
-        private final DynamicRecordAdder<PropertyRecord> PROPERTY_DELETED_DYNAMIC_RECORD_ADDER = new DynamicRecordAdder<PropertyRecord>()
-        {
-            @Override
-            public void add( PropertyRecord target, DynamicRecord record )
-            {
-                assert !record.inUse() : record + " is kinda weird";
-                target.addDeletedRecord( record );
-            }
-        };
-        private final DynamicRecordAdder<PropertyKeyTokenRecord> PROPERTY_INDEX_DYNAMIC_RECORD_ADDER = new DynamicRecordAdder<PropertyKeyTokenRecord>()
-        {
-            @Override
-            public void add( PropertyKeyTokenRecord target, DynamicRecord record )
-            {
-                target.addNameRecord( record );
-            }
-        };
-
         @Override
         public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
         {
@@ -720,11 +684,15 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             boolean entityIdNeedsLong = (headerBytes[0] & 0x1) > 0;
             byte indexNameId = (byte) (headerBytes[1] & 0x3F);
 
-            boolean startNodeNeedsLong = (headerBytes[1] & 0x8) > 0;
+            boolean startNodeNeedsLong = (headerBytes[1] & 0x80) > 0;
             boolean endNodeNeedsLong = (headerBytes[1] & 0x40) > 0;
 
             byte keyId = headerBytes[2];
-            return new IndexCommandHeader( valueType, entityType, entityIdNeedsLong,
+            if ( indexCommandHeader == null )
+            {
+                indexCommandHeader = new IndexCommandHeader();
+            }
+            return indexCommandHeader.set( valueType, entityType, entityIdNeedsLong,
                     indexNameId, startNodeNeedsLong, endNodeNeedsLong, keyId );
         }
 
@@ -759,15 +727,15 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
 
     private static final class IndexCommandHeader
     {
-        final byte valueType;
-        final byte entityType;
-        final boolean entityIdNeedsLong;
-        final byte indexNameId;
-        final boolean startNodeNeedsLong;
-        final boolean endNodeNeedsLong;
-        final byte keyId;
+        byte valueType;
+        byte entityType;
+        boolean entityIdNeedsLong;
+        byte indexNameId;
+        boolean startNodeNeedsLong;
+        boolean endNodeNeedsLong;
+        byte keyId;
 
-        IndexCommandHeader( byte valueType, byte entityType, boolean entityIdNeedsLong,
+        IndexCommandHeader set( byte valueType, byte entityType, boolean entityIdNeedsLong,
                 byte indexNameId, boolean startNodeNeedsLong, boolean endNodeNeedsLong, byte keyId )
         {
             this.valueType = valueType;
@@ -777,6 +745,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             this.startNodeNeedsLong = startNodeNeedsLong;
             this.endNodeNeedsLong = endNodeNeedsLong;
             this.keyId = keyId;
+            return this;
         }
     }
 }

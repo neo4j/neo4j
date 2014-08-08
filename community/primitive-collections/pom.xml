@@ -55,6 +55,16 @@ the relevant Commercial Agreement.
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <scope>test</scope>
+    </dependency>
 <!--<dependency>
       <groupId>net.sf.trove4j</groupId>
       <artifactId>trove4j</artifactId>

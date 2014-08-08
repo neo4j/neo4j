@@ -1,3 +1,16 @@
+2.1.3
+-----
+o Fixes a bug where instances could not join a cluster if their transaction log
+  files were not sufficiently recent.
+o Fixes a bug where a cluster instance could not participate in leader elections
+  after it had resurfaced from a crash.
+o Fixes a bug that could lead to constraints suddenly missing their associated
+  indexes after a mode switch in HA.
+o Fixes a data race bug in the Enterprise (Forseti) LockManager, that could lead
+  to transactions mistakenly failing with IllegalStateExceptions.
+o Fixes a bug in the Enterprise (Forseti) LockManager where explicit shared
+  locks could not be properly upgraded to exclusive locks.
+
 2.1.2
 -----
 o Fixes issue with Forseti lock manager, which could miss grabbing
@@ -18,8 +31,8 @@ o Fix of issue with state bookkeeping for reporting instance role
 
 2.0.4
 -----
-o Slaves will now fall back to a full store copy if the master misses
-  logs old enough to serve incremental updates on join
+o Slave only instances no longer attempt to become coordinators, even if
+  they instantiate the cluster.
 
 2.0.2
 -----
@@ -53,7 +66,7 @@ o Constraints can now be created in a running HA cluster
 1.9.8
 -----
 o Slaves will now fall back to a full store copy if the master misses
- logs old enough to serve incremental updates on join
+  logs old enough to serve incremental updates on join
 
 1.9.7
 -----
@@ -69,7 +82,7 @@ o The master instance will now always send out masterIsAvailable messages in res
   SLAVE
 o Master instance now properly blocks transactions from starting after shutdown has started and
   waits on a timeout for running transactions to finish and be pushed to slaves before stopping
-  completely. 
+  completely.
 
 1.9.3
 -----
@@ -103,7 +116,7 @@ o Conflicting server IDs in a cluster will now make the latest joining instance 
 --------------------
 o Lifecycle improvements, with proper removal of listeners on shutdown
 o Cluster snapshot synchronization used for HA cluster membership
-o Implements JMX changes  
+o Implements JMX changes
 o IdGenerators instantiated properly in ModeSwitcher
 o ZooKeeper compatibility layer introduced, allows for rolling upgrades from 1.8
 o Ability to join a cluster even if there's an existing and empty database with a mismatching store ID.
@@ -126,7 +139,7 @@ o Master recovery in clusters with only one instance master capable will now alw
 
 1.8.M06 (2012-07-06)
 --------------------
-o Added transaction push factor that can be configured with amount of slaves to push transactions to. The master will 
+o Added transaction push factor that can be configured with amount of slaves to push transactions to. The master will
   optimistically push each transaction before tx.finish completes to reduce risk of branched data.
 o Added the ability for rolling upgrades from versions 1.5.3 onwards.
 o Changed the way master election notification and data gathering works, leading to massively reduced writing of data to
@@ -216,10 +229,10 @@ o How to handle cases of branched data is configurable: keep all, keep last, kee
 o Rotates logs before internal restart (slave->master or master->slave) to reduce potential recovery (i.e. switch) times.
 o Does some additional repairing of neostore fail after a full store copy from master so that log version is synced.
 
-1.4.M03 (2011-05-26) 
+1.4.M03 (2011-05-26)
 --------------------
 o Fixed bug that did not rollback tx associated with dead channels.
-o Modified master election algo to be more robust against zookeeper hiccups.                          
+o Modified master election algo to be more robust against zookeeper hiccups.
 o Fixed a synchronization bug in ZooClient that could cause waits on wrong monitor.
 
 1.4.M02 (2011-05-12)
@@ -279,4 +292,3 @@ o Shuts down databases after verifying them.
 ------------------------
 
 o initial release
-

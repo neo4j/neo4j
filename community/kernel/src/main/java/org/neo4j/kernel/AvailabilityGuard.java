@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static org.neo4j.helpers.Listeners.notifyListeners;
-import static org.neo4j.helpers.collection.Iterables.join;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +27,9 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
+
+import static org.neo4j.helpers.Listeners.notifyListeners;
+import static org.neo4j.helpers.collection.Iterables.join;
 
 /**
  * The availability guard is what ensures that the database will only take calls when it is in an ok state. It allows
@@ -58,11 +58,28 @@ public class AvailabilityGuard
         String description();
     }
 
+    public static AvailabilityRequirement availabilityRequirement( final String descriptionWhenBlocking )
+    {
+        return new AvailabilityRequirement()
+        {
+            @Override
+            public String description()
+            {
+                return descriptionWhenBlocking;
+            }
+        };
+    }
+
     private Iterable<AvailabilityListener> listeners = Listeners.newListeners();
 
     private final AtomicInteger available;
     private final List<AvailabilityRequirement> blockingComponents = new CopyOnWriteArrayList<>();
     private final Clock clock;
+
+    public AvailabilityGuard( Clock clock )
+    {
+        this(clock, 0);
+    }
 
     public AvailabilityGuard( Clock clock, int conditionCount )
     {
@@ -210,7 +227,7 @@ public class AvailabilityGuard
         if(blockingComponents.size() > 0 || available.get() > 0)
         {
             String causes = join( ", ", Iterables.map( DESCRIPTION, blockingComponents ) );
-            return "Blocking components ("+available.get()+"): [" + causes + "]";
+            return available.get() + " reasons for blocking: " + causes + ".";
         }
         return "No blocking components";
     }

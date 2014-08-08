@@ -6,7 +6,9 @@ Expressions
 
 An expression in Cypher can be:
 
-* A numeric literal (integer or double): `13`, `40000`, `3.14`.
+* A decimal (integer or double) literal: `13`, `-40000`, `3.14`, `6.022E23`.
+* A hexadecimal integer literal (starting with `0x`): `0x13zf`, `0xFC3A9`, `-0x66eff`.
+* An octal integer literal (starting with `0`): `01372`, `01278`, `-05671`.
 * A string literal: `"Hello"`, `'World'`.
 * A boolean literal:  `true`, `false`, `TRUE`, `FALSE`.
 * An identifier: `n`, `x`, `rel`, `myFancyIdentifier`, +\`A name with weird stuff in it[]!`+.

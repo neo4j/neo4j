@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.mockfs;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,102 +41,128 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
         this.delegate = delegate;
     }
 
+    @Override
     public StoreChannel open( File fileName, String mode ) throws IOException
     {
         return delegate.open( fileName, mode );
     }
 
+    @Override
     public void moveToDirectory( File file, File toDirectory ) throws IOException
     {
         delegate.moveToDirectory( file, toDirectory );
     }
 
+    @Override
     public boolean mkdir( File fileName )
     {
         return delegate.mkdir( fileName );
     }
 
+    @Override
     public void copyFile( File from, File to ) throws IOException
     {
         delegate.copyFile( from, to );
     }
 
+    @Override
     public <K extends FileSystemAbstraction.ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz,
                                                                                                      Function<Class<K>, K> creator )
     {
         return delegate.getOrCreateThirdPartyFileSystem( clazz, creator );
     }
 
+    @Override
     public boolean renameFile( File from, File to ) throws IOException
     {
         return delegate.renameFile( from, to );
     }
 
+    @Override
     public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
     {
         return delegate.tryLock( fileName, channel );
     }
 
+    @Override
     public StoreChannel create( File fileName ) throws IOException
     {
         return delegate.create( fileName );
     }
 
+    @Override
     public void mkdirs( File fileName ) throws IOException
     {
         delegate.mkdirs( fileName );
     }
 
+    @Override
     public boolean deleteFile( File fileName )
     {
         return delegate.deleteFile( fileName );
     }
 
+    @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
         return delegate.openAsInputStream( fileName );
     }
 
+    @Override
     public boolean fileExists( File fileName )
     {
         return delegate.fileExists( fileName );
     }
 
+    @Override
+    public File[] listFiles( File directory, FilenameFilter filter )
+    {
+        return delegate.listFiles( directory, filter );
+    }
+
+    @Override
     public boolean isDirectory( File file )
     {
         return delegate.isDirectory( file );
     }
 
+    @Override
     public long getFileSize( File fileName )
     {
         return delegate.getFileSize( fileName );
     }
 
+    @Override
     public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
     {
         return delegate.openAsWriter( fileName, encoding, append );
     }
 
+    @Override
     public File[] listFiles( File directory )
     {
         return delegate.listFiles( directory );
     }
 
+    @Override
     public void deleteRecursively( File directory ) throws IOException
     {
         delegate.deleteRecursively( directory );
     }
 
+    @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
         return delegate.openAsOutputStream( fileName, append );
     }
 
+    @Override
     public Reader openAsReader( File fileName, String encoding ) throws IOException
     {
         return delegate.openAsReader( fileName, encoding );
     }
 
+    @Override
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
         delegate.copyRecursively( fromDirectory, toDirectory );

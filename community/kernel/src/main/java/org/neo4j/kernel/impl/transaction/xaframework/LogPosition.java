@@ -21,6 +21,27 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 public class LogPosition
 {
+    public static final LogPosition UNSPECIFIED = new LogPosition( -1, -1 )
+    {
+        @Override
+        public long getLogVersion()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getByteOffset()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "UNSPECIFIED";
+        }
+    };
+
     private final long logVersion;
     private final long byteOffset;
 
@@ -28,19 +49,6 @@ public class LogPosition
     {
         this.logVersion = logVersion;
         this.byteOffset = byteOffset;
-    }
-
-    public boolean earlierThan( LogPosition other )
-    {
-        if ( logVersion < other.logVersion )
-        {
-            return true;
-        }
-        if ( logVersion > other.logVersion )
-        {
-            return false;
-        }
-        return byteOffset < other.byteOffset;
     }
 
     public long getLogVersion()
@@ -62,30 +70,37 @@ public class LogPosition
                 '}';
     }
 
-    public static final LogPosition UNSPECIFIED = new LogPosition( -1, -1 )
+    @Override
+    public boolean equals( Object o )
     {
-        @Override
-        public boolean earlierThan( LogPosition other )
+        if ( this == o )
         {
-            throw new UnsupportedOperationException();
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
         }
 
-        @Override
-        public long getLogVersion()
+        LogPosition that = (LogPosition) o;
+
+        if ( byteOffset != that.byteOffset )
         {
-            throw new UnsupportedOperationException();
+            return false;
+        }
+        if ( logVersion != that.logVersion )
+        {
+            return false;
         }
 
-        @Override
-        public long getByteOffset()
-        {
-            throw new UnsupportedOperationException();
-        }
+        return true;
+    }
 
-        @Override
-        public String toString()
-        {
-            return "UNSPECIFIED";
-        }
-    };
+    @Override
+    public int hashCode()
+    {
+        int result = (int) (logVersion ^ (logVersion >>> 32));
+        result = 31 * result + (int) (byteOffset ^ (byteOffset >>> 32));
+        return result;
+    }
 }

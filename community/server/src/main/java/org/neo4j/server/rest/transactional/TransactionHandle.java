@@ -27,7 +27,7 @@ import java.util.List;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.InvalidSemanticsException;
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -54,7 +54,7 @@ import org.neo4j.server.rest.web.TransactionUriScheme;
  * All of the public methods on this class are "single-shot"; once you have called one method, the handle returns itself
  * to the registry. If you want to use it again, you'll need to acquire it back from the registry to ensure exclusive use.
  */
-public class TransactionHandle
+public class TransactionHandle implements TransactionTerminationHandle
 {
     private final TransitionalPeriodTransactionMessContainer txManagerFacade;
     private final ServerExecutionEngine engine;
@@ -72,7 +72,7 @@ public class TransactionHandle
         this.registry = registry;
         this.uriScheme = uriScheme;
         this.log = log;
-        this.id = registry.begin();
+        this.id = registry.begin( this );
     }
 
     public URI uri()
@@ -100,6 +100,16 @@ public class TransactionHandle
         }
     }
 
+    @Override
+    public boolean terminate()
+    {
+        if ( context != null )
+        {
+            context.terminate();
+        }
+        return true;
+    }
+
     public void commit( StatementDeserializer statements, ExecutionResultSerializer output, boolean pristine )
     {
         List<Neo4jError> errors = new LinkedList<>();
@@ -117,7 +127,7 @@ public class TransactionHandle
                 boolean periodicCommit;
                 try
                 {
-                    periodicCommit = pristine && engine.isPeriodicCommitQuery( statements.peek().statement() );
+                    periodicCommit = pristine && engine.isPeriodicCommit( statements.peek().statement() );
                 }
                 catch ( CypherException e )
                 {
@@ -271,7 +281,7 @@ public class TransactionHandle
             while ( statements.hasNext() )
             {
                 Statement statement = statements.next();
-                ExecutionResult result;
+                ExtendedExecutionResult result;
                 try
                 {
                     result = engine.execute( statement.statement(), statement.parameters() );
@@ -316,7 +326,7 @@ public class TransactionHandle
     {
         try
         {
-            ExecutionResult result;
+            ExtendedExecutionResult result;
             try
             {
                 Statement statement = statements.next();

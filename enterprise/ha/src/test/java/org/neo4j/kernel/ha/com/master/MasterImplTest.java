@@ -59,7 +59,7 @@ public class MasterImplTest
         // When
         try
         {
-            instance.initializeTx( new RequestContext( 0, 1, 2, 0, 1, 0 ) );
+            instance.newLockSession( new RequestContext( 0, 1, 2, 0, 1, 0 ) );
             fail();
         }
         catch ( TransactionFailureException e )
@@ -87,7 +87,7 @@ public class MasterImplTest
         // When
         try
         {
-            instance.initializeTx( new RequestContext( handshake.epoch(), 1, 2, 0, 1, 0 ) );
+            instance.newLockSession( new RequestContext( handshake.epoch(), 1, 2, 0, 1, 0 ) );
         }
         catch ( Exception e )
         {
@@ -114,7 +114,7 @@ public class MasterImplTest
         // When
         try
         {
-            instance.initializeTx( new RequestContext( handshake.epoch(), 1, 2, 0, 1, 0 ) );
+            instance.newLockSession( new RequestContext( handshake.epoch(), 1, 2, 0, 1, 0 ) );
             fail("Should have failed.");
         }
         catch ( Exception e )

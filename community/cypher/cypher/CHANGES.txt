@@ -1,44 +1,29 @@
+2.1.3
+-----
+o Adds support for Octal literals (using a preceding 0, e.g. 03517)
+o Adds support for Hexadecimal literals (using a preceding 0x, e.g. 0xF0071E55)
+o Add `exists(...)` predicate function for checking patterns and properties
+o Ensure `toString(...)` only does type conversion
+o No longer introduces eagerness in some trivially decidable cases, such as
+  MATCH a, b CREATE (a)-[r:X]->(b)
+o Avoids opening two transactions per single request REST transaction by
+  introducing caching of PreparedQueries in ExecutionEngine.
+
 2.1.2
 -----
 o Allow Cypher to use indexes to solve IN queries
 o Fix problems where indexes where not picked up if multiple labels
   where used on a pattern node
 o Fix problem where indexes where not picked up when a query uses UNWIND
-
-2.1.0-M02
----------
-o Add a new cost based planner
-o To the new planner, added:
-  - All nodes scan
-  - Cartesian product
-  - Apply
-  - Relationship by id
-  - Expand
-  - Node by id
-  - Node by label
-  - Node by index seek
-  - Hash join
-  - Optional
-  - Projection
-  - Selection
-  - SemiApply
-  - Sort
-  - Named paths
-o Fix problem where LOAD CSV stops indexes from being used
-
-2.1.0-M01
----------
-o Add LOAD CSV
-o Add USING PERIODIC COMMIT
-
-2.0.5
------
 o Fixes problem where predicates are evaluated wrongly in NOT
 o Fixes problem when WITH introduces a symbol that shadows an existing identifier
 
-2.0.4
+2.1.1
 -----
+o Add a new (experimental) cost based planner
 o Adds UNWIND
+o Add LOAD CSV
+o Add USING PERIODIC COMMIT
 
 2.0.3
 -----

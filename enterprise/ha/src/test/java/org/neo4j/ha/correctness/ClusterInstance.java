@@ -95,7 +95,7 @@ class ClusterInstance
 
         InMemoryAcceptorInstanceStore acceptorInstances = new InMemoryAcceptorInstanceStore();
 
-        DelayedDirectExecutor executor = new DelayedDirectExecutor();
+        DelayedDirectExecutor executor = new DelayedDirectExecutor( logging );
         final MultiPaxosContext context = new MultiPaxosContext( id,
                 Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
                 new ClusterConfiguration( configuration.getName(), logging.getMessagesLog( ClusterConfiguration.class ),
@@ -109,8 +109,9 @@ class ClusterInstance
         SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(),
                 context.getLearnerContext() );
 
-        ProtocolServer ps = factory.newProtocolServer( id,
-                input, output, DIRECT_EXECUTOR, new DelayedDirectExecutor(), timeouts, context, snapshotContext );
+        DelayedDirectExecutor taskExecutor = new DelayedDirectExecutor( logging );
+        ProtocolServer ps = factory.newProtocolServer(
+                id, input, output, DIRECT_EXECUTOR, taskExecutor, timeouts, context, snapshotContext );
 
         return new ClusterInstance( DIRECT_EXECUTOR, logging, factory, ps, context, acceptorInstances, timeouts,
                 input, output, uri );
@@ -276,7 +277,7 @@ class ClusterInstance
         ClusterInstanceOutput output = new ClusterInstanceOutput( uri );
         ClusterInstanceInput input = new ClusterInstanceInput();
 
-        DelayedDirectExecutor executor = new DelayedDirectExecutor();
+        DelayedDirectExecutor executor = new DelayedDirectExecutor( logging );
 
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
         MultiPaxosContext snapshotCtx = ctx.snapshot( logging, timeoutsSnapshot, executor, snapshotAcceptorInstances,

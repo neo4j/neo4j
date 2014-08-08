@@ -29,16 +29,11 @@ import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles.LogVersionVisitor;
@@ -46,9 +41,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreCh
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalWritableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
-import org.neo4j.kernel.impl.util.Cursor;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -121,43 +119,28 @@ public class LogTestUtils
             VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, true );
 
             // Read all log entries
-            final List<LogEntry> entries = new ArrayList<>();
-            LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
-
-
-            Visitor<LogEntry, IOException> visitor = new Visitor<LogEntry, IOException>()
-            {
-                @Override
-                public boolean visit( LogEntry entry ) throws IOException
-                {
-                    entries.add( entry );
-                    return true;
-                }
-            };
+            LogDeserializer deserializer = new LogDeserializer();
 
             ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel), LogVersionBridge.NO_MORE_CHANNELS, 4096);
 
-            try ( Cursor<IOException> cursor = deserializer.cursor( logChannel, visitor ) )
-            {
-                cursor.next();
-            }
-
             // Assert entries are what we expected
-            for(int entryNo=0;entryNo < expectedEntries.length; entryNo++)
+            try ( IOCursor<LogEntry> cursor = deserializer.logEntries( logChannel) )
             {
-                LogEntry expectedEntry = expectedEntries[entryNo];
-                if(entries.size() <= entryNo)
+                int entryNo=0;
+                while (cursor.next())
                 {
-                    fail("Log ended prematurely. Expected to find '" + expectedEntry.toString() + "' as log entry number "+entryNo+", instead there were no more log entries." );
+                    assertThat( "The log contained more entries than we expected!", entryNo < expectedEntries.length, is( true) );
+
+                    LogEntry expectedEntry = expectedEntries[entryNo];
+                    assertThat( "Unexpected entry at entry number " + entryNo, cursor.get(), is( expectedEntry ) );
+                    entryNo++;
                 }
 
-                LogEntry actualEntry = entries.get( entryNo );
-
-                assertThat( "Unexpected entry at entry number " + entryNo, actualEntry, is( expectedEntry ) );
+                if(entryNo < expectedEntries.length)
+                {
+                    fail("Log ended prematurely. Expected to find '" + expectedEntries[entryNo].toString() + "' as log entry number "+entryNo+", instead there were no more log entries." );
+                }
             }
-
-            // And assert log does not contain more entries
-            assertThat( "The log contained more entries than we expected!", entries.size(), is( expectedEntries.length ) );
         }
     }
 
@@ -208,8 +191,7 @@ public class LogTestUtils
 
             ReadableLogChannel inBuffer = new ReadAheadLogChannel( new PhysicalLogVersionedStoreChannel( in ),
                     LogVersionBridge.NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
-            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader(
-                    CommandReaderFactory.DEFAULT );
+            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader();
             LogEntry entry;
             while ( (entry = entryReader.readLogEntry( inBuffer )) != null )
             {

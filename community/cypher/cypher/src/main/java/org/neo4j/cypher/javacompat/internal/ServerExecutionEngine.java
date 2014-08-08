@@ -51,8 +51,8 @@ public class ServerExecutionEngine extends ExecutionEngine
         return serverExecutionEngine;
     }
 
-    public boolean isPeriodicCommitQuery(String queryText)
+    public boolean isPeriodicCommit( String query )
     {
-        return serverExecutionEngine.isPeriodicCommit(queryText);
+        return serverExecutionEngine.isPeriodicCommit( query );
     }
 }

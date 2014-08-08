@@ -19,8 +19,6 @@
  */
 package org.neo4j.com.storecopy;
 
-import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
-
 import java.io.IOException;
 
 import org.neo4j.com.RequestContext;
@@ -33,6 +31,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 
 public class ResponsePacker
@@ -81,11 +80,7 @@ public class ResponsePacker
             @Override
             public boolean visit( CommittedTransactionRepresentation element ) throws IOException
             {
-                if ( filter.accept( element ) )
-                {
-                    return delegate.visit( element );
-                }
-                return true;
+                return !filter.accept( element ) || delegate.visit( element );
             }
         };
     }
@@ -93,6 +88,9 @@ public class ResponsePacker
     protected void extractTransactions( long startingAtTransactionId,
             Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
     {
-        exhaustAndClose( transactionStore.getCursor( startingAtTransactionId, visitor ) );
+        try (IOCursor<CommittedTransactionRepresentation> cursor = transactionStore.getTransactions( startingAtTransactionId) )
+        {
+            while (cursor.next() && visitor.visit( cursor.get() ));
+        }
     }
 }

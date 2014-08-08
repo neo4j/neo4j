@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.NewQueryPlanSuccessRateMonitor
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
+import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.neo4j.cypher.internal.compatability.ExecutionResultWrapperFor2_2
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{InternalExecutionResult, NewQueryPlanSuccessRateMonitor}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.commons.CypherTestSupport
 import org.neo4j.cypher.NewPlannerMonitor.{NewQuerySeen, UnableToHandleQuery, NewPlannerMonitorCall}
 import java.io.{PrintWriter, StringWriter}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 
 object NewPlannerMonitor {
 
@@ -78,17 +79,19 @@ trait NewPlannerTestSupport extends CypherTestSupport {
       }
     }
 
-  def executeWithNewPlanner(queryText: String, params: (String, Any)*): ExecutionResult =
+  def executeWithNewPlanner(queryText: String, params: (String, Any)*): InternalExecutionResult =
     monitoringNewPlanner(innerExecute(queryText, params: _*)) { trace =>
       trace.collect {
         case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $queryText\n$stackTrace")
       }
     }
 
-  private def innerExecute(queryText: String, params: (String, Any)*): ExecutionResult =
-    RewindableExecutionResult(eengine.execute(queryText, params.toMap))
+  private def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult =
+    eengine.execute(queryText, params.toMap) match {
+      case ExecutionResultWrapperFor2_2(inner: InternalExecutionResult) => RewindableExecutionResult(inner)
+    }
 
-  override def execute(queryText: String, params: (String, Any)*): ExecutionResult =
+  override def execute(queryText: String, params: (String, Any)*) =
     monitoringNewPlanner(innerExecute(queryText, params: _*)) { trace =>
       trace.collectFirst {
         case UnableToHandleQuery(stackTrace) =>

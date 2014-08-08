@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.pagecache.PageCacheMonitor;
-import org.neo4j.io.pagecache.PageLock;
+import org.neo4j.io.pagecache.PagedFile;
 
 import static org.neo4j.io.pagecache.PageCursor.UNBOUND_PAGE_ID;
 
@@ -83,10 +83,10 @@ public class ClockSweepPageTable implements PageTable, Runnable
     }
 
     @Override
-    public PinnablePage load( PageSwapper io, long pageId, PageLock lock ) throws IOException
+    public PinnablePage load( PageSwapper io, long pageId, int pf_flags ) throws IOException
     {
         StandardPinnablePage page = nextFreePage();
-        if ( page.pin( null, UNBOUND_PAGE_ID, lock ) )
+        if ( page.pin( null, UNBOUND_PAGE_ID, pf_flags ) )
         {
             page.reset( io, pageId );
             page.load();
@@ -120,14 +120,14 @@ public class ClockSweepPageTable implements PageTable, Runnable
         assertNoSweeperException();
         for ( StandardPinnablePage page : pages )
         {
-            page.lock( PageLock.SHARED );
+            page.lock(PagedFile.PF_SHARED_LOCK);
             try
             {
                 page.flush();
             }
             finally
             {
-                page.unlock( PageLock.SHARED );
+                page.unlock( PagedFile.PF_SHARED_LOCK);
             }
         }
     }
@@ -138,7 +138,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
         assertNoSweeperException();
         for ( StandardPinnablePage page : pages )
         {
-            page.lock( PageLock.SHARED );
+            page.lock( PagedFile.PF_SHARED_LOCK );
             try
             {
                 if( page.isBackedBy( io ) )
@@ -149,7 +149,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
             }
             finally
             {
-                page.unlock( PageLock.SHARED );
+                page.unlock( PagedFile.PF_SHARED_LOCK );
             }
         }
     }

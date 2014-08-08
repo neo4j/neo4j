@@ -43,10 +43,11 @@ public class CurrentDatabaseTest
         File workingDirectory = new File( "target/" + CurrentDatabaseTest.class.getSimpleName() );
 
         StoreVersionCheck storeVersionCheck = mock( StoreVersionCheck.class );
-        when( storeVersionCheck.hasVersion( eq( new File( workingDirectory, "neostore.nodestore.db" ) ), anyString() ) )
+
+        File neoStoreDb = new File( workingDirectory, "neostore.nodestore.db" );
+        when( storeVersionCheck.hasVersion( eq( neoStoreDb ), anyString() ) )
                 .thenReturn( Pair.<Outcome,String>of( Outcome.missingStoreFile, null ) );
-        when( storeVersionCheck.hasVersion( not( eq( new File( workingDirectory, "neostore.nodestore.db" ) ) ),
-                anyString() ) )
+        when( storeVersionCheck.hasVersion( not( eq( neoStoreDb ) ), anyString() ) )
                 .thenReturn( Pair.<Outcome,String>of( Outcome.ok, null ) );
 
         assertFalse( new CurrentDatabase( storeVersionCheck ).storeFilesAtCurrentVersion( workingDirectory ) );
@@ -58,8 +59,8 @@ public class CurrentDatabaseTest
         File workingDirectory = new File( "target/" + CurrentDatabaseTest.class.getSimpleName() );
 
         StoreVersionCheck storeVersionCheck = mock( StoreVersionCheck.class );
-        when( storeVersionCheck.hasVersion( any( File.class ), anyString() ) ).thenReturn(
-                Pair.<Outcome,String>of( Outcome.ok, null ) );
+        when( storeVersionCheck.hasVersion( any( File.class ), anyString() ) ).
+                thenReturn( Pair.<Outcome, String>of( Outcome.ok, null ) );
 
         assertTrue( new CurrentDatabase( storeVersionCheck ).storeFilesAtCurrentVersion( workingDirectory ) );
     }

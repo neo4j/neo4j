@@ -35,8 +35,6 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.neo4j.helpers.Settings.osIsWindows;
-
 /**
  * Not thread safe (since DiffRecordStore is not thread safe), intended for
  * single threaded use.
@@ -251,18 +249,7 @@ public class StoreAccess
     private static Map<String, String> defaultParams()
     {
         Map<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.nodestore_mapped_memory_size.name(), "20M" );
-        params.put( GraphDatabaseSettings.nodestore_propertystore_mapped_memory_size.name(), "90M" );
-        params.put( GraphDatabaseSettings.nodestore_propertystore_index_mapped_memory_size.name(), "1M" );
-        params.put( GraphDatabaseSettings.nodestore_propertystore_index_keys_mapped_memory_size.name(), "1M" );
-        params.put( GraphDatabaseSettings.strings_mapped_memory_size.name(), "130M" );
-        params.put( GraphDatabaseSettings.arrays_mapped_memory_size.name(), "130M" );
-        params.put( GraphDatabaseSettings.relationshipstore_mapped_memory_size.name(), "100M" );
-        // if on windows, default no memory mapping
-        if ( osIsWindows() )
-        {
-            params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), "false" );
-        }
+        params.put( GraphDatabaseSettings.mapped_memory_total_size.name(), "50%" );
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.TRUE );
         return params;
     }

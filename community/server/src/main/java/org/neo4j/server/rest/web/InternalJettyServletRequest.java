@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
 import javax.ws.rs.core.MediaType;
@@ -46,6 +47,7 @@ public class InternalJettyServletRequest extends Request
 
         private final byte[] bytes;
         private int position = 0;
+        private ReadListener readListener;
 
         public Input( String data )
         {
@@ -63,6 +65,9 @@ public class InternalJettyServletRequest extends Request
         {
             if ( bytes.length > position ) return (int) bytes[position++];
 
+            if (readListener != null)
+                readListener.onAllDataRead();
+
             return -1;
         }
 
@@ -74,6 +79,32 @@ public class InternalJettyServletRequest extends Request
         public long contentRead()
         {
             return (long) position;
+        }
+
+        @Override
+        public boolean isFinished()
+        {
+            return bytes.length == position;
+        }
+
+        @Override
+        public boolean isReady()
+        {
+            return true;
+        }
+
+        @Override
+        public void setReadListener( ReadListener readListener )
+        {
+            this.readListener = readListener;
+            try
+            {
+                readListener.onDataAvailable();
+            }
+            catch ( IOException e )
+            {
+                // Ignore
+            }
         }
     }
 

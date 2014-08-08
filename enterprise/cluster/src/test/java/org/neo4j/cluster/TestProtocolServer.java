@@ -21,6 +21,7 @@ package org.neo4j.cluster;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
@@ -35,6 +36,7 @@ import org.neo4j.cluster.statemachine.StateTransitionListener;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
+import org.neo4j.kernel.logging.DefaultLogging;
 
 /**
  * TODO
@@ -57,7 +59,8 @@ public class TestProtocolServer
         this.receiver = new TestMessageSource();
         this.sender = new TestMessageSender();
 
-        stateMachineExecutor = new DelayedDirectExecutor();
+        stateMachineExecutor = new DelayedDirectExecutor(
+                DefaultLogging.createDefaultLogging( Collections.<String, String>emptyMap() ) );
 
         server = factory.newProtocolServer( instanceId, timeoutStrategy, receiver, sender, acceptorInstanceStore,
                 electionCredentialsProvider, stateMachineExecutor, new ObjectStreamFactory(), new ObjectStreamFactory() );

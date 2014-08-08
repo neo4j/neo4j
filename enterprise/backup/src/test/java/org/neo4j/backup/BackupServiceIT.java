@@ -19,15 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.test.DoubleLatch.awaitLatch;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -46,6 +37,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -62,7 +54,7 @@ import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
+import org.neo4j.kernel.impl.storemigration.StoreFile20;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache.TransactionMetadata;
@@ -72,6 +64,16 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
+
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class BackupServiceIT
 {
@@ -213,7 +215,7 @@ public class BackupServiceIT
         // then
         File[] files = fileSystem.listFiles( backupDir );
 
-        for ( final StoreFile storeFile : StoreFile.values() )
+        for ( final StoreFile20 storeFile : StoreFile20.values() )
         {
             assertThat( files, hasFile( storeFile.storeFileName() ) );
         }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.docgen
 
+import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.graphdb.index.Index
 import org.junit.Test
 import scala.collection.JavaConverters._
@@ -34,8 +36,7 @@ import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.tooling.GlobalGraphOperations
-import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
 
 /*
 Use this base class for tests that are more flowing text with queries intersected in the middle of the text.
@@ -53,11 +54,11 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   def title: String
   def section: String
-  def assert(name: String, result: ExecutionResult)
+  def assert(name: String, result: InternalExecutionResult)
   def graphDescription: List[String]
   def indexProps: List[String] = List()
-  
-  private def executeQuery(queryText: String)(implicit engine: ExecutionEngine): ExecutionResult = try {
+
+  private def executeQuery(queryText: String)(implicit engine: ExecutionEngine): InternalExecutionResult = try {
     val result = RewindableExecutionResult(engine.execute(replaceNodeIds(queryText)))
     result.dumpToString()
     result
@@ -90,7 +91,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
     val querySnippet = AsciiDocGenerator.dumpToSeparateFileWithType(dir,  name + "-query", queryAsciidoc)
     val consoleAsciidoc = consoleSnippet(replaceNodeIds(query), emptyGraph)
     val consoleText = if (!consoleAsciidoc.isEmpty)
-        ".Try this query live\n" + 
+        ".Try this query live\n" +
         AsciiDocGenerator.dumpToSeparateFileWithType(dir, name + "-console", consoleAsciidoc)
       else ""
     val queryOutput = runQuery(emptyGraph, query, possibleAssertion)
@@ -115,7 +116,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   private def runQuery(emptyGraph: Boolean, query: String, possibleAssertion: Seq[String]): String = {
 
-    def testAssertions(result:ExecutionResult) {
+    def testAssertions(result: InternalExecutionResult) {
       possibleAssertion.foreach(name => assert(name, result) )
     }
 
@@ -188,7 +189,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
       case None => startText
       case Some(options) =>
         val optionString = options.group(1)
-        val txt = startText.replaceAllLiterally("###graph-image" + optionString + "###", 
+        val txt = startText.replaceAllLiterally("###graph-image" + optionString + "###",
             dumpGraphViz(dir, optionString.trim))
         txt
     }

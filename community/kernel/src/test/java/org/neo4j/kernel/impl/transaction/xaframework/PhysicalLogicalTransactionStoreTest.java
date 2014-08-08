@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.Visitor;
@@ -34,10 +33,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogFileRecoverer;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.Monitor;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
@@ -47,8 +46,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
 import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
 import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
 
 public class PhysicalLogicalTransactionStoreTest
@@ -77,8 +76,7 @@ public class PhysicalLogicalTransactionStoreTest
                 transactionIdStore, mock( LogVersionRepository.class), monitor, logRotationControl,
                 positionCache, noRecoveryAsserter() ) );
         TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
-        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache,
-                new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ), transactionIdStore ) );
+        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, transactionIdStore ) );
 
         try
         {
@@ -91,7 +89,6 @@ public class PhysicalLogicalTransactionStoreTest
         }
     }
 
-    @Ignore
     @Test
     public void shouldOpenAndRecoverExistingData() throws Exception
     {
@@ -125,7 +122,7 @@ public class PhysicalLogicalTransactionStoreTest
         final AtomicInteger recoveredTransactions = new AtomicInteger();
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                         transactionIdStore, mock( LogVersionRepository.class), monitor, logRotationControl,
-                        positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ),
+                        positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader(),
                                 new Visitor<CommittedTransactionRepresentation, IOException>()
         {
             @Override
@@ -142,8 +139,7 @@ public class PhysicalLogicalTransactionStoreTest
             }
         } ) ) );
 
-        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, new VersionAwareLogEntryReader(
-                CommandReaderFactory.DEFAULT ), transactionIdStore ) );
+        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, transactionIdStore ) );
 
         // WHEN
         try
@@ -192,7 +188,7 @@ public class PhysicalLogicalTransactionStoreTest
         final AtomicInteger recoveredTransactions = new AtomicInteger();
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                 transactionIdStore, mock( LogVersionRepository.class), monitor, logRotationControl,
-                positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ),
+                positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader(),
                         new Visitor<CommittedTransactionRepresentation, IOException>()
         {
             @Override
@@ -210,7 +206,7 @@ public class PhysicalLogicalTransactionStoreTest
         } )));
 
         LogicalTransactionStore store = life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
-                positionCache, new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ), transactionIdStore ) );
+                positionCache, transactionIdStore ) );
 
         // WHEN
         life.start();

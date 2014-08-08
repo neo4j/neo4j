@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -77,6 +74,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 public class SwitchToSlave
 {
@@ -141,6 +141,8 @@ public class SwitchToSlave
         }
 
         NeoStoreXaDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreXaDataSource.class );
+        nioneoDataSource.afterModeSwitch();
+
         checkDataConsistency( resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri );
 
         URI slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri );
@@ -383,7 +385,6 @@ public class SwitchToSlave
         myMaster = metadata.getMasterId();
         myChecksum = metadata.getChecksum();
 
-
         HandshakeResult handshake;
         try ( Response<HandshakeResult> response = master.handshake( myLastCommittedTx, nioneoDataSource.getStoreId() ) )
         {
@@ -393,7 +394,8 @@ public class SwitchToSlave
         catch ( BranchedDataException e )
         {
             // Rethrow wrapped in a branched data exception on our side, to clarify where the problem originates.
-            throw new BranchedDataException( "Master detected branched data for this machine.", e );
+            throw new BranchedDataException( "The database stored on this machine has diverged from that " +
+                    "of the master. This will be automatically resolved.", e );
         }
         catch ( RuntimeException e )
         {
@@ -416,10 +418,10 @@ public class SwitchToSlave
         if ( myMaster != -1 &&
                 (myMaster != handshake.txAuthor() || myChecksum != handshake.txChecksum()) )
         {
-            String msg = "Branched data, I (machineId:" + config.get( ClusterSettings.server_id ) + ") think machineId for" +
-                    " txId (" +
-                    myLastCommittedTx + ") is " + myMaster + ", but master (machineId:" +
-                    getServerId( availableMasterId ) + ") says that it's " + handshake;
+            String msg = "The cluster contains two logically different versions of the database.. This will be " +
+                    "automatically resolved. Details: I (machineId:" + config.get( ClusterSettings.server_id ) +
+                    ") think machineId for txId (" + myLastCommittedTx + ") is " + myMaster +
+                    ", but master (machineId:" + getServerId( availableMasterId ) + ") says that it's " + handshake;
             throw new BranchedDataException( msg );
         }
         msgLog.logMessage( "Master id for last committed tx ok with highestTxId=" +

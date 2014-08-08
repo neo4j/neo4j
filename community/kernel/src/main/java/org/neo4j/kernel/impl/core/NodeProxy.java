@@ -234,9 +234,9 @@ public class NodeProxy implements Node
         }
     }
 
-    private void assertInTransaction()
+    private void assertInUnterminatedTransaction()
     {
-        statementContextProvider.assertInTransaction();
+        statementContextProvider.assertInUnterminatedTransaction();
     }
 
     @Override
@@ -470,7 +470,7 @@ public class NodeProxy implements Node
                                StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
                                RelationshipType relationshipType, Direction direction )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         return OldTraverserWrapper.traverse( this,
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, relationshipType, direction );
@@ -482,7 +482,7 @@ public class NodeProxy implements Node
                                RelationshipType firstRelationshipType, Direction firstDirection,
                                RelationshipType secondRelationshipType, Direction secondDirection )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         return OldTraverserWrapper.traverse( this,
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, firstRelationshipType, firstDirection,
@@ -494,7 +494,7 @@ public class NodeProxy implements Node
                                StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
                                Object... relationshipTypesAndDirections )
     {
-        assertInTransaction();
+        assertInUnterminatedTransaction();
         return OldTraverserWrapper.traverse( this,
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, relationshipTypesAndDirections );
@@ -595,7 +595,7 @@ public class NodeProxy implements Node
         }
         catch ( LabelNotFoundKernelException e )
         {
-            throw new ThisShouldNotHappenError( "Stefan", "Label retrieved through kernel API should exist." );
+            throw new ThisShouldNotHappenError( "Stefan", "Label retrieved through kernel API should exist.", e );
         }
     }
 

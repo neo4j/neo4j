@@ -49,6 +49,7 @@ import org.neo4j.cluster.protocol.election.ElectionState;
 import org.neo4j.cluster.protocol.election.HeartbeatReelectionListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatIAmAliveProcessor;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatJoinListener;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatLeftListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatRefreshProcessor;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatState;
@@ -90,7 +91,7 @@ public class MultiPaxosServerFactory
                                              ObjectInputStreamFactory objectInputStreamFactory,
                                              ObjectOutputStreamFactory objectOutputStreamFactory )
     {
-        DelayedDirectExecutor executor = new DelayedDirectExecutor();
+        DelayedDirectExecutor executor = new DelayedDirectExecutor( logging );
 
         // Create state machines
         Timeouts timeouts = new Timeouts( timeoutStrategy );
@@ -172,8 +173,9 @@ public class MultiPaxosServerFactory
         input.addMessageProcessor( new HeartbeatIAmAliveProcessor( stateMachines.getOutgoing(),
                 context.getClusterContext() ) );
 
-        server.newClient( Cluster.class ).addClusterListener( new HeartbeatJoinListener( stateMachines
-                .getOutgoing() ) );
+        Cluster cluster = server.newClient( Cluster.class );
+        cluster.addClusterListener( new HeartbeatJoinListener( stateMachines.getOutgoing() ) );
+        cluster.addClusterListener( new HeartbeatLeftListener( context.getHeartbeatContext(), logging ) );
 
         context.getHeartbeatContext().addHeartbeatListener( new HeartbeatReelectionListener(
                 server.newClient( Election.class ), logging.getMessagesLog( HeartbeatReelectionListener.class ) ) );
