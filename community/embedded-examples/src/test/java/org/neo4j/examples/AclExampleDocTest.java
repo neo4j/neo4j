@@ -180,7 +180,8 @@ public class AclExampleDocTest extends ImpermanentGraphJavaDocTestBase
     public void ACL_structures_in_graphs()
     {
         data.get();
-        gen.get().addSnippet( "graph1", createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
+        // only add the visualization if it's actually used.
+        //gen.get().addSnippet( "graph1", createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
         
         //Files
         //TODO: can we do open ended?
