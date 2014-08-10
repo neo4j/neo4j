@@ -80,19 +80,18 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
         new ExplainExecutionResult(columns, pipeInfo.pipe.planDescription)
       } else {
         val results = pipeInfo.pipe.createResults(state)
-        val closingIterator = buildClosingIterator(results)
-        val descriptor = buildDescriptor(pipeInfo.pipe, closingIterator.isEmpty)
-
-        if (pipeInfo.updating)
-          new EagerPipeExecutionResult(closingIterator, columns, state, descriptor, planType)
-        else
-          new PipeExecutionResult(closingIterator, columns, state, descriptor, planType)
+        val resultIterator = buildResultIterator(results, pipeInfo.updating)
+        val descriptor = buildDescriptor(pipeInfo.pipe, resultIterator.wasMaterialized)
+        new PipeExecutionResult(resultIterator, columns, state, descriptor, planType)
       }
 
     private def queryContext = maybeQueryContext.get
 
-    private def buildClosingIterator(results: Iterator[ExecutionContext]): ClosingIterator =
-      new ClosingIterator(results, taskCloser, exceptionDecorator)
+    private def buildResultIterator(results: Iterator[ExecutionContext], isUpdating: Boolean): ResultIterator = {
+      val closingIterator = new ClosingIterator(results, taskCloser, exceptionDecorator)
+      val resultIterator = if (isUpdating) closingIterator.toEager else closingIterator
+      resultIterator
+    }
 
     private def buildDescriptor(pipe: Pipe, isProfileReady: => Boolean): () => PlanDescription =
       () => pipeDecorator.decorate(pipe.planDescription, isProfileReady)

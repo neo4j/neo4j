@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.ParameterNotFoundException
+import org.neo4j.cypher.{QueryStatistics, ParameterNotFoundException}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
 import java.util.UUID
@@ -44,7 +44,11 @@ case class QueryState(db: GraphDatabaseService,
   def getParam(key: String): Any =
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
-  def getStatistics = query.getOptStatistics.get
+  def getStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
+}
+
+object QueryState {
+  val defaultStatistics = QueryStatistics()
 }
 
 class TimeReader {

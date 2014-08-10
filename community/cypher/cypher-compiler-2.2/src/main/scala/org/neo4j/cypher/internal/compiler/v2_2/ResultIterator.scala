@@ -21,16 +21,41 @@ package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.internal.helpers._
 import org.neo4j.cypher.{CypherException, NodeStillHasRelationshipsException}
-import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.kernel.api.exceptions.Status
-import scala.collection
+
+import scala.collection.immutable
+
+trait ResultIterator extends Iterator[immutable.Map[String, Any]] {
+  def toEager: EagerResultIterator
+  def wasMaterialized: Boolean
+  def close()
+}
+
+class EagerResultIterator(result: ResultIterator) extends ResultIterator {
+  override val toList = result.toList
+  private val inner = toList.iterator
+
+  def toEager: EagerResultIterator = this
+
+  def wasMaterialized: Boolean = true
+
+  def hasNext = inner.hasNext
+
+  def next() = inner.next()
+
+  def close() { result.close() }
+}
 
 class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
                       closer: TaskCloser,
-                      exceptionDecorator: CypherException => CypherException) extends Iterator[Map[String, Any]] {
+                      exceptionDecorator: CypherException => CypherException) extends ResultIterator {
 
   lazy val still_has_relationships = "Node record Node\\[(\\d),.*] still has relationships".r
+
+  def toEager = new EagerResultIterator(this)
+
+  def wasMaterialized: Boolean = isEmpty
 
   def hasNext: Boolean = failIfThrows {
     if (closer.isClosed) return false
@@ -73,17 +98,16 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
       f
     } catch {
       case e: TransactionFailureException =>
-
-        var cause: Throwable = e.getCause()
-
-        if ( cause.isInstanceOf[org.neo4j.kernel.api.exceptions.TransactionFailureException] ) {
-          val status = cause.asInstanceOf[org.neo4j.kernel.api.exceptions.TransactionFailureException].status()
-          if ( status == Status.Transaction.ValidationFailed ) {
-            cause.getMessage match {
-              case still_has_relationships(id) => throw new NodeStillHasRelationshipsException(id.toLong, e)
-              case _ => throw e
+        e.getCause match {
+          case exception: org.neo4j.kernel.api.exceptions.TransactionFailureException =>
+            val status = exception.status()
+            if (status == Status.Transaction.ValidationFailed) {
+              exception.getMessage match {
+                case still_has_relationships(id) => throw new NodeStillHasRelationshipsException(id.toLong, e)
+                case _                           => throw e
+              }
             }
-          }
+          case _ =>
         }
 
         throw e
@@ -106,5 +130,4 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
     case e: CypherException =>
       throw exceptionDecorator(e)
   }
-
 }

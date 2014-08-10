@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.PlanType
+import org.neo4j.cypher.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_2.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{PlanContext, QueryContext, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
-import org.neo4j.cypher.{ExecutionResult, PeriodicCommitInOpenTransactionException}
 import org.neo4j.graphdb.GraphDatabaseService
 
 case class PipeInfo(pipe: Pipe,
@@ -56,11 +55,11 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
     val abstractQuery = inputQuery.abstractQuery
 
     val pipeInfo = pipeBuilder.producePlan(inputQuery, planContext)
-    val PipeInfo(pipe, _, periodicCommitInfo) = pipeInfo
+    val PipeInfo(pipe, updating, periodicCommitInfo) = pipeInfo
 
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
     val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, inputQuery.planType)
-    val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, resultBuilderFactory)
+    val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory)
 
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
@@ -94,14 +93,17 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
 
   private def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
                                        queryId: AnyRef,
+                                       updating: Boolean,
                                        resultBuilderFactory: ExecutionResultBuilderFactory):
   (QueryContext, Map[String, Any], Boolean) => InternalExecutionResult =
     (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
       val builder = resultBuilderFactory.create()
-      builder.setQueryContext(new UpdateCountingQueryContext(queryContext))
+
+      val builderContext = if (updating) new UpdateCountingQueryContext(queryContext) else queryContext
+      builder.setQueryContext(builderContext)
 
       if (periodicCommit.isDefined) {
-        if (!queryContext.isTopLevelTx)
+        if (!builderContext.isTopLevelTx)
           throw new PeriodicCommitInOpenTransactionException()
         builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)
       }
