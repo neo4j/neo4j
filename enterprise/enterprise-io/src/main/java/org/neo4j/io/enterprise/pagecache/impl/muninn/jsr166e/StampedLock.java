@@ -29,7 +29,6 @@ package org.neo4j.io.enterprise.pagecache.impl.muninn.jsr166e;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -113,10 +112,7 @@ import java.util.concurrent.locks.ReadWriteLock;
  *
  * <p>Because it supports coordinated usage across multiple lock
  * modes, this class does not directly implement the {@link Lock} or
- * {@link ReadWriteLock} interfaces. However, a StampedLock may be
- * viewed {@link #asReadLock()}, {@link #asWriteLock()}, or {@link
- * #asReadWriteLock()} in applications requiring only the associated
- * set of functionality.
+ * {@link ReadWriteLock} interfaces.
  *
  * <p><b>Sample Usage.</b> The following illustrates some usage idioms
  * in a class that maintains simple two-dimensional points. The sample
@@ -318,11 +314,6 @@ public class StampedLock implements java.io.Serializable {
     private transient volatile WNode whead;
     /** Tail (last) of CLH queue */
     private transient volatile WNode wtail;
-
-    // views
-    transient ReadLockView readLockView;
-    transient WriteLockView writeLockView;
-    transient ReadWriteLockView readWriteLockView;
 
     /** Lock sequence/state */
     private transient volatile long state;
@@ -832,122 +823,6 @@ public class StampedLock implements java.io.Serializable {
     protected String getLockStateString()
     {
         return getLockStateString( state );
-    }
-
-    // views
-
-    /**
-     * Returns a plain {@link Lock} view of this StampedLock in which
-     * the {@link Lock#lock} method is mapped to {@link #readLock},
-     * and similarly for other methods. The returned Lock does not
-     * support a {@link Condition}; method {@link
-     * Lock#newCondition()} throws {@code
-     * UnsupportedOperationException}.
-     *
-     * @return the lock
-     */
-    public Lock asReadLock() {
-        ReadLockView v;
-        return ((v = readLockView) != null ? v :
-                (readLockView = new ReadLockView()));
-    }
-
-    /**
-     * Returns a plain {@link Lock} view of this StampedLock in which
-     * the {@link Lock#lock} method is mapped to {@link #writeLock},
-     * and similarly for other methods. The returned Lock does not
-     * support a {@link Condition}; method {@link
-     * Lock#newCondition()} throws {@code
-     * UnsupportedOperationException}.
-     *
-     * @return the lock
-     */
-    public Lock asWriteLock() {
-        WriteLockView v;
-        return ((v = writeLockView) != null ? v :
-                (writeLockView = new WriteLockView()));
-    }
-
-    /**
-     * Returns a {@link ReadWriteLock} view of this StampedLock in
-     * which the {@link ReadWriteLock#readLock()} method is mapped to
-     * {@link #asReadLock()}, and {@link ReadWriteLock#writeLock()} to
-     * {@link #asWriteLock()}.
-     *
-     * @return the lock
-     */
-    public ReadWriteLock asReadWriteLock() {
-        ReadWriteLockView v;
-        return ((v = readWriteLockView) != null ? v :
-                (readWriteLockView = new ReadWriteLockView()));
-    }
-
-    // view classes
-
-    final class ReadLockView implements Lock {
-        public void lock() { readLock(); }
-        public void lockInterruptibly() throws InterruptedException {
-            readLockInterruptibly();
-        }
-        public boolean tryLock() { return tryReadLock() != 0L; }
-        public boolean tryLock(long time, TimeUnit unit)
-            throws InterruptedException {
-            return tryReadLock(time, unit) != 0L;
-        }
-        public void unlock() { unstampedUnlockRead(); }
-        public Condition newCondition() {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    final class WriteLockView implements Lock {
-        public void lock() { writeLock(); }
-        public void lockInterruptibly() throws InterruptedException {
-            writeLockInterruptibly();
-        }
-        public boolean tryLock() { return tryWriteLock() != 0L; }
-        public boolean tryLock(long time, TimeUnit unit)
-            throws InterruptedException {
-            return tryWriteLock(time, unit) != 0L;
-        }
-        public void unlock() { unstampedUnlockWrite(); }
-        public Condition newCondition() {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    final class ReadWriteLockView implements ReadWriteLock {
-        public Lock readLock() { return asReadLock(); }
-        public Lock writeLock() { return asWriteLock(); }
-    }
-
-    // Unlock methods without stamp argument checks for view classes.
-    // Needed because view-class lock methods throw away stamps.
-
-    final void unstampedUnlockWrite() {
-        WNode h; long s;
-        if (((s = state) & WBIT) == 0L)
-            throw new IllegalMonitorStateException();
-        state = (s += WBIT) == 0L ? ORIGIN : s;
-        if ((h = whead) != null && h.status != 0)
-            release(h);
-    }
-
-    final void unstampedUnlockRead() {
-        for (;;) {
-            long s, m; WNode h;
-            if ((m = (s = state) & ABITS) == 0L || m >= WBIT)
-                throw new IllegalMonitorStateException();
-            else if (m < RFULL) {
-                if (U.compareAndSwapLong(this, STATE, s, s - RUNIT)) {
-                    if (m == RUNIT && (h = whead) != null && h.status != 0)
-                        release(h);
-                    break;
-                }
-            }
-            else if (tryDecReaderOverflow(s) != 0L)
-                break;
-        }
     }
 
     private void readObject(java.io.ObjectInputStream s)

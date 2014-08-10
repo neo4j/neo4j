@@ -30,7 +30,6 @@
 package org.neo4j.io.enterprise.pagecache.impl.muninn.jsr166e;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.Lock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -897,51 +896,4 @@ public class StampedLockTest extends JSR166TestCase {
             threadUnexpectedException(ie);
         }
     }
-
-    /**
-     * asWriteLock can be locked and unlocked
-     */
-    public void testAsWriteLock() {
-        StampedLock sl = new StampedLock();
-        Lock lock = sl.asWriteLock();
-        lock.lock();
-        assertFalse(lock.tryLock());
-        lock.unlock();
-        assertTrue(lock.tryLock());
-    }
-
-    /**
-     * asReadLock can be locked and unlocked
-     */
-    public void testAsReadLock() {
-        StampedLock sl = new StampedLock();
-        Lock lock = sl.asReadLock();
-        lock.lock();
-        lock.unlock();
-        assertTrue(lock.tryLock());
-    }
-
-    /**
-     * asReadWriteLock.writeLock can be locked and unlocked
-     */
-    public void testAsReadWriteLockWriteLock() {
-        StampedLock sl = new StampedLock();
-        Lock lock = sl.asReadWriteLock().writeLock();
-        lock.lock();
-        assertFalse(lock.tryLock());
-        lock.unlock();
-        assertTrue(lock.tryLock());
-    }
-
-    /**
-     * asReadWriteLock.readLock can be locked and unlocked
-     */
-    public void testAsReadWriteLockReadLock() {
-        StampedLock sl = new StampedLock();
-        Lock lock = sl.asReadWriteLock().readLock();
-        lock.lock();
-        lock.unlock();
-        assertTrue(lock.tryLock());
-    }
-
 }
