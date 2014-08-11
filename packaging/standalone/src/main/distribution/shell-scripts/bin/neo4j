@@ -96,7 +96,7 @@ LAUNCHD_DIR=~/Library/LaunchAgents/
 
 TIMEOUT=120
 
-PID_FILE=${NEO4J_INSTANCE}/data/neo4j-service.pid
+PID_FILE=${wrapper_pidfile:-"$NEO4J_INSTANCE/data/neo4j-service.pid"}
 buildclasspath() {
   # confirm library jars
   LIBDIR="$NEO4J_HOME"/lib
