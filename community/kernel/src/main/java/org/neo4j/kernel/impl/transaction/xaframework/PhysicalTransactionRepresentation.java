@@ -32,8 +32,9 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     private byte[] additionalHeader;
     private int masterId;
     private int authorId;
-    private long timeWritten;
+    private long timeStarted;
     private long latestCommittedTxWhenStarted;
+    private long timeCommitted;
 
     // TODO 2.2-future recovered could be an aspect instead
     public PhysicalTransactionRepresentation( Collection<Command> commands )
@@ -41,14 +42,15 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         this.commands = commands;
     }
 
-    public void setHeader( byte[] additionalHeader, int masterId, int authorId, long timeWritten,
-            long latestCommittedTxWhenStarted )
+    public void setHeader( byte[] additionalHeader, int masterId, int authorId, long timeStarted,
+            long latestCommittedTxWhenStarted, long timeCommitted )
     {
         this.additionalHeader = additionalHeader;
         this.masterId = masterId;
         this.authorId = authorId;
-        this.timeWritten = timeWritten;
+        this.timeStarted = timeStarted;
         this.latestCommittedTxWhenStarted = latestCommittedTxWhenStarted;
+        this.timeCommitted = timeCommitted;
     }
 
     @Override
@@ -57,7 +59,9 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         for ( Command command : commands )
         {
             if (!visitor.visit( command ))
+            {
                 return;
+            }
         }
     }
 
@@ -80,15 +84,21 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     }
 
     @Override
-    public long getTimeWritten()
+    public long getTimeStarted()
     {
-        return timeWritten;
+        return timeStarted;
     }
 
     @Override
     public long getLatestCommittedTxWhenStarted()
     {
         return latestCommittedTxWhenStarted;
+    }
+
+    @Override
+    public long getTimeCommitted()
+    {
+        return timeCommitted;
     }
 
     @Override
@@ -117,7 +127,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         {
             return false;
         }
-        if ( timeWritten != that.timeWritten )
+        if ( timeStarted != that.timeStarted )
         {
             return false;
         }
@@ -140,7 +150,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         result = 31 * result + (additionalHeader != null ? Arrays.hashCode( additionalHeader ) : 0);
         result = 31 * result + masterId;
         result = 31 * result + authorId;
-        result = 31 * result + (int) (timeWritten ^ (timeWritten >>> 32));
+        result = 31 * result + (int) (timeStarted ^ (timeStarted >>> 32));
         result = 31 * result + (int) (latestCommittedTxWhenStarted ^ (latestCommittedTxWhenStarted >>> 32));
         return result;
     }

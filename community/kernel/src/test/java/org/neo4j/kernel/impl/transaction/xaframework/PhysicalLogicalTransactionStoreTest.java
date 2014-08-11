@@ -99,7 +99,7 @@ public class PhysicalLogicalTransactionStoreTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         final byte[] additionalHeader = new byte[] {1, 2, 5};
         final int masterId = 2, authorId = 1;
-        final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
+        final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted+10;
         LifeSupport life = new LifeSupport(  );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
         Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
@@ -111,7 +111,7 @@ public class PhysicalLogicalTransactionStoreTest
         try
         {
             addATransactionAndRewind( logFile, txIdGenerator, positionCache, transactionIdStore,
-                    additionalHeader, masterId, authorId, timeWritten, latestCommittedTxWhenStarted );
+                    additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted );
         }
         finally
         {
@@ -132,7 +132,8 @@ public class PhysicalLogicalTransactionStoreTest
                 assertArrayEquals( additionalHeader, transaction.additionalHeader() );
                 assertEquals( masterId, transaction.getMasterId() );
                 assertEquals( authorId, transaction.getAuthorId() );
-                assertEquals( timeWritten, transaction.getTimeWritten() );
+                assertEquals( timeStarted, transaction.getTimeStarted() );
+                assertEquals( timeCommitted, transaction.getTimeCommitted() );
                 assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
                 recoveredTransactions.incrementAndGet();
                 return true;
@@ -165,7 +166,7 @@ public class PhysicalLogicalTransactionStoreTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         final byte[] additionalHeader = new byte[] {1, 2, 5};
         final int masterId = 2, authorId = 1;
-        final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
+        final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted+10;
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
         Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
@@ -177,7 +178,7 @@ public class PhysicalLogicalTransactionStoreTest
         try
         {
             addATransactionAndRewind( logFile, txIdGenerator, positionCache, transactionIdStore,
-                    additionalHeader, masterId, authorId, timeWritten, latestCommittedTxWhenStarted );
+                    additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted );
         }
         finally
         {
@@ -198,7 +199,8 @@ public class PhysicalLogicalTransactionStoreTest
                 assertArrayEquals( additionalHeader, transaction.additionalHeader() );
                 assertEquals( masterId, transaction.getMasterId() );
                 assertEquals( authorId, transaction.getAuthorId() );
-                assertEquals( timeWritten, transaction.getTimeWritten() );
+                assertEquals( timeStarted, transaction.getTimeStarted() );
+                assertEquals( timeCommitted, transaction.getTimeCommitted() );
                 assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
                 recoveredTransactions.incrementAndGet();
                 return true;
@@ -225,14 +227,15 @@ public class PhysicalLogicalTransactionStoreTest
 
     private void addATransactionAndRewind( LogFile logFile, TxIdGenerator txIdGenerator,
                                            TransactionMetadataCache positionCache, TransactionIdStore transactionIdStore,
-                                           byte[] additionalHeader, int masterId, int authorId, long timeWritten,
-                                           long latestCommittedTxWhenStarted ) throws IOException
+                                           byte[] additionalHeader, int masterId, int authorId, long timeStarted,
+                                           long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
         TransactionAppender appender = new PhysicalTransactionAppender(
                 logFile, txIdGenerator, positionCache, transactionIdStore );
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
-        transaction.setHeader( additionalHeader, masterId, authorId, timeWritten, latestCommittedTxWhenStarted );
+        transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
+                timeCommitted );
         appender.append( transaction );
     }
 

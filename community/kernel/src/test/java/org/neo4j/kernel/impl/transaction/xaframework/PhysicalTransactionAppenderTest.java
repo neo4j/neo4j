@@ -59,8 +59,9 @@ public class PhysicalTransactionAppenderTest
                 singleCreateNodeCommand() );
         final byte[] additionalHeader = new byte[] {1, 2, 5};
         final int masterId = 2, authorId = 1;
-        final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
-        transaction.setHeader( additionalHeader, masterId, authorId, timeWritten, latestCommittedTxWhenStarted );
+        final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted+10;
+        transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
+                timeCommitted );
 
         appender.append( transaction );
 
@@ -72,7 +73,8 @@ public class PhysicalTransactionAppenderTest
             assertArrayEquals( additionalHeader, tx.additionalHeader() );
             assertEquals( masterId, tx.getMasterId() );
             assertEquals( authorId, tx.getAuthorId() );
-            assertEquals( timeWritten, tx.getTimeWritten() );
+            assertEquals( timeStarted, tx.getTimeStarted() );
+            assertEquals( timeCommitted, tx.getTimeCommitted() );
             assertEquals( latestCommittedTxWhenStarted, tx.getLatestCommittedTxWhenStarted() );
         }
     }
@@ -94,11 +96,11 @@ public class PhysicalTransactionAppenderTest
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2, authorId = 1;
-        final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
+        final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted+10;
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
                 singleCreateNodeCommand() );
-        transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeWritten,
-                latestCommittedTxWhenStarted );
+        transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
+                latestCommittedTxWhenStarted, timeCommitted );
 
         when( transactionIdStore.getLastCommittingTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
 
@@ -117,7 +119,8 @@ public class PhysicalTransactionAppenderTest
         assertArrayEquals( additionalHeader, result.additionalHeader() );
         assertEquals( masterId, result.getMasterId() );
         assertEquals( authorId, result.getAuthorId() );
-        assertEquals( timeWritten, result.getTimeWritten() );
+        assertEquals( timeStarted, result.getTimeStarted() );
+        assertEquals( timeCommitted, result.getTimeCommitted() );
         assertEquals( latestCommittedTxWhenStarted, result.getLatestCommittedTxWhenStarted() );
     }
 
@@ -137,11 +140,11 @@ public class PhysicalTransactionAppenderTest
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2, authorId = 1;
-        final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
+        final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted+10;
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
                 singleCreateNodeCommand() );
-        transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeWritten,
-                latestCommittedTxWhenStarted );
+        transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
+                latestCommittedTxWhenStarted, timeCommitted );
 
         when( transactionIdStore.getLastCommittingTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
 

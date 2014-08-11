@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 
@@ -86,7 +86,7 @@ public class PhysicalTransactionCursor implements IOCursor<CommittedTransactionR
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );
         transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getMasterId(),
                 startEntry.getLocalId(), startEntry.getTimeWritten(),
-                startEntry.getLastCommittedTxWhenTransactionStarted() );
+                startEntry.getLastCommittedTxWhenTransactionStarted(), commitEntry.getTimeWritten() );
         current = new CommittedTransactionRepresentation( startEntry, transaction, commitEntry );
         return true;
     }

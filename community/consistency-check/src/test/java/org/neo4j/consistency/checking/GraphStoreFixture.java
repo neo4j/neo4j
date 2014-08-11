@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
+import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.singletonMap;
 
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
@@ -107,7 +108,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
     public static abstract class Transaction
     {
-        public final long startTimestamp = System.currentTimeMillis();
+        public final long startTimestamp = currentTimeMillis();
 
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
 
@@ -116,7 +117,8 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             TransactionWriter writer = new TransactionWriter();
             transactionData( new TransactionDataBuilder( writer ), idGenerator );
-            return writer.representation( new byte[0], masterId, authorId, startTimestamp, lastCommittedTx );
+            return writer.representation( new byte[0], masterId, authorId, startTimestamp, lastCommittedTx,
+                   currentTimeMillis() );
         }
     }
 

@@ -33,7 +33,6 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceSto
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
-import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
