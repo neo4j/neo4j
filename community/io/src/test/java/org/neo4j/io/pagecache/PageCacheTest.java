@@ -26,8 +26,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,6 +52,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
 import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
@@ -2772,8 +2775,125 @@ public abstract class PageCacheTest<T extends PageCache>
         pageCache.unmap( fileB );
     }
 
-    // TODO concurrent page faulting must not put interleaved data into pages
-    // TODO concurrent flushing must not put interleaved data into file
-    // TODO specify what should happen if we call pagedFile.flush() while we have an exclusive lock on a page
+    @Test
+    public void concurrentPageFaultingMustNotPutInterleavedDataIntoPages() throws Exception
+    {
+        getPageCache( fs, 3, pageCachePageSize, PageCacheMonitor.NULL );
+
+        final File fileA = new File( "a" );
+
+        int pageCount = 11;
+
+        try (StoreChannel storeChannel = fs.create( fileA ))
+        {
+            for ( byte i = 0; i < pageCount; i++ )
+            {
+                byte[] data = new byte[pageCachePageSize];
+                Arrays.fill(data, (byte) (i+1) );
+                storeChannel.write( ByteBuffer.wrap( data ) );
+            }
+        }
+
+        final int COUNT = 100000;
+        final CountDownLatch readyLatch = new CountDownLatch( 11 );
+        final PagedFile pagedFile = pageCache.map( fileA, pageCachePageSize );
+
+        List<Future<?>> futures = new ArrayList<>(  );
+        for ( int pageId = 0; pageId < pageCount; pageId++ )
+        {
+            final int finalPageId = pageId;
+            futures.add( executor.submit( new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    readyLatch.countDown();
+                    readyLatch.await();
+                    byte[] byteCheck = new byte[pageCachePageSize];
+                    for ( int c = 0; c < COUNT; c++ )
+                    {
+                        try ( PageCursor cursor = pagedFile.io( finalPageId, PagedFile.PF_SHARED_LOCK ) )
+                        {
+                            if ( cursor.next() )
+                            {
+                                do
+                                {
+                                    cursor.getBytes( byteCheck );
+                                } while ( cursor.shouldRetry() );
+                            }
+                        }
+
+                        for ( int i = 0; i < pageCachePageSize; i++ )
+                        {
+                            assertThat( byteCheck[i], equalTo( (byte) (1 + finalPageId) ) );
+                        }
+                    }
+                    return null;
+                }
+            } ) );
+        }
+
+        try
+        {
+            for ( Future<?> future : futures )
+            {
+                future.get(); // This must not throw an ExecutionException
+            }
+        }
+        finally
+        {
+            pageCache.unmap( fileA );
+        }
+    }
+
+    @Test
+    public void concurrentFlushingMustNotPutInterleavedDataIntoFile() throws Exception
+    {
+        generateFileWithRecords( file, recordCount, recordSize );
+
+        getPageCache( fs, 500, pageCachePageSize, PageCacheMonitor.NULL );
+
+        final PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        for ( int i = 0; i < 100; i++ )
+        {
+            try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                while ( cursor.next() )
+                {
+                    // Advance the cursor through all the pages in the file,
+                    // faulting them into memory and marking them as dirty
+                    verifyRecordsMatchExpected( cursor );
+                }
+            }
+
+            int threads = 2;
+            final CountDownLatch readyLatch = new CountDownLatch( threads );
+            List<Future<?>> futures = new ArrayList<>();
+            for ( int j = 0; j < threads; j++ )
+            {
+                futures.add( executor.submit( new Callable<Object>()
+                {
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        readyLatch.countDown();
+                        readyLatch.await();
+
+                        pagedFile.flush();
+
+                        return null;
+                    }
+                } ) );
+            }
+
+            for ( Future<?> future : futures )
+            {
+                future.get(); // Must not throw an ExecutionException
+            }
+        }
+
+        pageCache.unmap( file );
+    }
     // TODO some tests that verify that the page swapping does not swallow interrupts
 }

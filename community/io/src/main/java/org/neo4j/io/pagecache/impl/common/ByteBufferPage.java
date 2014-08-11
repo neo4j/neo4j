@@ -122,9 +122,14 @@ public class ByteBufferPage implements Page
     @Override
     public void swapOut( StoreChannel channel, long offset, int length ) throws IOException
     {
-        buffer.position( 0 );
-        buffer.limit( length );
-        channel.writeAll( buffer, offset );
+        // We duplicate the buffer here, so that our thread gets its own
+        // position and limit to play with.
+        // This is important because swapping out, unlike swapping in,
+        // can happen concurrently to the same page.
+        ByteBuffer duplicate = buffer.duplicate();
+        duplicate.position( 0 );
+        duplicate.limit( length );
+        channel.writeAll( duplicate, offset );
     }
 
     public void setAllBytesToZero()
