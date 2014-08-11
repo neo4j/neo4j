@@ -182,7 +182,7 @@ object StatementConverters {
     def addToQueryBuilder(builder: commands.QueryBuilder) = {
       val matches = builder.matching ++ clause.pattern.asLegacyPatterns
       val namedPaths = builder.namedPaths ++ clause.pattern.asLegacyNamedPaths
-      val indexHints = builder.using ++ clause.hints.map {
+      val indexHints = builder.using ++ clause.hints.collect {
         case ast.UsingIndexHint(identifier, label, property) =>
           commands.SchemaIndex(identifier.name, label.name, property.name, commands.AnyIndex, None)
         case ast.UsingScanHint(identifier, label) =>

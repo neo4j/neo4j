@@ -17,14 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-object ConstantExpression {
-  def unapply(v: AnyRef): Option[Expression] = v match {
-    case expr: Literal => Some(expr)
-    case expr: Parameter => Some(expr)
-    case expr@Collection(expressions) if expressions.forall(unapply(_).nonEmpty) => Some(expr)
-    case expr@FunctionInvocation(FunctionName("__oneormore"), _, Seq(ConstantExpression(_))) => Some(expr)
-    case _ => None
-  }
+case class NodeExistsCondition(identifier: IdName, left: LogicalPlan) extends LogicalPlan {
+  val lhs = Some(left)
+  def rhs = None
+  def availableSymbols = left.availableSymbols
 }

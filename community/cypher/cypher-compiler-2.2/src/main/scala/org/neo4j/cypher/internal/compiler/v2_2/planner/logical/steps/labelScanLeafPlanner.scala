@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, CandidateList, LeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, CandidateList, LeafPlanner, UsingScanHint}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{PatternExpression, UsingScanHint, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{PatternExpression, Identifier}
 
 object labelScanLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]) = {

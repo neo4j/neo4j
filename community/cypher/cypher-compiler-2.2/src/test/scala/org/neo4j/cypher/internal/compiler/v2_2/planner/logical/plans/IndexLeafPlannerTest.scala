@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
@@ -119,7 +120,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("plans index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_
+    val hint = logical.UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))
 
     new given {
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))
@@ -143,7 +144,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("plans unique index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_
+    val hint = logical.UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))
 
     new given {
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))

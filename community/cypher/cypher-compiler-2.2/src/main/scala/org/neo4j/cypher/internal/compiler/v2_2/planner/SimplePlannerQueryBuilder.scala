@@ -19,13 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.ast
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, topDown}
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.OtherConverters.HintConverter
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.UsingIdSeekHint
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, ast, topDown}
+import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.graphdb.Direction
 
 object SimplePlannerQueryBuilder {
 
@@ -78,6 +82,55 @@ object SimplePlannerQueryBuilder {
       case node: NodePattern => destruct(node)
     }
 
+    def destructStartItem(startItem: StartItem) = startItem match {
+      case startItem @ (NodeByIds(_, _) | NodeByParameter(_, _)) =>
+        val pos = startItem.position
+        val (identifier, collection) = startItem match {
+          case NodeByIds(identifier, ids) =>
+            (identifier, Collection(ids.map {
+              case id @ UnsignedDecimalIntegerLiteral(string) =>
+                UnsignedDecimalIntegerLiteral(string)(id.position)
+            })(pos))
+          case NodeByParameter(identifier, parameter) =>
+            (identifier, FunctionInvocation(FunctionName("__oneormore")(pos), parameter)(pos))
+        }
+
+        val invocation = FunctionInvocation(FunctionName("id")(pos), identifier)(pos)
+        val predicates = Seq(In(invocation, collection)(pos))
+        val hints = Seq(UsingIdSeekHint(identifier))
+        (Seq(IdName(identifier.name)), Seq.empty, predicates, hints)
+
+      case startItem @ (RelationshipByIds(_, _) | RelationshipByParameter(_, _)) =>
+        val pos = startItem.position
+        val (identifier, collection) = startItem match {
+          case RelationshipByIds(identifier, ids) =>
+            (identifier, Collection(ids.map {
+              case id @ UnsignedDecimalIntegerLiteral(string) =>
+                UnsignedDecimalIntegerLiteral(string)(id.position)
+            })(pos))
+
+          case RelationshipByParameter(identifier, parameter) =>
+            (identifier, FunctionInvocation(FunctionName("__oneormore")(pos), parameter)(pos))
+        }
+
+        val position = identifier.position
+        val (lhs, rhs) = (
+          IdName(FreshIdNameGenerator.name(position) + "lhs"),
+          IdName(FreshIdNameGenerator.name(position) + "rhs")
+        )
+        val patternRel = PatternRelationship(IdName(identifier.name), (lhs, rhs), Direction.BOTH, Seq.empty, SimplePatternLength)
+        val invocation = FunctionInvocation(FunctionName("id")(pos), identifier)(pos)
+        val predicates = Seq(In(invocation, collection)(pos))
+        val hints = Seq(UsingIdSeekHint(identifier))
+        (Seq(lhs, rhs), Seq(patternRel), predicates, hints)
+
+      case startItem @ AllNodes(Identifier(idName)) =>
+        (Seq(IdName(idName)), Seq.empty, Seq.empty, Seq.empty)
+
+      case _ =>
+        throw new CantHandleQueryException()
+    }
+
     def destruct(chain: RelationshipChain): (Seq[IdName], Seq[PatternRelationship]) = chain match {
       // (a)->[r]->(b)
       case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None, _), RelationshipPattern(Some(relId), _, relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
@@ -110,15 +163,14 @@ object SimplePlannerQueryBuilder {
       case None => SimplePatternLength
     }
   }
-
 }
 
-class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
+class SimplePlannerQueryBuilder extends PlannerQueryBuilder with CollectionSupport {
 
-  import SimplePlannerQueryBuilder.PatternDestructuring._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.SimplePlannerQueryBuilder.PatternDestructuring._
 
   private def getSelectionsAndSubQueries(optWhere: Option[Where]): (Selections, Seq[(PatternExpression, QueryGraph)]) = {
-    import SimplePlannerQueryBuilder.SubQueryExtraction.extractQueryGraph
+    import org.neo4j.cypher.internal.compiler.v2_2.planner.SimplePlannerQueryBuilder.SubQueryExtraction.extractQueryGraph
 
     val predicates = optWhere.map(SelectionPredicates.fromWhere).getOrElse(Set.empty)
 
@@ -170,7 +222,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
   }
 
   private def getPatternInExpressionQueryGraphs(expressions: Seq[Expression]): Seq[(PatternExpression, QueryGraph)] = {
-    import SimplePlannerQueryBuilder.SubQueryExtraction.extractQueryGraph
+    import org.neo4j.cypher.internal.compiler.v2_2.planner.SimplePlannerQueryBuilder.SubQueryExtraction.extractQueryGraph
 
     val patternExpressions = expressions.treeFold(Seq.empty[PatternExpression]) {
       case p: PatternExpression =>
@@ -237,7 +289,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
             addSelections(selections).
             addPatternNodes(nodeIds: _*).
             addPatternRels(rels).
-            addHints(hints).
+            addHints(hints.map(_.asPlannerHint)).
             addShortestPaths(shortest: _*)
         }
 
@@ -255,7 +307,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
           selections = selections,
           patternNodes = nodeIds.toSet,
           patternRelationships = rels.toSet,
-          hints = hints.toSet,
+          hints = hints.map(_.asPlannerHint).toSet,
           shortestPathPatterns = shortest.toSet
         )
 
@@ -337,6 +389,25 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
             .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
 
         input.copy(q = newQuery, tailPlannedOutput.patternExprTable)
+
+      case Start(startItems, optWhere) :: tl =>
+        val (selections: Selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+        val nestedPatternPredicates = extractPatternInExpressionFromWhere(optWhere)
+        val newPatternInExpressionTable = input.patternExprTable ++ subQueries ++ nestedPatternPredicates
+
+        val x = startItems.map(destructStartItem)
+        val (nodeIds, rels, predicates, hints) = x.unzip4
+
+        val plannerQuery = input.q.updateGraph {
+          qg => qg.
+            addSelections(selections.++(predicates.flatten: _*)).
+            addPatternNodes(nodeIds.flatten: _*).
+            addPatternRels(rels.flatten).
+            addHints(hints.flatten)
+        }
+
+        val nextStep = input.copy(q = plannerQuery, patternExprTable = newPatternInExpressionTable)
+        produceQueryGraphFromClauses(nextStep, tl)
 
       case Seq() =>
         input

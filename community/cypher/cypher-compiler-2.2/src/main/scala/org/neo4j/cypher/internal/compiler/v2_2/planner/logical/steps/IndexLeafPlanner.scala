@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
@@ -43,7 +44,7 @@ abstract class IndexLeafPlanner extends LeafPlanner {
       yield {
         val propertyName = propertyKeyName.name
         val hint = qg.hints.collectFirst {
-          case hint @ UsingIndexHint(Identifier(`name`), `labelName`, Identifier(`propertyName`)) => hint
+          case hint @ logical.UsingIndexHint(Identifier(`name`), `labelName`, Identifier(`propertyName`)) => hint
         }
         val entryConstructor: (Seq[Expression]) => QueryPlan =
           constructPlan(idName, LabelToken(labelName, labelId), PropertyKeyToken(propertyKeyName, propertyKeyName.id.head), queryExpression, hint)
@@ -63,7 +64,7 @@ abstract class IndexLeafPlanner extends LeafPlanner {
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],
-                              hint: Option[UsingIndexHint])
+                              hint: Option[logical.UsingIndexHint])
                              (implicit context: LogicalPlanningContext,
                               subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (Seq[Expression]) => QueryPlan
 
@@ -77,7 +78,7 @@ object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],
-                              hint: Option[UsingIndexHint])
+                              hint: Option[logical.UsingIndexHint])
                              (implicit context: LogicalPlanningContext,
                               subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
@@ -93,7 +94,7 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],
-                              hint: Option[UsingIndexHint])
+                              hint: Option[logical.UsingIndexHint])
                              (implicit context: LogicalPlanningContext,
                               subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>

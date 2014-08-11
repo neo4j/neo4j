@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.docbuilders.internalDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator.isNamed
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.PlannerHint
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 import scala.collection.GenTraversableOnce
@@ -31,7 +32,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       argumentIds: Set[IdName] = Set.empty,
                       selections: Selections = Selections(),
                       optionalMatches: Seq[QueryGraph] = Seq.empty,
-                      hints: Set[Hint] = Set.empty,
+                      hints: Set[PlannerHint] = Set.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty) extends internalDocBuilder.AsPrettyToString{
 
   def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
@@ -62,7 +63,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     copy(selections = selections ++ newSelections)
   }
 
-  def addHints(addedHints: GenTraversableOnce[Hint]) = copy(hints = hints ++ addedHints)
+  def addHints(addedHints: GenTraversableOnce[PlannerHint]) = copy(hints = hints ++ addedHints)
 
   def withoutArguments(): QueryGraph = withArgumentIds(Set.empty)
   def withArgumentIds(newArgumentIds: Set[IdName]): QueryGraph =
@@ -90,7 +91,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     patternIds ++ argumentIds ++ optionalMatchIds
   }
 
-  val allHints: Set[Hint] =
+  val allHints: Set[PlannerHint] =
     if (optionalMatches.isEmpty) hints else hints ++ optionalMatches.flatMap(_.allHints)
 
   def numHints = allHints.size
@@ -125,7 +126,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                    argumentIds: Set[IdName] = argumentIds,
                    selections: Selections = selections,
                    optionalMatches: Seq[QueryGraph] = optionalMatches,
-                   hints: Set[Hint] = hints,
+                   hints: Set[PlannerHint] = hints,
                    shortestPathPatterns: Set[ShortestPathPattern] = shortestPathPatterns) =
   QueryGraph(patternRelationships, patternNodes, argumentIds, selections, optionalMatches, hints, shortestPathPatterns)
 }

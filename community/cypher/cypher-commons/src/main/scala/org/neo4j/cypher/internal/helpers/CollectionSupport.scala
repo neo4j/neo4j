@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import collection.Seq
-import collection.Map
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.generic.HasNewBuilder
+import scala.collection.{GenTraversable, Seq, Map}
 import java.lang.{Iterable => JavaIterable}
 import java.util.{Map => JavaMap}
 import collection.JavaConverters._
@@ -110,5 +111,13 @@ trait CollectionSupport {
     }
   }
 
+  implicit class RichTuple4Seq[A1, A2, A3, A4](inner: Seq[(A1, A2, A3, A4)]) {
+    def unzip4 = {
+      val (first, second, tail) = (for ((a, b, c, d) <- inner)
+        yield (a, b, (c, d))).unzip3
+      val (third, fourth) = tail.unzip
+      (first, second, third, fourth)
+    }
+  }
 
 }

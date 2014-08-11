@@ -38,7 +38,7 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
       }
 
       if (distinct)
-        distinctiy(unionPlan)
+        distinctify(unionPlan)
       else
         unionPlan
 
@@ -52,7 +52,7 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
     verifyBestPlan(finalPlan, query)
   }
 
-  private def distinctiy(p: LogicalPlan): LogicalPlan = {
+  private def distinctify(p: LogicalPlan): LogicalPlan = {
     val returnAll = QueryProjection.forIds(p.availableSymbols) map {
       case AliasedReturnItem(e, Identifier(key)) => key -> e // This smells awful.
     }

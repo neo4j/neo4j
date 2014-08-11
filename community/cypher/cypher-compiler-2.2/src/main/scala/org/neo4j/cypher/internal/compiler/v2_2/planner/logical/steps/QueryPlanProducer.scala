@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.PlannerHint
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
@@ -70,12 +71,14 @@ object QueryPlanProducer {
                                        startNode: IdName,
                                        endNode: IdName,
                                        pattern: PatternRelationship,
-                                       solvedPredicates: Seq[Expression] = Seq.empty) =
+                                       solvedPredicates: Seq[Expression] = Seq.empty,
+                                       solvedHint: Option[PlannerHint] = None) =
     QueryPlan(
       DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode),
       PlannerQuery(graph = QueryGraph.empty
-        .addPatternRel(pattern).
-        addPredicates(solvedPredicates: _*)
+        .addPatternRel(pattern)
+        .addHints(solvedHint)
+        .addPredicates(solvedPredicates: _*)
       )
     )
 
@@ -91,21 +94,27 @@ object QueryPlanProducer {
       Expand(left.plan, from, dir, types, to, relName, length),
       left.solved.updateGraph(_.addPatternRel(pattern)))
 
+  def planNodeExistsCondition(identifier: IdName, left: QueryPlan) =
+    QueryPlan(
+      NodeExistsCondition(identifier, left.plan),
+      left.solved)
+
   def planHiddenSelection(predicates: Seq[Expression], left: QueryPlan) =
     QueryPlan(
       Selection(predicates, left.plan),
       left.solved)
 
-  def planNodeByIdSeek(idName: IdName, nodeIds: Seq[Expression], solvedPredicates: Seq[Expression] = Seq.empty) =
+  def planNodeByIdSeek(idName: IdName, nodeIds: Seq[Expression], solvedPredicates: Seq[Expression] = Seq.empty, solvedHint: Option[logical.UsingIdSeekHint] = None) =
     QueryPlan(
       NodeByIdSeek(idName, nodeIds),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
+        .addHints(solvedHint)
       )
     )
 
-  def planNodeByLabelScan(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression], solvedHint: Option[UsingScanHint] = None) =
+  def planNodeByLabelScan(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression], solvedHint: Option[logical.UsingScanHint] = None) =
     QueryPlan(
       NodeByLabelScan(idName, label),
       PlannerQuery(graph = QueryGraph.empty
@@ -119,7 +128,7 @@ object QueryPlanProducer {
                         label: ast.LabelToken,
                         propertyKey: ast.PropertyKeyToken,
                         valueExpr: QueryExpression[Expression], solvedPredicates: Seq[Expression] = Seq.empty,
-                        solvedHint: Option[UsingIndexHint] = None) =
+                        solvedHint: Option[logical.UsingIndexHint] = None) =
     QueryPlan(
       NodeIndexSeek(idName, label, propertyKey, valueExpr),
       PlannerQuery(graph = QueryGraph.empty
@@ -140,7 +149,7 @@ object QueryPlanProducer {
                               propertyKey: ast.PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],
                               solvedPredicates: Seq[Expression] = Seq.empty,
-                              solvedHint: Option[UsingIndexHint] = None) =
+                              solvedHint: Option[logical.UsingIndexHint] = None) =
     QueryPlan(
       NodeIndexUniqueSeek(idName, label, propertyKey, valueExpr),
       PlannerQuery(graph = QueryGraph.empty
@@ -235,11 +244,13 @@ object QueryPlanProducer {
                                          leftNode: IdName,
                                          rightNode: IdName,
                                          pattern: PatternRelationship,
-                                         solvedPredicates: Seq[Expression] = Seq.empty) =
+                                         solvedPredicates: Seq[Expression] = Seq.empty,
+                                         solvedHint: Option[PlannerHint] = None) =
     QueryPlan(
       UndirectedRelationshipByIdSeek(idName, relIds, leftNode, rightNode),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternRel(pattern)
+        .addHints(solvedHint)
       )
     )
 

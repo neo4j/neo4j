@@ -29,8 +29,5 @@ case object astDocBuilder extends CachingDocBuilder[Any] {
   override protected def newNestedDocGenerator = {
     case relTypeName: RelTypeName => (inner) =>
       text(relTypeName.name)
-
-    case hint: UsingIndexHint => (inner) =>
-      group("USING" :/: "INDEX" :/: group(inner(hint.identifier) :: block(inner(hint.label))(inner(hint.property))))
   }
 }

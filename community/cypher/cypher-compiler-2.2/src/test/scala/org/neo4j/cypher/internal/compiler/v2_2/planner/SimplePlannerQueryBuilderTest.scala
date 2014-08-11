@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{UsingIdSeekHint, UsingIndexHint}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.graphdb.Direction
 
@@ -781,7 +782,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   test("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n")
 
-    query.graph.hints should equal(Set[Hint](UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_))
+    query.graph.hints should equal(Set(UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))))
   }
 
   test("MATCH shortestPath(a-[r]->b) RETURN r") {
@@ -1012,6 +1013,129 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
         projections = Map("node" -> ident("node"))
       )
     )
+  }
+
+  test("START n=node(0) RETURN n") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
+      buildPlannerQuery("START n=node(0) RETURN n", normalize = true)
+
+    query.graph.patternNodes should equal(Set(IdName("n")))
+    query.graph.selections.predicates should equal(Set(
+      Predicate(Set(IdName("n")),
+        In(FunctionInvocation(FunctionName("id")_, Identifier("n")_)_, Collection(Seq(UnsignedDecimalIntegerLiteral("0")_))_)_)
+    ))
+    val hint: UsingIdSeekHint = UsingIdSeekHint(Identifier("n")_)
+    query.graph.hints should equal(Set(hint))
+
+    query.horizon should equal(
+      RegularQueryProjection(
+        projections = Map("n" -> Identifier("n")_)))
+
+    query.tail should equal(None)
+  }
+
+  test("START n=node(0, 1) RETURN n") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
+      buildPlannerQuery("START n=node(0, 1) RETURN n", normalize = true)
+
+    query.graph.patternNodes should equal(Set(IdName("n")))
+    query.graph.selections.predicates should equal(Set(
+      Predicate(Set(IdName("n")),
+        In(FunctionInvocation(FunctionName("id")_, Identifier("n")_)_, Collection(Seq(
+          UnsignedDecimalIntegerLiteral("0")_,
+          UnsignedDecimalIntegerLiteral("1")_
+        ))_)_)
+    ))
+    val hint: UsingIdSeekHint = UsingIdSeekHint(Identifier("n")_)
+    query.graph.hints should equal(Set(hint))
+
+    query.horizon should equal(
+      RegularQueryProjection(
+        projections = Map("n" -> Identifier("n")_)))
+
+    query.tail should equal(None)
+  }
+
+  test("START n=node(0, 1), m=node(2) RETURN n, m") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
+      buildPlannerQuery("START n=node(0, 1), m=node(2) RETURN n, m", normalize = true)
+
+    query.graph.patternNodes should equal(Set(IdName("n"), IdName("m")))
+    query.graph.selections.predicates should equal(Set(
+      Predicate(Set(IdName("n")),
+        In(FunctionInvocation(FunctionName("id")_, Identifier("n")_)_, Collection(Seq(
+          UnsignedDecimalIntegerLiteral("0")_,
+          UnsignedDecimalIntegerLiteral("1")_
+        ))_)_),
+      Predicate(Set(IdName("m")),
+        In(FunctionInvocation(FunctionName("id")_, Identifier("m")_)_, Collection(Seq(
+          UnsignedDecimalIntegerLiteral("2")_
+        ))_)_)
+    ))
+    val hint1: UsingIdSeekHint = UsingIdSeekHint(Identifier("n")_)
+    val hint2: UsingIdSeekHint = UsingIdSeekHint(Identifier("m")_)
+    query.graph.hints should equal(Set(hint1, hint2))
+
+    query.horizon should equal(
+      RegularQueryProjection(
+        projections = Map(
+          "n" -> Identifier("n")_,
+          "m" -> Identifier("m")_
+        )))
+
+    query.tail should equal(None)
+  }
+
+  test("START r=rel(0), m=node(2) RETURN r, m") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
+      buildPlannerQuery("START r=rel(0), m=node(2) RETURN r, m", normalize = true)
+
+    query.graph.patternNodes should equal(Set(
+      IdName("m"), IdName("  FRESHID6lhs"), IdName("  FRESHID6rhs")
+    ))
+    query.graph.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r"), (IdName("  FRESHID6lhs"), IdName("  FRESHID6rhs")), Direction.BOTH, Seq.empty, SimplePatternLength)
+    ))
+    query.graph.selections.predicates should equal(Set(
+      Predicate(Set(IdName("r")),
+        In(FunctionInvocation(FunctionName("id")_, Identifier("r")_)_, Collection(Seq(
+          UnsignedDecimalIntegerLiteral("0")_
+        ))_)_),
+      Predicate(Set(IdName("m")),
+        In(FunctionInvocation(FunctionName("id")_, Identifier("m")_)_, Collection(Seq(
+          UnsignedDecimalIntegerLiteral("2")_
+        ))_)_)
+    ))
+    val hint1: UsingIdSeekHint = UsingIdSeekHint(Identifier("r")_)
+    val hint2: UsingIdSeekHint = UsingIdSeekHint(Identifier("m")_)
+    query.graph.hints should equal(Set(hint1, hint2))
+
+    query.horizon should equal(
+      RegularQueryProjection(
+        projections = Map(
+          "r" -> Identifier("r")_,
+          "m" -> Identifier("m")_
+        )))
+
+    query.tail should equal(None)
+  }
+
+  test("START n=node(*) RETURN n") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
+      buildPlannerQuery("START n=node(*) RETURN n", normalize = true)
+
+    query.graph.patternNodes should equal(Set(IdName("n")))
+    query.graph.patternRelationships should be(empty)
+    query.graph.selections.predicates should be(empty)
+    query.graph.hints should be(empty)
+
+    query.horizon should equal(
+      RegularQueryProjection(
+        projections = Map(
+          "n" -> Identifier("n")_
+        )))
+
+    query.tail should equal(None)
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)_
