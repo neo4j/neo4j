@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.Thread.State;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
 public class Exceptions
@@ -82,17 +83,17 @@ public class Exceptions
             throw new RuntimeException( messageForUnexpected, exception );
         }
     }
-    
+
     /**
      * Peels off layers of causes. For example:
-     * 
+     *
      * MyFarOuterException
      *   cause: MyOuterException
      *     cause: MyInnerException
      *       cause: MyException
      * and a toPeel predicate returning true for MyFarOuterException and MyOuterException
-     * will return MyInnerException. If the predicate peels all exceptions null is returned. 
-     * 
+     * will return MyInnerException. If the predicate peels all exceptions null is returned.
+     *
      * @param exception the outer exception to peel to get to an delegate cause.
      * @param toPeel {@link Predicate} for deciding what to peel. {@code true} means
      * to peel (i.e. remove), whereas the first {@code false} means stop and return.
@@ -110,7 +111,7 @@ public class Exceptions
         }
         return exception;
     }
-    
+
     public static Predicate<Throwable> exceptionsOfType( final Class<? extends Throwable>... types )
     {
         return new Predicate<Throwable>()
@@ -167,7 +168,7 @@ public class Exceptions
             return "[ERROR: Unable to serialize stacktrace, UTF-8 not supported.]";
         }
     }
-    
+
     public static String stringify( Thread thread, StackTraceElement[] elements )
     {
         StringBuilder builder = new StringBuilder(
@@ -178,7 +179,7 @@ public class Exceptions
         builder.append( "   " + State.class.getName() + ": " + thread.getState().name().toUpperCase() + "\n" );
         for ( StackTraceElement element : elements )
         {
-            builder.append( "      at " + element.getClassName() + "." + element.getMethodName() ); 
+            builder.append( "      at " + element.getClassName() + "." + element.getMethodName() );
             if ( element.isNativeMethod() )
             {
                 builder.append( "(Native method)" );
@@ -195,7 +196,7 @@ public class Exceptions
         }
         return builder.toString();
     }
-    
+
     @SuppressWarnings( "rawtypes" )
     public static boolean contains( final Throwable cause, final String containsMessage, final Class... anyOfTheseClasses )
     {
@@ -268,5 +269,31 @@ public class Exceptions
 
         current.initCause( second );
         return first;
+    }
+
+    private static final Field THROWABLE_MESSAGE_FIELD;
+    static
+    {
+        try
+        {
+            THROWABLE_MESSAGE_FIELD = Throwable.class.getDeclaredField( "detailMessage" );
+            THROWABLE_MESSAGE_FIELD.setAccessible( true );
+        }
+        catch ( Exception e )
+        {
+            throw new LinkageError( "Could not get Throwable message field", e );
+        }
+    }
+
+    public static void setMessage( Throwable t, String message )
+    {
+        try
+        {
+            THROWABLE_MESSAGE_FIELD.set( t, message );
+        }
+        catch ( IllegalArgumentException | IllegalAccessException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

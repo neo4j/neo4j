@@ -20,7 +20,6 @@
 package org.neo4j.helpers;
 
 import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -52,7 +51,7 @@ public class TestExceptions
         // then
         assertEquals( expected, peeled );
     }
-    
+
     @Test
     public void canPeelUsingConveniencePredicate() throws Exception
     {
@@ -67,21 +66,36 @@ public class TestExceptions
 
         // when
         Throwable peeled = Exceptions.peel( exception, Exceptions.exceptionsOfType( RuntimeException.class, LevelFourException.class ) );
-        
+
         // then
         assertEquals( expected, peeled );
     }
-    
+
     @Test
     public void shouldDetectContainsOneOfSome() throws Exception
     {
         // GIVEN
         Throwable cause = new ARuntimeException( new AnotherRuntimeException( new NullPointerException( "Some words" ) ) );
-        
+
         // THEN
         assertTrue( Exceptions.contains( cause, NullPointerException.class ) );
         assertTrue( Exceptions.contains( cause, "words", NullPointerException.class ) );
         assertFalse( Exceptions.contains( cause, "not", NullPointerException.class ) );
+    }
+
+    @Test
+    public void shouldSetMessage() throws Exception
+    {
+        // GIVEN
+        String initialMessage = "Initial message";
+        LevelOneException exception = new LevelOneException( initialMessage );
+
+        // WHEN
+        String prependedMessage = "Prepend this: " + exception.getMessage();
+        Exceptions.setMessage( exception, prependedMessage );
+
+        // THEN
+        assertEquals( prependedMessage, exception.getMessage() );
     }
 
     private static class LevelOneException extends Exception
@@ -96,7 +110,7 @@ public class TestExceptions
             super( message, cause );
         }
     }
-    
+
     private static class LevelTwoException extends LevelOneException
     {
         public LevelTwoException( String message )
@@ -135,7 +149,7 @@ public class TestExceptions
             super( message, cause );
         }
     }
-    
+
     private static class ARuntimeException extends RuntimeException
     {
         public ARuntimeException( Throwable cause )
