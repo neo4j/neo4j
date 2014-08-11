@@ -136,7 +136,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     /**
      * Must be call under lock
      */
-    private ByteBuffer buffer()
+    ByteBuffer buffer()
     {
         assertLocked();
         if( buffer == null )

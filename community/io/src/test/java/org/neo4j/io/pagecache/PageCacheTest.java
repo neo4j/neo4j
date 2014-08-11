@@ -124,12 +124,14 @@ public abstract class PageCacheTest<T extends PageCache>
     @Before
     public void setUp()
     {
+        Thread.interrupted(); // Clear stray interrupts
         fs = new EphemeralFileSystemAbstraction();
     }
 
     @After
     public void tearDown() throws IOException
     {
+        Thread.interrupted(); // Clear stray interrupts
         if ( pageCache != null )
         {
             tearDownPageCache( pageCache );
@@ -2895,5 +2897,4 @@ public abstract class PageCacheTest<T extends PageCache>
 
         pageCache.unmap( file );
     }
-    // TODO some tests that verify that the page swapping does not swallow interrupts
 }
