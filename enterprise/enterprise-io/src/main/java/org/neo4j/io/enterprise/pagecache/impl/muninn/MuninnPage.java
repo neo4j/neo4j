@@ -342,7 +342,7 @@ final class MuninnPage extends StampedLock implements Page
         return filePageId != PageCursor.UNBOUND_PAGE_ID;
     }
 
-    public boolean pin( PageSwapper swapper, long filePageId )
+    public boolean isBoundTo( PageSwapper swapper, long filePageId )
     {
         return this.swapper == swapper && this.filePageId == filePageId;
     }

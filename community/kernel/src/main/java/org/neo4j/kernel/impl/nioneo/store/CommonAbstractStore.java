@@ -450,7 +450,7 @@ public abstract class CommonAbstractStore implements IdSequence
                         return ((lastPageId - nextPageId) * recordsPerPage) - currentRecord;
                     }
                 }
-            } while ( cursor.retry() );
+            } while ( cursor.shouldRetry() );
         }
 
         return 0;
@@ -481,7 +481,7 @@ public abstract class CommonAbstractStore implements IdSequence
                         defragged++;
                     }
                 }
-            } while ( cursor.retry() );
+            } while ( cursor.shouldRetry() );
 
             setHighId( idPageOffset + recordsPerPage );
             for ( int i = 0; i < defragged; i++ )

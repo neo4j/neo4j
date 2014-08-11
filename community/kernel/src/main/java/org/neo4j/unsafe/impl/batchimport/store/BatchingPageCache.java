@@ -390,7 +390,7 @@ public class BatchingPageCache implements PageCache
         }
 
         @Override
-        public boolean retry()
+        public boolean shouldRetry()
         {
             return false;
         }

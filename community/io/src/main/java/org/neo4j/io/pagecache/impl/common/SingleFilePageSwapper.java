@@ -96,7 +96,6 @@ public class SingleFilePageSwapper implements PageSwapper
         SingleFilePageSwapper that = (SingleFilePageSwapper) o;
 
         return !(channel != null ? !channel.equals( that.channel ) : that.channel != null);
-
     }
 
     @Override

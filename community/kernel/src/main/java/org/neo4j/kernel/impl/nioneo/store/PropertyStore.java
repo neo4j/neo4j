@@ -183,7 +183,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
                 do
                 {
                     updateRecord( record, cursor );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
             else
             {
@@ -337,7 +337,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
                 do
                 {
                     record = getRecord( id, cursor, RecordLoad.NORMAL );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
                 return record;
             }
             else
@@ -362,7 +362,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
                 do
                 {
                     record = getRecord( id, cursor, RecordLoad.FORCE );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
                 return record;
             }
             else

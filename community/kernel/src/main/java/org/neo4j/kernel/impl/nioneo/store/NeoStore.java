@@ -564,7 +564,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             graphNextPropField = getRecordValue( cursor, NEXT_GRAPH_PROP_POSITION );
             latestConstraintIntroducingTxField = getRecordValue( cursor, LATEST_CONSTRAINT_TX_POSITION );
             lastClosedTx.set( lastCommittedTxId );
-        } while ( cursor.retry() );
+        } while ( cursor.shouldRetry() );
     }
 
     private long getRecordValue( PageCursor cursor, int position )
@@ -585,7 +585,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             value = cursor.getLong() + 1;
             cursor.setOffset( offset + 1 ); // +1 to skip the inUse byte
             cursor.putLong( value );
-        } while ( cursor.retry() );
+        } while ( cursor.shouldRetry() );
         versionField = value;
     }
 
@@ -627,7 +627,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                     cursor.setOffset( offset );
                     cursor.putByte( Record.IN_USE.byteValue() );
                     cursor.putLong( value );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
         catch ( IOException e )

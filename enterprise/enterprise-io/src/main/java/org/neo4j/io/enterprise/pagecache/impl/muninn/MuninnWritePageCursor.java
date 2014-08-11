@@ -131,7 +131,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
         }
 
         lockStamp = page.writeLock();
-        if ( page.pin( swapper, filePageId ) )
+        if ( page.isBoundTo( swapper, filePageId ) )
         {
             // Our translation table was also up to date, and the page is bound to
             // our file, and we could pin it since its not in the process of
@@ -162,7 +162,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
                 // If we can pin the page now, someone already completed the page
                 // fault ahead of us.
                 lockStamp = page.writeLock();
-                if ( page.pin( swapper, filePageId ) )
+                if ( page.isBoundTo( swapper, filePageId ) )
                 {
                     pinCursorToPage( page, filePageId, swapper );
                     return;
@@ -232,7 +232,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
     }
 
     @Override
-    public final boolean retry()
+    public final boolean shouldRetry()
     {
         // We take exclusive locks, so there's never a need to retry.
         return false;

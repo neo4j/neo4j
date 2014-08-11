@@ -153,7 +153,7 @@ public abstract class PageCacheTest<T extends PageCache>
             do
             {
                 cursor.getBytes( record );
-            } while ( cursor.retry() );
+            } while ( cursor.shouldRetry() );
             actualPageContents.position( recordSize * i );
             actualPageContents.put( record );
         }
@@ -346,7 +346,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 do
                 {
                     writeRecords( cursor );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
 
@@ -454,7 +454,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 do
                 {
                     writeRecords( cursor );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
 
@@ -631,7 +631,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 do
                 {
                     writeRecords( cursor );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
         finally
@@ -792,7 +792,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 cursor.putByte( (byte) 2 );
                 cursor.putByte( (byte) 3 );
                 cursor.putByte( (byte) 4 );
-            } while ( cursor.retry() );
+            } while ( cursor.shouldRetry() );
             assertTrue( cursor.next() );
             do
             {
@@ -801,7 +801,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 cursor.putByte( (byte) 6 );
                 cursor.putByte( (byte) 7 );
                 cursor.putByte( (byte) 8 );
-            } while ( cursor.retry() );
+            } while ( cursor.shouldRetry() );
         }
 
         try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK ) )
@@ -811,13 +811,13 @@ public abstract class PageCacheTest<T extends PageCache>
             do
             {
                 cursor.getBytes( bytes );
-            } while ( cursor.retry() );
+            } while ( cursor.shouldRetry() );
             assertThat( bytes, byteArray( new byte[]{1, 2, 3, 4} ) );
             assertTrue( cursor.next() );
             do
             {
                 cursor.getBytes( bytes );
-            } while ( cursor.retry() );
+            } while ( cursor.shouldRetry() );
             assertThat( bytes, byteArray( new byte[]{5, 6, 7, 8} ) );
         }
         cache.unmap( file );
@@ -1132,7 +1132,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 do
                 {
                     writeRecords( cursor );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
 
@@ -1207,7 +1207,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 do
                 {
                     cursor.putByte( expectedByte );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
 
@@ -1226,7 +1226,7 @@ public abstract class PageCacheTest<T extends PageCache>
                             {
                                 cursor.setOffset( recordSize );
                                 cursor.putByte( (byte) 14 );
-                            } while ( cursor.retry() );
+                            } while ( cursor.shouldRetry() );
                         }
                         startLatch.countDown();
                     }
@@ -1250,7 +1250,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 do
                 {
                     assertThat( cursor.getByte(), is( expectedByte ) );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
 
@@ -1323,17 +1323,17 @@ public abstract class PageCacheTest<T extends PageCache>
             do
             {
                 writeRecords( cursor );
-            } while ( cursor.retry() );
+            } while ( cursor.shouldRetry() );
             assertTrue( cursor.next( 0 ) );
             do
             {
                 writeRecords( cursor );
-            } while ( cursor.retry() );
+            } while ( cursor.shouldRetry() );
             assertTrue( cursor.next( 1 ) );
             do
             {
                 writeRecords( cursor );
-            } while ( cursor.retry() );
+            } while ( cursor.shouldRetry() );
         }
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
@@ -1426,7 +1426,7 @@ public abstract class PageCacheTest<T extends PageCache>
                                         cursor.setOffset( offsets[i] );
                                         cursor.putByte( value );
                                     }
-                                } while ( cursor.retry() );
+                                } while ( cursor.shouldRetry() );
                             }
                         }
                     }
@@ -1468,7 +1468,7 @@ public abstract class PageCacheTest<T extends PageCache>
                             byte b = cursor.getByte();
                             consistent = consistent && b == first;
                         }
-                    } while ( cursor.retry() );
+                    } while ( cursor.shouldRetry() );
                     assertTrue( "checked consistency at itr " + i, consistent );
                     countedConsistentPageReads++;
                 }
@@ -1700,7 +1700,7 @@ public abstract class PageCacheTest<T extends PageCache>
                             cursor2.putByte( (byte) 'b' );
                         }
                     }
-                    while ( cursor2.retry() );
+                    while ( cursor2.shouldRetry() );
                 }
             }
             while ( moreWorkToDo );
@@ -2181,7 +2181,7 @@ public abstract class PageCacheTest<T extends PageCache>
         awaitTheadState( unmapper, 1000,
                 Thread.State.BLOCKED, Thread.State.WAITING, Thread.State.TIMED_WAITING );
 
-        assertFalse( cursor.retry() );
+        assertFalse( cursor.shouldRetry() );
         cursor.close();
 
         unmapper.join();
@@ -2200,7 +2200,7 @@ public abstract class PageCacheTest<T extends PageCache>
 
         fork( $unmap( pageCache, file ) ).join();
 
-        assertFalse( cursor.retry() );
+        assertFalse( cursor.shouldRetry() );
         cursor.close();
     }
 
@@ -2235,7 +2235,7 @@ public abstract class PageCacheTest<T extends PageCache>
 
         fork( $unmap( pageCache, file ) ).join();
 
-        assertFalse( cursor.retry() );
+        assertFalse( cursor.shouldRetry() );
         try {
             cursor.next();
             fail( "Advancing the cursor should have thrown" );
@@ -2264,7 +2264,7 @@ public abstract class PageCacheTest<T extends PageCache>
         pageCache = null;
 
         cursor.getByte();
-        assertFalse( cursor.retry() );
+        assertFalse( cursor.shouldRetry() );
         try {
             cursor.next();
             fail( "Advancing the cursor should have thrown" );
@@ -2749,7 +2749,7 @@ public abstract class PageCacheTest<T extends PageCache>
             // Now fill file B with 'b's... this will cause our current page to be evicted
             fork( fillPagedFileB ).join();
             // So if we had an optimistic lock, we should be asked to retry:
-            if ( cursor.retry() )
+            if ( cursor.shouldRetry() )
             {
                 // When we do reads after the retry() call,  we should fault our page back
                 // and get consistent reads (assuming we don't race any further with eviction)
@@ -2763,7 +2763,7 @@ public abstract class PageCacheTest<T extends PageCache>
                         actual += cursor.getByte();
                     }
                 }
-                while ( cursor.retry() );
+                while ( cursor.shouldRetry() );
                 assertThat( actual, is( expected ) );
             }
         }
@@ -2772,6 +2772,8 @@ public abstract class PageCacheTest<T extends PageCache>
         pageCache.unmap( fileB );
     }
 
+    // TODO concurrent page faulting must not put interleaved data into pages
+    // TODO concurrent flushing must not put interleaved data into file
     // TODO specify what should happen if we call pagedFile.flush() while we have an exclusive lock on a page
     // TODO some tests that verify that the page swapping does not swallow interrupts
 }

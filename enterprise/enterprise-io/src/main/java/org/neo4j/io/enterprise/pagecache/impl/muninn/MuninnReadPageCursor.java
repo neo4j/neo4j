@@ -132,7 +132,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
         }
 
         lockStamp = page.tryOptimisticRead();
-        if ( page.pin( swapper, filePageId ) )
+        if ( page.isBoundTo( swapper, filePageId ) )
         {
             // Our translation table was also up to date, and the page is bound to
             // our file, and we could pin it since its not in the process of
@@ -163,7 +163,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
                 // If we can pin the page now, someone already completed the page
                 // fault ahead of us.
                 lockStamp = page.readLock();
-                if ( page.pin( swapper, filePageId ) )
+                if ( page.isBoundTo( swapper, filePageId ) )
                 {
                     pinCursorToPage( page, filePageId, swapper );
                     optimisticLock = false;
@@ -238,7 +238,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
     }
 
     @Override
-    public boolean retry() throws IOException
+    public boolean shouldRetry() throws IOException
     {
         boolean needsRetry = optimisticLock && !page.validate( lockStamp );
         if ( needsRetry )
@@ -251,7 +251,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
             // However, it might have been evicted while we held the optimistic
             // read lock, so we need to check with page.pin that this is still
             // the page we're actually interested in:
-            if ( !page.pin( pagedFile.swapper, currentPageId ) )
+            if ( !page.isBoundTo( pagedFile.swapper, currentPageId ) )
             {
                 // This is no longer the page we're interested in, so we have
                 // to release our lock and redo the pinning.

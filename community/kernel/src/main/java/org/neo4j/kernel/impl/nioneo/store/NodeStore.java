@@ -197,7 +197,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
                         record.setId( id );
                         readIntoRecord( cursor, record, inUseByte, true );
                     }
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
             return isInUse? record : null;
         }
@@ -247,7 +247,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
                 do
                 {
                     writeRecord( cursor, record, force );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
         catch ( IOException e )
@@ -307,7 +307,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
                 {
                     cursor.setOffset( offset );
                     recordIsInUse = isInUse( cursor.getByte() );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
             return recordIsInUse;
         }

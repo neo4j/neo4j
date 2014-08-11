@@ -160,7 +160,7 @@ public class StandardPageCursor extends OffsetTrackingCursor
     }
 
     @Override
-    public boolean retry()
+    public boolean shouldRetry()
     {
         return false;
     }

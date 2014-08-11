@@ -54,6 +54,9 @@ public interface PagedFile
 
     PageCursor io( long pageId, int pf_flags ) throws IOException;
 
+    /**
+     * Get the size of the file-pages, in bytes.
+     */
     int pageSize();
 
     /** Flush all dirty pages into the file channel, and force the file channel to disk. */
