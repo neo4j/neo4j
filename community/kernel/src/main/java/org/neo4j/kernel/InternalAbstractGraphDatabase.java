@@ -429,7 +429,7 @@ public abstract class InternalAbstractGraphDatabase
                     "been caused by either such a missing registration, or by the lack of the provider class itself." );
         }
 
-        jobScheduler = life.add( new Neo4jJobScheduler( this.toString() ));
+        jobScheduler = life.add( createJobScheduler() );
 
         pageCache = createPageCache();
         life.add( pageCache );
@@ -517,6 +517,11 @@ public abstract class InternalAbstractGraphDatabase
 
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
+    }
+
+    protected Neo4jJobScheduler createJobScheduler()
+    {
+        return new Neo4jJobScheduler( this.toString() );
     }
 
     protected LegacyIndexProxy.Lookup createIndexLookup()

@@ -57,9 +57,9 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public void close()
     {
-        storeApplier.close();
         indexApplier.close();
         legacyIndexApplier.close();
+        storeApplier.close();
     }
 
     @Override
