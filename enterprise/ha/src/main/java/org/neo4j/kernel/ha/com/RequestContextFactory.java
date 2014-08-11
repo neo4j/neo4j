@@ -65,7 +65,7 @@ public class RequestContextFactory extends LifecycleAdapter
 
     public RequestContext newRequestContext( long sessionId, int machineId, int eventIdentifier )
     {
-        long latestTxId = txIdStore.getLastCommittingTransactionId();
+        long latestTxId = txIdStore.getLastCommittedTransactionId();
         if ( latestTxId == 0 )
         {
             return new RequestContext( sessionId, machineId, eventIdentifier, 0, -1, -1 );

@@ -333,7 +333,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
             commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),
-                    transactionIdStore.getLastCommittingTransactionId() ) );
+                    transactionIdStore.getLastCommittedTransactionId() ) );
         }
         finally
         {

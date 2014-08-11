@@ -60,7 +60,7 @@ public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentati
     {
         if ( lastTransactionIdApplied != -1 )
         {
-            store.setLastCommittingAndClosedTransactionId( lastTransactionIdApplied );
+            store.setLastCommittedAndClosedTransactionId( lastTransactionIdApplied );
         }
     }
 }

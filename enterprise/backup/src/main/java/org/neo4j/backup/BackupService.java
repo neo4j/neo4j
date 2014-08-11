@@ -249,7 +249,7 @@ class BackupService
     {
         TransactionIdStore transactionIdStore =
                 graphDb.getDependencyResolver().resolveDependency( TransactionIdStore.class );
-        return anonymous( transactionIdStore.getLastCommittingTransactionId() );
+        return anonymous( transactionIdStore.getLastCommittedTransactionId() );
     }
 
     boolean directoryContainsDb( String targetDirectory )

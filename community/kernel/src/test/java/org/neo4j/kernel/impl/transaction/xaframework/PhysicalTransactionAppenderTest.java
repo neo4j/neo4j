@@ -102,7 +102,7 @@ public class PhysicalTransactionAppenderTest
         transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
                 latestCommittedTxWhenStarted, timeCommitted );
 
-        when( transactionIdStore.getLastCommittingTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
 
         LogEntryStart start = new LogEntryStart( 0, 0, 0l, latestCommittedTxWhenStarted, null,
                 LogPosition.UNSPECIFIED );
@@ -146,7 +146,7 @@ public class PhysicalTransactionAppenderTest
         transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
                 latestCommittedTxWhenStarted, timeCommitted );
 
-        when( transactionIdStore.getLastCommittingTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
 
         LogEntryStart start = new LogEntryStart( 0, 0, 0l, latestCommittedTxWhenStarted, null,
                 LogPosition.UNSPECIFIED );

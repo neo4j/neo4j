@@ -29,9 +29,9 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.OnePhaseCommit;
 
@@ -54,17 +54,17 @@ public class RecoveryVisitorTest
     private final LogEntryCommit commitEntry = new OnePhaseCommit( 42, 0 );
 
     @Test
-    public void shouldNotSetLastCommittingAndClosedTransactionIdWhenNoRecoveryHappened() throws IOException
+    public void shouldNotSetLastCommittedAndClosedTransactionIdWhenNoRecoveryHappened() throws IOException
     {
         final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, recoveredCount );
 
         visitor.close();
 
-        verify( store, never() ).setLastCommittingAndClosedTransactionId( anyLong() );
+        verify( store, never() ).setLastCommittedAndClosedTransactionId( anyLong() );
     }
 
     @Test
-    public void shouldApplyVisitedTransactionToTheStoreAndSetLastCommittingAndClosedTransactionId() throws IOException
+    public void shouldApplyVisitedTransactionToTheStoreAndSetLastCommittedAndClosedTransactionId() throws IOException
     {
         final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, recoveredCount );
 
@@ -82,6 +82,6 @@ public class RecoveryVisitorTest
 
         visitor.close();
 
-        verify( store, times( 1 ) ).setLastCommittingAndClosedTransactionId( commitEntry.getTxId() );
+        verify( store, times( 1 ) ).setLastCommittedAndClosedTransactionId( commitEntry.getTxId() );
     }
 }

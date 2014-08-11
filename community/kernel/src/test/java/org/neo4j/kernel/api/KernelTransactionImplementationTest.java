@@ -321,7 +321,7 @@ public class KernelTransactionImplementationTest
             // WHEN committing it at a later point
             clock.forward( 5, MILLISECONDS );
             // ...and simulating some other transaction being committed
-            when( neoStore.getLastCommittingTransactionId() ).thenReturn( 7L );
+            when( neoStore.getLastCommittedTransactionId() ).thenReturn( 7L );
             transaction.success();
         }
 

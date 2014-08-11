@@ -112,7 +112,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
             Locks.Client locksClient = locks.newClient();
             context.bind( locksClient );
             TransactionRecordState neoStoreTransaction = new TransactionRecordState(
-                    neoStore.getLastCommittingTransactionId(), neoStore, integrityValidator, context );
+                    neoStore.getLastCommittedTransactionId(), neoStore, integrityValidator, context );
             LegacyIndexTransactionState legacyIndexTransactionState =
                     new LegacyIndexTransactionState( indexConfigStore, legacyIndexProviderLookup );
             KernelTransactionImplementation tx = new KernelTransactionImplementation(
@@ -189,7 +189,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         assertDatabaseIsRunning();
         return localTxPool.acquire().initialize(
                 transactionHeaderInformationFactory.create(),
-                neoStore.getLastCommittingTransactionId());
+                neoStore.getLastCommittedTransactionId());
     }
 
     /**

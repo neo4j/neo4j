@@ -86,7 +86,7 @@ public class PhysicalLogFileInformation implements LogFileInformation
     @Override
     public long getLastCommittedTxId()
     {
-        return transactionIdStore.getLastCommittingTransactionId();
+        return transactionIdStore.getLastCommittedTransactionId();
     }
 
     @Override

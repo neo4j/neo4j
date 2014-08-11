@@ -71,7 +71,7 @@ public class StoreCopyResponsePacker extends ResponsePacker
                 if ( oldestExistingTransactionId == -1 )
                 {
                     // Seriously, there are no logs that we can serve?
-                    if ( mandatoryStartTransactionId >= transactionIdStore.getLastCommittingTransactionId() )
+                    if ( mandatoryStartTransactionId >= transactionIdStore.getLastCommittedTransactionId() )
                     {
                         // Although there are no mandatory transactions to stream, so we're good here.
                         return;

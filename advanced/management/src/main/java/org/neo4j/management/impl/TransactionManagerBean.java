@@ -94,7 +94,7 @@ public final class TransactionManagerBean extends ManagementBeanProvider
             {
                 return -1;
             }
-            return neoStoreDataSource.getNeoStore().getLastCommittingTransactionId();
+            return neoStoreDataSource.getNeoStore().getLastCommittedTransactionId();
         }
     }
 }

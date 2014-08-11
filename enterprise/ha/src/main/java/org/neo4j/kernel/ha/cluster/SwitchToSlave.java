@@ -214,7 +214,7 @@ public class SwitchToSlave
         catch ( MismatchingStoreIdException e )
         {
             console.log( "The store does not represent the same database as master. Will remove and fetch a new one from master" );
-            if ( txIdStore != null && txIdStore.getLastCommittingTransactionId() == 0 )
+            if ( txIdStore != null && txIdStore.getLastCommittedTransactionId() == 0 )
             {
                 msgLog.warn( "Found and deleting empty store with mismatching store id " + e.getMessage() );
                 stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
@@ -373,7 +373,7 @@ public class SwitchToSlave
                                                  TransactionIdStore transactionIdStore )
             throws IOException
     {
-        long myLastCommittedTx = transactionIdStore.getLastCommittingTransactionId();
+        long myLastCommittedTx = transactionIdStore.getLastCommittedTransactionId();
         HandshakeResult handshake;
         try ( Response<HandshakeResult> response = master.handshake( myLastCommittedTx, nioneoDataSource.getStoreId() ) )
         {

@@ -217,7 +217,7 @@ public class PhysicalLogicalTransactionStoreTest
             positionCache.clear();
 
             // TODO 2.2-future make this into a proper test
-            System.out.println( store.getMetadataFor( transactionIdStore.getLastCommittingTransactionId() ) );
+            System.out.println( store.getMetadataFor( transactionIdStore.getLastCommittedTransactionId() ) );
         }
         finally
         {

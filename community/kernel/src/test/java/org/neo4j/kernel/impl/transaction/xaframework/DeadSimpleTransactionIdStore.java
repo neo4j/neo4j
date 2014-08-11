@@ -33,19 +33,19 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public long nextCommittingTransactionId()
+    public long nextCommittedTransactionId()
     {
         return ++transactionId;
     }
 
     @Override
-    public long getLastCommittingTransactionId()
+    public long getLastCommittedTransactionId()
     {
         return transactionId;
     }
 
     @Override
-    public void setLastCommittingAndClosedTransactionId( long transactionId )
+    public void setLastCommittedAndClosedTransactionId( long transactionId )
     {
         this.transactionId = transactionId;
         this.appliedTransactionId = transactionId;
@@ -58,7 +58,7 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public boolean closedTransactionIdIsOnParWithCommittingTransactionId()
+    public boolean closedTransactionIdIsOnParWithCommittedTransactionId()
     {
         return appliedTransactionId == transactionId;
     }

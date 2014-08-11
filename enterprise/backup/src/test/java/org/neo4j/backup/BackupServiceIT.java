@@ -533,7 +533,7 @@ public class BackupServiceIT
             TransactionIdStore transactionIdStore =
                     db.getDependencyResolver().resolveDependency( TransactionIdStore.class );
             TransactionMetadata metadata = transactionStore.getMetadataFor(
-                    transactionIdStore.getLastCommittingTransactionId() );
+                    transactionIdStore.getLastCommittedTransactionId() );
             return Pair.of( metadata.getMasterId(), metadata.getChecksum() );
         }
         catch ( NoSuchTransactionException e )

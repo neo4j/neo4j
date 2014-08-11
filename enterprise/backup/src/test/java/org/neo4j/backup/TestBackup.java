@@ -519,20 +519,20 @@ public class TestBackup
     private void assertMetadataAboutLastTransactionExists( File storeDir )
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
-        long lastCommittingTransactionId = -1;
+        long lastCommittedTransactionId = -1;
         try
         {
             DependencyResolver resolver = db.getDependencyResolver();
             LogicalTransactionStore transactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
             TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
-            lastCommittingTransactionId = transactionIdStore.getLastCommittingTransactionId();
-            assertNotNull( transactionStore.getMetadataFor( lastCommittingTransactionId ) );
+            lastCommittedTransactionId = transactionIdStore.getLastCommittedTransactionId();
+            assertNotNull( transactionStore.getMetadataFor( lastCommittedTransactionId ) );
             // Good, we got the metadata. If it's missing a NoSuchTransactionException should have been thrown
             // the not-null check is just because it looks better.
         }
         catch ( NoSuchTransactionException e )
         {
-            fail( "Transaction metadata for " + lastCommittingTransactionId + " not found: " + e );
+            fail( "Transaction metadata for " + lastCommittedTransactionId + " not found: " + e );
         }
         catch ( IOException e )
         {

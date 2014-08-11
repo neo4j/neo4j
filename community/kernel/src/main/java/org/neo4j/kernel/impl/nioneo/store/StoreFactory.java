@@ -267,7 +267,7 @@ public class StoreFactory
         neoStore.setCreationTime( storeId.getCreationTime() );
         neoStore.setRandomNumber( storeId.getRandomId() );
         neoStore.setCurrentLogVersion( 0 );
-        neoStore.setLastCommittingAndClosedTransactionId( BASE_TX_ID );
+        neoStore.setLastCommittedAndClosedTransactionId( BASE_TX_ID );
         neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         neoStore.setGraphNextProp( -1 );
 
