@@ -92,7 +92,7 @@ public class TestExceptions
 
         // WHEN
         String prependedMessage = "Prepend this: " + exception.getMessage();
-        Exceptions.setMessage( exception, prependedMessage );
+        Exceptions.withMessage( exception, prependedMessage );
 
         // THEN
         assertEquals( prependedMessage, exception.getMessage() );

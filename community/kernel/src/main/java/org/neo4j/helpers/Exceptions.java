@@ -26,6 +26,8 @@ import java.lang.Thread.State;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
+import org.neo4j.kernel.impl.locking.Locks.Client;
+
 public class Exceptions
 {
     private static final String UNEXPECTED_MESSAGE = "Unexpected Exception";
@@ -285,15 +287,74 @@ public class Exceptions
         }
     }
 
-    public static void setMessage( Throwable t, String message )
+    public static <T extends Throwable> T withMessage( T cause, String message )
     {
         try
         {
-            THROWABLE_MESSAGE_FIELD.set( t, message );
+            THROWABLE_MESSAGE_FIELD.set( cause, message );
+            return cause;
         }
         catch ( IllegalArgumentException | IllegalAccessException e )
         {
             throw new RuntimeException( e );
         }
+    }
+
+    public static Predicate<StackTraceElement> classImplementingInterface( final Class<Client> cls )
+    {
+        return new Predicate<StackTraceElement>()
+        {
+            @Override
+            public boolean accept( StackTraceElement item )
+            {
+                try
+                {
+                    for ( Class<?> interfaceClass : Class.forName( item.getClassName() ).getInterfaces() )
+                    {
+                        if ( interfaceClass.equals( cls ) )
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                catch ( ClassNotFoundException e )
+                {
+                    return false;
+                }
+            }
+        };
+    }
+
+    public static boolean containsStackTraceElement( Throwable cause,
+            final Predicate<StackTraceElement> predicate )
+    {
+        return contains( cause, new Predicate<Throwable>()
+        {
+            @Override
+            public boolean accept( Throwable item )
+            {
+                for ( StackTraceElement element : item.getStackTrace() )
+                {
+                    if ( predicate.accept( element ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        } );
+    }
+
+    public static Predicate<StackTraceElement> forMethod( final String name )
+    {
+        return new Predicate<StackTraceElement>()
+        {
+            @Override
+            public boolean accept( StackTraceElement item )
+            {
+                return item.getMethodName().equals( name );
+            }
+        };
     }
 }
