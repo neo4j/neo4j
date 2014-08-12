@@ -28,16 +28,28 @@ import java.util.Set;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.HighIdTrackerFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.nioneo.store.Abstract64BitRecord;
+import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
@@ -51,13 +63,15 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     private final LockService lockService;
     private final LockGroup lockGroup;
     private final long transactionId;
-
+    private final HighIdTracker highIdTracker;
+    
     public NeoTransactionStoreApplier( NeoStore store, IndexingService indexes, CacheAccessBackDoor cacheAccess,
-            LockService lockService, long transactionId, boolean recovery )
+            LockService lockService, long transactionId, HighIdTrackerFactory highIdTrackerFactory, boolean recovery )
     {
         this.cacheAccess = cacheAccess;
         this.lockService = lockService;
         this.transactionId = transactionId;
+        this.highIdTracker = highIdTrackerFactory.create( recovery );
         this.recovery = recovery;
         this.neoStore = store;
         this.indexes = indexes;
@@ -70,12 +84,10 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
         // acquire lock
         lockGroup.add( lockService.acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK ) );
 
-        if ( recovery )
-        {
-        	neoStore.getNodeStore().setHighId( command.getAfter().getId() );
-        }
         // update store
-        neoStore.getNodeStore().updateRecord( command.getAfter() );
+        NodeStore nodeStore = neoStore.getNodeStore();
+        highIdTracker.track( nodeStore, command.getAfter().getId() );
+        nodeStore.updateRecord( command.getAfter() );
 
         // Dynamic Label Records
         Collection<DynamicRecord> toUpdate = new ArrayList<>( command.getAfter().getDynamicLabelRecords() );
@@ -94,14 +106,8 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
             toUpdate.add( new DynamicRecord( id ) );
         }
 
-        if ( recovery )
-        {
-        	for ( DynamicRecord record : toUpdate )
-        	{
-        		neoStore.getNodeStore().getDynamicLabelStore().setHighId( record.getId() );
-        	}
-        }
-        neoStore.getNodeStore().updateDynamicLabelRecords( toUpdate );
+        trackHighIds( nodeStore.getDynamicLabelStore(), toUpdate );
+        nodeStore.updateDynamicLabelRecords( toUpdate );
 
         // Additional cache invalidation check for nodes that have just been upgraded to dense
         invalidateCache( command, nodeHasBeenUpgradedToDense( command ) );
@@ -122,11 +128,7 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     {
         RelationshipRecord record = command.getRecord();
 
-        if ( recovery )
-        {
-        	neoStore.getRelationshipStore().setHighId( record.getId() );
-        }
-
+        RelationshipStore relationshipStore = neoStore.getRelationshipStore();
         if ( recovery && !record.inUse() )
         {
             /*
@@ -135,9 +137,10 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
              * Therefore, we need to read the record from the store. This is not too expensive, since the window
              * will be either in memory or will soon be anyway and we are just saving the write the trouble.
              */
-             command.setBefore( neoStore.getRelationshipStore().forceGetRaw( record.getId() ) );
+             command.setBefore( relationshipStore.forceGetRaw( record.getId() ) );
         }
-        neoStore.getRelationshipStore().updateRecord( record );
+        highIdTracker.track( relationshipStore, record.getLongId() );
+        relationshipStore.updateRecord( record );
         invalidateCache( command );
         return true;
     }
@@ -152,25 +155,52 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
             lockGroup.add( lockService.acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK ) );
         }
 
+        // track the dynamic value record high ids
+        PropertyStore propertyStore = neoStore.getPropertyStore();
+        highIdTracker.track( propertyStore, command.getAfter().getId() );
         if ( recovery )
         {
-        	neoStore.getPropertyStore().setHighId( command.getAfter().getId() );
+            for ( PropertyBlock block : command.getAfter().getPropertyBlocks() )
+            {
+                switch ( block.getType() )
+                {
+                case STRING:
+                    trackHighIds( propertyStore.getStringStore(), block.getValueRecords() );
+                    break;
+                case ARRAY:
+                    trackHighIds( propertyStore.getArrayStore(), block.getValueRecords() );
+                    break;
+                default:
+                    // Not needed, no dynamic records then
+                    break;
+                }
+            }
         }
 
         // update store
-        neoStore.getPropertyStore().updateRecord( command.getAfter() );
+        propertyStore.updateRecord( command.getAfter() );
         invalidateCache( command );
         return true;
+    }
+
+    private void trackHighIds( CommonAbstractStore store, Collection<? extends Abstract64BitRecord> records )
+    {
+        // A slight optimization where we know that we only need to track things if we're doing recovery
+        if ( recovery )
+        {
+            for ( Abstract64BitRecord record : records )
+            {
+                highIdTracker.track( store, record.getId() );
+            }
+        }
     }
 
     @Override
     public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
     {
-    	if ( recovery )
-    	{
-    		neoStore.getRelationshipGroupStore().setHighId(command.getRecord().getId() );
-    	}
-        neoStore.getRelationshipGroupStore().updateRecord( command.getRecord() );
+    	RelationshipGroupStore relationshipGroupStore = neoStore.getRelationshipGroupStore();
+    	highIdTracker.track( relationshipGroupStore, command.getRecord().getId() );
+        relationshipGroupStore.updateRecord( command.getRecord() );
         invalidateCache( command );
         return true;
     }
@@ -178,14 +208,13 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     @Override
     public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException
     {
-    	if ( recovery )
-    	{
-    		neoStore.getRelationshipTypeTokenStore().setHighId( command.getRecord().getId() );
-    	}
-        neoStore.getRelationshipTypeTokenStore().updateRecord( command.getRecord() );
+    	RelationshipTypeTokenStore relationshipTypeTokenStore = neoStore.getRelationshipTypeTokenStore();
+    	highIdTracker.track( relationshipTypeTokenStore, command.getRecord().getId() );
+    	trackHighIds( relationshipTypeTokenStore.getNameStore(), command.getRecord().getNameRecords() );
+        relationshipTypeTokenStore.updateRecord( command.getRecord() );
         if ( recovery )
         {
-            Token type = neoStore.getRelationshipTypeTokenStore().getToken( (int) command.getKey() );
+            Token type = relationshipTypeTokenStore.getToken( (int) command.getKey() );
             cacheAccess.addRelationshipTypeToken( type );
         }
         invalidateCache( command );
@@ -195,14 +224,13 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     @Override
     public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
     {
-    	if ( recovery )
-    	{
-    		neoStore.getLabelTokenStore().setHighId( command.getRecord().getId() );
-    	}
-        neoStore.getLabelTokenStore().updateRecord( command.getRecord() );
+    	LabelTokenStore labelTokenStore = neoStore.getLabelTokenStore();
+    	highIdTracker.track( labelTokenStore, command.getRecord().getId() );
+    	trackHighIds( labelTokenStore.getNameStore(), command.getRecord().getNameRecords() );
+        labelTokenStore.updateRecord( command.getRecord() );
         if ( recovery )
         {
-            Token labelId = neoStore.getLabelTokenStore().getToken( (int) command.getKey() );
+            Token labelId = labelTokenStore.getToken( (int) command.getKey() );
             cacheAccess.addLabelToken( labelId );
         }
         invalidateCache( command );
@@ -212,14 +240,13 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     @Override
     public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
     {
-    	if ( recovery )
-    	{
-    		neoStore.getPropertyKeyTokenStore().setHighId( command.getRecord().getId() );
-    	}
-        neoStore.getPropertyKeyTokenStore().updateRecord( command.getRecord() );
+    	PropertyKeyTokenStore propertyKeyTokenStore = neoStore.getPropertyKeyTokenStore();
+    	highIdTracker.track( propertyKeyTokenStore, command.getRecord().getId() );
+    	trackHighIds( propertyKeyTokenStore.getNameStore(), command.getRecord().getNameRecords() );
+        propertyKeyTokenStore.updateRecord( command.getRecord() );
         if ( recovery )
         {
-            Token index = neoStore.getPropertyKeyTokenStore().getToken( (int) command.getKey() );
+            Token index = propertyKeyTokenStore.getToken( (int) command.getKey() );
             cacheAccess.addPropertyKeyToken( index );
         }
         invalidateCache( command );
@@ -239,13 +266,11 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
         // 4) the population job will apply those updates as added properties, and might end up with duplicate
         //    entries for the same property
 
+        SchemaStore schemaStore = neoStore.getSchemaStore();
         for ( DynamicRecord record : command.getRecordsAfter() )
         {
-        	if ( recovery )
-        	{
-        		neoStore.getSchemaStore().setHighId( record.getId() );
-        	}
-        	neoStore.getSchemaStore().updateRecord( record );
+            highIdTracker.track( schemaStore, record.getId() );
+        	schemaStore.updateRecord( record );
         }
 
         if ( command.getSchemaRule() instanceof IndexRule )
@@ -328,14 +353,16 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
             command.invalidateCache( cacheAccess );
         }
     }
+    
+    @Override
+    public void apply()
+    {
+        highIdTracker.apply();
+    }
 
     @Override
     public void close()
     {
-    	if ( recovery )
-    	{
-    		neoStore.updateIdGenerators();
-    	}
         lockGroup.close();
     }
 }

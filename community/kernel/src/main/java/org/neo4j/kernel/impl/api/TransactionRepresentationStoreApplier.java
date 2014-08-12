@@ -29,8 +29,10 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
+import org.neo4j.kernel.impl.nioneo.xa.command.HighIdTracker;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionIndexApplier;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
+import org.neo4j.kernel.impl.nioneo.xa.command.RecoveredHighIdTracker;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
 public class TransactionRepresentationStoreApplier
@@ -43,11 +45,12 @@ public class TransactionRepresentationStoreApplier
     private final IndexConfigStore indexConfigStore;
     private final ProviderLookup legacyIndexProviderLookup;
     private final PropertyLoader propertyLoader;
+    private final HighIdTrackerFactory highIdTrackerFactory;
 
     public TransactionRepresentationStoreApplier(
             IndexingService indexingService, LabelScanStore labelScanStore, NeoStore neoStore,
             CacheAccessBackDoor cacheAccess, LockService lockService, ProviderLookup legacyIndexProviderLookup,
-            IndexConfigStore indexConfigStore )
+            IndexConfigStore indexConfigStore, HighIdTrackerFactory highIdTrackerFactory )
     {
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
@@ -56,6 +59,7 @@ public class TransactionRepresentationStoreApplier
         this.lockService = lockService;
         this.legacyIndexProviderLookup = legacyIndexProviderLookup;
         this.indexConfigStore = indexConfigStore;
+        this.highIdTrackerFactory = highIdTrackerFactory;
         this.propertyLoader = new PropertyLoader( neoStore );
     }
 
@@ -63,7 +67,8 @@ public class TransactionRepresentationStoreApplier
             throws IOException
     {
         NeoTransactionStoreApplier storeApplier = new NeoTransactionStoreApplier(
-                neoStore, indexingService, cacheAccess, lockService, transactionId, applyRecovered );
+                neoStore, indexingService, cacheAccess, lockService, transactionId,
+                highIdTrackerFactory, applyRecovered );
         NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( indexingService,
                 labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess, propertyLoader );
         LegacyIndexApplier legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,
@@ -75,4 +80,18 @@ public class TransactionRepresentationStoreApplier
             representation.accept( applier );
         }
     }
+    
+    public interface HighIdTrackerFactory
+    {
+        HighIdTracker create( boolean recovery );
+    }
+    
+    public static final HighIdTrackerFactory DEFAULT_HIGH_ID_TRACKING = new HighIdTrackerFactory()
+    {
+        @Override
+        public HighIdTracker create( boolean recovery )
+        {
+            return recovery ? new RecoveredHighIdTracker() : HighIdTracker.NO_TRACKING;
+        }
+    };
 }

@@ -114,9 +114,9 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         dataSource.getWriteLock();
         return true;
     }
-
+    
     @Override
-    public void close()
+    public void apply()
     {
         try
         {
@@ -133,12 +133,14 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         {
             throw new RuntimeException( "Failure to commit changes to lucene", e );
         }
-        finally
+    }
+
+    @Override
+    public void close()
+    {
+        if ( definitions != null )
         {
-            if ( definitions != null )
-            {
-                dataSource.releaseWriteLock();
-            }
+            dataSource.releaseWriteLock();
         }
     }
 

@@ -120,6 +120,15 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     }
 
     @Override
+    public void apply()
+    {
+        for ( NeoCommandHandler applier : providerAppliers.values() )
+        {
+            applier.apply();
+        }
+    }
+    
+    @Override
     public void close()
     {
         for ( NeoCommandHandler applier : providerAppliers.values() )

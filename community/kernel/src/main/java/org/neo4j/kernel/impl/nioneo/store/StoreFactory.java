@@ -260,7 +260,7 @@ public class StoreFactory
         /*
         *  created time | random long | backup version | tx id | store version | next prop
         */
-        for ( int i = 0; i < 6; i++ )
+        for ( int i = 0; i < NeoStore.NUMBER_OF_RECORDS; i++ )
         {
             neoStore.nextId();
         }
@@ -270,6 +270,7 @@ public class StoreFactory
         neoStore.setLastCommittedAndClosedTransactionId( BASE_TX_ID );
         neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         neoStore.setGraphNextProp( -1 );
+        neoStore.setLatestConstraintIntroducingTx( 0 );
 
         try
         {

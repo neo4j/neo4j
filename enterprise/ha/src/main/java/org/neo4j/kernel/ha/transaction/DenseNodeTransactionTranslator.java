@@ -58,7 +58,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
     private final RelationshipGroupGetter groupGetter;
     private final RelationshipCreator relationshipCreator;
     private final RelationshipDeleter deleter;
-    private DenseNodeTransactionTranslator.TranslatingNeoCommandVisitor commandVisitor = new TranslatingNeoCommandVisitor();
+    private final DenseNodeTransactionTranslator.TranslatingNeoCommandVisitor commandVisitor = new TranslatingNeoCommandVisitor();
 
     public DenseNodeTransactionTranslator( NeoStore neoStore )
     {
@@ -98,9 +98,10 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         LogEntry done = null;
         for ( LogEntry logEntry : from )
         {
-            if ( logEntry.getVersion() == LogEntryVersions.CURRENT_LOG_ENTRY_VERSION
-                    )
+            if ( logEntry.getVersion() == LogEntryVersions.CURRENT_LOG_ENTRY_VERSION )
+            {
                 throw new RuntimeException( "crap" );
+            }
 
             switch ( logEntry.getType() )
             {
@@ -178,7 +179,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
 
         for ( LogEntryCommand commandEntry : commands )
         {
-            Command command = (Command) commandEntry.getXaCommand();
+            Command command = commandEntry.getXaCommand();
             if ( command instanceof Command.RelationshipCommand )
             {
                 long id = ((Command.RelationshipCommand) command).getRecord().getId();
@@ -204,7 +205,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
 
     private boolean handleCommand( LogEntryCommand commandEntry ) throws IOException
     {
-        Command command = (Command) commandEntry.getXaCommand();
+        Command command = commandEntry.getXaCommand();
         return command.handle( commandVisitor );
     }
 
@@ -383,11 +384,15 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         {
             return false;
         }
+        
+        @Override
+        public void apply()
+        {
+        }
 
         @Override
         public void close()
         {
-
         }
 
         private void translateRelationshipCreation( Command.RelationshipCommand command )

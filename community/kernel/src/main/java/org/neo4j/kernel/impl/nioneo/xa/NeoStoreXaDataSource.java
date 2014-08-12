@@ -132,6 +132,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.DEFAULT_HIGH_ID_TRACKING;
 import static org.neo4j.kernel.impl.nioneo.xa.CacheLoaders.nodeLoader;
 import static org.neo4j.kernel.impl.nioneo.xa.CacheLoaders.relationshipLoader;
 import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
@@ -466,10 +467,11 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
                     logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
 
-            final TransactionRepresentationStoreApplier storeApplier = dependencies.satisfyDependency( new
-                    TransactionRepresentationStoreApplier(
-                    indexingService, labelScanStore, neoStore,
-                    cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore ) );
+            final TransactionRepresentationStoreApplier storeApplier = dependencies.satisfyDependency(
+                    new TransactionRepresentationStoreApplier(
+                            indexingService, labelScanStore, neoStore,
+                            cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
+                            DEFAULT_HIGH_ID_TRACKING ) );
 
             RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeApplier, recoveredCount );
             Visitor<ReadableLogChannel, IOException> logFileRecoverer =

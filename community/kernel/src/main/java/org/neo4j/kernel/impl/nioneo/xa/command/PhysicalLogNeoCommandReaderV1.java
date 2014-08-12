@@ -718,6 +718,11 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
                 throw new RuntimeException( "Unknown value type " + valueType );
             }
         }
+        
+        @Override
+        public void apply()
+        {   // Nothing to apply
+        }
 
         @Override
         public void close()

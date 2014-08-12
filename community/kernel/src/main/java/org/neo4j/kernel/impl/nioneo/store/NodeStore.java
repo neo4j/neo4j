@@ -237,7 +237,6 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     private void writeRecord( NodeRecord record, boolean force )
     {
-        registerIdFromUpdateRecord( record.getId() );
         long recordId = record.getId();
         long pageId = pageIdForRecord( recordId );
         try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
@@ -424,11 +423,5 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     {
         dynamicLabelStore.rebuildIdGenerators();
         super.rebuildIdGenerators();
-    }
-
-    protected void updateIdGenerators()
-    {
-        dynamicLabelStore.updateHighId();
-        super.updateHighId();
     }
 }
