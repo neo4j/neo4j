@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.storemigration.monitoring;
 
-import static java.lang.String.format;
-
 import java.io.PrintStream;
 
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.lang.String.format;
 
 public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
 {
@@ -41,7 +41,7 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     {
         String message = "Starting upgrade of database store files";
         out.println( message );
-        logger.logMessage( message, true );
+        logger.info( message );
     }
 
     @Override
@@ -50,7 +50,7 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
         out.print( "." );
         if (percent % 10 == 0)
         {
-            logger.logMessage( format( "Store upgrade %d%% complete", percent ), true );
+            logger.info( format( "Store upgrade %d%% complete", percent ) );
             out.println( " " + percent + "%" );
         }
         out.flush();
@@ -61,6 +61,6 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     {
         String message = "Finished upgrade of database store files";
         out.println( message );
-        logger.logMessage( message, true );
+        logger.info( message );
     }
 }

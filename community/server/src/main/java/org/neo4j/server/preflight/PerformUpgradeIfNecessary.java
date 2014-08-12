@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
@@ -43,6 +42,7 @@ import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
 
 public class PerformUpgradeIfNecessary implements PreflightTask
 {
+    private final Logging logging;
     private String failureMessage = "Unable to upgrade database";
     private final Configuration config;
     private final Map<String, String> dbConfig;
@@ -55,7 +55,8 @@ public class PerformUpgradeIfNecessary implements PreflightTask
         this.config = serverConfig;
         this.dbConfig = dbConfig;
         this.monitor = monitor;
-        this.log = logging.getConsoleLog( getClass() );
+        this.logging = logging;
+        this.log = this.logging.getConsoleLog( getClass() );
     }
 
     @Override
@@ -82,12 +83,11 @@ public class PerformUpgradeIfNecessary implements PreflightTask
             try
             {
                 new StoreMigrationTool().run( dbLocation,
-                        configForStoreDir( new Config( dbConfig ), storeDir ), StringLogger.SYSTEM, monitor );
+                        configForStoreDir( new Config( dbConfig ), storeDir ), logging, monitor );
             }
             catch ( UpgradeNotAllowedByConfigurationException e )
             {
                 log.log( e.getMessage() );
-                System.out.println( e.getMessage() );
                 failureMessage = e.getMessage();
                 return false;
             }

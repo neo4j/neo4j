@@ -41,6 +41,8 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -72,6 +74,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     private final MigrationProgressMonitor progressMonitor;
     private final UpgradableDatabase upgradableDatabase;
     private final Config config;
+    private final Logging logging;
     private String versionToUpgradeFrom;
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
@@ -79,15 +82,16 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem )
     {
         this( progressMonitor, new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ),
-                new Config() );
+                new Config(), new SystemOutLogging() );
     }
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor, UpgradableDatabase upgradableDatabase,
-            Config config )
+            Config config, Logging logging )
     {
         this.progressMonitor = progressMonitor;
         this.upgradableDatabase = upgradableDatabase;
         this.config = config;
+        this.logging = logging;
     }
 
     @Override
@@ -131,8 +135,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
             }
         };
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
-                new Configuration.OverrideFromConfig( config ),
-                executionMonitor );
+                new Configuration.OverrideFromConfig( config ), logging, executionMonitor );
         Iterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         IdMapper idMapper = IdMappers.actualIds();
