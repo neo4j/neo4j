@@ -850,8 +850,8 @@ public abstract class PageCacheTest<T extends PageCache>
     @Test( timeout = 1000 )
     public void nextToSpecificPageIdMustAdvanceFromThatPointOn() throws IOException
     {
-        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
-        PagedFile pagedFile = cache.map( file, filePageSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
 
         try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK ) )
         {
@@ -864,15 +864,15 @@ public abstract class PageCacheTest<T extends PageCache>
         }
         finally
         {
-            cache.unmap( file );
+            pageCache.unmap( file );
         }
     }
 
     @Test( timeout = 1000 )
     public void currentPageIdIsUnboundBeforeFirstNextAndAfterRewind() throws IOException
     {
-        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
-        PagedFile pagedFile = cache.map( file, filePageSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
 
         try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK ) )
         {
@@ -884,7 +884,39 @@ public abstract class PageCacheTest<T extends PageCache>
         }
         finally
         {
-            cache.unmap( file );
+            pageCache.unmap( file );
+        }
+    }
+
+    @Test( expected = NullPointerException.class )
+    public void readingFromUnboundCursorMustThrow() throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            cursor.getByte();
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
+    }
+
+    @Test( expected = NullPointerException.class )
+    public void writingFromUnboundCursorMustThrow() throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            cursor.putInt( 1 );
+        }
+        finally
+        {
+            pageCache.unmap( file );
         }
     }
 
