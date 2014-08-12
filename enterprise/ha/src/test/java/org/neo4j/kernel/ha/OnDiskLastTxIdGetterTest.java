@@ -44,7 +44,7 @@ public class OnDiskLastTxIdGetterTest
         when( graphdb.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( NeoStoreProvider.class ) ).thenReturn( provider );
         when( provider.evaluate() ).thenReturn( neoStore );
-        when( neoStore.getLastCommittingTransactionId() ).thenReturn( 13L );
+        when( neoStore.getLastCommittedTransactionId() ).thenReturn( 13L );
 
         OnDiskLastTxIdGetter getter = new OnDiskLastTxIdGetter( graphdb );
         assertEquals( 13L, getter.getLastTxId() );

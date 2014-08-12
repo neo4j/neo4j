@@ -77,9 +77,9 @@ class BackupImpl implements TheBackupInterface
     private long boBackACoupleOfTransactionsIfRequired( long transactionWhenStartingCopy )
     {
         int atLeast = 10;
-        if ( transactionIdStore.getLastCommittingTransactionId()-transactionWhenStartingCopy < atLeast )
+        if ( transactionIdStore.getLastCommittedTransactionId()-transactionWhenStartingCopy < atLeast )
         {
-            return max( 1, transactionIdStore.getLastCommittingTransactionId()-atLeast );
+            return max( 1, transactionIdStore.getLastCommittedTransactionId()-atLeast );
         }
         return transactionWhenStartingCopy;
     }

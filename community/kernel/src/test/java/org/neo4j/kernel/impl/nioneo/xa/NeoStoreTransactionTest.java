@@ -1343,7 +1343,7 @@ public class NeoStoreTransactionTest
 
         // Call this just to make sure the counters have been initialized.
         // This is only a problem in a mocked environment like this.
-        neoStore.nextCommittingTransactionId();
+        neoStore.nextCommittedTransactionId();
 
         return new TransactionRepresentationCommitProcess( txStoreMock, mock( KernelHealth.class ),
                 neoStore, applier, false );

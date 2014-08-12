@@ -215,7 +215,7 @@ public class TxPushStrategyConfigIT
     private long getLastTx( GraphDatabaseAPI db )
     {
         return db.getDependencyResolver().resolveDependency( TransactionIdStore.class )
-                .getLastCommittingTransactionId();
+                .getLastCommittedTransactionId();
     }
 
     private LastTxMapping lastTx( int serverIndex, long txId )

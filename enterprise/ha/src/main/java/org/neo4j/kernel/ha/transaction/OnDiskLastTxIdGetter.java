@@ -38,7 +38,7 @@ public class OnDiskLastTxIdGetter implements LastTxIdGetter
     public long getLastTxId()
     {
         TransactionIdStore neoStore = getNeoStore();
-        return neoStore.getLastCommittingTransactionId();
+        return neoStore.getLastCommittedTransactionId();
     }
 
     private NeoStore getNeoStore()

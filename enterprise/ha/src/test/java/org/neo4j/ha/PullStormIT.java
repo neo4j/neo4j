@@ -151,6 +151,6 @@ public class PullStormIT
     private long lastCommittedTxId( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase )
     {
         return highlyAvailableGraphDatabase.getDependencyResolver()
-                .resolveDependency( TransactionIdStore.class ).getLastCommittingTransactionId();
+                .resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
     }
 }

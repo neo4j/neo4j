@@ -29,15 +29,43 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
  */
 public interface TransactionRepresentation
 {
+    /**
+     * Accepts a visitor into the commands making up this transaction.
+     * @param visitor {@link Visitor} which will see the commands.
+     * @throws IOException if there were any problem reading the commands.
+     */
     void accept( Visitor<Command, IOException> visitor ) throws IOException;
 
+    /**
+     * @return an additional header of this transaction. Just arbitrary bytes that means nothing
+     * to this transaction representation.
+     */
     byte[] additionalHeader();
 
+    /**
+     * @return database instance id of current master in a potential database cluster at the time of committing
+     * this transaction {@code -1} means no cluster.
+     */
     int getMasterId();
 
+    /**
+     * @return database instance id of the author of this transaction.
+     */
     int getAuthorId();
 
-    long getTimeWritten();
+    /**
+     * @return time when transaction was started, i.e. when the user started it, not when it was committed.
+     * Reported in milliseconds.
+     */
+    long getTimeStarted();
 
+    /**
+     * @return last committed transaction id at the time when this transaction was started.
+     */
     long getLatestCommittedTxWhenStarted();
+
+    /**
+     * @return time when transaction was committed. Reported in milliseconds.
+     */
+    long getTimeCommitted();
 }

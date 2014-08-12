@@ -108,7 +108,7 @@ public class RemoteStoreCopierTest
                 // TODO This code is sort-of-copied from DefaultMasterImplSPI. Please dedup that
                 // <copy>
                 final TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
-                final long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittingTransactionId();
+                final long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittedTransactionId();
                 NeoStoreXaDataSource dataSource =
                         resolver.resolveDependency( DataSourceManager.class ).getDataSource();
                 dataSource.forceEverything();
@@ -143,11 +143,14 @@ public class RemoteStoreCopierTest
                     public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor )
                             throws IOException
                     {
-//                        long highTransactionId = transactionIdStore.getLastCommittingTransactionId();
+//                        long highTransactionId = transactionIdStore.getLastCommittedTransactionId();
                         LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
                         try (IOCursor<CommittedTransactionRepresentation> cursor = txStore.getTransactions( transactionIdWhenStartingCopy + 1 ) )
                         {
-                            while (cursor.next() && visitor.visit( cursor.get() ));
+                            while (cursor.next() && visitor.visit( cursor.get() ))
+                            {
+                                ;
+                            }
                         }
                     }
                 };

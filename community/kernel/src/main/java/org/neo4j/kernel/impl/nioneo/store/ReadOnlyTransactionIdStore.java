@@ -34,19 +34,19 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public long nextCommittingTransactionId()
+    public long nextCommittedTransactionId()
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
 
     @Override
-    public long getLastCommittingTransactionId()
+    public long getLastCommittedTransactionId()
     {
         return transactionId;
     }
 
     @Override
-    public void setLastCommittingAndClosedTransactionId( long transactionId )
+    public void setLastCommittedAndClosedTransactionId( long transactionId )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
@@ -58,7 +58,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public boolean closedTransactionIdIsOnParWithCommittingTransactionId()
+    public boolean closedTransactionIdIsOnParWithCommittedTransactionId()
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }

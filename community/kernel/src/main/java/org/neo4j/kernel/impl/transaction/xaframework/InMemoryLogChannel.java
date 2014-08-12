@@ -171,14 +171,18 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
         positionMarker.mark( 0, asWriter.position() );
     }
 
-    public void positionWriter( int position )
+    public int positionWriter( int position )
     {
+        int previous = asWriter.position();
         asWriter.position( position );
+        return previous;
     }
 
-    public void positionReader( int position )
+    public int positionReader( int position )
     {
+        int previous = asReader.position();
         asReader.position( position );
+        return previous;
     }
 
     public int readerPosition()
@@ -194,5 +198,20 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public void truncateTo( int bytesSuccessfullyWritten )
     {
         asReader.limit( bytesSuccessfullyWritten );
+    }
+
+    public int capacity()
+    {
+        return bytes.length;
+    }
+
+    public int availableBytesToRead()
+    {
+        return asReader.remaining();
+    }
+
+    public int availableBytesToWrite()
+    {
+        return asWriter.remaining();
     }
 }

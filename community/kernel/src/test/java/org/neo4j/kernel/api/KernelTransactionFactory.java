@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -32,11 +33,10 @@ import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 public class KernelTransactionFactory
 {
@@ -50,8 +50,8 @@ public class KernelTransactionFactory
                 null, mock( NeoStore.class ), new NoOpClient(), new TransactionHooks(),
                 mock( ConstraintIndexCreator.class ), headerInformation,
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
-                mock( TransactionIdStore.class ), mock( PersistenceCache.class ),
+                mock( PersistenceCache.class ),
                 mock( StoreReadLayer.class ),
-                mock( LegacyIndexTransactionState.class ), mock( Pool.class ) );
+                mock( LegacyIndexTransactionState.class ), mock( Pool.class ), Clock.SYSTEM_CLOCK );
     }
 }

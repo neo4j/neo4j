@@ -43,7 +43,7 @@ public class TestApplyTransactions
 //        tx.success();
 //        tx.finish();
 //        NeoStoreXaDataSource ds = origin.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
-//        int latestTxId = (int) ds.getNeoStore().getLastCommittingTransactionId();
+//        int latestTxId = (int) ds.getNeoStore().getLastCommittedTransactionId();
 //        InMemoryLogBuffer theTx = new InMemoryLogBuffer();
 //        originNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
 //

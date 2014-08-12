@@ -62,7 +62,7 @@ public class ResponsePacker
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
             {
-                if ( toStartFrom > 0 && toStartFrom <= transactionIdStore.getLastCommittingTransactionId() )
+                if ( toStartFrom > 0 && toStartFrom <= transactionIdStore.getLastCommittedTransactionId() )
                 {
                     extractTransactions( toStartFrom, filterVisitor( visitor, filter ) );
                 }

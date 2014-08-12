@@ -751,7 +751,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     public void awaitAllTransactionsClosed()
     {
         // TODO 2.2-future what if this will never happen?
-        while ( !neoStore.closedTransactionIdIsOnParWithCommittingTransactionId() )
+        while ( !neoStore.closedTransactionIdIsOnParWithCommittedTransactionId() )
         {
             try
             {

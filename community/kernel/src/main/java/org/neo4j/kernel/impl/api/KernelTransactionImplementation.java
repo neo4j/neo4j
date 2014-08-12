@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -51,14 +52,11 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
-import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
-
-import static java.lang.System.currentTimeMillis;
 
 /**
  * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon as
@@ -92,11 +90,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionHeaderInformation headerInformation;
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
-    private final TransactionIdStore transactionIdStore;
     private final PersistenceCache persistenceCache;
     private final StoreReadLayer storeLayer;
     private final LegacyIndexTransactionState legacyIndexTransactionState;
     private final Pool<KernelTransactionImplementation> pool;
+    private final Clock clock;
+
+    // Some header information
+    private long startTimeMillis;
+    private long lastTransactionIdWhenStarted;
 
     public KernelTransactionImplementation( StatementOperationParts operations, boolean readOnly,
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
@@ -109,11 +111,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionHeaderInformation transactionHeaderInformation,
                                             TransactionCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
-                                            TransactionIdStore transactionIdStore,
                                             PersistenceCache persistenceCache,
                                             StoreReadLayer storeLayer,
                                             LegacyIndexTransactionState legacyIndexTransaction,
-                                            Pool<KernelTransactionImplementation> pool)
+                                            Pool<KernelTransactionImplementation> pool, Clock clock )
     {
         this.operations = operations;
         this.readOnly = readOnly;
@@ -129,11 +130,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.headerInformation = transactionHeaderInformation;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
-        this.transactionIdStore = transactionIdStore;
         this.persistenceCache = persistenceCache;
         this.storeLayer = storeLayer;
         this.legacyIndexTransactionState = legacyIndexTransaction;
         this.pool = pool;
+        this.clock = clock;
         this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
     }
 
@@ -147,6 +148,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.txState = null; // TODO: Implement txState.clear() instead, to re-use data structures
         this.legacyIndexTransactionState.initialize();
         this.recordState.initialize( lastCommittedTx );
+        this.startTimeMillis = clock.currentTimeMillis();
+        this.lastTransactionIdWhenStarted = lastCommittedTx;
         return this;
     }
 
@@ -602,13 +605,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         new PhysicalTransactionRepresentation( commands );
                 transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                         headerInformation.getMasterId(),
-                        headerInformation.getAuthorId(), currentTimeMillis(),
-                        transactionIdStore.getLastCommittingTransactionId() );
+                        headerInformation.getAuthorId(),
+                        startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis() );
 
                 // Commit the transaction
                 commitProcess.commit( transactionRepresentation );
-
-                // TODO 2.2-future do the TxIdGenerator#committed thing
             }
 
             if ( hasTxStateWithChanges() )

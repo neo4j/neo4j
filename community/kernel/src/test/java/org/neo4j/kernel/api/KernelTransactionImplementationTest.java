@@ -21,19 +21,31 @@ package org.neo4j.kernel.api;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.test.DoubleLatch;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class KernelTransactionImplementationTest
 {
@@ -296,23 +308,64 @@ public class KernelTransactionImplementationTest
         verifyNoMoreInteractions( transactionMonitor );
     }
 
+    @Test
+    public void shouldUseStartTimeAndTxIdFromWhenStartingTxAsHeader() throws Exception
+    {
+        // GIVEN a transaction starting at one point in time
+        long startingTime = clock.currentTimeMillis();
+        when( recordState.isReadOnly() ).thenReturn( false );
+        try ( KernelTransactionImplementation transaction = newTransaction() )
+        {
+            transaction.initialize( headerInformation, 5L );
+
+            // WHEN committing it at a later point
+            clock.forward( 5, MILLISECONDS );
+            // ...and simulating some other transaction being committed
+            when( neoStore.getLastCommittedTransactionId() ).thenReturn( 7L );
+            transaction.success();
+        }
+
+        // THEN start time and last tx when started should have been taken from when the transaction started
+        assertEquals( 5L, commitProcess.transaction.getLatestCommittedTxWhenStarted() );
+        assertEquals( startingTime, commitProcess.transaction.getTimeStarted() );
+        assertEquals( startingTime+5, commitProcess.transaction.getTimeCommitted() );
+    }
+
     private final NeoStore neoStore = mock( NeoStore.class );
     private final TransactionHooks hooks = new TransactionHooks();
     private final TransactionRecordState recordState = mock( TransactionRecordState.class );
     private final LegacyIndexTransactionState legacyIndexState = mock( LegacyIndexTransactionState.class );
     private final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
+    private final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
+    private final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
+    private final FakeClock clock = new FakeClock();
 
     @Before
     public void before()
     {
         when( recordState.isReadOnly() ).thenReturn( true );
         when( legacyIndexState.isReadOnly() ).thenReturn( true );
+        when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
     }
 
     private KernelTransactionImplementation newTransaction()
     {
         return new KernelTransactionImplementation( null, false, null, null, null, null, recordState,
-                null, neoStore, new NoOpClient(), hooks, null, null, null, transactionMonitor, neoStore,
-                null, null, legacyIndexState, mock(Pool.class));
+                null, neoStore, new NoOpClient(), hooks, null, headerInformation, commitProcess, transactionMonitor,
+                null, null, legacyIndexState, mock( Pool.class ), clock );
+    }
+
+    public class CapturingCommitProcess implements TransactionCommitProcess
+    {
+        private long txId = 1;
+        private TransactionRepresentation transaction;
+
+        @Override
+        public long commit( TransactionRepresentation representation ) throws TransactionFailureException
+        {
+            assert transaction == null : "Designed to only allow one transaction";
+            transaction = representation;
+            return txId++;
+        }
     }
 }

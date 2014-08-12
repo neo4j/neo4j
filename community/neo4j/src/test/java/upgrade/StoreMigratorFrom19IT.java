@@ -103,7 +103,7 @@ public class StoreMigratorFrom19IT
         assertEquals( -460827792522586619l, neoStore.getRandomNumber() );
         assertEquals( 15l, neoStore.getCurrentLogVersion() );
         assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1004L + 3, neoStore.getLastCommittingTransactionId() ); // prior verifications add 3 transactions
+        assertEquals( 1004L + 3, neoStore.getLastCommittedTransactionId() ); // prior verifications add 3 transactions
     }
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();

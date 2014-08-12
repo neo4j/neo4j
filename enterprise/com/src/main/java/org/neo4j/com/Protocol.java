@@ -253,7 +253,8 @@ public class Protocol
             channel.putInt( tx.getAuthorId() );
             channel.putInt( tx.getMasterId() );
             channel.putLong( tx.getLatestCommittedTxWhenStarted() );
-            channel.putLong( tx.getTimeWritten() );
+            channel.putLong( tx.getTimeStarted() );
+            channel.putLong( tx.getTimeCommitted() );
             channel.putInt( tx.additionalHeader().length );
             channel.put( tx.additionalHeader(), tx.additionalHeader().length );
             new LogEntryWriterv1( channel, new CommandWriter( channel ) ).serialize( tx );
@@ -273,7 +274,8 @@ public class Protocol
             int authorId = channel.getInt();
             int masterId = channel.getInt();
             long latestCommittedTxWhenStarted = channel.getLong();
-            long timeWritten = channel.getLong();
+            long timeStarted = channel.getLong();
+            long timeCommitted = channel.getLong();
 
             int headerLength = channel.getInt();
             byte[] header = new byte[headerLength];
@@ -288,7 +290,8 @@ public class Protocol
             }
 
             PhysicalTransactionRepresentation toReturn = new PhysicalTransactionRepresentation( commands );
-            toReturn.setHeader( header, masterId, authorId, timeWritten, latestCommittedTxWhenStarted );
+            toReturn.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
+                    timeCommitted );
             return toReturn;
         }
     };

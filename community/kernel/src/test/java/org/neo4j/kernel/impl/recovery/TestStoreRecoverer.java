@@ -25,6 +25,7 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.DeadSimpleLogVersionReposit
 import org.neo4j.kernel.impl.transaction.xaframework.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
-import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
@@ -45,10 +45,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresen
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.util.Providers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -132,7 +132,7 @@ public class TestStoreRecoverer
     private static TransactionRepresentation singleNodeTransaction()
     {
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( Arrays.asList( createNodeCommand() ) );
-        transaction.setHeader( new byte[0], 0, 0, 0, 0 );
+        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0 );
         return transaction;
     }
 

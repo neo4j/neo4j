@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 /**
- * Keeps a latest transaction id. There's one counter for {@code committing transaction id} and one for
- * {@code applied transaction id}. The committing transaction id is for writing into a log before making
+ * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
+ * {@code applied transaction id}. The committed transaction id is for writing into a log before making
  * the changes to be made. After that the application of those transactions might be asynchronous and
  * completion of those are marked using {@link #transactionClosed(long)}.
  */
@@ -34,14 +34,14 @@ public interface TransactionIdStore
      * @return the next transaction id for a committing transaction. The transaction id is incremented
      * with each call.
      */
-    long nextCommittingTransactionId();
+    long nextCommittedTransactionId();
 
-    long getLastCommittingTransactionId();
+    long getLastCommittedTransactionId();
 
     /**
      * Used by recovery. Perhaps this shouldn't be exposed like this?
      */
-    void setLastCommittingAndClosedTransactionId( long transactionId );
+    void setLastCommittedAndClosedTransactionId( long transactionId );
 
     /**
      * Signals that a transaction with a given transaction id has been applied. Calls to this method
@@ -51,13 +51,13 @@ public interface TransactionIdStore
     void transactionClosed( long transactionId );
 
     /**
-     * Should be called in a place where no more committing transaction ids are returned, so that
+     * Should be called in a place where no more committed transaction ids are returned, so that
      * applied transactions can catch up.
      *
      * @return {@code true} if the latest applied transaction (without any lower transaction id gaps)
-     * is the same as the highest returned {@code committing transaction id}.
+     * is the same as the highest returned {@code committed transaction id}.
      */
-    boolean closedTransactionIdIsOnParWithCommittingTransactionId();
+    boolean closedTransactionIdIsOnParWithCommittedTransactionId();
 
     /**
      * Forces the transaction id to persistent storage.

@@ -117,7 +117,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         if ( header == null )
         {
             // Either the header is not there in full or the file was new. Don't care
-            long lastTxId = transactionIdStore.getLastCommittingTransactionId();
+            long lastTxId = transactionIdStore.getLastCommittedTransactionId();
             writeLogHeader( headerBuffer, forVersion, lastTxId );
             transactionMetadataCache.putHeader( forVersion, lastTxId );
             channel.writeAll( headerBuffer );
@@ -276,7 +276,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     {
         // Start from the where we're currently at and go backwards in time (versions)
         long logVersion = logFiles.getHighestLogVersion();
-        long highTransactionId = transactionIdStore.getLastCommittingTransactionId();
+        long highTransactionId = transactionIdStore.getLastCommittedTransactionId();
         while ( logFiles.versionExists( logVersion ) )
         {
             long previousLogLastTxId = transactionMetadataCache.getLogHeader( logVersion );

@@ -58,10 +58,10 @@ public class TransactionWriter
     private final List<Command> commands = new ArrayList<>();
 
     public TransactionRepresentation representation( byte[] additionalHeader, int masterId, int authorId,
-            long startTime, long lastCommittedTx )
+            long startTime, long lastCommittedTx, long committedTime )
     {
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( commands );
-        representation.setHeader( additionalHeader, masterId, authorId, startTime, lastCommittedTx );
+        representation.setHeader( additionalHeader, masterId, authorId, startTime, lastCommittedTx, committedTime );
         return representation;
     }
 

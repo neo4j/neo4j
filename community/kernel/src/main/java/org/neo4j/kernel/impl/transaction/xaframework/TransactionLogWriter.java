@@ -35,13 +35,13 @@ public class TransactionLogWriter
     public void append( TransactionRepresentation transaction, long transactionId ) throws IOException
     {
         writer.writeStartEntry( transaction.getMasterId(), transaction.getAuthorId(),
-                transaction.getTimeWritten(), transaction.getLatestCommittedTxWhenStarted(),
+                transaction.getTimeStarted(), transaction.getLatestCommittedTxWhenStarted(),
                 transaction.additionalHeader() );
 
         // Write all the commands to the log channel
         writer.serialize( transaction );
 
         // Write commit record
-        writer.writeCommitEntry( transactionId, transaction.getTimeWritten() );
+        writer.writeCommitEntry( transactionId, transaction.getTimeCommitted() );
     }
 }

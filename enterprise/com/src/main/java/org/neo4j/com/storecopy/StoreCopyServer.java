@@ -65,7 +65,7 @@ public class StoreCopyServer
     {
         try
         {
-            long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittingTransactionId();
+            long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittedTransactionId();
             dataSource.forceEverything();
             ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
 

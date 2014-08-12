@@ -81,7 +81,7 @@ public class PhysicalTransactionAppender implements TransactionAppender
     {
         logFile.checkRotation();
         long txId = transaction.getCommitEntry().getTxId();
-        long lastCommittedTxId = transactionIdStore.getLastCommittingTransactionId();
+        long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
         if ( lastCommittedTxId + 1 == txId )
         {
             txIdGenerator.generate( transaction.getTransactionRepresentation() );
