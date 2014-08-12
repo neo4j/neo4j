@@ -22,6 +22,10 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.Closeable;
 import java.io.IOException;
 
+/**
+ * Cursor which advances to new items when calling {@link #next()}, potentially throwing {@link IOException}.
+ * An item can be retrieved using {@link #get()} after each call to {@link #next()}.
+ */
 public interface IOCursor<T> extends Closeable
 {
     T get();

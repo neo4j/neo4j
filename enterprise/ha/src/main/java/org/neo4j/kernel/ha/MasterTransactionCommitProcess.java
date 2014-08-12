@@ -27,6 +27,10 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
+/**
+ * Commit process on the master side in HA, where transactions either comes in from slaves committing,
+ * or gets created and committed directly on the master.
+ */
 public class MasterTransactionCommitProcess implements TransactionCommitProcess
 {
     private final TransactionPropagator pusher;
@@ -48,8 +52,8 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
     @Override
     public synchronized long commit( TransactionRepresentation representation ) throws TransactionFailureException
     {
-        final boolean isOnMaster = representation.getAuthorId() == representation.getMasterId();
-        if ( !isOnMaster )
+        final boolean authoredByMeTheMaster = representation.getAuthorId() == representation.getMasterId();
+        if ( !authoredByMeTheMaster )
         {
             transactionMonitor.transactionStarted();
         }
@@ -68,7 +72,7 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
         }
         finally
         {
-            if ( !isOnMaster )
+            if ( !authoredByMeTheMaster )
             {
                 transactionMonitor.transactionFinished( success );
             }

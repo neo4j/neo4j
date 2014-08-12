@@ -28,6 +28,10 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
+/**
+ * Commit process on slaves in HA. Transactions aren't committed here, but sent to the master, committed
+ * there and streamed back.
+ */
 public class SlaveTransactionCommitProcess implements TransactionCommitProcess
 {
     private final Master master;
