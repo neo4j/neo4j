@@ -17,24 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.common;
+package org.neo4j.test;
 
-public interface Page
+import org.junit.Test;
+
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.test.ByteArrayMatcher.byteArray;
+
+public class ByteArrayMatcherTest
 {
-    byte getByte( int offset );
+    @Test
+    public void metaTestForByteArrayMatcher()
+    {
+        byte[] a = new byte[] { 1, -2, 3 };
+        byte[] b = new byte[] { 1, 3, -2 };
+        assertThat( "a == a", a, byteArray( a ) );
 
-    long getLong( int offset );
-    void putLong( long value, int offset );
-
-    int getInt( int offset );
-    long getUnsignedInt( int offset );
-    void putInt( int value, int offset );
-
-    void getBytes( byte[] data, int offset );
-    void putBytes( byte[] data, int offset );
-
-    void putByte( byte value, int offset );
-
-    short getShort( int offset );
-    void putShort( short value, int offset );
+        boolean caughtError = false;
+        try
+        {
+            assertThat( "a != b", a, byteArray( b ) ); // this must fail
+        } catch ( AssertionError error )
+        {
+            caughtError = true;
+        }
+        assertTrue( "should have thrown on a != b", caughtError );
+    }
 }

@@ -35,6 +35,7 @@ import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -503,39 +504,54 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             return String.format( "%s[%s]", getClass().getSimpleName(), openedAt.filename );
         }
 
-        @Override
-        public int read( ByteBuffer dst )
+        private void checkInterrupted() throws IOException
         {
+            if ( Thread.currentThread().isInterrupted() )
+            {
+                close();
+                throw new ClosedByInterruptException();
+            }
+        }
+
+        @Override
+        public int read( ByteBuffer dst ) throws IOException
+        {
+            checkInterrupted();
             return data.read( this, dst );
         }
 
         @Override
-        public long read( ByteBuffer[] dsts, int offset, int length )
+        public long read( ByteBuffer[] dsts, int offset, int length ) throws IOException
         {
+            checkInterrupted();
             throw new UnsupportedOperationException();
         }
 
         @Override
         public int write( ByteBuffer src ) throws IOException
         {
+            checkInterrupted();
             return data.write( this, src );
         }
 
         @Override
-        public long write( ByteBuffer[] srcs, int offset, int length )
+        public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
         {
+            checkInterrupted();
             throw new UnsupportedOperationException();
         }
 
         @Override
         public long position() throws IOException
         {
+            checkInterrupted();
             return position;
         }
 
         @Override
         public FileChannel position( long newPosition ) throws IOException
         {
+            checkInterrupted();
             this.position = newPosition;
             return this;
         }
@@ -543,24 +559,27 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         @Override
         public long size() throws IOException
         {
+            checkInterrupted();
             return data.size();
         }
 
         @Override
         public FileChannel truncate( long size ) throws IOException
         {
+            checkInterrupted();
             data.truncate( size );
             return this;
         }
 
         @Override
-        public void force(boolean metaData)
+        public void force(boolean metaData) throws IOException
         {
-            // NO-OP
+            checkInterrupted();
+            // Otherwise no forcing of an in-memory file
         }
 
         @Override
-        public long transferTo(long position, long count, WritableByteChannel target)
+        public long transferTo(long position, long count, WritableByteChannel target) throws IOException
         {
             throw new UnsupportedOperationException();
         }
@@ -568,6 +587,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         @Override
         public long transferFrom( ReadableByteChannel src, long position, long count ) throws IOException
         {
+            checkInterrupted();
             long previousPos = position();
             position( position );
             try
@@ -597,24 +617,28 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         @Override
         public int read( ByteBuffer dst, long position ) throws IOException
         {
+            checkInterrupted();
             return data.read( new LocalPosition( position ), dst );
         }
 
         @Override
         public int write( ByteBuffer src, long position ) throws IOException
         {
+            checkInterrupted();
             return data.write( new LocalPosition( position ), src );
         }
 
         @Override
         public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
         {
+            checkInterrupted();
             throw new IOException("Not supported");
         }
 
         @Override
         public java.nio.channels.FileLock lock( long position, long size, boolean shared ) throws IOException
         {
+            checkInterrupted();
             synchronized ( data.channels )
             {
                 if ( !data.lock() )
@@ -710,18 +734,19 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             int wanted = src.limit();
             int pending = wanted;
             byte[] scratchPad = SCRATCH_PAD.get();
-            while ( pending > 0 )
-            {
-                int howMuchToWriteThisTime = min( pending, scratchPad.length );
-                src.get( scratchPad, 0, howMuchToWriteThisTime );
-                long pos = fc.pos();
-                fileAsBuffer.put( (int) pos, scratchPad, 0, howMuchToWriteThisTime );
-                fc.pos( pos += howMuchToWriteThisTime );
-                pending -= howMuchToWriteThisTime;
-            }
 
             synchronized ( fileAsBuffer )
             {
+                while ( pending > 0 )
+                {
+                    int howMuchToWriteThisTime = min( pending, scratchPad.length );
+                    src.get( scratchPad, 0, howMuchToWriteThisTime );
+                    long pos = fc.pos();
+                    fileAsBuffer.put( (int) pos, scratchPad, 0, howMuchToWriteThisTime );
+                    fc.pos( pos + howMuchToWriteThisTime );
+                    pending -= howMuchToWriteThisTime;
+                }
+
                 // If we just made a jump in the file fill the rest of the gap with zeros
                 int newSize = max( size, (int) fc.pos() );
                 int intermediaryBytes = newSize - wanted - size;

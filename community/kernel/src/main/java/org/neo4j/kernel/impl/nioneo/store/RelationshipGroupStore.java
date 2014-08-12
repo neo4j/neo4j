@@ -73,7 +73,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
                 do
                 {
                     record = getRecord( id, cursor, RecordLoad.NORMAL );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
                 return record;
             }
             else
@@ -163,7 +163,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
                 do
                 {
                     updateRecord( record, cursor, false );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
         catch ( IOException e )
@@ -237,7 +237,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
                 do
                 {
                     record = getRecord( id, cursor, RecordLoad.FORCE );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
                 return record;
             }
             else
@@ -267,7 +267,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
                 do
                 {
                     updateRecord( record, cursor, true );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
         catch ( IOException e )

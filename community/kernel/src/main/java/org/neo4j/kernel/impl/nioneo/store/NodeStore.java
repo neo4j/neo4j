@@ -152,22 +152,13 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     public NodeRecord loadLightNode( long id )
     {
-        try
-        {
-            assertIdExists( id );
-        }
-        catch ( InvalidRecordException e )
-        {
-            return null;
-        }
-
         return loadRecord( id, null );
     }
 
     @Override
     public NodeRecord forceGetRecord( long id )
     {
-        NodeRecord record = loadLightNode( id );
+        NodeRecord record = loadRecord( id, null );
         if ( record == null )
         {
             return new NodeRecord(
@@ -206,7 +197,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
                         record.setId( id );
                         readIntoRecord( cursor, record, inUseByte, true );
                     }
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
             return isInUse? record : null;
         }
@@ -256,7 +247,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
                 do
                 {
                     writeRecord( cursor, record, force );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
         catch ( IOException e )
@@ -316,7 +307,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
                 {
                     cursor.setOffset( offset );
                     recordIsInUse = isInUse( cursor.getByte() );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
             return recordIsInUse;
         }

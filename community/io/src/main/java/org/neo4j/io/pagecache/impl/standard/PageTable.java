@@ -21,6 +21,8 @@ package org.neo4j.io.pagecache.impl.standard;
 
 import java.io.IOException;
 
+import org.neo4j.io.pagecache.PageSwapper;
+
 public interface PageTable
 {
     /**

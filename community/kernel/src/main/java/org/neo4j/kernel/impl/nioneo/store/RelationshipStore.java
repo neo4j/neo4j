@@ -146,7 +146,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
                 do
                 {
                     record = getRecord( id, cursor, loadMode, target );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
                 return record;
             }
             else if ( loadMode == RecordLoad.NORMAL )
@@ -189,7 +189,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
                 do
                 {
                     updateRecord( record, cursor, force );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
         catch ( IOException e )

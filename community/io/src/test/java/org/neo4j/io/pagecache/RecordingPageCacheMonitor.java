@@ -17,16 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.standard;
+package org.neo4j.io.pagecache;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.hamcrest.Matcher;
-
-import org.neo4j.io.pagecache.PageCacheMonitor;
-import org.neo4j.io.pagecache.PageLock;
 
 public class RecordingPageCacheMonitor implements PageCacheMonitor
 {
@@ -35,29 +32,35 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
     private Matcher<? extends Event> trap;
 
     @Override
-    public void pageFault( long pageId, PageSwapper io )
+    public void pageFault( long filePageId, PageSwapper swapper )
     {
-        Fault event = new Fault( io, pageId );
+        Fault event = new Fault( swapper, filePageId );
         record.add( event );
         trip( event );
     }
 
     @Override
-    public void evict( long pageId, PageSwapper io )
+    public void evict( long filePageId, PageSwapper swapper )
     {
-        Evict event = new Evict( io, pageId );
+        Evict event = new Evict( swapper, filePageId );
         record.add( event );
         trip( event );
     }
 
     @Override
-    public void pin( PageLock lock, long pageId, PageSwapper io )
+    public void pin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
     {
         // we currently do not record these
     }
 
     @Override
-    public void unpin( PageLock lock, long pageId, PageSwapper io )
+    public void unpin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+    {
+        // we currently do not record these
+    }
+
+    @Override
+    public void flush( long filePageId, PageSwapper swapper )
     {
         // we currently do not record these
     }
@@ -112,12 +115,12 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
         }
     }
 
-    static abstract class Event
+    public static abstract class Event
     {
         public final PageSwapper io;
         public final long pageId;
 
-        Event( PageSwapper io, long pageId )
+        public Event( PageSwapper io, long pageId )
         {
             this.io = io;
             this.pageId = pageId;
@@ -157,17 +160,17 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
         }
     }
 
-    static class Fault extends Event
+    public static class Fault extends Event
     {
-        Fault( PageSwapper io, long pageId )
+        public Fault( PageSwapper io, long pageId )
         {
             super( io, pageId );
         }
     }
 
-    static class Evict extends Event
+    public static class Evict extends Event
     {
-        Evict( PageSwapper io, long pageId )
+        public Evict( PageSwapper io, long pageId )
         {
             super( io, pageId );
         }

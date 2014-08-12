@@ -19,42 +19,48 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.neo4j.io.pagecache.impl.standard.PageSwapper;
-
 public interface PageCacheMonitor
 {
     public static final PageCacheMonitor NULL = new PageCacheMonitor()
     {
         @Override
-        public void pageFault( long pageId, PageSwapper io )
+        public void pageFault( long filePageId, PageSwapper swapper )
         {
         }
 
         @Override
-        public void evict( long pageId, PageSwapper io )
+        public void evict( long filePageId, PageSwapper swapper )
         {
         }
 
         @Override
-        public void pin( PageLock lock, long pageId, PageSwapper io )
+        public void pin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
         {
         }
 
         @Override
-        public void unpin( PageLock lock, long pageId, PageSwapper io )
+        public void unpin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+        {
+        }
+
+        @Override
+        public void flush( long filePageId, PageSwapper swapper )
         {
         }
     };
 
     /** A page not in the cache was loaded */
-    void pageFault( long pageId, PageSwapper io );
+    void pageFault( long filePageId, PageSwapper swapper );
 
     /** A page was evicted. */
-    void evict( long pageId, PageSwapper io );
+    void evict( long filePageId, PageSwapper swapper );
 
     /** A page is pinned */
-    void pin( PageLock lock, long pageId, PageSwapper io );
+    void pin( boolean exclusiveLock, long filePageId, PageSwapper swapper );
 
     /** A page is unpinned */
-    void unpin( PageLock lock, long pageId, PageSwapper io );
+    void unpin( boolean exclusiveLock, long filePageId, PageSwapper swapper );
+
+    /** A page is flushed to the mapped file */
+    void flush( long filePageId, PageSwapper swapper );
 }

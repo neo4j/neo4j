@@ -41,7 +41,7 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     private final FileSystemAbstraction inner;
     private boolean outOfSpace;
 
-    public LimitedFilesystemAbstraction(FileSystemAbstraction wrapped)
+    public LimitedFilesystemAbstraction( FileSystemAbstraction wrapped )
     {
         this.inner = wrapped;
     }
@@ -145,7 +145,7 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
             throw new IOException( "No space left on device" );
         }
     }
-    
+
     @Override
     public File[] listFiles( File directory )
     {

@@ -81,8 +81,6 @@ public class StandardPageCursor extends OffsetTrackingCursor
         if ( checkNoGrow() )
         {
             pinNextPage();
-
-            nextPageId++;
             return true;
         }
 
@@ -130,7 +128,12 @@ public class StandardPageCursor extends OffsetTrackingCursor
 
     private void pinNextPage() throws IOException
     {
+        if ( pagedFile.getReferenceCount() == 0 )
+        {
+            throw new IllegalStateException( "File has been unmapped" );
+        }
         currentPageId = nextPageId;
+        nextPageId++;
         try
         {
             pagedFile.pin( this, pf_flags, currentPageId );
@@ -157,7 +160,7 @@ public class StandardPageCursor extends OffsetTrackingCursor
     }
 
     @Override
-    public boolean retry()
+    public boolean shouldRetry()
     {
         return false;
     }

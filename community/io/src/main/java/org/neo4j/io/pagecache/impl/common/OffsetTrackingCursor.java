@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.common;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 
+import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 
 public abstract class OffsetTrackingCursor implements PageCursor
@@ -36,7 +37,7 @@ public abstract class OffsetTrackingCursor implements PageCursor
             byte value = page.getByte( currentOffset );
             currentOffset += 1;
             return value;
-        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
         }
@@ -48,7 +49,7 @@ public abstract class OffsetTrackingCursor implements PageCursor
         {
             page.putByte( value, currentOffset );
             currentOffset += 1;
-        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
         }
@@ -61,7 +62,7 @@ public abstract class OffsetTrackingCursor implements PageCursor
             long value = page.getLong( currentOffset );
             currentOffset += 8;
             return value;
-        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
         }
@@ -73,7 +74,7 @@ public abstract class OffsetTrackingCursor implements PageCursor
         {
             page.putLong( l, currentOffset );
             currentOffset += 8;
-        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
         }
@@ -86,7 +87,7 @@ public abstract class OffsetTrackingCursor implements PageCursor
             int value = page.getInt( currentOffset );
             currentOffset += 4;
             return value;
-        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
         }
@@ -103,7 +104,7 @@ public abstract class OffsetTrackingCursor implements PageCursor
         {
             page.putInt( i, currentOffset );
             currentOffset += 4;
-        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
         }
@@ -115,7 +116,7 @@ public abstract class OffsetTrackingCursor implements PageCursor
         {
             page.getBytes( data, currentOffset );
             currentOffset += data.length;
-        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
         }
@@ -127,7 +128,7 @@ public abstract class OffsetTrackingCursor implements PageCursor
         {
             page.putBytes( data, currentOffset );
             currentOffset += data.length;
-        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
         }
@@ -135,6 +136,10 @@ public abstract class OffsetTrackingCursor implements PageCursor
 
     public void setOffset( int offset )
     {
+        if ( offset < 0 )
+        {
+            throw new IndexOutOfBoundsException();
+        }
         currentOffset = offset;
     }
 
@@ -146,7 +151,7 @@ public abstract class OffsetTrackingCursor implements PageCursor
             short value = page.getShort( currentOffset );
             currentOffset += 2;
             return value;
-        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
         }
@@ -159,7 +164,7 @@ public abstract class OffsetTrackingCursor implements PageCursor
         {
             page.putShort( value, currentOffset );
             currentOffset += 2;
-        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        } catch( BufferOverflowException | BufferUnderflowException e )
         {
             throw outOfBoundsException( e );
         }

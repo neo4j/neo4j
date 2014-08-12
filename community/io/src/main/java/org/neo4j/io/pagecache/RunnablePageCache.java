@@ -17,30 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.io.pagecache;
 
-import java.lang.reflect.Field;
-
-import sun.misc.Unsafe;
-
-public class UnsafeUtil
+/**
+ * A PageCache that also implements Runnable.
+ *
+ * The purpose of this is typically for doing page eviction in the background,
+ * and the page cache therefore has be started in a dedicated thread.
+ *
+ * It is implicitly assumed that sending an interrupt to this dedicated thread,
+ * will signal it to shut the page cache down.
+ */
+public interface RunnablePageCache extends PageCache, Runnable
 {
-    private final static Unsafe unsafe;
-    static {
-        try
-        {
-            Field unsafeField = Unsafe.class.getDeclaredField( "theUnsafe" );
-            unsafeField.setAccessible( true );
-            unsafe = (Unsafe) unsafeField.get(null);
-        }
-        catch ( NoSuchFieldException | IllegalAccessException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    public static Unsafe getUnsafe()
-    {
-        return unsafe;
-    }
 }

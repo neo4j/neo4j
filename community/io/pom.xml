@@ -129,6 +129,29 @@ the relevant Commercial Agreement.
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <!--
+          Run mutation tests like this:
+          mvn org.pitest:pitest-maven:mutationCoverage
+
+          NOTE: This takes about 9 to 10 minutes to run.
+        -->
+        <groupId>org.pitest</groupId>
+        <artifactId>pitest-maven</artifactId>
+        <version>1.0.0</version>
+        <configuration>
+          <targetTests>
+            <param>org.neo4j.io.pagecache.*</param>
+          </targetTests>
+          <targetClasses>
+            <param>org.neo4j.io.pagecache.impl.*</param>
+          </targetClasses>
+          <threads>8</threads>
+          <jvmArgs>
+            <value>-ea</value>
+          </jvmArgs>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 

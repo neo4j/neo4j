@@ -36,7 +36,7 @@ import java.io.IOException;
  *             do
  *             {
  *                 processPage( cursor );
- *             } while ( cursor.retry() );
+ *             } while ( cursor.shouldRetry() );
  *             // Any finalising, non-repeatable post-processing
  *             // goes here.
  *         }
@@ -130,6 +130,10 @@ public interface PageCursor extends AutoCloseable
     /**
      * Returns true if the page has entered an inconsistent state since the
      * last call to next() or retry().
+     *
+     * @throws IOException If the page was evicted while doing IO, the cursor will have
+     *                     to do a page fault to get the page back.
+     *                     This may throw an IOException.
      */
-    boolean retry();
+    boolean shouldRetry() throws IOException;
 }

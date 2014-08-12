@@ -30,6 +30,7 @@ import org.neo4j.graphdb.mockfs.LimitedFilesystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.RecordingPageCacheMonitor;
 import org.neo4j.test.TargetDirectory;
 
 import static junit.framework.TestCase.fail;
@@ -83,5 +84,4 @@ public class OutOfDiskSpaceTest
         // 2: The background eviction thread should give up and shut down
         sweeperThread.join();
     }
-
 }

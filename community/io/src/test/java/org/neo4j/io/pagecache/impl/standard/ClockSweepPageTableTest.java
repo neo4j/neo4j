@@ -29,10 +29,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.io.fs.AbstractStoreChannel;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.standard.RecordingPageCacheMonitor.Evict;
-import org.neo4j.io.pagecache.impl.standard.RecordingPageCacheMonitor.Fault;
+import org.neo4j.io.pagecache.Page;
+import org.neo4j.io.pagecache.RecordingPageCacheMonitor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -41,6 +44,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+
+import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Evict;
+import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Fault;
 
 public class ClockSweepPageTableTest
 {
@@ -370,29 +376,44 @@ public class ClockSweepPageTableTest
     private class BufferPageSwapper implements PageSwapper
     {
         private final ByteBuffer buffer;
+        private final StoreChannel channel;
 
         private BufferPageSwapper( byte[] bytes )
         {
             this( ByteBuffer.wrap( bytes ) );
         }
 
-        private BufferPageSwapper( ByteBuffer buffer )
+        private BufferPageSwapper( final ByteBuffer buffer )
         {
             this.buffer = buffer;
+            channel = new AbstractStoreChannel() {
+                @Override
+                public int read( ByteBuffer dst, long position ) throws IOException
+                {
+                    dst.position( 0 );
+                    dst.put( buffer );
+                    return buffer.limit();
+                }
+
+                @Override
+                public void writeAll( ByteBuffer src, long position ) throws IOException
+                {
+                    buffer.position( 0 );
+                    buffer.put( src );
+                }
+            };
         }
 
         @Override
-        public void read( long pageId, ByteBuffer into )
+        public void read( long filePageId, Page page ) throws IOException
         {
-            buffer.position( 0 );
-            into.put( buffer );
+            page.swapIn( channel, 0, buffer.limit() );
         }
 
         @Override
-        public void write( long pageId, ByteBuffer from )
+        public void write( long filePageId, Page page ) throws IOException
         {
-            buffer.position( 0 );
-            buffer.put(from);
+            page.swapOut( channel, 0, buffer.limit() );
         }
 
         @Override
@@ -405,6 +426,24 @@ public class ClockSweepPageTableTest
         public String fileName()
         {
             return buffer.toString();
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+
+        }
+
+        @Override
+        public void force() throws IOException
+        {
+
+        }
+
+        @Override
+        public long getLastPageId() throws IOException
+        {
+            return 1;
         }
     }
 }

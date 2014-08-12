@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.lang.String.format;
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -41,6 +37,11 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.String.format;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -492,14 +493,24 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             {
                 incrementVersion( cursor );
             }
-            // make sure the new version value is persisted
-            // TODO this can be improved by flushing only the page containing that value rather than all pages
-            storeFile.flush();
             return versionField;
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
+        }
+        finally
+        {
+            try
+            {
+                // make sure the new version value is persisted
+                // TODO this can be improved by flushing only the page containing that value rather than all pages
+                storeFile.flush();
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( e );
+            }
         }
     }
 
@@ -540,7 +551,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         latestConstraintIntroducingTxField = latestConstraintIntroducingTx;
     }
 
-    private void readAllFields( PageCursor cursor )
+    private void readAllFields( PageCursor cursor ) throws IOException
     {
         do
         {
@@ -553,7 +564,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             graphNextPropField = getRecordValue( cursor, NEXT_GRAPH_PROP_POSITION );
             latestConstraintIntroducingTxField = getRecordValue( cursor, LATEST_CONSTRAINT_TX_POSITION );
             lastClosedTx.set( lastCommittedTxId );
-        } while ( cursor.retry() );
+        } while ( cursor.shouldRetry() );
     }
 
     private long getRecordValue( PageCursor cursor, int position )
@@ -564,7 +575,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         return cursor.getLong();
     }
 
-    private void incrementVersion( PageCursor cursor )
+    private void incrementVersion( PageCursor cursor ) throws IOException
     {
         int offset = VERSION_POSITION * getEffectiveRecordSize();
         long value;
@@ -574,7 +585,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             value = cursor.getLong() + 1;
             cursor.setOffset( offset + 1 ); // +1 to skip the inUse byte
             cursor.putLong( value );
-        } while ( cursor.retry() );
+        } while ( cursor.shouldRetry() );
         versionField = value;
     }
 
@@ -616,7 +627,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                     cursor.setOffset( offset );
                     cursor.putByte( Record.IN_USE.byteValue() );
                     cursor.putLong( value );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
         catch ( IOException e )

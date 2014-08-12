@@ -52,7 +52,8 @@ public class ChannelInputStream extends InputStream
         }
         buffer.flip();
         position++;
-        return buffer.get();
+        // Return the *unsigned* byte value as an integer
+        return buffer.get() & 0x000000FF;
     }
 
     @Override

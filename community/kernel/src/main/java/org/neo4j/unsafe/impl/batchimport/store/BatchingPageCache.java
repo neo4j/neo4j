@@ -222,17 +222,10 @@ public class BatchingPageCache implements PageCache
             return pageSize;
         }
 
-        @Override
         public void close() throws IOException
         {
             flush();
             channel.close();
-        }
-
-        @Override
-        public int numberOfCachedPages()
-        {
-            return 1;
         }
 
         @Override
@@ -397,7 +390,7 @@ public class BatchingPageCache implements PageCache
         }
 
         @Override
-        public boolean retry()
+        public boolean shouldRetry()
         {
             return false;
         }

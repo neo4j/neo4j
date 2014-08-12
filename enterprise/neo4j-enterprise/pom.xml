@@ -34,6 +34,11 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-enterprise-io</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-advanced</artifactId>
       <version>${project.version}</version>
     </dependency>

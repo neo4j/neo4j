@@ -24,28 +24,34 @@ import java.nio.ByteBuffer;
 
 import org.junit.Test;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
+import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapper;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class StandardPageSwapperTest
+public class SingleFilePageSwapperTest
 {
     @Test
     public void shouldNotGoToDiskIfReadingPageBeyondFileSize() throws Exception
     {
         // Given
+        ByteBuffer buffer = ByteBuffer.allocate( 64 );
         StoreChannel channel = mock( StoreChannel.class );
-        when(channel.size()).thenReturn( 128l );
+        when( channel.size() ).thenReturn( 128l );
 
-        StandardPageSwapper io = new StandardPageSwapper( new File("SomeFile"), channel, 64, null );
+        SingleFilePageSwapper io = new SingleFilePageSwapper( new File("SomeFile"), channel, 64, null );
 
         // When
-        io.read( 16, ByteBuffer.allocateDirect(64) );
+        ByteBufferPage page = new ByteBufferPage( buffer );
+        io.read( 16, page );
+        io.read( 3, page );
 
         // Then
-        verify(channel).size();
+        verify( channel, times( 2 ) ).size();
         verifyNoMoreInteractions( channel );
     }
 

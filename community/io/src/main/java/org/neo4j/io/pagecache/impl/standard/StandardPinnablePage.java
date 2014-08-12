@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
 
@@ -134,7 +136,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     /**
      * Must be call under lock
      */
-    private ByteBuffer buffer()
+    ByteBuffer buffer()
     {
         assertLocked();
         if( buffer == null )
@@ -177,13 +179,14 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     /**
      * Must be call under lock
      */
-    void flush() throws IOException
+    void flush( PageCacheMonitor monitor ) throws IOException
     {
         assertLocked();
         if ( dirty )
         {
-            buffer().position(0);
-            swapper.write( pageId, buffer );
+            buffer();
+            monitor.flush( pageId, swapper );
+            swapper.write( pageId, this );
             dirty = false;
         }
     }
@@ -194,8 +197,8 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     void load() throws IOException
     {
         assertLocked();
-        buffer().position(0);
-        swapper.read( pageId, buffer );
+        buffer();
+        swapper.read( pageId, this );
         loaded = true;
     }
 
@@ -220,7 +223,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     /**
      * Must be call under lock
      */
-    PageSwapper io()
+    PageSwapper swapper()
     {
         assertLocked();
         return swapper;
@@ -246,6 +249,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
                 "buffer=" + buffer +
                 ", swapper=" + swapper +
                 ", pageId=" + pageId +
+                ", pageSize=" + pageSize +
                 ", dirty=" + dirty +
                 ", usageStamp=" + usageStamp +
                 ", loaded=" + loaded +

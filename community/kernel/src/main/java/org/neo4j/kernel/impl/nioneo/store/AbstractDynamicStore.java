@@ -211,7 +211,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 do
                 {
                     writeRecord( cursor, record );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
         catch ( IOException e )
@@ -336,7 +336,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                     {
                         readRecordData( cursor, record );
                     }
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
                 if ( !record.inUse() )
                 {
                     // If the record was not in use, then it was loaded using force.
@@ -439,7 +439,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                     // Add the BLOCK_HEADER_SIZE to the offset, since we don't read it
                     cursor.setOffset( offset + BLOCK_HEADER_SIZE );
                     readRecordData( cursor, record );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
         catch ( IOException e )
@@ -465,7 +465,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                     {
                         readRecordData( cursor, record );
                     }
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
             else
             {
@@ -496,7 +496,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                      {
                          readRecordData( cursor, record );
                      }
-                 } while ( cursor.retry() );
+                 } while ( cursor.shouldRetry() );
              }
             return record;
         }

@@ -170,7 +170,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
                 do
                 {
                     record = getRecord( id, cursor, false );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
                 record.addNameRecords( nameStore.getLightRecords( record.getNameId() ) );
                 return record;
             }
@@ -202,7 +202,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
                 do
                 {
                     record = getRecord( (int) id, cursor, true );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
                 return record;
             }
             else
@@ -258,7 +258,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
                 do
                 {
                     updateRecord( record, cursor );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
         }
         catch ( IOException e )

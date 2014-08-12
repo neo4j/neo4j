@@ -21,9 +21,9 @@ package org.neo4j.io.pagecache.impl.standard;
 
 import java.util.concurrent.ConcurrentMap;
 
-import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
+import org.neo4j.io.pagecache.PageEvictionCallback;
 
-public class RemoveEvictedPage implements FunctionFromPrimitiveLong
+public class RemoveEvictedPage implements PageEvictionCallback
 {
     private final ConcurrentMap<Long, Object> filePages;
 
@@ -33,9 +33,8 @@ public class RemoveEvictedPage implements FunctionFromPrimitiveLong
     }
 
     @Override
-    public Object apply( long value )
+    public void onEvict( long pageId )
     {
-        filePages.remove( value );
-        return null;
+        filePages.remove( pageId );
     }
 }

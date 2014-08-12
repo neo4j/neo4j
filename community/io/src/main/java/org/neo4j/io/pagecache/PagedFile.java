@@ -54,13 +54,17 @@ public interface PagedFile
 
     PageCursor io( long pageId, int pf_flags ) throws IOException;
 
+    /**
+     * Get the size of the file-pages, in bytes.
+     */
     int pageSize();
 
-    void close() throws IOException;
-
-    int numberOfCachedPages();
-
-    /** Flush all dirty pages into the file channel, and force the file channel to disk. */
+    /**
+     * Flush all dirty pages into the file channel, and force the file channel to disk.
+     *
+     * Note: Flushing has to take locks on pages, so you cannot call flush
+     * while you have pages pinned.
+     */
     void flush() throws IOException;
 
     /** Force all changes to this file handle down to disk. Does not flush dirty pages. */

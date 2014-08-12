@@ -22,11 +22,8 @@ package org.neo4j.io.pagecache.impl.standard;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.junit.AfterClass;
 import org.junit.Test;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -43,14 +40,7 @@ import static org.junit.Assert.assertThat;
 
 public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
 {
-    private static final ExecutorService executor = Executors.newCachedThreadPool();
     private static final ConcurrentMap<PageCache, Future<?>> futures = new ConcurrentHashMap<>();
-
-    @AfterClass
-    public static void stopExecutor()
-    {
-        executor.shutdown();
-    }
 
     @Override
     protected StandardPageCache createPageCache(
@@ -59,7 +49,7 @@ public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
             int pageSize,
             PageCacheMonitor monitor )
     {
-        StandardPageCache pageCache = new StandardPageCache( fs, maxPages, pageSize );
+        StandardPageCache pageCache = new StandardPageCache( fs, maxPages, pageSize, monitor );
         Future<?> future = executor.submit( pageCache );
         futures.put( pageCache, future );
         return pageCache;
@@ -84,7 +74,7 @@ public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
         int pagesKeptInUse = (int) (pagesInCache * ClockSweepPageTable.PAGE_UTILISATION_RATIO);
 
         StandardPageCache cache = getPageCache( fs, pagesInCache, filePageSize, PageCacheMonitor.NULL );
-        PagedFile pagedFile = cache.map( file, filePageSize );
+        StandardPagedFile pagedFile = (StandardPagedFile) cache.map( file, filePageSize );
 
         // When I pin and unpin a series of pages
         try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
@@ -99,5 +89,6 @@ public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
         Thread.sleep( 50 );
         assertThat( pagedFile.numberOfCachedPages(),
                 allOf( greaterThanOrEqualTo( pagesKeptInUse ), lessThanOrEqualTo( pagesInCache ) ) );
+        cache.unmap( file );
     }
 }
