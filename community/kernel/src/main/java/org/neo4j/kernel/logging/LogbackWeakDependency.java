@@ -20,10 +20,10 @@
 package org.neo4j.kernel.logging;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration;
 
 /**
  * This class is here since kernel has a weak dependency on logback, i.e. it will be used if available,
@@ -31,7 +31,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
  * may refer to are available at compile time, it cannot be written in a way that assumes them being there.
  * For example it cannot import those classes, but should resolve them by reflection instead.
  */
-public class LogbackWeakDependency
+public final class LogbackWeakDependency
 {
     public static final Function<Config, Logging> DEFAULT_TO_CLASSIC = new Function<Config, Logging>()
     {
@@ -76,20 +76,14 @@ public class LogbackWeakDependency
     private static final String LOGGER_CONTEXT_CLASS_NAME = "ch.qos.logback.classic.LoggerContext";
     private static final String LOGGER_BINDER_CLASS_NAME = "org.slf4j.impl.StaticLoggerBinder";
 
-    public static Function<Config, Logging> logbackOrDefaultToClassic()
+    private LogbackWeakDependency()
     {
-        return new Function<Config, Logging>()
-        {
-            @Override
-            public Logging apply( Config config )
-            {
-                return new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
-            }
-        };
+        throw new AssertionError( "Not for instantiation!" );
     }
 
-    public Logging tryLoadLogbackService( Config config, Function<Config, Object> loggerContextGetter,
-            Function<Config, Logging> otherwiseDefaultTo )
+    public static Logging tryLoadLogbackService( Config config,
+                                                 Function<Config, Object> loggerContextGetter,
+                                                 Function<Config, Logging> otherwiseDefaultTo )
     {
         try
         {
@@ -104,7 +98,7 @@ public class LogbackWeakDependency
         return otherwiseDefaultTo.apply( config );
     }
 
-    public Logging tryLoadLogbackService( Config config, Function<Config, Logging> otherwiseDefaultTo )
+    public static Logging tryLoadLogbackService( Config config, Function<Config, Logging> otherwiseDefaultTo )
     {
         return tryLoadLogbackService( config, STATIC_LOGGER_CONTEXT, otherwiseDefaultTo );
     }
@@ -113,20 +107,19 @@ public class LogbackWeakDependency
      * To work around the problem where we have an object that is actually a LoggerContext, but we
      * cannot refer to it as such since that class may not exist at runtime.
      */
-    private Logging newLogbackService( Config config, Object loggerContext ) throws Exception
+    private static Logging newLogbackService( Config config, Object loggerContext ) throws Exception
     {
         Class<?> loggerContextClass = Class.forName( LOGGER_CONTEXT_CLASS_NAME );
         return LogbackService.class
                 .getConstructor( Config.class, loggerContextClass, String.class )
-                .newInstance( config, loggerContext, config.get( InternalAbstractGraphDatabase.Configuration
-                        .log_configuration_file ) );
+                .newInstance( config, loggerContext, config.get( Configuration.log_configuration_file ) );
     }
 
-    private boolean logbackIsOnClasspath()
+    private static boolean logbackIsOnClasspath()
     {
         try
         {
-            getClass().getClassLoader().loadClass( LOGGER_CONTEXT_CLASS_NAME );
+            LogbackWeakDependency.class.getClassLoader().loadClass( LOGGER_CONTEXT_CLASS_NAME );
             return true;
         }
         catch ( ClassNotFoundException e )
