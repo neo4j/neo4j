@@ -17,22 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.kernel.impl.core;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-
-public interface LegacyStore extends Closeable
+/**
+ * This is a {@link RuntimeException} since there is no sensible way to handle this exception.
+ * It signals that the database is inconsistent, or trying to perform an inconsistent operations,
+ * and when thrown it should bubble up in order to stop the database.
+ */
+public class NonUniqueTokenException extends RuntimeException
 {
-    File getStorageFileName();
-
-    @Override
-    void close() throws IOException;
-
-    LegacyNodeStoreReader getNodeStoreReader();
-
-    LegacyRelationshipStoreReader getRelStoreReader();
-
-    void copyLegacyIndexStoreFile( File toDirectory ) throws IOException;
+    public NonUniqueTokenException( Class<? extends TokenHolder> holder, String tokenName, int tokenId, int existingId )
+    {
+        super( String.format( "The %s \"%s\" is not unique, it existed with id=%d before being added with id=%d.",
+                              holder.getSimpleName().replace( "TokenHolder", "" ), tokenName, existingId, tokenId ) );
+    }
 }

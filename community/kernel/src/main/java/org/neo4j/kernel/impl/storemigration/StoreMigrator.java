@@ -23,24 +23,40 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -52,6 +68,10 @@ import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
+
+import static org.neo4j.helpers.UTF8.encode;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
@@ -142,9 +162,96 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         importer.doImport( nodes, relationships, idMapper );
         progressMonitor.finished();
 
-        // Close
+        // Finish the import of nodes and relationships
         importer.shutdown();
+        if ( legacyStore instanceof Legacy19Store )
+        { // we need may need to upgrade the property keys
+            PropertyStore propertyStore = storeFactory( fileSystem, migrationDir, dependencyResolver )
+                    .newPropertyStore( new File( migrationDir.getPath(),
+                                                 NeoStore.DEFAULT_NAME + StoreFactory.PROPERTY_STORE_NAME ) );
+            try
+            {
+                migratePropertyKeys( (Legacy19Store) legacyStore, propertyStore );
+            }
+            finally
+            {
+                propertyStore.close();
+            }
+        }
+        // Close
         legacyStore.close();
+    }
+
+    private StoreFactory storeFactory( FileSystemAbstraction fileSystem, File migrationDir, DependencyResolver resolve )
+    {
+        return new StoreFactory(
+                StoreFactory.configForNeoStore( config, new File( migrationDir, NeoStore.DEFAULT_NAME ) ),
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL,
+                new DefaultTxHook() );
+    }
+
+    private void migratePropertyKeys( Legacy19Store legacyStore, PropertyStore propertyStore ) throws IOException
+    {
+        Token[] tokens = legacyStore.getPropertyIndexReader().readTokens();
+
+        // dedup and write new property key token store (incl. names)
+        Map<Integer, Integer> propertyKeyTranslation = dedupAndWritePropertyKeyTokenStore( propertyStore, tokens );
+
+        // read property store, replace property key ids
+        migratePropertyStore( legacyStore, propertyKeyTranslation, propertyStore );
+    }
+
+    private Map<Integer, Integer> dedupAndWritePropertyKeyTokenStore(
+            PropertyStore propertyStore, Token[] tokens /*ordered ASC*/ )
+    {
+        PropertyKeyTokenStore keyTokenStore = propertyStore.getPropertyKeyTokenStore();
+        Map<Integer/*duplicate*/, Integer/*use this instead*/> translations = new HashMap<>();
+        Map<String, Integer> createdTokens = new HashMap<>();
+        for ( Token token : tokens )
+        {
+            Integer id = createdTokens.get( token.name() );
+            if ( id == null )
+            {   // Not a duplicate, add to store
+                id = (int) keyTokenStore.nextId();
+                PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( id );
+                Collection<DynamicRecord> nameRecords =
+                        keyTokenStore.allocateNameRecords( encode( token.name() ) );
+                record.setNameId( (int) first( nameRecords ).getId() );
+                record.addNameRecords( nameRecords );
+                record.setInUse( true );
+                record.setCreated();
+                keyTokenStore.updateRecord( record );
+                createdTokens.put( token.name(), id );
+            }
+            translations.put( token.id(), id );
+        }
+        return translations;
+    }
+
+    private void migratePropertyStore( Legacy19Store legacyStore, Map<Integer, Integer> propertyKeyTranslation,
+                                       PropertyStore propertyStore ) throws IOException
+    {
+        long lastInUseId = -1;
+        for ( PropertyRecord propertyRecord : loop( legacyStore.getPropertyStoreReader().readPropertyStore() ) )
+        {
+            // Translate property keys
+            for ( PropertyBlock block : propertyRecord.getPropertyBlocks() )
+            {
+                int key = block.getKeyIndexId();
+                Integer translation = propertyKeyTranslation.get( key );
+                if ( translation != null )
+                {
+                    block.setKeyIndexId( translation );
+                }
+            }
+            propertyStore.setHighId( propertyRecord.getId() + 1 );
+            propertyStore.updateRecord( propertyRecord );
+            for ( long id = lastInUseId + 1; id < propertyRecord.getId(); id++ )
+            {
+                propertyStore.freeId( id );
+            }
+            lastInUseId = propertyRecord.getId();
+        }
     }
 
     private StoreFile20[] allExcept( StoreFile20... exceptions )
@@ -230,6 +337,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         StoreFile20.deleteIdFile( fileSystem, migrationDir, allExcept( StoreFile20.RELATIONSHIP_GROUP_STORE ) );
 
         StoreFile20[] filesToDelete;
+        StoreFile20[] leftoverFiles;
         if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
         {
             filesToDelete = allExcept(
@@ -238,8 +346,16 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
                     StoreFile20.RELATIONSHIP_GROUP_STORE,
                     StoreFile20.LABEL_TOKEN_STORE,
                     StoreFile20.NODE_LABEL_STORE,
+                    StoreFile20.PROPERTY_STORE,
+                    StoreFile20.PROPERTY_KEY_TOKEN_STORE,
+                    StoreFile20.PROPERTY_KEY_TOKEN_NAMES_STORE,
                     StoreFile20.LABEL_TOKEN_NAMES_STORE,
                     StoreFile20.SCHEMA_STORE );
+            leftoverFiles = new StoreFile20[]{StoreFile20.NODE_STORE,
+                                              StoreFile20.RELATIONSHIP_STORE,
+                                              StoreFile20.PROPERTY_STORE,
+                                              StoreFile20.PROPERTY_KEY_TOKEN_STORE,
+                                              StoreFile20.PROPERTY_KEY_TOKEN_NAMES_STORE,};
         }
         else
         {
@@ -249,13 +365,14 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
                     StoreFile20.RELATIONSHIP_STORE,
                     StoreFile20.RELATIONSHIP_GROUP_STORE,
                     StoreFile20.SCHEMA_STORE );
+            leftoverFiles = new StoreFile20[]{StoreFile20.NODE_STORE, StoreFile20.RELATIONSHIP_STORE};
         }
         StoreFile20.deleteStoreFile( fileSystem, migrationDir, filesToDelete );
 
         // Move the current ones into the leftovers directory
         StoreFile20.move( fileSystem, storeDir, leftOversDir,
-                IteratorUtil.<StoreFile20>asIterable( StoreFile20.NODE_STORE, StoreFile20.RELATIONSHIP_STORE ),
-                false, false, StoreFileType.STORE );
+                          IteratorUtil.asIterable( leftoverFiles ),
+                          false, false, StoreFileType.STORE );
 
         // Move the migrated ones into the store directory
         StoreFile20.move( fileSystem, migrationDir, storeDir, StoreFile20.currentStoreFiles(),
