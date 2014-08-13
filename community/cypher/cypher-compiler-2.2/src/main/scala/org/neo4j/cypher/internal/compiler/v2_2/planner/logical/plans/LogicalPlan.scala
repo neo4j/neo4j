@@ -62,6 +62,11 @@ final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir:
   def left = nodes._1
 
   def right = nodes._2
+
+  def inOrder = dir match {
+    case Direction.INCOMING => (right, left)
+    case _                  => (left, right)
+  }
 }
 
 trait PatternLength extends internalDocBuilder.AsPrettyToString {

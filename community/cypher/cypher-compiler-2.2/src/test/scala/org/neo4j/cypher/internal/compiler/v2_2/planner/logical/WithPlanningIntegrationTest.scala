@@ -127,4 +127,114 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result should equal(expected)
   }
+
+  test("should build plans that project endpoints of re-matched directed relationship arguments") {
+    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
+
+    val plan = planFor("MATCH (a)-[r]->(b) WITH r ORDER BY rand() MATCH (u)-[r]->(v) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_, Projection(_, expressions)), _) =>
+        val expected = Map[String, Expression](
+          "r" -> ident("r"),
+          "u" -> startOfR,
+          "v" -> endOfR
+        )
+
+        expressions should equal(expected)
+    }
+  }
+
+  test("should build plans that verify endpoints of re-matched directed relationship arguments") {
+    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
+
+    val plan = planFor("MATCH (a)-[r]->(b) WITH * ORDER BY rand() MATCH (a)-[r]->(b) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_, Selection(predicates, _)), _) =>
+        val expected: Seq[Expression] = Seq(
+          Equals(ident("a"), startOfR)_,
+          Equals(ident("b"), endOfR)_
+        )
+
+        predicates should equal(expected)
+    }
+  }
+
+  test("should build plans that project and verify endpoints of re-matched directed relationship arguments") {
+    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
+
+    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r ORDER BY rand() MATCH (a)-[r]->(b) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_, Selection(predicates, _)), _) =>
+        val expectedPredicates: Seq[Expression] = Seq(
+          Equals(ident("a"), startOfR)_,
+          Equals(ident("b"), endOfR)_
+        )
+
+        predicates should equal(expectedPredicates)
+    }
+  }
+
+  test("should build plans that project endpoints of re-matched undirected relationship arguments") {
+    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
+
+    val plan = planFor("MATCH (a)-[r]->(b) WITH r ORDER BY rand() MATCH (u)-[r]-(v) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_, Projection(_, expressions)), _) =>
+        val expected = Map[String, Expression](
+          "r" -> ident("r"),
+          "u" -> startOfR,
+          "v" -> endOfR
+        )
+
+        expressions should equal(expected)
+    }
+  }
+
+  test("should build plans that verify endpoints of re-matched undirected relationship arguments") {
+    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
+
+    val plan = planFor("MATCH (a)-[r]->(b) WITH * ORDER BY rand() MATCH (a)-[r]-(b) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_, Selection(predicates, _)), _) =>
+        val expected: Seq[Expression] = Seq(
+          Or(
+            And( Equals(ident("a"), startOfR)_, Equals(ident("b"), endOfR)_ )_,
+            And( Equals(ident("b"), startOfR)_, Equals(ident("a"), endOfR)_ )_
+          )_
+        )
+
+        predicates should equal(expected)
+    }
+  }
+
+  test("should build plans that project and verify endpoints of re-matched undirected relationship arguments") {
+    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
+
+    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r ORDER BY rand() MATCH (a)-[r]-(v) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_, Projection(Selection(predicates, _), expressions)), _) =>
+        val expectedPredicates: Seq[Expression] = Seq(
+          Or(Equals(ident("a"), startOfR)_, Equals(ident("a"), endOfR)_)_
+        )
+
+        val expr: Expression = CaseExpression(expression = Some(ident("a")), alternatives = Seq(startOfR -> endOfR), default = Some(startOfR))_
+        val expectedExpressions: Map[String, Expression] = Seq(
+          "a" -> ident("a"),
+          "r" -> ident("r"),
+          "v" -> expr
+        ).toMap
+
+        predicates should equal(expectedPredicates)
+        expressions should equal(expectedExpressions)
+    }
+  }
+
+  def startOfR: Expression = FunctionInvocation(FunctionName("startNode") _, ident("r")) _
+  def endOfR: Expression = FunctionInvocation(FunctionName("endNode") _, ident("r")) _
 }
