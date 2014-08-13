@@ -463,7 +463,7 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
 
-        cache.unmap( file );
+        cache.unmap( file ); // unmapping implies flushing
 
         StoreChannel channel = fs.open( file, "r" );
         ByteBuffer observation = ByteBuffer.allocate( recordSize );
@@ -2507,6 +2507,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
+    // TODO future change: we don't want out of space errors to kill the sweeper thread -- change this to throw and Error instead
     @Test( timeout = 1000, expected = IOException.class )
     public void pageFaultForWriteMustThrowIfSweeperThreadIsDead() throws IOException
     {
@@ -2551,6 +2552,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
+    // TODO future change: we don't want out of space errors to kill the sweeper thread -- change this to throw and Error instead
     @Test( timeout = 1000, expected = IOException.class )
     public void pageFaultForReadMustThrowIfSweeperThreadIsDead() throws IOException
     {
@@ -2607,6 +2609,8 @@ public abstract class PageCacheTest<T extends PageCache>
             pageCache = null;
         }
     }
+    // TODO if the storage devise runs out of space, eviction must stop and faulting must throw, until more space becomes available
+    // TODO page faulting with a terminated eviction thread must throw (still important even if running out of space is not enough to kill the sweeper thread)
 
     @Test( timeout = 1000 )
     public void dataFromDifferentFilesMustNotBleedIntoEachOther() throws IOException
@@ -2795,7 +2799,7 @@ public abstract class PageCacheTest<T extends PageCache>
             // So if we had an optimistic lock, we should be asked to retry:
             if ( cursor.shouldRetry() )
             {
-                // When we do reads after the retry() call,  we should fault our page back
+                // When we do reads after the shouldRetry() call, we should fault our page back
                 // and get consistent reads (assuming we don't race any further with eviction)
                 int expected = a * filePageSize;
                 int actual;

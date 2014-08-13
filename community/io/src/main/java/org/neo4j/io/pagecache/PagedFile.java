@@ -30,9 +30,9 @@ public interface PagedFile
     /**
      * Pin the pages with a shared lock.
      *
-     * This implies PF_NO_GROW, since pages under shared locks cannot be safely
-     * written to anyway, so there's no point in trying to go beyond the end
-     * of the file.
+     * This implies {@link org.neo4j.io.pagecache.PagedFile#PF_NO_GROW}, since
+     * pages under shared locks cannot be safely written to anyway, so there's
+     * no point in trying to go beyond the end of the file.
      *
      * This cannot be combined with PF_EXCLUSIVE_LOCK.
      */
@@ -94,8 +94,8 @@ public interface PagedFile
      *
      * <p>The first <code>next</code> call will advance the cursor to the
      * initial page, as given by the <code>pageId</code> parameter.
-     * Until them, the cursor won't be bound to any page, the
-     * {@link PageCursor#getCurrentPageId()} method with return the
+     * Until then, the cursor won't be bound to any page, the
+     * {@link PageCursor#getCurrentPageId()} method will return the
      * {@link org.neo4j.io.pagecache.PageCursor#UNBOUND_PAGE_ID} constant, and
      * attempts at reading from or writing to the cursor will throw a
      * NullPointerException.
