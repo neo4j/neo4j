@@ -83,6 +83,9 @@ class neo.utils.arcArrow
     @outline = () ->
       if captionLayout is 'external'
         captionSweep = @shortCaptionLength / arcRadius
+        if @deflection > 0
+          captionSweep *= -1
+
         startBreak = midShaftAngle - captionSweep / 2
         endBreak = midShaftAngle + captionSweep / 2
 
