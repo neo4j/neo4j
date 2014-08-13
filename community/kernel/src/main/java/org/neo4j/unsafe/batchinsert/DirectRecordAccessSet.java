@@ -22,12 +22,15 @@ package org.neo4j.unsafe.batchinsert;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.Loaders;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess;
@@ -39,6 +42,9 @@ public class DirectRecordAccessSet implements RecordAccessSet
     private final DirectRecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords;
     private final DirectRecordAccess<Long, RelationshipRecord, Void> relationshipRecords;
     private final DirectRecordAccess<Long, RelationshipGroupRecord, Integer> relationshipGroupRecords;
+    private final DirectRecordAccess<Integer, PropertyKeyTokenRecord, Void> propertyKeyTokenRecords;
+    private final DirectRecordAccess<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenRecords;
+    private final DirectRecordAccess<Integer, LabelTokenRecord, Void> labelTokenRecords;
 //    private final DirectRecordAccess<Long, Collection<DynamicRecord>, SchemaRule> schemaRecords; // TODO
 
     public DirectRecordAccessSet( NeoStore neoStore )
@@ -47,6 +53,9 @@ public class DirectRecordAccessSet implements RecordAccessSet
         propertyRecords = new DirectRecordAccess<>( neoStore.getPropertyStore(), Loaders.propertyLoader( neoStore.getPropertyStore() ) );
         relationshipRecords = new DirectRecordAccess<>( neoStore.getRelationshipStore(), Loaders.relationshipLoader( neoStore.getRelationshipStore() ) );
         relationshipGroupRecords = new DirectRecordAccess<>( neoStore.getRelationshipGroupStore(), Loaders.relationshipGroupLoader( neoStore.getRelationshipGroupStore() ) );
+        propertyKeyTokenRecords = new DirectRecordAccess<>( neoStore.getPropertyKeyTokenStore(), Loaders.propertyKeyTokenLoader( neoStore.getPropertyKeyTokenStore() ) );
+        relationshipTypeTokenRecords = new DirectRecordAccess<>( neoStore.getRelationshipTypeTokenStore(), Loaders.relationshipTypeTokenLoader( neoStore.getRelationshipTypeTokenStore() ) );
+        labelTokenRecords = new DirectRecordAccess<>( neoStore.getLabelTokenStore(), Loaders.labelTokenLoader( neoStore.getLabelTokenStore() ) );
 //        schemaRecords = new DirectRecordAccess<>( neoStore.getSchemaStore(), Loaders.schemaRuleLoader( neoStore ) ); // TODO
     }
 
@@ -77,9 +86,27 @@ public class DirectRecordAccessSet implements RecordAccessSet
     @Override
     public RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges()
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( "Not needed. Implement if needed" );
     }
 
+    @Override
+    public RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
+    {
+        return propertyKeyTokenRecords;
+    }
+
+    @Override
+    public RecordAccess<Integer, LabelTokenRecord, Void> getLabelTokenChanges()
+    {
+        return labelTokenRecords;
+    }
+
+    @Override
+    public RecordAccess<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
+    {
+        return relationshipTypeTokenRecords;
+    }
+    
     @Override
     public void close()
     {
@@ -89,6 +116,9 @@ public class DirectRecordAccessSet implements RecordAccessSet
         relationshipRecords.close();
         relationshipGroupRecords.close();
 //        schemaRecords.close(); // TODO
+        relationshipTypeTokenRecords.close();
+        labelTokenRecords.close();
+        propertyKeyTokenRecords.close();
     }
 
     public void commit()
@@ -98,5 +128,8 @@ public class DirectRecordAccessSet implements RecordAccessSet
         relationshipGroupRecords.commit();
         relationshipRecords.commit();
 //        schemaRecords.commit(); // TODO
+        relationshipTypeTokenRecords.commit();
+        labelTokenRecords.commit();
+        propertyKeyTokenRecords.commit();
     }
 }
