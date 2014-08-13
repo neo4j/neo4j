@@ -19,32 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-class NiceHasher(val original: Seq[Any]) {
-  override def equals(p1: Any): Boolean = {
-    if(p1 == null || !p1.isInstanceOf[NiceHasher])
-      return false
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.scalatest.FunSuite
 
-    val other = p1.asInstanceOf[NiceHasher]
+class NiceHasherTest extends CypherFunSuite {
 
-    hash == other.hash && comperableValues.equals(other.comperableValues)
+  test("compares arrays by their contents rather than object identity") {
+    val hasher1 = new NiceHasher(Seq(Array(1, 2, 3)))
+    val hasher2 = new NiceHasher(Seq(Array(1, 2, 3)))
+    hasher1 should equal(hasher2)
   }
 
-  lazy val comperableValues = original.map {
-    case x:Array[_] => x.deep
-    case x => x
-  }
-
-  override def toString = hashCode() + " : " + original.toString
-
-  lazy val hash = original.foldLeft(0) ((hashValue,element) => { element match {
-    case x: Array[Int] => java.util.Arrays.hashCode(x)
-    case x: Array[Long] => java.util.Arrays.hashCode(x)
-    case x: Array[Byte] => java.util.Arrays.hashCode(x)
-    case x: Array[AnyRef] => java.util.Arrays.deepHashCode(x)
-    case null => 0
-    case x => x.hashCode()
-  }
-  } + hashValue * 31 )
-
-  override def hashCode() = hash
 }
