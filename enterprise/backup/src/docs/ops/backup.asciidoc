@@ -22,11 +22,11 @@ time but they also require that a _full backup_ has taken place before they are 
 The backup tool will detect whether you are trying to run a full backup or an incremental one by inspecting the target directory.
 Regardless of the mode a backup is created with, the resulting files represent a consistent database snapshot and they can be used to boot up a Neo4j instance.
 
-The database to be backed up is specified using a URI with syntax
+The database to be backed up is specified using an address with syntax
 
-<host>[:port]{,<host>[:port]*}
+<host>[:port]{,<host>[:port]}...
 
-The <host>[:port] part
+The <host>[:<port>] part
 points to a host running the database, on port _port_ if not the default. The additional _host:port_ arguments
 are useful for passing multiple cluster members.
 
@@ -79,7 +79,7 @@ That is, use the value of the +ha.cluster_server+ setting in the configuration.
 [source,shell]
 ----
 # Performing a backup from HA cluster, specifying only one cluster member
-./neo4j-backup -from 192.168.1.15:5001 -to /mnt/backup/neo4j-backup
+./neo4j-backup -from 192.168.1.15:6362 -to /mnt/backup/neo4j-backup
 
 # Performing a backup from HA cluster, specifying two possible cluster members
 ./neo4j-backup -from 192.168.1.15:5001,192.168.1.16:5002 -to /mnt/backup/neo4j-backup
