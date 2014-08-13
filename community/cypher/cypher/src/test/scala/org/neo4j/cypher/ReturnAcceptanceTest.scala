@@ -480,4 +480,16 @@ return coalesce(a.title, a.name)""")
     result shouldNot contain(null)
   }
 
+  test("aggregating by an array property has a correct definition of equality") {
+    execute(
+      """    create
+        |    (_0  {a:[1,2,3]}),
+        |    (_1  {a:[1,2,3]})
+      """.stripMargin
+    )
+
+    val result = executeWithNewPlanner("MATCH (a) WITH a.a AS a, count(*) AS count RETURN count")
+    result.toList should equal(List(Map("count" -> 2)))
+  }
+
 }
