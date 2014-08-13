@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -34,6 +37,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -79,9 +83,6 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 public class SwitchToSlave
 {
     // TODO solve this with lifecycle instance grouping or something
@@ -122,7 +123,20 @@ public class SwitchToSlave
         this.masterDelegateHandler = masterDelegateHandler;
     }
 
-    public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri ) throws Throwable
+    /**
+     * Performs a switch to the slave state. Starts the communication endpoints, switches components to the slave state
+     * and ensures that the current database is appropriate for this cluster. It also broadcasts the appropriate
+     * Slave Is Available event
+     * @param haCommunicationLife The LifeSupport instance to register the network facilities required for communication
+     *                            with the rest of the cluster
+     * @param me The URI this instance must bind to
+     * @param masterUri The URI of the master for which this instance must become slave to
+     * @param cancellationRequest A handle for gracefully aborting the switch
+     * @return The URI that was broadcasted as the slave endpoint or null if the task was cancelled
+     * @throws Throwable
+     */
+    public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri, CancellationRequest
+            cancellationRequest ) throws Throwable
     {
         console.log( "ServerId " + config.get( ClusterSettings.server_id ) + ", moving to slave for master " +
                 masterUri );
@@ -143,17 +157,37 @@ public class SwitchToSlave
         {
             if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
             {
-                copyStoreFromMaster( masterUri );
+                copyStoreFromMaster( masterUri, cancellationRequest );
             }
 
-                            /*
-                             * We get here either with a fresh store from the master copy above so we need to
-                             * start the ds
-                             * or we already had a store, so we have already started the ds. Either way,
-                             * make sure it's there.
-                             */
+            /*
+             * The following check is mandatory, since the store copy can be cancelled and if it was actually happening
+             * then we can't continue, as there is no store in place
+             */
+            if ( cancellationRequest.cancellationRequested() )
+            {
+                return null;
+            }
+
+            /*
+             * We get here either with a fresh store from the master copy above so we need to
+             * start the ds or we already had a store, so we have already started the ds. Either way,
+             * make sure it's there.
+             */
             NeoStoreXaDataSource nioneoDataSource = ensureDataSourceStarted( xaDataSourceManager, resolver );
-            checkDataConsistency( xaDataSourceManager, resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri );
+
+            if ( cancellationRequest.cancellationRequested() )
+            {
+                return null;
+            }
+
+            checkDataConsistency( xaDataSourceManager, resolver.resolveDependency( RequestContextFactory.class ),
+                    nioneoDataSource, masterUri );
+
+            if ( cancellationRequest.cancellationRequested() )
+            {
+                return null;
+            }
 
             URI slaveUri = startHaCommunication( haCommunicationLife, xaDataSourceManager, nioneoDataSource, me, masterUri );
 
@@ -306,7 +340,7 @@ public class SwitchToSlave
         return URI.create( "ha://" + host + ":" + port + "?serverId=" + serverId );
     }
 
-    private void copyStoreFromMaster( URI masterUri ) throws Throwable
+    private void copyStoreFromMaster( URI masterUri, CancellationRequest cancellationRequest ) throws Throwable
     {
         // Must be called under lock on XaDataSourceManager
         LifeSupport life = new LifeSupport();
@@ -320,7 +354,7 @@ public class SwitchToSlave
 
             // This will move the copied db to the graphdb location
             console.log( "Copying store from master" );
-            new SlaveStoreWriter( config, console ).copyStore( copyMaster );
+            new SlaveStoreWriter( config, console ).copyStore( copyMaster, cancellationRequest );
 
             startServicesAgain();
             console.log( "Finished copying store from master" );

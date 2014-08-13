@@ -23,10 +23,12 @@ import java.net.URI;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -67,7 +69,15 @@ public class SwitchToMaster
         this.clusterMemberAvailability = clusterMemberAvailability;
     }
 
-    public URI switchToMaster(LifeSupport haCommunicationLife, URI me)
+    /**
+     * Performs a switch to the master state. Starts communication endpoints, switches components to the master state
+     * and broadcasts the appropriate Master Is Available event.
+     * @param haCommunicationLife The LifeSupport instance to register communication endpoints.
+     * @param me The URI that the communication endpoints should bind to
+     * @param cancellationRequest A handle for gracefully aborting the switch
+     * @return The URI at which the master communication was bound.
+     */
+    public URI switchToMaster( LifeSupport haCommunicationLife, URI me, CancellationRequest cancellationRequest )
     {
         msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to master" );
 
@@ -99,18 +109,25 @@ public class SwitchToMaster
 
             haCommunicationLife.start();
 
-            URI masterHaURI = URI.create( "ha://" + (ServerUtil.getHostString( masterServer.getSocketAddress
-                    () ).contains
-                    ( "0.0.0.0" ) ? me.getHost() : ServerUtil.getHostString( masterServer
-                    .getSocketAddress() )) + ":" +
-                    masterServer.getSocketAddress().getPort() + "?serverId=" +
-                    config.get( ClusterSettings.server_id ) );
+            URI masterHaURI = getMasterUri( me, masterServer );
             clusterMemberAvailability.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER, masterHaURI );
             msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
                     ", successfully moved to master" );
 
             return masterHaURI;
         }
+    }
+
+    private URI getMasterUri( URI me, MasterServer masterServer )
+    {
+        String hostname = ServerUtil.getHostString( masterServer.getSocketAddress() ).contains( "0.0.0.0" ) ?
+                            me.getHost() :
+                            ServerUtil.getHostString( masterServer.getSocketAddress() );
+
+        int port = masterServer.getSocketAddress().getPort();
+        InstanceId serverId = config.get( ClusterSettings.server_id );
+
+        return URI.create( "ha://" + hostname + ":" + port + "?serverId=" + serverId );
     }
 
     private Server.Configuration serverConfig()
