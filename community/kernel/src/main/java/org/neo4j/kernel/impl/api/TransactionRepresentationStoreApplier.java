@@ -72,7 +72,10 @@ public class TransactionRepresentationStoreApplier
         try ( CommandApplierFacade applier = new CommandApplierFacade(
                 storeApplier, indexApplier, legacyIndexApplier ) )
         {
-            representation.accept( applier );
+            synchronized ( this )
+            {
+                representation.accept( applier );
+            }
         }
     }
 }

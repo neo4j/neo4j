@@ -84,6 +84,7 @@ import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
@@ -405,9 +406,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore, KernelHealth
                     kernelHealth, NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier, NeoStoreInjectedTransactionValidator validator, boolean recovery )
             {
+                TransactionRepresentationCommitProcess inner = (TransactionRepresentationCommitProcess)
+                        defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
+                                storeApplier, validator, recovery );
                 new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
                         memberStateMachine, unpacker, logicalTransactionStore, kernelHealth, neoStore, storeApplier,
-                        validator, transactionMonitor );
+                        validator, transactionMonitor, inner );
 
                 return (TransactionCommitProcess) Proxy.newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
                         new Class[]{ TransactionCommitProcess.class }, commitProcessDelegate );

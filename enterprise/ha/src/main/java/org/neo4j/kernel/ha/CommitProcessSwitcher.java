@@ -38,16 +38,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 
 public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommitProcess>
 {
-    private final TransactionPropagator pusher;
-    private final Master master;
-    private final RequestContextFactory requestContextFactory;
-    private final TransactionCommittingResponseUnpacker unpacker;
-    private final LogicalTransactionStore logicalTransactionStore;
-    private final KernelHealth kernelHealth;
-    private final NeoStore neoStore;
-    private final TransactionRepresentationStoreApplier storeApplier;
-    private final NeoStoreInjectedTransactionValidator validator;
-    private final TransactionMonitor transactionMonitor;
+    private final MasterTransactionCommitProcess masterImpl;
+    private final SlaveTransactionCommitProcess slaveImpl;
 
     public CommitProcessSwitcher( TransactionPropagator pusher,
                                   Master master,
@@ -59,33 +51,23 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
                                   KernelHealth kernelHealth, NeoStore neoStore,
                                   TransactionRepresentationStoreApplier storeApplier,
                                   NeoStoreInjectedTransactionValidator validator,
-                                  TransactionMonitor transactionMonitor)
+                                  TransactionMonitor transactionMonitor,
+                                  TransactionRepresentationCommitProcess innerCommitProcess )
     {
         super( memberStateMachine, delegate );
-        this.pusher = pusher;
-        this.master = master;
-        this.requestContextFactory = requestContextFactory;
-        this.unpacker = unpacker;
-        this.logicalTransactionStore = logicalTransactionStore;
-        this.kernelHealth = kernelHealth;
-        this.neoStore = neoStore;
-        this.storeApplier = storeApplier;
-        this.validator = validator;
-        this.transactionMonitor = transactionMonitor;
+        this.masterImpl = new MasterTransactionCommitProcess( innerCommitProcess, pusher, validator, transactionMonitor );
+        this.slaveImpl = new SlaveTransactionCommitProcess( master, requestContextFactory, unpacker );
     }
 
     @Override
     protected TransactionCommitProcess getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveTransactionCommitProcess( master, requestContextFactory, unpacker );
+        return slaveImpl;
     }
 
     @Override
     protected TransactionCommitProcess getMasterImpl()
     {
-        TransactionRepresentationCommitProcess commitProcess =
-                new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
-                        neoStore, storeApplier, false );
-        return new MasterTransactionCommitProcess( commitProcess, pusher, validator, transactionMonitor );
+        return masterImpl;
     }
 }
