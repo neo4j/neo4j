@@ -51,19 +51,17 @@ sealed class PathValueBuilder {
     this
   }
 
-  def addIncomingRelationships(rels: Iterable[Relationship]): PathValueBuilder = addIncomingRelationships(rels.iterator)
-
-  def addIncomingRelationships(rels: Iterator[Relationship]): PathValueBuilder = nullCheck(rels) {
-    while (rels.hasNext)
-      addIncomingRelationship(rels.next())
+  def addIncomingRelationships(rels: Iterable[Relationship]): PathValueBuilder = nullCheck(rels) {
+    val iterator = rels.iterator
+    while (iterator.hasNext)
+      addIncomingRelationship(iterator.next())
     this
   }
 
-  def addOutgoingRelationships(rels: Iterable[Relationship]): PathValueBuilder = addOutgoingRelationships(rels.iterator)
-
-  def addOutgoingRelationships(rels: Iterator[Relationship]): PathValueBuilder = nullCheck(rels) {
-    while (rels.hasNext)
-      addOutgoingRelationship(rels.next())
+  def addOutgoingRelationships(rels: Iterable[Relationship]): PathValueBuilder = nullCheck(rels) {
+    val iterator = rels.iterator
+    while (iterator.hasNext)
+      addOutgoingRelationship(iterator.next())
     this
   }
 
