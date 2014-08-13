@@ -644,6 +644,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throw new TransactionFailureException( Status.Transaction.CouldNotRollback, e,
                         "Could not drop created constraint indexes" );
             }
+            
+            if ( hasTxStateWithChanges() )
+            {
+                persistenceCache.invalidate( txState );
+            }
         }
         finally
         {

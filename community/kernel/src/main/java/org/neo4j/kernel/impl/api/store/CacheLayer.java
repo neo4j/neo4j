@@ -512,4 +512,12 @@ public class CacheLayer implements StoreReadLayer
             return false;
         }
     }
+    
+    @Override
+    public long reserveNode()
+    {
+        long nodeId = diskLayer.reserveNode();
+        persistenceCache.reserveNode( nodeId );
+        return nodeId;
+    }
 }

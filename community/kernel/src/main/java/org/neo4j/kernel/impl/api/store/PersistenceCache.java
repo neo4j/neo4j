@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.api.TxState.VisitorAdapter;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.NodeImplReservation;
 import org.neo4j.kernel.impl.core.Primitive;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
@@ -126,7 +128,7 @@ public class PersistenceCache
     public NodeImpl getNode( long nodeId ) throws EntityNotFoundException
     {
         NodeImpl node = nodeCache.get( nodeId );
-        if ( node == null )
+        if ( node == null || node instanceof NodeImplReservation )
         {
             throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
@@ -159,6 +161,17 @@ public class PersistenceCache
             // For now just have these methods convert their data into whatever NodeImpl (and friends)
             // expects. We can optimize later.
 
+            @Override
+            public void visitCreatedNode( long id )
+            {
+                NodeImpl node = nodeCache.getIfCached( id );
+                if ( node instanceof NodeImplReservation )
+                {
+                    // Cache in the reservation
+                    nodeCache.put( node = new NodeImpl( id ), true );
+                }
+            }
+            
             @Override
             public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
                     Iterator<DefinedProperty> changed, Iterator<Integer> removed )
@@ -304,15 +317,15 @@ public class PersistenceCache
         for ( NodeLabelUpdate update : updates )
         {
             NodeImpl node = nodeCache.getIfCached( update.getNodeId() );
-            if(node != null)
+            if ( node != null )
             {
                 // TODO: This is because the labels are still longs in WriteTransaction, this should go away once
                 // we make labels be ints everywhere.
                 long[] labelsAfter = update.getLabelsAfter();
                 int[] labels = new int[labelsAfter.length];
-                for(int i=0;i<labels.length;i++)
+                for ( int i = 0; i < labels.length; i++ )
                 {
-                    labels[i] = (int)labelsAfter[i];
+                    labels[i] = (int) labelsAfter[i];
                 }
                 node.commitLabels( labels );
             }
@@ -466,5 +479,26 @@ public class PersistenceCache
                 position.compareAndAdvance( relIdDeleted, nextRelId );
             }
         }
+    }
+
+    public void reserveNode( long nodeId )
+    {
+        nodeCache.put( new NodeImplReservation( nodeId ) );
+    }
+
+    /**
+     * Used when rolling back a transaction. Node reservations are put in cache up front, so those have
+     * to be removed when rolling back.
+     */
+    public void invalidate( TxState txState )
+    {
+        txState.accept( new VisitorAdapter()
+        {
+            @Override
+            public void visitCreatedNode( long id )
+            {
+                nodeCache.remove( id );
+            }
+        } );
     }
 }

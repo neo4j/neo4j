@@ -622,4 +622,9 @@ public class DiskLayer
             }
         };
     }
+
+    public long reserveNode()
+    {
+        return nodeStore.nextId();
+    }
 }

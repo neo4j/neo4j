@@ -26,7 +26,7 @@ import java.util.Collection;
  *
  * @param <E> type of entity objects in the cache.
  */
-public class AutoLoadingCache<E extends EntityWithSizeObject> implements Cache<E>
+public class AutoLoadingCache<E extends EntityWithSizeObject> extends Cache.Adapter<E>
 {
     private final Cache<E> actual;
     private final Loader<E> loader;
@@ -52,9 +52,9 @@ public class AutoLoadingCache<E extends EntityWithSizeObject> implements Cache<E
     }
 
     @Override
-    public E put( E value )
+    public E put( E value, boolean force )
     {
-        return actual.put( value );
+        return actual.put( value, force );
     }
 
     @Override

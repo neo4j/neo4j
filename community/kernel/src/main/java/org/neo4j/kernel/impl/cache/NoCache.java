@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.cache;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class NoCache<E extends EntityWithSizeObject> implements Cache<E>
+public class NoCache<E extends EntityWithSizeObject> extends Cache.Adapter<E>
 {
     private final String name;
 
@@ -34,7 +34,7 @@ public class NoCache<E extends EntityWithSizeObject> implements Cache<E>
     }
 
     @Override
-    public E put( E value )
+    public E put( E value, boolean force )
     {
         return value;
     }

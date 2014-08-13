@@ -110,7 +110,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public long nodeCreate( KernelStatement state )
     {
-        long nodeId = state.recordState().nextNodeId();
+        long nodeId = storeLayer.reserveNode();
         state.recordState().nodeCreate( nodeId );
         state.txState().nodeDoCreate( nodeId );
         return nodeId;

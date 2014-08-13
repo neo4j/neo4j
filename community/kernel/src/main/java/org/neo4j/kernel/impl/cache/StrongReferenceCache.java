@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class StrongReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
+public class StrongReferenceCache<E extends EntityWithSizeObject> extends Cache.Adapter<E>
 {
     private final ConcurrentHashMap<Long,E> cache = new ConcurrentHashMap<>();
     private final String name;
@@ -58,7 +58,7 @@ public class StrongReferenceCache<E extends EntityWithSizeObject> implements Cac
     }
 
     @Override
-    public E put( E value )
+    public E put( E value, boolean force )
     {
         E old = cache.put( value.getId(), value );
         return old == null ? value : old;
