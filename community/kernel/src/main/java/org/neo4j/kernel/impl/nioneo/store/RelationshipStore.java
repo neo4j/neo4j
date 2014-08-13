@@ -168,6 +168,30 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         }
     }
 
+    public boolean inUse( long id )
+    {
+        long pageId = pageIdForRecord( id );
+        int offset = offsetForId( id );
+
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK ) )
+        {
+            boolean recordIsInUse = false;
+            if ( cursor.next() )
+            {
+                do
+                {
+                    cursor.setOffset( offset );
+                    recordIsInUse = isInUse( cursor.getByte() );
+                } while ( cursor.retry() );
+            }
+            return recordIsInUse;
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
     @Override
     public void forceUpdateRecord( RelationshipRecord record )
     {

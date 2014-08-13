@@ -94,9 +94,11 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
+import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.kernel.impl.cache.NoCacheProvider;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DefaultCaches;
@@ -427,11 +429,21 @@ public abstract class InternalAbstractGraphDatabase
         CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
         if ( cacheProvider == null )
         {
-            throw new IllegalArgumentException( "No provider for cache type '" + cacheTypeName + "'. " +
-                    "Cache providers are loaded using java service loading where they " +
-                    "register themselves in resource (plain-text) files found on the class path under " +
-                    "META-INF/services/" + CacheProvider.class.getName() + ". This missing provider may have " +
-                    "been caused by either such a missing registration, or by the lack of the provider class itself." );
+            // Temporarily here to allow experimentally turning off the cache layer entirely. This is different
+            // from cache_type=none in that it *completely* bypasses the caching layer.
+            if( config.get(Configuration.cache_type).equals( CacheLayer.EXPERIMENTAL_OFF ) )
+            {
+                cacheProvider = new NoCacheProvider();
+            }
+            else
+            {
+                throw new IllegalArgumentException( "No provider for cache type '" + cacheTypeName + "'. " +
+                        "Cache providers are loaded using java service loading where they " +
+                        "register themselves in resource (plain-text) files found on the class path under " +
+                        "META-INF/services/" + CacheProvider.class.getName() + ". This missing provider may have " +
+                        "been caused by either such a missing registration, or by the lack of the provider class itself." );
+
+            }
         }
 
         jobScheduler = life.add( createJobScheduler() );

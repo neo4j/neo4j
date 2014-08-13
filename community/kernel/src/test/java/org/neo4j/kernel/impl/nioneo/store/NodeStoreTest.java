@@ -26,20 +26,16 @@ import java.util.List;
 
 import org.junit.ClassRule;
 import org.junit.Test;
-
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.*;
 import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.nioneo.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
@@ -105,20 +101,7 @@ public class NodeStoreTest
         // GIVEN
         // -- a store
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        File storeDir = new File( "dir" );
-        fs.mkdirs( storeDir );
-        Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-        Monitors monitors = new Monitors();
-        StoreFactory factory = new StoreFactory(
-                config,
-                idGeneratorFactory,
-                pageCacheRule.getPageCache( fs, config ),
-                fs,
-                DEV_NULL,
-                monitors );
-        factory.createNodeStore();
-        NodeStore nodeStore = factory.newNodeStore();
+        NodeStore nodeStore = newNodeStore( fs );
 
         // -- a record with the msb carrying a negative value
         long nodeId = 0, labels = 0x8000000001L;
@@ -165,6 +148,44 @@ public class NodeStoreTest
 
         // THEN
         assertFalse( record.isLight() );
+    }
+
+    @Test
+    public void shouldTellNodeInUse() throws Exception
+    {
+        // Given
+        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        NodeStore store = newNodeStore( fs );
+
+        long exists = store.nextId();
+        store.updateRecord( new NodeRecord( exists, false, 10, 20, true ) );
+
+        long deleted = store.nextId();
+        store.updateRecord( new NodeRecord( deleted, false, 10, 20, true ) );
+        store.updateRecord( new NodeRecord( deleted, false, 10, 20, false ) );
+
+        // When & then
+        assertTrue( store.inUse( exists ) );
+        assertFalse( store.inUse( deleted ) );
+        assertFalse(store.inUse( IdType.NODE.getMaxValue() ));
+    }
+
+    private NodeStore newNodeStore( EphemeralFileSystemAbstraction fs )
+    {
+        File storeDir = new File( "dir" );
+        fs.mkdirs( storeDir );
+        Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
+        Monitors monitors = new Monitors();
+        StoreFactory factory = new StoreFactory(
+                config,
+                idGeneratorFactory,
+                pageCacheRule.getPageCache( fs, config ),
+                fs,
+                DEV_NULL,
+                monitors );
+        factory.createNodeStore();
+        return factory.newNodeStore();
     }
 
     @ClassRule

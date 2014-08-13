@@ -30,6 +30,7 @@ import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Title;
+import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 
@@ -299,6 +300,10 @@ public abstract class GraphDatabaseSettings
         {
             available.add( cacheProvider.getName() );
         }
+
+        // Temporary hidden config to turn off cache layer entirely
+        available.add( CacheLayer.EXPERIMENTAL_OFF );
+
                                            // --- higher prio ---->
         for ( String prioritized : new String[] { "soft", "hpc" } )
         {
