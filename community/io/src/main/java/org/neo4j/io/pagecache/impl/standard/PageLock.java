@@ -17,22 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache;
+package org.neo4j.io.pagecache.impl.standard;
 
-public class PageLockException extends RuntimeException
+public enum PageLock
 {
-    public PageLockException( String message )
-    {
-        super( message );
-    }
-
-    public PageLockException( String message, Throwable cause )
-    {
-        super( message, cause );
-    }
-
-    public PageLockException( Throwable cause )
-    {
-        super( cause );
-    }
+    SHARED, EXCLUSIVE
 }

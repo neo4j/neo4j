@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapper;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapper;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
