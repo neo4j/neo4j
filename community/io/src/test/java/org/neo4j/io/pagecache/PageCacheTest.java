@@ -1764,6 +1764,7 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( monitor.countTakenSharedLocks(), is( countedPages * 2 ) );
         assertThat( monitor.countReleasedExclusiveLocks(), is( 0 ) );
         assertThat( monitor.countReleasedSharedLocks(), is( countedPages * 2 ) );
+        
         // We might be unlucky and fault in the second next call, on the page
         // we brought up in the first next call. That's why we assert that we
         // have observed *at least* the countedPages number of faults.
@@ -1808,6 +1809,7 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( monitor.countReleasedExclusiveLocks(), is( pagesToGenerate * 2 ) );
         assertThat( monitor.countReleasedSharedLocks(), is( 0 ) );
         assertThat( monitor.countUnpins(), is( pagesToGenerate * 2 ) );
+
         // We might be unlucky and fault in the second next call, on the page
         // we brought up in the first next call. That's why we assert that we
         // have observed *at least* the countedPages number of faults.
@@ -1815,7 +1817,12 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( monitor.countEvictions(),
                 both( greaterThanOrEqualTo( pagesToGenerate - maxPages ) )
                         .and( lessThan( pagesToGenerate ) ) );
-        assertThat( monitor.countFlushes(), is( pagesToGenerate ) );
+
+        // We use greaterThanOrEqualTo because we visit each page twice, and
+        // that leaves a small window wherein we can race with eviction, have
+        // the evictor flush the page, and then fault it back and mark it as
+        // dirty again.
+        assertThat( monitor.countFlushes(), greaterThanOrEqualTo( pagesToGenerate ) );
     }
 
     @Test
