@@ -127,4 +127,37 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result should equal(expected)
   }
+
+  test("should build plans that project endpoints of re-matched relationship arguments") {
+    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
+
+    val plan = planFor("MATCH (a)-[r]->(b) WITH r ORDER BY rand() MATCH (u)-[r]->(v) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_, Projection(_, expressions)), _) =>
+        val expected = Map[String, Expression](
+          "r" -> ident("r"),
+          "u" -> FunctionInvocation(FunctionName("startNode")_, ident("r"))_,
+          "v" -> FunctionInvocation(FunctionName("endNode")_, ident("r"))_
+        )
+
+        expressions should equal(expected)
+    }
+  }
+
+  test("should build plans that verify endpoints of re-matched relationship arguments") {
+    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
+
+    val plan = planFor("MATCH (a)-[r]->(b) WITH * ORDER BY rand() MATCH (a)-[r]->(b) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_, Selection(predicates, _)), _) =>
+        val expected: Seq[Expression] = Seq(
+          Equals(ident("a"), FunctionInvocation(FunctionName("startNode")_, ident("r"))_)_,
+          Equals(ident("b"), FunctionInvocation(FunctionName("endNode")_, ident("r"))_)_
+        )
+
+        predicates should equal(expected)
+    }
+  }
 }

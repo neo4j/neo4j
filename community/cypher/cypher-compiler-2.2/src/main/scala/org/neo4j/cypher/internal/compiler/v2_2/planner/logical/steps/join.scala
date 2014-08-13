@@ -33,9 +33,9 @@ object join extends CandidateGenerator[PlanTable] {
     } yield {
       val shared = (left.availableSymbols & right.availableSymbols).toList
       shared match {
-        case id :: Nil => Some(planNodeHashJoin(id, left, right))
-        case Nil => None
-        case _ => None
+        case id :: Nil if queryGraph.patternNodes(id) => Some(planNodeHashJoin(id, left, right))
+        case Nil                                      => None
+        case _                                        => None
       }
     }).flatten
     CandidateList(joinPlans)

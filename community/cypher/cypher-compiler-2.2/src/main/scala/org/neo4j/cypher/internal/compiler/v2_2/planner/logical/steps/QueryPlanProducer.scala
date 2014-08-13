@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.InputPosition.NONE
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan}
-import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.SortDescription
 import org.neo4j.cypher.internal.compiler.v2_2.commands.QueryExpression
-import org.neo4j.cypher.internal.compiler.v2_2.ast
-import org.neo4j.cypher.internal.compiler.v2_2.LabelId
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.SortDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, ast}
+import org.neo4j.graphdb.Direction
 
 object QueryPlanProducer {
   def solvePredicate(plan: QueryPlan, solved: Expression) =
@@ -259,7 +258,7 @@ object QueryPlanProducer {
       other.toSeq.map( (x: IdName) => x.name -> CTAny)
     val typeInfo = typeInfoSeq.toMap
 
-    QueryPlan(
+    val singleRowPlan = QueryPlan(
       SingleRow(coveredIds)(typeInfo),
       PlannerQuery(graph =
         QueryGraph(
@@ -268,7 +267,53 @@ object QueryPlanProducer {
           patternRelationships = patternRels
       ))
     )
+
+    planArgumentRelEndpoints(singleRowPlan, patternRels.toSeq)
   }
+
+  private def planArgumentRelEndpoints(inner: QueryPlan, rels: Seq[PatternRelationship]) = {
+    if (rels.isEmpty)
+      inner
+    else {
+      // TODO: Avoid calling start/endNode when possible
+      val symbols = inner.availableSymbols
+      val allTasks = rels.flatMap(computeRelEndpointTasks(symbols))
+      var result = inner.plan
+
+      val projectedRels = allTasks collect { case Left(mapping) => mapping}
+      if (projectedRels.nonEmpty) {
+        val existingIdentifiers = symbols.map { name => name.name -> Identifier(name.name)(NONE)}
+        val allProjections = existingIdentifiers ++ projectedRels
+        result = Projection(inner.plan, allProjections.toMap)
+      }
+
+      // TODO: Perhaps this should happen at the query graph
+      val predicates = allTasks collect { case Right(predicate) => predicate}
+      if (predicates.nonEmpty) {
+        result = Selection(predicates, result)
+      }
+
+      QueryPlan(
+        result,
+        inner.solved.updateTailOrSelf(_.updateGraph(_.addPatternRels(rels)))
+      )
+    }
+  }
+
+  private def computeRelEndpointTasks(symbols: Set[IdName])(rel: PatternRelationship) = {
+    val (start, end) = rel.inOrder
+    Seq(
+      if (symbols(start)) selectRelEndpoint(start.name, "startNode", rel) else projectRelEndpoint(start.name, "startNode", rel),
+      if (symbols(end)) selectRelEndpoint(end.name, "endNode", rel) else projectRelEndpoint(end.name, "endNode", rel)
+    )
+  }
+
+  private def projectRelEndpoint(vname: String, fname: String, rel: PatternRelationship) =
+    Left(vname -> FunctionInvocation(FunctionName(fname)(NONE), Identifier(rel.name.name)(NONE))(NONE))
+
+  private def selectRelEndpoint(vname: String, fname: String, rel: PatternRelationship) =
+    Right(Equals(Identifier(vname)(NONE), FunctionInvocation(FunctionName(fname)(NONE), Identifier(rel.name.name)(NONE))(NONE))(NONE))
+
 
   def planSingleRow() =
     QueryPlan( SingleRow(Set.empty)(Map.empty), PlannerQuery.empty )

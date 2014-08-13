@@ -31,7 +31,8 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
-  private def createQuery(rels: PatternRelationship*) = QueryGraph(patternRelationships = rels.toSet)
+  private def createQuery(rels: PatternRelationship*) = QueryGraph.empty.addPatternRels(rels)
+
   val aNode = IdName("a")
   val bNode = IdName("b")
   val cNode = IdName("c")
@@ -112,6 +113,21 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val qg = createQuery()
 
+    join(planTable, qg) should equal(CandidateList())
+  }
+
+  test("does not join relationships") {
+    implicit val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext
+    )
+    val left = newMockedQueryPlanWithPatterns(Set(r1Name, aNode))
+    val right = newMockedQueryPlanWithPatterns(Set(r1Name, bNode))
+    val planTable = PlanTable(Map(
+      Set(r1Name, aNode) -> left,
+      Set(r1Name, bNode) -> right
+    ))
+
+    val qg = createQuery(r1Rel)
     join(planTable, qg) should equal(CandidateList())
   }
 }
