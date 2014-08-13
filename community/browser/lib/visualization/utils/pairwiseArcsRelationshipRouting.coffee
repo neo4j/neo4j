@@ -82,6 +82,9 @@ class neo.utils.pairwiseArcsRelationshipRouting
           )
         else
           deflection = 30 * (i - middleRelationshipIndex)
+          if nodePair.nodeA isnt relationship.source
+            deflection *= -1
+
           relationship.arrow = new neo.utils.arcArrow(
               relationship.source.radius,
               relationship.target.radius,
