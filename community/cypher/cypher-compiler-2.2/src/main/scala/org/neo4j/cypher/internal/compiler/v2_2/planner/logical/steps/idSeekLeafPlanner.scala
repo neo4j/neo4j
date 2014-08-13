@@ -19,31 +19,34 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.functions
+import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, functions}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.InputPosition.NONE
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.graphdb.Direction.{BOTH, INCOMING, OUTGOING}
 
 object idSeekLeafPlanner extends LeafPlanner {
   def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]) = {
     val predicates: Seq[Expression] = queryGraph.selections.flatPredicates
 
-    val candidatePlans = predicates.collect {
+    val idSeekPredicates = predicates.collect {
       // MATCH (a)-[r]->b WHERE id(r) IN value
       // MATCH a WHERE id(a) IN value
       case predicate@In(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))
         if func.function == Some(functions.Id) &&
            idValueExprs.forall(ConstantExpression.unapply(_).isDefined) =>
         (predicate, idExpr, idValueExprs)
-    }.collect {
-      case (predicate, Identifier(idName), idValues) =>
+    }
+
+    val candidatePlans = idSeekPredicates.collect {
+      case (predicate, idExpr @ Identifier(idName), idValues) =>
         queryGraph.patternRelationships.find(_.name.name == idName) match {
           case Some(relationship) =>
-            createRelationshipByIdSeek(relationship, idValues, predicate)
+            val types = relationship.types.toList
+            val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate))
+            planRelTypeFilter(seekPlan, idExpr, types)
           case None =>
             planNodeByIdSeek(IdName(idName), idValues, Seq(predicate))
         }
@@ -52,39 +55,37 @@ object idSeekLeafPlanner extends LeafPlanner {
     CandidateList(candidatePlans)
   }
 
-  def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): QueryPlan = {
+  private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicates: Seq[Expression]): QueryPlan = {
     val (left, right) = relationship.nodes
     val name = relationship.name
-    val plan = relationship.dir match {
-      case Direction.BOTH =>
-        planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, Seq(predicate))
-
-      case Direction.INCOMING =>
-        planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, Seq(predicate))
-
-      case Direction.OUTGOING =>
-        planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, Seq(predicate))
+    relationship.dir match {
+      case BOTH     => planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, predicates)
+      case INCOMING => planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, predicates)
+      case OUTGOING => planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, predicates)
     }
-    filterIfNeeded(plan, name.name, relationship.types)
   }
 
-  private def filterIfNeeded(plan: QueryPlan, relName: String, types: Seq[RelTypeName]): QueryPlan =
-    if (types.isEmpty)
-      plan
-    else {
-      val id = Identifier(relName)(NONE)
-      val name = FunctionName("type")(NONE)
-      val invocation = FunctionInvocation(name, id)(NONE)
+  private def planRelTypeFilter(plan: QueryPlan, idExpr: Identifier, relTypes: List[RelTypeName]): QueryPlan = {
+    relTypes match {
+      case Seq(tpe) =>
+        val relTypeExpr = relTypeAsStringLiteral(tpe)
+        val predicate = Equals(typeOfRelExpr(idExpr), relTypeExpr)(idExpr.position)
+        planHiddenSelection(Seq(predicate), plan)
 
-      val predicates = types.map {
-        relType => Equals(invocation, StringLiteral(relType.name)(NONE))(NONE)
-      }.toList
+      case tpe :: _ =>
+        val relTypeExprs = relTypes.map(relTypeAsStringLiteral).toSet
+        val invocation = typeOfRelExpr(idExpr)
+        val idPos = idExpr.position
+        val predicate = Ors(relTypeExprs.map { expr => Equals(invocation, expr)(idPos) } )(idPos)
+        planHiddenSelection(Seq(predicate), plan)
 
-      val predicate = predicates match {
-        case exp :: Nil => exp
-        case _ => Ors(predicates.toSet)(predicates.head.position)
-      }
-
-      planHiddenSelection(Seq(predicate), plan)
+      case _ =>
+        plan
     }
+  }
+
+  private def relTypeAsStringLiteral(relType: RelTypeName) = StringLiteral(relType.name)(relType.position)
+
+  private def typeOfRelExpr(idExpr: Identifier) =
+    FunctionInvocation(FunctionName("type")(idExpr.position), idExpr)(idExpr.position)
 }
