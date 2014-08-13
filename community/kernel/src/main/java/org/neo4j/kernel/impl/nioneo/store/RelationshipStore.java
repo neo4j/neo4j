@@ -182,7 +182,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
                 {
                     cursor.setOffset( offset );
                     recordIsInUse = isInUse( cursor.getByte() );
-                } while ( cursor.retry() );
+                } while ( cursor.shouldRetry() );
             }
             return recordIsInUse;
         }
