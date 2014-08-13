@@ -34,19 +34,19 @@ public class CountingPageCacheMonitor implements PageCacheMonitor
     private final AtomicInteger flushes = new AtomicInteger();
 
     @Override
-    public void pageFault( long filePageId, PageSwapper swapper )
+    public void pageFaulted(long filePageId, PageSwapper swapper)
     {
         faults.getAndIncrement();
     }
 
     @Override
-    public void evict( long filePageId, PageSwapper swapper )
+    public void evicted(long filePageId, PageSwapper swapper)
     {
         evictions.getAndIncrement();
     }
 
     @Override
-    public void pin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+    public void pinned(boolean exclusiveLock, long filePageId, PageSwapper swapper)
     {
         pins.getAndIncrement();
         if ( exclusiveLock )
@@ -60,7 +60,7 @@ public class CountingPageCacheMonitor implements PageCacheMonitor
     }
 
     @Override
-    public void unpin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+    public void unpinned(boolean exclusiveLock, long filePageId, PageSwapper swapper)
     {
         unpins.getAndIncrement();
         if ( exclusiveLock )
@@ -74,7 +74,7 @@ public class CountingPageCacheMonitor implements PageCacheMonitor
     }
 
     @Override
-    public void flush( long filePageId, PageSwapper swapper )
+    public void flushed(long filePageId, PageSwapper swapper)
     {
         flushes.getAndIncrement();
     }

@@ -24,43 +24,43 @@ public interface PageCacheMonitor
     public static final PageCacheMonitor NULL = new PageCacheMonitor()
     {
         @Override
-        public void pageFault( long filePageId, PageSwapper swapper )
+        public void pageFaulted(long filePageId, PageSwapper swapper)
         {
         }
 
         @Override
-        public void evict( long filePageId, PageSwapper swapper )
+        public void evicted(long filePageId, PageSwapper swapper)
         {
         }
 
         @Override
-        public void pin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+        public void pinned(boolean exclusiveLock, long filePageId, PageSwapper swapper)
         {
         }
 
         @Override
-        public void unpin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+        public void unpinned(boolean exclusiveLock, long filePageId, PageSwapper swapper)
         {
         }
 
         @Override
-        public void flush( long filePageId, PageSwapper swapper )
+        public void flushed(long filePageId, PageSwapper swapper)
         {
         }
     };
 
     /** A page not in the cache was loaded */
-    void pageFault( long filePageId, PageSwapper swapper );
+    void pageFaulted(long filePageId, PageSwapper swapper);
 
     /** A page was evicted. */
-    void evict( long filePageId, PageSwapper swapper );
+    void evicted(long filePageId, PageSwapper swapper);
 
     /** A page is pinned */
-    void pin( boolean exclusiveLock, long filePageId, PageSwapper swapper );
+    void pinned(boolean exclusiveLock, long filePageId, PageSwapper swapper);
 
     /** A page is unpinned */
-    void unpin( boolean exclusiveLock, long filePageId, PageSwapper swapper );
+    void unpinned(boolean exclusiveLock, long filePageId, PageSwapper swapper);
 
     /** A page is flushed to the mapped file */
-    void flush( long filePageId, PageSwapper swapper );
+    void flushed(long filePageId, PageSwapper swapper);
 }

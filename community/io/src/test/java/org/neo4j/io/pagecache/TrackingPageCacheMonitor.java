@@ -27,7 +27,7 @@ class TrackingPageCacheMonitor implements PageCacheMonitor
     Queue<String> queue = new ConcurrentLinkedQueue<>();
 
     @Override
-    public void pageFault( long filePageId, PageSwapper swapper )
+    public void pageFaulted(long filePageId, PageSwapper swapper)
     {
         queue.offer( threadId() + "fault(" + filePageId + ", " + swapper + ")" );
     }
@@ -38,26 +38,26 @@ class TrackingPageCacheMonitor implements PageCacheMonitor
     }
 
     @Override
-    public void evict( long filePageId, PageSwapper swapper )
+    public void evicted(long filePageId, PageSwapper swapper)
     {
-        queue.offer( threadId() + "evict(" + filePageId + ", " + swapper + ")" );
+        queue.offer( threadId() + "evicted(" + filePageId + ", " + swapper + ")" );
     }
 
     @Override
-    public void pin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+    public void pinned(boolean exclusiveLock, long filePageId, PageSwapper swapper)
     {
-        queue.offer( threadId() + "pin(" + exclusiveLock + ", " + filePageId + ", " + swapper + ")" );
+        queue.offer( threadId() + "pinned(" + exclusiveLock + ", " + filePageId + ", " + swapper + ")" );
     }
 
     @Override
-    public void unpin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+    public void unpinned(boolean exclusiveLock, long filePageId, PageSwapper swapper)
     {
-        queue.offer( threadId() + "unpin(" + exclusiveLock + ", " + filePageId + ", " + swapper + ")" );
+        queue.offer( threadId() + "unpinned(" + exclusiveLock + ", " + filePageId + ", " + swapper + ")" );
     }
 
     @Override
-    public void flush( long filePageId, PageSwapper swapper )
+    public void flushed(long filePageId, PageSwapper swapper)
     {
-        queue.offer( threadId() + "flush(" + filePageId + ", " + swapper + ")" );
+        queue.offer( threadId() + "flushed(" + filePageId + ", " + swapper + ")" );
     }
 }

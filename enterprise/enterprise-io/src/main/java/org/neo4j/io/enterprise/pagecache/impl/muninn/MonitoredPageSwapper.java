@@ -46,7 +46,7 @@ public class MonitoredPageSwapper implements PageSwapper
     public void write( long filePageId, Page page ) throws IOException
     {
         pageSwapper.write( filePageId, page );
-        monitor.flush( filePageId, pageSwapper );
+        monitor.flushed(filePageId, pageSwapper);
     }
 
     @Override

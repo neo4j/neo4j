@@ -91,7 +91,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
         {
             page.reset( io, pageId );
             page.load();
-            monitor.pageFault( pageId, io );
+            monitor.pageFaulted(pageId, io);
         }
         else
         {
@@ -278,7 +278,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
         do {
             page.next = freeList.get();
         } while ( !freeList.compareAndSet( page.next, page ) );
-        monitor.evict( pageId, swapper );
+        monitor.evicted(pageId, swapper);
     }
 
     private void parkUntilEvictionRequired( int minLoadedPages )

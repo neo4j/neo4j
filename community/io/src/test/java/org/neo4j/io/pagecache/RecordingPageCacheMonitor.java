@@ -32,7 +32,7 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
     private Matcher<? extends Event> trap;
 
     @Override
-    public void pageFault( long filePageId, PageSwapper swapper )
+    public void pageFaulted(long filePageId, PageSwapper swapper)
     {
         Fault event = new Fault( swapper, filePageId );
         record.add( event );
@@ -40,7 +40,7 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
     }
 
     @Override
-    public void evict( long filePageId, PageSwapper swapper )
+    public void evicted(long filePageId, PageSwapper swapper)
     {
         Evict event = new Evict( swapper, filePageId );
         record.add( event );
@@ -48,19 +48,19 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
     }
 
     @Override
-    public void pin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+    public void pinned(boolean exclusiveLock, long filePageId, PageSwapper swapper)
     {
         // we currently do not record these
     }
 
     @Override
-    public void unpin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+    public void unpinned(boolean exclusiveLock, long filePageId, PageSwapper swapper)
     {
         // we currently do not record these
     }
 
     @Override
-    public void flush( long filePageId, PageSwapper swapper )
+    public void flushed(long filePageId, PageSwapper swapper)
     {
         // we currently do not record these
     }

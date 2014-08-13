@@ -43,7 +43,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
 
         if ( p != null )
         {
-            pagedFile.monitor.unpin( false, currentPageId, pagedFile.swapper );
+            pagedFile.monitor.unpinned(false, currentPageId, pagedFile.swapper);
             assert optimisticLock || p.isReadLocked() :
                     "pinned page wasn't really locked; not even optimistically: " + p;
 
@@ -191,7 +191,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
     {
         reset( page );
         page.incrementUsage();
-        pagedFile.monitor.pin( false, filePageId, swapper );
+        pagedFile.monitor.pinned(false, filePageId, swapper);
     }
 
     /**
@@ -234,7 +234,7 @@ class MuninnReadPageCursor extends MuninnPageCursor
         translationTable.put( filePageId, page );
         pinCursorToPage( page, filePageId, swapper );
         page.incrementUsage(); // Add a second usage increment as a fault-bonus.
-        pagedFile.monitor.pageFault( filePageId, swapper );
+        pagedFile.monitor.pageFaulted(filePageId, swapper);
     }
 
     @Override

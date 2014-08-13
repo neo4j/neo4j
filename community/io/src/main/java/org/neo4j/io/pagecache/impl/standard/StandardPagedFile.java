@@ -126,7 +126,7 @@ public class StandardPagedFile implements PagedFile
                     filePages.put( pageId, page );
                     latch.countDown();
 
-                    monitor.pin( lock == PageLock.EXCLUSIVE, pageId, swapper );
+                    monitor.pinned(lock == PageLock.EXCLUSIVE, pageId, swapper);
                     return; // yay!
                 }
             }
@@ -149,7 +149,7 @@ public class StandardPagedFile implements PagedFile
                 if ( page.pin( swapper, pageId, pf_flags ) )
                 {
                     cursor.reset( page, lock );
-                    monitor.pin( lock == PageLock.EXCLUSIVE, pageId, swapper );
+                    monitor.pinned(lock == PageLock.EXCLUSIVE, pageId, swapper);
                     return; // yay!
                 }
                 filePages.replace( pageId, page, NULL );
@@ -163,7 +163,7 @@ public class StandardPagedFile implements PagedFile
         PinnablePage page = cursor.page();
         long pageId = page.pageId();
         page.unpin( cursor.flags() );
-        monitor.unpin( lock == PageLock.EXCLUSIVE, pageId, swapper );
+        monitor.unpinned(lock == PageLock.EXCLUSIVE, pageId, swapper);
         cursor.reset( null, null );
     }
 

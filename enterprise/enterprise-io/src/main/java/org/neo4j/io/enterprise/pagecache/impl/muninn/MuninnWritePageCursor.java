@@ -39,7 +39,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
     {
         if ( page != null )
         {
-            pagedFile.monitor.unpin( true, currentPageId, pagedFile.swapper );
+            pagedFile.monitor.unpinned(true, currentPageId, pagedFile.swapper);
             assert page.isWriteLocked(): "page pinned for writing was not write locked: " + page;
             page.unlockWrite( lockStamp );
             UnsafeUtil.retainReference( page );
@@ -190,7 +190,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
         reset( page );
         page.incrementUsage();
         page.markAsDirty();
-        pagedFile.monitor.pin( true, filePageId, swapper );
+        pagedFile.monitor.pinned(true, filePageId, swapper);
     }
 
     /**
@@ -228,7 +228,7 @@ class MuninnWritePageCursor extends MuninnPageCursor
         page.fault( swapper, filePageId );
         translationTable.put( filePageId, page );
         pinCursorToPage( page, filePageId, swapper );
-        pagedFile.monitor.pageFault( filePageId, swapper );
+        pagedFile.monitor.pageFaulted(filePageId, swapper);
     }
 
     @Override

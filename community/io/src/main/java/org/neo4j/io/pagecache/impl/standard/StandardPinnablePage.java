@@ -185,7 +185,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
         if ( dirty )
         {
             buffer();
-            monitor.flush( pageId, swapper );
+            monitor.flushed(pageId, swapper);
             swapper.write( pageId, this );
             dirty = false;
         }

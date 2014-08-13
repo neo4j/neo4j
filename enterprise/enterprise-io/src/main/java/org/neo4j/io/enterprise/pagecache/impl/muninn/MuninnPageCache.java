@@ -435,7 +435,7 @@ public class MuninnPageCache implements RunnablePageCache
                         page.unlockWrite( stamp );
                     }
                     swapper.evicted( filePageId );
-                    monitor.evict( filePageId, swapper );
+                    monitor.evicted(filePageId, swapper);
 
                     MuninnPage next;
                     do
