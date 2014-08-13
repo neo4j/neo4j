@@ -587,7 +587,22 @@ return x, p""").toSet
     relate(a, b, "X")
 
     val result = execute( """
-start a  = node(0)
+start a = node(0)
+optional match p = a-->b-[*]->c
+return p""")
+
+    assert(Set(
+      Map("p" -> null)
+    ) === result.toSet)
+  }
+
+  test("should handle optional paths from a combo with MATCH") {
+    val a = createNode("A")
+    val b = createNode("B")
+    relate(a, b, "X")
+
+    val result = executeWithNewPlanner( """
+match a WHERE id(a) = 0
 optional match p = a-->b-[*]->c
 return p""")
 
