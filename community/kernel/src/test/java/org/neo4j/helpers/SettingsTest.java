@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
@@ -66,7 +67,7 @@ public class SettingsTest
             setting.apply( map( stringMap( "foo", "bar" ) ) );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
             // Ok
         }
@@ -99,7 +100,7 @@ public class SettingsTest
             setting.apply( map( stringMap( "foo", "1" ) ) );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
             // Ok
         }
@@ -120,7 +121,7 @@ public class SettingsTest
             setting.apply( map( stringMap( "foo", "7" ) ) );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
             // Ok
         }
@@ -140,7 +141,7 @@ public class SettingsTest
             setting.apply( map( stringMap( "foo", "1" ) ) );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
             // Ok
         }
@@ -150,7 +151,7 @@ public class SettingsTest
             setting.apply( map( stringMap( "foo", "6" ) ) );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
             // Ok
         }
@@ -170,13 +171,13 @@ public class SettingsTest
             setting.apply( map( stringMap( "foo", "cba" ) ) );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
             // Ok
         }
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test( expected = InvalidSettingException.class )
     public void testDurationWithBrokenDefault()
     {
         // Notice that the default value is less that the minimum
@@ -184,7 +185,7 @@ public class SettingsTest
         setting.apply( map( stringMap() ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test( expected = InvalidSettingException.class )
     public void testDurationWithValueNotWithinConstraint()
     {
         Setting<Long> setting = setting( "foo.bar", DURATION, "3s", min( DURATION.apply( "3s" ) ) );
