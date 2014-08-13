@@ -9,7 +9,6 @@
 
   <properties>
     <short-name>io</short-name>
-    <version-package>io</version-package>
     <bundle.namespace>org.neo4j.io</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/primitive-collections.html</docs.url>
@@ -18,7 +17,6 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-io</artifactId>
-  <groupId>org.neo4j</groupId>
   <version>2.2-SNAPSHOT</version>
 
   <packaging>jar</packaging>
@@ -94,16 +92,6 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
-      <!-- Disable the ComponentVersion generation -->
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-          <executions>
-            <execution>
-            <id>generate-version</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <artifactId>maven-site-plugin</artifactId>
         <configuration>
