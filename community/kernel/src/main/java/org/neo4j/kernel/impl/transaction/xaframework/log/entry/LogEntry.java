@@ -27,30 +27,6 @@ import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 
 public abstract class LogEntry
 {
-    public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
-
-    /* version 1 as of 2011-02-22
-     * version 2 as of 2011-10-17
-     * version 3 as of 2013-02-09: neo4j 2.0 Labels & Indexing
-     * version 4 as of 2014-02-06: neo4j 2.1 Dense nodes, split by type/direction into groups
-     * version 5 as of 2014-05-23: neo4j 2.2 Removal of JTA / unified data source
-     */
-    public static final byte CURRENT_LOG_VERSION = (byte) 5;
-
-    /*
-     * version 0 for Neo4j versions < 2.1
-     * version -1 for Neo4j 2.1
-     */
-    public static final byte CURRENT_LOG_ENTRY_VERSION = (byte) -1;
-
-    // empty record due to memory mapped file
-    public static final byte EMPTY = (byte) 0;
-
-    // Real entries
-    public static final byte TX_START = (byte) 1;
-    public static final byte COMMAND = (byte) 3;
-    public static final byte TX_1P_COMMIT = (byte) 5;
-
     private final byte type;
     private final byte version;
 

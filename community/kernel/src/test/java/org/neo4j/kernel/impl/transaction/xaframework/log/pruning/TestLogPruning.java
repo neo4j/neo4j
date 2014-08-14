@@ -32,16 +32,17 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.LogFileRecoverer;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.xaframework.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
@@ -51,7 +52,8 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.CURRENT_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
 
 public class TestLogPruning
 {
@@ -107,21 +109,18 @@ public class TestLogPruning
         assertTrue( logFileSize >= size - logThreshold && logFileSize <= size + logThreshold );
     }
 
-    @Ignore
     @Test
     public void pruneByFileCount() throws Exception
     {
         int logsToKeep = 5;
-        newDb( logsToKeep + " files", transactionLogSize*3 );
+        newDb( logsToKeep + " files", transactionLogSize * 3 );
 
         for ( int i = 0; i < 100; i++ )
         {
             doTransaction();
         }
 
-        // At the time of checking the log count, even in the best case where we have juust rotated,
-        // there is going to be a (n+1)th log file which is now the current one.
-        assertEquals( logsToKeep+1, logCount() );
+        assertEquals( logsToKeep, logCount() );
         // TODO we could verify, after the db has been shut down, that the file count is n.
     }
 
@@ -254,15 +253,16 @@ public class TestLogPruning
                 LogVersionBridge bridge = new LogVersionBridge()
                 {
                     @Override
-                    public VersionedStoreChannel next( VersionedStoreChannel channel ) throws IOException
+                    public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
                     {
                         return channel;
                     }
                 };
-                PhysicalLogVersionedStoreChannel storeChannel =
-                        new PhysicalLogVersionedStoreChannel( fs.open( from, "r" ) );
-                storeChannel.position( LOG_HEADER_SIZE );
-                try ( ReadableLogChannel channel = new ReadAheadLogChannel( storeChannel, bridge, 1000 ) )
+                StoreChannel storeChannel = fs.open( from, "r" );
+                PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                        new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, CURRENT_LOG_VERSION );
+                versionedStoreChannel.position( LOG_HEADER_SIZE );
+                try ( ReadableLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
                 {
                     reader.visit( channel );
                 }

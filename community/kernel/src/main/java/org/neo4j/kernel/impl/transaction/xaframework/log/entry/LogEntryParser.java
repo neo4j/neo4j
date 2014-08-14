@@ -21,7 +21,16 @@ package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
 import java.io.IOException;
 
-public interface LogEntryReader<S>
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+
+public interface LogEntryParser
 {
-    LogEntry readLogEntry( S source ) throws IOException;
+    LogEntry parse( byte version, ReadableLogChannel channel,
+                    LogPositionMarker marker, CommandReaderFactory commandReaderFactory ) throws IOException;
+
+    byte byteCode();
+
+    boolean skip();
 }

@@ -46,7 +46,9 @@ import org.neo4j.kernel.impl.nioneo.xa.RelationshipLocker;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodes;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryVersions;
 
 public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, List<LogEntry>>
 {
@@ -96,19 +98,19 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         LogEntry done = null;
         for ( LogEntry logEntry : from )
         {
-            if( logEntry.getVersion() == LogEntry.CURRENT_LOG_ENTRY_VERSION
+            if ( logEntry.getVersion() == LogEntryVersions.CURRENT_LOG_ENTRY_VERSION
                     )
                 throw new RuntimeException( "crap" );
 
             switch ( logEntry.getType() )
             {
-                case LogEntry.TX_START:
+                case LogEntryByteCodes.TX_START:
                     result.add( logEntry );
                     break;
-                case LogEntry.TX_1P_COMMIT:
+                case LogEntryByteCodes.TX_1P_COMMIT:
                     commit = logEntry;
                     break;
-                case LogEntry.COMMAND:
+                case LogEntryByteCodes.COMMAND:
                     try
                     {
                         if ( !handleCommand( (LogEntryCommand) logEntry ) )

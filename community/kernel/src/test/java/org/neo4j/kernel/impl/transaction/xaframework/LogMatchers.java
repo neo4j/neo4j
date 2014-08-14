@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import javax.transaction.xa.Xid;
 
 import org.hamcrest.Description;
@@ -38,9 +37,11 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.OnePhaseCommit;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.readLogHeader;
 import static org.neo4j.kernel.impl.util.Cursors.iterable;
 
 /**
@@ -58,13 +59,14 @@ public class LogMatchers
         ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
 
         // Always a header
-        VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, true );
+        LogHeader header = readLogHeader( buffer, fileChannel, true );
 
         // Read all log entries
         LogDeserializer deserializer = new LogDeserializer();
 
-        ReadableLogChannel logChannel = new ReadAheadLogChannel(
-                new PhysicalLogVersionedStoreChannel( fileChannel ), LogVersionBridge.NO_MORE_CHANNELS, 4096 );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( fileChannel, header.logVersion, header.logFormatVersion );
+        ReadableLogChannel logChannel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS, 4096 );
         return iterable( deserializer.logEntries( logChannel ) );
     }
 

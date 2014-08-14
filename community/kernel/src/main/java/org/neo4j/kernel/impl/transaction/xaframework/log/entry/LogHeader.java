@@ -19,43 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
-import java.io.IOException;
-
-import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodes.COMMAND;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
-
-public class LogEntryCommand extends LogEntry
+public class LogHeader
 {
-    private final org.neo4j.kernel.impl.nioneo.xa.command.Command command;
+    public final byte logFormatVersion;
+    public final long logVersion;
+    public final long lastCommittedTxId;
 
-    public LogEntryCommand( org.neo4j.kernel.impl.nioneo.xa.command.Command command )
+    public LogHeader( byte logFormatVersion, long logVersion, long lastCommittedTxId )
     {
-        this( CURRENT_LOG_ENTRY_VERSION, command );
-    }
-
-    public LogEntryCommand( byte version, org.neo4j.kernel.impl.nioneo.xa.command.Command command )
-    {
-        super( COMMAND, version );
-        this.command = command;
-    }
-
-    public org.neo4j.kernel.impl.nioneo.xa.command.Command getXaCommand()
-    {
-        return command;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "Command[" + command + "]";
-    }
-
-    @Override
-    public void accept( LogHandler handler ) throws IOException
-    {
-        handler.commandEntry( this );
+        this.logFormatVersion = logFormatVersion;
+        this.logVersion = logVersion;
+        this.lastCommittedTxId = lastCommittedTxId;
     }
 
     @Override
@@ -70,9 +44,17 @@ public class LogEntryCommand extends LogEntry
             return false;
         }
 
-        LogEntryCommand command1 = (LogEntryCommand) o;
+        LogHeader logHeader = (LogHeader) o;
 
-        if ( !command.equals( command1.command ) )
+        if ( lastCommittedTxId != logHeader.lastCommittedTxId )
+        {
+            return false;
+        }
+        if ( logFormatVersion != logHeader.logFormatVersion )
+        {
+            return false;
+        }
+        if ( logVersion != logHeader.logVersion )
         {
             return false;
         }
@@ -83,6 +65,19 @@ public class LogEntryCommand extends LogEntry
     @Override
     public int hashCode()
     {
-        return command.hashCode();
+        int result = (int) logFormatVersion;
+        result = 31 * result + (int) (logVersion ^ (logVersion >>> 32));
+        result = 31 * result + (int) (lastCommittedTxId ^ (lastCommittedTxId >>> 32));
+        return result;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "LogHeader{" +
+                "logFormatVersion=" + logFormatVersion +
+                ", logVersion=" + logVersion +
+                ", lastCommittedTxId=" + lastCommittedTxId +
+                '}';
     }
 }

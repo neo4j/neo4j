@@ -19,9 +19,22 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
-import java.io.IOException;
-
-public interface LogEntryReader<S>
+public class LogVersions
 {
-    LogEntry readLogEntry( S source ) throws IOException;
+    private LogVersions()
+    {
+        // no instances are allowed
+    }
+
+    /* version 1 as of 2011-02-22
+     * version 2 as of 2011-10-17
+     * version 3 as of 2013-02-09: neo4j 2.0 Labels & Indexing
+     * version 4 as of 2014-02-06: neo4j 2.1 Dense nodes, split by type/direction into groups
+     * version 5 as of 2014-05-23: neo4j 2.2 Removal of JTA / unified data source
+     */
+    public static final byte LOG_VERSION_2_1 = (byte) 4;
+    public static final byte LOG_VERSION_2_2 = (byte) 5;
+    public static final byte CURRENT_LOG_VERSION = LOG_VERSION_2_2;
+
+
 }

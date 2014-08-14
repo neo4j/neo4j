@@ -23,28 +23,11 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.StoreChannel;
 
-/**
- * Provides information and functionality for bridging log file boundaries.
- */
-public interface LogVersionBridge
+public interface LogVersionedStoreChannel extends StoreChannel
 {
-    /**
-     * Provides the next channel, given the current channel and version.
-     * Returning the same value as was passed in means that no bridging was needed or that the end was reached.
-     *
-     * @param channel {@link StoreChannel} to advance from.
-     * @return the next {@link StoreChannel} having advanced on from the given channel, or {@code channel}
-     * if no bridging needed or end was reached.
-     * @throws IOException
-     */
-    LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException;
+    long getVersion();
 
-    public static final LogVersionBridge NO_MORE_CHANNELS = new LogVersionBridge()
-    {
-        @Override
-        public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
-        {
-            return channel;
-        }
-    };
+    byte getLogFormatVersion();
+
+    void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException;
 }

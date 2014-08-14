@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
@@ -178,7 +179,9 @@ public class LogTruncationTest
         int bytesSuccessfullyWritten = inMemoryChannel.writerPosition();
         try
         {
-            assertEquals( cmd, ((LogEntryCommand) logEntryReader.readLogEntry( inMemoryChannel )).getXaCommand() );
+            LogEntry logEntry = logEntryReader.readLogEntry( inMemoryChannel );
+            Command command = ((LogEntryCommand) logEntry).getXaCommand();
+            assertEquals( cmd, command );
         }
         catch ( Exception e )
         {
@@ -190,9 +193,9 @@ public class LogTruncationTest
             inMemoryChannel.reset();
             writer.writeCommandEntry( cmd );
             inMemoryChannel.truncateTo( bytesSuccessfullyWritten );
-            LogEntryCommand deserialized = ((LogEntryCommand) logEntryReader.readLogEntry( inMemoryChannel ));
-            assertNull( "Deserialization did not detect log truncation! Record: " + cmd + ", deserialized: "
-                    + deserialized, deserialized );
+            LogEntry deserialized = logEntryReader.readLogEntry( inMemoryChannel );
+            assertNull( "Deserialization did not detect log truncation!" +
+                    "Record: " + cmd + ", deserialized: " + deserialized, deserialized );
         }
     }
 
