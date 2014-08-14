@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 
 sealed trait ReturnItems extends ASTNode with SemanticCheckable {
   def declareIdentifiers(currentState: SemanticState): SemanticCheck
+  def containsAggregate: Boolean
 }
 
 case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition) extends ReturnItems {
@@ -30,10 +31,9 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition
     ensureProjectedToUniqueIds
 
   def declareIdentifiers(currentState: SemanticState) =
-    items.foldSemanticCheck(item => item.alias match {
-      case Some(identifier) => identifier.declare(item.expression.types(currentState))
-      case None             => SemanticCheckResult.success
-    })
+    items.foldSemanticCheck(item =>
+      Identifier(item.name)(null).declare(item.expression.types(currentState))
+    )
 
   private def ensureProjectedToUniqueIds: SemanticCheck = {
     items.groupBy(_.name).foldLeft(SemanticCheckResult.success) {
@@ -43,19 +43,28 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition
          acc
     }
   }
+
+  def containsAggregate = this.exists {
+    case IsAggregate(_) => true
+  }
 }
 
 case class ReturnAll()(val position: InputPosition) extends ReturnItems {
   var seenIdentifiers: Option[Set[String]] = None
 
-  def semanticCheck = (s: SemanticState) => {
+  def semanticCheck =
+    updateSeenIdentifiers
+
+  private def updateSeenIdentifiers = (s: SemanticState) => {
     seenIdentifiers = Some(s.scope.symbolTable.keySet)
     SemanticCheckResult.success(s)
   }
 
-  def declareIdentifiers(currentState: SemanticState) = s => SemanticCheckResult.success(s.importScope(currentState.scope))
-}
+  def declareIdentifiers(currentState: SemanticState) = s =>
+    SemanticCheckResult.success(s.importScope(currentState.scope))
 
+  def containsAggregate = false
+}
 
 sealed trait ReturnItem extends ASTNode with SemanticCheckable {
   def expression: Expression

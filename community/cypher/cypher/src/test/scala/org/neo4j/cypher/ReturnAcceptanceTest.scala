@@ -92,7 +92,7 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
     createNode(Map("name" -> "jim", "division" -> "England", "age" -> 55))
     createNode(Map("name" -> "anders", "division" -> "Sweden", "age" -> 35))
 
-    val result = execute("start n=node(0,1,2,3) return n.division, max(n.age) order by max(n.age) ")
+    val result = executeWithNewPlanner("match n where id(n) IN [0,1,2,3] return n.division, max(n.age) order by max(n.age)")
 
     result.columnAs[String]("n.division").toList should equal(List("Germany", "Sweden", "England"))
   }

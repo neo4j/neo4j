@@ -43,4 +43,10 @@ case class FunctionInvocation(functionName: FunctionName, distinct: Boolean, arg
   }
 }
 
-case class FunctionName(name: String)(val position: InputPosition) extends ASTNode
+case class FunctionName(name: String)(val position: InputPosition) extends ASTNode {
+  override def equals(x: Any): Boolean = x match {
+    case FunctionName(other) => other.toLowerCase == name.toLowerCase
+    case _ => false
+  }
+  override def hashCode = name.toLowerCase.hashCode
+}

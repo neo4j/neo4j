@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
@@ -29,7 +29,7 @@ sealed trait Clause extends ASTNode with SemanticCheckable {
 
 sealed trait UpdateClause extends Clause
 
-sealed trait ClosingClause extends Clause {
+sealed trait ClosingClause extends Clause with SemanticChecking {
   def distinct: Boolean
   def returnItems: ReturnItems
   def orderBy: Option[OrderBy]
@@ -38,18 +38,35 @@ sealed trait ClosingClause extends Clause {
 
   def semanticCheck =
     returnItems.semanticCheck chain
-    checkSortItems chain
-    checkSkipLimit
+    createSpecialScopeForOrderBy {
+      orderBy.semanticCheck chain
+      checkIdentifiersInScope
+    } chain
+    skip.semanticCheck chain
+    limit.semanticCheck chain
+    clearOutOldSymbolsAndIntroduceNew
 
-  // use a scoped state containing the aliased return items for the sort expressions
-  private def checkSortItems: SemanticCheck = s => {
-    val result = (returnItems.declareIdentifiers(s) chain orderBy.semanticCheck)(s.newScope)
-    SemanticCheckResult(result.state.popScope, result.errors)
+  private def clearOutOldSymbolsAndIntroduceNew: SemanticCheck = stateNeededForTypes =>
+    returnItems.declareIdentifiers(stateNeededForTypes)(stateNeededForTypes.clearSymbols)
+
+  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError]
+
+  private def createSpecialScopeForOrderBy(check: => SemanticCheck): SemanticCheck = {
+    val mustHaveCleanScope = returnItems.containsAggregate || distinct
+
+    val startState: SemanticCheck = s => {
+      val start = if (mustHaveCleanScope) s.clearSymbols else s.newScope
+      val innerScopeWithAliases = returnItems.declareIdentifiers(s)(start)
+      SemanticCheckResult.success(innerScopeWithAliases.state)
+    }
+
+    val endState: SemanticCheck = s => if (mustHaveCleanScope)
+      SemanticCheckResult.success(s)
+    else
+      SemanticCheckResult.success(s.popScope)
+
+    startState chain check chain endState
   }
-
-  // use an empty state when checking skip & limit, as these have isolated scope
-  private def checkSkipLimit: SemanticState => Seq[SemanticError] =
-    s => (skip ++ limit).semanticCheck(SemanticState.clean).errors
 }
 
 case class LoadCSV(withHeaders: Boolean, urlString: Expression, identifier: Identifier, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
@@ -235,18 +252,20 @@ case class With(
     orderBy: Option[OrderBy],
     skip: Option[Skip],
     limit: Option[Limit],
-    where: Option[Where])(val position: InputPosition) extends ClosingClause
-{
+    where: Option[Where])(val position: InputPosition) extends ClosingClause {
   def name = "WITH"
 
   override def semanticCheck =
     super.semanticCheck chain
-    checkAliasedReturnItems
+    checkAliasedReturnItems chain
+    where.semanticCheck
 
   private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
     case li: ListedReturnItems => li.items.filter(!_.alias.isDefined).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
     case _                     => Seq()
   }
+
+  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state => Seq()
 }
 
 case class Unwind(expression: Expression, identifier: Identifier)(val position: InputPosition) extends Clause {
@@ -258,6 +277,8 @@ case class Unwind(expression: Expression, identifier: Identifier)(val position: 
       val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
       identifier.declare(possibleInnerTypes)
     }
+
+  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state => Seq()
 }
 
 case class Return(
@@ -266,18 +287,14 @@ case class Return(
     orderBy: Option[OrderBy],
     skip: Option[Skip],
     limit: Option[Limit])(val position: InputPosition) extends ClosingClause {
+
   def name = "RETURN"
 
-  override def semanticCheck =
-    super.semanticCheck chain
-    checkIdentifiersInScope
-
-  private def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state =>
-    returnItems match {
-      case _: ReturnAll if state.scope.symbolTable.isEmpty =>
-        Seq(SemanticError("RETURN * is not allowed when there are no identifiers in scope", position))
-      case _            =>
-        Seq()
+  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state =>
+    if (returnItems == ReturnAll()(null) && state.scope.isEmpty) {
+      Seq(SemanticError("RETURN * is not allowed when there are no identifiers in scope", position))
+    } else {
+      Seq()
     }
 }
 
