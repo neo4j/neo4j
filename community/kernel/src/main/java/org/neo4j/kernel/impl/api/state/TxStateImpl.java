@@ -126,11 +126,28 @@ public final class TxStateImpl implements TxState
     @Override
     public void accept( final Visitor visitor )
     {
+        if ( nodes != null )
+        {
+            nodes.accept( new DiffSets.Visitor<Long>()
+            {
+                @Override
+                public void visitAdded( Long element )
+                {
+                    visitor.visitCreatedNode( element.longValue() );
+                }
+
+                @Override
+                public void visitRemoved( Long element )
+                {   // Ignore
+                }
+            } );
+        }
+        
         if ( hasNodeStatesMap() && !nodeStatesMap().isEmpty() )
         {
             for ( NodeState node : modifiedNodes() )
             {
-                node.accept(nodeVisitor( visitor ));
+                node.accept( nodeVisitor( visitor ) );
             }
         }
 
@@ -194,7 +211,7 @@ public final class TxStateImpl implements TxState
         };
     }
 
-    private static NodeState.Visitor nodeVisitor( final Visitor visitor  )
+    private static NodeState.Visitor nodeVisitor( final Visitor visitor )
     {
         return new NodeState.Visitor()
         {

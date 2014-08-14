@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
+public class ReferenceCache<E extends EntityWithSizeObject> extends Cache.Adapter<E>
 {
     final static int MAX_NUM_PUT_BEFORE_POLL = 5000;
 
@@ -46,7 +46,7 @@ public class ReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
     }
 
     @Override
-    public E put( E value )
+    public E put( E value, boolean force )
     {
         Long key = value.getId();
         ReferenceWithKey<Long, E> ref = referenceFactory.<Long, E>newReference( key, value, (ReferenceQueue) refQueue );
@@ -57,7 +57,9 @@ public class ReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
             // collecting the weak reference, and need to account for that happening at any time.
             do
             {
-                ReferenceWithKey<Long, E> previous = cache.putIfAbsent( key, ref );
+                ReferenceWithKey<Long, E> previous = force ?
+                        cache.put( key, ref ) :
+                        cache.putIfAbsent( key, ref );
 
                 if ( previous != null )
                 {
@@ -82,7 +84,7 @@ public class ReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
             recordPutAndPollIfNeeded( 1 );
         }
     }
-
+    
     @Override
     public void putAll( Collection<E> entities )
     {

@@ -78,7 +78,6 @@ import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Caches;
-import org.neo4j.kernel.impl.core.DenseNodeImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -93,12 +92,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -138,6 +132,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.kernel.impl.nioneo.xa.CacheLoaders.nodeLoader;
+import static org.neo4j.kernel.impl.nioneo.xa.CacheLoaders.relationshipLoader;
 
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
@@ -388,10 +384,9 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
-        nodeCache = new AutoLoadingCache<>(
-                cacheProvider.node(), nodeLoader( neoStore.getNodeStore() ) );
-        relationshipCache = new AutoLoadingCache<>(
-                cacheProvider.relationship(),
+        nodeCache = new AutoLoadingCache<>( cacheProvider.node(),
+                nodeLoader( neoStore.getNodeStore() ) );
+        relationshipCache = new AutoLoadingCache<>( cacheProvider.relationship(),
                 relationshipLoader( neoStore.getRelationshipStore() ) );
         RelationshipLoader relationshipLoader = new RelationshipLoader( relationshipCache, new RelationshipChainLoader(
                 neoStore ) );
@@ -591,46 +586,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             public Iterator<IndexRule> iterator()
             {
                 return new SchemaStorage( neoStore.getSchemaStore() ).allIndexRules();
-            }
-        };
-    }
-
-    private AutoLoadingCache.Loader<RelationshipImpl> relationshipLoader( final RelationshipStore relationshipStore )
-    {
-        return new AutoLoadingCache.Loader<RelationshipImpl>()
-        {
-            @Override
-            public RelationshipImpl loadById( long id )
-            {
-                try
-                {
-                    RelationshipRecord record = relationshipStore.getRecord( id );
-                    return new RelationshipImpl( id, record.getFirstNode(), record.getSecondNode(), record.getType() );
-                }
-                catch ( InvalidRecordException e )
-                {
-                    return null;
-                }
-            }
-        };
-    }
-
-    private AutoLoadingCache.Loader<NodeImpl> nodeLoader( final NodeStore nodeStore )
-    {
-        return new AutoLoadingCache.Loader<NodeImpl>()
-        {
-            @Override
-            public NodeImpl loadById( long id )
-            {
-                try
-                {
-                    NodeRecord record = nodeStore.getRecord( id );
-                    return record.isDense() ? new DenseNodeImpl( id ) : new NodeImpl( id );
-                }
-                catch ( InvalidRecordException e )
-                {
-                    return null;
-                }
             }
         };
     }

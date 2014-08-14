@@ -36,12 +36,15 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -148,6 +151,24 @@ public class RelationshipCreatorTest
         public RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges()
         {
             return delegate.getSchemaRuleChanges();
+        }
+        
+        @Override
+        public RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
+        {
+            return delegate.getPropertyKeyTokenChanges();
+        }
+
+        @Override
+        public RecordAccess<Integer, LabelTokenRecord, Void> getLabelTokenChanges()
+        {
+            return delegate.getLabelTokenChanges();
+        }
+
+        @Override
+        public RecordAccess<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
+        {
+            return delegate.getRelationshipTypeTokenChanges();
         }
 
         @Override

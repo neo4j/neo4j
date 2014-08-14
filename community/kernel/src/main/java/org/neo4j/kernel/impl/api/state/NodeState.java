@@ -46,7 +46,7 @@ public final class NodeState extends PropertyContainerState
     {
         super( id );
     }
-
+    
     public DiffSets<Integer> labelDiffSets()
     {
         if ( null == labelDiffSets )
@@ -146,10 +146,10 @@ public final class NodeState extends PropertyContainerState
         return degree;
     }
 
-    public void accept(Visitor visitor)
+    public void accept( Visitor visitor )
     {
-        super.accept(visitor);
-        if(labelDiffSets != null)
+        super.accept( visitor );
+        if ( labelDiffSets != null )
         {
             visitor.visitLabelChanges( getId(), labelDiffSets.getAdded().iterator(),
                                                 labelDiffSets.getRemoved().iterator() );

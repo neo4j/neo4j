@@ -498,4 +498,12 @@ public class CacheLayer implements StoreReadLayer
     {
         return diskLayer.relationshipExists( relationshipId );
     }
+    
+    @Override
+    public long reserveNode()
+    {
+        long nodeId = diskLayer.reserveNode();
+        persistenceCache.reserveNode( nodeId );
+        return nodeId;
+    }
 }

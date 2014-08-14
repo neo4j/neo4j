@@ -89,16 +89,19 @@ public class RecordChangeSet implements RecordAccessSet
         return schemaRuleChanges;
     }
 
+    @Override
     public RecordChanges<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
     {
         return propertyKeyTokenChanges;
     }
 
+    @Override
     public RecordChanges<Integer, LabelTokenRecord, Void> getLabelTokenChanges()
     {
         return labelTokenChanges;
     }
 
+    @Override
     public RecordChanges<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
     {
         return relationshipTypeTokenChanges;

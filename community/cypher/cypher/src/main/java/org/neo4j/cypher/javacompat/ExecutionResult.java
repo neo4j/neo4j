@@ -23,7 +23,6 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.Normal$;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
@@ -44,7 +43,7 @@ import org.neo4j.graphdb.ResourceIterator;
 @Deprecated
 public class ExecutionResult implements ResourceIterable<Map<String,Object>>
 {
-    private org.neo4j.cypher.ExecutionResult inner;
+    private final org.neo4j.cypher.ExecutionResult inner;
 
     /**
      * Constructor used by the Cypher framework. End-users should not

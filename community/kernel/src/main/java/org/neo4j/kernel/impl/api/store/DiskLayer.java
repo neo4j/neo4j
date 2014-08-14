@@ -763,4 +763,9 @@ public class DiskLayer implements StoreReadLayer
             }
         };
     }
+
+    public long reserveNode()
+    {
+        return nodeStore.nextId();
+    }
 }

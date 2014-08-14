@@ -163,4 +163,9 @@ public interface StoreReadLayer
     PrimitiveLongIterator nodesGetAll();
 
     PrimitiveLongIterator relationshipsGetAll();
+
+    /**
+     * Reserves a node id for future use.
+     */
+    long reserveNode();
 }

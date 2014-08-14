@@ -107,6 +107,8 @@ public interface TxState
 
     public interface Visitor
     {
+        void visitCreatedNode( long id );
+        
         void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
                                        Iterator<Integer> removed );
 
@@ -132,6 +134,11 @@ public interface TxState
 
     public static class VisitorAdapter implements Visitor
     {
+        @Override
+        public void visitCreatedNode( long id )
+        {   // Ignore
+        }
+        
         @Override
         public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
                 Iterator<DefinedProperty> changed, Iterator<Integer> removed )

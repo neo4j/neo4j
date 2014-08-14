@@ -22,11 +22,14 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 public interface RecordAccessSet
@@ -40,6 +43,12 @@ public interface RecordAccessSet
     RecordAccess<Long, RelationshipGroupRecord, Integer> getRelGroupRecords();
 
     RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges();
+    
+    RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges();
+
+    RecordAccess<Integer, LabelTokenRecord, Void> getLabelTokenChanges();
+
+    RecordAccess<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges();
 
     void close();
 }

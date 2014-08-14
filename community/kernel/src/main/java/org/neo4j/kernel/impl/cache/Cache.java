@@ -36,7 +36,10 @@ public interface Cache<E extends EntityWithSizeObject>
      * then return that element.
      *
      * @param value the element to cache.
+     * @param force put the element even if there's already a value for that key in the cache.
      */
+    E put( E value, boolean force );
+    
     E put( E value );
 
     /**
@@ -82,4 +85,13 @@ public interface Cache<E extends EntityWithSizeObject>
     void updateSize( E entity, int newSize );
 
     void printStatistics();
+    
+    public static abstract class Adapter<E extends EntityWithSizeObject> implements Cache<E>
+    {
+        @Override
+        public E put( E value )
+        {
+            return put( value, false );
+        }
+    }
 }

@@ -29,7 +29,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 
-public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cache<E>, DiagnosticsProvider
+public class HighPerformanceCache<E extends EntityWithSizeObject> extends Cache.Adapter<E>
+    implements DiagnosticsProvider
 {
     public interface Monitor {
         void purged( long sizeBefore, long sizeAfter, int numberOfEntitiesPurged );
@@ -125,7 +126,7 @@ public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cac
     private long putTimeStamp = 0;
 
     @Override
-    public E put( E obj )
+    public E put( E obj, boolean force )
     {
         long time = System.currentTimeMillis();
         if ( time - putTimeStamp > minLogInterval )
@@ -137,7 +138,7 @@ public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cac
         E oldObj = cache.get( pos );
         while ( oldObj != obj )
         {
-            if ( oldObj != null && oldObj.getId() == obj.getId() )
+            if ( oldObj != null && oldObj.getId() == obj.getId() && !force )
             {   // There's an existing element representing the same entity at this position, return the existing
                 return oldObj;
             }
