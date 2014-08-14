@@ -19,19 +19,6 @@
  */
 package org.neo4j.ha.upgrade;
 
-import static java.lang.Integer.parseInt;
-import static java.lang.System.currentTimeMillis;
-import static java.lang.System.getProperty;
-import static java.lang.Thread.sleep;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.fail;
-import static org.neo4j.ha.upgrade.RollingUpgradeIT.type1;
-import static org.neo4j.ha.upgrade.RollingUpgradeIT.type2;
-import static org.neo4j.ha.upgrade.Utils.execJava;
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import java.io.File;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -54,6 +41,21 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.test.ProcessStreamHandler;
+
+import static java.lang.Integer.parseInt;
+import static java.lang.System.currentTimeMillis;
+import static java.lang.System.getProperty;
+import static java.lang.Thread.sleep;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.ha.upgrade.RollingUpgradeIT.type1;
+import static org.neo4j.ha.upgrade.RollingUpgradeIT.type2;
+import static org.neo4j.ha.upgrade.Utils.execJava;
+import static org.neo4j.helpers.Exceptions.launderedException;
 
 public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDatabase
 {
@@ -210,9 +212,10 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
         return result;
     }
 
+    @Override
     public void doComplexLoad( long center )
     {
-        System.out.println("STarting.....");
+        System.out.println("Starting.....");
         try( Transaction tx = db.beginTx() )
         {
             Node central = db.getNodeById( center );

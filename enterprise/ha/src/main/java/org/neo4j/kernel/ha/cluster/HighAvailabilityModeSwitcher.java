@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,6 +31,7 @@ import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
@@ -57,6 +59,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private volatile URI masterHaURI;
     private volatile URI slaveHaURI;
+    private CancellationHandle cancellationHandle; // guarded by synchronized in startModeSwitching()
 
     public static InstanceId getServerId( URI haUri )
     {
@@ -139,7 +142,18 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }
         else
         {
-            stateChanged( event );
+            try
+            {
+                stateChanged( event );
+            }
+            catch ( ExecutionException e )
+            {
+                throw new RuntimeException( e );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 
@@ -152,7 +166,18 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }
         else
         {
-            stateChanged( event );
+            try
+            {
+                stateChanged( event );
+            }
+            catch ( ExecutionException e )
+            {
+                throw new RuntimeException( e );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 
@@ -165,10 +190,21 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     @Override
     public void instanceStops( HighAvailabilityMemberChangeEvent event )
     {
-        stateChanged( event );
+        try
+        {
+            stateChanged( event );
+        }
+        catch ( ExecutionException e )
+        {
+            throw new RuntimeException( e );
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
-    private void stateChanged( HighAvailabilityMemberChangeEvent event )
+    private void stateChanged( HighAvailabilityMemberChangeEvent event ) throws ExecutionException, InterruptedException
     {
         availableMasterId = event.getServerHaUri();
         if ( event.getNewState() == event.getOldState() )
@@ -209,7 +245,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         haCommunicationLife.shutdown();
                         haCommunicationLife = new LifeSupport();
                     }
-                } );
+                }, new CancellationHandle() );
 
                 try
                 {
@@ -226,13 +262,20 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }
     }
 
-    private void switchToMaster()
+    private void switchToMaster() throws ExecutionException, InterruptedException
     {
+        final CancellationHandle cancellationHandle = new CancellationHandle();
         startModeSwitching( new Runnable()
         {
             @Override
             public void run()
             {
+                // We just got scheduled. Maybe we are already obsolete - test
+                if ( cancellationHandle.cancellationRequested() )
+                {
+                    return;
+                }
+
                 if ( currentTargetState != HighAvailabilityMemberState.TO_MASTER )
                 {
                     return;
@@ -243,7 +286,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
                 try
                 {
-                    masterHaURI = switchToMaster.switchToMaster( haCommunicationLife, me );
+                    masterHaURI = switchToMaster.switchToMaster( haCommunicationLife, me, cancellationHandle );
                 }
                 catch ( Throwable e )
                 {
@@ -255,15 +298,28 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     return;
                 }
             }
-        } );
+        }, cancellationHandle );
     }
 
-    private void switchToSlave()
+    private void switchToSlave() throws ExecutionException, InterruptedException
     {
         // Do this with a scheduler, so that if it fails, it can retry later with an exponential backoff with max
         // wait time.
         final URI masterUri = availableMasterId;
+        /*
+         * This is purely defensive and should never trigger. There was a race where the switch to slave task would
+         * start after this instance was elected master and the task would constantly try to change as slave
+         * for itself, never cancelling. This now should not be possible, since we cancel the task and wait for it
+         * to complete, all in a single thread executor. However, this is a check worth doing because if this
+         * condition slips through via some other code path it can cause trouble.
+         */
+        if ( getServerId( masterUri ).equals( getServerId( me ) ) )
+        {
+            msgLog.error( "I (" + me + ") tried to switch to slave for myself as master (" + masterUri + ")"  );
+            return;
+        }
         final AtomicLong wait = new AtomicLong();
+        final CancellationHandle cancellationHandle = new CancellationHandle();
         startModeSwitching( new Runnable()
         {
             @Override
@@ -279,8 +335,21 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     haCommunicationLife.shutdown();
                     haCommunicationLife = new LifeSupport();
 
-                    slaveHaURI = switchToSlave.switchToSlave(haCommunicationLife, me, masterUri);
-                } catch ( MismatchingStoreIdException | NoSuchLogVersionException e )
+                    URI resultingSlaveHaURI = switchToSlave.switchToSlave( haCommunicationLife, me, masterUri, cancellationHandle );
+                    if ( resultingSlaveHaURI == null )
+                    {
+                        /*
+                         * null slave uri means the task was cancelled. The task then must simply terminate and
+                         * have no side effects.
+                         */
+                        msgLog.info( "Switch to slave resulted in null URI - that means it was effectively cancelled" );
+                    }
+                    else
+                    {
+                        slaveHaURI = resultingSlaveHaURI;
+                    }
+                }
+                catch ( MismatchingStoreIdException | NoSuchLogVersionException e )
                 {
                     // Try again immediately
                     run();
@@ -298,17 +367,45 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     msgLog.logMessage( "Attempting to switch to slave in " + wait.get() + "s" );
                 }
             }
-        } );
+        }, cancellationHandle );
     }
 
-    private void startModeSwitching( Runnable switcher )
+    private synchronized void startModeSwitching( Runnable switcher, CancellationHandle cancellationHandle )
+            throws ExecutionException, InterruptedException
     {
         if ( modeSwitcherFuture != null )
         {
             // Cancel any delayed previous switching
-            modeSwitcherFuture.cancel( false );
+            this.cancellationHandle.cancel();
+            // Wait for it to actually stop what it was doing
+            try
+            {
+                modeSwitcherFuture.get();
+            }
+            catch ( Exception e )
+            {
+                msgLog.warn( "Got exception from cancelled task", e );
+            }
         }
 
+        this.cancellationHandle = cancellationHandle;
         modeSwitcherFuture = modeSwitcherExecutor.submit( switcher );
+    }
+
+    private static class CancellationHandle implements CancellationRequest
+    {
+        private volatile boolean cancelled = false;
+
+        @Override
+        public boolean cancellationRequested()
+        {
+            return cancelled;
+        }
+
+        public void cancel()
+        {
+            assert !cancelled : "Should not cancel on the same request twice";
+            cancelled = true;
+        }
     }
 }

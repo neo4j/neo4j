@@ -55,6 +55,8 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -68,7 +70,7 @@ import static org.neo4j.kernel.ha.HaSettings.ha_server;
 //@Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
 public class RollingUpgradeIT
 {
-    private static final String OLD_VERSION = "2.0.1";
+    private static final String OLD_VERSION = "2.0.4";
 
     public static final RelationshipType type1 = DynamicRelationshipType.withName( "type1" );
     public static final RelationshipType type2 = DynamicRelationshipType.withName( "type2" );
@@ -251,7 +253,7 @@ public class RollingUpgradeIT
             LegacyDatabase legacyDb = legacyDbs[i];
             if ( legacyDb == master.first() )
             {   // Roll over the master last
-                System.out.println("master is " + master.first().getStoreDir());
+                debug( "master is " + master.first().getStoreDir() );
                 continue;
             }
 
@@ -324,6 +326,8 @@ public class RollingUpgradeIT
         {
             if ( newDbs[j] != null )
             {
+                assertTrue( "Rolled over database " + j + " not available within 1 minute",
+                        newDbs[i].isAvailable( MINUTES.toMillis( 1 ) ) );
                 verifyComplexLoad( newDbs[j], centralNode );
                 debug( "Verified on new db " + j );
             }

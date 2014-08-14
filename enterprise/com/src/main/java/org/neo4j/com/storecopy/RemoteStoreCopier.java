@@ -32,6 +32,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -85,18 +86,13 @@ public class RemoteStoreCopier
         this.fs = fs;
     }
 
-    public void copyStore( StoreCopyRequester requester ) throws IOException
+    public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest ) throws IOException
     {
         // Clear up the current temp directory if there
         File storeDir = config.get( Configuration.store_dir );
         File tempStore = new File( storeDir, COPY_FROM_MASTER_TEMP );
         Config tempConfig = configForTempStore( tempStore );
-
-        if ( !tempStore.mkdir() )
-        {
-            FileUtils.deleteRecursively( tempStore );
-            tempStore.mkdir();
-        }
+        clearTempDirectory( tempStore );
 
         // Request store files and transactions that will need recovery
         StoreWriter storeWriter = decorateWithProgressIndicator( new ToFileStoreWriter( tempStore ) );
@@ -116,10 +112,16 @@ public class RemoteStoreCopier
         {
             requester.done();
         }
+        
+        // This is a good place to check if the switch has been cancelled
+        checkCancellation( cancellationRequest, tempStore );
 
         // Run recovery
         GraphDatabaseAPI copiedDb = newTempDatabase( tempStore );
         copiedDb.shutdown();
+        
+        // This is a good place to check if the switch has been cancelled
+        checkCancellation( cancellationRequest, tempStore );
 
         // All is well, move to the real store directory
         for ( File candidate : tempStore.listFiles( new FileFilter()
@@ -135,6 +137,23 @@ public class RemoteStoreCopier
         } ) )
         {
             FileUtils.moveFileToDirectory( candidate, storeDir );
+        }
+    }
+    
+    private void checkCancellation( CancellationRequest cancellationRequest, File tempStore ) throws IOException
+    {
+        if ( cancellationRequest.cancellationRequested() )
+        {
+            clearTempDirectory( tempStore );
+        }
+    }
+    
+    private void clearTempDirectory( File tempStore ) throws IOException
+    {
+        if ( !tempStore.mkdir() )
+        {
+            FileUtils.deleteRecursively( tempStore );
+            tempStore.mkdir();
         }
     }
 
