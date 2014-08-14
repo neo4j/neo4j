@@ -27,7 +27,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorCounters;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
@@ -49,9 +49,9 @@ public class TransactionMonitoringIT
                 MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005", HaSettings.tx_push_factor.name(), "2" )
         );
 
-        TransactionMonitor masterMonitor = null;
-        TransactionMonitor firstSlaveMonitor = null;
-        TransactionMonitor secondSlaveMonitor = null;
+        TransactionMonitorCounters masterMonitor = null;
+        TransactionMonitorCounters firstSlaveMonitor = null;
+        TransactionMonitorCounters secondSlaveMonitor = null;
         try
         {
             clusterManager.start();
@@ -59,13 +59,13 @@ public class TransactionMonitoringIT
             clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
             GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-            masterMonitor = master.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+            masterMonitor = master.getDependencyResolver().resolveDependency( TransactionMonitorCounters.class );
 
             HighlyAvailableGraphDatabase firstSlave = clusterManager.getDefaultCluster().getAnySlave();
-            firstSlaveMonitor = firstSlave.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+            firstSlaveMonitor = firstSlave.getDependencyResolver().resolveDependency( TransactionMonitorCounters.class );
 
             HighlyAvailableGraphDatabase secondSlave = clusterManager.getDefaultCluster().getAnySlave( firstSlave );
-            secondSlaveMonitor = secondSlave.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+            secondSlaveMonitor = secondSlave.getDependencyResolver().resolveDependency( TransactionMonitorCounters.class );
 
             // WHEN
             try ( Transaction tx = master.beginTx() )
@@ -105,9 +105,9 @@ public class TransactionMonitoringIT
                 MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005", HaSettings.tx_push_factor.name(), "2" )
         );
 
-        TransactionMonitor masterMonitor = null;
-        TransactionMonitor firstSlaveMonitor = null;
-        TransactionMonitor secondSlaveMonitor = null;
+        TransactionMonitorCounters masterMonitor = null;
+        TransactionMonitorCounters firstSlaveMonitor = null;
+        TransactionMonitorCounters secondSlaveMonitor = null;
         try
         {
             clusterManager.start();
@@ -115,13 +115,13 @@ public class TransactionMonitoringIT
             clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
             GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-            masterMonitor = master.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+            masterMonitor = master.getDependencyResolver().resolveDependency( TransactionMonitorCounters.class );
 
             HighlyAvailableGraphDatabase firstSlave = clusterManager.getDefaultCluster().getAnySlave();
-            firstSlaveMonitor = firstSlave.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+            firstSlaveMonitor = firstSlave.getDependencyResolver().resolveDependency( TransactionMonitorCounters.class );
 
             HighlyAvailableGraphDatabase secondSlave = clusterManager.getDefaultCluster().getAnySlave( firstSlave );
-            secondSlaveMonitor = secondSlave.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+            secondSlaveMonitor = secondSlave.getDependencyResolver().resolveDependency( TransactionMonitorCounters.class );
 
             // WHEN
             try ( Transaction tx = firstSlave.beginTx() )

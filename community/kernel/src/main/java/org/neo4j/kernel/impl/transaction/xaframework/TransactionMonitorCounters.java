@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TransactionMonitorImpl implements TransactionMonitor
+public class TransactionMonitorCounters implements TransactionMonitor
 {
     private final AtomicInteger startedTransactionCount = new AtomicInteger();
     private final AtomicInteger activeTransactionCount = new AtomicInteger();
@@ -55,25 +55,21 @@ public class TransactionMonitorImpl implements TransactionMonitor
         terminatedTransactionCount.incrementAndGet();
     }
 
-    @Override
     public int getNumberOfActiveTransactions()
     {
         return activeTransactionCount.get();
     }
 
-    @Override
     public int getPeakConcurrentNumberOfTransactions()
     {
         return peakTransactionCount;
     }
 
-    @Override
     public int getNumberOfStartedTransactions()
     {
         return startedTransactionCount.get();
     }
 
-    @Override
     public long getNumberOfCommittedTransactions()
     {
         return startedTransactionCount.get()
@@ -82,13 +78,11 @@ public class TransactionMonitorImpl implements TransactionMonitor
                 - terminatedTransactionCount.get();
     }
 
-    @Override
     public long getNumberOfTerminatedTransactions()
     {
         return terminatedTransactionCount.get();
     }
 
-    @Override
     public long getNumberOfRolledbackTransactions()
     {
         return rolledBackTransactionCount.get();

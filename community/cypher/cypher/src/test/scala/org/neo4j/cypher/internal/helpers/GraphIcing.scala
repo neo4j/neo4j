@@ -26,7 +26,7 @@ import collection.JavaConverters._
 import java.util.concurrent.TimeUnit
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor
+import org.neo4j.kernel.impl.transaction.xaframework.{TransactionMonitorCounters, TransactionMonitor}
 
 trait GraphIcing {
 
@@ -76,7 +76,7 @@ trait GraphIcing {
 
     def txCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledbackTransactions, txMonitor.getNumberOfActiveTransactions)
 
-    private def txMonitor: TransactionMonitor = graph.getDependencyResolver.resolveDependency(classOf[TransactionMonitor])
+    private def txMonitor: TransactionMonitorCounters = graph.getDependencyResolver.resolveDependency(classOf[TransactionMonitorCounters])
 
     private def txBridge: ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
   }

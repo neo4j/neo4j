@@ -35,7 +35,7 @@ public class TransactionMonitorTest
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         try
         {
-            TransactionMonitor monitor = db.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+            TransactionMonitorCounters monitor = db.getDependencyResolver().resolveDependency( TransactionMonitorCounters.class );
             int startedBefore = monitor.getNumberOfStartedTransactions();
             long committedBefore = monitor.getNumberOfCommittedTransactions();
             long rolledBackBefore = monitor.getNumberOfRolledbackTransactions();
@@ -60,7 +60,7 @@ public class TransactionMonitorTest
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         try
         {
-            TransactionMonitor monitor = db.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+            TransactionMonitorCounters monitor = db.getDependencyResolver().resolveDependency( TransactionMonitorCounters.class );
             int startedBefore = monitor.getNumberOfStartedTransactions();
             long committedBefore = monitor.getNumberOfCommittedTransactions();
             long rolledBackBefore = monitor.getNumberOfRolledbackTransactions();

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorCounters;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
@@ -33,9 +33,9 @@ public class DatabaseAvailability
         implements Lifecycle, AvailabilityGuard.AvailabilityRequirement
 {
     private final AvailabilityGuard availabilityGuard;
-    private final TransactionMonitor transactionMonitor;
+    private final TransactionMonitorCounters transactionMonitor;
 
-    public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionMonitor transactionMonitor )
+    public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionMonitorCounters transactionMonitor )
     {
         this.availabilityGuard = availabilityGuard;
         this.transactionMonitor = transactionMonitor;
