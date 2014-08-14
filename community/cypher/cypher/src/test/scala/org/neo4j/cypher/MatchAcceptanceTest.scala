@@ -1231,4 +1231,12 @@ RETURN a.name""")
     // should give us a single, empty path starting at one end
     result.toList should equal (List(Map("n" -> "42", "count" -> 1)))
   }
+
+  test("MATCH n WITH n.prop AS n2 RETURN n2.prop") {
+    // Given a single node
+    val node = createNode("prop" -> "42")
+
+    // then
+    intercept[SyntaxException](executeWithNewPlanner("MATCH n WITH n.prop AS n2 RETURN n2.prop"))
+  }
 }
