@@ -154,7 +154,7 @@ import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.*;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorCounters;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionCounters;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -273,7 +273,7 @@ public abstract class InternalAbstractGraphDatabase
     protected JobScheduler jobScheduler;
     protected UpdateableSchemaState updateableSchemaState;
     protected Monitors monitors;
-    protected TransactionMonitorCounters transactionMonitor = new TransactionMonitorCounters();
+    protected TransactionCounters transactionMonitor = new TransactionCounters();
     protected final LifeSupport life = new LifeSupport();
     private final Map<String, CacheProvider> cacheProviders;
     protected AvailabilityGuard availabilityGuard;

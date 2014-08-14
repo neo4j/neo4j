@@ -19,29 +19,29 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
-public class TransactionMonitorCounters implements TransactionMonitor
+public class TransactionCounters implements TransactionMonitor
 {
-    private final AtomicInteger startedTransactionCount = new AtomicInteger();
-    private final AtomicInteger activeTransactionCount = new AtomicInteger();
-    private final AtomicInteger rolledBackTransactionCount = new AtomicInteger();
-    private final AtomicInteger terminatedTransactionCount = new AtomicInteger();
-    private int peakTransactionCount; // hard to have absolutely atomic, and it doesn't need to be.
+    private final AtomicLong startedTransactionCount = new AtomicLong();
+    private final AtomicLong activeTransactionCount = new AtomicLong();
+    private final AtomicLong rolledBackTransactionCount = new AtomicLong();
+    private final AtomicLong terminatedTransactionCount = new AtomicLong();
+    private long peakTransactionCount; // hard to have absolutely atomic, and it doesn't need to be.
 
     @Override
     public void transactionStarted()
     {
         // TODO offload stats keeping somehow from executing thread?
         startedTransactionCount.incrementAndGet();
-        int active = activeTransactionCount.incrementAndGet();
+        long active = activeTransactionCount.incrementAndGet();
         peakTransactionCount = Math.max( peakTransactionCount, active );
     }
 
     @Override
     public void transactionFinished( boolean successful )
     {
-        int count = activeTransactionCount.decrementAndGet();
+        long count = activeTransactionCount.decrementAndGet();
         assert count >= 0;
         if ( !successful )
         {
@@ -55,17 +55,17 @@ public class TransactionMonitorCounters implements TransactionMonitor
         terminatedTransactionCount.incrementAndGet();
     }
 
-    public int getNumberOfActiveTransactions()
+    public long getNumberOfActiveTransactions()
     {
         return activeTransactionCount.get();
     }
 
-    public int getPeakConcurrentNumberOfTransactions()
+    public long getPeakConcurrentNumberOfTransactions()
     {
         return peakTransactionCount;
     }
 
-    public int getNumberOfStartedTransactions()
+    public long getNumberOfStartedTransactions()
     {
         return startedTransactionCount.get();
     }

@@ -27,7 +27,7 @@ import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorCounters;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionCounters;
 import org.neo4j.management.TransactionManager;
 
 @Service.Implementation(ManagementBeanProvider.class)
@@ -46,30 +46,30 @@ public final class TransactionManagerBean extends ManagementBeanProvider
 
     private static class TransactionManagerImpl extends Neo4jMBean implements TransactionManager
     {
-        private final TransactionMonitorCounters txMonitor;
+        private final TransactionCounters txMonitor;
         private final DataSourceManager xadsm;
 
         TransactionManagerImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.txMonitor = management.resolveDependency( TransactionMonitorCounters.class );
+            this.txMonitor = management.resolveDependency( TransactionCounters.class );
             this.xadsm = management.resolveDependency( DataSourceManager.class );
         }
 
         @Override
-        public int getNumberOfOpenTransactions()
+        public long getNumberOfOpenTransactions()
         {
             return txMonitor.getNumberOfActiveTransactions();
         }
 
         @Override
-        public int getPeakNumberOfConcurrentTransactions()
+        public long getPeakNumberOfConcurrentTransactions()
         {
             return txMonitor.getPeakConcurrentNumberOfTransactions();
         }
 
         @Override
-        public int getNumberOfOpenedTransactions()
+        public long getNumberOfOpenedTransactions()
         {
             return txMonitor.getNumberOfStartedTransactions();
         }

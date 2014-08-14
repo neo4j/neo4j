@@ -32,8 +32,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.MasterServer;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorCounters;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionCounters;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -42,14 +41,14 @@ public class MetricsLogExtension implements Lifecycle
     private final Monitors monitors;
     private final Config config;
     private final FileSystemAbstraction fileSystemAbstraction;
-    private final TransactionMonitorCounters transactionMonitor;
+    private final TransactionCounters transactionMonitor;
     private ByteCounterMetrics networkCounterMetrics;
     private ByteCounterMetrics diskCounterMetrics;
     private ScheduledExecutorService executor;
     private CSVFile csv;
 
     public MetricsLogExtension( Monitors monitors, Config config, FileSystemAbstraction fileSystemAbstraction,
-                                TransactionMonitorCounters transactionMonitor)
+                                TransactionCounters transactionMonitor)
     {
         this.monitors = monitors;
         this.config = config;

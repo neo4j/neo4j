@@ -29,13 +29,13 @@ public interface TransactionManager
     final String NAME = "Transactions";
 
     @Description( "The number of currently open transactions" )
-    int getNumberOfOpenTransactions();
+    long getNumberOfOpenTransactions();
 
     @Description( "The highest number of transactions ever opened concurrently" )
-    int getPeakNumberOfConcurrentTransactions();
+    long getPeakNumberOfConcurrentTransactions();
 
     @Description( "The total number started transactions" )
-    int getNumberOfOpenedTransactions();
+    long getNumberOfOpenedTransactions();
 
     @Description( "The total number of committed transactions" )
     long getNumberOfCommittedTransactions();
