@@ -1,49 +1,77 @@
+@import 'variables'
 @import 'nib'
 @import 'mixins'
 
 .legend
-  absolute: top 16px left 16px
-  user-select: none
-  cursor: default
-  padding-right: 32px
-  max-height: 368px
+  background-color: #EEF1F8
+  border-bottom: 1px solid #DFE5F0
 
-  li
-    overflow: hidden
-    margin-bottom: 8px
-    &.faded
-      opacity: 0.3
-    .preview
-      preview-size = 29px
-      float: left
-      border-radius: 50%
+  .label
+    user-select: none
+    padding: 10px
+    font-size: 12px
+    margin-right: 5px
+    cursor: pointer
+    &.label-node
+      padding: 4px 7px 4px 9px
+      border-radius: 20px
+    &.label-relationship
+      padding: 4px 5px 4px 6px
+      border-radius: 3px
+
+    .count
+      font-weight: normal
+
+    .caret
+      margin-top: -1px
+      margin-left: 3px
+
+  .type
+    float: left
+    line-height: 35px
+    margin: 0 12px
+    color: #525864
+
+  .caption
+    float: left
+    margin-right: 5px
+    font-size: 12px
+    font-weight: bold
+    line-height: 21px
+
+  .legend-row > ul
+    padding: 7px 9px 0px 10px
+    &.list-relationships
+      border-top: 1px dashed #d2d5da
+    > li
       display: inline-block
-      width: preview-size
-      height: preview-size
-      margin-right: 8px
-      .shade
-        stretch()
-        background-color: #fff
-        width: (preview-size / 2px)
-        opacity: 0.10
-
-    .contents
-      //overflow: hidden
-      float: left
-      line-height: 1em
-      position: relative
-      top: 3px
-      &.no-condition
-        top: -1px
-        line-height: 30px
-      .class-name
-        font-size: 13px
-      .condition
-        font-size: 10px
-        color: #888
-    .remove
-      display: none
-      padding: 2px 8px
-      margin-left: 12px
-    &:hover .remove
+      margin-bottom: 3px
+      &.faded
+        opacity: 0.3
+      .preview
+        preview-size = 29px
+        float: left
+        border-radius: 50%
         display: inline-block
+        width: preview-size
+        height: preview-size
+        margin-right: 8px
+        .shade
+          stretch()
+          background-color: #fff
+          width: (preview-size / 2px)
+          opacity: 0.10
+
+      .contents
+        //overflow: hidden
+        float: left
+        line-height: 1em
+        position: relative
+        top: 3px
+        top: -1px
+      .remove
+        display: none
+        padding: 2px 8px
+        margin-left: 12px
+      &:hover .remove
+          display: inline-block

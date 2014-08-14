@@ -1,54 +1,7 @@
-inspector(show='isInspectorShown', ng-controller='InspectorCtrl', style="top: 60px; right: 24px")
-  .header
-    span.preview(ng-style='{"background-color": style.color }')
-    {{item.type || item.labels.join(', ')}}&nbsp;
-    span.muted [{{item.id}}]
-    a.close.icon-remove(ng-click='toggleInspector()')
+.inspector-footer(ng-if="Inspector.length > 0")
+  .inspector-footer-row(ng-repeat="row in Inspector.items", ng-include="row.tmpl", onload ="item = row.data")
 
-  tabset
-    tab
-      tab-heading
-        i.icon-info-sign
-        span.name Properties
-      ul.sections.unstyled.tight.scrollable
-        li.empty(ng-show='item.propertyList.length == 0') No properties
-        li.pair(ng-repeat='property in item.propertyList')
-          .key {{property.key}}
-          .value {{property.value}}
-
-    tab
-      tab-heading
-        i.icon-eye-open
-        span.name Style
-      ul.sections.unstyled
-        li
-          span Caption:
-          .dropdown
-            a.dropdown-toggle(data-toggle='dropdown') {{selectedCaption}} &nbsp;
-              i.icon-caret-down
-            ul.dropdown-menu.pull-left(role='menu')
-              li
-                a(ng-click='selectCaption("id")') ID
-              li(ng-repeat='property in item.propertyList')
-                a(ng-click='selectCaption(property.key)') {{property.key}}
-        li.node-sizes(ng-show='item.isNode')
-          ul.inline
-            li(ng-repeat='size in sizes')
-              a(ng-style='{width: size.diameter, height: size.diameter}'
-                ng-class='{active: size.diameter == style.diameter}'
-                ng-click='selectSize(size)')
-        li.arrow-widths(ng-show='item.isRelationship')
-          ul.inline
-            li(ng-repeat='arrowWidth in arrowWidths')
-              a(ng-style='{width: arrowWidth["shaft-width"]}'
-                ng-class='{active: arrowWidth["shaft-width"] == style["shaft-width"]}'
-                ng-click='selectArrowWidth(arrowWidth)')
-        li.colors
-          ul.inline
-            li(ng-repeat='scheme in colors')
-              a(ng-style='{"background-color": scheme.color}'
-                ng-class='{active: scheme.color == style.color && scheme["border-color"] == style["border-color"]}'
-                ng-click="selectScheme(scheme)")
-        li
-          i.icon-code
-          a(ng-click='togglePopup("styling")') View stylesheet...
+.inspector-footer(ng-if="Inspector.length == 0")
+  .inspector-footer-row
+    ul.list-inline
+      li(ng-bind="resultStatistics(frame)")

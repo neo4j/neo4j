@@ -39,15 +39,12 @@ angular.module('neo4jApp.controllers')
       ###*
        * Scope methods
       ###
-      $scope.showingDrawer = (named) ->
-        $scope.isDrawerShown and ($scope.whichDrawer == named)
-
       $scope.removeFolder = (folder) ->
         return unless confirm("Are you sure you want to delete the folder?")
-        Folder.remove(folder)
+        Folder.destroy(folder)
 
       $scope.removeDocument = (doc) ->
-        Document.remove(doc)
+        Document.destroy(doc)
         # also clear the document contents to cleanup editor content etc.
         doc[k] = null for own k, v of doc
 
@@ -63,29 +60,29 @@ angular.module('neo4jApp.controllers')
 
       # Handlers for drag n drop (for angular-ui-sortable)
       $scope.sortableOptions =
-        stop: scopeApply (e, ui) ->
-          doc = ui.item.scope().document
+        connectWith: '.sortable'
+        placeholder: 'sortable-placeholder'
+        items: 'li'
+        cursor: 'move'
+        dropOnEmpty: yes
 
+        stop: (e, ui) ->
+          doc = ui.item.sortable.moved or ui.item.scope().document
           folder = if ui.item.folder? then ui.item.folder else doc.folder
-          offsetLeft = Math.abs(ui.position.left - ui.originalPosition.left)
 
-          if ui.item.relocate
+          if ui.item.resort and ui.item.relocate
             doc.folder = folder
-            doc.starred = !!folder
-          # XXX: FIXME
-          else if offsetLeft > 200
-            $scope.documents.remove(doc)
+            doc.folder = false if doc.folder is 'root'
 
-          if ui.item.resort
-            idxOffset = ui.item.index()
-            # Get insertion index offset
-            first = $scope.documents.where(folder: folder)[0]
-            idx = $scope.documents.indexOf(first)
-            idx = 0 if idx < 0
-            $scope.documents.remove(doc)
-            $scope.documents.add(doc, {at: idx + idxOffset})
+          # re-order the scripts according to order in sortable
+          for folder in $scope.folders
+            for doc in folder.documents
+              Document.remove(doc)
+              Document.add(doc)
 
-          $scope.documents.save()
+          Document.save()
+
+          return
 
         update: (e, ui) ->
           ui.item.resort = yes
@@ -95,14 +92,25 @@ angular.module('neo4jApp.controllers')
           folder = angular.element(e.target).scope().folder
           ui.item.folder = if folder? then folder.id else false
 
-        cursor: "move"
-        dropOnEmpty: yes
-        connectWith: '.droppable'
-        items: 'li'
+      nestedFolderStructure = ->
+        nested = for folder in Folder.all()
+          documents = (doc for doc in Document.where({folder: folder.id}))
+          folder.documents = documents
+          folder
+
+        noFolder = Folder.new(id: 'root')
+        noFolder.documents = (doc for doc in Document.where({folder: false}))
+        nested.push noFolder
+
+        nested
+
+      $scope.folders = nestedFolderStructure()
+
+      $scope.$on 'localStorage:updated', ->
+        $scope.folders = nestedFolderStructure()
 
       # Expose editor service to be able to play saved scripts
       $scope.editor = Editor
-      # Expose documents and folders to views
-      $scope.folders = Folder
-      $scope.documents   = Document
+
+      $scope.folderService = Folder
   ]

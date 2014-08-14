@@ -25,35 +25,70 @@ angular.module('neo4jApp')
 
     $scope.graph = null
 
-    update = (graph) ->
+    $scope.sizes = graphStyle.defaultSizes()
+    $scope.arrowWidths = graphStyle.defaultArrayWidths()
+    $scope.colors = graphStyle.defaultColors()
+
+    graphStats = (graph) ->
       resultLabels = {}
+      resultRelTypes = {}
+      stats = {
+        labels: {}
+        types: {}
+      }
       for node in graph.nodes()
-        for label in node.labels 
-          resultLabels[label] = (resultLabels[label] || 0) + 1
-      resultRules = []
-      for rule in graphStyle.rules
-        if resultLabels.hasOwnProperty(rule.selector.klass)
-          resultRules.push(rule)
-      $scope.rules = resultRules
+        stats.labels[''] ?=
+          label: ''
+          attrs: []
+          count: 0
+          style: graphStyle.forNode()
+        stats.labels[''].count++
+
+        for label, idx in node.labels
+          stats.labels[label] ?=
+            label: label
+            attrs: Object.keys(node.propertyMap)
+            count: 0
+            style: graphStyle.forNode(node, idx)
+
+          stats.labels[label].count++
+
+      for rel in graph.relationships()
+        stats.types[''] ?=
+          type: ''
+          attrs: []
+          count: 0
+          style: graphStyle.forRelationship()
+        stats.types[''].count++
+
+        stats.types[rel.type] ?=
+          type: rel.type
+          attrs: Object.keys(rel.propertyMap)
+          count: 0
+          style: graphStyle.forRelationship(rel)
+
+        stats.types[rel.type].count++
+
+      stats
+
+    update = (graph) ->
+      stats = graphStats(graph)
+      #for rule in graphStyle.rules
+      #  if stats.labels.hasOwnProperty(rule.selector.klass)
+      #    resultRules.push(rule)
+      #$scope.rules = resultRules
+      $scope.labels = stats.labels
+      $scope.types = stats.types
 
     $scope.$watch 'frame.response', (frameResponse) ->
       return unless frameResponse
       if frameResponse.graph
         $scope.graph = frameResponse.graph
-        update(frameResponse.graph) 
+        update(frameResponse.graph)
 
     graphChanged = (event, graph) ->
       if graph is $scope.graph
         update(graph)
 
     $scope.$on 'graph:changed', graphChanged
-
-    $scope.rules = [] 
-
-    $scope.isNode = (rule) ->
-      rule.selector.tag == 'node'
-
-    $scope.remove = (rule) ->
-      graphStyle.destroyRule(rule)
-
   ]

@@ -19,6 +19,8 @@ indent-hover = 22px
   height: 100%
   .droppable
     user-select: none
+    ul
+      min-height: 8px
   .pane
     position: absolute
     right: 0
@@ -58,9 +60,13 @@ indent-hover = 22px
       &:hover
         color: drawer-color-section-icon-hover
     a.create-folder
-      font-size: 16px
-      color: #4A5055
-      padding: 8px
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      border-radius: 3px;
+      text-shadow: none;
+      float: right;
+      .fa
+        margin-right: 3px
       &:hover
         color: drawer-color-section-icon-hover
 
@@ -69,11 +75,11 @@ indent-hover = 22px
     font-size: 12px
     line-height: 39px;
     font-size: 13px
-    border-bottom: 1px solid drawer-color-border
     color: #fff
     font-weight: bold
     margin-bottom: 12px
     margin-top: 12px
+    border-bottom: 1px solid drawer-color-border
     &:first-child
       margin-top: 0
     .count
@@ -85,9 +91,12 @@ indent-hover = 22px
       margin: 0
       padding-left: 16px
       cursor: pointer
-      .icon-caret-right
+      &.folded
+        border-bottom: none
+        margin-bottom: -10px
+      .fa-caret-right
         absolute: top 13px left 0px
-    .icon-trash
+    .fa-trash-o
       absolute: top 11px right 2px
       font-size: 16px
       color: drawer-color-fg-icon
@@ -95,7 +104,7 @@ indent-hover = 22px
       &:hover
         color: drawer-color-fg-icon-hover
     &:hover
-      .icon-trash
+      .fa-trash-o
         display: block
       .edit-in-place-trigger
         display: inline
@@ -103,6 +112,7 @@ indent-hover = 22px
   ul
     li
       color: drawer-color-fg
+      line-height: 1.5em
       &.pair
         overflow: hidden
         .key
@@ -127,25 +137,38 @@ indent-hover = 22px
     li
       background-color: drawer-color-bg
       overflow: hidden
+      &.sortable-placeholder
+        border-radius: 4px
+        height: 29px
       .list-item
-        padding: 9px horizontal-padding 9px 0
+        padding: 9px horizontal-padding 0 0
+        padding-left: indent-hover
         position: relative
-        border-bottom: 1px solid drawer-color-border
         cursor: pointer
         transist: padding 0.2s
         overflow: hidden
+        .icon
+          position: absolute
+          &.fa-circle-thin
+            opacity: 1
+            padding-left: 0
+            left: 0
+            font-size: 14px
+            top: 10px
         &.loaded
           padding-left: indent-hover
+          &.fa-circle-thin
+            opacity: 0
           &:hover
             padding-left: indent-hover
             .contents a
               color: color-star
-          .icon-long-arrow-right
+          .icon-loaded
             opacity: 1
             left: 0
             &:hover
               color: #fff
-          &:hover .icon-play-sign
+          &:hover .icon-inactive
             opacity: 0
             left: 40px
           .contents
@@ -158,35 +181,36 @@ indent-hover = 22px
           width 0
           opacity 0
         &:hover
-          padding-left: indent-hover
-          .icon-trash
+          .fa-trash-o
             display: block
-          .icon-play-sign, .icon-spinner
+          .fa-circle-thin
+            opacity: 0
+          .icon-inactive, .fa-spinner
             opacity: 1
-          .icon-play-sign
+          .icon-inactive
             color: color-success
           .contents a
             color: drawer-color-fg-active
         .background
           stretch()
-        a[class*="icon-"]
+        a[class*="fa-"]
           font-size: 16px
           color: drawer-color-fg-icon
           &:hover
             color: drawer-color-fg-icon-hover
-        .icon-trash
+        .fa-trash-o
           z-index 2
           absolute: right 2px top 10px
           display: none
-        .icon-play-sign, .icon-spinner, .icon-long-arrow-right
+        .icon-inactive, .fa-spinner, .icon-loaded, .icon
           transist: all 0.2s
           opacity: 0
           z-index 2
           absolute: left 0 top 10px
-        a.icon-long-arrow-right
+        a.icon-loaded
           color: color-star
           left: -10px
-        a.icon-spinner
+        a.fa-spinner
           color: #fff
         .contents
           position relative
@@ -209,18 +233,30 @@ indent-hover = 22px
               margin-right: 4px
   ul.indented
     li .list-item
-      padding-left: indent
-      a.icon-long-arrow-right
+      padding-left: indent-hover + indent
+      .icon
+        position: absolute
+        &.fa-circle-thin
+          padding-left:indent-hover + indent
+          left: -21px
+      a.icon-loaded
         left: 0px
+      &.icon
+        position: absolute
+        &.fa-circle-thin
+          padding-left: indent-hover + indent
+          left: -14px
+          font-size: 14px
+          top: 10px
       &.loaded
         padding-left: indent-hover + indent
         &:hover
           padding-left: indent-hover + indent
-        .icon-long-arrow-right
+        .icon-loaded
           left: indent
       &:hover
         padding-left: indent-hover + indent
-      .icon-play-sign, .icon-spinner
+      .icon-inactive, .fa-spinner
         left indent
 
   .badge, .label
@@ -242,6 +278,10 @@ indent-hover = 22px
       border-color: #FFF
       color: #FFF
 
+  hr
+    border-top: 1px dashed lighten(drawer-color-border, 10%)
+    margin-top: 13px
+    margin-bottom: 1px
 
   .file-drop-area
     margin: 14px 0

@@ -34,7 +34,7 @@ angular.module('neo4jApp')
         null
 
     argv = (input) ->
-      rv = input.toLowerCase().split(' ')
+      rv = input?.toLowerCase().split(' ')
       rv or []
 
     error = (msg, exception = "Error", data) ->
@@ -45,10 +45,27 @@ angular.module('neo4jApp')
     FrameProvider.interpreters.push
       type: 'clear'
       matches: "#{cmdchar}clear"
-      exec: ['$rootScope', 'Frame', ($rootScope, Frame) ->
+      exec: ['Frame', (Frame) ->
         (input) ->
           Frame.reset()
           true
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'style'
+      matches: "#{cmdchar}style"
+      exec: [
+        '$rootScope', 'exportService', 'GraphStyle',
+        ($rootScope, exportService, GraphStyle) ->
+          (input, q) ->
+            switch argv(input)[1]
+              when 'reset'
+                GraphStyle.resetToDefault()
+              when 'export'
+                exportService.download('graphstyle.grass', 'text/plain;charset=utf-8', GraphStyle.toString())
+              else
+                $rootScope.togglePopup('styling')
+            true
       ]
 
     # FrameProvider.interpreters.push
@@ -144,7 +161,7 @@ angular.module('neo4jApp')
 
           if (matches?)
             [key, value] = [matches[1], matches[2]]
-            if (value?) 
+            if (value?)
               try
                 value = eval(value)
               catch
@@ -156,11 +173,11 @@ angular.module('neo4jApp')
             property = {}
             property[key] = value
             q.resolve(property)
-          else 
+          else
             q.resolve(Settings)
 
           q.promise
-          
+
       ]
 
     # about handler
@@ -242,6 +259,11 @@ angular.module('neo4jApp')
     #       q.promise
     #   ]
 
+    extractGraphModel = (response, CypherGraphModel) ->
+      graph = new neo.models.Graph()
+      graph.addNodes(response.nodes.map(CypherGraphModel.convertNode()))
+      graph.addRelationships(response.relationships.map(CypherGraphModel.convertRelationship(graph)))
+      graph
 
     # Cypher handler
     FrameProvider.interpreters.push
@@ -251,7 +273,7 @@ angular.module('neo4jApp')
         'where', 'foreach', 'with', 'load', 'using', 'unwind'
       ]
       templateUrl: 'views/frame-cypher.html'
-      exec: ['Cypher', 'GraphModel', (Cypher, GraphModel) ->
+      exec: ['Cypher', 'CypherGraphModel', (Cypher, CypherGraphModel) ->
         # Return the function that handles the input
         (input, q) ->
           Cypher.transaction().commit(input).then(
@@ -259,9 +281,10 @@ angular.module('neo4jApp')
               if response.size > Settings.maxRows
                 q.reject(error("Resultset too large (over #{Settings.maxRows} rows)"))
               else
+
                 q.resolve(
                   table: response
-                  graph: new GraphModel(response)
+                  graph: extractGraphModel(response, CypherGraphModel)
                 )
           ,
           q.reject

@@ -20,20 +20,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict';
 
-angular.module('neo4jApp.directives')
-  .directive('exportable', [() ->
+angular.module('neo.exportable', ['neo.csv'])
+  .service('exportService', [
+    '$window'
+    ($window) ->
+      download: (filename, mime, data) ->
+        blob = new Blob([data], {type: mime})
+        $window.saveAs(blob, filename)
+  ])
+  .directive('exportable', [->
     restrict: 'A'
     controller: [
       '$scope',
-      '$window',
       'CSV',
-      ($scope, $window, CSV) ->
+      'exportService'
+      ($scope, CSV, exportService) ->
 
         saveAs = (data, filename, mime = "text/csv;charset=utf-8") ->
           if !!navigator.userAgent.match(/Version\/[\d\.]+.*Safari/)
             return alert('Exporting data is currently not supported in Safari. Please use another browser.')
-          blob = new Blob([data], {type: mime});
-          $window.saveAs(blob, filename);
+          exportService.download(filename, mime, data)
 
         $scope.exportJSON = (data) ->
           return unless data
@@ -50,6 +56,9 @@ angular.module('neo4jApp.directives')
 
         $scope.exportGraSS = (data) ->
           saveAs(data, 'graphstyle.grass')
+
+        $scope.exportScript = (data) ->
+          saveAs(data, 'script.cypher')
 
     ]
   ])

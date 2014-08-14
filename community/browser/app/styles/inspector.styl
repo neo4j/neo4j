@@ -1,11 +1,84 @@
+@import 'variables'
 @import 'mixins'
+@import 'nib'
 
-inspector-bg-color = #0F1419
-inspector-font-color = #eee
-inspector-tab-bg-color = #33373C
-inspector-tab-font-color = #66696D
-inspector-tab-font-active-color = #b1b2b4
-inspector-divider-color = #242E3B
+
+.inspector-footer
+  // background-color: #EEF1F8
+  font-size: 10px
+  // width: 100%
+  .inspector-footer-row > ul
+    // min-height: 28px
+    // padding: 5px 9px 5px 10px
+    li
+      vertical-align: middle
+    li.pair
+      font-size: 10px
+    .key
+      float: left
+      color: darken(inspector-font-color, 30%)
+    .value
+      padding-left: 3px
+      overflow: hidden
+
+    .class-name
+      font-size: 10px
+
+    .inspector-icon
+      .fa
+        margin-right: 5px
+        margin-left: 3px
+
+    .colors, .node-sizes, .arrow-widths
+      ul.list-inline > li
+        padding-left: 1px
+        a
+          background-color: #aaa
+          display: inline-block;
+          height: 12px
+          width: 12px
+          margin-top: 1px
+          line-height: 0
+          opacity: 0.4
+          &.active, &:hover
+            opacity: 1
+    .node-sizes a, .colors a, .colors a
+      border-radius: 50%
+    .attribute
+      user-select: none
+      display: inline-block
+      padding: 1px 6px
+      font-size: 10px
+      line-height: 12px
+      color: #9195A0;
+      border: 1px solid #9195A0;
+      max-width: 100px;
+      overflow: hidden;
+      border-radius: .25em;
+      margin-right: 0;
+      font-weight: bold;
+      &:hover
+        border-color: #aaa;
+        color: #aaa;
+
+
+.inspector-handle
+  position: absolute
+  bottom: 0
+  right: 0
+  width: 42px
+  height: 42px
+  background: #fff
+  color: #9b9da2
+  text-align: center
+  font-size: 16px
+  padding-top: 10px
+  border-left: 1px solid #dfe5f0
+  border-top: 1px solid #dfe5f0
+  transist: all 0.2s
+  &:hover
+    background: #4B4F58
+    color: #fff
 
 .inspector
   opacity: 0.95
@@ -14,17 +87,18 @@ inspector-divider-color = #242E3B
   z-index: 5010
   color: inspector-font-color
   background-color: inspector-bg-color
-  border-radius: 6px
-  top: 24px
-  right: 24px
+  top: 0
+  right: 0
+  bottom: 0
   width: 320px
+  overflow: hidden
 
   // Bootstrap overrides
-  ul.inline li:first-child
+  ul.list-inline li:first-child
     padding-left: 0
-  ul.inline li:last-child
+  ul.list-inline li:last-child
     padding-right: 0
-  ul.inline > li
+  ul.list-inline > li
     padding-left: 3px
     padding-right: 3px
   .nav
@@ -33,7 +107,7 @@ inspector-divider-color = #242E3B
     border-bottom: 0
     > li
       margin-bottom: 0
-  .nav-tabs > .active > a
+  .nav-tabs > .active > a, .nav-tabs > .active > a:hover
     color: inspector-tab-font-active-color
     background-color: inspector-bg-color
     border: none
@@ -41,6 +115,8 @@ inspector-divider-color = #242E3B
     border: none
     color: inspector-tab-font-color
     background-color: inspector-tab-bg-color
+    padding: 0 12px;
+    line-height: 39px;
   li
     line-height: 1px
   .dropdown
@@ -54,7 +130,7 @@ inspector-divider-color = #242E3B
     padding-left: 10px
     overflow: hidden
     user-select: none
-    cursor: move
+    background-color: inspector-header-color
     .preview
       width: 10px
       height: 10px
@@ -62,108 +138,130 @@ inspector-divider-color = #242E3B
       display: inline-block
       margin-right: 6px
     a.close
-      font-size: 13px
-      color: white
+      font-size: 14px
+      color: #fff
       float: right
-      padding: 10px 12px
+      padding: 9px 12px
+      opacity: 0.8
 
-  .nav
-    font-weight: bold
-    padding: 0 8px
-    background-color: inspector-tab-bg-color
-    padding-top: 6px
-    .name
-      display: none
-      margin-left: 8px
-    .active
-      .name
-        display: inline-block
+  .inspector-body
+    position: absolute
+    top: 34px
+    bottom: 0
+    left: 0
+    right: 0
+    overflow: auto
+
+  .sections > li
+    line-height: 1.3em
+    padding: 18px 14px
+    border-bottom: 1px solid inspector-divider-color
+    a
+      color: inspector-font-color
+    .dropdown-menu > li > a
+      color: inspector-bg-color
+      &:hover
+        color: #fff
+    .dropdown-toggle
+      font-weight: bold
+    &:last-child
+      border-bottom: none
     i
+      margin-top: -2px
+      vertical-align: middle
       font-size: 18px
-      position: relative;
-      top: 1px
-
-  .tab-content
-    overflow: visible
-
-  .tab-pane
-    .sections.scrollable
-        max-height: 450px
-        overflow: auto
-    .sections > li
-      line-height: 1.3em
-      padding: 18px 14px
-      border-bottom: 1px solid inspector-divider-color
+      display: inline-block
+      width: 29px
+    &.colors, &.node-sizes, &.arrow-widths
+      padding-top: 10px
+      padding-bottom: 11px
       a
-        color: inspector-font-color
-      .dropdown-menu > li > a
-        color: inspector-bg-color
-        &:hover
-          color: #fff
-      .dropdown-toggle
-        font-weight: bold
-      &:last-child
-        border-bottom: none
-      i
-        margin-top: -2px
-        vertical-align: middle
-        font-size: 18px
+        position: relative
         display: inline-block
-        width: 29px
-      &.colors, &.node-sizes, &.arrow-widths
-        padding-top: 10px
-        padding-bottom: 11px
-        a
-          position: relative
-          display: inline-block
-          background-color: #FFF
-          line-height: 0
-          overflow: hidden
-          opacity: 0.3
-          &:after
-            content: ' '
-            stretch()
-            background-color: #fff
-            width 50%
-            opacity: 0.20
-          &:hover, &.active
-            opacity: 1
-      &.colors, &.node-sizes
-        a
-          border-radius: 50%
-      &.colors
-        a
-          width: 30px
-          height: 30px
-          border: 3px solid inspector-bg-color
-          &:hover, &.active
-            width: 36px
-            height: 36px
-            border: none
-      &.arrow-widths
-        a
-          height: 30px
-
-      &.pair
+        background-color: #FFF
+        line-height: 0
         overflow: hidden
-        .key
-          text-align: right
-          margin-right: 1em
-          width: 90px
-          float: left
-          color: darken(inspector-font-color, 30%)
-        .value
-          overflow: hidden
-      &.empty
+        opacity: 0.3
+        &:after
+          content: ' '
+          stretch()
+          background-color: #fff
+          width 50%
+          opacity: 0.20
+        &:hover, &.active
+          opacity: 1
+    &.colors, &.node-sizes
+      a
+        border-radius: 50%
+    &.colors
+      a
+        width: 36px
+        height: 36px
+        border: 3px solid inspector-bg-color
+        &:hover, &.active
+          width: 36px
+          height: 36px
+          border: none
+    &.arrow-widths
+      a
+        height: 30px
+
+    &.pair
+      font-size: 12px
+      overflow: hidden
+      .key
+        text-align: right
+        margin-right: 1em
+        width: 90px
+        float: left
         color: darken(inspector-font-color, 30%)
-        text-align: center
-        font-style: italic
+      .value
+        overflow: hidden
+    &.empty
+      color: darken(inspector-font-color, 30%)
+      text-align: center
+      font-style: italic
+      padding: 18px 24px
+
+  .attribute
+    user-select: none
+    display: inline-block
+    padding: 1px 6px
+    font-size: 12px
+    background-color: rgba(0, 0, 0, 0);
+    color: #9195A0;
+    border: 1px solid #7E8491;
+    max-width: 100px;
+    overflow: hidden;
+    border-radius: .25em;
+    margin-right: 6px;
+    margin-bottom: 2px;
+    font-weight: bold;
+    &:hover
+      border-color: #FFF;
+      color: #FFF;
 
   ul.tight
     li.pair
-      padding-top: 10px
-      padding-bottom: 10px
+      padding-top: 6px
+      padding-bottom: 6px
       &:first-child
         padding-top: 14px
       &:last-child
         padding-bottom: 14px
+
+/*
+ * Animations
+ */
+.inspector-slide-in.ng-hide-add, .inspector-slide-in.ng-hide-remove {
+  transition: all 0.3s
+  display: block !important;
+}
+.inspector-slide-in.ng-hide-add.ng-hide-add-active,
+.inspector-slide-in.ng-hide-remove {
+  top: 100%
+}
+.inspector-slide-in.ng-hide-add,
+.inspector-slide-in.ng-hide-remove.ng-hide-remove-active {
+  top: 0%
+}

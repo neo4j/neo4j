@@ -1,9 +1,17 @@
 .code-bar
-  .status
-    div(class="label label-{{frame.type | lowercase}}") {{frame.type | uppercase}}
-    span.code(click-to-code='frame.input') {{frame.input | uncomment}}
   .actions
-    a.icon-download-alt(exportable ng-click='exportJSON(frame.response)', tooltip-placement='bottom', tooltip='Export JSON', ng-show='frame.exportable')
-    a.icon-fullscreen(ng-click="toggleFullscreen(true)", tooltip-placement='bottom', tooltip='Fullscreen', ng-show='frame.fullscreenable')
-    a.icon-trash(ng-click='frames.remove(frame)', tooltip-placement='bottom', tooltip='Remove')
-  a.close-fullscreen.icon-chevron-down(ng-click="toggleFullscreen(false)")
+    .toggle(ng-if='frame.type == "cypher" && availableModes.length > 1')
+      a.toggle-graph(ng-class='{active: isActive("graph")}', ng-click='setActive("graph")') Graph
+      .switch
+        label(ng-class='{right: isActive("table")}', ng-click='setActive()')
+          .switch-inner
+          .handle
+      a.toggle-table(ng-class='{active: isActive("table")}', ng-click='setActive("table")') Table
+    a.button.fa.fa-download(exportable ng-click='exportJSON(frame.response)', tooltip-placement='bottom', tooltip='Export JSON', ng-show='frame.exportable')
+    a.button.fa.fa-expand(ng-click="toggleFullscreen(true)", tooltip-placement='bottom', tooltip='Fullscreen', ng-show='frame.fullscreenable')
+    a.button.fa.fa-times-circle(ng-click='frames.remove(frame)', tooltip-placement='bottom', tooltip='Remove')
+  .status
+    //- div(class="label label-default label-{{frame.type | lowercase}}") {{frame.type | uppercase}}
+    span.prompt.code(ng-if='frame.type == "cypher"') $
+    span.code.mono(click-to-code='frame.input') {{frame.input | uncomment}}
+  a.close-fullscreen.fa.fa-compress(ng-click="toggleFullscreen(false)")

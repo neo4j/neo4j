@@ -35,9 +35,12 @@ left-margin = 16px
     line-height: 18px
 
 #editor
+  &.file-loaded
+    .CodeMirror
+      margin-right: left-margin
   .CodeMirror
     background-color: transparent
-    margin: 25px 180px 25px left-margin
+    margin: 25px 116px 25px left-margin
     transist: all
     @extend .code-style
     pre

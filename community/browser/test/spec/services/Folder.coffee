@@ -32,17 +32,17 @@ describe 'Service: Folder', () ->
       folder = Folder.create()
       expect(folder instanceof Folder.klass).toBeTruthy()
 
-  describe '#remove', ->
-    it 'should remove a folder from the collection', ->
+  describe '#destroy', ->
+    it 'should destroy a folder from the collection', ->
       f = Folder.create()
       len = Folder.length
-      Folder.remove(f)
+      Folder.destroy(f)
       expect(Folder.length).toBe len-1
 
-    it 'should remove all documents within a folder', ->
+    it 'should destroy all documents within a folder', ->
       f = Folder.create(id: 'test')
       d = Document.create(folder: 'test')
       expect(Document.where(folder: 'test').length).toBe 1
 
-      Folder.remove(f)
+      Folder.destroy(f)
       expect(Document.where(folder: 'test').length).toBe 0

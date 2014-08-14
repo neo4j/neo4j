@@ -11,14 +11,14 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
 
     //build:css styles/main.css
     //- link(rel='stylesheet', href='components/bootstrap/css/bootstrap.css')
-    link(rel='stylesheet', href='styles/bootstrap-neo4j.css')
-    //- link(rel='stylesheet', href='components/bootstrap/css/bootstrap-responsive.css')
+    //- link(rel='stylesheet', href='styles/bootstrap-neo4j.css')
+    link(rel='stylesheet', href='components/bootstrap/dist/css/bootstrap.css')
     link(rel='stylesheet', href='components/font-awesome/css/font-awesome.css')
     link(rel='stylesheet', href='components/codemirror/lib/codemirror.css')
     link(rel="stylesheet", href="styles/main.css")
     //endbuild
 
-  body(ng-class="{'connection-error': offline, 'show-drawer': isDrawerShown, 'modal-shown': isPopupShown, 'maximize-editor': editor.maximized}", ng-controller="LayoutCtrl", keydown="globalKey($event)")
+  body(ng-class="{'connection-error': offline, 'show-drawer': isDrawerShown, 'modal-shown': isPopupShown}", ng-controller="LayoutCtrl", keydown="globalKey($event)")
 
 
     //if lt IE 9
@@ -33,7 +33,9 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     include views/template/tooltip
     include views/template/tabs
     include views/template/popups
-    //- include views/template/carousel
+    include views/template/inspector-rows
+    include views/template/carousel/carousel
+    include views/template/carousel/slide
 
     // banner for going to webadmin, only if needed
     div.ng-cloak(ng-hide="goodBrowser")
@@ -58,16 +60,17 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     script(src='components/angular-sanitize/angular-sanitize.js')
     script(src='components/angular-local-storage/angular-local-storage.js')
     script(src='components/angular-ui-bootstrap/src/transition/transition.js')
-    script(src='components/angular-ui-bootstrap/src/dialog/dialog.js')
-    script(src='components/angular-ui-bootstrap/src/dropdownToggle/dropdownToggle.js')
+    script(src='components/angular-ui-bootstrap/src/modal/modal.js')
+    script(src='components/angular-ui-bootstrap/src/dropdown/dropdown.js')
+    script(src='components/angular-ui-bootstrap/src/bindHtml/bindHtml.js')
     script(src='components/angular-ui-bootstrap/src/tooltip/tooltip.js')
     script(src='components/angular-ui-bootstrap/src/popover/popover.js')
     script(src='components/angular-ui-bootstrap/src/position/position.js')
     script(src='components/angular-ui-bootstrap/src/tabs/tabs.js')
-    // script(src='components/angular-ui-bootstrap/src/carousel/carousel.js')
-    script(src='scripts/directives/carousel.js')
-    script(src='components/angular-ui-sortable/src/sortable.js')
-    script(src='components/angular-moment/index.js')
+    script(src='components/angular-ui-bootstrap/src/carousel/carousel.js')
+    // script(src='scripts/directives/carousel.js')
+    script(src='components/angular-ui-sortable/sortable.js')
+    // script(src='components/angular-moment/angular-moment.js')
     script(src='components/codemirror/lib/codemirror.js')
     script(src='components/codemirror/mode/css/css.js')
     script(src='components/codemirror/addon/display/placeholder.js')
@@ -77,7 +80,7 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     script(src='components/d3/d3.js')
     script(src='components/blob/Blob.js')
     script(src='components/file-saver/FileSaver.js')
-    script(src='components/moment/moment.js')
+    // script(src='components/moment/moment.js')
     script(src='components/UUID.js/src/uuid.js')
     script(src='components/modernizr/modernizr.js')
     script(src='components/jquery.easing/js/jquery.easing.js')
@@ -131,7 +134,7 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     script(src='scripts/services/CircularLayout.js')
     script(src='scripts/services/CircumferentialDistribution.js')
     script(src='scripts/controllers/Inspector.js')
-    script(src='scripts/directives/inspector.js')
+    //script(src='scripts/directives/inspector.js')
     script(src='scripts/controllers/Legend.js')
     script(src='scripts/controllers/StylePreview.js')
     script(src='scripts/controllers/CypherResult.js')
@@ -148,6 +151,7 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     script(src='scripts/directives/helpUrl.js')
     script(src='scripts/directives/helpTopic.js')
     script(src='scripts/directives/playTopic.js')
+    script(src='scripts/directives/noNgAnimate.js')
     script(src='scripts/init/localStorage.js')
     script(src='scripts/controllers/Editor.js')
     script(src='scripts/controllers/Sidebar.js')
@@ -158,4 +162,6 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     script(src='scripts/directives/scrollTopWhen.js')
     script(src='scripts/directives/FrameStream.js')
     script(src='scripts/services/RssFeedService.js')
+    script(src='scripts/services/CypherGraphModel.js')
+    script(src='lib/visualization/neod3.js')
     //endbuild

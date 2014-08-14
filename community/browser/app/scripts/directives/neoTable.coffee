@@ -25,7 +25,16 @@ angular.module('neo4jApp.directives')
       replace: yes
       restrict: 'E'
       link: (scope, elm, attr) ->
-        predicate = null
+        entityMap =
+          "&": "&amp;"
+          "<": "&lt;"
+          ">": "&gt;"
+          '"': '&quot;'
+          "'": '&#39;'
+          "/": '&#x2F;'
+
+        escapeHtml = (string) ->
+          String(string).replace(/[&<>"'\/]/g, (s) -> entityMap[s])
 
         unbind = scope.$watch attr.tableData, (result) ->
           return unless result
@@ -40,29 +49,36 @@ angular.module('neo4jApp.directives')
 
         cell2html = (cell) ->
           if angular.isString(cell)
-            cell
+            escapeHtml(cell)
           else if angular.isArray(cell)
             (cell2html(el) for el in cell).join(', ')
           else if angular.isObject(cell)
             json2html(cell)
           else
-            JSON.stringify(cell)
+            escapeHtml(JSON.stringify(cell))
 
         # Manual rendering function due to performance reasons
         # (repeat watchers are expensive)
         render = (result) ->
           rows = result.rows()
-          return "" unless rows.length
+          cols = result.columns()
+          return "" unless cols.length
           html  = "<table class='table data'>"
           html += "<thead><tr>"
-          for col in result.columns()
+          for col in cols
             html += "<th>#{col}</th>"
           html += "</tr></thead>"
           html += "<tbody>"
-          for row in result.rows()
+          if rows.length
+            for row in rows
+              html += "<tr>"
+              for cell in row
+                html += '<td>' + cell2html(cell) + '</td>'
+              html += "</tr>"
+          else # empty results
             html += "<tr>"
-            for cell in row
-              html += '<td>' + cell2html(cell) + '</td>'
+            for col in cols
+              html += '<td>&nbsp;</td>'
             html += "</tr>"
           html += "</tbody>"
           html += "</table>"

@@ -48,10 +48,10 @@ angular.module('neo4jApp.services')
           @save()
         klass: Folder
         new: (args) -> new Folder(args)
-        remove: (folder) ->
-          super(folder)
+        destroy: (folder) ->
           documentsToRemove = Document.where(folder: folder.id)
           Document.remove(documentsToRemove)
+          @remove(folder)
           @save()
 
       new Folders(null, Folder).fetch()

@@ -76,6 +76,7 @@ angular.module('neo4jApp.services')
                 @hasErrors = yes
                 @response = null
                 @errorText = result.message or "Unknown error"
+                @detailedErrorText = " " # ABKTODO consider a friendly message here
                 if result.length > 0 and result[0].code
                   @errorText = result[0].code
                   @detailedErrorText = result[0].message if result[0].message
@@ -96,7 +97,7 @@ angular.module('neo4jApp.services')
             if intr.templateUrl
               frame = new Frame(data)
             else
-              rv = $injector.invoke(intr.exec)()
+              rv = $injector.invoke(intr.exec)(data.input)
 
             if frame
               # Make sure we don't create more frames than allowed

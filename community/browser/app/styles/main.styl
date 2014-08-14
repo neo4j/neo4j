@@ -25,6 +25,7 @@ a
     color: color-link-hover
     text-decoration: none
 
+
 #incompatible
   background-color: #fff
   bottom: 0
@@ -99,24 +100,6 @@ table.json-object
         padding: 2px 10px;
         max-width: 320px;
 
-ul
-  list-style-type none
-  margin: 0
-
-form
-  margin: 0
-
-blockquote, blockquote p
-  font-size: 17px; line-height: 24px; color: #777;
-
-blockquote
-  margin: 0 0 20px;
-  padding: 9px 0px
-
-p.lead
-  font-size 16px
-  margin-bottom 0em
-
 .status-bar-wrapper
   height: 68px
   display: none
@@ -129,8 +112,10 @@ p.lead
   font-size: 13px
   position: relative
   background-color: #FFF
-  .btn-group
-    absolute: top 3px right 12px
+  .status
+    float: left
+    [class*="fa-"]
+      margin-right: 6px
 
   .popover.bottom
     line-height: 22px
@@ -145,11 +130,9 @@ p.lead
     margin-right horizontal-padding
   &.error
     color: color-error
-  [class^="icon-"]
-    margin-right: 6px
-  i[class^="icon-"]
+  i[class*="fa-"]
     margin: 0
-  .icon-ok
+  .fa-ok
     color: color-success
 
 .fullscreen-container
@@ -159,12 +142,12 @@ p.lead
   bottom: 0
   right: 0
   background-color: #fff
-  z-index: 5000
+  z-index: 1030
   .code-bar
     background-color: #fff
     position: relative
     z-index: 2
-    padding: 0 16px
+    margin: 0
     .actions
       display: none
     a.close-fullscreen
@@ -172,7 +155,7 @@ p.lead
       absolute: top 9px right 16px
       color: #9B9DA2
       font-size: 20px
-  a.icon-download-alt
+  a.fa-download
     color: #9B9DA2
     absolute: top 9px right 18px
     font-size: 22px
@@ -184,9 +167,8 @@ p.lead
     .btn-group
       absolute: bottom 0 right 32px
   .view-result
-    stretch()
     top: middlebar-height
-    bottom: middlebar-height
+    bottom: 0
     left: 0
     right: 0
     position: absolute
@@ -195,6 +177,9 @@ p.lead
       height: 100%
       svg
         height: 100%
+      .graph-contents
+        height: 100%
+        position: relative
   .legend
     max-height: none;
 
@@ -248,18 +233,14 @@ p.lead
 .navbar .nav > li:last-child > a
   padding-right: 0
 
-.icon-margin-right
+.fa-margin-right
   margin-right: 0.5em
 
-.icon-margin-left
+.fa-margin-left
   margin-left: 0.5em
 
 select
   margin-bottom: 0
-
-.hero-unit
-  padding 2em 60px 1em 60px
-  margin-top 1em
 
 .dl-horizontal
   dt
@@ -285,13 +266,6 @@ select
 .table td.wrapped
   word-break break-all
 
-a.badge, a.label
-  color: #fff
-  &:hover
-    color: color-success
-
-.label.relationship
-  border-radius: 2px
 
 /////
 #error
@@ -320,7 +294,7 @@ a.badge, a.label
   left: nav-width
   right: 0
   z-index: 10
-  background-color: #E7E9EB
+  background-color: #D2D5DA
   transist all
 
   .intro
@@ -358,17 +332,17 @@ a.badge, a.label
   .close
     display: none
 
-.maximize-editor
-  #editor
-    min-height: 100%
-    position: absolute
-    top: 0
-    bottom: 0
-    left: 0
-    right: 0
-    overflow-y: scroll
+
+#editor
+  &.file-loaded
     .view-editor
-      min-height: 100%
+      top: 39px
+  &.maximize-editor
+    height: 100% !important
+    .view-editor
+      bottom: 0
+    .message-bar
+      position: absolute
     .CodeMirror
       position: absolute
       left: 0
@@ -377,14 +351,8 @@ a.badge, a.label
       bottom: 0
     .CodeMirror-scroll
       max-height: initial
-    .message-bar
-      position: absolute
-      left: 0
-      right: 0
-      bottom: 0
-      z-index: 10
 
-// TODO: implement this class as @extend .icon-pencil
+// TODO: implement this class as @extend .fa-pencil
 .edit-in-place
   .edit-in-place-input
     border: none
@@ -392,14 +360,16 @@ a.badge, a.label
     border-radius: 3px
     padding: 2px 8px
     font-size: 13px
-    width: 157px
+    width: 157px - 16px
     position: relative
-    top: -1px
+    top: 1px
     font-weight: bold
+    color: #000;
+    line-height: 28px
   .edit-in-place-trigger
     &:before
       content: "\f040"
-    [class^="icon-"]:before, [class*=" icon-"]:before
+    [class*="fa-"]:before, [class*=" fa-"]:before
       text-decoration: inherit
       display: inline-block
       speak: none

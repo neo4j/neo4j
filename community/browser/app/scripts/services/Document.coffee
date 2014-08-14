@@ -46,6 +46,8 @@ angular.module('neo4jApp.services')
         new: (args) -> new Document(args)
         remove: (doc) ->
           super
+        destroy: (doc) ->
+          @remove(doc)
           @save()
 
       new Documents(null, Document).fetch()

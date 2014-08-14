@@ -22,8 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 angular.module('neo4jApp.services')
   .factory 'Persistable', [
+    '$rootScope'
     'localStorageService'
-    (localStorageService) ->
+    ($rootScope, localStorageService) ->
       class Persistable
         # Set all properties and generate an ID if missing
         constructor: (data = {})->
@@ -48,6 +49,7 @@ angular.module('neo4jApp.services')
         # Save all items
         @save: (data) ->
           localStorageService.add(@storageKey, JSON.stringify(data))
+          $rootScope.$broadcast "localStorage:updated"
 
       Persistable
   ]

@@ -37,7 +37,7 @@
 
 #nav
   user-select: none
-  .nav-list
+  > .nav
     padding: 0
     > li
       padding: 0
@@ -76,7 +76,7 @@
         padding: 0
         margin: 0
         text-shadow: none
-        color: #D8DDE2
+        color: navbar-color-fg
         line-height: 60px
         font-size: 28px
         &:hover
@@ -89,15 +89,15 @@
           text-shadow: 0 1px 2px rgba(0,0,0,0.4)
           background-color: drawer-color-bg
           box-shadow: inset 0 1px 8px rgba(0,0,0,0.2)
-        > .icon-star
+        > .fa-star
           color: color-star
-        > .icon-info-sign
+        > .fa-info-circle
           color: color-info
 
   absolute: top left
   width: 80px
   bottom: 0
-  background: #525864
+  background: navbar-color-bg
 
   .nav-header:hover .ball
     background: #fff
