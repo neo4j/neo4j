@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.neo4j.cypher.PeriodicCommitInOpenTransactionException
+import org.neo4j.cypher.internal.Profiled
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
@@ -61,8 +62,10 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
     val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, inputQuery.planType)
     val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory)
 
+    val profileMarker = inputQuery.planType == Profiled
+
     new ExecutionPlan {
-      def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
+      def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, profileMarker)
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new UpdateCountingQueryContext(queryContext), params, true)
       def isPeriodicCommit = periodicCommitInfo.isDefined
     }

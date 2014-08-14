@@ -10,6 +10,7 @@ org.neo4j.shell.kernel.apps.cypher.Create
 org.neo4j.shell.kernel.apps.cypher.Cypher
 org.neo4j.shell.kernel.apps.cypher.Drop
 org.neo4j.shell.kernel.apps.cypher.Dump
+org.neo4j.shell.kernel.apps.cypher.Explain
 org.neo4j.shell.kernel.apps.cypher.Match
 org.neo4j.shell.kernel.apps.cypher.Merge
 org.neo4j.shell.kernel.apps.cypher.Load
@@ -18,6 +19,7 @@ org.neo4j.shell.kernel.apps.cypher.Profile
 org.neo4j.shell.kernel.apps.cypher.Return
 org.neo4j.shell.kernel.apps.cypher.Start
 org.neo4j.shell.kernel.apps.cypher.Using
+org.neo4j.shell.kernel.apps.cypher.Unwind
 org.neo4j.shell.kernel.apps.cypher.With
 org.neo4j.shell.kernel.apps.Ls
 org.neo4j.shell.kernel.apps.Mknode

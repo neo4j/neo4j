@@ -57,9 +57,9 @@ class CypherCompiler(graph: GraphDatabaseService,
     version match {
       case CypherVersion.experimental => compatibilityFor2_2Experimental.produceParsedQuery(statementAsText, planType)
       case CypherVersion.v2_2 => compatibilityFor2_2Legacy.produceParsedQuery(statementAsText, planType)
-      case CypherVersion.v2_1 if planType == Normal => compatibilityFor2_1.parseQuery(statementAsText)
-      case CypherVersion.v2_0 => compatibilityFor2_0.parseQuery(statementAsText)
-      case CypherVersion.v1_9 => compatibilityFor1_9.parseQuery(statementAsText)
+      case CypherVersion.v2_1 => compatibilityFor2_1.parseQuery(statementAsText, planType == Profiled)
+      case CypherVersion.v2_0 => compatibilityFor2_0.parseQuery(statementAsText, planType == Profiled)
+      case CypherVersion.v1_9 => compatibilityFor1_9.parseQuery(statementAsText, planType == Profiled)
     }
   }
 
@@ -76,14 +76,28 @@ class CypherCompiler(graph: GraphDatabaseService,
       case Left(versions) => throw new SyntaxException(s"You must specify only one version for a query (found: $versions)")
     }
 
-    val planType: PlanType = queryWithOption.options.collectFirst {
-      case ExplainOption => Explained
-    }.getOrElse(Normal)
+    val planType: PlanType = calculatePlanType(queryWithOption.options)
 
-    if (planType == Explained && cypherVersion != CypherVersion.v2_2)
+    if (planType == Explained && cypherVersion != CypherVersion.v2_2) {
       throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
+    }
 
     PreParsedQuery(queryWithOption.statement, cypherVersion, planType)
+  }
+
+  private def calculatePlanType(options: Seq[CypherOption]) = {
+    val planTypes: Seq[PlanType] = options.collect {
+      case ExplainOption => Explained
+      case ProfileOption => Profiled
+    }
+
+    val planType = planTypes.reduceOption[PlanType] {
+      case (Explained, Explained) => Explained
+      case (Profiled, Profiled)   => Profiled
+      case (Explained, Profiled) => throw new InvalidSemanticsException("Can't mix PROFILE and EXPLAIN")
+    }
+
+    planType.getOrElse(Normal)
   }
 
   private def getQueryCacheSize : Int =

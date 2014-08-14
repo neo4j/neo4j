@@ -1,3 +1,7 @@
+2.2.0
+-----
+o Adds EXPLAIN and PROFILE to Cypher
+
 2.1.3
 -----
 o Adds support for Octal literals (using a preceding 0, e.g. 03517)

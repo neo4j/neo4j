@@ -26,10 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 
 case class PreparedQuery(statement: Statement,
                          abstractQuery: AbstractQuery,
-                         semanticTable: SemanticTable,
                          queryText: String,
                          extractedParams: Map[String, Any],
-                         planType: PlanType) {
+                         planType: PlanType)(val semanticTable: SemanticTable) {
 
   def isPeriodicCommit = statement match {
     case ast.Query(Some(_), _) => true

@@ -89,37 +89,37 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       var touched = false
       val isTopLevelTx = !txBridge.hasTransaction
       val tx = graph.beginTx()
-      val statement = txBridge.instance()
+      val kernelStatement = txBridge.instance()
       val (plan, extractedParameters) = try {
         // fetch plan cache
-        val cache = getOrCreateFromSchemaState(statement, {
-          cacheMonitor.cacheFlushDetected(statement)
+        val cache: LRUCache[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(kernelStatement, {
+          cacheMonitor.cacheFlushDetected(kernelStatement)
           new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
         })
         cacheAccessor.getOrElseUpdate(cache)(queryText, {
           touched = true
-          val parsedQuery = parseQuery(queryText)
-          val queryPlan = parsedQuery.plan(statement)
+          val parsedQuery: ParsedQuery = parseQuery(queryText)
+          val queryPlan = parsedQuery.plan(kernelStatement)
           queryPlan
         })
       }
       catch {
         case (t: Throwable) =>
-          statement.close()
+          kernelStatement.close()
           tx.failure()
           tx.close()
           throw t
       }
 
       if (touched) {
-        statement.close()
+        kernelStatement.close()
         tx.success()
         tx.close()
       }
       else {
         // close the old statement reference after the statement has been "upgraded"
         // to either a schema data or a schema statement, so that the locks are "handed over".
-        statement.close()
+        kernelStatement.close()
         return (plan, extractedParameters, TransactionInfo(tx, isTopLevelTx, txBridge.instance()))
       }
 
@@ -171,5 +171,3 @@ object ExecutionEngine {
   val DEFAULT_PLAN_CACHE_SIZE: Int = 100
   val PLAN_BUILDING_TRIES: Int = 20
 }
-
-

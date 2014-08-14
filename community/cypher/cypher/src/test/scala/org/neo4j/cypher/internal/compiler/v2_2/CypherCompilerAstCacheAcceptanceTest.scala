@@ -19,27 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.Normal
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ExecutionPlan
-import org.neo4j.cypher.GraphDatabaseTestSupport
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   def createCompiler() = CypherCompilerFactory.ronjaCompiler(graph, 128, kernelMonitors)
 
-  case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0)
+  case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0) {
+    override def toString = s"hits = $hits, misses = $misses, flushes = $flushes"
+  }
 
   class CacheCounter(var counts: CacheCounts = CacheCounts()) extends AstCacheMonitor {
-    def cacheHit(key: Statement) {
+    def cacheHit(key: PreparedQuery) {
       counts = counts.copy(hits = counts.hits + 1)
     }
 
-    def cacheMiss(key: Statement) {
+    def cacheMiss(key: PreparedQuery) {
       counts = counts.copy(misses = counts.misses + 1)
     }
 
-    def cacheFlushDetected(justBeforeKey: CacheAccessor[Statement, ExecutionPlan]) {
+    def cacheFlushDetected(justBeforeKey: CacheAccessor[PreparedQuery, ExecutionPlan]) {
       counts = counts.copy(flushes = counts.flushes + 1)
     }
   }
