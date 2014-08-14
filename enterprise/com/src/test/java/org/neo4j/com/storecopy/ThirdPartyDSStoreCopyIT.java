@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.ResourceIterators;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.monitoring.BackupMonitor;
@@ -92,8 +93,11 @@ public class ThirdPartyDSStoreCopyIT
         // Given
         final String copyDir = new File(testDir.directory(), "copy").getAbsolutePath();
         final String originalDir = new File(testDir.directory(), "original").getAbsolutePath();
+
         Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
-        RemoteStoreCopier copier = new RemoteStoreCopier( config, loadKernelExtensions(), new ConsoleLogger( StringLogger.DEV_NULL ), fs );
+        ConsoleLogger consoleLog = new ConsoleLogger( StringLogger.DEV_NULL );
+        TestLogging logging = new TestLogging();
+        RemoteStoreCopier copier = new RemoteStoreCopier( config, loadKernelExtensions(), consoleLog, logging, fs );
 
         // When
         copier.copyStore( new RemoteStoreCopier.StoreCopyRequester()
@@ -141,7 +145,7 @@ public class ThirdPartyDSStoreCopyIT
     private List<KernelExtensionFactory<?>> loadKernelExtensions()
     {
         List<KernelExtensionFactory<?>> kernelExtensions = new ArrayList<>();
-        for ( KernelExtensionFactory factory : Service.load( KernelExtensionFactory.class ) )
+        for ( KernelExtensionFactory<?> factory : Service.load( KernelExtensionFactory.class ) )
         {
             kernelExtensions.add( factory );
         }

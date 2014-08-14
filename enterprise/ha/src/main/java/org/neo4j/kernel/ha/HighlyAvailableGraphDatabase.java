@@ -235,8 +235,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected Logging createLogging()
     {
-        Logging loggingService = life.add( new LogbackWeakDependency().tryLoadLogbackService( config,
-                NEW_LOGGER_CONTEXT,
+        Logging loggingService = life.add( LogbackWeakDependency.tryLoadLogbackService( config, NEW_LOGGER_CONTEXT,
                 DEFAULT_TO_CLASSIC ) );
 
         // Set Netty logger

@@ -48,16 +48,20 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
 
 public class RemoteStoreCopier
 {
-    public static final String COPY_FROM_MASTER_TEMP = "temp-copy";
+    private static final String COPY_FROM_MASTER_TEMP = "temp-copy";
+
     private final Config config;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final ConsoleLogger console;
+    private final Logging logging;
     private final FileSystemAbstraction fs;
 
     /**
@@ -66,24 +70,25 @@ public class RemoteStoreCopier
      */
     public interface StoreCopyRequester
     {
-        Response<?> copyStore(StoreWriter writer);
+        Response<?> copyStore( StoreWriter writer );
 
         void done();
     }
 
     public RemoteStoreCopier( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                              ConsoleLogger console, FileSystemAbstraction fs )
+                              ConsoleLogger console, Logging logging, FileSystemAbstraction fs )
     {
         this.config = config;
         this.kernelExtensions = kernelExtensions;
         this.console = console;
+        this.logging = logging;
         this.fs = fs;
     }
 
     public void copyStore( StoreCopyRequester requester ) throws IOException
     {
         // Clear up the current temp directory if there
-        File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
+        File storeDir = config.get( Configuration.store_dir );
         File tempStore = new File( storeDir, COPY_FROM_MASTER_TEMP );
         Config tempConfig = configForTempStore( tempStore );
 
@@ -94,7 +99,8 @@ public class RemoteStoreCopier
         }
 
         // Request store files and transactions that will need recovery
-        try ( Response response = requester.copyStore( decorateWithProgressIndicator( new ToFileStoreWriter( tempStore ) ) ) )
+        StoreWriter storeWriter = decorateWithProgressIndicator( new ToFileStoreWriter( tempStore ) );
+        try ( Response<?> response = requester.copyStore( storeWriter ) )
         {
             // Update highest archived log id
             long highestLogVersion = XaLogicalLog.getHighestHistoryLogVersion( fs, tempStore, LOGICAL_LOG_DEFAULT_NAME );
@@ -135,7 +141,7 @@ public class RemoteStoreCopier
     private Config configForTempStore( File tempStore )
     {
         Map<String, String> params = config.getParams();
-        params.put( InternalAbstractGraphDatabase.Configuration.store_dir .name(), tempStore.getAbsolutePath() );
+        params.put( Configuration.store_dir.name(), tempStore.getAbsolutePath() );
         return new Config( params );
     }
 
@@ -145,10 +151,12 @@ public class RemoteStoreCopier
         Map</*dsName*/String, LogBuffer> logFiles = new HashMap<>();
         try
         {
-            while(transactions.hasNext())
+            while ( transactions.hasNext() )
             {
-                Triplet<String,Long,TxExtractor> next = transactions.next();
-                LogBuffer log = getOrCreateLogBuffer( logFiles, logWriters, /*dsName*/next.first(), /*txId*/next.second(), tempConfig );
+                Triplet<String, Long, TxExtractor> next = transactions.next();
+                String dsName = next.first();
+                Long txId = next.second();
+                LogBuffer log = getOrCreateLogBuffer( logFiles, logWriters, dsName, txId, tempConfig );
                 next.third().extract( log );
             }
         }
@@ -162,13 +170,14 @@ public class RemoteStoreCopier
         }
     }
 
-    private LogBuffer getOrCreateLogBuffer( Map<String, LogBuffer> buffers, Map<String, LogBufferFactory> logWriters, String dsName, Long txId, Config config )
-            throws IOException
+    private static LogBuffer getOrCreateLogBuffer( Map<String, LogBuffer> buffers,
+                                                   Map<String, LogBufferFactory> logWriters,
+                                                   String dsName, Long txId, Config config ) throws IOException
     {
-        LogBuffer buffer = buffers.get(dsName);
-        if(buffer == null)
+        LogBuffer buffer = buffers.get( dsName );
+        if ( buffer == null )
         {
-            if(logWriters.containsKey( dsName ))
+            if ( logWriters.containsKey( dsName ) )
             {
                 buffer = logWriters.get( dsName ).createActiveLogFile( config, txId - 1 );
                 buffers.put( dsName, buffer );
@@ -208,15 +217,20 @@ public class RemoteStoreCopier
     private GraphDatabaseAPI newTempDatabase( File tempStore )
     {
         return (GraphDatabaseAPI) new GraphDatabaseFactory()
+                .setLogging( logging )
                 .setKernelExtensions( kernelExtensions )
                 .newEmbeddedDatabaseBuilder( tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
-                .setConfig( InternalAbstractGraphDatabase.Configuration.log_configuration_file,
-                        "neo4j-backup-logback.xml" )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, config.get( GraphDatabaseSettings
-                        .allow_store_upgrade ).toString() )
+                .setConfig( InternalAbstractGraphDatabase.Configuration.log_configuration_file, logConfigFileName() )
+                .setConfig( GraphDatabaseSettings.allow_store_upgrade,
+                        config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )
 
                 .newGraphDatabase();
+    }
+
+    String logConfigFileName()
+    {
+        return "neo4j-backup-logback.xml";
     }
 
     private StoreWriter decorateWithProgressIndicator( final StoreWriter actual )
@@ -240,7 +254,7 @@ public class RemoteStoreCopier
             public void done()
             {
                 actual.done();
-                console.log( "Done, copied " + totalFiles + " files");
+                console.log( "Done, copied " + totalFiles + " files" );
             }
         };
     }

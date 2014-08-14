@@ -25,8 +25,13 @@ import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 
-public class DefaultLogging
+public final class DefaultLogging
 {
+    private DefaultLogging()
+    {
+        throw new AssertionError( "Not for instantiation!" );
+    }
+
     public static Logging createDefaultLogging( Map<String, String> config )
     {
         return createDefaultLogging( new Config( config ) );
@@ -34,6 +39,6 @@ public class DefaultLogging
 
     public static Logging createDefaultLogging( Config config )
     {
-        return new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
+        return LogbackWeakDependency.tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
     }
 }

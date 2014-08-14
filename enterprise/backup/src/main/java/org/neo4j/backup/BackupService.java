@@ -125,8 +125,9 @@ class BackupService
         GraphDatabaseAPI targetDb = null;
         try
         {
+            ConsoleLogger consoleLog = new ConsoleLogger( StringLogger.SYSTEM );
             RemoteStoreCopier storeCopier = new RemoteStoreCopier( tuningConfiguration, loadKernelExtensions(),
-                    new ConsoleLogger( StringLogger.SYSTEM ), new DefaultFileSystemAbstraction() );
+                    consoleLog, new DevNullLoggingService(), new DefaultFileSystemAbstraction() );
             storeCopier.copyStore( new RemoteStoreCopier.StoreCopyRequester()
             {
                 private BackupClient client;

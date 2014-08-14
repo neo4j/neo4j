@@ -104,8 +104,8 @@ import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 public class SwitchToSlave
 {
     // TODO solve this with lifecycle instance grouping or something
-    @SuppressWarnings( "rawtypes" )
-    private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {
+    @SuppressWarnings("unchecked")
+    private static final Class<? extends Lifecycle>[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[]{
             StoreLockerLifecycleAdapter.class,
             XaDataSourceManager.class,
             TransactionManager.class,
@@ -126,7 +126,7 @@ public class SwitchToSlave
     private final Monitors monitors;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
 
-    private MasterClientResolver masterClientResolver;
+    private final MasterClientResolver masterClientResolver;
 
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver, HaIdGeneratorFactory
             idGeneratorFactory, Logging logging, DelegateInvocationHandler<Master> masterDelegateHandler,
@@ -161,8 +161,7 @@ public class SwitchToSlave
 
         assert masterUri != null; // since we are here it must already have been set from outside
 
-        HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency(
-                HaXaDataSourceManager.class );
+        HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency( HaXaDataSourceManager.class );
         idGeneratorFactory.switchToSlave();
         synchronized ( xaDataSourceManager )
         {
@@ -343,8 +342,8 @@ public class SwitchToSlave
 
             // This will move the copied db to the graphdb location
             console.log( "Copying store from master" );
-            new RemoteStoreCopier( config, kernelExtensions, console,
-                    fs ).copyStore( new RemoteStoreCopier.StoreCopyRequester()
+            RemoteStoreCopier storeCopier = new RemoteStoreCopier( config, kernelExtensions, console, logging, fs );
+            storeCopier.copyStore( new RemoteStoreCopier.StoreCopyRequester()
 
             {
                 @Override
@@ -382,20 +381,17 @@ public class SwitchToSlave
 
     private void startServicesAgain() throws Throwable
     {
-        List<Class> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
-        for ( Class<?> serviceClass : services )
+        for ( Class<? extends Lifecycle> serviceClass : SERVICES_TO_RESTART_FOR_STORE_COPY )
         {
-            Lifecycle service = (Lifecycle) resolver.resolveDependency( serviceClass );
-            service.start();
+            resolver.resolveDependency( serviceClass ).start();
         }
     }
 
     private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
     {
-        List<Class> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
-        Collections.reverse( services );
-        for ( Class<Lifecycle> serviceClass : services )
+        for ( int i = SERVICES_TO_RESTART_FOR_STORE_COPY.length - 1; i >= 0; i-- )
         {
+            Class<? extends Lifecycle> serviceClass = SERVICES_TO_RESTART_FOR_STORE_COPY[i];
             resolver.resolveDependency( serviceClass ).stop();
         }
 
