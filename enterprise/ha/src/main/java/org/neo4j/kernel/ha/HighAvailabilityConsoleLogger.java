@@ -28,8 +28,6 @@ import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.logging.ConsoleLogger;
 
-import static org.neo4j.helpers.Uris.parameter;
-
 /**
  * This class logs to the console whenever important cluster or high availability events
  * are issued.

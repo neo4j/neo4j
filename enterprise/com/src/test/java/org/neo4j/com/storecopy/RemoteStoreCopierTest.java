@@ -19,15 +19,6 @@
  */
 package org.neo4j.com.storecopy;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +32,7 @@ import org.neo4j.com.ServerUtil;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
@@ -56,6 +48,16 @@ import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 
 public class RemoteStoreCopierTest
 {
@@ -119,7 +121,7 @@ public class RemoteStoreCopierTest
                 verify( response, times( 1 ) ).close();
             }
         } );
-        copier.copyStore( requester );
+        copier.copyStore( requester, CancellationRequest.NONE );
 
         // Then
         GraphDatabaseService copy = new GraphDatabaseFactory().newEmbeddedDatabase( copyDir );

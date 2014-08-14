@@ -32,8 +32,6 @@ import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.helpers.Function2;
-import org.neo4j.kernel.Traversal;
-
 import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
 public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
