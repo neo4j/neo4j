@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.hoistExpressionsInClosingClauses
 import org.neo4j.cypher.internal.compiler.v2_1.commands.AbstractQuery
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{CypherParser, ParserMonitor}
@@ -105,9 +106,10 @@ case class CypherCompiler(parser: CypherParser,
 
   def prepareQuery(queryText: String): PreparedQuery = {
     val parsedStatement = parser.parse(queryText)
-    semanticChecker.check(queryText, parsedStatement)
-    val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, parsedStatement)
-    val table = semanticChecker.check(queryText, parsedStatement)
+    val cleanedStatement = parsedStatement.endoRewrite(hoistExpressionsInClosingClauses)
+    semanticChecker.check(queryText, cleanedStatement)
+    val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, cleanedStatement)
+    val table = semanticChecker.check(queryText, cleanedStatement)
     val query: AbstractQuery = rewrittenStatement.asQuery.setQueryText(queryText)
     PreparedQuery(rewrittenStatement, query, table, queryText, extractedParams)
   }

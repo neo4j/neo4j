@@ -38,18 +38,30 @@ sealed trait ClosingClause extends Clause {
 
   def semanticCheck =
     returnItems.semanticCheck chain
-    checkSortItems chain
-    checkSkipLimit
+    introduceAliasSymbols chain
+    orderBy.semanticCheck chain
+    skip.semanticCheck chain
+    limit.semanticCheck chain
+    checkIdentifiersInScope chain
+    dropOldSymbols
 
-  // use a scoped state containing the aliased return items for the sort expressions
-  private def checkSortItems: SemanticCheck = s => {
-    val result = (returnItems.declareIdentifiers(s) chain orderBy.semanticCheck)(s.newScope)
-    SemanticCheckResult(result.state.popScope, result.errors)
+  private def introduceAliasSymbols: SemanticCheck = s => {
+    val containsAggregation = returnItems.exists { case IsAggregate(expr) => true }
+    val newState: SemanticState = if (containsAggregation || distinct) {
+      s.clearSymbols
+    } else {
+      s
+    }
+    val result = returnItems.declareOrShadowIdentifiers(newState)(newState)
+    SemanticCheckResult(result.state, result.errors)
   }
 
-  // use an empty state when checking skip & limit, as these have isolated scope
-  private def checkSkipLimit: SemanticState => Seq[SemanticError] =
-    s => (skip ++ limit).semanticCheck(SemanticState.clean).errors
+  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError]
+
+  private def dropOldSymbols: SemanticCheck = s => {
+    val newState = s.clearSymbols
+    returnItems.declareOrShadowIdentifiers(s)(newState)
+  }
 }
 
 case class LoadCSV(withHeaders: Boolean, urlString: Expression, identifier: Identifier, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
@@ -241,12 +253,15 @@ case class With(
 
   override def semanticCheck =
     super.semanticCheck chain
-    checkAliasedReturnItems
+    checkAliasedReturnItems chain
+    where.semanticCheck
 
   private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
     case li: ListedReturnItems => li.items.filter(!_.alias.isDefined).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
     case _                     => Seq()
   }
+
+  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state => Seq()
 }
 
 case class Unwind(expression: Expression, identifier: Identifier)(val position: InputPosition) extends Clause {
@@ -258,6 +273,8 @@ case class Unwind(expression: Expression, identifier: Identifier)(val position: 
       val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
       identifier.declare(possibleInnerTypes)
     }
+
+  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state => Seq()
 }
 
 case class Return(
@@ -266,18 +283,13 @@ case class Return(
     orderBy: Option[OrderBy],
     skip: Option[Skip],
     limit: Option[Limit])(val position: InputPosition) extends ClosingClause {
+
   def name = "RETURN"
-
-  override def semanticCheck =
-    super.semanticCheck chain
-    checkIdentifiersInScope
-
-  private def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state =>
-    returnItems match {
-      case _: ReturnAll if state.scope.symbolTable.isEmpty =>
-        Seq(SemanticError("RETURN * is not allowed when there are no identifiers in scope", position))
-      case _            =>
-        Seq()
+  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state =>
+    if (returnItems == ReturnAll()(null) && state.scope.symbolTable.isEmpty) {
+      Seq(SemanticError("RETURN * is not allowed when there are no identifiers in scope", position))
+    } else {
+      Seq()
     }
 }
 

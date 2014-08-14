@@ -87,8 +87,7 @@ object Planner {
     collapseInCollectionsContainingConstants,
     nameVarLengthRelationships,
     namePatternPredicates,
-    inlineProjections,
-    useAliasesInSortSkipAndLimit
+    inlineProjections
   )
 
   def rewriteStatement(statement: Statement) = statement.endoRewrite(rewriter)
