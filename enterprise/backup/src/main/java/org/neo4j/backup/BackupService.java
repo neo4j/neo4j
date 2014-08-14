@@ -41,6 +41,7 @@ import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.Triplet;
@@ -143,7 +144,7 @@ class BackupService
                 {
                     client.stop();
                 }
-            });
+            }, CancellationRequest.NONE );
 
             targetDb = startTemporaryDb( targetDirectory, VerificationLevel.NONE /* run full check instead */ );
             new LogicalLogSeeder(logger).ensureAtLeastOneLogicalLogPresent( sourceHostNameOrIp, sourcePort, targetDb );

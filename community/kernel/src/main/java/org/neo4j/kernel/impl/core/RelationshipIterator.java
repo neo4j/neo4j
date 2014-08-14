@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.graphdb.NotFoundException;
