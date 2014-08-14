@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocFormatters, condense, PrintNewLine, PrintText}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{toStringDocBuilder, scalaDocBuilder, DocBuilderTestSuite}
@@ -115,7 +116,7 @@ class QueryGraphDocBuilderTest extends DocBuilderTestSuite[Any] {
   }
 
   test("renders hints") {
-    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
+    val hint = logical.UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))
 
     format(QueryGraph(hints = Set(hint))) should equal("GIVEN * USING INDEX n:Person(name)")
   }

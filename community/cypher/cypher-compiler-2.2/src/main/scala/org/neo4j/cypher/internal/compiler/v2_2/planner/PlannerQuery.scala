@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.docbuilders.internalDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.PlannerHint
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Hint
 
@@ -39,7 +40,7 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
 
   def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
 
-  val allHints: Set[Hint] = tail match {
+  val allHints: Set[PlannerHint] = tail match {
     case Some(tailPlannerQuery) => graph.allHints ++ tailPlannerQuery.allHints
     case None                   => graph.allHints
   }

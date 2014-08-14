@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{PlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{Relationship, Node}
 
 import scala.collection.mutable
 

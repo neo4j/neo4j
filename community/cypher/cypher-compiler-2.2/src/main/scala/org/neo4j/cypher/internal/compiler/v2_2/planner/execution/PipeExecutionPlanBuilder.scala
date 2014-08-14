@@ -174,6 +174,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case UnwindPlan(lhs, identifier, collection) =>
           UnwindPipe(buildPipe(lhs), collection.asCommandExpression, identifier.name)
 
+        case NodeExistsCondition(identifier, inner) =>
+          SourceNonEmptyConditionPipe(buildPipe(inner), identifier.name)
+
         case _ =>
           throw new CantHandleQueryException
       }

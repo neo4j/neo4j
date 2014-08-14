@@ -19,14 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.convert
 
-import ExpressionConverters._
-import PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{expressions => commandexpressions, values => commandvalues}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.StartItem
-import org.neo4j.cypher.internal.compiler.v2_2.commands.PeriodicCommitQuery
-import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{UsingIndexHint, UsingScanHint}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.PlannerHint
 
 object OtherConverters {
 
@@ -37,6 +34,15 @@ object OtherConverters {
         case ast.DescSortItem(expr) => (expr, false)
       }
       commands.SortItem(expression.asCommandExpression, ascending)
+    }
+  }
+
+  implicit class HintConverter(val h: ast.Hint) extends AnyVal {
+    def asPlannerHint: PlannerHint = h match {
+      case UsingIndexHint(identifier, labelName, property) =>
+        logical.UsingIndexHint(identifier, labelName, property)
+      case UsingScanHint(identifier, labelName) =>
+        logical.UsingScanHint(identifier, labelName)
     }
   }
 

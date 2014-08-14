@@ -17,14 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast
+package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
-object ConstantExpression {
-  def unapply(v: AnyRef): Option[Expression] = v match {
-    case expr: Literal => Some(expr)
-    case expr: Parameter => Some(expr)
-    case expr@Collection(expressions) if expressions.forall(unapply(_).nonEmpty) => Some(expr)
-    case expr@FunctionInvocation(FunctionName("__oneormore"), _, Seq(ConstantExpression(_))) => Some(expr)
-    case _ => None
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.UsingIndexHint
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+
+case object plannerHintDocBuilder extends CachingDocBuilder[Any] {
+
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+
+  override protected def newNestedDocGenerator = {
+    case hint: UsingIndexHint => (inner) =>
+      group("USING" :/: "INDEX" :/: group(inner(hint.identifier) :: block(inner(hint.label))(inner(hint.property))))
   }
 }

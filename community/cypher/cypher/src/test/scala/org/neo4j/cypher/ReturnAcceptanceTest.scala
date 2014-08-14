@@ -70,7 +70,7 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
   test("should get stuff in the middle") {
     val nodes = createNodes("A", "B", "C", "D", "E")
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       s"start n=node(${nodeIds.mkString(",")}) return n order by n.name ASC skip 2 limit 2"
     )
 
@@ -81,7 +81,7 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
     val nodes = createNodes("A", "B", "C", "D", "E")
 
     val query = s"start n=node(${nodeIds.mkString(",")}) return n order by n.name ASC skip {s} limit {l}"
-    val result = execute(query, "l" -> 2, "s" -> 2)
+    val result = executeWithNewPlanner(query, "l" -> 2, "s" -> 2)
 
     result.columnAs[Node]("n").toList should equal(nodes.slice(2, 4).toList)
   }
@@ -92,7 +92,7 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
     createNode(Map("name" -> "jim", "division" -> "England", "age" -> 55))
     createNode(Map("name" -> "anders", "division" -> "Sweden", "age" -> 35))
 
-    val result = execute("start n=node(0,1,2,3) return n.division, max(n.age) order by max(n.age) ")
+    val result = executeWithNewPlanner("start n=node(0,1,2,3) return n.division, max(n.age) order by max(n.age) ")
 
     result.columnAs[String]("n.division").toList should equal(List("Germany", "Sweden", "England"))
   }
@@ -118,7 +118,7 @@ order by a.name""")
   test("should support column renaming") {
     val a = createNode(Map("name" -> "Andreas"))
 
-    val result = execute("start a = node(0) return a as OneLove")
+    val result = executeWithNewPlanner("start a = node(0) return a as OneLove")
 
     result.columnAs[Node]("OneLove").toList should equal(List(a))
   }
@@ -126,7 +126,7 @@ order by a.name""")
   test("should support column renaming for aggregates as well") {
     createNode(Map("name" -> "Andreas"))
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 start a  = node(0)
 return count(*) as OneLove""")
 
@@ -138,7 +138,7 @@ return count(*) as OneLove""")
     createNode("name" -> "B", "age" -> 12)
     createNode("name" -> "C", "age" -> 11)
 
-    intercept[SyntaxException](execute( """
+    intercept[SyntaxException](executeWithNewPlanner( """
 start a  = node(1,2,3,1)
 return distinct a.name
 order by a.age""").toList)
@@ -165,7 +165,7 @@ order by b.name""")
   test("should be able to run coalesce") {
     createNode("name" -> "A")
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 start a  = node(0)
 return coalesce(a.title, a.name)""")
 
@@ -175,7 +175,7 @@ return coalesce(a.title, a.name)""")
   test("should allow ordering on aggregate function") {
     createNode()
 
-    val result = execute("start n = node(0) match (n)-[:KNOWS]-(c) return n, count(c) as cnt order by cnt")
+    val result = executeWithNewPlanner("start n = node(0) match (n)-[:KNOWS]-(c) return n, count(c) as cnt order by cnt")
     result shouldBe 'isEmpty
   }
 
@@ -199,26 +199,26 @@ return coalesce(a.title, a.name)""")
   test("should allow addition") {
     createNode("age" -> 36)
 
-    val result = execute("start a=node(0) return a.age + 5 as newAge")
+    val result = executeWithNewPlanner("start a=node(0) return a.age + 5 as newAge")
     result.toList should equal(List(Map("newAge" -> 41)))
   }
 
   test("abs Function") {
     createNode()
-    val result = execute("start a=node(0) return abs(-1)")
+    val result = executeWithNewPlanner("start a=node(0) return abs(-1)")
     result.toList should equal(List(Map("abs(-1)" -> 1)))
   }
 
   test("exposes Issue 198") {
     createNode()
 
-    execute("start a=node(*) return a, count(*) order by COUNT(*)").toList
+    executeWithNewPlanner("start a=node(*) return a, count(*) order by COUNT(*)").toList
   }
 
   test("functions should return null if they get path containing unbound") {
     createNode()
 
-    val result = execute("start a=node(0) optional match p=a-[r]->() return length(nodes(p)), id(r), type(r), nodes(p), rels(p)").toList
+    val result = executeWithNewPlanner("start a=node(0) optional match p=a-[r]->() return length(nodes(p)), id(r), type(r), nodes(p), rels(p)").toList
 
     result should equal(List(Map("length(nodes(p))" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)))
   }
@@ -317,7 +317,7 @@ return coalesce(a.title, a.name)""")
     relate(peter, bread, "ATE", Map("times" -> 7))
     relate(peter, meat, "ATE", Map("times" -> 4))
 
-    execute(
+    executeWithNewPlanner(
       """    start me=node(1)
     match me-[r1:ATE]->food<-[r2:ATE]-you
 

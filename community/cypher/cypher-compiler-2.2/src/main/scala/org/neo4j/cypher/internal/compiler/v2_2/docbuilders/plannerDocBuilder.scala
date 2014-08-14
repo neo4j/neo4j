@@ -91,6 +91,7 @@ case object plannerDocBuilder extends DocBuilderChain[Any] {
       logicalPlanDocBuilder,
       queryProjectionDocBuilder("WITH"),
       queryShuffleDocBuilder,
-      plannerQueryDocBuilder
+      plannerQueryDocBuilder,
+      plannerHintDocBuilder
     )
 }

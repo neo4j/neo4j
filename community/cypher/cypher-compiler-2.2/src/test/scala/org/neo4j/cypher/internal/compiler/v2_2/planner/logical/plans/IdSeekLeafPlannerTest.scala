@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_2.RelTypeId
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Candidates}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{UsingIdSeekHint, Cardinality, Candidates}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
 
 import org.mockito.Matchers._
@@ -245,5 +245,45 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
         ),
         planUndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedDecimalIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
     )))
+  }
+
+  test("simple node by id seek with a id seek hint") {
+    // given
+    val nIdent: Identifier = Identifier("n")_
+    val expr = In(
+      FunctionInvocation(FunctionName("id")_, distinct = false, Array(nIdent))_,
+      Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
+    )_
+    val node = IdName("n")
+    val semanticTable = newMockedSemanticTable
+    // START n=node(42) RETURN n
+    // MATCH n WHERE id(n) IN [42] USING IDSEEK RETURN n
+    val qg = QueryGraph(
+      selections = Selections(Set(Predicate(Set(IdName("n")), expr))),
+      patternNodes = Set(node),
+      patternRelationships = Set.empty,
+      hints = Set(UsingIdSeekHint(nIdent)))
+
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: NodeByIdSeek => Cardinality(1)
+      case _               => Cardinality(Double.MaxValue)
+    })
+    implicit val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext,
+      metrics = factory.newMetrics(statistics, semanticTable)
+    )
+    when(context.semanticTable.isNode(nIdent)).thenReturn(true)
+
+    // when
+    val resultPlans = idSeekLeafPlanner(qg)
+
+    // then
+    resultPlans should equal(Candidates(
+      planNodeExistsCondition(
+        node,
+        planNodeByIdSeek(node, Seq(SignedDecimalIntegerLiteral("42")_), Seq(expr), Some(UsingIdSeekHint(nIdent)))
+      )
+    ))
   }
 }

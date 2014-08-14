@@ -41,29 +41,33 @@ object idSeekLeafPlanner extends LeafPlanner {
         (predicate, idExpr, idValueExprs)
     }.collect {
       case (predicate, Identifier(idName), idValues) =>
+        val hint = queryGraph.hints.collectFirst {
+          case hint @ UsingIdSeekHint(Identifier(`idName`)) => hint
+        }
         queryGraph.patternRelationships.find(_.name.name == idName) match {
           case Some(relationship) =>
-            createRelationshipByIdSeek(relationship, idValues, predicate)
+            createRelationshipByIdSeek(relationship, idValues, predicate, hint)
           case None =>
-            planNodeByIdSeek(IdName(idName), idValues, Seq(predicate))
+            val innerPlan = planNodeByIdSeek(IdName(idName), idValues, Seq(predicate), hint)
+            hint.foldLeft(innerPlan)((innerPlan, _) => planNodeExistsCondition(IdName(idName), innerPlan))
         }
     }
 
     CandidateList(candidatePlans)
   }
 
-  def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): QueryPlan = {
+  def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression, hint: Option[PlannerHint]): QueryPlan = {
     val (left, right) = relationship.nodes
     val name = relationship.name
     val plan = relationship.dir match {
       case Direction.BOTH =>
-        planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, Seq(predicate))
+        planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, Seq(predicate), hint)
 
       case Direction.INCOMING =>
-        planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, Seq(predicate))
+        planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, Seq(predicate), hint)
 
       case Direction.OUTGOING =>
-        planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, Seq(predicate))
+        planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, Seq(predicate), hint)
     }
     filterIfNeeded(plan, name.name, relationship.types)
   }

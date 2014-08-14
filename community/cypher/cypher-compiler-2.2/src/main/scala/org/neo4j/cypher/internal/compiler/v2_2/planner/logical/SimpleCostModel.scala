@@ -160,6 +160,9 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
     case s@SortedLimit(input, _, _) =>
       cost(input) +
       cardinality(s) * SORT_COST_PER_ROW
+
+    case NodeExistsCondition(_, input) =>
+      cost(input)
   }
 
   private def selectOrSemiApplyCost(outer: LogicalPlan, inner: LogicalPlan): Cost =

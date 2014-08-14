@@ -17,14 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast
+package org.neo4j.cypher.internal.compiler.v2_2.functions
 
-object ConstantExpression {
-  def unapply(v: AnyRef): Option[Expression] = v match {
-    case expr: Literal => Some(expr)
-    case expr: Parameter => Some(expr)
-    case expr@Collection(expressions) if expressions.forall(unapply(_).nonEmpty) => Some(expr)
-    case expr@FunctionInvocation(FunctionName("__oneormore"), _, Seq(ConstantExpression(_))) => Some(expr)
-    case _ => None
-  }
+import org.neo4j.cypher.internal.compiler.v2_2._
+import ast.convert.ExpressionConverters._
+import commands.{expressions => commandexpressions}
+import symbols._
+
+case object OneOrMore extends Function with SimpleTypedFunction {
+  def name = "__oneormore"
+
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTAny), outputType = CTCollection(CTAny))
+  )
+
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
+    commandexpressions.OneOrMoreFunction(invocation.arguments(0).asCommandExpression)
 }
