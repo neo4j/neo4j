@@ -24,6 +24,8 @@ import java.io.IOException;
 
 public interface ReadableLogChannel extends Closeable
 {
+    byte getLogFormatVersion();
+
     byte get() throws IOException, ReadPastEndException;
 
     short getShort() throws IOException, ReadPastEndException;

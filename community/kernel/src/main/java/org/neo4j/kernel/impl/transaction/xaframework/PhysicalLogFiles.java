@@ -24,11 +24,12 @@ import java.io.IOException;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
 
 import static java.lang.Math.max;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.readLogHeader;
 
 /**
  * Used to figure out what logical log file to open when the database
@@ -78,7 +79,7 @@ public class PhysicalLogFiles
         return fileSystem.fileExists( getLogFileForVersion( version ) );
     }
 
-    public long[] extractHeader( long version ) throws IOException
+    public LogHeader extractHeader( long version ) throws IOException
     {
         return readLogHeader( fileSystem, getLogFileForVersion( version ) );
     }

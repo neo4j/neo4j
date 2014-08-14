@@ -35,6 +35,8 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
+
 public class ReadAheadLogChannelTest
 {
     @Test
@@ -64,9 +66,11 @@ public class ReadAheadLogChannelTest
                 return true;
             }
         } );
-        try ( ReadAheadLogChannel channel = new ReadAheadLogChannel(
-                new PhysicalLogVersionedStoreChannel( fs.open( file, "r" ) ),
-                LogVersionBridge.NO_MORE_CHANNELS, 16 ) )
+
+        StoreChannel storeChannel = fs.open( file, "r" );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1 /* ignored */ );
+        try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS, 16 ) )
         {
             // THEN
             assertEquals( byteValue, channel.get() );
@@ -111,18 +115,21 @@ public class ReadAheadLogChannelTest
             }
         } );
 
-        try ( ReadAheadLogChannel channel = new ReadAheadLogChannel(
-                new PhysicalLogVersionedStoreChannel( fs.open( file( 0 ), "r" ) ), new LogVersionBridge()
+        StoreChannel storeChannel = fs.open( file( 0 ), "r" );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1 /* ignored */ );
+        try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, new LogVersionBridge()
         {
             private boolean returned = false;
 
             @Override
-            public VersionedStoreChannel next( VersionedStoreChannel channel ) throws IOException
+            public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
             {
                 if ( !returned )
                 {
                     returned = true;
-                    return new PhysicalLogVersionedStoreChannel( fs.open( file( 1 ), "r" ) );
+                    return new PhysicalLogVersionedStoreChannel( fs.open( file( 1 ), "r" ),
+                            -1 /* ignored */, (byte) -1 /* ignored */ );
                 }
                 return channel;
             }

@@ -17,15 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
 import java.io.IOException;
 
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
-public interface VersionedStoreChannel extends StoreChannel
+public interface LogEntryParser
 {
-    long getVersion();
+    LogEntry parse( byte version, ReadableLogChannel channel,
+                    LogPositionMarker marker, CommandReaderFactory commandReaderFactory ) throws IOException;
 
-    void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException;
+    boolean skip();
 }

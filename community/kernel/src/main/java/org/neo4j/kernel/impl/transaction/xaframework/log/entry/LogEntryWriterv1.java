@@ -27,6 +27,11 @@ import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodeV11111110.COMMAND;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodeV11111110.TX_1P_COMMIT;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodeV11111110.TX_START;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
+
 public class LogEntryWriterv1 implements LogEntryWriter
 {
     private final WritableLogChannel channel;
@@ -40,14 +45,14 @@ public class LogEntryWriterv1 implements LogEntryWriter
 
     private void writeLogEntryHeader( byte type ) throws IOException
     {
-        channel.put( LogEntry.CURRENT_LOG_ENTRY_VERSION ).put( type );
+        channel.put( CURRENT_LOG_ENTRY_VERSION ).put( type );
     }
 
     @Override
     public void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
             byte[] additionalHeaderData ) throws IOException
     {
-        writeLogEntryHeader( LogEntry.TX_START );
+        writeLogEntryHeader( TX_START );
         channel.putInt( masterId ).putInt( authorId ).putLong( timeWritten ).putLong( latestCommittedTxWhenStarted )
                 .putInt( additionalHeaderData.length ).put( additionalHeaderData, additionalHeaderData.length );
     }
@@ -55,7 +60,7 @@ public class LogEntryWriterv1 implements LogEntryWriter
     @Override
     public void writeCommitEntry( long transactionId, long timeWritten ) throws IOException
     {
-        writeLogEntryHeader( LogEntry.TX_1P_COMMIT );
+        writeLogEntryHeader( TX_1P_COMMIT );
         channel.putLong( transactionId ).putLong( timeWritten );
     }
 
@@ -67,7 +72,7 @@ public class LogEntryWriterv1 implements LogEntryWriter
 
     public void writeCommandEntry( Command command ) throws IOException
     {
-        writeLogEntryHeader( LogEntry.COMMAND );
+        writeLogEntryHeader( COMMAND );
         command.handle( commandWriter );
     }
 

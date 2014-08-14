@@ -32,7 +32,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.Monitor;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
@@ -42,6 +42,10 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.writeLogHeader;
 
 public class PhysicalLogFileTest
 {
@@ -53,7 +57,7 @@ public class PhysicalLogFileTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        LogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 1000, LogPruneStrategyFactory.NO_PRUNING,
+        life.add( new PhysicalLogFile( fs, logFiles, 1000, LogPruneStrategyFactory.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
                 new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ));
 
@@ -63,9 +67,9 @@ public class PhysicalLogFileTest
 
         // THEN
         File file = new PhysicalLogFiles( directory.directory(), name, fs ).getLogFileForVersion( 1L );
-        long[] header = VersionAwareLogEntryReader.readLogHeader( fs, file );
-        assertEquals( 1L, header[0] );
-        assertEquals( 5L, header[1] );
+        LogHeader header = readLogHeader( fs, file );
+        assertEquals( 1L, header.logVersion );
+        assertEquals( 5L, header.lastCommittedTxId );
     }
 
     @Test
@@ -171,9 +175,9 @@ public class PhysicalLogFileTest
             @Override
             public boolean visit( ByteBuffer buffer ) throws IOException
             {
-                VersionAwareLogEntryReader.writeLogHeader( buffer, 1, 3 );
+                writeLogHeader( buffer, 1, 3 );
                 buffer.clear();
-                buffer.position( VersionAwareLogEntryReader.LOG_HEADER_SIZE );
+                buffer.position( LOG_HEADER_SIZE );
                 buffer.put( (byte) 2 );
                 buffer.putInt( 23324 );
                 return true;

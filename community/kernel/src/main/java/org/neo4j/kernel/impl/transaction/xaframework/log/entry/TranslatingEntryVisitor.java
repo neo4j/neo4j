@@ -27,6 +27,10 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodeV11111110.TX_1P_COMMIT;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodeV11111110.TX_START;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
+
 /**
  * Handles on-the-fly translation of incoming log entries, forwards them to an underlying handler, generally for
  * applying the entries to the store.
@@ -49,14 +53,14 @@ class TranslatingEntryVisitor implements Visitor<LogEntry, IOException>
     {
         if ( startEntry == null )
         {
-            if ( logEntry == null || logEntry.getType() != LogEntry.TX_START )
+            if ( logEntry == null || logEntry.getType() != TX_START )
             {
                 throw new IOException( "Unable to find start entry" );
             }
             startEntry = (LogEntryStart) logEntry;
         }
 
-        if ( logEntry.getVersion() != LogEntry.CURRENT_LOG_ENTRY_VERSION )
+        if ( logEntry.getVersion() != CURRENT_LOG_ENTRY_VERSION )
         {
             if ( entries == null )
             {
@@ -64,7 +68,7 @@ class TranslatingEntryVisitor implements Visitor<LogEntry, IOException>
             }
             entries.add( logEntry );
 
-            if ( logEntry.getType() == LogEntry.TX_1P_COMMIT  )
+            if ( logEntry.getType() == TX_1P_COMMIT  )
             {
                 entries = translator.apply( entries );
                 for ( LogEntry entry : entries )
