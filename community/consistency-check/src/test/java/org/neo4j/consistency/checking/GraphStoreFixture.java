@@ -220,7 +220,7 @@ public abstract class GraphStoreFixture implements TestRule
         {
             try
             {
-                writer.label( id, name, id );
+                writer.label( id, name, id + 1 );
             }
             catch ( IOException e )
             {
