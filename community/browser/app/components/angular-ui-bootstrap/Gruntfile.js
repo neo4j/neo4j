@@ -4,7 +4,7 @@ module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
-  grunt.loadNpmTasks('grunt-contrib-copy'); 
+  grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-html2js');
@@ -16,8 +16,8 @@ module.exports = function(grunt) {
   grunt.util.linefeed = '\n';
 
   grunt.initConfig({
-    ngversion: '1.0.5',
-    bsversion: '2.3.1',
+    ngversion: '1.2.10',
+    bsversion: '3.1.1',
     modules: [],//to be filled in by build task
     pkg: grunt.file.readJSON('package.json'),
     dist: 'dist',
@@ -26,9 +26,19 @@ module.exports = function(grunt) {
     meta: {
       modules: 'angular.module("ui.bootstrap", [<%= srcModules %>]);',
       tplmodules: 'angular.module("ui.bootstrap.tpls", [<%= tplModules %>]);',
-      all: 'angular.module("ui.bootstrap", ["ui.bootstrap.tpls", <%= srcModules %>]);'
+      all: 'angular.module("ui.bootstrap", ["ui.bootstrap.tpls", <%= srcModules %>]);',
+      banner: ['/*',
+               ' * <%= pkg.name %>',
+               ' * <%= pkg.homepage %>\n',
+               ' * Version: <%= pkg.version %> - <%= grunt.template.today("yyyy-mm-dd") %>',
+               ' * License: <%= pkg.license %>',
+               ' */\n'].join('\n')
     },
     delta: {
+      docs: {
+        files: ['misc/demo/index.html'],
+        tasks: ['after-test']
+      },
       html: {
         files: ['template/**/*.html'],
         tasks: ['html2js', 'karma:watch:run']
@@ -42,14 +52,14 @@ module.exports = function(grunt) {
     concat: {
       dist: {
         options: {
-          banner: '<%= meta.modules %>\n'
+          banner: '<%= meta.banner %><%= meta.modules %>\n'
         },
         src: [], //src filled in by build task
         dest: '<%= dist %>/<%= filename %>-<%= pkg.version %>.js'
       },
       dist_tpls: {
         options: {
-          banner: '<%= meta.all %>\n<%= meta.tplmodules %>\n'
+          banner: '<%= meta.banner %><%= meta.all %>\n<%= meta.tplmodules %>\n'
         },
         src: [], //src filled in by build task
         dest: '<%= dist %>/<%= filename %>-tpls-<%= pkg.version %>.js'
@@ -63,28 +73,31 @@ module.exports = function(grunt) {
         },
         files: [{
           expand: true,
-          src: ["**/*.html"],
-          cwd: "misc/demo/",
-          dest: "dist/"
+          src: ['**/*.html'],
+          cwd: 'misc/demo/',
+          dest: 'dist/'
         }]
       },
       demoassets: {
         files: [{
           expand: true,
           //Don't re-copy html files, we process those
-          src: ["**/**/*", "!**/*.html"],
-          cwd: "misc/demo",
-          dest: "dist/"
+          src: ['**/**/*', '!**/*.html'],
+          cwd: 'misc/demo',
+          dest: 'dist/'
         }]
       }
     },
     uglify: {
+      options: {
+        banner: '<%= meta.banner %>'
+      },
       dist:{
-        src:['<%= dist %>/<%= filename %>-<%= pkg.version %>.js'],
+        src:['<%= concat.dist.dest %>'],
         dest:'<%= dist %>/<%= filename %>-<%= pkg.version %>.min.js'
       },
       dist_tpls:{
-        src:['<%= dist %>/<%= filename %>-tpls-<%= pkg.version %>.js'],
+        src:['<%= concat.dist_tpls.dest %>'],
         dest:'<%= dist %>/<%= filename %>-tpls-<%= pkg.version %>.min.js'
       }
     },
@@ -104,16 +117,7 @@ module.exports = function(grunt) {
     jshint: {
       files: ['Gruntfile.js','src/**/*.js'],
       options: {
-        curly: true,
-        immed: true,
-        newcap: true,
-        noarg: true,
-        sub: true,
-        boss: true,
-        eqnull: true,
-        globals: {
-          angular: true
-        }
+        jshintrc: '.jshintrc'
       }
     },
     karma: {
@@ -129,12 +133,18 @@ module.exports = function(grunt) {
       jenkins: {
         singleRun: true,
         colors: false,
-        reporter: ['dots', 'junit'],
-        browsers: ['Chrome', 'ChromeCanary', 'Firefox', 'Opera', '/Users/jenkins/bin/safari.sh', '/Users/jenkins/bin/ie9.sh' ,'/Users/jenkins/bin/ie10.sh']
+        reporters: ['dots', 'junit'],
+        browsers: ['Chrome', 'ChromeCanary', 'Firefox', 'Opera', '/Users/jenkins/bin/safari.sh']
       },
       travis: {
         singleRun: true,
         browsers: ['Firefox']
+      },
+      coverage: {
+        preprocessors: {
+          'src/*/*.js': 'coverage'
+        },
+        reporters: ['progress', 'coverage']
       }
     },
     changelog: {
@@ -165,7 +175,7 @@ module.exports = function(grunt) {
       options: {
         dest: 'dist/docs',
         scripts: [
-          'angular.js', 
+          'angular.js',
           '<%= concat.dist_tpls.dest %>'
         ],
         styles: [
@@ -176,13 +186,13 @@ module.exports = function(grunt) {
         html5Mode: false
       },
       api: {
-        src: ["src/**/*.js", "src/**/*.ngdoc"],
-        title: "API Documentation"
+        src: ['src/**/*.js', 'src/**/*.ngdoc'],
+        title: 'API Documentation'
       }
     }
   });
 
-  //register before and after test tasks so we've don't have to change cli 
+  //register before and after test tasks so we've don't have to change cli
   //options on the goole's CI server
   grunt.registerTask('before-test', ['enforce', 'jshint', 'html2js']);
   grunt.registerTask('after-test', ['build', 'copy']);
@@ -227,18 +237,18 @@ module.exports = function(grunt) {
       name: name,
       moduleName: enquote('ui.bootstrap.' + name),
       displayName: ucwords(breakup(name, ' ')),
-      srcFiles: grunt.file.expand("src/"+name+"/*.js"),
-      tplFiles: grunt.file.expand("template/"+name+"/*.html"),
-      tpljsFiles: grunt.file.expand("template/"+name+"/*.html.js"),
-      tplModules: grunt.file.expand("template/"+name+"/*.html").map(enquote),
+      srcFiles: grunt.file.expand('src/'+name+'/*.js'),
+      tplFiles: grunt.file.expand('template/'+name+'/*.html'),
+      tpljsFiles: grunt.file.expand('template/'+name+'/*.html.js'),
+      tplModules: grunt.file.expand('template/'+name+'/*.html').map(enquote),
       dependencies: dependenciesForModule(name),
       docs: {
-        md: grunt.file.expand("src/"+name+"/docs/*.md")
-          .map(grunt.file.read).map(markdown).join("\n"),
-        js: grunt.file.expand("src/"+name+"/docs/*.js")
-          .map(grunt.file.read).join("\n"),
-        html: grunt.file.expand("src/"+name+"/docs/*.html")
-          .map(grunt.file.read).join("\n")
+        md: grunt.file.expand('src/'+name+'/docs/*.md')
+          .map(grunt.file.read).map(markdown).join('\n'),
+        js: grunt.file.expand('src/'+name+'/docs/*.js')
+          .map(grunt.file.read).join('\n'),
+        html: grunt.file.expand('src/'+name+'/docs/*.html')
+          .map(grunt.file.read).join('\n')
       }
     };
     module.dependencies.forEach(findModule);
@@ -316,12 +326,19 @@ module.exports = function(grunt) {
     grunt.task.run(['concat', 'uglify']);
   });
 
-  grunt.registerTask('test', 'Run tests on singleRun karma server', function() {
+  grunt.registerTask('test', 'Run tests on singleRun karma server', function () {
     //this task can be executed in 3 different environments: local, Travis-CI and Jenkins-CI
     //we need to take settings for each one into account
     if (process.env.TRAVIS) {
       grunt.task.run('karma:travis');
     } else {
+      var isToRunJenkinsTask = !!this.args.length;
+      if(grunt.option('coverage')) {
+        var karmaOptions = grunt.config.get('karma.options'),
+          coverageOpts = grunt.config.get('karma.coverage');
+        grunt.util._.extend(karmaOptions, coverageOpts);
+        grunt.config.set('karma.options', karmaOptions);
+      }
       grunt.task.run(this.args.length ? 'karma:jenkins' : 'karma:continuous');
     }
   });

@@ -1,7 +1,38 @@
 {
-  "name": "components-jquery",
-  "version": "2.0.3",
-  "description": "jQuery component",
-  "keywords": ["jquery"],
-  "main": "./jquery.js"
+	"name": "jquery",
+	"title": "jQuery",
+	"description": "JavaScript library for DOM operations",
+	"version": "2.0.3",
+	"homepage": "http://jquery.com",
+	"author": {
+		"name": "jQuery Foundation and other contributors",
+		"url": "https://github.com/jquery/jquery/blob/master/AUTHORS.txt"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/jquery/jquery.git"
+	},
+	"bugs": {
+		"url": "http://bugs.jquery.com"
+	},
+	"licenses": [
+		{
+			"type": "MIT",
+			"url": "https://github.com/jquery/jquery/blob/master/MIT-LICENSE.txt"
+		}
+	],
+	"dependencies": {},
+	"devDependencies": {
+		"grunt-compare-size": "~0.4.0",
+		"grunt-git-authors": "1.2.0",
+		"grunt-update-submodules": "0.2.0",
+		"grunt-contrib-watch": "0.3.1",
+		"grunt-contrib-jshint": "0.3.0",
+		"grunt-contrib-uglify": "0.2.0",
+		"grunt": "0.4.1",
+		"gzip-js": "0.3.1",
+		"testswarm": "~1.1.0",
+		"archiver": "~0.4.2"
+	},
+	"keywords": []
 }

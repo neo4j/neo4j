@@ -36,7 +36,12 @@
                     elPosition.left += elPosition.width;
 
                     positionedEl.css({left: elPosition.left + 'px', top: elPosition.top + 'px'});
-                    element.after($compile(positionedEl)(scope));
+
+                    if (attrs['position'] === 'body') {
+                        angular.element(document.getElementsByTagName('body')[0]).after($compile(positionedEl)(scope));
+                    } else {
+                        element.after($compile(positionedEl)(scope));
+                    }
                 }
             };
         });
@@ -110,6 +115,15 @@
     </table>
 </div>
 
+<h3>Inside svg</h3>
+
+<svg height="300px" width="300px">
+  <rect x="0" y="0" height="300" width="300" fill="aliceblue"></rect>
+  <rect x="50" y="50" height="200" width="200" position="body" fill="white" stroke="red">
+  </rect>
+</svg>
+
+
 <h3>Inside looong text</h3>
 <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur non velit nulla. Suspendisse sit amet tempus diam. Sed at ultricies neque. Suspendisse id felis a sem placerat ornare. Donec auctor, purus at molestie tempor, arcu enim molestie lacus, ac imperdiet massa urna eu massa. Praesent velit tellus, scelerisque a fermentum ut, ornare in diam. Phasellus egestas molestie feugiat. Vivamus sit amet viverra metus.</p>
 <p>Etiam ultricies odio commodo erat ullamcorper sodales. Nullam ac dui ac libero dictum mollis. Quisque convallis adipiscing facilisis. In nec nisi velit, id auctor lectus. Cras interdum urna non felis lacinia vulputate. Integer dignissim, mi aliquam gravida auctor, massa odio cursus lorem, eu ultrices eros nisl tempus diam. Maecenas tristique pellentesque nisi sed adipiscing. Aenean hendrerit sapien quis arcu lobortis vitae pulvinar ante volutpat. Morbi consectetur erat eu lacus facilisis eu ullamcorper orci euismod. Quisque diam dui, interdum in suscipit et, fringilla non justo. Pellentesque non nibh odio. Proin sit amet massa sem.</p>
@@ -119,10 +133,12 @@
 <div class="content" position>HERE</div>
 <p>Maecenas laoreet nisi pretium elit bibendum eget tempor nunc aliquet. Vivamus interdum nisi sit amet tortor fermentum congue. Suspendisse at posuere erat. Aliquam hendrerit ultricies nunc non adipiscing. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Duis molestie viverra nulla a aliquet. Nullam non eros vel sem vehicula suscipit. Ut sit amet arcu ac tortor dignissim viverra in a ligula.</p>
 
-<div style="position: fixed; bottom: 0px" class="container">
+
+<div style="position: fixed; bottom: 0" class="container">
     <h3>Within fixed div</h3>
     <div class="content" position>Content</div>
 </div>
+
 
 </body>
 </html>

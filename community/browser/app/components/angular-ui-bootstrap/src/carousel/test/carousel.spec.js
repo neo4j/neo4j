@@ -1,8 +1,20 @@
 describe('carousel', function() {
-  beforeEach(module('ui.bootstrap.carousel'));
+  beforeEach(module('ui.bootstrap.carousel', function($compileProvider, $provide) {
+    angular.forEach(['ngSwipeLeft', 'ngSwipeRight'], makeMock);
+    function makeMock(name) {
+      $provide.value(name + 'Directive', []); //remove existing directive if it exists
+      $compileProvider.directive(name, function() {
+        return function(scope, element, attr) {
+          element.on(name, function() {
+            scope.$apply(attr[name]);
+          });
+        };
+      });
+    }
+  }));
   beforeEach(module('template/carousel/carousel.html', 'template/carousel/slide.html'));
-  
-  var $rootScope, elm, $compile, $controller, $timeout;
+
+  var $rootScope, $compile, $controller, $timeout;
   beforeEach(inject(function(_$rootScope_, _$compile_, _$controller_, _$timeout_) {
     $rootScope = _$rootScope_;
     $compile = _$compile_;
@@ -11,7 +23,7 @@ describe('carousel', function() {
   }));
 
   describe('basics', function() {
-    var elm, scope, carouselScope;
+    var elm, scope;
     beforeEach(function() {
       scope = $rootScope.$new();
       scope.slides = [
@@ -24,15 +36,11 @@ describe('carousel', function() {
           '<slide ng-repeat="slide in slides" active="slide.active">' +
             '{{slide.content}}' +
           '</slide>' +
-        '</carousel>' 
+        '</carousel>'
       )(scope);
-      carouselScope = elm.scope();
       scope.interval = 5000;
       scope.nopause = undefined;
       scope.$apply();
-    });
-    afterEach(function() {
-      scope.$destroy();
     });
 
     function testSlideActive(slideIndex) {
@@ -64,7 +72,7 @@ describe('carousel', function() {
       var indicators = elm.find('ol.carousel-indicators > li');
       expect(indicators.length).toBe(3);
     });
-    
+
     it('should hide navigation when only one slide', function () {
       scope.slides=[{active:false,content:'one'}];
       scope.$apply();
@@ -73,25 +81,25 @@ describe('carousel', function() {
             '<slide ng-repeat="slide in slides" active="slide.active">' +
               '{{slide.content}}' +
             '</slide>' +
-          '</carousel>' 
+          '</carousel>'
         )(scope);
       var indicators = elm.find('ol.carousel-indicators > li');
       expect(indicators.length).toBe(0);
-      
+
       var navNext = elm.find('a.right');
       expect(navNext.length).toBe(0);
-      
+
       var navPrev = elm.find('a.left');
       expect(navPrev.length).toBe(0);
     });
-    
-    it('should show navigation when there are 3 slides', function () {  
+
+    it('should show navigation when there are 3 slides', function () {
       var indicators = elm.find('ol.carousel-indicators > li');
       expect(indicators.length).not.toBe(0);
-      
+
       var navNext = elm.find('a.right');
       expect(navNext.length).not.toBe(0);
-      
+
       var navPrev = elm.find('a.left');
       expect(navPrev.length).not.toBe(0);
     });
@@ -116,6 +124,20 @@ describe('carousel', function() {
       testSlideActive(1);
       navPrev.click();
       testSlideActive(0);
+    });
+
+    describe('swiping', function() {
+      it('should go next on swipeLeft', function() {
+        testSlideActive(0);
+        elm.triggerHandler('ngSwipeLeft');
+        testSlideActive(1);
+      });
+
+      it('should go prev on swipeRight', function() {
+        testSlideActive(0);
+        elm.triggerHandler('ngSwipeRight');
+        testSlideActive(2);
+      });
     });
 
     it('should select a slide when clicking on slide indicators', function () {
@@ -179,7 +201,7 @@ describe('carousel', function() {
       $timeout.flush();
       testSlideActive(2);
     });
-    
+
     it('should not pause on mouseover if noPause', function() {
       scope.$apply('nopause = true');
       testSlideActive(0);
@@ -189,7 +211,7 @@ describe('carousel', function() {
       elm.trigger('mouseleave');
       $timeout.flush();
       testSlideActive(2);
-    });    
+    });
 
     it('should remove slide from dom and change active slide', function() {
       scope.$apply('slides[2].active = true');
@@ -212,12 +234,6 @@ describe('carousel', function() {
       expect(contents.eq(0).text()).toBe('new1');
       expect(contents.eq(1).text()).toBe('new2');
       expect(contents.eq(2).text()).toBe('new3');
-      scope.$apply('slides.splice(0,1)');
-      contents = elm.find('div.item');
-      expect(contents.length).toBe(2);
-      expect(contents.eq(0).text()).toBe('new2');
-      expect(contents.eq(0)).toHaveClass('active');
-      expect(contents.eq(1).text()).toBe('new3');
     });
 
     it('should not change if next is clicked while transitioning', function() {
@@ -234,12 +250,25 @@ describe('carousel', function() {
       next.click();
       testSlideActive(1);
     });
+
+    it('issue 1414 - should not continue running timers after scope is destroyed', function() {
+      testSlideActive(0);
+      $timeout.flush();
+      testSlideActive(1);
+      $timeout.flush();
+      testSlideActive(2);
+      $timeout.flush();
+      testSlideActive(0);
+      scope.$destroy();
+      expect($timeout.flush).toThrow('No deferred tasks to be flushed');
+    });
+
   });
 
   describe('controller', function() {
     var scope, ctrl;
     //create an array of slides and add to the scope
-    var slides = [{'content': 1},{'content': 2},{'content':3},{'content':4}];
+    var slides = [{'content':1},{'content':2},{'content':3},{'content':4}];
 
     beforeEach(function() {
       scope = $rootScope.$new();
@@ -248,22 +277,19 @@ describe('carousel', function() {
         ctrl.addSlide(slides[i]);
       }
     });
-    afterEach(function() {
-      scope.$destroy();
-    });
 
     describe('addSlide', function() {
       it('should set first slide to active = true and the rest to false', function() {
         angular.forEach(ctrl.slides, function(slide, i) {
-          if (i !== 0) { 
-            expect(slide.active).not.toBe(true); 
+          if (i !== 0) {
+            expect(slide.active).not.toBe(true);
           } else {
             expect(slide.active).toBe(true);
           }
         });
       });
 
-      it('should add new slide and change active to true if active is true on the added slide', function() { 
+      it('should add new slide and change active to true if active is true on the added slide', function() {
         var newSlide = {active: true};
         expect(ctrl.slides.length).toBe(4);
         ctrl.addSlide(newSlide);
@@ -272,7 +298,7 @@ describe('carousel', function() {
         expect(ctrl.slides[0].active).toBe(false);
       });
 
-      it('should add a new slide and not change the active slide', function() { 
+      it('should add a new slide and not change the active slide', function() {
         var newSlide = {active: false};
         expect(ctrl.slides.length).toBe(4);
         ctrl.addSlide(newSlide);
@@ -293,6 +319,20 @@ describe('carousel', function() {
         ctrl.removeSlide(ctrl.slides[0]);
         expect(ctrl.slides.length).toBe(1);
         expect(ctrl.currentSlide).toBe(ctrl.slides[0]);
+      });
+
+      it('issue 1414 - should not continue running timers after scope is destroyed', function() {
+        spyOn(scope, 'next').andCallThrough();
+        scope.interval = 2000;
+        scope.$digest();
+
+        $timeout.flush();
+        expect(scope.next.calls.length).toBe(1);
+
+        scope.$destroy();
+
+        $timeout.flush(scope.interval);
+        expect(scope.next.calls.length).toBe(1);
       });
     });
   });

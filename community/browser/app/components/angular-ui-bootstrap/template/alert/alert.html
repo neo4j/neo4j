@@ -1,4 +1,7 @@
-<div class='alert' ng-class='type && "alert-" + type'>
-    <button ng-show='closeable' type='button' class='close' ng-click='close()'>&times;</button>
+<div class="alert" ng-class="{'alert-{{type || 'warning'}}': true, 'alert-dismissable': closeable}" role="alert">
+    <button ng-show="closeable" type="button" class="close" ng-click="close()">
+        <span aria-hidden="true">&times;</span>
+        <span class="sr-only">Close</span>
+    </button>
     <div ng-transclude></div>
 </div>

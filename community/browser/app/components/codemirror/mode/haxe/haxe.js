@@ -16,7 +16,7 @@ CodeMirror.defineMode("haxe", function(config, parserConfig) {
       "function": kw("function"), "catch": kw("catch"), "untyped": kw("untyped"), "callback": kw("cb"),
       "for": kw("for"), "switch": kw("switch"), "case": kw("case"), "default": kw("default"),
       "in": operator, "never": kw("property_access"), "trace":kw("trace"),
-    "class": type, "enum":type, "interface":type, "typedef":type, "extends":type, "implements":type, "dynamic":type,
+    "class": type, "abstract":type, "enum":type, "interface":type, "typedef":type, "extends":type, "implements":type, "dynamic":type,
       "true": atom, "false": atom, "null": atom
     };
   }();
@@ -305,12 +305,13 @@ CodeMirror.defineMode("haxe", function(config, parserConfig) {
 
   function importdef (type, value) {
   if(type == "variable" && /[A-Z]/.test(value.charAt(0))) { registerimport(value); return cont(); }
-  else if(type == "variable" || type == "property" || type == ".") return cont(importdef);
+  else if(type == "variable" || type == "property" || type == "." || value == "*") return cont(importdef);
   }
 
   function typedef (type, value)
   {
   if(type == "variable" && /[A-Z]/.test(value.charAt(0))) { registerimport(value); return cont(); }
+  else if (type == "type" && /[A-Z]/.test(value.charAt(0))) { return cont(); }
   }
 
   function maybelabel(type) {
@@ -422,7 +423,10 @@ CodeMirror.defineMode("haxe", function(config, parserConfig) {
       else return lexical.indented + (closing ? 0 : indentUnit);
     },
 
-    electricChars: "{}"
+    electricChars: "{}",
+    blockCommentStart: "/*",
+    blockCommentEnd: "*/",
+    lineComment: "//"
   };
 });
 

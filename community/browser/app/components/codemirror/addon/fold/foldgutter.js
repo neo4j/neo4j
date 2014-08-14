@@ -62,7 +62,7 @@
       if (isFolded(cm, cur)) {
         mark = marker(opts.indicatorFolded);
       } else {
-        var pos = Pos(cur, 0), func = opts.rangeFinder || cm.getHelper(pos, "fold");
+        var pos = Pos(cur, 0), func = opts.rangeFinder || CodeMirror.fold.auto;
         var range = func && func(cm, pos);
         if (range && range.from.line + 1 < range.to.line)
           mark = marker(opts.indicatorOpen);
@@ -88,14 +88,14 @@
   }
 
   function onChange(cm) {
-    var state = cm.state.foldGutter;
+    var state = cm.state.foldGutter, opts = cm.state.foldGutter.options;
     state.from = state.to = 0;
     clearTimeout(state.changeUpdate);
-    state.changeUpdate = setTimeout(function() { updateInViewport(cm); }, 600);
+    state.changeUpdate = setTimeout(function() { updateInViewport(cm); }, opts.foldOnChangeTimeSpan || 600);
   }
 
   function onViewportChange(cm) {
-    var state = cm.state.foldGutter;
+    var state = cm.state.foldGutter, opts = cm.state.foldGutter.options;
     clearTimeout(state.changeUpdate);
     state.changeUpdate = setTimeout(function() {
       var vp = cm.getViewport();
@@ -113,7 +113,7 @@
           }
         });
       }
-    }, 400);
+    }, opts.updateViewportTimeSpan || 400);
   }
 
   function onFold(cm, from) {

@@ -1,12 +1,10 @@
-<ul class="dropdown-menu" ng-style="{display: (isOpen && 'block') || 'none', top: position.top+'px', left: position.left+'px'}" class="dropdown-menu">
+<ul class="dropdown-menu" ng-style="{display: (isOpen && 'block') || 'none', top: position.top+'px', left: position.left+'px'}" ng-keydown="keydown($event)">
 	<li ng-transclude></li>
-	<li class="divider"></li>
-	<li style="padding: 9px;">
+	<li ng-if="showButtonBar" style="padding:10px 9px 2px">
 		<span class="btn-group">
-			<button class="btn btn-small btn-inverse" ng-click="today()">Today</button>
-			<button class="btn btn-small btn-info" ng-click="showWeeks = ! showWeeks" ng-class="{active: showWeeks}">Weeks</button>
-			<button class="btn btn-small btn-danger" ng-click="clear()">Clear</button>
+			<button type="button" class="btn btn-sm btn-info" ng-click="select('today')">{{ getText('current') }}</button>
+			<button type="button" class="btn btn-sm btn-danger" ng-click="select(null)">{{ getText('clear') }}</button>
 		</span>
-		<button class="btn btn-small btn-success pull-right" ng-click="isOpen = false">Close</button>
+		<button type="button" class="btn btn-sm btn-success pull-right" ng-click="close()">{{ getText('close') }}</button>
 	</li>
 </ul>

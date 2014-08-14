@@ -36,6 +36,8 @@
   min-width: 20px;
   text-align: right;
   color: #999;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
 }
 
 /* CURSOR */
@@ -59,17 +61,23 @@
 
 .cm-tab { display: inline-block; }
 
+.CodeMirror-ruler {
+  border-left: 1px solid #ccc;
+  position: absolute;
+}
+
 /* DEFAULT THEME */
 
 .cm-s-default .cm-keyword {color: #708;}
 .cm-s-default .cm-atom {color: #219;}
 .cm-s-default .cm-number {color: #164;}
 .cm-s-default .cm-def {color: #00f;}
-.cm-s-default .cm-variable {color: black;}
+.cm-s-default .cm-variable,
+.cm-s-default .cm-punctuation,
+.cm-s-default .cm-property,
+.cm-s-default .cm-operator {}
 .cm-s-default .cm-variable-2 {color: #05a;}
 .cm-s-default .cm-variable-3 {color: #085;}
-.cm-s-default .cm-property {color: black;}
-.cm-s-default .cm-operator {color: black;}
 .cm-s-default .cm-comment {color: #a50;}
 .cm-s-default .cm-string {color: #a11;}
 .cm-s-default .cm-string-2 {color: #f50;}
@@ -114,7 +122,7 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   /* 30px is the magic margin used to hide the element's real scrollbars */
   /* See overflow: hidden in .CodeMirror */
   margin-bottom: -30px; margin-right: -30px;
-  padding-bottom: 30px; padding-right: 30px;
+  padding-bottom: 30px;
   height: 100%;
   outline: none; /* Prevent dragging from highlighting the element */
   position: relative;
@@ -123,6 +131,9 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
 }
 .CodeMirror-sizer {
   position: relative;
+  border-right: 30px solid transparent;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
 }
 
 /* The fake, visible scrollbars. Used to force redraw during scrolling
@@ -197,16 +208,7 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   white-space: pre-wrap;
   word-break: normal;
 }
-.CodeMirror-code pre {
-  border-right: 30px solid transparent;
-  width: -webkit-fit-content;
-  width: -moz-fit-content;
-  width: fit-content;
-}
-.CodeMirror-wrap .CodeMirror-code pre {
-  border-right: none;
-  width: auto;
-}
+
 .CodeMirror-linebackground {
   position: absolute;
   left: 0; right: 0; top: 0; bottom: 0;

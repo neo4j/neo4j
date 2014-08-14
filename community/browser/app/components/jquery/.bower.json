@@ -8,14 +8,14 @@
   ],
   "main": "jquery.js",
   "license": "MIT",
-  "homepage": "https://github.com/components/jquery",
+  "homepage": "https://github.com/jquery/jquery",
   "_release": "2.0.3",
   "_resolution": {
     "type": "version",
     "tag": "2.0.3",
-    "commit": "452a56b52b8f4a032256cdb8b6838f25f0bdb3d2"
+    "commit": "f852e631ba85af7da4ad7594785e122504e7b233"
   },
-  "_source": "git://github.com/components/jquery.git",
-  "_target": "~2.0.3",
+  "_source": "git://github.com/jquery/jquery.git",
+  "_target": "2.0.3",
   "_originalSource": "jquery"
 }

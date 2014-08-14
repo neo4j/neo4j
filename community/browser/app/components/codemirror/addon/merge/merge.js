@@ -29,7 +29,7 @@
       this.edit = this.mv.edit;
       this.orig = CodeMirror(pane, copyObj({value: orig, readOnly: true}, copyObj(options)));
 
-      this.diff = getDiff(orig, options.value);
+      this.diff = getDiff(asString(orig), asString(options.value));
       this.diffOutOfDate = false;
 
       this.showDifferences = options.showDifferences !== false;
@@ -46,6 +46,14 @@
     }
   };
 
+  function ensureDiff(dv) {
+    if (dv.diffOutOfDate) {
+      dv.diff = getDiff(dv.orig.getValue(), dv.edit.getValue());
+      dv.diffOutOfDate = false;
+      CodeMirror.signal(dv.edit, "updateDiff", dv.diff);
+    }
+  }
+
   function registerUpdate(dv) {
     var edit = {from: 0, to: 0, marked: []};
     var orig = {from: 0, to: 0, marked: []};
@@ -58,11 +66,7 @@
         clearMarks(dv.orig, orig.marked, dv.classes);
         edit.from = edit.to = orig.from = orig.to = 0;
       }
-      if (dv.diffOutOfDate) {
-        dv.diff = getDiff(dv.orig.getValue(), dv.edit.getValue());
-        dv.diffOutOfDate = false;
-        CodeMirror.signal(dv.edit, "updateDiff", dv.diff);
-      }
+      ensureDiff(dv);
       if (dv.showDifferences) {
         updateMarks(dv.edit, dv.diff, edit, DIFF_INSERT, dv.classes);
         updateMarks(dv.orig, dv.diff, orig, DIFF_DELETE, dv.classes);
@@ -82,6 +86,10 @@
     }
     dv.edit.on("change", change);
     dv.orig.on("change", change);
+    dv.edit.on("markerAdded", set);
+    dv.edit.on("markerCleared", set);
+    dv.orig.on("markerAdded", set);
+    dv.orig.on("markerCleared", set);
     dv.edit.on("viewportChange", set);
     dv.orig.on("viewportChange", set);
     update();
@@ -349,8 +357,19 @@
     setShowDifferences: function(val) {
       if (this.right) this.right.setShowDifferences(val);
       if (this.left) this.left.setShowDifferences(val);
+    },
+    rightChunks: function() {
+      return this.right && getChunks(this.right);
+    },
+    leftChunks: function() {
+      return this.left && getChunks(this.left);
     }
   };
+
+  function asString(obj) {
+    if (typeof obj == "string") return obj;
+    else return obj.getValue();
+  }
 
   // Operations on diffs
 
@@ -392,6 +411,16 @@
     }
     if (startEdit <= edit.line || startOrig <= orig.line)
       f(startOrig, orig.line + 1, startEdit, edit.line + 1);
+  }
+
+  function getChunks(dv) {
+    ensureDiff(dv);
+    var collect = [];
+    iterateChunks(dv.diff, function(topOrig, botOrig, topEdit, botEdit) {
+      collect.push({origFrom: topOrig, origTo: botOrig,
+                    editFrom: topEdit, editTo: botEdit});
+    });
+    return collect;
   }
 
   function endOfLineClean(diff, i) {

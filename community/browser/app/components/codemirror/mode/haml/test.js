@@ -1,5 +1,5 @@
 (function() {
-  var mode = CodeMirror.getMode({tabSize: 4}, "haml");
+  var mode = CodeMirror.getMode({tabSize: 4, indentUnit: 2}, "haml");
   function MT(name) { test.mode(name, mode, Array.prototype.slice.call(arguments, 1)); }
 
   // Requires at least one media query
@@ -28,7 +28,7 @@
      "[tag %a]([variable title][operator =][string \"test\"]){[atom :title] [operator =>] [string \"test\"]}");
 
   MT("htmlCode",
-     "[tag <h1>]Title[tag </h1>]");
+     "[tag&bracket <][tag h1][tag&bracket >]Title[tag&bracket </][tag h1][tag&bracket >]");
 
   MT("rubyBlock",
      "[operator =][variable-2 @item]");

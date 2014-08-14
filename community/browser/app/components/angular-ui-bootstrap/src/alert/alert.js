@@ -1,15 +1,19 @@
-angular.module("ui.bootstrap.alert", []).directive('alert', function () {
+angular.module('ui.bootstrap.alert', [])
+
+.controller('AlertController', ['$scope', '$attrs', function ($scope, $attrs) {
+  $scope.closeable = 'close' in $attrs;
+}])
+
+.directive('alert', function () {
   return {
     restrict:'EA',
+    controller:'AlertController',
     templateUrl:'template/alert/alert.html',
     transclude:true,
     replace:true,
     scope: {
-      type: '=',
+      type: '@',
       close: '&'
-    },
-    link: function(scope, iElement, iAttrs, controller) {
-      scope.closeable = "close" in iAttrs;
     }
   };
 });

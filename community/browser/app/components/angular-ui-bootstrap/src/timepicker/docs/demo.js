@@ -21,6 +21,10 @@ var TimepickerDemoCtrl = function ($scope) {
     $scope.mytime = d;
   };
 
+  $scope.changed = function () {
+    console.log('Time changed to: ' + $scope.mytime);
+  };
+
   $scope.clear = function() {
     $scope.mytime = null;
   };
