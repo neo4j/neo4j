@@ -23,28 +23,41 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.kernel.logging.Logging;
 
 /* Utility to test log messages in integration tests. */
 public class TestLogging implements Logging
 {
-
-    private Map<Class, TestLogger> loggers = new HashMap<>();
+    private Map<Class, TestLogger> messageLoggers = new HashMap<>();
+    private Map<Class, TestLogger> consoleLoggers = new HashMap<>();
 
     @Override
     public TestLogger getMessagesLog( Class loggingClass )
     {
-        if(!loggers.containsKey( loggingClass ))
+        if(!messageLoggers.containsKey( loggingClass ))
         {
-            loggers.put( loggingClass, new TestLogger() );
+            messageLoggers.put( loggingClass, new TestLogger() );
         }
-        return loggers.get( loggingClass );
+        return messageLoggers.get( loggingClass );
     }
 
     @Override
     public ConsoleLogger getConsoleLog( Class loggingClass )
     {
-        return new ConsoleLogger( getMessagesLog( loggingClass ) );
+        if(!consoleLoggers.containsKey( loggingClass ))
+        {
+            consoleLoggers.put( loggingClass, new TestLogger(){
+                @Override
+                public void logMessage( String msg, Throwable cause, boolean flush, LogMarker marker )
+                {
+                    // Console log still uses the logMessage methods, so we work around that here for now.
+                    // We should write a separate TestLogger for the console logging when time permits.
+                    super.info( msg, cause );
+                }
+            });
+        }
+        return new ConsoleLogger( consoleLoggers.get( loggingClass ) );
     }
 
     @Override

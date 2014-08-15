@@ -19,27 +19,37 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
-import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class Property(map: Expression, propertyKey: PropertyKeyName)(val position: InputPosition) extends Expression with SimpleTyping {
-  protected def possibleTypes = CTAny.covariant
+case class Property(map: Expression, propertyKey: PropertyKeyName)(val position: InputPosition) extends Expression with
+FunctionTyping {
+  protected def possibleTypes = CTAny.invariant
 
-  override def semanticCheck(ctx: SemanticContext) =
-    map.semanticCheck(ctx) chain
-    map.expectType(CTMap.covariant) chain
-    super.semanticCheck(ctx)
+  val signatures = Vector(
+                           Signature(argumentTypes = Vector(CTMap), outputType = CTInteger),
+                           Signature(argumentTypes = Vector(CTMap), outputType = CTString),
+                           Signature(argumentTypes = Vector(CTMap), outputType = CTBoolean),
+                           Signature(argumentTypes = Vector(CTMap), outputType = CTFloat),
+                           Signature(argumentTypes = Vector(CTMap), outputType = CTNumber),
+                           Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTInteger)),
+                           Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTString)),
+                           Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTBoolean)),
+                           Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTFloat)),
+                           Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTNumber))
+                         )
 }
-
 object LegacyProperty {
   def apply(map: Expression, propertyKey: PropertyKeyName, legacyOperator: String)(position: InputPosition) =
     new Property(map, propertyKey)(position) {
       override def semanticCheck(ctx: SemanticContext): SemanticCheck = legacyOperator match {
         case "?" => SemanticError(s"This syntax is no longer supported (missing properties are now returned as null). Please use (not(has(<ident>.${propertyKey.name})) OR <ident>.${propertyKey.name}=<value>) if you really need the old behavior.", position)
         case "!" => SemanticError(s"This syntax is no longer supported (missing properties are now returned as null).", position)
-        case _   => throw new ThisShouldNotHappenError("Stefan", s"Invalid legacy operator $legacyOperator following access to property.")
+
+        case _ => throw new ThisShouldNotHappenError("Stefan", s"Invalid legacy operator $legacyOperator following " +
+                                                               s"access to property.")
       }
     }
 }

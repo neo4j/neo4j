@@ -30,11 +30,11 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SystemOutLogging;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.NO_MONITOR;
 
@@ -48,19 +48,20 @@ public class StoreMigrationTool
     public static void main( String[] args )
     {
         String legacyStoreDirectory = args[0];
-        new StoreMigrationTool().run( legacyStoreDirectory, new Config(), StringLogger.SYSTEM, NO_MONITOR );
+        new StoreMigrationTool().run( legacyStoreDirectory, new Config(), new SystemOutLogging(), NO_MONITOR );
     }
 
-    public void run( String legacyStoreDirectory, Config config, StringLogger log, StoreUpgrader.Monitor monitor )
+    public void run( String legacyStoreDirectory, Config config, Logging logging, StoreUpgrader.Monitor monitor )
     {
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         StoreUpgrader migrationProcess = new StoreUpgrader( new ConfigMapUpgradeConfiguration( config ), fs, monitor );
 
         // Add the kernel store migrator
         config = StoreFactory.configForStoreDir( config, new File( legacyStoreDirectory ) );
-        migrationProcess.addParticipant( new StoreMigrator( new VisibleMigrationProgressMonitor( log, System.out ),
+        migrationProcess.addParticipant( new StoreMigrator(
+                new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrationTool.class ), System.out ),
                 new UpgradableDatabase( new StoreVersionCheck( fs ) ),
-                config ) );
+                config, logging ) );
 
         // Add participants from kernel extensions...
         LifeSupport life = new LifeSupport();
@@ -85,7 +86,8 @@ public class StoreMigrationTool
             long startTime = System.currentTimeMillis();
             migrationProcess.migrateIfNeeded( new File( legacyStoreDirectory ) );
             long duration = System.currentTimeMillis() - startTime;
-            log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
+            logging.getMessagesLog( StoreMigrationTool.class )
+                    .info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }
         finally
         {

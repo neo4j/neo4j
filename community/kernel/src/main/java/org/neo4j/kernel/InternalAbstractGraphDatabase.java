@@ -473,9 +473,9 @@ public abstract class InternalAbstractGraphDatabase
 
         idGeneratorFactory = createIdGeneratorFactory();
 
-        storeMigrationProcess.addParticipant( new StoreMigrator(
+        storeMigrationProcess.addParticipant( new StoreMigrator( monitors,
                 new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrator.class ), System.out ),
-                new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), config ) );
+                new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), config, logging ) );
 
         propertyKeyTokenHolder = life.add( new PropertyKeyTokenHolder( createPropertyKeyCreator() ) );
         labelTokenHolder = life.add( new LabelTokenHolder( createLabelIdCreator() ) );

@@ -56,7 +56,7 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         this.tokenCreator = tokenCreator;
     }
 
-    public void addTokens( Token... tokens )
+    void addTokens( Token... tokens ) throws NonUniqueTokenException
     {
         Map<String, Integer> newNameToId = new HashMap<>();
         Map<Integer, TOKEN> newIdToToken = new HashMap<>();
@@ -70,20 +70,25 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         idToToken.putAll( newIdToToken );
     }
 
-    public void addToken( String name, int id )
+    public void addToken( String name, int id ) throws NonUniqueTokenException
     {
         addToken( name, id, nameToId, idToToken );
     }
 
-    public void addToken( Token token )
+    public void addToken( Token token ) throws NonUniqueTokenException
     {
         addToken( token.name(), token.id() );
     }
 
     void addToken( String name, int id, Map<String, Integer> nameToIdMap, Map<Integer, TOKEN> idToTokenMap )
+            throws NonUniqueTokenException
     {
         TOKEN token = newToken( name, id );
-        nameToIdMap.put( name, id );
+        Integer previous;
+        if ( (previous = nameToIdMap.put( name, id )) != null && previous != id )
+        {
+            throw new NonUniqueTokenException( getClass(), name, id, previous );
+        }
         idToTokenMap.put( id, token );
     }
 
@@ -115,7 +120,14 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         }
 
         id = tokenCreator.getOrCreate( name );
-        addToken( name, id );
+        try
+        {
+            addToken( name, id );
+        }
+        catch ( NonUniqueTokenException e )
+        {
+            throw new IllegalStateException( "Newly created token should be unique.", e );
+        }
         return id;
     }
 

@@ -201,7 +201,7 @@ public class RemoteStoreCopierTest
     private List<KernelExtensionFactory<?>> loadKernelExtensions()
     {
         List<KernelExtensionFactory<?>> kernelExtensions = new ArrayList<>();
-        for ( KernelExtensionFactory factory : Service.load( KernelExtensionFactory.class ) )
+        for ( KernelExtensionFactory<?> factory : Service.load( KernelExtensionFactory.class ) )
         {
             kernelExtensions.add( factory );
         }

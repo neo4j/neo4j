@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.com.RequestContext.anonymous;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -61,6 +59,8 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.RequestContext.anonymous;
 
 /**
  * Client-side convenience service for doing backups from a running database instance.

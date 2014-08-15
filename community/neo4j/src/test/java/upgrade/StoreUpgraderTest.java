@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
@@ -89,7 +90,8 @@ public class StoreUpgraderTest
         fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
 
         // when
-        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
+        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new Monitors(), new SilentMigrationProgressMonitor(),
+                fileSystem ) )
                 .migrateIfNeeded( dbDirectory );
 
         // then
@@ -113,8 +115,8 @@ public class StoreUpgraderTest
 
         try
         {
-            newUpgrader( vetoingUpgradeConfiguration, new StoreMigrator( new SilentMigrationProgressMonitor(),
-                    fileSystem ) )
+            newUpgrader( vetoingUpgradeConfiguration, new StoreMigrator( new Monitors(),
+                    new SilentMigrationProgressMonitor(), fileSystem ) )
                     .migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
@@ -137,7 +139,8 @@ public class StoreUpgraderTest
 
         try
         {
-            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
+            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new Monitors(), new SilentMigrationProgressMonitor(),
+                    fileSystem ) )
                     .migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
@@ -162,7 +165,8 @@ public class StoreUpgraderTest
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
         try
         {
-            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
+            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new Monitors(), new SilentMigrationProgressMonitor(),
+                    fileSystem ) )
                     .migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
@@ -187,7 +191,8 @@ public class StoreUpgraderTest
 
         try
         {
-            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
+            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new Monitors(), new SilentMigrationProgressMonitor(),
+                    fileSystem ) )
                     .migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
