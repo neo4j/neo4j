@@ -34,6 +34,9 @@ case class Identifier(name: String)(val position: InputPosition) extends Express
   def declare(possibleTypes: TypeSpec) =
     (_: SemanticState).declareIdentifier(this, possibleTypes)
 
+  def declareOrShadow(possibleTypes: TypeSpec) =
+    (_: SemanticState).declareOrShadowIdentifier(this, possibleTypes)
+
   def declare(typeGen: SemanticState => TypeSpec) =
     (s: SemanticState) => s.declareIdentifier(this, typeGen(s))
 

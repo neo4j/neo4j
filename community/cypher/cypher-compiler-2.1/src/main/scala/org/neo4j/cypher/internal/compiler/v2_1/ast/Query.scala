@@ -99,18 +99,11 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   }
 
   private def checkClauses: SemanticCheck = s => {
-    def checkClause(clause: Clause, last: SemanticCheckResult) = {
-      val result = clause.semanticCheck(last.state)
-      SemanticCheckResult(result.state, last.errors ++ result.errors)
+    clauses.foldLeft(SemanticCheckResult.success(s.clearSymbols)) {
+      case (last: SemanticCheckResult, clause: Clause) =>
+        val result = clause.semanticCheck(last.state)
+        SemanticCheckResult(result.state, last.errors ++ result.errors)
     }
-
-    clauses.foldLeft(SemanticCheckResult.success(s.clearSymbols))((last, clause) => clause match {
-      case c: With =>
-        val result = checkClause(clause, last)
-        val subState = c.returnItems.declareIdentifiers(result.state)(result.state.clearSymbols)
-        SemanticCheckResult(subState.state, result.errors ++ subState.errors)
-      case _       => checkClause(clause, last)
-    })
   }
 }
 

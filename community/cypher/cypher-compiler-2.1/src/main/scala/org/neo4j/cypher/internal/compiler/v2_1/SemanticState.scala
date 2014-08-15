@@ -74,6 +74,8 @@ case class SemanticState(scope: Scope, typeTable: IdentityMap[ast.Expression, Ex
         Left(SemanticError(s"${identifier.name} already declared", identifier.position, symbol.positions:_*))
     }
 
+
+
   def implicitIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(identifier.name) match {
       case None         =>
@@ -114,6 +116,12 @@ case class SemanticState(scope: Scope, typeTable: IdentityMap[ast.Expression, Ex
   }
 
   def expressionType(expression: ast.Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
+
+  def declareOrShadowIdentifier(identifier: ast.Identifier, types: TypeSpec): Either[SemanticError, SemanticState] =
+    Right(copy(
+      scope = scope.updateIdentifier(identifier.name, types, Seq(identifier.position)),
+      typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types))
+    ))
 
   private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Seq[InputPosition]) =
     copy(
