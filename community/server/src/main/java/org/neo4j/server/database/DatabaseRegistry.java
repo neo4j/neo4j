@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -41,12 +42,12 @@ public class DatabaseRegistry implements Lifecycle
     private final ConcurrentMap<String, Database.Factory> providers = new ConcurrentHashMap<>();
 
     private final ConcurrentMap<String, DatabaseRegistryEntry> databases = new ConcurrentHashMap<>();
-    private final Function<Config, Logging> loggingProvider;
+    private final Function<Config, InternalAbstractGraphDatabase.Dependencies> dependenciesProvider;
     private final LifeSupport life = new LifeSupport();
 
-    public DatabaseRegistry( Function<Config, Logging> loggingProvider )
+    public DatabaseRegistry( Function<Config, InternalAbstractGraphDatabase.Dependencies> dependenciesProvider )
     {
-        this.loggingProvider = loggingProvider;
+        this.dependenciesProvider = dependenciesProvider;
     }
 
     /** Visit a database, acquiring a shared lock on it that keeps it from being dropped. */
@@ -69,7 +70,7 @@ public class DatabaseRegistry implements Lifecycle
         }
 
         DatabaseRegistryEntry entry = new DatabaseRegistryEntry(providers.get( db.provider() ).newDatabase(
-                db.config(), loggingProvider.apply( db.config() ) ) );
+                db.config(), dependenciesProvider.apply( db.config() )) );
         DatabaseRegistryEntry prevEntry = databases.putIfAbsent( db.key(), entry );
 
         if(prevEntry == null)

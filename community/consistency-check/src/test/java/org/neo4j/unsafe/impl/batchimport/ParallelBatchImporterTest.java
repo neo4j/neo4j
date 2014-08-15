@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappings;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -91,8 +92,9 @@ public class ParallelBatchImporterTest
         // WHEN
         int nodeCount = 100_000;
         int relationshipCount = nodeCount * 10;
-        inserter.doImport( nodes( nodeCount ), relationships( relationshipCount, nodeCount ), IdMappings.actual() );
-        inserter.shutdown();
+        inserter.doImport( nodes( nodeCount ),
+                relationships( relationshipCount, nodeCount ),
+                IdMappings.actual() );
 
         // THEN
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );

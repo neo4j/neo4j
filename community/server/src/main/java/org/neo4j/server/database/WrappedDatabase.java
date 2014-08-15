@@ -22,9 +22,11 @@ package org.neo4j.server.database;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class WrappedDatabase extends LifecycleAdapter implements Database
 {
@@ -36,7 +38,7 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
         return new Factory()
         {
             @Override
-            public Database newDatabase( Config config, Logging logging )
+            public Database newDatabase(Config config, InternalAbstractGraphDatabase.Dependencies dependencies)
             {
                 return new WrappedDatabase( db );
             }

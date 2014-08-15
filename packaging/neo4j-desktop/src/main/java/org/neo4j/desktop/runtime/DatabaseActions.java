@@ -26,9 +26,11 @@ import java.util.Set;
 import org.neo4j.desktop.ui.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
 import org.neo4j.desktop.ui.UnableToStartServerException;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerStartupException;
@@ -60,9 +62,10 @@ public class DatabaseActions
         }
 
         Configurator configurator = model.getServerConfigurator();
-        logging = life.add( createDefaultLogging( configurator.getDatabaseTuningProperties() ) );
+        Monitors monitors = new Monitors();
+        logging = life.add( createDefaultLogging( configurator.getDatabaseTuningProperties(), monitors ) );
         life.start();
-        server = new CommunityNeoServer( configurator, logging );
+        server = new CommunityNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(logging).monitors( monitors ) );
         try
         {
             server.start();

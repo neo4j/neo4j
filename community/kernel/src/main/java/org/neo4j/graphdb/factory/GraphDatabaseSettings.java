@@ -121,9 +121,8 @@ public abstract class GraphDatabaseSettings
     @Description("Port for remote logging using LogBack SocketAppender.")
     public static final Setting<Integer> remote_logging_port = setting("remote_logging_port", INTEGER, "4560", port );
 
-    // TODO: Turn this into ByteSizeSetting, and make sure this applies to all logging providers
-    @Description("Threshold in bytes for when database logs (text logs, for debugging, that is) are rotated.")
-    public static final Setting<Integer> threshold_for_logging_rotation = setting("logging.threshold_for_rotation", INTEGER, "" + (100 * 1024 * 1024), min(1) );
+    @Description("Max nr of history files for messages.log.")
+    public static final Setting<Integer> log_history_size = setting("logging.history", INTEGER, "7", min(1) );
 
     // Indexing
     @Description("Controls the auto indexing feature for nodes. Setting to false shuts it down, " +

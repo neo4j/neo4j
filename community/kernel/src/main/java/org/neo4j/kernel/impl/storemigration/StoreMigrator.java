@@ -61,7 +61,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -107,10 +106,10 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
-    public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem )
+    public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem, Logging logging )
     {
         this( progressMonitor, new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ),
-                new Config(), new SystemOutLogging() );
+                new Config(), logging );
     }
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor, UpgradableDatabase upgradableDatabase,
@@ -180,14 +179,14 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
             }
         };
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
-                                                            new Configuration.OverrideFromConfig( config ), logging, executionMonitor );
+                new Configuration.OverrideFromConfig( config ), logging,
+                executionMonitor );
         Iterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         importer.doImport( nodes, relationships, IdMappings.actual() );
         progressMonitor.finished();
 
         // Finish the import of nodes and relationships
-        importer.shutdown();
         if ( legacyStore instanceof Legacy19Store )
         {
             // we may need to upgrade the property keys

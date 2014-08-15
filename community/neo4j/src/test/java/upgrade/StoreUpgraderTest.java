@@ -56,8 +56,8 @@ import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMo
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
@@ -338,7 +338,9 @@ public class StoreUpgraderTest
         fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_42" ) );
 
         // When
-        StoreMigrator migrator = spy( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) );
+        StoreMigrator migrator = spy( new StoreMigrator( new
+                SilentMigrationProgressMonitor(), fileSystem,
+                DevNullLoggingService.DEV_NULL ) );
         when( migrator.needsMigration( fileSystem, dbDirectory ) ).thenReturn( false );
 
         newUpgrader( ALLOW_UPGRADE, migrator, StoreUpgrader.NO_MONITOR ).migrateIfNeeded( dbDirectory );
@@ -395,13 +397,17 @@ public class StoreUpgraderTest
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration upgradeConfig )
     {
-        StoreMigrator defaultMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem );
+        StoreMigrator defaultMigrator = new StoreMigrator( new
+                SilentMigrationProgressMonitor(), fileSystem,
+                DevNullLoggingService.DEV_NULL );
         return newUpgrader( upgradeConfig, defaultMigrator, StoreUpgrader.NO_MONITOR );
     }
 
     private StoreUpgrader newUpgrader( Monitor monitor )
     {
-        StoreMigrator defaultMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem );
+        StoreMigrator defaultMigrator = new StoreMigrator( new
+                SilentMigrationProgressMonitor(), fileSystem,
+                DevNullLoggingService.DEV_NULL );
         return newUpgrader( ALLOW_UPGRADE, defaultMigrator, monitor );
     }
 

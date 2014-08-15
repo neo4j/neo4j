@@ -30,6 +30,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Wraps a neo4j database in lifecycle management. This is intermediate, and will go away once we have an internal
@@ -56,36 +57,34 @@ public class LifecycleManagingDatabase implements Database
         return new Factory()
         {
             @Override
-            public Database newDatabase( Config config, Logging logging )
+            public Database newDatabase(Config config, Dependencies dependencies)
             {
-                return new LifecycleManagingDatabase( config, graphDbFactory, logging );
+                return new LifecycleManagingDatabase( config, graphDbFactory, dependencies );
             }
         };
     }
 
     private final Config dbConfig;
     private final GraphFactory dbFactory;
-    private final GraphDatabaseFactoryState factoryState = new GraphDatabaseFactoryState();
+    private final Dependencies dependencies;
     private final ConsoleLogger log;
 
     private boolean isRunning = false;
     private GraphDatabaseAPI graph;
     private ExecutionEngine executionEngine;
-    private Logging logging;
 
-    public LifecycleManagingDatabase( Config dbConfig, GraphFactory dbFactory, Logging logging )
+    public LifecycleManagingDatabase(Config dbConfig, GraphFactory dbFactory, Dependencies dependencies)
     {
         this.dbConfig = dbConfig;
         this.dbFactory = dbFactory;
-        this.logging = logging;
-        this.factoryState.setLogging( logging );
-        this.log = logging.getConsoleLog( getClass() );
+        this.dependencies = dependencies;
+        this.log = dependencies.logging().getConsoleLog( getClass() );
     }
 
     @Override
     public Logging getLogging()
     {
-        return logging;
+        return dependencies.logging();
     }
 
     @Override
@@ -116,8 +115,7 @@ public class LifecycleManagingDatabase implements Database
     {
         try
         {
-            this.graph = dbFactory.newGraphDatabase( getLocation(), dbConfig.getParams(),
-                    factoryState.databaseDependencies() );
+            this.graph = dbFactory.newGraphDatabase( getLocation(), dbConfig.getParams(), dependencies );
             this.executionEngine = new ExecutionEngine( graph );
             isRunning = true;
             log.log( "Successfully started database" );

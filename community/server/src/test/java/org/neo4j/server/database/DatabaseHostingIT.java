@@ -30,6 +30,8 @@ import org.junit.Test;
 
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
@@ -249,7 +251,7 @@ public class DatabaseHostingIT
 
     private DatabaseRegistry registry()
     {
-        DatabaseRegistry registry = new DatabaseRegistry( Functions.<Config,Logging>constant( logging ) );
+        DatabaseRegistry registry = new DatabaseRegistry( Functions.<Config,InternalAbstractGraphDatabase.Dependencies>constant(GraphDatabaseDependencies.newDependencies().logging(logging)) );
         registry.addProvider( "single", lifecycleManagingDatabase( EMBEDDED ));
         registry.addProvider( "someOtherProvider", lifecycleManagingDatabase( EMBEDDED ));
         return registry;
