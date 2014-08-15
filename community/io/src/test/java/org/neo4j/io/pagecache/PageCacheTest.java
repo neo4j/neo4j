@@ -1408,9 +1408,9 @@ public abstract class PageCacheTest<T extends PageCache>
         final CountDownLatch writersDoneLatch = new CountDownLatch( writerThreads );
         List<Future<?>> writers = new ArrayList<>();
 
-        final PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        final PagedFile pagedFile = pageCache.map( file, filePageSize );
 
-        PagedFile pagedFile = cache.map( file, filePageSize );
         // zero-fill the file
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
@@ -1427,7 +1427,6 @@ public abstract class PageCacheTest<T extends PageCache>
             {
                 try
                 {
-                    PagedFile pagedFile = cache.map( file, filePageSize );
                     int pageRangeMin = pageCount / 2;
                     int pageRangeMax = pageRangeMin + 5;
                     ThreadLocalRandom rng = ThreadLocalRandom.current();
@@ -1467,8 +1466,6 @@ public abstract class PageCacheTest<T extends PageCache>
                             }
                         }
                     }
-
-                    cache.unmap( file );
                 }
                 catch ( IOException e )
                 {
@@ -1488,44 +1485,50 @@ public abstract class PageCacheTest<T extends PageCache>
 
         startLatch.await();
 
-        for ( int i = 0; i < 2000; i++ )
+        try
         {
-            int countedConsistentPageReads = 0;
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            for ( int i = 0; i < 2000; i++ )
             {
-                while ( cursor.next() )
+                int countedConsistentPageReads = 0;
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
                 {
-                    boolean consistent;
-                    do
+                    while ( cursor.next() )
                     {
-                        consistent = true;
-                        byte first = cursor.getByte();
-                        for ( int j = 1; j < filePageSize; j++ )
+                        boolean consistent;
+                        do
                         {
-                            byte b = cursor.getByte();
-                            consistent = consistent && b == first;
-                        }
-                    } while ( cursor.shouldRetry() );
-                    assertTrue( "checked consistency at itr " + i, consistent );
-                    countedConsistentPageReads++;
+                            consistent = true;
+                            byte first = cursor.getByte();
+                            for ( int j = 1; j < filePageSize; j++ )
+                            {
+                                byte b = cursor.getByte();
+                                consistent = consistent && b == first;
+                            }
+                        } while ( cursor.shouldRetry() );
+                        assertTrue( "checked consistency at itr " + i, consistent );
+                        countedConsistentPageReads++;
+                    }
+                }
+                assertThat( countedConsistentPageReads, is( pageCount ) );
+            }
+
+            for ( Future<?> future : writers )
+            {
+                if ( future.isDone() )
+                {
+                    future.get();
+                }
+                else
+                {
+                    future.cancel( true );
                 }
             }
-            assertThat( countedConsistentPageReads, is( pageCount ) );
+            writersDoneLatch.await();
         }
-
-        for ( Future<?> future : writers )
+        finally
         {
-            if ( future.isDone() )
-            {
-                future.get();
-            }
-            else
-            {
-                future.cancel( true );
-            }
+            pageCache.unmap( file );
         }
-        cache.unmap( file );
-        writersDoneLatch.await();
     }
 
     @Test(timeout = 1000)
