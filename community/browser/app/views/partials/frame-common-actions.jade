@@ -11,7 +11,6 @@
     a.button.fa.fa-expand(ng-click="toggleFullscreen(true)", tooltip-placement='bottom', tooltip='Fullscreen', ng-show='frame.fullscreenable')
     a.button.fa.fa-times-circle(ng-click='frames.close(frame)', tooltip-placement='bottom', tooltip='Close')
   .status
-    //- div(class="label label-default label-{{frame.type | lowercase}}") {{frame.type | uppercase}}
     span.prompt.code(ng-if='frame.type == "cypher"') $
     span.code.mono(click-to-code='frame.input') {{frame.input | uncomment}}
   a.close-fullscreen.fa.fa-compress(ng-click="toggleFullscreen(false)")
