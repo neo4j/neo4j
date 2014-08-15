@@ -53,6 +53,16 @@ import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Fault;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 {
+    static {
+        // This is disabled by default, but we have tests that verify that
+        // pinned and unpinned are called correctly.
+        // Setting this property here in the test class should ensure that
+        // it is set before the MuninnPageCache classes are loaded, and
+        // thus before they check this value.
+        System.setProperty(
+                "org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.monitorPinUnpin", "true" );
+    }
+
     private static final ConcurrentMap<PageCache, Future<?>> futures = new ConcurrentHashMap<>();
     private final long x = 0xCAFEBABEDEADBEEFL;
     private final long y = 0xDECAFC0FFEEDECAFL;

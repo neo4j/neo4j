@@ -39,7 +39,10 @@ class MuninnWritePageCursor extends MuninnPageCursor
     {
         if ( page != null )
         {
-            pagedFile.monitor.unpinned(true, currentPageId, pagedFile.swapper);
+            if ( monitorPinUnpin )
+            {
+                pagedFile.monitor.unpinned( true, currentPageId, pagedFile.swapper );
+            }
             assert page.isWriteLocked(): "page pinned for writing was not write locked: " + page;
             page.unlockWrite( lockStamp );
             UnsafeUtil.retainReference( page );
@@ -189,8 +192,11 @@ class MuninnWritePageCursor extends MuninnPageCursor
     {
         reset( page );
         page.incrementUsage();
+        if ( monitorPinUnpin )
+        {
+            pagedFile.monitor.pinned( true, filePageId, swapper );
+        }
         page.markAsDirty();
-        pagedFile.monitor.pinned(true, filePageId, swapper);
     }
 
     /**
