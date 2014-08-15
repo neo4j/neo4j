@@ -150,9 +150,24 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         try
         {
             tle.movedOn = false;
-            while ( totalWriteCount > tle.writeCount )
+
+            if (totalWriteCount > tle.writeCount)
             {
-                deadlockGuardedWait( tx, tle, READ );
+                waitingThreadList.addFirst( new WaitElement( tle, READ, currentThread() ) );
+
+                while ( totalWriteCount > tle.writeCount )
+                {
+                    ragManager.checkWaitOn( this, tx );
+                    try
+                    {
+                        wait();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        interrupted();
+                    }
+                    ragManager.stopWaitOn( this, tx );
+                }
             }
 
             registerReadLockAcquired( tx, tle );
@@ -313,9 +328,24 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         try
         {
             tle.movedOn = false;
-            while ( totalWriteCount > tle.writeCount || totalReadCount > tle.readCount )
+
+            if ( totalWriteCount > tle.writeCount || totalReadCount > tle.readCount )
             {
-                deadlockGuardedWait( tx, tle, WRITE );
+                waitingThreadList.addFirst( new WaitElement( tle, WRITE, currentThread() ) );
+
+                while ( totalWriteCount > tle.writeCount || totalReadCount > tle.readCount )
+                {
+                    ragManager.checkWaitOn( this, tx );
+                    try
+                    {
+                        wait();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        interrupted();
+                    }
+                    ragManager.stopWaitOn( this, tx );
+                }
             }
 
             registerWriteLockAcquired( tx, tle );
@@ -539,21 +569,6 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         {
             throw new IllegalArgumentException();
         }
-    }
-
-    private void deadlockGuardedWait( Object tx, TxLockElement tle, LockType lockType )
-    {   // given: we must be in a synchronized block here
-        ragManager.checkWaitOn( this, tx );
-        waitingThreadList.addFirst( new WaitElement( tle, lockType, currentThread() ) );
-        try
-        {
-            wait();
-        }
-        catch ( InterruptedException e )
-        {
-            interrupted();
-        }
-        ragManager.stopWaitOn( this, tx );
     }
 
     private TxLockElement getOrCreateLockElement( Object tx )
