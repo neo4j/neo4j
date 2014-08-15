@@ -22,8 +22,27 @@ package org.neo4j.io.pagecache;
 import java.io.File;
 import java.io.IOException;
 
+/**
+ * Creates PageSwappers for the given files.
+ *
+ * A PageSwapper is responsible for swapping file pages in and out of memory.
+ *
+ * The PageSwapperFactory presumably knows about what file system to use.
+ */
 public interface PageSwapperFactory
 {
+    /**
+     * Create a PageSwapper for the given file.
+     * @param file The file that the PageSwapper will move file pages in and
+     *             out of.
+     * @param filePageSize The size of the pages in the file. Presumably a
+     *                     multiple of some record size.
+     * @param onEviction The PageSwapper will be told about evictions, and has
+     *                   the responsibility of informing the PagedFile via this callback.
+     * @return A working PageSwapper instance for the given file.
+     * @throws IOException If the PageSwapper could not be created, for
+     * instance if the underlying file could not be opened.
+     */
     public PageSwapper createPageSwapper(
             File file,
             int filePageSize,

@@ -24,8 +24,7 @@ import java.nio.ByteBuffer;
 
 import org.junit.Test;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
-import org.neo4j.io.pagecache.impl.common.SingleFilePageSwapper;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapper;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
