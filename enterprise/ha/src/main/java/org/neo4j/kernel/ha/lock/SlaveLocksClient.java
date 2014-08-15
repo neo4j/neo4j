@@ -315,12 +315,7 @@ class SlaveLocksClient implements Locks.Client
 
     private void makeSureTxHasBeenInitialized()
     {
-        if ( !availabilityGuard.isAvailable( config.getAvailabilityTimeout() ) )
-        {
-            // TODO Specific exception instead?
-            throw new RuntimeException( "Timed out waiting for database to allow operations to proceed. "
-                    + availabilityGuard.describeWhoIsBlocking() );
-        }
+        availabilityGuard.checkAvailability( config.getAvailabilityTimeout(), RuntimeException.class );
         if ( !initialized )
         {
             master.newLockSession( requestContextFactory.newRequestContext( (int) client.getIdentifier() ) );

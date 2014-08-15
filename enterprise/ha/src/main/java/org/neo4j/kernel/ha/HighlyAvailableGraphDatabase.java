@@ -212,23 +212,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     public org.neo4j.graphdb.Transaction beginTx()
     {
-        if ( !availabilityGuard.isAvailable( stateSwitchTimeoutMillis ) )
-        {
-            throw new TransactionFailureException( "Timeout waiting for database to allow new transactions. "
-                    + availabilityGuard.describeWhoIsBlocking() );
-        }
-
+        availabilityGuard.checkAvailability( stateSwitchTimeoutMillis, TransactionFailureException.class );
         return super.beginTx();
     }
 
     @Override
     public IndexManager index()
     {
-        if ( !availabilityGuard.isAvailable( stateSwitchTimeoutMillis ) )
-        {
-            throw new TransactionFailureException( "Timeout waiting for database to allow new transactions. "
-                    + availabilityGuard.describeWhoIsBlocking() );
-        }
+        availabilityGuard.checkAvailability( stateSwitchTimeoutMillis, TransactionFailureException.class );
         return super.index();
     }
 

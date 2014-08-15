@@ -153,8 +153,13 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.*;
+import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -893,11 +898,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Transaction beginTx()
     {
-        if ( !availabilityGuard.isAvailable( accessTimeout ) )
-        {
-            throw new TransactionFailureException( "Database is currently not available. "
-                    + availabilityGuard.describeWhoIsBlocking() );
-        }
+        availabilityGuard.checkAvailability( accessTimeout, TransactionFailureException.class );
 
         KernelAPI kernel = neoDataSource.getKernel();
         TopLevelTransaction topLevelTransaction =
