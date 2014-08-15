@@ -22,8 +22,6 @@ package org.neo4j.io.enterprise.pagecache.impl.muninn;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 
 import org.junit.Test;
@@ -32,7 +30,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
@@ -63,7 +60,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 "org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.monitorPinUnpin", "true" );
     }
 
-    private static final ConcurrentMap<PageCache, Future<?>> futures = new ConcurrentHashMap<>();
     private final long x = 0xCAFEBABEDEADBEEFL;
     private final long y = 0xDECAFC0FFEEDECAFL;
 
@@ -74,21 +70,13 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             int pageSize,
             PageCacheMonitor monitor )
     {
-        MuninnPageCache pageCache = new MuninnPageCache( fs, maxPages, pageSize, monitor );
-        Future<?> future = executor.submit( pageCache );
-        futures.put( pageCache, future );
-        return pageCache;
+        return new MuninnPageCache( fs, maxPages, pageSize, monitor );
     }
 
     @Override
     protected void tearDownPageCache( MuninnPageCache pageCache ) throws IOException
     {
         pageCache.close();
-        Future<?> future = futures.remove( pageCache );
-        if ( future != null )
-        {
-            future.cancel( true );
-        }
     }
 
     @Test

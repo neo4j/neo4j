@@ -110,8 +110,8 @@ public class MuninnPageCache implements RunnablePageCache
     private volatile Thread evictorThread;
     private volatile IOException evictorException;
 
-    // Flag for when page cache is closed - guarded by synchronized(this)
-    private boolean closed;
+    // Flag for when page cache is closed - writes guarded by synchronized(this), reads can be unsynchronized
+    private volatile boolean closed;
 
     public MuninnPageCache(
             FileSystemAbstraction fs,
@@ -402,12 +402,20 @@ public class MuninnPageCache implements RunnablePageCache
 
     int evictPages( int pageCountToEvict, int clockArm ) throws IOException
     {
-        while ( pageCountToEvict > 0 ) {
+        Thread currentThread = Thread.currentThread();
+        while ( pageCountToEvict > 0 && !currentThread.isInterrupted() ) {
             if ( clockArm == pages.length )
             {
                 clockArm = 0;
             }
             MuninnPage page = pages[clockArm];
+
+            if ( page == null )
+            {
+                // The page cache has been shut down.
+                currentThread.interrupt();
+                return 0;
+            }
 
             if ( page.isLoaded() && page.decrementUsage() )
             {

@@ -20,14 +20,10 @@
 package org.neo4j.io.pagecache.impl.standard;
 
 import java.io.IOException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Future;
 
 import org.junit.Test;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
@@ -40,8 +36,6 @@ import static org.junit.Assert.assertThat;
 
 public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
 {
-    private static final ConcurrentMap<PageCache, Future<?>> futures = new ConcurrentHashMap<>();
-
     @Override
     protected StandardPageCache createPageCache(
             FileSystemAbstraction fs,
@@ -49,21 +43,13 @@ public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
             int pageSize,
             PageCacheMonitor monitor )
     {
-        StandardPageCache pageCache = new StandardPageCache( fs, maxPages, pageSize, monitor );
-        Future<?> future = executor.submit( pageCache );
-        futures.put( pageCache, future );
-        return pageCache;
+        return new StandardPageCache( fs, maxPages, pageSize, monitor );
     }
 
     @Override
     protected void tearDownPageCache( StandardPageCache pageCache ) throws IOException
     {
         pageCache.close();
-        Future<?> future = futures.remove( pageCache );
-        if ( future != null )
-        {
-            future.cancel( true );
-        }
     }
 
     @Test
