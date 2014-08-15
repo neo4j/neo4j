@@ -50,7 +50,7 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
     }
 
     @Override
-    public synchronized long commit( TransactionRepresentation representation ) throws TransactionFailureException
+    public long commit( TransactionRepresentation representation ) throws TransactionFailureException
     {
         final boolean authoredByMeTheMaster = representation.getAuthorId() == representation.getMasterId();
         if ( !authoredByMeTheMaster )
