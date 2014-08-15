@@ -1,10 +1,10 @@
 article.guide
-  .container
+  .container-fluid
     .row
-      .span4
-        img(src='images/welcome-logo.png')
+      .col-sm-4
+        img.img-responsive(src='images/welcome-logo.png')
         p.lead.text-center {{ neo4j.version }}
-      .span4
+      .col-sm-4
         h3 Getting started
         p.lead by learning about Neo4j...
         br
@@ -18,7 +18,7 @@ article.guide
           li
             a(play-topic='cypher') Cypher
             |  - query language
-      .span4
+      .col-sm-4
         h3 Jump into code
         p.lead with a mini graph app...
         br
@@ -31,11 +31,11 @@ article.guide
           //-   a(play-topic='product-graph') Product Recommendations
 
     .hero-unit
-      p 
+      p
         a(href="{{ motd.callToAction.u}}") {{ motd.callToAction.d }}
 
     footer
-      p Copyright &copy; 
+      p Copyright &copy;
         a.no-icon(href='http://neotechnology.com/')  Neo Technology
         | &nbsp;2002–
         span= new Date().getFullYear()

@@ -55,6 +55,23 @@ describe('collapse directive', function () {
     expect(element.height()).not.toBe(0);
   });
 
+  it('should expand if isCollapsed = true with animation on subsequent uses', function() {
+    scope.isCollapsed = false;
+    scope.$digest();
+    scope.isCollapsed = true;
+    scope.$digest();
+    scope.isCollapsed = false;
+    scope.$digest();
+    scope.isCollapsed = true;
+    scope.$digest();
+    $timeout.flush();
+    expect(element.height()).toBe(0);
+    if ($transition.transitionEndEventName) {
+      element.triggerHandler($transition.transitionEndEventName);
+      expect(element.height()).toBe(0);
+    }
+  });
+
   describe('dynamic content', function() {
     beforeEach(function() {
       element = angular.element('<div collapse="isCollapsed"><p>Initial content</p><div ng-show="exp">Additional content</div></div>');
@@ -86,21 +103,5 @@ describe('collapse directive', function () {
       expect(element.height()).toBeLessThan(collapseHeight);
     });
 
-    it('should shrink accordingly when content size inside collapse decreases on subsequent use', function() {
-      scope.isCollapsed = false;
-      scope.exp = false;
-      scope.$digest();
-      scope.isCollapsed = true;
-      scope.$digest();
-      scope.isCollapsed = false;
-      scope.$digest();
-      $timeout.flush();
-      scope.exp = true;
-      scope.$digest();
-      var collapseHeight = element.height();
-      scope.exp = false;
-      scope.$digest();
-      expect(element.height()).toBeLessThan(collapseHeight);
-    });
   });
 });

@@ -1,11 +1,34 @@
 {
   "name": "bootstrap",
-  "_cacheHeaders": {
-    "Last-Modified": "Fri, 23 Aug 2013 04:27:37 GMT",
-    "Content-Length": "85732",
-    "Content-Type": "application/zip"
+  "version": "3.1.1",
+  "main": [
+    "./dist/css/bootstrap.css",
+    "./dist/js/bootstrap.js",
+    "./dist/fonts/glyphicons-halflings-regular.eot",
+    "./dist/fonts/glyphicons-halflings-regular.svg",
+    "./dist/fonts/glyphicons-halflings-regular.ttf",
+    "./dist/fonts/glyphicons-halflings-regular.woff"
+  ],
+  "ignore": [
+    "**/.*",
+    "_config.yml",
+    "CNAME",
+    "composer.json",
+    "CONTRIBUTING.md",
+    "docs",
+    "js/tests"
+  ],
+  "dependencies": {
+    "jquery": ">= 1.9.0"
   },
-  "_source": "http://getbootstrap.com/2.3.2/assets/bootstrap.zip",
-  "_target": "*",
-  "_originalSource": "http://getbootstrap.com/2.3.2/assets/bootstrap.zip"
+  "homepage": "https://github.com/twbs/bootstrap",
+  "_release": "3.1.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "v3.1.1",
+    "commit": "a365d8689c3f3cee7f1acf86b61270ecca8e106d"
+  },
+  "_source": "git://github.com/twbs/bootstrap.git",
+  "_target": "3.1.1",
+  "_originalSource": "bootstrap"
 }

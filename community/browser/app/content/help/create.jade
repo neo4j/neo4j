@@ -1,10 +1,10 @@
 article.help
   .container
     section.row-fluid.summary
-      .summary.span3
+      .summary.col-sm-3
         h3 CREATE
         p.lead Insert graph data
-      .details.span9
+      .details.col-sm-9
         p
           | The&nbsp;
           code CREATE
@@ -30,7 +30,7 @@ article.help
               a(help-topic='cypher') :help Cypher
               | &nbsp;
     section.row-fluid.example
-      .span9.offset3
+      .col-sm-9.col-sm-offset-3
         figure
           pre.code.runnable.
             CREATE (le:Person {name:"Euler"}),(db:Person {name:"Bernoulli"}),

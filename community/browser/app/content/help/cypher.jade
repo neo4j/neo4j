@@ -1,10 +1,10 @@
 article.help
   .container-fluid
     section.row-fluid.summary
-      .summary.span3
+      .summary.col-sm-3
         h3 Cypher
         p.lead A graph query language
-      .details.span9
+      .details.col-sm-9
         p
           | Cypher is Neo4j's graph query language. Working with a graph is all about understanding
           | patterns of data, which are central to Cypher queries.
@@ -54,7 +54,7 @@ article.help
             td
               a(play-topic='cypher') Cypher
     section.row-fluid.example
-      .span9.offset3
+      .col-sm-9.col-sm-offset-3
         figure
           pre.
             MATCH &lt;pattern&gt; WHERE &lt;conditions&gt; RETURN &lt;expressions&gt;

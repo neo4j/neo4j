@@ -2,10 +2,10 @@
 article.guide
   carousel.deck.container-fluid
     slide.row-fluid
-      .span3
+      .col-sm-3
         h3 Cypher
         p.lead Neo4j's graph query language
-      .span9
+      .col-sm-9
         p
           | Neo4j's Cypher language is purpose built for working with graph data.
         ul.big
@@ -13,15 +13,15 @@ article.guide
           li familiar SQL-like clauses
           li declarative, describing what to find, not how to find it
     slide.row-fluid
-      .span3
+      .col-sm-3
         h3 CREATE
         p.lead Create a node
-      .span9
+      .col-sm-9
         p
           | Let's use Cypher to generate a small social graph.
         figure
           pre.pre-scrollable.code.runnable(mode='cypher').
-            CREATE (ee:Person { name: "Emil", from: "Sweden", klout: 99 }) 
+            CREATE (ee:Person { name: "Emil", from: "Sweden", klout: 99 })
         ul
           li
             code CREATE
@@ -36,10 +36,10 @@ article.guide
             code {}
             |  brackets to add properties to the node
     slide.row-fluid
-      .span3
+      .col-sm-3
         h3 MATCH
         p.lead Finding nodes
-      .span9
+      .col-sm-9
         p
           | Now find the node representing Emil:
         figure
@@ -62,10 +62,10 @@ article.guide
             code RETURN
             |  clause used to request particular results
     slide.row-fluid
-      .span3
+      .col-sm-3
         h3 CREATE more
         p.lead Nodes and relationships
-      .span9
+      .col-sm-9
         p
           code CREATE
           | clauses can create many nodes and relationships at once.
@@ -81,10 +81,10 @@ article.guide
             (ir)-[:KNOWS]->(js),(ir)-[:KNOWS]->(ally),
             (rvb)-[:KNOWS]->(ally)
     slide.row-fluid
-      .span3
+      .col-sm-3
         h3 Pattern matching
         p.lead Describe what to find in the graph
-      .span9
+      .col-sm-9
         p.summary
           | For instance, a pattern can be used to find Emil's friends:
         figure
@@ -105,10 +105,10 @@ article.guide
             code (friends)
             | will be bound to Emil's friends
     slide.row-fluid
-      .span3
+      .col-sm-3
         h3 Recommend
         p.lead Using patterns
-      .span9
+      .col-sm-9
         p.summary
           | Pattern matching can be used to make recommendations. Johan is learning to surf, so he may want to find
           | a new friend who already does:
@@ -128,11 +128,11 @@ article.guide
             code surfer
             | will contain Allison, a friend of a friend who surfs
     slide.row-fluid
-      .span4
+      .col-sm-4
         h3 Next steps
         p Start your application using Cypher to create and query graph data. Use the REST API
           | to monitor the database. In special cases, consider a plugin.
-      .span4
+      .col-sm-4
         h3 Keep getting started
         ul.undecorated
           li
@@ -144,7 +144,7 @@ article.guide
           li
             a(href='http://docs.neo4j.org/chunked/{{neo4j.version | neo4jdoc}}/cypher-query-lang.html') Neo4j Manual
             |  - section about Cypher
-      .span4
+      .col-sm-4
         h3 Jump into code
         ul.undecorated
           li

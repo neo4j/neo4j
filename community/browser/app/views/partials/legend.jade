@@ -1,10 +1,13 @@
 .legend(ng-controller='LegendCtrl', ng-model='frame.results.graph')
-  ul.unstyled
-    li(ng-repeat='rule in rules | filter:isNode')
-      a.preview(ng-style='{"background-color": rule.props.color, "border-color": rule.props["border-color"]}')
-        .shade
-      .contents.no-condition
-        .class-name {{rule.selector.klass || 'Default'}}
-        .condition
-      //- a.remove.btn.btn-small(tooltip-placement='right', tooltip='Remove style', ng-click="remove(rule)")
-      //-   i.icon-remove
+  .legend-row(ng-if='labels[""].count')
+    ul.list-unstyled.list-labels
+      li(ng-repeat='(label, node) in labels', ng-class="{active: currentItem == node}")
+        .contents(ng-click="onItemClick(node, 'label')")
+          .label.label-node.class-name(ng-style='{"background-color": node.style.props.color, "color": node.style.props["text-color-internal"]}') {{label || '*'}}
+            span.count ({{node.count}})
+  .legend-row(ng-if='types[""].count')
+    ul.list-unstyled.list-relationships
+      li(ng-repeat='(type, rel) in types', ng-class="{active: currentItem == node}")
+        .contents(ng-click="onItemClick(rel, 'relationshipType')")
+          .label.label-relationship.class-name(ng-style='{"background-color": rel.style.props.color, "color": rel.style.props["text-color-internal"]}') {{type || '*'}}
+            span.count ({{rel.count}})

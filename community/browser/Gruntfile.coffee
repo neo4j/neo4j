@@ -34,6 +34,7 @@ module.exports = (grunt) ->
   # configurable paths
   yeomanConfig =
     app: "app"
+    lib: "lib"
     dist: "dist/browser"
 
   try
@@ -49,8 +50,8 @@ module.exports = (grunt) ->
     yeoman: yeomanConfig
     watch:
       coffee:
-        files: ["<%= yeoman.app %>/scripts/{,*/}*.coffee"]
-        tasks: ["coffee:dist"]
+        files: ["<%= yeoman.app %>/scripts/{,*/}*.coffee", "<%= yeoman.lib %>/visualization/**/*.coffee"]
+        tasks: ["coffee:dist", "coffee:visualization"]
 
       coffeeTest:
         files: ["test/spec/{,*/}*.coffee"]
@@ -127,6 +128,7 @@ module.exports = (grunt) ->
     coffee:
       options:
         force: true
+        bare: true
       dist:
         files: [
           expand: true
@@ -143,6 +145,15 @@ module.exports = (grunt) ->
           src: "{,*/}*.coffee"
           dest: ".tmp/spec"
           ext: ".js"
+        ]
+      visualization:
+        files: [
+          '.tmp/lib/visualization/neod3.js': [
+            '<%= yeoman.lib %>/visualization/neod3.coffee'
+            '<%= yeoman.lib %>/visualization/components/*.coffee'
+            '<%= yeoman.lib %>/visualization/utils/*.coffee'
+            '<%= yeoman.lib %>/visualization/init.coffee'
+          ]
         ]
 
     stylus:
@@ -286,7 +297,7 @@ module.exports = (grunt) ->
         src: ["<%= yeoman.dist %>/styles/main.css"]
 
   grunt.renameTask "regarde", "watch"
-  grunt.registerTask "server", ["clean:server", "coffee:dist", "configureProxies", "stylus", "jade", "livereload-start", "connect:livereload", "watch"]
+  grunt.registerTask "server", ["clean:server", "coffee", "configureProxies", "stylus", "jade", "livereload-start", "connect:livereload", "watch"]
   grunt.registerTask "test", ["clean:server", "coffee", "connect:test", "karma"]
   grunt.registerTask "build", ["clean:dist", "test", "coffee", "jade", "stylus", "useminPrepare", "concat", "copy", "imagemin", "cssmin", "htmlmin", "uglify", "usemin", "replace"]
   grunt.registerTask "default", ["build"]

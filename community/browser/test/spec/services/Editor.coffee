@@ -69,7 +69,7 @@ describe 'Service: Editor', ->
     it 'should create a new document if the current lacks an id', ->
       len = Document.length
       Editor.loadDocument 1
-      Document.remove(Editor.document)
+      Document.destroy(Editor.document)
       expect(Document.length).toBe len-1
       Editor.saveDocument()
       expect(Document.length).toBe len

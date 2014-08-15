@@ -5,16 +5,16 @@
     "ui/jquery-ui.js"
   ],
   "dependencies": {
-    "jquery": "~> 1.10.1"
+    "jquery": ">=1.6"
   },
   "homepage": "https://github.com/components/jqueryui",
   "_release": "1.10.3",
   "_resolution": {
     "type": "version",
     "tag": "1.10.3",
-    "commit": "6c476bd548e777b23fdbed295b8518beb049a2d0"
+    "commit": "19487fec75762284c5c284b8ad8936d4e5d265f4"
   },
   "_source": "git://github.com/components/jqueryui.git",
-  "_target": "~1.10.3",
+  "_target": "1.10.3",
   "_originalSource": "jquery-ui"
 }

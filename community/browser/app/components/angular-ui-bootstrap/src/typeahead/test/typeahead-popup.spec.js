@@ -16,7 +16,7 @@ describe('typeaheadPopup - result rendering', function () {
     scope.matches = ['foo', 'bar', 'baz'];
     scope.active = 1;
 
-    var el = $compile("<div><typeahead-popup matches='matches' active='active' select='select(activeIdx)'></typeahead-popup></div>")(scope);
+    var el = $compile('<div><typeahead-popup matches="matches" active="active" select="select(activeIdx)"></typeahead-popup></div>')(scope);
     $rootScope.$digest();
 
     var liElems = el.find('li');
@@ -31,7 +31,7 @@ describe('typeaheadPopup - result rendering', function () {
     scope.matches = ['foo', 'bar', 'baz'];
     scope.active = 1;
 
-    var el = $compile("<div><typeahead-popup matches='matches' active='active' select='select(activeIdx)'></typeahead-popup></div>")(scope);
+    var el = $compile('<div><typeahead-popup matches="matches" active="active" select="select(activeIdx)"></typeahead-popup></div>')(scope);
     $rootScope.$digest();
 
     var liElems = el.find('li');
@@ -51,7 +51,7 @@ describe('typeaheadPopup - result rendering', function () {
     $rootScope.select = angular.noop;
     spyOn($rootScope, 'select');
 
-    var el = $compile("<div><typeahead-popup matches='matches' active='active' select='select(activeIdx)'></typeahead-popup></div>")(scope);
+    var el = $compile('<div><typeahead-popup matches="matches" active="active" select="select(activeIdx)"></typeahead-popup></div>')(scope);
     $rootScope.$digest();
 
     var liElems = el.find('li');

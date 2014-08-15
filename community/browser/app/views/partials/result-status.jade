@@ -7,4 +7,5 @@ span(ng-hide='frame.hasErrors')
     | ,
     ng-pluralize(count='frame.response.graph.relationships().length', when="{one: '1 relationship', other: '{} relationships'}")
   span(ng-show='isActive("table")')
-    | {{resultStatistics(frame)}} in {{frame.runTime}} ms
+    | {{resultStatistics(frame)}}
+    //- in {{frame.runTime}} ms

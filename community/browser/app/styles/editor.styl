@@ -6,22 +6,83 @@
   cursor: text
   user-select: none
   min-height: 72px
-  background-color: #fff
   position: relative
   top: 0
   left: 0
   right: 0
   z-index: 100
-  border-bottom: 1px solid #D6D8DA
-  box-shadow: 0 1px 2px rgba(0,0,0,0.07)
+
+  .file-bar
+    color: #fff
+    height: 39px
+    display: none
+    background: #69707E
+    line-height: 39px
+    padding: 0 0 0 24px
+    overflow: hidden
+    &.enabled
+      display: block
+    .title
+      float: left;
+      line-height: 39px - 1px
+      font-size: 14px
+      font-weight: bold
+      margin-right: 28px
+      max-width: 180px
+      text-overflow: ellipsis
+      white-space: nowrap
+      overflow: hidden
+      &:before
+        color: #fdcc59
+        padding-right: 2px
+    ul.file-actions
+      @include display(flex);
+      li
+        padding: 0
+        border-left: 1px solid #575D69
+        &.modified
+          a
+            border-top: 3px solid #FDCC59
+            line-height: 34px
+      li:last-child
+        border-right: 1px solid #575D69
+      a
+        color: #fff
+        line-height: 39px
+        padding: 0 10px
+        &:hover
+          &:before
+            color: #fff
+        &:before
+          color: #CFD5E1
+          margin-right: 5px
+        &.button
+          width: 38px
+          text-align: center
+          font-size: 15px
+          &:before
+            margin-right: 0
+
+  .starred
+    display: none
+    position: absolute
+    &.enabled
+      display: block
+
 
   textarea
     opacity: 0 // avoid being displayed before CodeMirror has loaded
 
   .view-editor
-    transist: min-height
+    transist: all
     min-height: 0%
     overflow-y: auto
+    position: absolute
+    left: 0
+    right: 0
+    top: 0
+    background-color: #fff
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1)
 
   .message-bar
     height: 49px
@@ -29,7 +90,11 @@
     padding: 0 24px
     color: #FFF
     overflow: hidden
+    z-index: 100
     position: relative
+    left: 0
+    right: 0
+    bottom: 0
     a
       color: #fff
     .actions
@@ -37,11 +102,12 @@
         font-size: 18px
         position: absolute
         top: 10px
-        right: 16px
+        right: 10px
         line-height: 30px
         width: 30px
         text-align: center
         border-radius: 3px
+        border: none
         &:hover
           background-color: rgba(0,0,0,0.4)
     i
@@ -61,7 +127,7 @@
 
   ul.controls
     z-index: 1000
-    fixed: top 20px right 16px
+    absolute: top 20px right 16px
     .divider
       margin: 0 6px
       width: 1px
@@ -77,8 +143,8 @@
       background-color: #E5E5E7
       cursor: default
       display: inline-block
-      width: 30px
-      height: 30px
+      width: 34px
+      height: 34px
       text-align: center
       border-radius: 50%
       vertical-align: middle
@@ -116,12 +182,12 @@
             color: color-link
             border: 2px solid color-link
 
-      [class^="icon-"]
+      [class*="fa-"]
         font-size: 18px
         line-height: 32px
         position: relative
-        &.icon-play
+        &.fa-play
           font-size: 16px
           left: 1px
-        &.icon-star
+        &.fa-star
           font-size: 19px

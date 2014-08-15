@@ -1,193 +1,202 @@
-describe('pager directive with default configuration', function () {
-  var $rootScope, element;
+describe('pager directive', function () {
+  var $compile, $rootScope, element;
   beforeEach(module('ui.bootstrap.pagination'));
   beforeEach(module('template/pagination/pager.html'));
   beforeEach(inject(function(_$compile_, _$rootScope_) {
     $compile = _$compile_;
     $rootScope = _$rootScope_;
-    $rootScope.numPages = 5;
+    $rootScope.total = 47; // 5 pages
     $rootScope.currentPage = 3;
-    element = $compile('<pager num-pages="numPages" current-page="currentPage"></pager>')($rootScope);
+    element = $compile('<pager total-items="total" ng-model="currentPage"></pager>')($rootScope);
     $rootScope.$digest();
   }));
+
+  function getPaginationBarSize() {
+    return element.find('li').length;
+  }
+
+  function getPaginationEl(index) {
+    return element.find('li').eq(index);
+  }
+
+  function clickPaginationEl(index) {
+    getPaginationEl(index).find('a').click();
+  }
+
+  function updateCurrentPage(value) {
+    $rootScope.currentPage = value;
+    $rootScope.$digest();
+  }
 
   it('has a "pager" css class', function() {
     expect(element.hasClass('pager')).toBe(true);
   });
 
   it('contains 2 li elements', function() {
-    expect(element.find('li').length).toBe(2);
-    expect(element.find('li').eq(0).text()).toBe('« Previous');
-    expect(element.find('li').eq(-1).text()).toBe('Next »');
+    expect(getPaginationBarSize()).toBe(2);
+    expect(getPaginationEl(0).text()).toBe('« Previous');
+    expect(getPaginationEl(-1).text()).toBe('Next »');
   });
 
   it('aligns previous & next page', function() {
-    expect(element.find('li').eq(0).hasClass('previous')).toBe(true);
-    expect(element.find('li').eq(0).hasClass('next')).toBe(false);
+    expect(getPaginationEl(0)).toHaveClass('previous');
+    expect(getPaginationEl(0)).not.toHaveClass('next');
 
-    expect(element.find('li').eq(-1).hasClass('previous')).toBe(false);
-    expect(element.find('li').eq(-1).hasClass('next')).toBe(true);
+    expect(getPaginationEl(-1)).not.toHaveClass('previous');
+    expect(getPaginationEl(-1)).toHaveClass('next');
   });
 
-  it('disables the "previous" link if current-page is 1', function() {
-    $rootScope.currentPage = 1;
-    $rootScope.$digest();
-    expect(element.find('li').eq(0).hasClass('disabled')).toBe(true);
+  it('disables the "previous" link if current page is 1', function() {
+    updateCurrentPage(1);
+    expect(getPaginationEl(0)).toHaveClass('disabled');
   });
 
-  it('disables the "next" link if current-page is num-pages', function() {
-    $rootScope.currentPage = 5;
-    $rootScope.$digest();
-    expect(element.find('li').eq(-1).hasClass('disabled')).toBe(true);
+  it('disables the "next" link if current page is num-pages', function() {
+    updateCurrentPage(5);
+    expect(getPaginationEl(-1)).toHaveClass('disabled');
   });
 
   it('changes currentPage if the "previous" link is clicked', function() {
-    var previous = element.find('li').eq(0).find('a').eq(0);
-    previous.click();
-    $rootScope.$digest();
+    clickPaginationEl(0);
     expect($rootScope.currentPage).toBe(2);
   });
 
   it('changes currentPage if the "next" link is clicked', function() {
-    var next = element.find('li').eq(-1).find('a').eq(0);
-    next.click();
-    $rootScope.$digest();
+    clickPaginationEl(-1);
     expect($rootScope.currentPage).toBe(4);
   });
 
   it('does not change the current page on "previous" click if already at first page', function() {
-    var previous = element.find('li').eq(0).find('a').eq(0);
-    $rootScope.currentPage = 1;
-    $rootScope.$digest();
-    previous.click();
-    $rootScope.$digest();
+    updateCurrentPage(1);
+    clickPaginationEl(0);
     expect($rootScope.currentPage).toBe(1);
   });
 
   it('does not change the current page on "next" click if already at last page', function() {
-    var next = element.find('li').eq(-1).find('a').eq(0);
-    $rootScope.currentPage = 5;
-    $rootScope.$digest();
-    next.click();
-    $rootScope.$digest();
+    updateCurrentPage(5);
+    clickPaginationEl(-1);
     expect($rootScope.currentPage).toBe(5);
   });
 
-  it('executes the onSelectPage expression when the current page changes', function() {
+  it('executes the `ng-change` expression when an element is clicked', function() {
     $rootScope.selectPageHandler = jasmine.createSpy('selectPageHandler');
-    element = $compile('<pager num-pages="numPages" current-page="currentPage" on-select-page="selectPageHandler(page)"></pager>')($rootScope);
+    element = $compile('<pager total-items="total" ng-model="currentPage" ng-change="selectPageHandler()"></pager>')($rootScope);
     $rootScope.$digest();
-    var next = element.find('li').eq(-1).find('a').eq(0);
-    next.click();
-    $rootScope.$digest();
-    expect($rootScope.selectPageHandler).toHaveBeenCalledWith(4);
+
+    clickPaginationEl(-1);
+    expect($rootScope.selectPageHandler).toHaveBeenCalled();
   });
 
-  it('does not changes the number of items when numPages changes', function() {
-    $rootScope.numPages = 8;
+  it('does not changes the number of pages when `total-items` changes', function() {
+    $rootScope.total = 73; // 8 pages
     $rootScope.$digest();
-    expect(element.find('li').length).toBe(2);
-    expect(element.find('li').eq(0).text()).toBe('« Previous');
-    expect(element.find('li').eq(-1).text()).toBe('Next »');
+
+    expect(getPaginationBarSize()).toBe(2);
+    expect(getPaginationEl(0).text()).toBe('« Previous');
+    expect(getPaginationEl(-1).text()).toBe('Next »');
   });
 
-  it('sets the current page to the last page if the numPages is changed to less than the current page', function() {
-    $rootScope.selectPageHandler = jasmine.createSpy('selectPageHandler');
-    element = $compile('<pager num-pages="numPages" current-page="currentPage" on-select-page="selectPageHandler(page)"></pager>')($rootScope);
-    $rootScope.$digest();
-    $rootScope.numPages = 2;
-    $rootScope.$digest();
-    expect(element.find('li').length).toBe(2);
-    expect($rootScope.currentPage).toBe(2);
-    expect($rootScope.selectPageHandler).toHaveBeenCalledWith(2);
-  });
-
-  describe('when `current-page` is not a number', function () {
-    it('handles string', function() {
-      $rootScope.currentPage = '1';
+  describe('`items-per-page`', function () {
+    beforeEach(function() {
+      $rootScope.perpage = 5;
+      element = $compile('<pager total-items="total" items-per-page="perpage" ng-model="currentPage"></pager>')($rootScope);
       $rootScope.$digest();
-      expect(element.find('li').eq(0).hasClass('disabled')).toBe(true);
+    });
 
-      $rootScope.currentPage = '05';
+    it('does not change the number of pages', function() {
+      expect(getPaginationBarSize()).toBe(2);
+      expect(getPaginationEl(0).text()).toBe('« Previous');
+      expect(getPaginationEl(-1).text()).toBe('Next »');
+    });
+
+    it('selects the last page when it is too big', function() {
+      $rootScope.perpage = 30;
       $rootScope.$digest();
-      expect(element.find('li').eq(-1).hasClass('disabled')).toBe(true);
+
+      expect($rootScope.currentPage).toBe(2);
+      expect(getPaginationBarSize()).toBe(2);
+      expect(getPaginationEl(0)).not.toHaveClass('disabled');
+      expect(getPaginationEl(-1)).toHaveClass('disabled');
     });
   });
-});
 
-describe('setting pagerConfig', function() {
-  var $rootScope, element;
-  var originalConfig = {};
-  beforeEach(module('ui.bootstrap.pagination'));
-  beforeEach(module('template/pagination/pager.html'));
-  beforeEach(inject(function(_$compile_, _$rootScope_, pagerConfig) {
-    $compile = _$compile_;
-    $rootScope = _$rootScope_;
-    $rootScope.numPages = 5;
-    $rootScope.currentPage = 3;
-    angular.extend(originalConfig, pagerConfig);
-    pagerConfig.previousText = 'PR';
-    pagerConfig.nextText = 'NE';
-    pagerConfig.align = false;
-    element = $compile('<pager num-pages="numPages" current-page="currentPage"></pager>')($rootScope);
-    $rootScope.$digest();
-  }));
-  afterEach(inject(function(pagerConfig) {
-    // return it to the original state
-    angular.extend(pagerConfig, originalConfig);
-  }));
+  describe('when `page` is not a number', function () {
+    it('handles string', function() {
+      updateCurrentPage('1');
+      expect(getPaginationEl(0)).toHaveClass('disabled');
 
-  it('contains 2 li elements', function() {
-    expect(element.find('li').length).toBe(2);
+      updateCurrentPage('05');
+      expect(getPaginationEl(-1)).toHaveClass('disabled');
+    });
   });
 
-  it('should change paging text', function () {
-    expect(element.find('li').eq(0).text()).toBe('PR');
-    expect(element.find('li').eq(-1).text()).toBe('NE');
+  describe('`num-pages`', function () {
+    beforeEach(function() {
+      $rootScope.numpg = null;
+      element = $compile('<pager total-items="total" ng-model="currentPage" num-pages="numpg"></pager>')($rootScope);
+      $rootScope.$digest();
+    });
+
+    it('equals to total number of pages', function() {
+      expect($rootScope.numpg).toBe(5);
+    });
   });
 
-  it('should not align previous & next page link', function () {
-    expect(element.find('li').eq(0).hasClass('previous')).toBe(false);
-    expect(element.find('li').eq(-1).hasClass('next')).toBe(false);
+  describe('setting `pagerConfig`', function() {
+    var originalConfig = {};
+    beforeEach(inject(function(pagerConfig) {
+      angular.extend(originalConfig, pagerConfig);
+      pagerConfig.previousText = 'PR';
+      pagerConfig.nextText = 'NE';
+      pagerConfig.align = false;
+      element = $compile('<pager total-items="total" ng-model="currentPage"></pager>')($rootScope);
+      $rootScope.$digest();
+    }));
+    afterEach(inject(function(pagerConfig) {
+      // return it to the original state
+      angular.extend(pagerConfig, originalConfig);
+    }));
+
+    it('should change paging text', function () {
+      expect(getPaginationEl(0).text()).toBe('PR');
+      expect(getPaginationEl(-1).text()).toBe('NE');
+    });
+
+    it('should not align previous & next page link', function () {
+      expect(getPaginationEl(0)).not.toHaveClass('previous');
+      expect(getPaginationEl(-1)).not.toHaveClass('next');
+    });
   });
 
-});
+  describe('override configuration from attributes', function () {
+    beforeEach(function() {
+      element = $compile('<pager align="false" previous-text="<" next-text=">" total-items="total" ng-model="currentPage"></pager>')($rootScope);
+      $rootScope.$digest();
+    });
 
-describe('pager bypass configuration from attributes', function () {
-  var $rootScope, element;
-  beforeEach(module('ui.bootstrap.pagination'));
-  beforeEach(module('template/pagination/pager.html'));
-  beforeEach(inject(function(_$compile_, _$rootScope_) {
-    $compile = _$compile_;
-    $rootScope = _$rootScope_;
-    $rootScope.numPages = 5;
-    $rootScope.currentPage = 3;
-    element = $compile('<pager align="false" previous-text="<" next-text=">" num-pages="numPages" current-page="currentPage"></pager>')($rootScope);
-    $rootScope.$digest();
-  }));
+    it('contains 2 li elements', function() {
+      expect(getPaginationBarSize()).toBe(2);
+    });
 
-  it('contains 2 li elements', function() {
-    expect(element.find('li').length).toBe(2);
-  });
+    it('should change paging text from attributes', function () {
+      expect(getPaginationEl(0).text()).toBe('<');
+      expect(getPaginationEl(-1).text()).toBe('>');
+    });
 
-  it('should change paging text from attributes', function () {
-    expect(element.find('li').eq(0).text()).toBe('<');
-    expect(element.find('li').eq(-1).text()).toBe('>');
-  });
+    it('should not align previous & next page link', function () {
+      expect(getPaginationEl(0)).not.toHaveClass('previous');
+      expect(getPaginationEl(-1)).not.toHaveClass('next');
+    });
 
-  it('should not align previous & next page link', function () {
-    expect(element.find('li').eq(0).hasClass('previous')).toBe(false);
-    expect(element.find('li').eq(-1).hasClass('next')).toBe(false);
-  });
+    it('changes "previous" & "next" text from interpolated attributes', function() {
+      $rootScope.previousText = '<<';
+      $rootScope.nextText = '>>';
+      element = $compile('<pager align="false" previous-text="{{previousText}}" next-text="{{nextText}}" total-items="total" ng-model="currentPage"></pager>')($rootScope);
+      $rootScope.$digest();
 
-  it('changes "previous" & "next" text from interpolated attributes', function() {
-    $rootScope.previousText = '<<';
-    $rootScope.nextText = '>>';
-    element = $compile('<pager align="false" previous-text="{{previousText}}" next-text="{{nextText}}" num-pages="numPages" current-page="currentPage"></pager>')($rootScope);
-    $rootScope.$digest();
-
-    expect(element.find('li').eq(0).text()).toBe('<<');
-    expect(element.find('li').eq(-1).text()).toBe('>>');
+      expect(getPaginationEl(0).text()).toBe('<<');
+      expect(getPaginationEl(-1).text()).toBe('>>');
+    });
   });
 
 });

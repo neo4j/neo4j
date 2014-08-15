@@ -44,7 +44,7 @@ describe('syntax parser', function () {
       {code:'CA', name:'California'},
       {code:'DE', name:'Delaware'}
     ];
-    var result = typeaheadParser.parse("state.name for state in states | filter:$viewValue | orderBy:'name':true");
+    var result = typeaheadParser.parse('state.name for state in states | filter:$viewValue | orderBy:"name":true');
 
     var itemName = result.itemName;
     expect(itemName).toEqual('state');
@@ -66,7 +66,7 @@ describe('syntax parser', function () {
       {code:'CA', name:'California'},
       {code:'DE', name:'Delaware'}
     ];
-    var result = typeaheadParser.parse("state.code as state.name + ' ('+state.code+')' for state in states | filter:$viewValue | orderBy:'name':true");
+    var result = typeaheadParser.parse('state.code as state.name + " ("+state.code+")" for state in states | filter:$viewValue | orderBy:"name":true');
 
     var itemName = result.itemName;
     expect(result.source(scope, {$viewValue:'al'})).toEqual([

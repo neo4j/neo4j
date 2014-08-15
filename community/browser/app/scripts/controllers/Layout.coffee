@@ -26,12 +26,12 @@ angular.module('neo4jApp.controllers')
   .controller 'LayoutCtrl', [
     '$rootScope'
     '$timeout'
-    '$dialog'
+    '$modal'
     'Editor'
     'Frame'
     'GraphStyle'
     'Utils'
-    ($scope, $timeout, $dialog, Editor, Frame, GraphStyle, Utils) ->
+    ($scope, $timeout, $modal, Editor, Frame, GraphStyle, Utils) ->
 
       _codeMirror = null
       dialog = null
@@ -41,6 +41,7 @@ angular.module('neo4jApp.controllers')
         backdropFade: yes
         dialogFade: yes
         keyboard: yes
+        size: 'lg'
 
       $scope.showDoc = () ->
         Frame.create(input: ':play')
@@ -72,7 +73,7 @@ angular.module('neo4jApp.controllers')
       $scope.editor = Editor
       $scope.editorOneLine = true
       $scope.editorChanged = (codeMirror) ->
-        $scope.editorOneLine = codeMirror.lineCount() == 1
+        $scope.editorOneLine = codeMirror.lineCount() == 1 and !Editor.document
         $scope.disableHighlighting = codeMirror.getValue().trim()[0] == ':'
 
       $scope.isDrawerShown = false
@@ -82,38 +83,35 @@ angular.module('neo4jApp.controllers')
         $scope.isDrawerShown = state
         $scope.whichDrawer = selectedDrawer
 
+      $scope.showingDrawer = (named) ->
+        $scope.isDrawerShown and ($scope.whichDrawer is named)
+
       $scope.$watch 'isDrawerShown', () ->
         $timeout(() -> $scope.$emit 'layout.changed', 0)
 
-      $scope.isInspectorShown = no
-      $scope.toggleInspector = ->
-        $scope.isInspectorShown ^= true
-
-      $scope.$watch 'selectedGraphItem', Utils.debounce((val) ->
-        $scope.isInspectorShown = !!val
-      ,200)
       $scope.isPopupShown = false
       $scope.togglePopup = (content) ->
         if content?
-          if not dialog?.isOpen()
+          if not dialog
             dialogOptions.templateUrl = 'popup-' + content
-            dialog = $dialog.dialog(dialogOptions)
-            dialog.open().then(->
+            dialogOptions.windowClass = 'modal-' + content
+            dialog = $modal.open(dialogOptions)
+            dialog.result.finally(->
               $scope.popupContent = null
               $scope.isPopupShown = no
+              dialog = null
             )
         else
           dialog.close() if dialog?
+          dialog = null
 
-        # Add unique classes so that we can style popups individually
-        dialog.modalEl.removeClass('modal-' + $scope.popupContent) if $scope.popupContent
-        dialog.modalEl.addClass('modal-' + content) if content
 
-        $scope.popupContent = content
-        $scope.isPopupShown = !!content
+        $scope.popupContent = dialog
+        $scope.isPopupShown = !!dialog
 
       $scope.globalKey = (e) ->
-        # Don't toggle anything when shortcut popup is open
+        resizeStream()
+
         return if $scope.isPopupShown and e.keyCode != 191
 
         # ABK: kinda weird as a global key.
@@ -138,17 +136,15 @@ angular.module('neo4jApp.controllers')
         # else
         #   console.debug(e)
 
-      # we need set a max-height to make the stream scrollable, but since it's
-      # position:relative the max-height needs to be calculated.
-      timer = null
-      resize = ->
-        $('#stream').css
-          'max-height': $(window).height() - $('#editor').height() - 40
-        $scope.$emit 'layout.changed'
-      $(window).resize(resize)
-      check = ->
-        resize()
-        $timeout.cancel(timer)
-        timer = $timeout(check, 500, false)
-      check()
+      resizeStream = Utils.debounce((ignored) ->
+        unless $scope.editor.maximized
+          $('#stream').css
+            'top': $('.view-editor').height() + $('.file-bar').height()
+          $scope.$emit 'layout.changed'
+      , 100)
+
+      $(window).resize(resizeStream)
+
+      $("body").bind "transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd", ->
+        resizeStream()
   ]

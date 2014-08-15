@@ -24,37 +24,21 @@
 .modal-backdrop.fade.in {
   opacity: 0.45;
 }
-.modal
-  width = 400px
-  width: width
-  margin-left: -(width/2)
-  position: fixed;
-  top: 10%;
-  left: 50%;
-  z-index: 10050
-  background-color: #ffffff;
 
-  border-radius 6px
-  border: 1px solid #888
-  box-shadow: 0 7px 27px rgba(0,0,0,0.35)
-
-  background-clip: padding-box;
-  outline: none;
-
-.modal.fade {
+.modal.fade .modal-dialog {
   transform: scale(1.3);
   opacity: 0;
   transition: all 0.25s;
   //transition: opacity .1s ease-out, top .2s cubic-bezier(0.25, 0.1, 0.25, 1)
-  top: 10%;
+ // top: 10%;
 }
-.modal.fade.in {
+.modal.fade.in .modal-dialog {
   transform: scale(1);
   opacity: 1;
-  top: 10%;
+  //  top: 10%;
 }
 
-.modal
+.modal-dialog
   min-height: 120px
   modal-padding = 32px
   modal-top-padding = 16px
@@ -119,20 +103,26 @@
     &.active
       background-color: #ccc
 
-.modal-styling.modal
-  width = 640px
-  width: width
+.modal-styling
+  //width = 640px
+  //width: width
   .modal-body
     .CodeMirror-scroll
       overflow-x: auto
-  margin-left: -(width/2)
+    textarea
+      width: 100%
+      height: 480px
+      font-family: Menlo, Monaco, Consolas, "Courier New", monospace
+      color: #666;
+      border: 0
+  //margin-left: -(width/2)
 
 .modal-header
   font-size: 21px
   font-weight: bold
   padding-top 12px
   padding-bottom: 12px
-  a.icon-download-alt
+  a.fa-download
     margin-left: 10px
 
 .modal-body

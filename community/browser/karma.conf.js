@@ -43,7 +43,7 @@ module.exports = function(config) {
     files: [
       'app/components/jquery/jquery.js',
       'app/components/angular/angular.js',
-      'app/components/angular-ui-bootstrap/src/dialog/dialog.js',
+      'app/components/angular-ui-bootstrap/src/modal/modal.js',
       'app/components/angular-ui-bootstrap/src/transition/transition.js',
       'app/components/angular-local-storage/angular-local-storage.js',
       'app/components/angular-mocks/angular-mocks.js',

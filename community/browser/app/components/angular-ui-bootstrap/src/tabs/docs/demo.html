@@ -1,9 +1,12 @@
 <div ng-controller="TabsDemoCtrl">
-  Select a tab by setting active binding to true:
-  <br />
-  <button class="btn btn-small" ng-click="tabs[0].active = true">Select second tab</button>
-  <button class="btn btn-small" ng-click="tabs[1].active = true">Select third tab</button>
-  <button class="btn btn-small" ng-click="tabs[1].disabled = ! tabs[1].disabled">Enable / Disable third tab</button>
+  <p>Select a tab by setting active binding to true:</p>
+  <p>
+    <button class="btn btn-default btn-sm" ng-click="tabs[0].active = true">Select second tab</button>
+    <button class="btn btn-default btn-sm" ng-click="tabs[1].active = true">Select third tab</button>
+  </p>
+  <p>
+    <button class="btn btn-default btn-sm" ng-click="tabs[1].disabled = ! tabs[1].disabled">Enable / Disable third tab</button>
+  </p>
   <hr />
 
   <tabset>
@@ -13,7 +16,7 @@
     </tab>
     <tab select="alertMe()">
       <tab-heading>
-        <i class="icon-bell"></i> Select me for alert!
+        <i class="glyphicon glyphicon-bell"></i> Alert!
       </tab-heading>
       I've got an HTML heading, and a select callback. Pretty cool!
     </tab>
@@ -21,8 +24,16 @@
 
   <hr />
 
-  <tabset vertical="true" type="navType">
+  <tabset vertical="true" type="pills">
     <tab heading="Vertical 1">Vertical content 1</tab>
     <tab heading="Vertical 2">Vertical content 2</tab>
+  </tabset>
+
+  <hr />
+
+  <tabset justified="true">
+    <tab heading="Justified">Justified content</tab>
+    <tab heading="SJ">Short Labeled Justified content</tab>
+    <tab heading="Long Justified">Long Labeled Justified content</tab>
   </tabset>
 </div>

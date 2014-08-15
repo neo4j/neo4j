@@ -25,6 +25,13 @@ angular.module('neo4jApp.controllers')
 
     $scope.$watch 'frame.response', (resp) ->
       return unless resp
+      # available combos:
+      # - Graph + Table
+      # - Table only
+      $scope.availableModes = []
+      $scope.availableModes.push('table') if resp.table.size
+      $scope.availableModes.push('graph') if resp.table.nodes.length
+
       # Initialise tab state from user selected if any
       $scope.tab = $rootScope.stickyTab
       # Otherwise try to detect the best mode
@@ -32,7 +39,13 @@ angular.module('neo4jApp.controllers')
         showGraph = resp.table.nodes.length
         $scope.tab = if showGraph then 'graph' else 'table'
 
-    $scope.setActive = (tab) -> $rootScope.stickyTab = $scope.tab = tab
+      # Override user tab selection if that mode doesn't exists
+      $scope.tab = 'table' unless $scope.availableModes.indexOf($scope.tab) >= 0
+
+
+    $scope.setActive = (tab) ->
+      tab ?= if $scope.tab is 'graph' then 'table' else 'graph'
+      $rootScope.stickyTab = $scope.tab = tab
     $scope.isActive = (tab) -> tab is $scope.tab
 
     $scope.resultStatistics = (frame) ->
@@ -51,7 +64,9 @@ angular.module('neo4jApp.controllers')
           {plural: 'relationships', singular: 'relationship', verb: 'deleted', field: 'relationship_deleted' }
           {plural: 'relationships', singular: 'relationship', verb: 'created', field: 'relationships_created' }
         ]
-        nonZeroFields = fields.filter((field) -> stats[field.field] > 0)
+        nonZeroFields = []
+        nonZeroFields.push(field) for field in fields when stats[field.field] > 0
+
         messages = ("#{field.verb} #{stats[field.field]} #{if stats[field.field] is 1 then field.singular else field.plural}" for field in nonZeroFields)
         messages.push "returned #{frame.response.table.size} #{if frame.response.table.size is 1 then 'row' else 'rows'}"
         joinedMessages = messages.join(', ')

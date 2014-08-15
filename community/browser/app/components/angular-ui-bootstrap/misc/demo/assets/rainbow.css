@@ -14,18 +14,18 @@ pre {
 
 code {
     border: 1px solid #eaeaea;
-    margin: 0px 2px;
-    padding: 0px 5px;
+    margin: 0 2px;
+    padding: 0 5px;
     font-size: 12px;
 }
 
 pre code {
-    border: 0px;
-    padding: 0px;
-    margin: 0px;
-    -moz-border-radius: 0px;
-    -webkit-border-radius: 0px;
-    border-radius: 0px;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    -moz-border-radius: 0;
+    -webkit-border-radius: 0;
+    border-radius: 0;
 }
 
 pre, code {

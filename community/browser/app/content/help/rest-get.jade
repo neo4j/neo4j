@@ -1,10 +1,10 @@
 article.help
   .container-fluid
     section.row-fluid.summary
-      .summary.span3
+      .summary.col-sm-3
         h3 REST GET
         p.lead
-      .details.span9
+      .details.col-sm-9
         p Use&nbsp;
           code :GET
           |  to send HTTP GET to Neo4j's REST interface.
@@ -23,7 +23,7 @@ article.help
               | &nbsp;
               a(help-topic='rest-put') :help REST PUT
     section.row-fluid.example
-      .span9.offset3
+      .col-sm-9.col-sm-offset-3
         figure
           pre.code.runnable.
             :GET /db/data/labels

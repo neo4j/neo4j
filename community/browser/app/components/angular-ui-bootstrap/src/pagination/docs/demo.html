@@ -1,20 +1,19 @@
-<div ng-controller="PaginationDemoCtrl" class="well well-small">
+<div ng-controller="PaginationDemoCtrl">
     <h4>Default</h4>
-
-    <pagination num-pages="noOfPages" current-page="currentPage"></pagination>
-    <pagination boundary-links="true" num-pages="noOfPages" current-page="currentPage" class="pagination-small" previous-text="&lsaquo;" next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;"></pagination>
-    <pagination direction-links="false" boundary-links="true" num-pages="noOfPages" current-page="currentPage"></pagination>
-    <pagination direction-links="false" num-pages="noOfPages" current-page="currentPage"></pagination>
-
-    <button class="btn" ng-click="setPage(3)">Set current page to: 3</button>
-    The selected page no: {{currentPage}}
+    <pagination total-items="totalItems" ng-model="currentPage" ng-change="pageChanged()"></pagination>
+    <pagination boundary-links="true" total-items="totalItems" ng-model="currentPage" class="pagination-sm" previous-text="&lsaquo;" next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;"></pagination>
+    <pagination direction-links="false" boundary-links="true" total-items="totalItems" ng-model="currentPage"></pagination>
+    <pagination direction-links="false" total-items="totalItems" ng-model="currentPage" num-pages="smallnumPages"></pagination>
+    <pre>The selected page no: {{currentPage}}</pre>
+    <button class="btn btn-info" ng-click="setPage(3)">Set current page to: 3</button>
 
     <hr />
     <h4>Pager</h4>
-    <pager num-pages="noOfPages" current-page="currentPage"></pager>
+    <pager total-items="totalItems" ng-model="currentPage"></pager>
 
     <hr />
-    <h4>Limit the maximimum visible page-buttons</h4>
-    <pagination num-pages="bigNoOfPages" current-page="bigCurrentPage" max-size="maxSize" class="pagination-small" boundary-links="true"></pagination>
-    <pagination rotate="false" num-pages="bigNoOfPages" current-page="bigCurrentPage" max-size="maxSize" class="pagination-small" boundary-links="true"></pagination>
+    <h4>Limit the maximum visible buttons</h4>
+    <pagination total-items="bigTotalItems" ng-model="bigCurrentPage" max-size="maxSize" class="pagination-sm" boundary-links="true"></pagination>
+    <pagination total-items="bigTotalItems" ng-model="bigCurrentPage" max-size="maxSize" class="pagination-sm" boundary-links="true" rotate="false" num-pages="numPages"></pagination>
+    <pre>Page: {{bigCurrentPage}} / {{numPages}}</pre>
 </div>

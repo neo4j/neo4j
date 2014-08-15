@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict';
 
-angular.module('neo4jApp.services')
+angular.module('neo.csv', [])
   .factory 'CSV', [
     () ->
       class Serializer

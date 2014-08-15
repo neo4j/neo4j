@@ -14,7 +14,7 @@ angular.module('ui.bootstrap.transition', [])
   var $transition = function(element, trigger, options) {
     options = options || {};
     var deferred = $q.defer();
-    var endEventName = $transition[options.animation ? "animationEndEventName" : "transitionEndEventName"];
+    var endEventName = $transition[options.animation ? 'animationEndEventName' : 'transitionEndEventName'];
 
     var transitionEndHandler = function(event) {
       $rootScope.$apply(function() {

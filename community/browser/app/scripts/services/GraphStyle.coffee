@@ -28,14 +28,14 @@ angular.module('neo4jApp.services')
     @defaultStyle =
       'node':
         'diameter': '40px'
-        'color': '#DFE1E3'
-        'border-color': '#D4D6D7'
+        'color': '#A5ABB6'
+        'border-color': '#9AA1AC'
         'border-width': '2px'
-        'text-color-internal': '#000000'
+        'text-color-internal': '#FFFFFF'
         'caption': '{id}'
         'font-size': '10px'
       'relationship':
-        'color': '#D4D6D7'
+        'color': '#A5ABB6'
         'shaft-width': '1px'
         'font-size': '8px'
         'padding': '3px'
@@ -65,13 +65,13 @@ angular.module('neo4jApp.services')
 
     # Default node colors that user can choose from
     @defaultColors = [
-      { color: '#DFE1E3', 'border-color': '#D4D6D7', 'text-color-internal': '#000000' }
-      { color: '#F25A29', 'border-color': '#DC4717', 'text-color-internal': '#FFFFFF' }
-      { color: '#AD62CE', 'border-color': '#9453B1', 'text-color-internal': '#FFFFFF' }
-      { color: '#30B6AF', 'border-color': '#46A39E', 'text-color-internal': '#FFFFFF' }
-      { color: '#FF6C7C', 'border-color': '#EB5D6C', 'text-color-internal': '#FFFFFF' }
-      { color: '#FCC940', 'border-color': '#F3BA25', 'text-color-internal': '#000000' }
-      { color: '#4356C0', 'border-color': '#3445A2', 'text-color-internal': '#FFFFFF' }
+      { color: '#A5ABB6', 'border-color': '#9AA1AC', 'text-color-internal': '#FFFFFF' }
+      { color: '#68BDF6', 'border-color': '#5CA8DB', 'text-color-internal': '#FFFFFF' }
+      { color: '#6DCE9E', 'border-color': '#60B58B', 'text-color-internal': '#FFFFFF' }
+      { color: '#FF756E', 'border-color': '#E06760', 'text-color-internal': '#FFFFFF' }
+      { color: '#DE9BF9', 'border-color': '#BF85D6', 'text-color-internal': '#FFFFFF' }
+      { color: '#FB95AF', 'border-color': '#E0849B', 'text-color-internal': '#FFFFFF' }
+      { color: '#FFD86E', 'border-color': '#EDBA39', 'text-color-internal': '#604A0E' }
     ]
 
     class Selector
@@ -99,7 +99,7 @@ angular.module('neo4jApp.services')
         @selector.tag is selector.tag and @selector.klass is selector.klass
 
     class StyleElement
-      constructor: (selector, @data) ->
+      constructor: (selector) ->
         @selector = selector
         @props = {}
 
@@ -134,20 +134,20 @@ angular.module('neo4jApp.services')
       #
       # Methods for calculating applied style for elements
       #
-      calculateStyle: (selector, data) ->
-        new StyleElement(selector, data).applyRules(@rules)
+      calculateStyle: (selector) ->
+        new StyleElement(selector).applyRules(@rules)
 
       forEntity: (item) ->
-        @calculateStyle(@selector(item), item)
+        @calculateStyle(@selector(item))
 
-      forNode: (node = {}) ->
-        selector = @nodeSelector(node)
+      forNode: (node = {}, idx = 0) ->
+        selector = @nodeSelector(node, idx)
         if node.labels?.length > 0
           @setDefaultStyling(selector)
         @calculateStyle(selector, node)
 
       forRelationship: (rel) ->
-        @calculateStyle(@relationshipSelector(rel), rel)
+        @calculateStyle(@relationshipSelector(rel))
 
       findAvailableDefaultColor: () ->
         usedColors = {}
@@ -174,8 +174,10 @@ angular.module('neo4jApp.services')
       #
       change: (item, props) ->
         selector = @selector(item)
-        rule = @findRule(selector)
+        @changeForSelector(selector, props)
 
+      changeForSelector: (selector, props) ->
+        rule = @findRule(selector)
         if not rule?
           rule = new StyleRule(selector, {})
           @rules.push(rule)
@@ -195,10 +197,12 @@ angular.module('neo4jApp.services')
       #
       # Selector helpers
       #
-      nodeSelector: (node = {}) ->
+      # FIXME: until we support styling nodes with multiple labels separately.
+      # Provide an option to select which label to use
+      nodeSelector: (node = {}, labelIdx = 0) ->
         selector = 'node'
         if node.labels?.length > 0
-          selector += ".#{node.labels[0]}"
+          selector += ".#{node.labels[labelIdx]}"
         new Selector(selector)
 
       relationshipSelector: (rel = {}) ->

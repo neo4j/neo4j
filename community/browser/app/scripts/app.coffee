@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict'
 
 angular.module('neo4jApp.controllers', ['neo4jApp.utils'])
-angular.module('neo4jApp.directives', ['ui.bootstrap.dialog'])
+angular.module('neo4jApp.directives', ['ui.bootstrap.modal'])
 angular.module('neo4jApp.filters', [])
 angular.module('neo4jApp.services', ['LocalStorageModule', 'neo4jApp.settings', 'neo4jApp.utils'])
 
@@ -32,7 +32,9 @@ app = angular.module('neo4jApp', [
   'neo4jApp.filters'
   'neo4jApp.services'
   'neo4jApp.animations'
-  'ui.bootstrap.dropdownToggle'
+  'neo.exportable'
+  'neo.csv'
+  'ui.bootstrap.dropdown'
   'ui.bootstrap.position'
   'ui.bootstrap.tooltip'
   'ui.bootstrap.popover'
@@ -40,6 +42,6 @@ app = angular.module('neo4jApp', [
   'ui.bootstrap.carousel'
   'ui.codemirror'
   'ui.sortable'
-  'angularMoment'
+  #'angularMoment'
   'ngSanitize'
 ])

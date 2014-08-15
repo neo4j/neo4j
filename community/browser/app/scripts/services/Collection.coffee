@@ -101,6 +101,17 @@ angular.module('neo4jApp.services')
           return unless idx?
           @items[--idx]
 
+        pop: ->
+          item = @items.pop()
+          @length = @items.length
+          item
+
+        push: (items) ->
+          itemsToPush = if angular.isArray(items) then items else [items]
+          @items.push.apply(@items, itemsToPush)
+          @length = @items.length
+          @
+
         where: (attrs) ->
           rv = []
           return rv unless angular.isObject(attrs)

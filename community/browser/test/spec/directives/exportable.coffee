@@ -1,7 +1,7 @@
 'use strict'
 
 describe 'Directive: exportable', () ->
-  beforeEach module 'neo4jApp.directives'
+  beforeEach module 'neo.exportable'
 
   element = {}
 

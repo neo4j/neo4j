@@ -46,7 +46,7 @@ angular.module('neo4jApp.services')
           if !frame and input != ''
             @setMessage("<b>Unrecognized:</b> <i>#{input}</i>.", 'error')
           else
-            @addToHistory(input)
+            @addToHistory(input) unless (Settings.filemode and @document?.id)
             @maximize(no)
 
         addToHistory: (input) ->
@@ -65,7 +65,7 @@ angular.module('neo4jApp.services')
           $('#editor textarea').focus()
 
         hasChanged:->
-          @document?.content and @document.content.trim() isnt @content.trim()
+          @document?.content and @document.content isnt @content
 
         historyNext: ->
           idx = @cursor
@@ -111,6 +111,14 @@ angular.module('neo4jApp.services')
           else
             @document = Document.create(content: @content)
 
+        createDocument: (content = '// Untitled script\n', folder) ->
+          @content = content
+          @document = Document.create(content: content, folder: folder)
+
+        cloneDocument: ->
+          folder = @document?.folder
+          @createDocument(@content, folder)
+
         setContent: (content = '') ->
           @content = content
           @focusEditor()
@@ -125,7 +133,7 @@ angular.module('neo4jApp.services')
 
       # Configure codemirror
       CodeMirror.commands.handleEnter = (cm) ->
-        if cm.lineCount() == 1
+        if cm.lineCount() == 1 and !editor.document
           editor.execCurrent()
         else
           CodeMirror.commands.newlineAndIndent(cm)

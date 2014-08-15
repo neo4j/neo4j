@@ -1,19 +1,43 @@
-var ModalDemoCtrl = function ($scope) {
+var ModalDemoCtrl = function ($scope, $modal, $log) {
 
-  $scope.open = function () {
-    $scope.shouldBeOpen = true;
+  $scope.items = ['item1', 'item2', 'item3'];
+
+  $scope.open = function (size) {
+
+    var modalInstance = $modal.open({
+      templateUrl: 'myModalContent.html',
+      controller: ModalInstanceCtrl,
+      size: size,
+      resolve: {
+        items: function () {
+          return $scope.items;
+        }
+      }
+    });
+
+    modalInstance.result.then(function (selectedItem) {
+      $scope.selected = selectedItem;
+    }, function () {
+      $log.info('Modal dismissed at: ' + new Date());
+    });
+  };
+};
+
+// Please note that $modalInstance represents a modal window (instance) dependency.
+// It is not the same as the $modal service used above.
+
+var ModalInstanceCtrl = function ($scope, $modalInstance, items) {
+
+  $scope.items = items;
+  $scope.selected = {
+    item: $scope.items[0]
   };
 
-  $scope.close = function () {
-    $scope.closeMsg = 'I was closed at: ' + new Date();
-    $scope.shouldBeOpen = false;
+  $scope.ok = function () {
+    $modalInstance.close($scope.selected.item);
   };
 
-  $scope.items = ['item1', 'item2'];
-
-  $scope.opts = {
-    backdropFade: true,
-    dialogFade:true
+  $scope.cancel = function () {
+    $modalInstance.dismiss('cancel');
   };
-
 };

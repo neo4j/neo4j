@@ -32,9 +32,9 @@ describe 'Service: Document', () ->
       d = Document.create()
       expect(d instanceof Document.klass).toBeTruthy()
 
-  describe '#remove', ->
-    it 'should remove a document from the collection', ->
+  describe '#destroy', ->
+    it 'should destroy a document from the collection', ->
       f = Document.create()
       len = Document.length
-      Document.remove(f)
+      Document.destroy(f)
       expect(Document.length).toBe len-1

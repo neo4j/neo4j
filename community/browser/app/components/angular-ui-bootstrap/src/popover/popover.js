@@ -4,6 +4,7 @@
  * just mouse enter/leave, html popovers, and selector delegatation.
  */
 angular.module( 'ui.bootstrap.popover', [ 'ui.bootstrap.tooltip' ] )
+
 .directive( 'popoverPopup', function () {
   return {
     restrict: 'EA',
@@ -12,7 +13,7 @@ angular.module( 'ui.bootstrap.popover', [ 'ui.bootstrap.tooltip' ] )
     templateUrl: 'template/popover/popover.html'
   };
 })
-.directive( 'popover', [ '$compile', '$timeout', '$parse', '$window', '$tooltip', function ( $compile, $timeout, $parse, $window, $tooltip ) {
+
+.directive( 'popover', [ '$tooltip', function ( $tooltip ) {
   return $tooltip( 'popover', 'popover', 'click' );
 }]);
-

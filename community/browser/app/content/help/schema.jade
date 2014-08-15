@@ -1,10 +1,10 @@
 article.help
   .container-fluid
     section.row-fluid.summary
-      .summary.span3
+      .summary.col-sm-3
         h3 Schema
         p.lead Database schema indexes
-      .details.span9
+      .details.col-sm-9
         p
           | Shows information about database schema indexes.
         table.table-condensed.table-help
@@ -15,13 +15,13 @@ article.help
           tr
             th Actions:
             td
-              ul
+              ul.list-unstyled
                 li ls - list indexes
                 li await - wait for an index to come online
           tr
             th Options:
             td
-              ul
+              ul.list-unstyled
                 li -l   Specifies which label selected operation is about.
                 li -p   Specifies which property selected operation is about.
                 li -v   Verbose output of failure descriptions etc.

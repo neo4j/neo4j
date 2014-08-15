@@ -2,7 +2,6 @@
 @import 'nib'
 @import 'mixins'
 
-
 .view-result
   article.help, article.guide
     background-color #fff
@@ -61,6 +60,9 @@
         display block
     ul
       list-style: disc
+      margin-top: 8px
+    ul.list-unstyled
+      list-style: none
 
     ul.big, ol.big
       font-size: 18px
@@ -68,28 +70,4 @@
         line-height: 28px
     ul.undecorated
       list-style: none
-
-.carousel-indicators-wrapper
-  position: absolute
-  bottom: -20px
-  left: 7px
-  height: 12px
-  z-index: 45
-
-  .carousel-indicators
-    opacity: 1
-    position: relative
-    z-index: 5
-    margin: 0 auto
-    list-style: none
-    background: transparent
-    left: initial
-    height: 10px
-    display: inline-block
-    li
-      cursor: pointer
-      background-color: rgba(188, 195, 207, 0.64)
-      &.active
-        background-color: color-link
-
 

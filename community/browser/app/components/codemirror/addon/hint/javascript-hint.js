@@ -21,6 +21,7 @@
   function scriptHint(editor, keywords, getToken, options) {
     // Find the token at the cursor
     var cur = editor.getCursor(), token = getToken(editor, cur), tprop = token;
+    if (/\b(?:string|comment)\b/.test(token.type)) return;
     token.state = CodeMirror.innerMode(editor.getMode(), token.state).state;
 
     // If it's not a 'word-style' token, ignore the token.
@@ -86,7 +87,7 @@
   function getCompletions(token, context, keywords, options) {
     var found = [], start = token.string;
     function maybeAdd(str) {
-      if (str.indexOf(start) == 0 && !arrayContains(found, str)) found.push(str);
+      if (str.lastIndexOf(start, 0) == 0 && !arrayContains(found, str)) found.push(str);
     }
     function gatherCompletions(obj) {
       if (typeof obj == "string") forEach(stringProps, maybeAdd);

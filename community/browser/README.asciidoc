@@ -15,11 +15,7 @@ Neo4j Browser is http://github.com/neo4j/neo4j/[Neo4j's] built-in client applica
 
 Management::
 
-  * https://trello.com/b/3QpahIAK/team-pop[Trello Wall]
-
-How-to::
-
-  * https://github.com/neo4j/neo4j-browser/wiki/Build[Build instructions]
+  * https://trello.com/b/3QpahIAK/public-neo4j-browser[Trello Wall]
 
 Run in development mode::
 
@@ -29,14 +25,9 @@ Run in development mode::
 +
 This sets up localhost:9000 to run server and browser. Any local changes will be applied here immediatley by reloading the page.
 
-== Try it ==
-
-At the moment, there is no ready-made download of Neo4j Browser. Until one is distributed, you'll need to http://github.com/neo4j/neo4j-browser/wiki/Build[build it yourself].
-
 == Feedback ==
 
 * mailto:andreas@neotechnology.com[Andreas Kollegger] - questions or comments? send an email to me
-* https://github.com/neo4j/neo4j-browser/issues?milestone=2&state=open[Github Issues] - feature requests and bug reports (please note OS + web browser)
 
 == Adding a new Cypher keyword ==
 

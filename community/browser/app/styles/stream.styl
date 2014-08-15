@@ -3,10 +3,14 @@
 @import 'mixins'
 
 #stream
-  padding-bottom: 60px
   padding-top: 24px
-  position: relative
+  position: absolute
+  left: 0
+  right: 0
+  top: 0
+  bottom: 0
   overflow-y: auto
+  transition: all 0.25s
 
   .frame
     overflow: hidden
@@ -21,39 +25,45 @@
     .row.header
       padding-top: 24px
 
+    .outer
+      margin: 0 24px 24px 24px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.12);
     .inner
       position: relative
-      margin: 0 24px 24px 24px
-      border: 1px solid #D2D7DD
       border-radius: 3px
       background-color: #fff
 
       .view-result
         position: relative
         height: auto
+        minimum-height: middlebar-height
         background: #F8F9FB
         z-index: 10
 
-        a[class^="icon-"]
-          color: color-default-text
-          &:hover
-            color: color-link
+        //a[class*="fa-"]
+        //  color: color-default-text
+        //  &:hover
+        //    color: color-link
 
         .view-result-graph
-          background-color: #F8F9FB
+          background-color: #F9FBFD
           svg
             height: 400px
             width: 100%
-          a.icon-table
+          a.fa-table
             font-size: 24px
             absolute: bottom 57px right horizontal-padding
+
+          .graph-contents
+            position: relative
+            overflow: hidden
 
         .view-result-table
           border-top: 1px solid #fff
           position: relative
           overflow-y: auto
-          max-height: 359px
-          a.icon-download-alt
+          max-height: 496px
+          a.fa-download
             absolute: top 8px right horizontal-padding*2+20
             font-size: 24px
             right: horizontal-padding
@@ -66,6 +76,17 @@
             margin: 0
             background: none
             border: none
+
+        .view-result-loading
+          .spinner
+            height: 40px
+            position: relative;
+            top: 50%;
+            padding-top: 4px
+            padding-bottom: 4px
+            margin-left: auto
+            margin-right: auto
+            text-align: center
     footer
       position: relative
       padding: 0
@@ -73,30 +94,42 @@
         margin: 0
 
 .code-bar
-  color: #848790
-  border-bottom: 1px solid table-color-border-color
+  background: #fff
+  color: stream-font-color
   height: middlebar-height
   line-height: middlebar-height
-  padding-left: horizontal-padding
-  padding: 0 25px
-  //overflow: hidden
+  padding-left: 10px
   position: relative
+  border-bottom: 1px solid #e6e9ef
 
   .label
-    text-shadow: 0 1px 1px rgba(0,0,0,0.15)
     font-size: 11px
+    border-radius: 0px
+    padding: 4px 7px
+    border: 2px solid
+    background: none
+    color: #525864
+    border-color: #525864
   .label-cypher
-    background-color: #8FDDC7
+    color: #8FDDC7
+    border-color: #8FDDC7
   .label-rest
     background-color: #81C0EB
   .label-help
-    background-color: #D2A8E9
+    color: #D2A8E9
+    border-color: #D2A8E9
 
-  .code
-    text-shadow: 0 1px 0 rgba(255,255,255,0.7)
+  .mono
     font-family: mono-font-family
-    font-size: 14px
-    margin-left: 8px
+    font-size: 12px
+    color: #525864
+  .prompt
+    margin-left: 1px
+    margin-right: 5px
+    opacity: 0.5
+    font-weight: bold
+  .code
+    margin-left: 3px
     &:hover
       cursor: pointer
       border-bottom: 1px dotted #B6ADAD
@@ -106,32 +139,128 @@
 
   .status
     display: block
-    max-height: 30px
+    max-height: 33px
     overflow: hidden
-  .actions
-    opacity: 0
-    transist: opacity 0.2s
-    absolute: top 3px right 25px
-    background-color: #e7e9eb
+    max-width: 400px
+    text-overflow: ellipsis
+    white-space: nowrap
+
+  .toggle
+    ball-size = 16px
+
+    float: left
+    font-weight: bold
+    font-size: 11px
+    text-transform: uppercase
+    border-left: 1px solid #e6e9ef
     a
-      font-size: 20px
-      margin-left: 13px
-      vertical-align: center
+      color: #9b9da2
+      line-height: 36px
       position: relative
-      color: #9B9DA2
+      top: -1px
+      transition: color 0.25s;
       &:hover
-        color: #3F434B
-      &.icon-download-alt
-        top: 2px
-      &.icon-edit
-        top: 1px
-      &.icon-fullscreen
-        font-size: 19px
-        margin-left: 16px
-      &.icon-trash
-        font-size: 21px
-      &.icon-remove
-        top: 1px
-        font-size: 26px
-    .btn
-      margin-left: 4px
+        color: #40454f
+      &.toggle-graph
+        padding: 12px 0 12px 16px
+      &.toggle-table
+        padding: 12px 16px 12px 0px
+
+    .switch {
+      position: relative
+      top: 3px
+      display: inline-block
+      margin-left: 3px
+      margin-right: 5px
+
+      height: ball-size;
+      width: 26px;
+      user-select: none;
+      label.right {
+        border-color: #D2D5DA;
+        .switch-inner {
+          margin-left: 0;
+        }
+        .handle {
+          right: 0px;
+          border-color: #D2D5DA;
+        }
+      }
+
+      label {
+        margin-bottom: 0;
+        display: block;
+        overflow: hidden;
+        cursor: pointer;
+        border: 2px solid #CED3D8;
+        border-radius: 50px;
+        height: ball-size;
+        transition: border-color 0.25s;
+      }
+      .switch-inner {
+        width: 200%;
+        margin-left: -100%;
+        transition: all 0.3s ease-in 0s;
+        &:before, &:after {
+          content: "";
+          float: left;
+          width: 50%;
+          height: ball-size;
+        }
+        &:before {
+          padding-left: 10px;
+          background-color: #D2D5DA
+        }
+        &:after {
+          background-color: #D2D5DA;
+        }
+      }
+      .handle {
+        width: ball-size;
+        margin: 0;
+        background: #FFFFFF;
+        border: 2px solid #CED3D8;
+        border-radius: 50%;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 10px;
+        transition: all 0.3s ease-in 0s;
+      }
+    }
+
+.actions
+  float: right
+  opacity: 1.0
+  .button
+    transist: all 0.2s
+    float: left
+    border-left: 1px solid #E6E9EF
+    padding-top: 11px
+    height: 39px
+    font-size: 16px
+    vertical-align: center
+    position: relative
+    color: #9B9DA2
+    width: 41px
+    text-align: center
+    &:hover
+      background: #40454f
+      color: #fff
+    &.active, &.active:hover {
+      color: #30333a
+      cursor: default
+      position: relative
+      top: -1px
+      background: #F9FBFD
+      &.fa-table {
+        background: #fff;
+      }
+    }
+    &.fa-download
+      padding-top: 12px
+    &.fa-fullscreen
+      padding-top: 12px
+      font-size: 15px
+  .btn
+    margin-left: 4px

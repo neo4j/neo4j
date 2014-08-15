@@ -96,7 +96,7 @@
 
     getHint: function(cm, c) { return hint(this, cm, c); },
 
-    showType: function(cm) { showType(this, cm); },
+    showType: function(cm, pos) { showType(this, cm, pos); },
 
     updateArgHints: function(cm) { updateArgHints(this, cm); },
 
@@ -106,10 +106,10 @@
 
     rename: function(cm) { rename(this, cm); },
 
-    request: function (cm, query, c) {
+    request: function (cm, query, c, pos) {
       var self = this;
       var doc = findDoc(this, cm.getDoc());
-      var request = buildRequest(this, doc, query);
+      var request = buildRequest(this, doc, query, pos);
 
       this.server.request(request, function (error, data) {
         if (!error && self.options.responseFilter)
@@ -221,7 +221,7 @@
 
   // Type queries
 
-  function showType(ts, cm) {
+  function showType(ts, cm, pos) {
     ts.request(cm, "type", function(error, data) {
       if (error) return showError(ts, cm, error);
       if (ts.options.typeTip) {
@@ -236,7 +236,7 @@
         }
       }
       tempTooltip(cm, tip);
-    });
+    }, pos);
   }
 
   // Maintaining argument hints
@@ -251,7 +251,7 @@
     var lex = inner.state.lexical;
     if (lex.info != "call") return;
 
-    var ch, pos = lex.pos || 0, tabSize = cm.getOption("tabSize");
+    var ch, argPos = lex.pos || 0, tabSize = cm.getOption("tabSize");
     for (var line = cm.getCursor().line, e = Math.max(0, line - 9), found = false; line >= e; --line) {
       var str = cm.getLine(line), extra = 0;
       for (var pos = 0;;) {
@@ -268,7 +268,7 @@
     var start = Pos(line, ch);
     var cache = ts.cachedArgHints;
     if (cache && cache.doc == cm.getDoc() && cmpPos(start, cache.start) == 0)
-      return showArgHints(ts, cm, pos);
+      return showArgHints(ts, cm, argPos);
 
     ts.request(cm, {type: "type", preferFunction: true, end: start}, function(error, data) {
       if (error || !data.type || !(/^fn\(/).test(data.type)) return;
@@ -279,7 +279,7 @@
         guess: data.guess,
         doc: cm.getDoc()
       };
-      showArgHints(ts, cm, pos);
+      showArgHints(ts, cm, argPos);
     });
   }
 
@@ -450,13 +450,13 @@
 
   // Generic request-building helper
 
-  function buildRequest(ts, doc, query) {
+  function buildRequest(ts, doc, query, pos) {
     var files = [], offsetLines = 0, allowFragments = !query.fullDocs;
     if (!allowFragments) delete query.fullDocs;
     if (typeof query == "string") query = {type: query};
     query.lineCharPositions = true;
     if (query.end == null) {
-      query.end = doc.doc.getCursor("end");
+      query.end = pos || doc.doc.getCursor("end");
       if (doc.doc.somethingSelected())
         query.start = doc.doc.getCursor("start");
     }

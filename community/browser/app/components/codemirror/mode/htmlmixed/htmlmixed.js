@@ -1,5 +1,8 @@
 CodeMirror.defineMode("htmlmixed", function(config, parserConfig) {
-  var htmlMode = CodeMirror.getMode(config, {name: "xml", htmlMode: true});
+  var htmlMode = CodeMirror.getMode(config, {name: "xml",
+                                             htmlMode: true,
+                                             multilineTagIndentFactor: parserConfig.multilineTagIndentFactor,
+                                             multilineTagIndentPastTag: parserConfig.multilineTagIndentPastTag});
   var cssMode = CodeMirror.getMode(config, "css");
 
   var scriptTypes = [], scriptTypesConf = parserConfig && parserConfig.scriptTypes;
@@ -44,7 +47,7 @@ CodeMirror.defineMode("htmlmixed", function(config, parserConfig) {
     if (close > -1) stream.backUp(cur.length - close);
     else if (m = cur.match(/<\/?$/)) {
       stream.backUp(cur.length);
-      if (!stream.match(pat, false)) stream.match(cur[0]);
+      if (!stream.match(pat, false)) stream.match(cur);
     }
     return style;
   }
@@ -92,8 +95,6 @@ CodeMirror.defineMode("htmlmixed", function(config, parserConfig) {
       else
         return CodeMirror.Pass;
     },
-
-    electricChars: "/{}:",
 
     innerMode: function(state) {
       return {state: state.localState || state.htmlState, mode: state.localMode || htmlMode};

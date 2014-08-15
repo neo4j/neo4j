@@ -1,21 +1,5 @@
-<table>
-  <thead>
-    <tr class="text-center">
-      <th><button type="button" class="btn pull-left" ng-click="move(-1)"><i class="icon-chevron-left"></i></button></th>
-      <th colspan="{{rows[0].length - 2 + showWeekNumbers}}"><button type="button" class="btn btn-block" ng-click="toggleMode()"><strong>{{title}}</strong></button></th>
-      <th><button type="button" class="btn pull-right" ng-click="move(1)"><i class="icon-chevron-right"></i></button></th>
-    </tr>
-    <tr class="text-center" ng-show="labels.length > 0">
-      <th ng-show="showWeekNumbers">#</th>
-      <th ng-repeat="label in labels">{{label}}</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr ng-repeat="row in rows">
-      <td ng-show="showWeekNumbers" class="text-center"><em>{{ getWeekNumber(row) }}</em></td>
-      <td ng-repeat="dt in row" class="text-center">
-        <button type="button" style="width:100%;" class="btn" ng-class="{'btn-info': dt.selected}" ng-click="select(dt.date)" ng-disabled="dt.disabled"><span ng-class="{muted: dt.secondary}">{{dt.label}}</span></button>
-      </td>
-    </tr>
-  </tbody>
-</table>
+<div ng-switch="datepickerMode" role="application" ng-keydown="keydown($event)">
+  <daypicker ng-switch-when="day" tabindex="0"></daypicker>
+  <monthpicker ng-switch-when="month" tabindex="0"></monthpicker>
+  <yearpicker ng-switch-when="year" tabindex="0"></yearpicker>
+</div>

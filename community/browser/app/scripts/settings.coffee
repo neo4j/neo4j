@@ -39,6 +39,7 @@ angular.module('neo4jApp.settings', [])
     maxNeighbours: 100
     maxNodes: 1000
     maxRows: 1000
+    filemode: false
     maxRawSize: 5000 # bytes
     scrollToTop: yes # When new frames are inserted in to the stream
   })

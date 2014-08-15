@@ -1,10 +1,10 @@
 article.help
   .container-fluid
     section.row-fluid.summary
-      .summary.span3
+      .summary.col-sm-3
         h3 UNWIND
         p.lead unwind a collection into a sequence of rows
-      .details.span9
+      .details.col-sm-9
         p
           | The&nbsp;
           code UNWIND
@@ -25,7 +25,7 @@ article.help
               | &nbsp;
               a(help-topic='cypher') :help Cypher
     section.row-fluid.example
-      .span9.offset3
+      .col-sm-9.col-sm-offset-3
         figure
           pre.code.runnable.
             MATCH p = shortestPath( (lucy:Person {name:"Lucy Liu"})-[:ACTED_IN*]-(bacon:Person {name:"Kevin Bacon"}) )

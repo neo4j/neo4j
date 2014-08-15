@@ -1,106 +1,81 @@
-angular.module('ui.bootstrap.progressbar', ['ui.bootstrap.transition'])
+angular.module('ui.bootstrap.progressbar', [])
 
 .constant('progressConfig', {
   animate: true,
-  autoType: false,
-  stackedTypes: ['success', 'info', 'warning', 'danger']
+  max: 100
 })
 
-.controller('ProgressBarController', ['$scope', '$attrs', 'progressConfig', function($scope, $attrs, progressConfig) {
+.controller('ProgressController', ['$scope', '$attrs', 'progressConfig', function($scope, $attrs, progressConfig) {
+    var self = this,
+        animate = angular.isDefined($attrs.animate) ? $scope.$parent.$eval($attrs.animate) : progressConfig.animate;
 
-    // Whether bar transitions should be animated
-    var animate = angular.isDefined($attrs.animate) ? $scope.$eval($attrs.animate) : progressConfig.animate;
-    var autoType = angular.isDefined($attrs.autoType) ? $scope.$eval($attrs.autoType) : progressConfig.autoType;
-    var stackedTypes = angular.isDefined($attrs.stackedTypes) ? $scope.$eval('[' + $attrs.stackedTypes + ']') : progressConfig.stackedTypes;
+    this.bars = [];
+    $scope.max = angular.isDefined($attrs.max) ? $scope.$parent.$eval($attrs.max) : progressConfig.max;
 
-    // Create bar object
-    this.makeBar = function(newBar, oldBar, index) {
-        var newValue = (angular.isObject(newBar)) ? newBar.value : (newBar || 0);
-        var oldValue =  (angular.isObject(oldBar)) ? oldBar.value : (oldBar || 0);
-        var type = (angular.isObject(newBar) && angular.isDefined(newBar.type)) ? newBar.type : (autoType) ? getStackedType(index || 0) : null;
+    this.addBar = function(bar, element) {
+        if ( !animate ) {
+            element.css({'transition': 'none'});
+        }
 
-        return {
-            from: oldValue,
-            to: newValue,
-            type: type,
-            animate: animate
-        };
+        this.bars.push(bar);
+
+        bar.$watch('value', function( value ) {
+            bar.percent = +(100 * value / $scope.max).toFixed(2);
+        });
+
+        bar.$on('$destroy', function() {
+            element = null;
+            self.removeBar(bar);
+        });
     };
 
-    function getStackedType(index) {
-        return stackedTypes[index];
-    }
-
-    this.addBar = function(bar) {
-        $scope.bars.push(bar);
-        $scope.totalPercent += bar.to;
+    this.removeBar = function(bar) {
+        this.bars.splice(this.bars.indexOf(bar), 1);
     };
-
-    this.clearBars = function() {
-        $scope.bars = [];
-        $scope.totalPercent = 0;
-    };
-    this.clearBars();
 }])
 
 .directive('progress', function() {
     return {
         restrict: 'EA',
         replace: true,
-        controller: 'ProgressBarController',
+        transclude: true,
+        controller: 'ProgressController',
+        require: 'progress',
+        scope: {},
+        templateUrl: 'template/progressbar/progress.html'
+    };
+})
+
+.directive('bar', function() {
+    return {
+        restrict: 'EA',
+        replace: true,
+        transclude: true,
+        require: '^progress',
         scope: {
-            value: '=percent',
-            onFull: '&',
-            onEmpty: '&'
+            value: '=',
+            type: '@'
         },
-        templateUrl: 'template/progressbar/progress.html',
-        link: function(scope, element, attrs, controller) {
-            scope.$watch('value', function(newValue, oldValue) {
-                controller.clearBars();
-
-                if (angular.isArray(newValue)) {
-                    // Stacked progress bar
-                    for (var i=0, n=newValue.length; i < n; i++) {
-                        controller.addBar(controller.makeBar(newValue[i], oldValue[i], i));
-                    }
-                } else {
-                    // Simple bar
-                    controller.addBar(controller.makeBar(newValue, oldValue));
-                }
-            }, true);
-
-            // Total percent listeners
-            scope.$watch('totalPercent', function(value) {
-              if (value >= 100) {
-                scope.onFull();
-              } else if (value <= 0) {
-                scope.onEmpty();
-              }
-            }, true);
+        templateUrl: 'template/progressbar/bar.html',
+        link: function(scope, element, attrs, progressCtrl) {
+            progressCtrl.addBar(scope, element);
         }
     };
 })
 
-.directive('progressbar', ['$transition', function($transition) {
+.directive('progressbar', function() {
     return {
         restrict: 'EA',
         replace: true,
+        transclude: true,
+        controller: 'ProgressController',
         scope: {
-            width: '=',
-            old: '=',
-            type: '=',
-            animate: '='
+            value: '=',
+            type: '@'
         },
-        templateUrl: 'template/progressbar/bar.html',
-        link: function(scope, element) {
-            scope.$watch('width', function(value) {
-                if (scope.animate) {
-                    element.css('width', scope.old + '%');
-                    $transition(element, {width: value + '%'});
-                } else {
-                    element.css('width', value + '%');
-                }
-            });
+        templateUrl: 'template/progressbar/progressbar.html',
+        link: function(scope, element, attrs, progressCtrl) {
+            progressCtrl.addBar(scope, angular.element(element.children()[0]));
         }
     };
-}]);
+});

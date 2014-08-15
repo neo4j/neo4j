@@ -21,38 +21,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 
 angular.module('neo4jApp.services')
-  .factory 'GraphExplorer', ['$q', 'Cypher', 'Settings', ($q, Cypher, Settings) ->
-    return  {
-      exploreNeighboursWithInternalRelationships: (node, graph) ->
-        q = $q.defer()
-        @exploreNeighbours(node).then (neighboursResult) =>
-          if neighboursResult.nodes.length > Settings.maxNeighbours
-            return q.reject('Sorry! Too many neighbours')
-          graph.merge(neighboursResult)
-          @internalRelationships(graph.nodes()).then (result) =>
-            graph.addRelationships(result.relationships)
+  .factory 'GraphExplorer', [
+    '$q'
+    'Cypher'
+    'CypherGraphModel'
+    'Settings'
+    ($q, Cypher, CypherGraphModel, Settings) ->
+      return  {
+        exploreNeighboursWithInternalRelationships: (node, graph) ->
+          q = $q.defer()
+          @exploreNeighbours(node).then (neighboursResult) =>
+            if neighboursResult.nodes.length > Settings.maxNeighbours
+              return q.reject('Sorry! Too many neighbours')
+            graph.addNodes(neighboursResult.nodes.map(CypherGraphModel.convertNode()))
+            graph.addRelationships(neighboursResult.relationships.map(CypherGraphModel.convertRelationship(graph)))
+            @internalRelationships(graph.nodes()).then (result) =>
+              graph.addRelationships(result.relationships.map(CypherGraphModel.convertRelationship(graph)))
+              q.resolve()
+          q.promise
+
+        exploreNeighbours: (node) ->
+          q = $q.defer()
+          Cypher.transaction()
+          .commit("START a = node(#{node.id}) MATCH (a)-[r]-() RETURN r;")
+          .then(q.resolve)
+          q.promise
+
+        internalRelationships: (nodes) ->
+          q = $q.defer()
+          if nodes.length is 0
             q.resolve()
-        q.promise
-
-      exploreNeighbours: (node) ->
-        q = $q.defer()
-        Cypher.transaction()
-        .commit("START a = node(#{node.id}) MATCH (a)-[r]-() RETURN r;")
-        .then(q.resolve)
-        q.promise
-
-      internalRelationships: (nodes) ->
-        q = $q.defer()
-        if nodes.length is 0
-          q.resolve()
-          return q.promise
-        ids = nodes.map((node) -> node.id)
-        Cypher.transaction()
-        .commit("""
-          START a = node(#{ids.join(',')}), b = node(#{ids.join(',')})
-          MATCH a -[r]-> b RETURN r;"""
-        )
-        .then(q.resolve)
-        q.promise
-    }
+            return q.promise
+          ids = nodes.map((node) -> node.id)
+          Cypher.transaction()
+          .commit("""
+            START a = node(#{ids.join(',')}), b = node(#{ids.join(',')})
+            MATCH a -[r]-> b RETURN r;"""
+          )
+          .then(q.resolve)
+          q.promise
+      }
   ]

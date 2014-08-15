@@ -4,7 +4,7 @@ describe 'Service: CSV', () ->
   serializer = null
 
   # load the service's module
-  beforeEach module 'neo4jApp.services'
+  beforeEach module 'neo.csv'
 
   # instantiate service
   CSV = {}

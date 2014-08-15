@@ -5,6 +5,6 @@
     "ui/jquery-ui.js"
   ],
   "dependencies": {
-    "jquery": "~> 1.10.1"
+    "jquery": ">=1.6"
   }
 }
