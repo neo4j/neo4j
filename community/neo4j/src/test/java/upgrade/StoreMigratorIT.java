@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
@@ -79,7 +80,7 @@ public class StoreMigratorIT
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // WHEN
-        upgrader( new StoreMigrator( monitor, fs ) )
+        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) )
                 .migrateIfNeeded( find20FormatStoreDirectory( storeDir ) );
 
         // THEN
@@ -120,7 +121,7 @@ public class StoreMigratorIT
 
         // WHEN
         // upgrading that store, the two key tokens for "name" should be merged
-        upgrader( new StoreMigrator( monitor, fs ) ).migrateIfNeeded( storeDir );
+        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) ).migrateIfNeeded( storeDir );
 
         // THEN
         // verify that the "name" property for both the involved nodes

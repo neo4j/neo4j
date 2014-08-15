@@ -104,6 +104,7 @@ import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
@@ -139,9 +140,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                          Iterable<CacheProvider> cacheProviders )
     {
-        this( storeDir, params, new GraphDatabaseDependencies( null,
-                Arrays.<Class<?>>asList( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ),
-                kernelExtensions, cacheProviders ) );
+        this( storeDir, params, newDependencies().settingsClasses(GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ).kernelExtensions(kernelExtensions).cacheProviders(cacheProviders));
     }
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
@@ -226,8 +225,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected Logging createLogging()
     {
-        Logging loggingService = life.add( LogbackWeakDependency.tryLoadLogbackService( config, NEW_LOGGER_CONTEXT,
-                DEFAULT_TO_CLASSIC ) );
+        Logging loggingService = life.add( LogbackWeakDependency.tryLoadLogbackService( config,
+                NEW_LOGGER_CONTEXT,
+                DEFAULT_TO_CLASSIC, monitors ) );
 
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( loggingService ) );

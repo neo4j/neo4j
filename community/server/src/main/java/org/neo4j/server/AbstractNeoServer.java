@@ -55,6 +55,7 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.RunCarefully;
 import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -62,6 +63,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.CypherExecutor;
@@ -110,7 +112,7 @@ public abstract class AbstractNeoServer implements NeoServer
      */
     private static final long ROUNDING_SECOND = 1000L;
 
-    protected final Logging logging;
+    protected final InternalAbstractGraphDatabase.Dependencies dependencies;
     protected Database database;
     protected CypherExecutor cypherExecutor;
     protected Configurator configurator;
@@ -139,14 +141,14 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected abstract WebServer createWebServer();
 
-    public AbstractNeoServer( Configurator configurator, Database.Factory dbFactory, Logging logging )
+    public AbstractNeoServer( Configurator configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies)
     {
         this.configurator = configurator;
+        this.dependencies = dependencies;
         this.dbConfig = new Config();
-        this.logging = logging;
-        this.log = logging.getConsoleLog( getClass() );
+        this.log = dependencies.logging().getConsoleLog( getClass() );
 
-        this.database = dbFactory.newDatabase( dbConfig, logging );
+        this.database = dbFactory.newDatabase( dbConfig, dependencies);
 
         this.preFlight = createPreflightTasks();
         this.webServer = createWebServer();
@@ -189,13 +191,13 @@ public abstract class AbstractNeoServer implements NeoServer
                 databaseActions = createDatabaseActions();
 
                 // TODO: RrdDb is not needed once we remove the old webadmin
-                rrdDbScheduler = new RoundRobinJobScheduler( logging );
-                rrdDbWrapper = new RrdFactory( configurator.configuration(), logging )
+                rrdDbScheduler = new RoundRobinJobScheduler( dependencies.logging() );
+                rrdDbWrapper = new RrdFactory( configurator.configuration(), dependencies.logging())
                         .createRrdDbAndSampler( database, rrdDbScheduler );
 
                 transactionFacade = createTransactionalActions();
 
-                cypherExecutor = new CypherExecutor( database, logging.getMessagesLog( CypherExecutor.class ) );
+                cypherExecutor = new CypherExecutor( database, dependencies.logging().getMessagesLog(CypherExecutor.class) );
 
                 configureWebServer();
 
@@ -282,7 +284,7 @@ public abstract class AbstractNeoServer implements NeoServer
         final Clock clock = SYSTEM_CLOCK;
 
         transactionRegistry =
-            new TransactionHandleRegistry( clock, timeoutMillis, logging.getMessagesLog(TransactionRegistry.class) );
+            new TransactionHandleRegistry( clock, timeoutMillis, dependencies.logging().getMessagesLog(TransactionRegistry.class) );
 
         // ensure that this is > 0
         long runEvery = round( timeoutMillis / 2.0 );
@@ -299,9 +301,9 @@ public abstract class AbstractNeoServer implements NeoServer
 
         return new TransactionFacade(
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
-                new ServerExecutionEngine( database.getGraph(), logging.getMessagesLog( ExecutionEngine.class ) ),
+                new ServerExecutionEngine( database.getGraph(), dependencies.logging().getMessagesLog( ExecutionEngine.class ) ),
                 transactionRegistry,
-                baseUri(), logging.getMessagesLog( TransactionFacade.class )
+                baseUri(), dependencies.logging().getMessagesLog(TransactionFacade.class)
         );
     }
 
@@ -388,7 +390,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected Logging getLogging()
     {
-        return logging;
+        return dependencies.logging();
     }
 
     // TODO: Once WebServer is fully implementing LifeCycle,
@@ -714,7 +716,7 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new CypherExecutorProvider( cypherExecutor ) );
         singletons.add( providerForSingleton( transactionFacade, TransactionFacade.class ) );
         singletons.add( new TransactionFilter( database ) );
-        singletons.add( new LoggingProvider( logging ) );
+        singletons.add( new LoggingProvider( dependencies.logging() ) );
 
         return singletons;
     }

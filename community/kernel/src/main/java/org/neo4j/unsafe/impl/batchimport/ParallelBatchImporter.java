@@ -64,7 +64,6 @@ public class ParallelBatchImporter implements BatchImporter
     private final ExecutionMonitor executionMonitor;
     private final Logging logging;
     private final StringLogger logger;
-    private final LifeSupport life = new LifeSupport();
     private final Monitors monitors;
     private final WriterFactory writerFactory;
 
@@ -80,8 +79,6 @@ public class ParallelBatchImporter implements BatchImporter
         this.monitors = new Monitors();
         this.writeMonitor = new IoMonitor();
         this.writerFactory = writerFactory;
-
-        life.start();
     }
 
     public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
@@ -151,14 +148,6 @@ public class ParallelBatchImporter implements BatchImporter
         }
 
         executionMonitor.monitor( executions );
-    }
-
-    @Override
-    public void shutdown()
-    {
-        logger.debug( "Importer shutting down" );
-        life.shutdown();
-        logger.info( "Importer shut down." );
     }
 
     public class NodeStage extends Stage

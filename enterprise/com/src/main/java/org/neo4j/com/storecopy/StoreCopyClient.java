@@ -263,7 +263,7 @@ public class StoreCopyClient
         {
             // Skip log files and tx files from temporary database
             return !file.getName().startsWith( "metrics" )
-                    && !file.getName().equals( StringLogger.DEFAULT_NAME )
+                    && !file.getName().startsWith("messages." )
                     && !("active_tx_log tm_tx_log.1 tm_tx_log.2").contains( file.getName() );
         }
     };

@@ -27,9 +27,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.helpers.Functions;
+import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
 
@@ -160,7 +163,7 @@ public class DatabaseRegistryTest
 
     private DatabaseRegistry newRegistryWithEmbeddedProvider()
     {
-        DatabaseRegistry registry = new DatabaseRegistry( Functions.<Config, Logging>constant( new TestLogging() ) );
+        DatabaseRegistry registry = new DatabaseRegistry( Functions.<Config, InternalAbstractGraphDatabase.Dependencies>constant(GraphDatabaseDependencies.newDependencies().logging(new TestLogging() ) ));
         registry.addProvider( EMBEDDED, singletonDatabase( northwind ) );
         registry.init();
         registry.start();
@@ -172,7 +175,7 @@ public class DatabaseRegistryTest
         return new Database.Factory()
         {
             @Override
-            public Database newDatabase( Config config, Logging logging )
+            public Database newDatabase(Config config, InternalAbstractGraphDatabase.Dependencies dependencies)
             {
                 return db;
             }

@@ -23,6 +23,7 @@ import java.io.File;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
@@ -31,6 +32,7 @@ import org.neo4j.kernel.logging.BufferingConsoleLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
@@ -48,7 +50,7 @@ public abstract class Bootstrapper
     protected NeoServer server;
 	protected Configurator configurator;
     private Thread shutdownHook;
-    protected Logging logging;
+    protected GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
     private ConsoleLogger log;
 
     public static void main( String[] args )
@@ -89,10 +91,11 @@ public abstract class Bootstrapper
     {
         try
         {
+            dependencies = dependencies.monitors(new Monitors());
             BufferingConsoleLogger consoleBuffer = new BufferingConsoleLogger();
         	configurator = createConfigurator( consoleBuffer );
-        	logging = createLogging( configurator );
-        	log = logging.getConsoleLog( getClass() );
+        	dependencies = dependencies.logging(createLogging( configurator, dependencies.monitors()));
+        	log = dependencies.logging().getConsoleLog( getClass() );
         	consoleBuffer.replayInto( log );
 
         	life.start();
@@ -128,15 +131,15 @@ public abstract class Bootstrapper
         }
     }
 
-    private Logging createLogging( Configurator configurator )
+    private Logging createLogging(Configurator configurator, Monitors monitors)
     {
         Config config = new Config( configurator.getDatabaseTuningProperties() );
-        return life.add( DefaultLogging.createDefaultLogging( config ) );
+        return life.add( DefaultLogging.createDefaultLogging( config, monitors ) );
     }
 
     private void checkCompatibility()
     {
-        new JvmChecker( logging.getMessagesLog( JvmChecker.class ),
+        new JvmChecker( dependencies.logging().getMessagesLog( JvmChecker.class ),
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
     }
 

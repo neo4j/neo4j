@@ -30,6 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
@@ -79,7 +80,7 @@ public class TestLifecycleManagedDatabase
     private LifecycleManagingDatabase newDatabase()
     {
         Config dbConfig = new Config(stringMap( GraphDatabaseSettings.store_dir.name(), databaseDirectory.getAbsolutePath() ));
-        return new LifecycleManagingDatabase( dbConfig, dbFactory, logging );
+        return new LifecycleManagingDatabase( dbConfig, dbFactory, GraphDatabaseDependencies.newDependencies().logging( logging ));
     }
 
     @After

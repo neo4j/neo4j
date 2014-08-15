@@ -24,6 +24,6 @@ public class CommunityBootstrapper extends Bootstrapper
     @Override
     protected NeoServer createNeoServer()
     {
-        return new CommunityNeoServer( configurator, logging );
+        return new CommunityNeoServer( configurator, dependencies );
     }
 }
