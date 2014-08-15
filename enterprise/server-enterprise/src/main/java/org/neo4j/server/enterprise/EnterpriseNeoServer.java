@@ -65,14 +65,14 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         }
     };
 
-    public EnterpriseNeoServer( Configurator configurator, Logging logging )
+    public EnterpriseNeoServer( Configurator configurator, Dependencies dependencies )
     {
-        super( configurator, createDbFactory( configurator.configuration() ), logging );
+        super( configurator, createDbFactory( configurator.configuration() ), dependencies );
     }
 
-    public EnterpriseNeoServer( Configurator configurator, Database.Factory dbFactory, Logging logging )
+    public EnterpriseNeoServer( Configurator configurator, Database.Factory dbFactory, Dependencies dependencies )
     {
-        super( configurator, dbFactory, logging );
+        super( configurator, dbFactory, dependencies );
     }
 
     protected static Database.Factory createDbFactory( Configuration config )
@@ -86,6 +86,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     @Override
     protected PreFlightTasks createPreflightTasks()
     {
+        Logging logging = dependencies.logging();
         return new PreFlightTasks(
                 logging,
                 // TODO: This check should be done in the bootrapper,
@@ -104,7 +105,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     protected Iterable<ServerModule> createServerModules()
     {
         return mix( asList(
-                (ServerModule) new MasterInfoServerModule( webServer, getConfiguration(), logging ) ),
+                (ServerModule) new MasterInfoServerModule( webServer, getConfiguration(), dependencies.logging() ) ),
                 super.createServerModules() );
     }
 

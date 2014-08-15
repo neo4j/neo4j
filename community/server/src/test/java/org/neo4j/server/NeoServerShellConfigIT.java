@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.shell.ShellException;
@@ -63,7 +64,7 @@ public class NeoServerShellConfigIT extends ExclusiveServerTestBase
                         ShellSettings.remote_shell_enabled.name(), Settings.TRUE,
                         ShellSettings.remote_shell_port.name(), "" + customPort );
             }
-        }, DevNullLoggingService.DEV_NULL );
+        }, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL) );
 
         // When
         server.start();
@@ -95,7 +96,7 @@ public class NeoServerShellConfigIT extends ExclusiveServerTestBase
             {
                 return stringMap();
             }
-        }, DevNullLoggingService.DEV_NULL );
+        }, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL) );
 
         // When
         server.start();

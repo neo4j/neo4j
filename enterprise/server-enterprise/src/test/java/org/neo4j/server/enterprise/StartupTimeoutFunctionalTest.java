@@ -30,6 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.configuration.Configurator;
@@ -79,7 +80,7 @@ public class StartupTimeoutFunctionalTest
     {
         Configurator configurator = buildProperties();
         configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 20 );
-        server = new EnterpriseNeoServer( configurator, DevNullLoggingService.DEV_NULL )
+        server = new EnterpriseNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL ))
         {
             @Override
             protected Iterable<ServerModule> createServerModules()
@@ -103,7 +104,7 @@ public class StartupTimeoutFunctionalTest
 
     private EnterpriseNeoServer createSlowServer( Configurator configurator )
     {
-        return new EnterpriseNeoServer( configurator, DevNullLoggingService.DEV_NULL )
+        return new EnterpriseNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL ))
         {
             @Override
             protected Iterable<ServerModule> createServerModules()

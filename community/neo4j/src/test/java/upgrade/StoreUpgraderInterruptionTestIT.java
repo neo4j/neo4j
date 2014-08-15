@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
@@ -80,7 +81,7 @@ public class StoreUpgraderInterruptionTestIT
         File workingDirectory = directory.directory();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, workingDirectory );
 
-        StoreMigrator failingStoreMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem )
+        StoreMigrator failingStoreMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DevNullLoggingService.DEV_NULL )
         {
             @Override
             public void migrate( FileSystemAbstraction fileSystem, File sourceStoreDir, File targetStoreDir,
@@ -105,7 +106,7 @@ public class StoreUpgraderInterruptionTestIT
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
 
-        newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
+        newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DevNullLoggingService.DEV_NULL ) )
                 .migrateIfNeeded( workingDirectory );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );

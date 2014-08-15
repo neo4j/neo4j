@@ -25,6 +25,7 @@ import java.net.URL;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 
@@ -52,14 +53,16 @@ public class LogbackService
 
     public LogbackService( Config config, LoggerContext loggerContext )
     {
-        this(config, loggerContext, "neo4j-logback.xml");
+        this(config, loggerContext, "neo4j-logback.xml", new Monitors());
     }
 
     public LogbackService( final Config config, final LoggerContext loggerContext,
-                           final String logbackConfigurationFilename )
+                           final String logbackConfigurationFilename,
+                           final Monitors monitors)
     {
         this.config = config;
         this.loggerContext = loggerContext;
+        MonitoredRollingPolicy.setMonitorsInstance(monitors);
 
         // We do the initialization in the constructor, because some services will use logging during creation phase, before init.
         final File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
@@ -86,6 +89,7 @@ public class LogbackService
                         loggerContext.putProperty( "host", config.getParams().get( "ha.server_id" ) );
 
                     loggerContext.putProperty( "neo_store", storeDir.getPath() );
+                    loggerContext.putProperty( "history", config.get(GraphDatabaseSettings.log_history_size).toString() );
                     loggerContext.putProperty( "remote_logging_enabled", config.get( GraphDatabaseSettings
                             .remote_logging_enabled ).toString() );
                     loggerContext.putProperty( "remote_logging_host", config.get( GraphDatabaseSettings
@@ -93,7 +97,6 @@ public class LogbackService
                     loggerContext.putProperty( "remote_logging_port", config.get( GraphDatabaseSettings
                             .remote_logging_port ).toString() );
                     try
-
                     {
                         URL resource = getClass().getClassLoader().getResource( logbackConfigurationFilename );
 
@@ -116,6 +119,9 @@ public class LogbackService
                 }
             } );
             loggingLife.start();
+
+            // Unset this to ensure we don't leak memory through statics
+            MonitoredRollingPolicy.setMonitorsInstance(null);
 
             restartOnChange = new RestartOnChange( "remote_logging_", loggingLife );
             config.addConfigurationChangeListener( restartOnChange );

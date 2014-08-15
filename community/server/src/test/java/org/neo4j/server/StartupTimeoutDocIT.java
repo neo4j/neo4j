@@ -31,6 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -76,7 +77,7 @@ public class StartupTimeoutDocIT
 	public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException
 	{
 		Configurator configurator = buildProperties().withStartupTimeout( 100 ).atPort( 7480 ).build();
-        server = new CommunityNeoServer( configurator, DevNullLoggingService.DEV_NULL )
+        server = new CommunityNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL) )
         {
             @Override
             protected Iterable<ServerModule> createServerModules()
@@ -117,7 +118,7 @@ public class StartupTimeoutDocIT
     private CommunityNeoServer createSlowServer( Configurator configurator, final boolean preventMovingFurtherThanStartingModules )
     {
         final AtomicReference<Runnable> timerStartSignal = new AtomicReference<>();
-        CommunityNeoServer server = new CommunityNeoServer( configurator, DevNullLoggingService.DEV_NULL )
+        CommunityNeoServer server = new CommunityNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL) )
         {
             @Override
             protected InterruptThreadTimer createInterruptStartupTimer()
