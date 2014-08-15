@@ -27,12 +27,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class LogFiles
 {
-    private static final class LogicalLogFilenameFilter implements
-            FilenameFilter
+    public static final class LogicalLogFilenameFilter implements FilenameFilter
     {
         private static final String[] logFilenamePatterns = { "active_tx_log",
-                "nioneo_logical\\.log.*", /* covers current log, active log marker
-                                            and backups */
+                "nioneo_logical\\.log.*", /* covers current log, active log marker and backups */
                 "tm_tx_log\\..*" };
 
         @Override
