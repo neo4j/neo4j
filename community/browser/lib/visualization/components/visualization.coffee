@@ -1,10 +1,13 @@
 neo.viz = (el, measureSize, graph, layout, style) ->
   viz =
     style: style
-    size: measureSize()
 
   el = d3.select(el)
   geometry = new NeoD3Geometry(style)
+
+  # Arbitrary dimension used to keep force layout aligned with
+  # the centre of the svg view-port.
+  layoutDimension = 200
 
   # To be overridden
   viz.trigger = (event, args...) ->
@@ -88,13 +91,14 @@ neo.viz = (el, measureSize, graph, layout, style) ->
 
     nodeGroups.exit().remove();
 
-    force.update(graph, [viz.size.width, viz.size.height])
+    force.update(graph, [layoutDimension, layoutDimension])
+    viz.resize()
 
   viz.resize = ->
-    newSize = measureSize()
-    unless newSize.width == viz.size.width and newSize.height = viz.size.height
-      viz.size = newSize
-      force.update(graph, [viz.size.width, viz.size.height])
+    size = measureSize()
+    el.attr('viewBox', [
+      0, (layoutDimension - size.height) / 2, layoutDimension, size.height
+    ].join(' '))
 
   clickHandler = neo.utils.clickHandler()
   clickHandler.on 'click', onNodeClick
