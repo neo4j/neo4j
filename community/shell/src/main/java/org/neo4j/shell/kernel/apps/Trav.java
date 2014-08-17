@@ -21,7 +21,6 @@ package org.neo4j.shell.kernel.apps;
 
 import static java.lang.Integer.parseInt;
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.shell.kernel.apps.ScriptEngineViaReflection.decorateWithImports;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -35,8 +34,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
-import org.neo4j.graphdb.traversal.Evaluation;
-import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.UniquenessFactory;
 import org.neo4j.helpers.Service;
@@ -58,8 +55,6 @@ import org.neo4j.shell.ShellException;
 @Service.Implementation( App.class )
 public class Trav extends TransactionProvidingApp
 {
-    private ScriptEngineViaReflection scripting;
-    
     /**
      * Constructs a new command which can traverse the graph.
      */
@@ -90,8 +85,6 @@ public class Trav extends TransactionProvidingApp
         this.addOptionDefinition( "c", OPTION_DEF_FOR_C );
         this.addOptionDefinition( "d", new OptionDefinition( OptionValueType.MUST,
                 "Depth limit" ) );
-        this.addOptionDefinition( "e", new OptionDefinition( OptionValueType.MUST,
-                "Custom javascript evaluator" ) );
         this.addOptionDefinition( "u", new OptionDefinition( OptionValueType.MUST,
                 "Uniqueness of the entities encountered during traversal " +
                 niceEnumAlternatives( Uniqueness.class ) ) );
@@ -145,13 +138,6 @@ public class Trav extends TransactionProvidingApp
         if ( depthLimit != null )
         {
             description = description.evaluator( toDepth( parseInt( depthLimit ) ) );
-        }
-        
-        // Custom evaluator
-        String evaluator = parser.options().get( "e" );
-        if ( evaluator != null )
-        {
-            description = description.evaluator( parseEvaluator( evaluator ) );
         }
 
         String filterString = parser.options().get( "f" );
@@ -223,22 +209,6 @@ public class Trav extends TransactionProvidingApp
         return Continuation.INPUT_COMPLETE;
     }
 
-    private Evaluator parseEvaluator( String evaluator ) throws ShellException
-    {
-        scripting = scripting != null ? scripting : new ScriptEngineViaReflection( getServer() );
-        try
-        {
-            evaluator = decorateWithImports( evaluator, STANDARD_EVAL_IMPORTS );
-            Object scriptEngine = scripting.getJavascriptEngine();
-            Object compiledScript = scripting.compile( scriptEngine, evaluator );
-            return new CompiledScriptEvaluator( compiledScript );
-        }
-        catch ( Exception e )
-        {
-            throw ShellException.wrapCause( e );
-        }
-    }
-
     private UniquenessFactory parseUniqueness( String uniqueness )
     {
         return parseEnum( Uniqueness.class, uniqueness, null );
@@ -256,83 +226,5 @@ public class Trav extends TransactionProvidingApp
         }
         
         return (BranchOrderingPolicy) parseEnum( CommonBranchOrdering.class, order, null );
-    }
-    
-//    private class ScriptEvaluator implements Evaluator
-//    {
-//        private final Object scriptEngine;
-//        private final String code;
-//
-//        ScriptEvaluator( Object scriptEngine, String code )
-//        {
-//            this.scriptEngine = scriptEngine;
-//            this.code = code;
-//        }
-//        
-//        @Override
-//        public Evaluation evaluate( Path path )
-//        {
-//            try
-//            {
-//                System.out.println( "interpreting " + code );
-//                Object result = scripting.interpret( scriptEngine, code );
-//                if ( result instanceof Boolean )
-//                {
-//                    return Evaluation.ofIncludes( (Boolean) result );
-//                }
-//                else if ( result instanceof Evaluation )
-//                {
-//                    return (Evaluation) result;
-//                }
-//                throw new IllegalArgumentException( "Cannot return value " + result + " from an evaluator" );
-//            }
-//            catch ( Exception e )
-//            {
-//                if ( e instanceof RuntimeException )
-//                {
-//                    throw (RuntimeException) e;
-//                }
-//                throw new RuntimeException( e );
-//            }
-//        }
-//    }
-    
-    private class CompiledScriptEvaluator implements Evaluator
-    {
-        private final Object compiledScript;
-        private final Object context;
-
-        CompiledScriptEvaluator( Object compiledScript ) throws Exception
-        {
-            this.compiledScript = compiledScript;
-            this.context = scripting.newContext();
-        }
-        
-        @Override
-        public Evaluation evaluate( Path path )
-        {
-            try
-            {
-                scripting.setContextAttribute( context, "position", path );
-                Object result = scripting.executeCompiledScript( compiledScript, context );
-                if ( result instanceof Boolean )
-                {
-                    return Evaluation.ofIncludes( (Boolean) result );
-                }
-                else if ( result instanceof Evaluation )
-                {
-                    return (Evaluation) result;
-                }
-                throw new IllegalArgumentException( "Cannot return value " + result + " from an evaluator" );
-            }
-            catch ( Exception e )
-            {
-                if ( e instanceof RuntimeException )
-                {
-                    throw (RuntimeException) e;
-                }
-                throw new RuntimeException( e );
-            }
-        }
     }
 }

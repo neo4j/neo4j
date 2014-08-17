@@ -34,7 +34,6 @@ org.neo4j.shell.kernel.apps.Gsh
 org.neo4j.shell.kernel.apps.Jsh
 org.neo4j.shell.kernel.apps.Dbinfo
 org.neo4j.shell.kernel.apps.IndexProviderShellApp
-org.neo4j.shell.kernel.apps.Eval
 org.neo4j.shell.kernel.apps.Schema
 org.neo4j.shell.apps.ha.Hainfo
 org.neo4j.shell.apps.ha.Pullupdates
