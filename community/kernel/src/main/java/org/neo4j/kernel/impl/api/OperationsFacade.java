@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -65,6 +66,8 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.util.register.NeoRegister;
+import org.neo4j.register.Register;
 
 public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
 {
@@ -297,6 +300,18 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         dataRead().relationshipVisit( statement, relId, visitor );
+    }
+
+    @Override
+    public Cursor expand( Cursor inputCursor, NeoRegister.Node.In nodeId, Register.Object.In<int[]> types,
+                          Register.Object.In<Direction> expandDirection,
+                          NeoRegister.Relationship.Out relId, NeoRegister.RelType.Out relType,
+                          Register.Object.Out<Direction> direction,
+                          NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId )
+    {
+        statement.assertOpen();
+        return dataRead().expand( statement, inputCursor, nodeId, types, expandDirection,
+                relId, relType, direction, startNodeId, neighborNodeId );
     }
 
     // </DataRead>

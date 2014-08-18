@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -32,6 +33,8 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.util.register.NeoRegister;
+import org.neo4j.register.Register;
 
 public interface EntityReadOperations
 {
@@ -131,4 +134,11 @@ public interface EntityReadOperations
 
     <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
             RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION;
+
+    Cursor expand( KernelStatement statement, Cursor inputCursor,
+                     /* Inputs  */ NeoRegister.Node.In nodeId, Register.Object.In<int[]> types,
+                     Register.Object.In<Direction> expandDirection,
+                     /* Outputs */ NeoRegister.Relationship.Out relId, NeoRegister.RelType.Out relType,
+                     Register.Object.Out<Direction> direction,
+                     NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId );
 }

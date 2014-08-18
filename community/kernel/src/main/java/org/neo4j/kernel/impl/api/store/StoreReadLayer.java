@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -43,6 +44,8 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
+import org.neo4j.kernel.impl.util.register.NeoRegister;
+import org.neo4j.register.Register;
 
 /**
  * Abstraction for reading committed data.
@@ -168,4 +171,9 @@ public interface StoreReadLayer
      * Reserves a node id for future use.
      */
     long reserveNode();
+
+    Cursor expand( Cursor inputCursor, NeoRegister.Node.In nodeId, Register.Object.In<int[]> types,
+                   Register.Object.In<Direction> expandDirection, NeoRegister.Relationship.Out relId,
+                   NeoRegister.RelType.Out relType, Register.Object.Out<Direction> direction,
+                   NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId );
 }

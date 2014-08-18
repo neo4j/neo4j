@@ -297,6 +297,10 @@ public class TxStateTest
                 containsLongs( relId, otherRel ) );
         assertThat( state.augmentRelationships( endNode, BOTH, iterator( otherRel ) ),
                 containsLongs( relId, otherRel ) );
+        assertThat( state.addedRelationships( endNode, new int[]{relType}, BOTH ),
+                containsLongs( relId ) );
+        assertThat( state.addedRelationships( endNode, new int[]{relType+1}, BOTH ),
+                containsLongs() );
     }
 
     @Test

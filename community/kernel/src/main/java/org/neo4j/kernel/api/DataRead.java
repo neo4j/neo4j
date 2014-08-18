@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -31,6 +32,8 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.util.register.NeoRegister;
+import org.neo4j.register.Register;
 
 interface DataRead
 {
@@ -115,4 +118,35 @@ interface DataRead
 
     <EXCEPTION extends Exception> void relationshipVisit( long relId, RelationshipVisitor<EXCEPTION> visitor )
             throws EntityNotFoundException, EXCEPTION;
+
+    /**
+     * Construct a traversal cursor which will expand from one node according to its input registers,
+     * putting one row in its output registers each time the {@link org.neo4j.cursor.Cursor#next()}
+     * method is called.
+     *
+     * The traverser will use its input cursor to request more arguments. This is repeated until the input cursor is
+     * exhausted or the {@link org.neo4j.cursor.Cursor#close() close} method is called on the traversal cursor.
+     *
+     * Output is guaranteed to be ordered by input rows - all output rows for each input will be grouped together in
+     * the order the inputs arrive. Other than this, no guarantees are given.
+     *
+     * Calling {@link org.neo4j.cursor.Cursor#reset()} will delegate to reset the input cursor and set the
+     * traversal cursor up to start over with the next item returned from the input cursor.
+     *
+     * Calling {@link org.neo4j.cursor.Cursor#close()} will release any associated resources and delegate
+     * the close call to the input cursor.
+     *
+     * @param direction signals the direction that the current row relationship goes from your start node to the
+     *                  neighbor node. We use this instead of just having start/end node registers, as the core use case
+     *                  is returning neighbor nodes, so the signature is optimized for that.
+     *
+     * @param startNodeId will always be the input node id used to find the current row. This is provided as a mechanism
+     *                    to help when you expand from multiple starting points and want to segregate the outputs.
+     */
+    Cursor expand( Cursor inputCursor,
+                     /* Inputs  */ NeoRegister.Node.In nodeId, Register.Object.In<int[]> expandTypes,
+                                   Register.Object.In<Direction> expandDirection,
+                     /* Outputs */ NeoRegister.Relationship.Out relId, NeoRegister.RelType.Out relType,
+                                   Register.Object.Out<Direction> direction,
+                                   NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId );
 }

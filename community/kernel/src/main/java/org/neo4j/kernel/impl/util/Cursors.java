@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Iterator;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -113,57 +113,38 @@ public class Cursors
         };
     }
 
-    public static <T> Iterable<T> iterable(final Cursor<T> cursor)
+    public static Cursor countDownCursor( final int count )
     {
-        return new Iterable<T>()
+        return new CountDownCursor( count );
+    }
+
+    public static class CountDownCursor implements Cursor
+    {
+        private final int count;
+        private int current;
+
+        public CountDownCursor( int count )
         {
-            @Override
-            public Iterator<T> iterator()
-            {
-                if (cursor.next())
-                {
-                    final T first = cursor.get();
+            this.count = count;
+            current = count;
+        }
 
-                    return new Iterator<T>()
-                    {
-                        T instance = first;
+        @Override
+        public boolean next()
+        {
+            return current-- > 0;
+        }
 
-                        @Override
-                        public boolean hasNext()
-                        {
-                            return instance != null;
-                        }
+        @Override
+        public void reset()
+        {
+            current = count;
+        }
 
-                        @Override
-                        public T next()
-                        {
-                            try
-                            {
-                                return instance;
-                            }
-                            finally
-                            {
-                                if (cursor.next())
-                                {
-                                    instance = cursor.get();
-                                } else
-                                {
-                                    instance = null;
-                                }
-                            }
-                        }
-
-                        @Override
-                        public void remove()
-                        {
-                            throw new UnsupportedOperationException(  );
-                        }
-                    };
-                } else
-                {
-                    return Collections.emptyIterator();
-                }
-            }
-        };
+        @Override
+        public void close()
+        {
+            current = 0;
+        }
     }
 }
