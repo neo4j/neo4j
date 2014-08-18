@@ -80,6 +80,10 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
       cost(projection.left) +
       cardinality(projection.left) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * projection.numExpressions
 
+    case endpointProjection@ProjectEndpoints(input, _, _, _, _, _) =>
+      cost(input) +
+        cardinality(endpointProjection) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * 2
+
     case selection: Selection =>
       cost(selection.left) +
       cardinality(selection.left) * EXPRESSION_SELECTION_OVERHEAD_PER_ROW * selection.numPredicates

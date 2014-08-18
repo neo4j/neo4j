@@ -19,12 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
-
-case class UnwindCollection(left: LogicalPlan, identifier: IdName, expression: Expression) extends LogicalPlan {
+case class ProjectEndpoints(left: LogicalPlan, rel: IdName, start: IdName, end: IdName, directed: Boolean, length: PatternLength) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
 
-  def availableSymbols: Set[IdName] = left.availableSymbols + identifier
+  def availableSymbols: Set[IdName] = left.availableSymbols + rel + start + end
 }
-

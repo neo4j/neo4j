@@ -114,7 +114,6 @@ object planArgumentRelEndpoints {
     def clear() = {
       selections.clear()
       projections.clear()
-      this
     }
   }
 

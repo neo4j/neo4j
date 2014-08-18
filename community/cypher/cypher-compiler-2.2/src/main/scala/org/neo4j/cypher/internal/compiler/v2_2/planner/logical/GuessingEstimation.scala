@@ -123,6 +123,9 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case Projection(left, _) =>
       cardinality(left)
 
+    case ProjectEndpoints(left, _, _, _, directed, _) =>
+      if (directed) cardinality(left) else cardinality(left) * Multiplier(2)
+
     case Optional(input) =>
       cardinality(input)
 

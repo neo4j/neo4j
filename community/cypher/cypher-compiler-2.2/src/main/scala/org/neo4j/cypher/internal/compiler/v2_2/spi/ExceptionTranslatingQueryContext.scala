@@ -112,6 +112,27 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
   override def isLabelSetOnNode(label: Int, node: Long): Boolean =
     translateException(super.isLabelSetOnNode(label, node))
 
+  override def getRelTypeId(relType: String) =
+    translateException(super.getRelTypeId(relType))
+
+  override def getRelTypeName(id: Int) =
+    translateException(super.getRelTypeName(id))
+
+  override def exactUniqueIndexSearch(index: IndexDescriptor, value: Any) =
+    translateException(super.exactUniqueIndexSearch(index, value))
+
+  override def commitAndRestartTx() =
+    translateException(super.commitAndRestartTx())
+
+  override def hasLocalFileAccess =
+    translateException(super.hasLocalFileAccess)
+
+  override def relationshipStartNode(rel: Relationship) =
+    translateException(super.relationshipStartNode(rel))
+
+  override def relationshipEndNode(rel: Relationship) =
+    translateException(super.relationshipEndNode(rel))
+
   class ExceptionTranslatingOperations[T <: PropertyContainer](inner: Operations[T])
     extends DelegatingOperations[T](inner) {
     override def delete(obj: T) =
