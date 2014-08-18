@@ -25,6 +25,9 @@ import org.neo4j.io.pagecache.PageCursor;
 
 abstract class MuninnPageCursor implements PageCursor
 {
+    static final boolean monitorPinUnpin = Boolean.getBoolean(
+            "org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.monitorPinUnpin" );
+
     private final MuninnCursorFreelist freelist;
     public MuninnPageCursor nextFree;
 
