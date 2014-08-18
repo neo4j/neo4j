@@ -1224,7 +1224,6 @@ RETURN a.name""")
     result.toList should equal (List(Map("p"->new PathImpl(node))))
   }
 
-
   test("match p = (a)-[r*0..]->(b) return p") {
     // Given a single node
     val node = createNode()
@@ -1246,4 +1245,55 @@ RETURN a.name""")
     // should give us a single, empty path starting at one end
     result.toList should equal (List(Map("n" -> "42", "count" -> 1)))
   }
+
+  // TODO: WIP
+  ignore("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel") {
+    // given a single rel
+    val rel1 = relate(createNode(), createNode())
+    val rel2 = relate(createNode(), createNode())
+
+    // when
+    val result = executeWithNewPlanner("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel")
+
+    // should give us all rels
+    val actual = relsById(result.columnAs[Relationship]("rel").toList)
+    val expected = relsById(Seq(rel1, rel2))
+
+    result.columns should equal(List("rel"))
+    actual should equal(expected)
+  }
+
+  test("MATCH (u)-[r1]->(v) WITH r1 AS r2 ORDER BY rand() MATCH (a)-[r2]->(b) RETURN r2 AS rel") {
+    // given a single rel
+    val rel1 = relate(createNode(), createNode())
+    val rel2 = relate(createNode(), createNode())
+
+    // when
+    val result = executeWithNewPlanner("MATCH (u)-[r1]->(v) WITH r1 AS r2 ORDER BY rand() MATCH (a)-[r2]->(b) RETURN r2 AS rel")
+
+    // should give us all rels
+    val actual = relsById(result.columnAs[Relationship]("rel").toList)
+    val expected = relsById(Seq(rel1, rel2))
+
+    result.columns should equal(List("rel"))
+    actual should equal(expected)
+  }
+
+  test("MATCH (a)-[r]->(b) WITH a, r, b, rand() AS c ORDER BY c MATCH (a)-[r]->(b) RETURN r AS rel") {
+    // given a single rel
+    val rel1 = relate(createNode(), createNode())
+    val rel2 = relate(createNode(), createNode())
+
+    // when
+    val result = executeWithNewPlanner("MATCH (a)-[r]->(b) WITH a, r, b, rand() AS c ORDER BY c MATCH (a)-[r]->(b) RETURN r AS rel")
+
+    // should give us all rels
+    val actual = relsById(result.columnAs[Relationship]("rel").toList)
+    val expected = relsById(Seq(rel1, rel2))
+
+    result.columns should equal(List("rel"))
+    actual should equal(expected)
+  }
+
+  private def relsById(in: Seq[Relationship]): Seq[Relationship] = in.sortBy(_.getId)
 }
