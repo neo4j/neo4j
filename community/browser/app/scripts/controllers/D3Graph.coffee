@@ -120,6 +120,9 @@ angular.module('neo4jApp.controllers')
             toggleSelection(null)
             onCanvasClicked()
           )
+          .on('updated', ->
+            $rootScope.$broadcast 'graph:changed', graph
+          )
 
           graphView.resize()
           $rootScope.$broadcast 'graph:changed', graph
