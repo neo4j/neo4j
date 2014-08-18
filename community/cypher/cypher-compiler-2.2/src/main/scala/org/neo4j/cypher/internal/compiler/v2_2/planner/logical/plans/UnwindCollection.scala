@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 
-case class UnwindPlan(left: LogicalPlan, identifier: IdName, expression: Expression) extends LogicalPlan {
+case class UnwindCollection(left: LogicalPlan, identifier: IdName, expression: Expression) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
 

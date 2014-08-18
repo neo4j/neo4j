@@ -294,7 +294,7 @@ object QueryPlanProducer {
 
   def planUnwind(inner: QueryPlan, name: IdName, expression: Expression) =
     QueryPlan(
-      UnwindPlan(inner.plan, name, expression),
+      UnwindCollection(inner.plan, name, expression),
       inner.solved.updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
     )
 

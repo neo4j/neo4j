@@ -171,7 +171,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case Union(lhs, rhs) =>
           NewUnionPipe(buildPipe(lhs), buildPipe(rhs))
 
-        case UnwindPlan(lhs, identifier, collection) =>
+        case UnwindCollection(lhs, identifier, collection) =>
           UnwindPipe(buildPipe(lhs), collection.asCommandExpression, identifier.name)
 
         case _ =>
