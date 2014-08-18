@@ -69,6 +69,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case Projection(left, expressions) =>
           ProjectionNewPipe(buildPipe(left), expressions.mapValues(buildExpression))
 
+        case ProjectEndpoints(left, rel, start, end, directed, length) =>
+          ProjectEndpointsPipe(buildPipe(left), rel.name, start.name, end.name, directed, length.isSimple)
+
         case sr @ SingleRow(ids) =>
           NullPipe(new SymbolTable(sr.typeInfo))
 
@@ -174,8 +177,8 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case UnwindCollection(lhs, identifier, collection) =>
           UnwindPipe(buildPipe(lhs), collection.asCommandExpression, identifier.name)
 
-        case _ =>
-          throw new CantHandleQueryException
+        case x =>
+          throw new CantHandleQueryException(x.toString)
       }
     }
 

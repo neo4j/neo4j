@@ -129,112 +129,81 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that project endpoints of re-matched directed relationship arguments") {
-    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
-
-    val plan = planFor("MATCH (a)-[r]->(b) WITH r ORDER BY rand() MATCH (u)-[r]->(v) RETURN r").plan.plan
+    val plan = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r").plan.plan
 
     plan match {
-      case Projection(Apply(_, Projection(_, expressions)), _) =>
-        val expected = Map[String, Expression](
-          "r" -> ident("r"),
-          "u" -> startOfR,
-          "v" -> endOfR
-        )
+      case Projection(Apply(_, ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("u"), IdName("v"), true, SimplePatternLength)), _) =>
+        sr.availableSymbols should equal(Set(IdName("r")))
+    }
+  }
 
-        expressions should equal(expected)
+  test("should build plans that project endpoints of re-matched reversed directed relationship arguments") {
+    val plan = planFor("MATCH (a)-[r]->(b) WITH r AS r, a AS a LIMIT 1 MATCH (b2)<-[r]-(a) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_,
+        Selection(
+          Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
+          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b2"), true, SimplePatternLength)
+        )
+      ), _) =>
+        sr.availableSymbols should equal(Set(IdName("r"), IdName("a")))
     }
   }
 
   test("should build plans that verify endpoints of re-matched directed relationship arguments") {
-    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
-
-    val plan = planFor("MATCH (a)-[r]->(b) WITH * ORDER BY rand() MATCH (a)-[r]->(b) RETURN r").plan.plan
+    val plan = planFor("MATCH (a)-[r]->(b) WITH * LIMIT 1 MATCH (a)-[r]->(b) RETURN r").plan.plan
 
     plan match {
-      case Projection(Apply(_, Selection(predicates, _)), _) =>
-        val expected: Seq[Expression] = Seq(
-          Equals(ident("a"), startOfR)_,
-          Equals(ident("b"), endOfR)_
+      case Projection(Apply(_,
+        Selection(
+          Seq(Equals(Identifier("a"), Identifier("a$$$_")), Equals(Identifier("b"), Identifier("b$$$_"))),
+          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b$$$_"), true, SimplePatternLength)
         )
-
-        predicates should equal(expected)
+      ), _) =>
+        sr.availableSymbols should equal(Set(IdName("r"), IdName("a"), IdName("b")))
     }
   }
 
   test("should build plans that project and verify endpoints of re-matched directed relationship arguments") {
-    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
-
-    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r ORDER BY rand() MATCH (a)-[r]->(b) RETURN r").plan.plan
+    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]->(b2) RETURN r").plan.plan
 
     plan match {
-      case Projection(Apply(_, Selection(predicates, _)), _) =>
-        val expectedPredicates: Seq[Expression] = Seq(
-          Equals(ident("a"), startOfR)_,
-          Equals(ident("b"), endOfR)_
+      case Projection(Apply(_,
+        Selection(
+          Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
+          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b2"), true, SimplePatternLength)
         )
-
-        predicates should equal(expectedPredicates)
-    }
-  }
-
-  test("should build plans that project endpoints of re-matched undirected relationship arguments") {
-    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
-
-    val plan = planFor("MATCH (a)-[r]->(b) WITH r ORDER BY rand() MATCH (u)-[r]-(v) RETURN r").plan.plan
-
-    plan match {
-      case Projection(Apply(_, Projection(_, expressions)), _) =>
-        val expected = Map[String, Expression](
-          "r" -> ident("r"),
-          "u" -> startOfR,
-          "v" -> endOfR
-        )
-
-        expressions should equal(expected)
-    }
-  }
-
-  test("should build plans that verify endpoints of re-matched undirected relationship arguments") {
-    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
-
-    val plan = planFor("MATCH (a)-[r]->(b) WITH * ORDER BY rand() MATCH (a)-[r]-(b) RETURN r").plan.plan
-
-    plan match {
-      case Projection(Apply(_, Selection(predicates, _)), _) =>
-        val expected: Seq[Expression] = Seq(
-          Or(
-            And( Equals(ident("a"), startOfR)_, Equals(ident("b"), endOfR)_ )_,
-            And( Equals(ident("b"), startOfR)_, Equals(ident("a"), endOfR)_ )_
-          )_
-        )
-
-        predicates should equal(expected)
+      ), _) =>
+        sr.availableSymbols should equal(Set(IdName("r"), IdName("a")))
     }
   }
 
   test("should build plans that project and verify endpoints of re-matched undirected relationship arguments") {
-    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
-
-    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r ORDER BY rand() MATCH (a)-[r]-(v) RETURN r").plan.plan
+    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r").plan.plan
 
     plan match {
-      case Projection(Apply(_, Projection(Selection(predicates, _), expressions)), _) =>
-        val expectedPredicates: Seq[Expression] = Seq(
-          Or(Equals(ident("a"), startOfR)_, Equals(ident("a"), endOfR)_)_
+      case Projection(Apply(_,
+        Selection(
+          Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
+          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b2"), false, SimplePatternLength)
         )
-
-        val expr: Expression = CaseExpression(expression = Some(ident("a")), alternatives = Seq(startOfR -> endOfR), default = Some(startOfR))_
-        val expectedExpressions: Map[String, Expression] = Seq(
-          "a" -> ident("a"),
-          "r" -> ident("r"),
-          "v" -> expr
-        ).toMap
-
-        predicates should equal(expectedPredicates)
-        expressions should equal(expectedExpressions)
+      ), _) =>
+        sr.availableSymbols should equal(Set(IdName("r"), IdName("a")))
     }
   }
 
-  def startOfR: Expression = FunctionInvocation(FunctionName("startNode") _, ident("r")) _
-  def endOfR: Expression = FunctionInvocation(FunctionName("endNode") _, ident("r")) _
+  test("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
+    val plan = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_,
+        Selection(
+          Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
+          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b2"), true, VarPatternLength(1, None))
+        )
+      ), _) =>
+        sr.availableSymbols should equal(Set(IdName("r"), IdName("a")))
+    }
+  }
 }

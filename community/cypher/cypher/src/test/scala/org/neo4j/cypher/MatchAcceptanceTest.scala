@@ -827,13 +827,13 @@ RETURN a.name""")
   }
 
   test("should be able to handle single node patterns") {
-    //GIVEN
+    // given
     val n = createNode("foo" -> "bar")
 
-    //WHEN
+    // when
     val result = executeWithNewPlanner("match n where n.foo = 'bar' return n")
 
-    //THEN
+    // then
     result.toList should equal (List(Map("n" -> n)))
   }
 
@@ -931,7 +931,7 @@ RETURN a.name""")
   }
 
   test("should filter nodes by label given in match") {
-    // GIVEN
+    // given
     val a = createNode()
     val b1 = createLabeledNode("foo")
     val b2 = createNode()
@@ -939,7 +939,7 @@ RETURN a.name""")
     relate(a, b1)
     relate(a, b2)
 
-    // WHEN
+    // when
     val result = executeWithNewPlanner(s"MATCH a-->(b:foo) RETURN b")
 
     // THEN
@@ -947,7 +947,7 @@ RETURN a.name""")
   }
 
   test("should use predicates in the correct place") {
-    //GIVEN
+    // given
     val m = execute( """create
                         (advertiser {name:"advertiser1"}),
                         (thing      {name:"Color"}),
@@ -964,19 +964,19 @@ RETURN a.name""")
     val advertiser = m("advertiser").asInstanceOf[Node]
     val thing = m("thing").asInstanceOf[Node]
 
-    //WHEN
+    // when
     val result = execute(
       """START advertiser = node({1}), a = node({2})
        MATCH (advertiser) -[:adv_has_product] ->(out) -[:ap_has_value] -> red <-[:aa_has_value]- (a)
        WHERE red.name = 'red' and out.name = 'product1'
        RETURN out.name""", "1" -> advertiser, "2" -> thing)
 
-    //THEN
+    // then
     result.toList should equal (List(Map("out.name" -> "product1")))
   }
 
   test("should be able to use index hints") {
-    //GIVEN
+    // given
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
     val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
@@ -984,24 +984,24 @@ RETURN a.name""")
 
     graph.createIndex("Person", "name")
 
-    //WHEN
+    // when
     val result = executeWithNewPlanner("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
 
-    //THEN
+    // then
     result.toList should equal (List(Map("n" -> jake)))
   }
 
   test("should be able to use label as start point") {
-    //GIVEN
+    // given
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
     val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
-    //WHEN
+    // when
     val result = executeWithNewPlanner("MATCH (n:Person)-->() WHERE n.name = 'Jacob' RETURN n")
 
-    //THEN
+    // then
     result.toList should equal (List(Map("n" -> jake)))
   }
 
@@ -1013,10 +1013,10 @@ RETURN a.name""")
   }
 
   test("id in where leads to empty result") {
-    //WHEN
+    // when
     val result = executeWithNewPlanner("MATCH n WHERE id(n)=1337 RETURN n")
 
-    //THEN DOESN'T THROW EXCEPTION
+    // then DOESN'T THROW EXCEPTION
     result shouldBe 'isEmpty
   }
 
@@ -1082,7 +1082,7 @@ RETURN a.name""")
 
 
   test("should handle queries that cant be index solved because expressions lack dependencies") {
-    // Given
+    // given
     val a = createLabeledNode(Map("property" -> 42), "Label")
     val b = createLabeledNode(Map("property" -> 42), "Label")
     createLabeledNode(Map("property" -> 666), "Label")
@@ -1100,7 +1100,7 @@ RETURN a.name""")
   }
 
   test("should handle queries that cant be index solved because expressions lack dependencies with two disjoin patterns") {
-    // Given
+    // given
     val a = createLabeledNode(Map("property" -> 42), "Label")
     val b = createLabeledNode(Map("property" -> 42), "Label")
     val e = createLabeledNode(Map("property" -> 1), "Label")
@@ -1120,7 +1120,7 @@ RETURN a.name""")
   }
 
   test("should handle cyclic patterns") {
-    // Given
+    // given
     val a = createNode("a")
     val b = createNode("b")
     val c = createNode("c")
@@ -1138,7 +1138,7 @@ RETURN a.name""")
   }
 
   test("should handle cyclic patterns (broken up into two paths)") {
-    // Given
+    // given
     val a = createNode("a")
     val b = createNode("b")
     val c = createNode("c")
@@ -1165,7 +1165,7 @@ RETURN a.name""")
   }
 
   test("should only evaluate non-deterministic predicates after pattern is matched") {
-    // Given
+    // given
     graph.inTx {
       (0 to 100) foreach {
         x => createNode()
@@ -1181,7 +1181,7 @@ RETURN a.name""")
   }
 
   test("should not find any matches when a node in a pattern is null") {
-    // Given empty db
+    // given empty db
 
     // when
     val result = executeWithNewPlanner("optional match (a) with a match (a)-->(b) return b")
@@ -1191,7 +1191,7 @@ RETURN a.name""")
   }
 
   test("should not find node in the match if there is a filter on the optional match") {
-    // Given
+    // given
     val a = createNode()
     val b = createNode()
     relate(a, b)
@@ -1204,7 +1204,7 @@ RETURN a.name""")
   }
 
   test("optional match starting from a null node returns null") {
-    // Given empty db
+    // given empty db
 
     // when
     val result = executeWithNewPlanner("optional match (a) with a optional match (a)-->(b) return b")
@@ -1214,7 +1214,7 @@ RETURN a.name""")
   }
 
   test("match p = (a) return p") {
-    // Given a single node
+    // given a single node
     val node = createNode()
 
     // when
@@ -1225,7 +1225,7 @@ RETURN a.name""")
   }
 
   test("match p = (a)-[r*0..]->(b) return p") {
-    // Given a single node
+    // given a single node
     val node = createNode()
 
     // when
@@ -1236,7 +1236,7 @@ RETURN a.name""")
   }
 
   test("MATCH n RETURN n.prop AS m, count(n) AS count") {
-    // Given a single node
+    // given a single node
     val node = createNode("prop" -> "42")
 
     // when
@@ -1246,9 +1246,8 @@ RETURN a.name""")
     result.toList should equal (List(Map("n" -> "42", "count" -> 1)))
   }
 
-  // TODO: WIP
-  ignore("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel") {
-    // given a single rel
+  test("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel") {
+    // given two disconnected rels
     val rel1 = relate(createNode(), createNode())
     val rel2 = relate(createNode(), createNode())
 
@@ -1263,13 +1262,13 @@ RETURN a.name""")
     actual should equal(expected)
   }
 
-  test("MATCH (u)-[r1]->(v) WITH r1 AS r2 ORDER BY rand() MATCH (a)-[r2]->(b) RETURN r2 AS rel") {
-    // given a single rel
+  test("MATCH (u)-[r1]->(v) WITH r1 AS r2, rand() AS c ORDER BY c MATCH (a)-[r2]->(b) RETURN r2 AS rel") {
+    // given two disconnected rels
     val rel1 = relate(createNode(), createNode())
     val rel2 = relate(createNode(), createNode())
 
     // when
-    val result = executeWithNewPlanner("MATCH (u)-[r1]->(v) WITH r1 AS r2 ORDER BY rand() MATCH (a)-[r2]->(b) RETURN r2 AS rel")
+    val result = executeWithNewPlanner("MATCH (u)-[r1]->(v) WITH r1 AS r2, rand() AS c ORDER BY c MATCH (a)-[r2]->(b) RETURN r2 AS rel")
 
     // should give us all rels
     val actual = relsById(result.columnAs[Relationship]("rel").toList)
@@ -1280,7 +1279,7 @@ RETURN a.name""")
   }
 
   test("MATCH (a)-[r]->(b) WITH a, r, b, rand() AS c ORDER BY c MATCH (a)-[r]->(b) RETURN r AS rel") {
-    // given a single rel
+    // given two disconnected rels
     val rel1 = relate(createNode(), createNode())
     val rel2 = relate(createNode(), createNode())
 

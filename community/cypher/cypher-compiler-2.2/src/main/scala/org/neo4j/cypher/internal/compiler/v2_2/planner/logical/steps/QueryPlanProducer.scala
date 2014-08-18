@@ -263,12 +263,11 @@ object QueryPlanProducer {
       PlannerQuery(graph =
         QueryGraph(
           argumentIds = coveredIds,
-          patternNodes = patternNodes,
-          patternRelationships = patternRels
+          patternNodes = patternNodes
         ))
     )
 
-    planArgumentRelEndpoints(singleRowPlan, patternRels.toSeq)
+    singleRowPlan
   }
 
   def planSingleRow() =
@@ -335,4 +334,13 @@ object QueryPlanProducer {
       FindShortestPaths(inner.plan, shortestPaths),
       inner.solved.updateGraph(_.addShortestPath(shortestPaths))
     )
+
+  def planEndpointProjection(inner: QueryPlan, start: IdName, end: IdName, predicates: Seq[Expression], patternRel: PatternRelationship) = {
+    val projectedPlan = ProjectEndpoints(inner.plan, patternRel.name, start, end, patternRel.dir != Direction.BOTH, patternRel.length)
+    val selectedPlan = if (predicates.isEmpty) projectedPlan else Selection(predicates, projectedPlan)
+    QueryPlan(
+      plan = selectedPlan,
+      solved = inner.solved.updateGraph(_.addPatternRel(patternRel))
+    )
+  }
 }

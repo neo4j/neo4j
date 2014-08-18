@@ -108,7 +108,7 @@ trait CollectionSupport {
 
       (current, builder.result())
     }
+
+    def asNonEmptyOption = if (inner.isEmpty) None else Some(inner)
   }
-
-
 }

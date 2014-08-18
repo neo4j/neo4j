@@ -52,7 +52,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = true, varLength = false).createResults(queryState).toList
+    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = true, simpleLength = true).createResults(queryState).toList
 
     // then
     result should equal(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
@@ -70,7 +70,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = false, varLength = false).createResults(queryState).toList
+    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = false, simpleLength = true).createResults(queryState).toList
 
     // then
     result should equal(List(
@@ -99,7 +99,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = true, varLength = true).createResults(queryState).toList
+    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = true, simpleLength = false).createResults(queryState).toList
 
     // then
     result should equal(List(
@@ -129,13 +129,43 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = false, varLength = true).createResults(queryState).toList
+    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = false, simpleLength = false).createResults(queryState).toList
 
     // then
     result should equal(List(
       Map("r" -> rels, "a" -> node1, "b" -> node4),
       Map("r" -> reversedRels, "a" -> node4, "b" -> node1)
     ))
+  }
+
+  test("projects no endpoints of an empty directed var length relationship") {
+    // given
+    val rels = Seq.empty
+
+    val left = newMockedPipe("r",
+      row("r" -> rels)
+    )
+
+    // when
+    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = true, simpleLength = false).createResults(queryState).toList
+
+    // then
+    result should be('isEmpty)
+  }
+
+  test("projects no endpoints of an empty undirected var length relationship") {
+    // given
+    val rels = Seq.empty
+
+    val left = newMockedPipe("r",
+      row("r" -> rels)
+    )
+
+    // when
+    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = false, simpleLength = false).createResults(queryState).toList
+
+    // then
+    result should be('isEmpty)
   }
 
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
