@@ -57,6 +57,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -69,7 +70,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.test.ByteArrayMatcher.byteArray;
 
-public abstract class PageCacheTest<T extends PageCache>
+public abstract class PageCacheTest<T extends RunnablePageCache>
 {
     protected static ExecutorService executor;
 
@@ -106,6 +107,7 @@ public abstract class PageCacheTest<T extends PageCache>
     protected abstract void tearDownPageCache( T pageCache ) throws IOException;
 
     private T pageCache;
+    private Future<?> pageCacheFuture;
 
     protected final T getPageCache(
             FileSystemAbstraction fs,
@@ -116,8 +118,10 @@ public abstract class PageCacheTest<T extends PageCache>
         if ( pageCache != null )
         {
             tearDownPageCache( pageCache );
+            pageCacheFuture.cancel( true );
         }
         pageCache = createPageCache( fs, maxPages, pageSize, monitor );
+        pageCacheFuture = executor.submit( pageCache );
         return pageCache;
     }
 
@@ -2942,5 +2946,52 @@ public abstract class PageCacheTest<T extends PageCache>
         }
 
         pageCache.unmap( file );
+    }
+
+    @Test
+    public void evictionThreadMustGracefullyShutDown() throws Exception
+    {
+        // TODO this test takes significantly longer to complete with Muninn, than it does with the StandardPageCache -- investigate why!
+        int iterations = 1000;
+        final AtomicReference<Throwable> caughtException = new AtomicReference<>();
+        Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler()
+        {
+            @Override
+            public void uncaughtException( Thread t, Throwable e )
+            {
+                e.printStackTrace();
+                caughtException.set( e );
+            }
+        };
+
+        generateFileWithRecords( file, recordCount, recordSize );
+        int filePagesInTotal = recordCount / recordsPerFilePage;
+
+        for ( int i = 0; i < iterations; i++ )
+        {
+            RunnablePageCache cache = createPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+            String evictionThreadName = cache.getClass().getSimpleName() + "-Eviction-Thread-" + i;
+            Thread evictionThread = new Thread( cache, evictionThreadName );
+            evictionThread.setUncaughtExceptionHandler( exceptionHandler );
+            evictionThread.start();
+
+            // Touch all the pages
+            PagedFile pagedFile = cache.map( file, filePageSize );
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            {
+                for ( int j = 0; j < filePagesInTotal; j++ )
+                {
+                    assertTrue( cursor.next() );
+                }
+            }
+
+            // We're now likely racing with the eviction thread
+            cache.unmap( file );
+            cache.close();
+            evictionThread.interrupt();
+            evictionThread.join();
+
+            assertThat( caughtException.get(), is( nullValue() ) );
+        }
     }
 }
