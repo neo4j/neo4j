@@ -138,10 +138,10 @@ public interface GraphDatabaseService
     Iterable<RelationshipType> getRelationshipTypes();
 
     /**
-     * Use this method to check if the database is in a usable state. If the database is currently not in a usable
-     * state,
-     * you can provide a timeout to wait for it to become so. If the database has been shutdown this immediately
-     * returns false.
+     * Use this method to check if the database is currently in a usable state.
+     *
+     * @param timeout timeout (in milliseconds) to wait for the database to become available. If the database has been
+     *                shutdown this immediately returns false.
      */
     boolean isAvailable( long timeout );
 
