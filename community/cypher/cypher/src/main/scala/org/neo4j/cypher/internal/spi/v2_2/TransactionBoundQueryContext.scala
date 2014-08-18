@@ -280,6 +280,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     case _ => true
   }
 
+  def relationshipStartNode(rel: Relationship) = rel.getStartNode
+
+  def relationshipEndNode(rel: Relationship) = rel.getEndNode
+
   private val tokenNameLookup = new StatementTokenNameLookup(statement.readOperations())
 
   override def commitAndRestartTx() {

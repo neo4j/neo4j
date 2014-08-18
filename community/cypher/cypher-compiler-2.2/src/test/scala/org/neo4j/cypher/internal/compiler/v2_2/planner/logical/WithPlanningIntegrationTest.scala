@@ -127,4 +127,83 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result should equal(expected)
   }
+
+  test("should build plans that project endpoints of re-matched directed relationship arguments") {
+    val plan = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_, ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("u"), IdName("v"), true, SimplePatternLength)), _) =>
+        sr.availableSymbols should equal(Set(IdName("r")))
+    }
+  }
+
+  test("should build plans that project endpoints of re-matched reversed directed relationship arguments") {
+    val plan = planFor("MATCH (a)-[r]->(b) WITH r AS r, a AS a LIMIT 1 MATCH (b2)<-[r]-(a) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_,
+        Selection(
+          Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
+          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b2"), true, SimplePatternLength)
+        )
+      ), _) =>
+        sr.availableSymbols should equal(Set(IdName("r"), IdName("a")))
+    }
+  }
+
+  test("should build plans that verify endpoints of re-matched directed relationship arguments") {
+    val plan = planFor("MATCH (a)-[r]->(b) WITH * LIMIT 1 MATCH (a)-[r]->(b) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_,
+        Selection(
+          Seq(Equals(Identifier("a"), Identifier("a$$$_")), Equals(Identifier("b"), Identifier("b$$$_"))),
+          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b$$$_"), true, SimplePatternLength)
+        )
+      ), _) =>
+        sr.availableSymbols should equal(Set(IdName("r"), IdName("a"), IdName("b")))
+    }
+  }
+
+  test("should build plans that project and verify endpoints of re-matched directed relationship arguments") {
+    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]->(b2) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_,
+        Selection(
+          Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
+          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b2"), true, SimplePatternLength)
+        )
+      ), _) =>
+        sr.availableSymbols should equal(Set(IdName("r"), IdName("a")))
+    }
+  }
+
+  test("should build plans that project and verify endpoints of re-matched undirected relationship arguments") {
+    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_,
+        Selection(
+          Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
+          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b2"), false, SimplePatternLength)
+        )
+      ), _) =>
+        sr.availableSymbols should equal(Set(IdName("r"), IdName("a")))
+    }
+  }
+
+  test("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
+    val plan = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r").plan.plan
+
+    plan match {
+      case Projection(Apply(_,
+        Selection(
+          Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
+          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b2"), true, VarPatternLength(1, None))
+        )
+      ), _) =>
+        sr.availableSymbols should equal(Set(IdName("r"), IdName("a")))
+    }
+  }
 }

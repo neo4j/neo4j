@@ -96,6 +96,10 @@ trait QueryContext extends TokenContext {
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
 
   def commitAndRestartTx()
+
+  def relationshipStartNode(rel: Relationship): Node
+
+  def relationshipEndNode(rel: Relationship): Node
 }
 
 trait LockingQueryContext extends QueryContext {

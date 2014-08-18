@@ -34,9 +34,9 @@ case class RelationshipEndPoints(relExpression: Expression, start: Boolean) exte
       val rel = castOrFail[Relationship](value)
 
       if (start)
-        rel.getStartNode
+        state.query.relationshipStartNode(rel)
       else
-        rel.getEndNode
+        state.query.relationshipEndNode(rel)
   }
 
   def arguments = Seq(relExpression)

@@ -100,6 +100,10 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def getRelTypeName(id: Int): String = singleDbHit(inner.getRelTypeName(id))
 
   override def hasLocalFileAccess: Boolean = inner.hasLocalFileAccess
+
+  def relationshipStartNode(rel: Relationship) = inner.relationshipStartNode(rel)
+
+  def relationshipEndNode(rel: Relationship) = inner.relationshipEndNode(rel)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

@@ -17,17 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{projectEndpoints, join, expand}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
-import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 
-object expandsOrJoins extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
-    val projectedEndpoints = projectEndpoints(planTable, queryGraph)
-    val expansions = expand(planTable, queryGraph)
-    val joins = join(planTable, queryGraph)
-    projectedEndpoints ++ expansions ++ joins
-  }
+case class UnwindCollection(left: LogicalPlan, identifier: IdName, expression: Expression) extends LogicalPlan {
+  val lhs = Some(left)
+  def rhs = None
+
+  def availableSymbols: Set[IdName] = left.availableSymbols + identifier
 }
+

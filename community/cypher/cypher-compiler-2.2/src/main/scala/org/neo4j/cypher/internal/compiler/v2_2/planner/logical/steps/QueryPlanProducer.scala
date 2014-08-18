@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.InputPosition.NONE
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan}
-import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.SortDescription
 import org.neo4j.cypher.internal.compiler.v2_2.commands.QueryExpression
-import org.neo4j.cypher.internal.compiler.v2_2.ast
-import org.neo4j.cypher.internal.compiler.v2_2.LabelId
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.SortDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, ast}
+import org.neo4j.graphdb.Direction
 
 object QueryPlanProducer {
   def solvePredicate(plan: QueryPlan, solved: Expression) =
@@ -245,7 +244,7 @@ object QueryPlanProducer {
 
   def planQueryArgumentRow(queryGraph: QueryGraph): QueryPlan = {
     val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
-    val patternRels = queryGraph.patternRelationships.filter( rel => queryGraph.argumentIds.contains(rel.name))
+    val patternRels = queryGraph.patternRelationships.filter(rel => queryGraph.argumentIds.contains(rel.name))
     val otherIds = queryGraph.argumentIds -- patternNodes -- patternRels.map(_.name)
     planArgumentRow(patternNodes, patternRels, otherIds)
   }
@@ -254,20 +253,21 @@ object QueryPlanProducer {
     val relIds = patternRels.map(_.name)
     val coveredIds = patternNodes ++ relIds ++ other
     val typeInfoSeq =
-      patternNodes.toSeq.map( (x: IdName) => x.name -> CTNode) ++
-      relIds.toSeq.map( (x: IdName) => x.name -> CTRelationship) ++
-      other.toSeq.map( (x: IdName) => x.name -> CTAny)
+      patternNodes.toSeq.map((x: IdName) => x.name -> CTNode) ++
+        relIds.toSeq.map((x: IdName) => x.name -> CTRelationship) ++
+        other.toSeq.map((x: IdName) => x.name -> CTAny)
     val typeInfo = typeInfoSeq.toMap
 
-    QueryPlan(
+    val singleRowPlan = QueryPlan(
       SingleRow(coveredIds)(typeInfo),
       PlannerQuery(graph =
         QueryGraph(
           argumentIds = coveredIds,
-          patternNodes = patternNodes,
-          patternRelationships = patternRels
-      ))
+          patternNodes = patternNodes
+        ))
     )
+
+    singleRowPlan
   }
 
   def planSingleRow() =
@@ -293,7 +293,7 @@ object QueryPlanProducer {
 
   def planUnwind(inner: QueryPlan, name: IdName, expression: Expression) =
     QueryPlan(
-      UnwindPlan(inner.plan, name, expression),
+      UnwindCollection(inner.plan, name, expression),
       inner.solved.updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
     )
 
@@ -334,4 +334,13 @@ object QueryPlanProducer {
       FindShortestPaths(inner.plan, shortestPaths),
       inner.solved.updateGraph(_.addShortestPath(shortestPaths))
     )
+
+  def planEndpointProjection(inner: QueryPlan, start: IdName, end: IdName, predicates: Seq[Expression], patternRel: PatternRelationship) = {
+    val projectedPlan = ProjectEndpoints(inner.plan, patternRel.name, start, end, patternRel.dir != Direction.BOTH, patternRel.length)
+    val selectedPlan = if (predicates.isEmpty) projectedPlan else Selection(predicates, projectedPlan)
+    QueryPlan(
+      plan = selectedPlan,
+      solved = inner.solved.updateGraph(_.addPatternRel(patternRel))
+    )
+  }
 }

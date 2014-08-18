@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
+import org.neo4j.cypher.internal.compiler.v2_2.InputPosition.NONE
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, ast, Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.InternalException
+import org.neo4j.graphdb.Direction
 
 object SimplePlannerQueryBuilder {
 
@@ -110,7 +111,6 @@ object SimplePlannerQueryBuilder {
       case None => SimplePatternLength
     }
   }
-
 }
 
 class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
@@ -226,11 +226,11 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         produceQueryGraphFromClauses(nextStep, tl)
 
       case Match(optional@false, pattern: Pattern, hints, optWhere) :: tl =>
+        val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
+
         val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
         val nestedPatternPredicates = extractPatternInExpressionFromWhere(optWhere)
         val newPatternInExpressionTable = input.patternExprTable ++ subQueries ++ nestedPatternPredicates
-
-        val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
 
         val plannerQuery = input.q.updateGraph {
           qg => qg.
@@ -341,8 +341,8 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
       case Seq() =>
         input
 
-      case _ =>
-        throw new CantHandleQueryException
+      case x =>
+        throw new CantHandleQueryException(x.toString())
     }
   }
 
