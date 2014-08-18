@@ -95,7 +95,6 @@ public class StoreUpgradeTest
         builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
         GraphDatabaseService db = builder.newGraphDatabase();
 
-        System.out.println(dir);
         try ( Transaction ignore = db.beginTx() )
         {
             long count = countAllNodes( db );
