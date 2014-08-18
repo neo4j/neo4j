@@ -27,8 +27,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.cache.IdMapper;
@@ -48,9 +48,6 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
 
 import static java.lang.System.currentTimeMillis;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.logging.DefaultLogging.createDefaultLogging;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
 /**
@@ -66,19 +63,19 @@ public class ParallelBatchImporter implements BatchImporter
     private final IoMonitor writeMonitor;
     private final ExecutionMonitor executionMonitor;
     private final Logging logging;
-    private final ConsoleLogger logger;
+    private final StringLogger logger;
     private final LifeSupport life = new LifeSupport();
     private final Monitors monitors;
     private final WriterFactory writerFactory;
 
-    ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
-                           Configuration config, ExecutionMonitor executionMonitor, WriterFactory writerFactory )
+    ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
+                           Logging logging, ExecutionMonitor executionMonitor, WriterFactory writerFactory )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.config = config;
-        this.logging = life.add( createDefaultLogging( stringMap( store_dir.name(), storeDir ) ) );
-        this.logger = logging.getConsoleLog( getClass() );
+        this.logging = logging;
+        this.logger = logging.getMessagesLog( getClass() );
         this.executionMonitor = executionMonitor;
         this.monitors = new Monitors();
         this.writeMonitor = new IoMonitor();
@@ -87,10 +84,11 @@ public class ParallelBatchImporter implements BatchImporter
         life.start();
     }
 
-    public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
-                                  Configuration config, ExecutionMonitor executionMonitor )
+    public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
+                                  Logging logging, ExecutionMonitor executionMonitor )
     {
-        this( storeDir, fileSystem, config, executionMonitor, new IoQueue( config.numberOfIoThreads(), SYNCHRONOUS ) );
+        this( storeDir, fileSystem, config, logging, executionMonitor, new IoQueue( config.numberOfIoThreads(),
+                SYNCHRONOUS ) );
     }
 
     @Override
@@ -141,7 +139,7 @@ public class ParallelBatchImporter implements BatchImporter
         }
 
         // TODO add import starts to this log message
-        logger.log( "Import completed" );
+        logger.info( "Import completed" );
     }
 
     private synchronized void executeStages( Stage... stages ) throws Exception
@@ -158,9 +156,9 @@ public class ParallelBatchImporter implements BatchImporter
     @Override
     public void shutdown()
     {
-        logger.log( "Shutting down" );
+        logger.debug( "Importer shutting down" );
         life.shutdown();
-        logger.log( "Successfully shut down [TODO store stats?]" );
+        logger.info( "Importer shut down." );
     }
 
     public class NodeStage extends Stage

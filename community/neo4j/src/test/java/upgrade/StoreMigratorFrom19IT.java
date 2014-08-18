@@ -61,7 +61,7 @@ public class StoreMigratorFrom19IT
     {
         // GIVEN
         StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR );
-        upgrader.addParticipant( new StoreMigrator( monitor, fs ) );
+        upgrader.addParticipant( new StoreMigrator( new Monitors(), monitor, fs ) );
         File legacyStoreDir = find19FormatStoreDirectory( storeDir );
 
         // WHEN

@@ -21,10 +21,6 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -81,8 +77,8 @@ import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 public class SwitchToSlave
 {
     // TODO solve this with lifecycle instance grouping or something
-    @SuppressWarnings( "rawtypes" )
-    private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {
+    @SuppressWarnings("unchecked")
+    private static final Class<? extends Lifecycle>[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[]{
             StoreLockerLifecycleAdapter.class,
             NeoStoreXaDataSource.class,
             RequestContextFactory.class,
@@ -344,20 +340,18 @@ public class SwitchToSlave
 
     private void startServicesAgain() throws Throwable
     {
-        List<Class> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
-        for ( Class<?> serviceClass : services )
+        for ( Class<? extends Lifecycle> serviceClass : SERVICES_TO_RESTART_FOR_STORE_COPY )
         {
-            ((Lifecycle) resolver.resolveDependency( serviceClass )).start();
+            resolver.resolveDependency( serviceClass ).start();
         }
     }
 
     private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
     {
-        List<Class> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
-        Collections.reverse( services );
-        for ( Class serviceClass : services )
+        for ( int i = SERVICES_TO_RESTART_FOR_STORE_COPY.length - 1; i >= 0; i-- )
         {
-            ((Lifecycle) resolver.resolveDependency( serviceClass )).stop();
+            Class<? extends Lifecycle> serviceClass = SERVICES_TO_RESTART_FOR_STORE_COPY[i];
+            resolver.resolveDependency( serviceClass ).stop();
         }
 
         handleBranchedStore( branchPolicy );

@@ -43,11 +43,11 @@ public class UpgradableDatabase
     public boolean storeFilesUpgradeable( File storeDirectory )
     {
         try
-		{
+        {
             checkUpgradeable( storeDirectory );
             return true;
         }
-		catch ( StoreUpgrader.UnableToUpgradeException e )
+        catch ( StoreUpgrader.UnableToUpgradeException e )
         {
             return false;
         }

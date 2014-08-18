@@ -207,7 +207,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
         public void nodeLabel( int id, String name )
         {
-            writer.label( id, name, id );
+            writer.label( id, name, id + 1 );
         }
 
         public void relationshipType( int id, String relationshipType )

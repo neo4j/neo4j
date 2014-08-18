@@ -19,10 +19,6 @@
  */
 package org.neo4j.graphdb.factory;
 
-import static java.util.Arrays.asList;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
-import static org.neo4j.helpers.Settings.TRUE;
-
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +28,12 @@ import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.logging.Logging;
+
+import static java.util.Arrays.asList;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
+import static org.neo4j.helpers.Settings.TRUE;
 
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
@@ -130,8 +132,7 @@ public class GraphDatabaseFactory
         getCurrentState().setKernelExtensions( newKernelExtensions );
         return this;
     }
-    
-    
+
 
     /**
      * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.
@@ -149,6 +150,12 @@ public class GraphDatabaseFactory
     public GraphDatabaseFactory setCacheProviders( Iterable<CacheProvider> newCacheProviders )
     {
         getCurrentState().setCacheProviders( newCacheProviders );
+        return this;
+    }
+
+    public GraphDatabaseFactory setLogging( Logging logging )
+    {
+        getCurrentState().setLogging( logging );
         return this;
     }
 }

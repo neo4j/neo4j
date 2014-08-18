@@ -44,11 +44,10 @@ public class LogbackService
         extends LifecycleAdapter
         implements Logging
 {
-    private Config config;
+    private final Config config;
     private final LoggerContext loggerContext;
-    private final String logbackConfigurationFilename;
 
-    private LifeSupport loggingLife = new LifeSupport();
+    private final LifeSupport loggingLife = new LifeSupport();
     protected RestartOnChange restartOnChange;
 
     public LogbackService( Config config, LoggerContext loggerContext )
@@ -61,7 +60,6 @@ public class LogbackService
     {
         this.config = config;
         this.loggerContext = loggerContext;
-        this.logbackConfigurationFilename = logbackConfigurationFilename;
 
         // We do the initialization in the constructor, because some services will use logging during creation phase, before init.
         final File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
