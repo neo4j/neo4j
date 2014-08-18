@@ -68,6 +68,19 @@ angular.module('neo4jApp')
             true
       ]
 
+    # Show command history
+    FrameProvider.interpreters.push
+      type: 'history'
+      matches: "#{cmdchar}history"
+      templateUrl: 'views/frame-history.html'
+      exec: [
+        'Editor',
+        (Editor) ->
+          (input, q) ->
+            q.resolve(angular.copy(Editor.history))
+            q.promise
+      ]
+
     # FrameProvider.interpreters.push
     #   type: 'keys'
     #   templateUrl: 'views/frame-keys.html'
