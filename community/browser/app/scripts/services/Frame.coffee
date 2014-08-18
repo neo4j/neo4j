@@ -69,7 +69,7 @@ angular.module('neo4jApp.services')
             intrPromise = intrFn(query, $q.defer())
             @terminate = => 
               @isTerminating = yes
-              intrPromise.transaction?.rollback()?.then( =>
+              intrPromise?.transaction?.rollback()?.then( =>
                 @isTerminating = no
               )
 
