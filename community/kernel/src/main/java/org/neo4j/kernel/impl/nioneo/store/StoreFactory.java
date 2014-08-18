@@ -123,14 +123,14 @@ public class StoreFactory
                 fileSystemAbstraction, stringLogger);
     }
 
-    private RelationshipTypeStore newRelationshipTypeStore(File baseFileName)
+    RelationshipTypeStore newRelationshipTypeStore(File baseFileName)
     {
         DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + ".names"), IdType.RELATIONSHIP_TYPE_BLOCK );
         return new RelationshipTypeStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger, nameStore );
     }
 
-    private PropertyStore newPropertyStore(File baseFileName)
+    PropertyStore newPropertyStore(File baseFileName)
     {
         DynamicStringStore stringPropertyStore = newDynamicStringStore(new File( baseFileName.getPath() + ".strings"), IdType.STRING_BLOCK);
         PropertyIndexStore propertyIndexStore = newPropertyIndexStore(new File( baseFileName.getPath() + ".index"));
@@ -139,14 +139,14 @@ public class StoreFactory
                 stringPropertyStore, propertyIndexStore, arrayPropertyStore);
     }
 
-    private PropertyIndexStore newPropertyIndexStore(File baseFileName)
+    PropertyIndexStore newPropertyIndexStore(File baseFileName)
     {
         DynamicStringStore nameStore = newDynamicStringStore(new File( baseFileName.getPath() + ".keys"), IdType.PROPERTY_INDEX_BLOCK);
         return new PropertyIndexStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger, nameStore );
     }
 
-    private RelationshipStore newRelationshipStore(File baseFileName)
+    public RelationshipStore newRelationshipStore(File baseFileName)
     {
         return new RelationshipStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
@@ -158,7 +158,7 @@ public class StoreFactory
                 fileSystemAbstraction, stringLogger);
     }
 
-    private NodeStore newNodeStore(File baseFileName)
+    NodeStore newNodeStore(File baseFileName)
     {
         return new NodeStore( baseFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger );
     }
