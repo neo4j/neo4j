@@ -25,16 +25,12 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.transaction.xa.Xid;
-
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles.LogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
@@ -44,15 +40,20 @@ import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+
+import static javax.transaction.xa.Xid.MAXBQUALSIZE;
+import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.writeLogHeader;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
@@ -111,25 +112,27 @@ public class LogTestUtils
     public static void assertLogContains( FileSystemAbstraction fileSystem, String logPath,
             LogEntry ... expectedEntries ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
-                + Xid.MAXBQUALSIZE * 10 );
-        try ( StoreChannel fileChannel = fileSystem.open( new File( logPath ), "r" ) )
+        ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + MAXGTRIDSIZE + MAXBQUALSIZE * 10 );
+        try ( StoreChannel file = fileSystem.open( new File( logPath ), "r" ) )
         {
             // Always a header
-            VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, true );
+            LogHeader logHeader = readLogHeader( buffer, file, true );
 
             // Read all log entries
             LogDeserializer deserializer = new LogDeserializer();
 
-            ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel), LogVersionBridge.NO_MORE_CHANNELS, 4096);
+            PhysicalLogVersionedStoreChannel channel =
+                    new PhysicalLogVersionedStoreChannel( file, logHeader.logVersion, logHeader.logFormatVersion );
+            ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
 
             // Assert entries are what we expected
-            try ( IOCursor<LogEntry> cursor = deserializer.logEntries( logChannel) )
+            try ( IOCursor<LogEntry> cursor = deserializer.logEntries( logChannel ) )
             {
                 int entryNo=0;
                 while (cursor.next())
                 {
-                    assertThat( "The log contained more entries than we expected!", entryNo < expectedEntries.length, is( true) );
+                    assertThat( "The log contained more entries than we expected!",
+                            entryNo < expectedEntries.length, is( true ) );
 
                     LogEntry expectedEntry = expectedEntries[entryNo];
                     assertThat( "Unexpected entry at entry number " + entryNo, cursor.get(), is( expectedEntry ) );
@@ -138,7 +141,8 @@ public class LogTestUtils
 
                 if(entryNo < expectedEntries.length)
                 {
-                    fail("Log ended prematurely. Expected to find '" + expectedEntries[entryNo].toString() + "' as log entry number "+entryNo+", instead there were no more log entries." );
+                    fail( "Log ended prematurely. Expected to find '" + expectedEntries[entryNo].toString() +
+                            "' as log entry number " + entryNo + ", instead there were no more log entries." );
                 }
             }
         }
@@ -183,15 +187,18 @@ public class LogTestUtils
         try ( StoreChannel in = fileSystem.open( file, "r" );
                 StoreChannel out = fileSystem.open( tempFile, "rw" ) )
         {
-            final WritableLogChannel outBuffer = new PhysicalWritableLogChannel(
-                    new PhysicalLogVersionedStoreChannel( out ) );
-            ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
-            LogEntryWriter entryWriter = new LogEntryWriterv1( outBuffer, new CommandWriter( outBuffer ) );
-            transferLogicalLogHeader( in, outBuffer, buffer );
+            ByteBuffer buffer = ByteBuffer.allocate( 1024 * 1024 );
+            LogHeader logHeader = transferLogicalLogHeader( in, out, buffer );
+            PhysicalLogVersionedStoreChannel outChannel =
+                    new PhysicalLogVersionedStoreChannel( out, logHeader.logVersion, logHeader.logFormatVersion );
+            final WritableLogChannel outBuffer = new PhysicalWritableLogChannel( outChannel );
 
-            ReadableLogChannel inBuffer = new ReadAheadLogChannel( new PhysicalLogVersionedStoreChannel( in ),
-                    LogVersionBridge.NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
+            PhysicalLogVersionedStoreChannel inChannel =
+                    new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion );
+            ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, NO_MORE_CHANNELS,
+                    DEFAULT_READ_AHEAD_SIZE );
             LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader();
+
             LogEntry entry;
             while ( (entry = entryReader.readLogEntry( inBuffer )) != null )
             {
@@ -204,14 +211,14 @@ public class LogTestUtils
         return tempFile;
     }
 
-    private static void transferLogicalLogHeader( StoreChannel in, WritableLogChannel outBuffer,
-            ByteBuffer buffer ) throws IOException
+    private static LogHeader transferLogicalLogHeader( StoreChannel in, StoreChannel out, ByteBuffer buffer )
+            throws IOException
     {
-        long[] header = VersionAwareLogEntryReader.readLogHeader( buffer, in, true );
-        VersionAwareLogEntryReader.writeLogHeader( buffer, header[0], header[1] );
-        byte[] headerBytes = new byte[buffer.limit()];
-        buffer.get( headerBytes );
-        outBuffer.put( headerBytes, headerBytes.length );
+        LogHeader header = readLogHeader( buffer, in, true );
+        writeLogHeader( buffer, header.logVersion, header.lastCommittedTxId );
+        buffer.flip();
+        out.write( buffer );
+        return header;
     }
 
     public static NonCleanLogCopy copyLogicalLog( FileSystemAbstraction fileSystem,

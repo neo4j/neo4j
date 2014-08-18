@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
-import java.io.IOException;
-
-public interface LogEntryReader<S>
+public interface LogEntryParserDispatcher
 {
-    LogEntry readLogEntry( S source ) throws IOException;
+    LogEntryParser dispatch( byte type );
 }

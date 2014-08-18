@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
@@ -55,6 +55,7 @@ import static java.lang.String.format;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.openForVersion;
 import static org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 
 class RebuildFromLogs
@@ -77,14 +78,11 @@ class RebuildFromLogs
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( sourceDir, FS );
         int startVersion = 0;
-        File logFile = logFiles.getLogFileForVersion( startVersion ); // assume we always start from version 0?
-        LogVersionBridge versionBridge = new ReaderLogVersionBridge( FS, logFiles );
-        ReadableLogChannel logChannel = new ReadAheadLogChannel(
-                new PhysicalLogVersionedStoreChannel( FS.open( logFile, "R" ), startVersion ),
-                versionBridge, DEFAULT_READ_AHEAD_SIZE );
-
-        try (IOCursor<CommittedTransactionRepresentation> cursor = new PhysicalTransactionCursor( logChannel,
-                new VersionAwareLogEntryReader() ) )
+        ReaderLogVersionBridge versionBridge = new ReaderLogVersionBridge( FS, logFiles );
+        PhysicalLogVersionedStoreChannel startingChannel = openForVersion( logFiles, FS, startVersion );
+        ReadableLogChannel channel = new ReadAheadLogChannel( startingChannel, versionBridge, DEFAULT_READ_AHEAD_SIZE );
+        try ( IOCursor<CommittedTransactionRepresentation> cursor =
+                      new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader() ) )
         {
             while (cursor.next())
             {
@@ -182,7 +180,7 @@ class RebuildFromLogs
     {
         File logFile = logFiles.getLogFileForVersion( highestVersion );
         ReadableLogChannel logChannel = new ReadAheadLogChannel(
-                new PhysicalLogVersionedStoreChannel( FS.open( logFile, "R" ), highestVersion ),
+                PhysicalLogFile.openForVersion( logFiles, FS, highestVersion ),
                 NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
 
         long lastTransactionId = -1;

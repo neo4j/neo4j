@@ -19,9 +19,30 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
-import java.io.IOException;
+import org.junit.Test;
 
-public interface LogEntryReader<S>
+import static org.junit.Assert.assertNotNull;
+
+public class DefaultLogEntryParserFactoryTest
 {
-    LogEntry readLogEntry( S source ) throws IOException;
+
+    private final DefaultLogEntryParserFactory factory = new DefaultLogEntryParserFactory();
+
+    @Test
+    public void shouldBeAbleToConstructAParserForLogVersion5()
+    {
+        assertNotNull( factory.newInstance( (byte) 5 ) );
+    }
+
+    @Test
+    public void shouldBeAbleToConstructAParserForLogVersion4()
+    {
+        assertNotNull( factory.newInstance( (byte) 4 ) );
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldBeAbleToConstructAParserForAnyOtherVersion()
+    {
+        assertNotNull( factory.newInstance( (byte) 1 ) );
+    }
 }

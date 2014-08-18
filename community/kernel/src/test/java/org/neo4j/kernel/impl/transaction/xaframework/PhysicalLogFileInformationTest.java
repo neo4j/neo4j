@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import org.junit.Test;
+
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import org.junit.Test;
-import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 
 public class PhysicalLogFileInformationTest
 {
@@ -46,7 +48,9 @@ public class PhysicalLogFileInformationTest
         long version = 10l;
         when( transactionMetadataCache.getLogHeader( version ) ).thenReturn( -1l );
         when( logFiles.versionExists( version ) ).thenReturn( true );
-        when( logFiles.extractHeader( version ) ).thenReturn( new long[]{-1l/*ignored*/, expected - 1l} );
+        when( logFiles.extractHeader( version ) ).thenReturn(
+                new LogHeader( (byte) -1/*ignored*/, -1l/*ignored*/, expected - 1l )
+        );
 
         long firstCommittedTxId = info.getFirstCommittedTxId( version );
         assertEquals( expected, firstCommittedTxId );
@@ -78,7 +82,9 @@ public class PhysicalLogFileInformationTest
         when( logFiles.getHighestLogVersion() ).thenReturn( version );
         when( transactionMetadataCache.getLogHeader( version ) ).thenReturn( -1l );
         when( logFiles.versionExists( version ) ).thenReturn( true );
-        when( logFiles.extractHeader( version ) ).thenReturn( new long[]{-1l/*ignored*/, expected - 1l} );
+        when( logFiles.extractHeader( version ) ).thenReturn(
+                new LogHeader( (byte) -1/*ignored*/, -1l/*ignored*/, expected - 1l )
+        );
         when( logFiles.hasAnyTransaction( version ) ).thenReturn( true );
 
         long firstCommittedTxId = info.getFirstExistingTxId();

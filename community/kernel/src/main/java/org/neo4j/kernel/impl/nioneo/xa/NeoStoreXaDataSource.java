@@ -134,6 +134,7 @@ import org.neo4j.kernel.logging.Logging;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.nioneo.xa.CacheLoaders.nodeLoader;
 import static org.neo4j.kernel.impl.nioneo.xa.CacheLoaders.relationshipLoader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
 
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
@@ -445,8 +446,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                 @Override
                                 public long getTimestampForVersion( long version ) throws IOException
                                 {
-                                    try ( ReadableLogChannel channel = logFile.getReader(
-                                            new LogPosition( version, VersionAwareLogEntryReader.LOG_HEADER_SIZE ) ) )
+                                    LogPosition position = new LogPosition( version, LOG_HEADER_SIZE );
+                                    try ( ReadableLogChannel channel = logFile.getReader( position ) )
                                     {
                                         LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader();
                                         LogEntry entry;

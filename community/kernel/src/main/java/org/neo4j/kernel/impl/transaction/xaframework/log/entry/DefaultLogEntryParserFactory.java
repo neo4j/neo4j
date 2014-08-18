@@ -19,9 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
-import java.io.IOException;
-
-public interface LogEntryReader<S>
+public class DefaultLogEntryParserFactory implements LogEntryParserFactory
 {
-    LogEntry readLogEntry( S source ) throws IOException;
+    @Override
+    public LogEntryParserDispatcher newInstance( byte logVersion )
+    {
+        switch ( logVersion )
+        {
+            case LogVersions.LOG_VERSION_2_1:
+                return new LogEntryParserDispatcherV4();
+            case LogVersions.LOG_VERSION_2_2:
+                return new LogEntryParserDispatcherV5();
+            default:
+                throw new IllegalStateException( "Unsupported log version format " + logVersion );
+        }
+    }
+
 }
