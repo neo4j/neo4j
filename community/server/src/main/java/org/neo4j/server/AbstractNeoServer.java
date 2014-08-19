@@ -93,6 +93,11 @@ import static org.neo4j.server.configuration.Configurator.SCRIPT_SANDBOXING_ENAB
 import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 
+/**
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
+ */
+@Deprecated
 public abstract class AbstractNeoServer implements NeoServer
 {
     private static final long MINIMUM_TIMEOUT = 1000L;

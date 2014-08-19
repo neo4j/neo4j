@@ -24,6 +24,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ */
+@Deprecated
 public class JAXRSHelper
 {
     public static List<String> listFrom( String... strings )

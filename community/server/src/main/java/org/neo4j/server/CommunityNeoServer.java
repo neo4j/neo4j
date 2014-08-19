@@ -47,6 +47,11 @@ import org.neo4j.server.webadmin.rest.JmxService;
 import org.neo4j.server.webadmin.rest.MonitorService;
 import org.neo4j.server.webadmin.rest.console.ConsoleService;
 
+/**
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
+ */
+@Deprecated
 public class CommunityNeoServer extends AbstractNeoServer
 {
     public CommunityNeoServer( Logging logging )
