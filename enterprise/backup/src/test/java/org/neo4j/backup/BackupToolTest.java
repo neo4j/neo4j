@@ -36,7 +36,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -93,7 +95,7 @@ public class BackupToolTest
     {
         String[] args = new String[]{"-full", "-from", "localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
-        when(service.directoryContainsDb( anyString() )).thenReturn( true );
+        when( service.directoryContainsDb( anyString() ) ).thenReturn( true );
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
@@ -101,7 +103,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any(Config.class) );
+                eq( "my_backup" ), eq( true ), any( Config.class ) );
         verify( systemOut ).println( "Performing backup from 'localhost'" );
         verify( systemOut ).println( "Done" );
     }
@@ -202,9 +204,9 @@ public class BackupToolTest
         {
             // then
             assertEquals( "Please specify -from, examples:\n" +
-                    "  -from 192.168.1.34\n" +
-                    "  -from 192.168.1.34:1234\n" +
-                    "  -from 192.168.1.15:2181,192.168.1.16:2181",
+                            "  -from 192.168.1.34\n" +
+                            "  -from 192.168.1.34:1234\n" +
+                            "  -from 192.168.1.15:2181,192.168.1.16:2181",
                     e.getMessage() );
         }
 
@@ -229,9 +231,7 @@ public class BackupToolTest
         catch ( BackupTool.ToolFailureException e )
         {
             // then
-            assertEquals( "foo was specified as a backup module but it was not found. " +
-                    "Please make sure that the implementing service is on the classpath.",
-                    e.getMessage() );
+            assertEquals( BackupTool.WRONG_FROM_ADDRESS_SYNTAX, e.getMessage() );
         }
 
         verifyZeroInteractions( service );
@@ -262,4 +262,27 @@ public class BackupToolTest
         verifyZeroInteractions( service );
     }
 
+    @Test
+    public void helpMessageForWrongUriShouldNotContainSchema() throws BackupTool.ToolFailureException
+    {
+        // given
+        String[] args = new String[]{"-from", ":VeryWrongURI:", "-to", "/var/backup/graph"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        try
+        {
+            // when
+            new BackupTool( service, systemOut ).run( args );
+            fail( "should exit abnormally" );
+        }
+        catch ( BackupTool.ToolFailureException e )
+        {
+            // then
+            assertThat( e.getMessage(), equalTo( BackupTool.WRONG_FROM_ADDRESS_SYNTAX ) );
+            assertThat( e.getMessage(), not( containsString( "<schema>" ) ) );
+        }
+
+        verifyZeroInteractions( service, systemOut );
+    }
 }

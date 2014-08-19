@@ -173,6 +173,18 @@ public class ClusterMembers
                 // Unknown member
             }
         }
+
+        @Override
+        public void memberIsFailed( InstanceId instanceId )
+        {
+            // Make it unavailable for all its current roles
+            ClusterMember member = getMember( instanceId );
+            for ( String role : member.getRoles() )
+            {
+                member = member.unavailableAs( role ); // ClusterMember is copy-on-write
+            }
+            members.put( instanceId, member ); // replace with the new copy
+        }
     }
 
     private class HAMHeartbeatListener extends HeartbeatListener.Adapter

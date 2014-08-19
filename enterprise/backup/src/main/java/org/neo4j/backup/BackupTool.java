@@ -63,9 +63,15 @@ public class BackupTool
     static final String MISMATCHED_STORE_ID = "You tried to perform a backup from database %s, " +
             "but the target directory contained a backup from database %s. ";
 
+    static final String WRONG_FROM_ADDRESS_SYNTAX = "Please properly specify a location to backup in the" +
+            " form <host>[:<port>]{,<host>[:<port>]}...";
+
+    static final String UNKNOWN_SCHEMA_MESSAGE_PATTERN = "%s was specified as a backup module but it was not found. " +
+            "Please make sure that the implementing service is on the classpath.";
+
     public static void main( String[] args )
     {
-        BackupTool tool = new BackupTool( new BackupService(new DefaultFileSystemAbstraction()), System.out );
+        BackupTool tool = new BackupTool( new BackupService( new DefaultFileSystemAbstraction() ), System.out );
         try
         {
             tool.run( args );
@@ -98,73 +104,20 @@ public class BackupTool
         boolean verify = arguments.getBoolean( VERIFY, true, true );
         Config tuningConfiguration = readTuningConfiguration( TO, arguments );
 
-        if (!from.contains( ":" ))
-            from = "single://"+from;
-
-        URI backupURI = null;
-        try
+        URI backupURI = resolveBackupUri( from.trim(), arguments, tuningConfiguration );
+        if ( backupURI == null || backupURI.getHost() == null )
         {
-            backupURI = new URI( from );
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new ToolFailureException( "Please properly specify a location to backup as a valid URI in the form " +
-                    "<scheme>://<host>[:port], where scheme is the target database's running mode, eg ha" );
-        }
-        String module = backupURI.getScheme();
-
-        /*
-         * So, the scheme is considered to be the module name and an attempt at
-         * loading the service is made.
-         */
-        BackupExtensionService service = null;
-        if ( module != null && !DEFAULT_SCHEME.equals( module ) )
-        {
-            try
-            {
-                service = Service.load( BackupExtensionService.class, module );
-            }
-            catch ( NoSuchElementException e )
-            {
-                throw new ToolFailureException( String.format(
-                        "%s was specified as a backup module but it was not found. " +
-                                "Please make sure that the implementing service is on the classpath.",
-                        module ) );
-            }
-        }
-        if ( service != null )
-        { // If in here, it means a module was loaded. Use it and substitute the
-            // passed URI
-            Logging logging;
-            try
-            {
-                getClass().getClassLoader().loadClass( "ch.qos.logback.classic.LoggerContext" );
-                LifeSupport life = new LifeSupport();
-                LogbackService logbackService = life.add( new LogbackService( tuningConfiguration, (LoggerContext) getSingleton().getLoggerFactory(), "neo4j-backup-logback.xml" ) );
-                life.start();
-                logging = logbackService;
-            }
-            catch ( Throwable e )
-            {
-                logging = new SystemOutLogging();
-            }
-
-            try
-            {
-                backupURI = service.resolve( backupURI, arguments, logging );
-            }
-            catch ( Throwable e )
-            {
-                throw new ToolFailureException( e.getMessage() );
-            }
+            throw new ToolFailureException( WRONG_FROM_ADDRESS_SYNTAX );
         }
 
         try
         {
             String str = backupURI.toASCIIString();
-            if (str.contains( "://" ))
+            if ( str.contains( "://" ) )
+            {
                 str = str.split( "://" )[1];
-            systemOut.println("Performing backup from '" + str + "'");
+            }
+            systemOut.println( "Performing backup from '" + str + "'" );
             doBackup( backupURI, to, verify, tuningConfiguration );
         }
         catch ( TransactionFailureException e )
@@ -188,13 +141,13 @@ public class BackupTool
             }
             else
             {
-                throw new ToolFailureException( "TransactionFailureException from existing backup at '" + from + "'" +
-                        ".", e );
+                throw new ToolFailureException( "TransactionFailureException " +
+                        "from existing backup at '" + from + "'.", e );
             }
         }
     }
 
-    private void checkArguments( Args arguments ) throws ToolFailureException
+    private static void checkArguments( Args arguments ) throws ToolFailureException
     {
         if ( arguments.get( FROM, null ) == null )
         {
@@ -211,7 +164,7 @@ public class BackupTool
         }
     }
 
-    public Config readTuningConfiguration( String storeDir, Args arguments ) throws ToolFailureException
+    private static Config readTuningConfiguration( String storeDir, Args arguments ) throws ToolFailureException
     {
         Map<String, String> specifiedProperties = stringMap();
 
@@ -233,17 +186,103 @@ public class BackupTool
         return new Config( specifiedProperties, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
-    private void doBackup( URI from, String to, boolean checkConsistency, Config tuningConfiguration ) throws ToolFailureException
+    private static URI resolveBackupUri( String from, Args arguments, Config config ) throws ToolFailureException
+    {
+        if ( from.contains( "," ) )
+        {
+            if ( !from.startsWith( "ha://" ) )
+            {
+                checkNoSchemaIsPresent( from );
+                from = "ha://" + from;
+            }
+            return resolveUriWithProvider( "ha", from, arguments, config );
+        }
+        if ( !from.startsWith( "single://" ) )
+        {
+            from = from.replace( "ha://", "" );
+            checkNoSchemaIsPresent( from );
+            from = "single://" + from;
+        }
+        return newURI( from );
+    }
+
+    private static void checkNoSchemaIsPresent( String address ) throws ToolFailureException
+    {
+        if ( address.contains( "://" ) )
+        {
+            throw new ToolFailureException( WRONG_FROM_ADDRESS_SYNTAX );
+        }
+    }
+
+    private static URI newURI( String uriString ) throws ToolFailureException
     {
         try
         {
-            backupService.doIncrementalBackupOrFallbackToFull( from.getHost(), extractPort( from ), to, checkConsistency,
-                tuningConfiguration );
+            return new URI( uriString );
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new ToolFailureException( WRONG_FROM_ADDRESS_SYNTAX );
+        }
+    }
+
+    private static URI resolveUriWithProvider( String providerName, String from, Args args, Config config )
+            throws ToolFailureException
+    {
+        URI uri = newURI( from );
+
+        BackupExtensionService service;
+        try
+        {
+            service = Service.load( BackupExtensionService.class, providerName );
+        }
+        catch ( NoSuchElementException e1 )
+        {
+            throw new ToolFailureException( String.format( UNKNOWN_SCHEMA_MESSAGE_PATTERN, providerName ) );
+        }
+
+        try
+        {
+            return service.resolve( uri, args, newLogging( config ) );
+        }
+        catch ( Throwable t )
+        {
+            throw new ToolFailureException( t.getMessage() );
+        }
+    }
+
+    private static Logging newLogging( Config config )
+    {
+        Logging logging;
+        try
+        {
+            BackupTool.class.getClassLoader().loadClass( "ch.qos.logback.classic.LoggerContext" );
+            LifeSupport life = new LifeSupport();
+            LogbackService logbackService = life.add(
+                    new LogbackService(
+                            config,
+                            (LoggerContext) getSingleton().getLoggerFactory(), "neo4j-backup-logback.xml" ) );
+            life.start();
+            logging = logbackService;
+        }
+        catch ( Throwable e )
+        {
+            logging = new SystemOutLogging();
+        }
+        return logging;
+    }
+
+    private void doBackup( URI from, String to, boolean checkConsistency, Config config ) throws ToolFailureException
+    {
+        try
+        {
+            backupService.doIncrementalBackupOrFallbackToFull( from.getHost(), extractPort( from ), to,
+                    checkConsistency, config );
             systemOut.println( "Done" );
         }
         catch ( MismatchingStoreIdException e )
         {
-            systemOut.println("Backup failed.");
+            systemOut.println( "Backup failed." );
             throw new ToolFailureException( String.format( MISMATCHED_STORE_ID, e.getExpected(), e.getEncountered() ) );
         }
         catch ( ComException e )
@@ -252,7 +291,7 @@ public class BackupTool
         }
     }
 
-    private int extractPort( URI from )
+    private static int extractPort( URI from )
     {
         int port = from.getPort();
         if ( port == -1 )
