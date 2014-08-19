@@ -10,7 +10,7 @@ neo4j-backup - Neo4j Backup Tool
 SYNOPSIS
 --------
 
-*neo4j-backup* -from SourceURI -to Directory
+*neo4j-backup* -from host:port -to target_directory
 
 [[neo4j-backup-manpage-description]]
 DESCRIPTION
@@ -20,7 +20,7 @@ A tool to perform live backups over the network from a running Neo4j graph datab
 Backups can be either full or incremental.
 The first backup must be a full backup, after that incremental backups can be performed.
 
-The source(s) are given as URIs in a special format, the target is a filesystem location.
+The source(s) are given as host:port pairs, the target is a filesystem location.
 
 BACKUP TYPE
 -----------
@@ -34,13 +34,13 @@ incremental backup to an existing backup store.
 
 The backup tool will automatically detect whether it needs to do a full or an incremental backup.
 
-[[neo4j-backup-manpage-souceuri]]
-SOURCE URI
+[[neo4j-backup-manpage-source-address]]
+SOURCE ADDRESS
 ----------
 
 Backup sources are given in the following format:
 
-*<host>[:<port>][,<host>[:<port>]]...*
+*<host>[:<port>]{,<host>[:<port>]}...*
 
 Note that multiple hosts can be defined.
 

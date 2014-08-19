@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
+
 import static org.neo4j.kernel.impl.transaction.LockType.READ;
 import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
 
@@ -151,9 +152,31 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         try
         {
             tle.movedOn = false;
+
+            boolean shouldAddWait = true;
+            Thread currentThread = currentThread();
+
             while ( totalWriteCount > tle.writeCount )
             {
-                deadlockGuardedWait( tx, tle, READ );
+                ragManager.checkWaitOn( this, tx );
+
+                if (shouldAddWait)
+                {
+                    waitingThreadList.addFirst( new WaitElement( tle, READ, currentThread) );
+                }
+
+                try
+                {
+                    wait();
+                    shouldAddWait = false;
+                }
+                catch ( InterruptedException e )
+                {
+                    interrupted();
+
+                    shouldAddWait = true;
+                }
+                ragManager.stopWaitOn( this, tx );
             }
 
             registerReadLockAcquired( tx, tle );
@@ -314,9 +337,31 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         try
         {
             tle.movedOn = false;
+
+            boolean shouldAddWait = true;
+            Thread currentThread = currentThread();
+
             while ( totalWriteCount > tle.writeCount || totalReadCount > tle.readCount )
             {
-                deadlockGuardedWait( tx, tle, WRITE );
+                ragManager.checkWaitOn( this, tx );
+
+                if (shouldAddWait)
+                {
+                    waitingThreadList.addFirst( new WaitElement( tle, WRITE, currentThread) );
+                }
+
+                try
+                {
+                    wait();
+                    shouldAddWait = false;
+                }
+                catch ( InterruptedException e )
+                {
+                    interrupted();
+
+                    shouldAddWait = true;
+                }
+                ragManager.stopWaitOn( this, tx );
             }
 
             registerWriteLockAcquired( tx, tle );
@@ -540,21 +585,6 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         {
             throw new IllegalArgumentException();
         }
-    }
-
-    private void deadlockGuardedWait( Transaction tx, TxLockElement tle, LockType lockType )
-    {   // given: we must be in a synchronized block here
-        ragManager.checkWaitOn( this, tx );
-        waitingThreadList.addFirst( new WaitElement( tle, lockType, currentThread() ) );
-        try
-        {
-            wait();
-        }
-        catch ( InterruptedException e )
-        {
-            interrupted();
-        }
-        ragManager.stopWaitOn( this, tx );
     }
 
     private TxLockElement getOrCreateLockElement( Transaction tx )

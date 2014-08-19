@@ -19,15 +19,15 @@
  */
 package org.neo4j.ext.udc.impl;
 
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimerTask;
 
+import org.neo4j.helpers.HostnamePort;
+
 public class UdcTimerTask extends TimerTask
 {
-
     // ABKTODO: make this thread safe
     public static final Map<String, Integer> successCounts = new HashMap<String, Integer>();
     public static final Map<String, Integer> failureCounts = new HashMap<String, Integer>();
@@ -35,7 +35,7 @@ public class UdcTimerTask extends TimerTask
     private final String storeId;
     private final Pinger pinger;
 
-    public UdcTimerTask( String hostAddress, UdcInformationCollector collector )
+    public UdcTimerTask( HostnamePort hostAddress, UdcInformationCollector collector )
     {
         this.storeId = collector.getStoreId();
 
