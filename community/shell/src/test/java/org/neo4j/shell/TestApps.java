@@ -462,22 +462,6 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void evalOneLinerExecutesImmediately() throws Exception
-    {
-        executeCommand( "eval db.createNode()", "Node\\[" );
-    }
-
-    @Test
-    public void evalMultiLineExecutesAfterAllLines() throws Exception
-    {
-        executeCommand(
-                "eval\n" +
-                "node = db.createNode()\n" +
-                "node.setProperty( \"name\", \"Mattias\" )\n" +
-                "node.getProperty( \"name\" )\n", "Mattias" );
-    }
-
-    @Test
     public void canReassignShellVariables() throws Exception
     {
         executeCommand( "export a=10" );
@@ -644,17 +628,6 @@ public class TestApps extends AbstractShellTest
 
     @Test
     public void commentsAreIgnored() throws Exception
-    {
-        executeCommand(
-                "eval\n" +
-                "// This comment should be ignored\n" +
-                "node = db.createNode()\n" +
-                "node.setProperty( \"name\", \"Mattias\" )\n" +
-                "node.getProperty( \"name\" )\n", "Mattias" );
-    }
-
-    @Test
-    public void commentsAloneAreIgnored() throws Exception
     {
         // See GitHub issue #1204
         executeCommand( "// a comment\n" );
