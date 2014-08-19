@@ -19,27 +19,44 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
+import org.neo4j.kernel.impl.locking.Locks.Client;
+import org.neo4j.kernel.impl.locking.Locks.ResourceType;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import org.neo4j.test.OtherThreadRule;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class MasterImplTest
 {
@@ -77,7 +94,6 @@ public class MasterImplTest
         Config config = config( 20 );
 
         when( spi.isAccessible() ).thenReturn( true );
-//        when( spi.beginTx() ).thenReturn( mock( Transaction.class ) );
         when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 1L ) );
 
         MasterImpl instance = new MasterImpl( spi, mock( MasterImpl.Monitor.class ), logging, config );
@@ -124,6 +140,61 @@ public class MasterImplTest
             assertThat(e.getMessage(), equalTo( "Nope" ));
         }
     }
+    
+    @Test
+    public void shouldNotEndLockSessionWhereThereIsAnActiveLockAcquisition() throws Throwable
+    {
+        // GIVEN
+        final CountDownLatch latch = new CountDownLatch( 1 );
+        try
+        {
+            MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
+            when( spi.isAccessible() ).thenReturn( true );
+            Client client = mock( Client.class );
+            doAnswer( new Answer<Void>()
+            {
+                @Override
+                public Void answer( InvocationOnMock invocation ) throws Throwable
+                {
+                    latch.await();
+                    return null;
+                }
+            } ).when( client ).acquireExclusive( any( ResourceType.class ), Matchers.<long[]>anyVararg() );
+            when( spi.acquireClient() ).thenReturn( client );
+            Config config = config( 20 );
+            final MasterImpl master = new MasterImpl( spi, mock( Monitor.class ),
+                    new DevNullLoggingService(), config, 20 );
+            master.start();
+            HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
+            
+            // WHEN
+            final RequestContext context = new RequestContext( handshake.epoch(), 1, 2, 0, 1, 0 );
+            master.newLockSession( context );
+            Future<Void> acquireFuture = otherThread.execute( new WorkerCommand<Void, Void>()
+            {
+                @Override
+                public Void doWork( Void state ) throws Exception
+                {
+                    master.acquireExclusiveLock( context, ResourceTypes.NODE, 1L );
+                    return null;
+                }
+            } );
+            otherThread.get().waitUntilWaiting();
+            master.endLockSession( context, false );
+            verify( client, times( 0 ) ).close();
+            latch.countDown();
+            acquireFuture.get();
+            
+            // THEN
+            verify( client, times( 1 ) ).close();
+        }
+        finally
+        {
+            latch.countDown();
+        }
+    }
+    
+    public final @Rule OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     private Config config( int lockReadTimeout )
     {

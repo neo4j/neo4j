@@ -98,6 +98,11 @@ public class OtherThreadRule<STATE> implements TestRule
             }
         };
     }
+    
+    public OtherThreadExecutor<STATE> get()
+    {
+        return executor;
+    }
 
     public void interrupt()
     {
