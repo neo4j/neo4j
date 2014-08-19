@@ -93,6 +93,7 @@ neo.viz = (el, measureSize, graph, layout, style) ->
 
     force.update(graph, [layoutDimension, layoutDimension])
     viz.resize()
+    viz.trigger('updated')
 
   viz.resize = ->
     size = measureSize()

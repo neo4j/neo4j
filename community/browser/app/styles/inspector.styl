@@ -5,7 +5,7 @@
 
 .inspector-footer
   // background-color: #EEF1F8
-  font-size: 10px
+  font-size: 12px
   // width: 100%
   .inspector-footer-row > ul
     // min-height: 28px
@@ -13,25 +13,29 @@
     li
       vertical-align: middle
     li.pair
-      font-size: 10px
+      font-size: 12px
     .key
       float: left
       color: darken(inspector-font-color, 30%)
     .value
       padding-left: 3px
       overflow: hidden
+      float: left
 
     .class-name
-      font-size: 10px
+      font-size: 12px
 
     .inspector-icon
       .fa
         margin-right: 5px
         margin-left: 3px
 
-    .colors, .node-sizes, .arrow-widths
+    .colors, .node-sizes, .arrow-widths, .attributes
       ul.list-inline > li
         padding-left: 1px
+        line-height: 0
+    .colors, .node-sizes, .arrow-widths
+      li
         a
           background-color: #aaa
           display: inline-block;
@@ -48,7 +52,7 @@
       user-select: none
       display: inline-block
       padding: 1px 6px
-      font-size: 10px
+      font-size: 12px
       line-height: 12px
       color: #9195A0;
       border: 1px solid #9195A0;

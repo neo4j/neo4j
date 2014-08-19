@@ -21,7 +21,7 @@
       padding: 0 4px
     p
       font-size: 15px
-      line-height: 23px
+      line-height: 1.428
       color: #666
     h1, h2, h3, h4, h5, dt
       background none
@@ -49,6 +49,7 @@
     pre.code
       background: #F3F3F3
       cursor: pointer
+      border: 1px solid #E1E1E8
       &:hover
         background: lighten(color-link, 80%)
         //outline: 2px solid color-link
@@ -58,6 +59,9 @@
         font-size 12pt
       h1 span
         display block
+    ul, ol
+      padding-left: 25px
+      line-height: 1.428
     ul
       list-style: disc
       margin-top: 8px
@@ -65,9 +69,13 @@
       list-style: none
 
     ul.big, ol.big
+      padding-left: 40px
       font-size: 18px
       li
         line-height: 28px
     ul.undecorated
+      padding: 0
       list-style: none
 
+    .bg-warning
+      padding: 10px
