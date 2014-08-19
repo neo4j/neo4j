@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -199,20 +198,23 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             writer.createSchema( beforeRecords, afterRecords, rule );
         }
+        
+        // In the following three methods there's an assumption that all tokens use one dynamic record
+        // and since the first record in a dynamic store the id starts at 1 instead of 0... hence the +1
 
         public void propertyKey( int id, String key )
         {
-            writer.propertyKey( id, key, id );
+            writer.propertyKey( id, key, id+1 );
         }
 
         public void nodeLabel( int id, String name )
         {
-            writer.label( id, name, id );
+            writer.label( id, name, id+1 );
         }
 
         public void relationshipType( int id, String relationshipType )
         {
-            writer.relationshipType( id, relationshipType, id );
+            writer.relationshipType( id, relationshipType, id+1 );
         }
 
         public void create( NodeRecord node )
@@ -278,11 +280,6 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         public void delete( PropertyRecord before, PropertyRecord property )
         {
             writer.delete( before, property );
-        }
-
-        private Error ioError( IOException e )
-        {
-            return new Error( "InMemoryLogBuffer should not throw IOException", e );
         }
     }
 

@@ -82,6 +82,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
     
+    @Override
     public TestGraphDatabaseFactory setLogging( Logging logging )
     {
         getCurrentState().setLogging( logging );

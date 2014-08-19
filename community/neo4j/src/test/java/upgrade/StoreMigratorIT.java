@@ -34,11 +34,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.NonUniqueTokenException;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
@@ -46,8 +47,10 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.PageCacheRule;
@@ -57,9 +60,11 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Integer.MAX_VALUE;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.consistency.store.StoreAssertions.verifyNeoStore;
@@ -111,9 +116,10 @@ public class StoreMigratorIT
     {
         // GIVEN
         // a store that contains two nodes with property "name" of which there are two key tokens
-        // that should be merged in the store migration
+        Unzip.unzip( Legacy19Store.class, "propkeydupdb.zip", storeDir );
+
         // WHEN
-        Unzip.unzip( Legacy20Store.class, "propkeydupdb.zip", storeDir );
+        // upgrading that store, the two key tokens for "name" should be merged
         upgrader( new StoreMigrator( monitor, fs ) ).migrateIfNeeded( storeDir );
 
         // THEN
@@ -146,7 +152,28 @@ public class StoreMigratorIT
         assertNoDuplicates( tokens );
 
         assertConsistentStore( storeDir );
+    }
 
+    @Test
+    public void shouldFailToStartWithImproperlyUpgradedPropertyKeyStore() throws Exception
+    {
+        // given
+        // a store with duplicate property keys, that was upgraded from 1.9 to 2.1.3, where no de-duplication was made
+        Unzip.unzip( LegacyStore.class, "v21/upgradeMissedPropKeyDup.zip", storeDir );
+
+        // when
+        try
+        {
+            new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
+            fail( "should have failed to start" );
+        }
+        // then
+        catch ( RuntimeException e )
+        {
+            e.printStackTrace();
+            assertThat( e.getCause(), instanceOf( LifecycleException.class ) );
+            assertTrue( Exceptions.contains( e, "The PropertyKey \"name\" is not unique", NonUniqueTokenException.class ) );
+        }
     }
 
     private StoreUpgrader upgrader( StoreMigrator storeMigrator )
@@ -158,7 +185,7 @@ public class StoreMigratorIT
 
     private void assertNoDuplicates( Token[] tokens )
     {
-        Set<String> visited = new HashSet<String>();
+        Set<String> visited = new HashSet<>();
         for ( Token token : tokens )
         {
             assertTrue( visited.add( token.name() ) );
@@ -167,8 +194,7 @@ public class StoreMigratorIT
 
     private Node getNodeWithName( GraphDatabaseService db, String name )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
             {
@@ -179,10 +205,6 @@ public class StoreMigratorIT
                 }
             }
         }
-        finally
-        {
-            tx.finish();
-        }
         throw new IllegalArgumentException( name + " not found" );
     }
 
@@ -191,7 +213,6 @@ public class StoreMigratorIT
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
-    private final IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
     private StoreFactory storeFactory;
 
     @Before
@@ -201,7 +222,7 @@ public class StoreMigratorIT
         Monitors monitors = new Monitors();
         storeFactory = new StoreFactory(
                 config,
-                idGeneratorFactory,
+                new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs, config ),
                 fs,
                 StringLogger.DEV_NULL,

@@ -74,19 +74,20 @@ public class StoreUpgradeOnStartupTest
     @Test
     public void shouldAbortOnNonCleanlyShutdown() throws Throwable
     {
+        // Given
         prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
         truncateAllFiles( fileSystem, workingDirectory );
         // Now everything has lost the version info
 
-        Map<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
-
         try
         {
+            // When
             new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
-                    workingDirectory.getPath()).setConfig( params ).newGraphDatabase();
+                    workingDirectory.getPath()).setConfig( upgradeConfig() ).newGraphDatabase();
+
+            // Then
             fail( "Should have been unable to start upgrade on old version" );
         }
         catch ( RuntimeException e )
@@ -99,6 +100,7 @@ public class StoreUpgradeOnStartupTest
     @Test
     public void shouldAbortOnCorruptStore() throws IOException
     {
+        // Given
         prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
@@ -106,13 +108,13 @@ public class StoreUpgradeOnStartupTest
                 "neostore.propertystore.db.index.keys" ),
                 "StringPropertyStore " + LEGACY_VERSION );
 
-        Map<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
-
         try
         {
+            // When
             GraphDatabaseService database = new GraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( workingDirectory.getPath() ).setConfig( params ).newGraphDatabase();
+                    .newEmbeddedDatabaseBuilder( workingDirectory.getPath() ).setConfig( upgradeConfig() ).newGraphDatabase();
+
+            // Then
             fail( "Should have been unable to start upgrade on old version" );
         }
         catch ( RuntimeException e )
@@ -121,6 +123,13 @@ public class StoreUpgradeOnStartupTest
         }
     }
 
+    private Map<String, String> upgradeConfig()
+    {
+        Map<String, String> params = new HashMap<>();
+        params.put( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
+        return params;
+    }
+    
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private final File workingDirectory = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
 

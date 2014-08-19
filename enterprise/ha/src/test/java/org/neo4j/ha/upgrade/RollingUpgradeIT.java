@@ -19,14 +19,6 @@
  */
 package org.neo4j.ha.upgrade;
 
-import static org.junit.Assert.fail;
-import static org.neo4j.cluster.ClusterSettings.cluster_server;
-import static org.neo4j.cluster.ClusterSettings.initial_hosts;
-import static org.neo4j.cluster.ClusterSettings.server_id;
-import static org.neo4j.ha.upgrade.Utils.assembleClassPathFromPackage;
-import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
-import static org.neo4j.kernel.ha.HaSettings.ha_server;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -40,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -54,6 +47,18 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.TargetDirectory;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.cluster.ClusterSettings.cluster_server;
+import static org.neo4j.cluster.ClusterSettings.initial_hosts;
+import static org.neo4j.cluster.ClusterSettings.server_id;
+import static org.neo4j.ha.upgrade.Utils.assembleClassPathFromPackage;
+import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
+import static org.neo4j.kernel.ha.HaSettings.ha_server;
 
 @Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
 public class RollingUpgradeIT
@@ -246,6 +251,7 @@ public class RollingUpgradeIT
             LegacyDatabase legacyDb = legacyDbs[i];
             if ( legacyDb == master.first() )
             {   // Roll over the master last
+                debug( "master is " + master.first().getStoreDir() );
                 continue;
             }
 
@@ -318,6 +324,8 @@ public class RollingUpgradeIT
         {
             if ( newDbs[j] != null )
             {
+                assertTrue( "Rolled over database " + j + " not available within 1 minute",
+                        newDbs[i].isAvailable( MINUTES.toMillis( 1 ) ) );
                 verifyComplexLoad( newDbs[j], centralNode );
                 debug( "Verified on new db " + j );
             }

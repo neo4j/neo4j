@@ -235,6 +235,7 @@ public enum ElectionState
                                 {
                                     if ( !context.getFailed().contains( server.getKey() ) )
                                     {
+
                                         // This is a candidate - allow it to vote itself for promotion
                                         outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(),
                                                 context.voteRequestForRole( new ElectionRole( role ) ) ) );
@@ -253,7 +254,8 @@ public enum ElectionState
                             ElectionContext.VoteRequest voteRequest = (ElectionContext.VoteRequest) request;
                             outgoing.offer( Message.respond( ElectionMessage.voted, message,
                                     new ElectionMessage.VersionedVotedData( voteRequest.getRole(), context.getMyId(),
-                                            context.getCredentialsForRole( voteRequest.getRole() ), voteRequest.getVersion() ) ) );
+                                            context.getCredentialsForRole( voteRequest.getRole() ),
+                                            voteRequest.getVersion() ) ) );
                             break;
                         }
 

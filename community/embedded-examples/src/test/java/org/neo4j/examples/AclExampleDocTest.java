@@ -26,7 +26,6 @@ import org.neo4j.test.GraphDescription.Graph;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
 public class AclExampleDocTest extends ImpermanentGraphJavaDocTestBase
@@ -180,7 +179,8 @@ public class AclExampleDocTest extends ImpermanentGraphJavaDocTestBase
     public void ACL_structures_in_graphs()
     {
         data.get();
-        gen.get().addSnippet( "graph1", createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
+        // only add the visualization if it's actually used.
+        //gen.get().addSnippet( "graph1", createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
         
         //Files
         //TODO: can we do open ended?

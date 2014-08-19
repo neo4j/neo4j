@@ -17,28 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.logging;
+package org.neo4j.helpers;
 
-import java.util.Map;
-
-import org.neo4j.kernel.configuration.Config;
-
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-
-public final class DefaultLogging
+/**
+ * Represents the concept of a cancellation notification towards a task. The implementation for the request will
+ * remain application dependent, but the task to be cancelled can use this to discover if cancellation has been
+ * requested.
+ */
+public interface CancellationRequest
 {
-    private DefaultLogging()
+    /**
+     * @return True iff a request for cancellation has been issued. It is assumed that the request cannot be withdrawn
+     * so once this method returns true it must always return true on all subsequent calls.
+     */
+    public boolean cancellationRequested();
+    
+    public static final CancellationRequest NONE = new CancellationRequest()
     {
-        throw new AssertionError( "Not for instantiation!" );
-    }
-
-    public static Logging createDefaultLogging( Map<String, String> config )
-    {
-        return createDefaultLogging( new Config( config ) );
-    }
-
-    public static Logging createDefaultLogging( Config config )
-    {
-        return LogbackWeakDependency.tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
-    }
+        @Override
+        public boolean cancellationRequested()
+        {
+            return false;
+        }
+    };
 }

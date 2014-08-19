@@ -965,7 +965,7 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
-        DynamicRecord record = access.getPropertyKeyNameStore().forceGetRecord( inconsistentName.get() );
+        DynamicRecord record = access.getPropertyKeyNameStore().forceGetRecord( inconsistentName.get()+1 );
         record.setNextBlock( record.getId() );
         access.getPropertyKeyNameStore().updateRecord( record );
 
@@ -1028,7 +1028,7 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
-        DynamicRecord record = access.getPropertyKeyNameStore().forceGetRecord( inconsistentKey.get() );
+        DynamicRecord record = access.getPropertyKeyNameStore().forceGetRecord( inconsistentKey.get()+1 );
         record.setInUse( false );
         access.getPropertyKeyNameStore().updateRecord( record );
 

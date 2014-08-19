@@ -41,6 +41,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.impl.batchimport.cache.IdMappers;
@@ -57,7 +58,6 @@ import static org.junit.Assert.assertThat;
 
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
-
 
 public class ParallelBatchImporterTest
 {
@@ -79,7 +79,7 @@ public class ParallelBatchImporterTest
             }
         };
         BatchImporter inserter = new ParallelBatchImporter( directory.getAbsolutePath(),
-                new DefaultFileSystemAbstraction(), config,
+                new DefaultFileSystemAbstraction(), config, new DevNullLoggingService(),
                 new DetailedExecutionMonitor(), new IoQueue( config.numberOfIoThreads(), delegateWriterFactory ) );
 
         // WHEN

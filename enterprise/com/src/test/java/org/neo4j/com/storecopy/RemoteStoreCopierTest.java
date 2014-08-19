@@ -35,6 +35,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Visitor;
@@ -52,20 +53,33 @@ import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.LogbackWeakDependency;
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import static org.neo4j.com.ResourceReleaser.NO_OP;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
 import static org.neo4j.io.fs.FileUtils.relativePath;
@@ -87,8 +101,9 @@ public class RemoteStoreCopierTest
                 .newEmbeddedDatabase( originalDir.getAbsolutePath() );
         final DependencyResolver resolver = original.getDependencyResolver();
         final FileSystemAbstraction fileSystem = resolver.resolveDependency( FileSystemAbstraction.class );
+        Logging logging = new DevNullLoggingService();
         StoreCopyClient copier = new StoreCopyClient( config, loadKernelExtensions(),
-                new ConsoleLogger( StringLogger.SYSTEM ), fs );
+                new ConsoleLogger( StringLogger.SYSTEM ), logging, fs );
 
         // When
         StoreCopyClient.StoreCopyRequester requester = spy( new StoreCopyClient.StoreCopyRequester()
@@ -165,7 +180,7 @@ public class RemoteStoreCopierTest
                 verify( response, times( 1 ) ).close();
             }
         } );
-        copier.copyStore( requester );
+        copier.copyStore( requester, CancellationRequest.NONE );
 
         // Then
         GraphDatabaseService copy = new GraphDatabaseFactory().newEmbeddedDatabase( copyDir.getAbsolutePath() );
@@ -198,10 +213,38 @@ public class RemoteStoreCopierTest
         };
     }
 
-    private List<KernelExtensionFactory<?>> loadKernelExtensions()
+    @Test
+    @SuppressWarnings("rawtypes")
+    public void shouldNotCloseAppendersOfProvidedLoggingOnFinish() throws Exception
+    {
+        // Given
+        String dir = new File( testDir.directory(), "dir" ).getAbsolutePath();
+
+        Config config = new Config( stringMap( store_dir.name(), dir ) );
+        ConsoleLogger console = new ConsoleLogger( StringLogger.SYSTEM );
+
+        Logging logging = LogbackWeakDependency.tryLoadLogbackService( config, null );
+
+        StoreCopyClient copier = spy( new StoreCopyClient( config, loadKernelExtensions(), console, logging, fs ) );
+        when( copier.logConfigFileName() ).thenReturn( "neo4j-logback.xml" );
+
+        Response response = mock( Response.class );
+        StoreCopyClient.StoreCopyRequester requester = when( mock( StoreCopyClient.StoreCopyRequester.class )
+                .copyStore( any( StoreWriter.class ) ) ).thenReturn( response ).getMock();
+
+        // When
+        copier.copyStore( requester, CancellationRequest.NONE );
+
+        // Then
+        LoggerContext context = ReflectionUtil.getPrivateField( logging, "loggerContext", LoggerContext.class );
+        List<Appender<ILoggingEvent>> appenders = asList( context.getLogger( "org.neo4j" ).iteratorForAppenders() );
+        assertThat( appenders, not( empty() ) );
+    }
+
+    private static List<KernelExtensionFactory<?>> loadKernelExtensions()
     {
         List<KernelExtensionFactory<?>> kernelExtensions = new ArrayList<>();
-        for ( KernelExtensionFactory factory : Service.load( KernelExtensionFactory.class ) )
+        for ( KernelExtensionFactory<?> factory : Service.load( KernelExtensionFactory.class ) )
         {
             kernelExtensions.add( factory );
         }

@@ -158,7 +158,7 @@ public class StandaloneClusterClient
         return result;
     }
 
-    private static void moveOver( Map<String, String> from, Map<String, String> to, Setting setting )
+    private static void moveOver( Map<String, String> from, Map<String, String> to, Setting<?> setting )
     {
         String key = setting.name();
         if ( from.containsKey( key ) )
@@ -174,7 +174,7 @@ public class StandaloneClusterClient
                 new File( new File( new File( home, "data" ), "log" ), "arbiter" ).getPath() );
         Config config = new Config( stringMap( InternalAbstractGraphDatabase.Configuration.store_dir.name(), logDir ) );
 
-        return new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
+        return LogbackWeakDependency.tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
     }
 
     private static File extractDbTuningProperties( String propertiesFile )

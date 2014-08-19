@@ -17,28 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.logging;
+package org.neo4j.server.rest.repr;
 
-import java.util.Map;
+import static org.junit.Assert.assertEquals;
 
-import org.neo4j.kernel.configuration.Config;
+import java.net.URI;
 
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import javax.ws.rs.core.Response;
 
-public final class DefaultLogging
+import org.junit.Test;
+
+import org.neo4j.server.rest.repr.formats.JsonFormat;
+
+public class OutputFormatTest
 {
-    private DefaultLogging()
+    @Test
+    public void shouldReturnAbsoluteURIForSeeOther() throws Exception
     {
-        throw new AssertionError( "Not for instantiation!" );
-    }
+        URI relativeURI = new URI( "/test/path" );
 
-    public static Logging createDefaultLogging( Map<String, String> config )
-    {
-        return createDefaultLogging( new Config( config ) );
-    }
+        OutputFormat outputFormat = new OutputFormat( new JsonFormat(), new URI( "http://base.local:8765/" ), null );
 
-    public static Logging createDefaultLogging( Config config )
-    {
-        return LogbackWeakDependency.tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
+        Response response = outputFormat.seeOther( relativeURI );
+
+        assertEquals( 303, response.getStatus() );
+        assertEquals( new URI("http://base.local:8765/test/path"), response.getMetadata().getFirst( "Location" ) );
     }
 }
