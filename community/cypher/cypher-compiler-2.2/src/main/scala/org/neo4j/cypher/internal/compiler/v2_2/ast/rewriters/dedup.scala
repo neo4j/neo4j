@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
+import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
-import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
-import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 
 case class dedup(table: SemanticTable) extends Rewriter {
 
@@ -39,35 +39,41 @@ case class dedup(table: SemanticTable) extends Rewriter {
   })
 
   private val rewriteTopDown: Rewriter = Rewriter.lift(rewriteIdentifiers() orElse {
-    case ret@Return(_, lst@ListedReturnItems(items), orderBy, skip, limit) =>
-      val newItems: Seq[ReturnItem] = items.map {
-        case returnItem@AliasedReturnItem(e, id) =>
-          returnItem.copy(expression = e.endoRewrite(topDownButNoAliases))(returnItem.position)
-        case item =>
-          item
-      }
-      val returnItems = lst.copy(items = newItems)(lst.position)
+    case ret@Return(_, originalReturnItems: ListedReturnItems, orderBy, skip, limit) =>
 
-      val aliases: Set[String] = newItems.collect {
-        case returnItem@AliasedReturnItem(e, id) => id.name
-      }.toSet
-
+      val (updatedReturnItems, aliases) = rewriteReturnItems(originalReturnItems)
       val rewriter = bottomUp(Rewriter.lift(rewriteIdentifiers(aliases)))
-
       val newOrderBy = orderBy.map(_.endoRewrite(rewriter))
       val newSkip = skip.map(_.endoRewrite(rewriter))
       val newLimit = limit.map(_.endoRewrite(rewriter))
 
       ret.copy(
-        returnItems = returnItems,
+        returnItems = updatedReturnItems,
         orderBy = newOrderBy,
         skip = newSkip,
         limit = newLimit
       )(ret.position)
 
-    case x =>
-      x.dup(x.children.map(_.endoRewrite(rewriteTopDown)).toList)
+    case astNode =>
+      val arguments = astNode.children.map(_.endoRewrite(rewriteTopDown)).toList
+      astNode.dup(arguments)
   })
+
+  private def rewriteReturnItems(originalReturnItems: ListedReturnItems): (ListedReturnItems, Set[String]) = {
+    val newItems: Seq[ReturnItem] = originalReturnItems.items.map {
+      case returnItem@AliasedReturnItem(e, id) =>
+        returnItem.copy(expression = e.endoRewrite(topDownButNoAliases))(returnItem.position)
+      case item =>
+        item
+    }
+    val updatedReturnItems: ListedReturnItems = originalReturnItems.copy(items = newItems)(originalReturnItems.position)
+
+    val aliases: Set[String] = newItems.collect {
+      case returnItem@AliasedReturnItem(e, id) => id.name
+    }.toSet
+
+    (updatedReturnItems, aliases)
+  }
 
   private def rewriteIdentifiers(identifiersToIgnore: Set[String] = Set.empty): PartialFunction[AnyRef, AnyRef] = {
     case id@Identifier(name) if !identifiersToIgnore(name) =>

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.TypeSpec
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 import scala.collection.immutable.HashMap
 
@@ -130,10 +131,11 @@ case class SemanticState(scope: Scope,
 
   def expressionType(expression: ast.Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
 
-  private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Seq[InputPosition]) =
+  private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Seq[InputPosition]) = {
     copy(
       scope = scope.updateIdentifier(identifier.name, types, locations),
       typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types)),
       identifiers = identifiers + (identifier -> locations.head)
     )
+  }
 }

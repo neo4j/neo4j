@@ -30,10 +30,12 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition
   def semanticCheck = items.semanticCheck chain
     ensureProjectedToUniqueIds
 
-  def declareIdentifiers(currentState: SemanticState) =
-    items.foldSemanticCheck(item =>
-      Identifier(item.name)(null).declare(item.expression.types(currentState))
-    )
+  def declareIdentifiers(currentState: SemanticState) = {
+    items.foldSemanticCheck({ item =>
+      val identifier = item.alias.getOrElse(Identifier(item.name)(item.position))
+      identifier.declare(item.expression.types(currentState))
+    })
+  }
 
   private def ensureProjectedToUniqueIds: SemanticCheck = {
     items.groupBy(_.name).foldLeft(SemanticCheckResult.success) {
