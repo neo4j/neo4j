@@ -24,35 +24,29 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Return
 
 object reattachAliasedExpressions extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
+  def apply(in: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(in)
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val findingRewriter: Rewriter = Rewriter.lift {
+    case r@Return(_, ListedReturnItems(items), orderBy, _, _) =>
+      val innerRewriter = expressionRewriter(items)
+      r.copy(
+        orderBy = r.orderBy.endoRewrite(innerRewriter)
+      )(r.position)
 
-    case r @ Return(_, ListedReturnItems(items: Seq[ReturnItem]), orderBy, _, _) =>
-      r.copy(orderBy = orderBy.map(reattachOrderByExpressions(items)))(r.position)
-
-    case r @ With(_, ListedReturnItems(items: Seq[ReturnItem]), orderBy, _, _, _) =>
-      r.copy(orderBy = orderBy.map(reattachOrderByExpressions(items)))(r.position)
+    case w@With(_, ListedReturnItems(items), orderBy, _, _, where) =>
+      val innerRewriter = expressionRewriter(items)
+      w.copy(
+        orderBy = w.orderBy.endoRewrite(innerRewriter)
+      )(w.position)
   }
 
-  private def reattachOrderByExpressions(items: Seq[ReturnItem])(orderBy: OrderBy): OrderBy = {
-    orderBy.copy(sortItems = orderBy.sortItems.map {
-      (sortItem: SortItem) =>
-        val returnItem = items.find(_.alias match {
-          case Some(identifier) => identifier == sortItem.expression
-          case None => false
-        })
-        returnItem match {
-          case None => sortItem
-          case Some(returnItem) => {
-            sortItem match {
-              case item: AscSortItem =>
-                item.copy(expression = returnItem.expression)(item.position)
-              case item: DescSortItem =>
-                item.copy(expression = returnItem.expression)(item.position)
-            }
-          }
-        }
-    })(orderBy.position)
+  private def expressionRewriter(items: Seq[ReturnItem]): Rewriter = {
+    val aliasedExpressions: Map[String, Expression] = items.map { returnItem =>
+      (returnItem.name, returnItem.expression)
+    }.toMap
+
+    bottomUp(Rewriter.lift {
+      case id@Identifier(name) if aliasedExpressions.contains(name) => aliasedExpressions(name)
+    })
   }
 }

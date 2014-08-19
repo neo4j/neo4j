@@ -20,58 +20,56 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2
-import org.neo4j.cypher.internal.compiler.v2_2.bottomUp
+import org.neo4j.cypher.internal.compiler.v2_2._
 
-class ReattachAliasedExpressionsTest extends CypherFunSuite {
+class ReattachAliasedExpressionsTest extends CypherFunSuite with RewriteTest {
 
-  import v2_2.parser.ParserFixture._
+  override def rewriterUnderTest: Rewriter = reattachAliasedExpressions
 
-  test("MATCH a RETURN a.x AS newAlias ORDER BY newAlias" ) {
-    val original = parser.parse("MATCH a RETURN a.x AS newAlias ORDER BY newAlias")
-    val expected = parser.parse("MATCH a RETURN a.x AS newAlias ORDER BY a.x")
-
-    val result = original.rewrite(reattachAliasedExpressions)
-    assert(result === expected)
+  test("MATCH a RETURN a.x AS newAlias ORDER BY newAlias") {
+    assertRewrite(
+      "MATCH a RETURN a.x AS newAlias ORDER BY newAlias",
+      "MATCH a RETURN a.x AS newAlias ORDER BY a.x")
   }
 
   test("MATCH a RETURN count(*) AS foo ORDER BY foo") {
-    val original = parser.parse("MATCH a RETURN count(*) AS foo ORDER BY foo")
-    val expected = parser.parse("MATCH a RETURN count(*) AS foo ORDER BY count(*)")
+    assertRewrite(
+      "MATCH a RETURN count(*) AS foo ORDER BY foo",
+      "MATCH a RETURN count(*) AS foo ORDER BY count(*)")
+  }
 
-    val result = original.rewrite(reattachAliasedExpressions)
-    assert(result === expected)
+  test("MATCH a RETURN collect(a) AS foo ORDER BY length(foo)") {
+    assertRewrite(
+      "MATCH a RETURN collect(a) AS foo ORDER BY length(foo)",
+      "MATCH a RETURN collect(a) AS foo ORDER BY length(collect(a))")
   }
 
   test("MATCH x WITH x AS x RETURN count(x) AS foo ORDER BY foo") {
-    val original = parser.parse("MATCH x WITH x AS x RETURN count(x) AS foo ORDER BY foo")
-    val expected = parser.parse("MATCH x WITH x AS x RETURN count(x) AS foo ORDER BY count(x)")
-
-    val result = original.rewrite(reattachAliasedExpressions)
-    assert(result === expected)
+    assertRewrite(
+      "MATCH x WITH x AS x RETURN count(x) AS foo ORDER BY foo",
+      "MATCH x WITH x AS x RETURN count(x) AS foo ORDER BY count(x)")
   }
 
   test("MATCH a WITH a.x AS newAlias ORDER BY newAlias RETURN *") {
-    val original = parser.parse("MATCH a WITH a.x AS newAlias ORDER BY newAlias RETURN *")
-    val expected = parser.parse("MATCH a WITH a.x AS newAlias ORDER BY a.x RETURN *")
-
-    val result = original.rewrite(reattachAliasedExpressions)
-    assert(result === expected)
+    assertRewrite(
+      "MATCH a WITH a.x AS newAlias ORDER BY newAlias RETURN *",
+      "MATCH a WITH a.x AS newAlias ORDER BY a.x RETURN *")
   }
 
   test("MATCH a WITH count(*) AS foo ORDER BY foo RETURN *") {
-    val original = parser.parse("MATCH a WITH count(*) AS foo ORDER BY foo RETURN *")
-    val expected = parser.parse("MATCH a WITH count(*) AS foo ORDER BY count(*) RETURN *")
-
-    val result = original.rewrite(reattachAliasedExpressions)
-    assert(result === expected)
+    assertRewrite(
+      "MATCH a WITH count(*) AS foo ORDER BY foo RETURN *",
+      "MATCH a WITH count(*) AS foo ORDER BY count(*) RETURN *")
   }
 
   test("MATCH x WITH x AS x WITH count(x) AS foo ORDER BY foo RETURN *") {
-    val original = parser.parse("MATCH x WITH x AS x WITH count(x) AS foo ORDER BY foo RETURN *")
-    val expected = parser.parse("MATCH x WITH x AS x WITH count(x) AS foo ORDER BY count(x) RETURN *")
+    assertRewrite(
+      "MATCH x WITH x AS x WITH count(x) AS foo ORDER BY foo RETURN *",
+      "MATCH x WITH x AS x WITH count(x) AS foo ORDER BY count(x) RETURN *")
+  }
 
-    val result = original.rewrite(reattachAliasedExpressions)
-    assert(result === expected)
+  test("MATCH x WITH x.prop as prop WHERE prop = 42 RETURN prop *") {
+    assertIsNotRewritten( // The legacy planner does not want this to be done for WHERE clauses... *sigh*
+      "MATCH x WITH x.prop as prop WHERE prop = 42 RETURN prop")
   }
 }

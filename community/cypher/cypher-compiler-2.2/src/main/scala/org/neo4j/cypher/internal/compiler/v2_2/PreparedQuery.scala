@@ -23,16 +23,19 @@ import org.neo4j.cypher.internal.PlanType
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.commands.AbstractQuery
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.StatementConverters._
 
 case class PreparedQuery(statement: Statement,
-                         abstractQuery: AbstractQuery,
                          queryText: String,
                          extractedParams: Map[String, Any],
                          planType: PlanType)(val semanticTable: SemanticTable) {
+
+  def abstractQuery: AbstractQuery = statement.asQuery.setQueryText(queryText)
 
   def isPeriodicCommit = statement match {
     case ast.Query(Some(_), _) => true
     case _ => false
   }
 
+  def rewrite(rewriter: Rewriter): PreparedQuery = copy(statement = statement.endoRewrite(rewriter))(semanticTable)
 }

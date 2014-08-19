@@ -39,7 +39,6 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       normalizeMatchPredicates,
       normalizeNotEquals,
       normalizeEqualsArgumentOrder,
-      reattachAliasedExpressions,
       addUniquenessPredicates,
       expandStar,
       isolateAggregation,

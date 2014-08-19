@@ -404,20 +404,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should not allow identifiers in ORDER BY that are removed by DISTINCT") {
-    executeAndEnsureError(
-      "MATCH n RETURN DISTINCT n.name ORDER BY n.age",
-      "Type mismatch: accumulator is Integer but expression has type Float (line 1, column 39)"
-    )
-  }
-
-  test("should not allow identifiers in ORDER BY that are removed by aggregation") {
-    executeAndEnsureError(
-      "MATCH n RETURN n.name, count(*) ORDER BY n.age",
-      "Type mismatch: accumulator is Integer but expression has type Float (line 1, column 39)"
-    )
-  }
-
   def executeAndEnsureError(query: String, message: String) {
     try {
       execute(query).toList

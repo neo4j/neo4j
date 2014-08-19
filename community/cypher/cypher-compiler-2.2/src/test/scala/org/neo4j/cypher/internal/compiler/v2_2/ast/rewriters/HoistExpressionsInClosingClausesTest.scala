@@ -146,6 +146,13 @@ class HoistExpressionsInClosingClausesTest extends CypherFunSuite with RewriteTe
     )
   }
 
+  test("MATCH a, b RETURN b.prop, collect(a.prop) ORDER BY length(collect(a.prop)), b.prop") {
+    assertRewrite(
+      "MATCH a, b RETURN b.prop as `b.prop`, collect(a.prop) as `collect(a.prop)` ORDER BY length(collect(a.prop)), b.prop",
+      "MATCH a, b RETURN b.prop as `b.prop`, collect(a.prop) as `collect(a.prop)` ORDER BY length(`collect(a.prop)`), `b.prop`"
+    )
+  }
+
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)

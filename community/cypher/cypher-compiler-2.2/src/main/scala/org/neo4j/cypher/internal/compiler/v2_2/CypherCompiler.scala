@@ -60,7 +60,7 @@ trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCache
 trait AstCacheMonitor extends CypherCacheMonitor[PreparedQuery, CacheAccessor[PreparedQuery, ExecutionPlan]]
 
 object CypherCompilerFactory {
-  val monitorTag = "cypher2.1"
+  val monitorTag = "cypher2.2"
 
   def ronjaCompiler(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
@@ -113,8 +113,7 @@ case class CypherCompiler(parser: CypherParser,
     semanticChecker.check(queryText, cleanedStatement)
     val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, cleanedStatement)
     val table = semanticChecker.check(queryText, rewrittenStatement)
-    val query: AbstractQuery = rewrittenStatement.asQuery.setQueryText(queryText)
-    PreparedQuery(rewrittenStatement, query, queryText, extractedParams, planType)(table)
+    PreparedQuery(rewrittenStatement, queryText, extractedParams, planType)(table)
   }
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
