@@ -19,8 +19,6 @@
  */
 package org.neo4j.cluster.protocol.election;
 
-import static org.neo4j.helpers.collection.Iterables.first;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +32,8 @@ import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.collection.Iterables.first;
 
 /**
  * State machine that implements the {@link Election} API.
@@ -122,7 +122,8 @@ public enum ElectionState
                                                 if ( !context.getFailed().contains( server.getKey() ) )
                                                 {
                                                     // This is a candidate - allow it to vote itself for promotion
-                                                    outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(), role ) );
+                                                    outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(),
+                                                            context.voteRequestForRole( new ElectionRole( role ) ) ) );
                                                 }
                                             }
                                             context.setTimeout( "election-" + role,
@@ -191,7 +192,8 @@ public enum ElectionState
                                                  * expected. If we are indeed the role holder, then we'll cast our
                                                  * vote as a response to this message, which will complete the election.
                                                  */
-                                                outgoing.offer( Message.internal( ElectionMessage.vote, roleName ) );
+                                                outgoing.offer( Message.internal( ElectionMessage.vote,
+                                                        context.voteRequestForRole( new ElectionRole( roleName ) ) ) );
                                             }
                                             else
                                             {
@@ -233,8 +235,10 @@ public enum ElectionState
                                 {
                                     if ( !context.getFailed().contains( server.getKey() ) )
                                     {
+
                                         // This is a candidate - allow it to vote itself for promotion
-                                        outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(), role ) );
+                                        outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(),
+                                                context.voteRequestForRole( new ElectionRole( role ) ) ) );
                                     }
                                 }
                                 context.setTimeout( "election-" + role, Message.timeout( ElectionMessage
@@ -246,24 +250,12 @@ public enum ElectionState
                         case vote:
                         {
                             Object request = message.getPayload();
-                            if ( request instanceof ElectionContext.VoteRequest )
-                            {
-                                ElectionContext.VoteRequest voteRequest = (ElectionContext.VoteRequest) request;
-                                outgoing.offer( Message.respond( ElectionMessage.voted, message,
-                                        new ElectionMessage.VersionedVotedData( voteRequest.getRole(), context.getMyId(),
-                                                context.getCredentialsForRole( voteRequest.getRole() ), voteRequest.getVersion() ) ) );
-                            }
-                            else if ( request instanceof String )
-                            {
-                                String role = (String) request;
-                                outgoing.offer( Message.respond( ElectionMessage.voted, message,
-                                        new ElectionMessage.VotedData( role, context.getMyId(),
-                                                context.getCredentialsForRole( role ) ) ) );
-                            }
-                            else
-                            {
-                                context.getLogger( getClass() ).error( "Unknown vote request message " + request );
-                            }
+
+                            ElectionContext.VoteRequest voteRequest = (ElectionContext.VoteRequest) request;
+                            outgoing.offer( Message.respond( ElectionMessage.voted, message,
+                                    new ElectionMessage.VersionedVotedData( voteRequest.getRole(), context.getMyId(),
+                                            context.getCredentialsForRole( voteRequest.getRole() ),
+                                            voteRequest.getVersion() ) ) );
                             break;
                         }
 
@@ -336,7 +328,7 @@ public enum ElectionState
                                 // Missing one vote, the one from the current role holder
                                 outgoing.offer( Message.to( ElectionMessage.vote,
                                         context.getUriForId( currentElected ),
-                                        data.getRole() ) );
+                                        context.voteRequestForRole( new ElectionRole( data.getRole() ) ) ) );
                             }
                             break;
                         }

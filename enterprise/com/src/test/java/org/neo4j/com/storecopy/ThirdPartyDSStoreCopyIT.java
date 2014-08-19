@@ -19,16 +19,6 @@
  */
 package org.neo4j.com.storecopy;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -39,11 +29,13 @@ import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -67,6 +59,18 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
+
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 
 /**
  * This is a somewhat tricky test, and one I am not super proud of, because it involves mocking some hairy parts of
@@ -130,7 +134,7 @@ public class ThirdPartyDSStoreCopyIT
             {
 
             }
-        });
+        }, CancellationRequest.NONE );
 
         // Then the resulting file should contain the data we expect.
         FileChannel activeLog = FileChannel.open( generatedLogFile().toPath(), READ );

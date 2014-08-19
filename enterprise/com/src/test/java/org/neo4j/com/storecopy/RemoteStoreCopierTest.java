@@ -23,9 +23,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,6 +33,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -55,6 +53,9 @@ import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
@@ -137,7 +138,7 @@ public class RemoteStoreCopierTest
                 verify( response, times( 1 ) ).close();
             }
         } );
-        copier.copyStore( requester );
+        copier.copyStore( requester, CancellationRequest.NONE );
 
         // Then
         GraphDatabaseService copy = new GraphDatabaseFactory().newEmbeddedDatabase( copyDir );
@@ -180,7 +181,7 @@ public class RemoteStoreCopierTest
                 .copyStore( any( StoreWriter.class ) ) ).thenReturn( response ).getMock();
 
         // When
-        copier.copyStore( requester );
+        copier.copyStore( requester, CancellationRequest.NONE );
 
         // Then
         LoggerContext context = ReflectionUtil.getPrivateField( logging, "loggerContext", LoggerContext.class );

@@ -21,9 +21,6 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import javax.transaction.TransactionManager;
@@ -38,6 +35,7 @@ import org.neo4j.com.ServerUtil;
 import org.neo4j.com.storecopy.RemoteStoreCopier;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Pair;
@@ -154,7 +152,20 @@ public class SwitchToSlave
                 config.get( HaSettings.com_chunk_size ).intValue()  );
     }
 
-    public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri ) throws Throwable
+    /**
+     * Performs a switch to the slave state. Starts the communication endpoints, switches components to the slave state
+     * and ensures that the current database is appropriate for this cluster. It also broadcasts the appropriate
+     * Slave Is Available event
+     * @param haCommunicationLife The LifeSupport instance to register the network facilities required for communication
+     *                            with the rest of the cluster
+     * @param me The URI this instance must bind to
+     * @param masterUri The URI of the master for which this instance must become slave to
+     * @param cancellationRequest A handle for gracefully aborting the switch
+     * @return The URI that was broadcasted as the slave endpoint or null if the task was cancelled
+     * @throws Throwable
+     */
+    public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri, CancellationRequest
+            cancellationRequest ) throws Throwable
     {
         console.log( "ServerId " + config.get( ClusterSettings.server_id ) + ", moving to slave for master " +
                 masterUri );
@@ -167,15 +178,37 @@ public class SwitchToSlave
         {
             if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
             {
-                copyStoreFromMaster( masterUri );
+                copyStoreFromMaster( masterUri, cancellationRequest );
             }
 
             /*
-             * We get here either with a fresh store from the master copy above so we need to start the ds
-             * or we already had a store, so we have already started the ds. Either way, make sure it's there.
+             * The following check is mandatory, since the store copy can be cancelled and if it was actually happening
+             * then we can't continue, as there is no store in place
+             */
+            if ( cancellationRequest.cancellationRequested() )
+            {
+                return null;
+            }
+
+            /*
+             * We get here either with a fresh store from the master copy above so we need to
+             * start the ds or we already had a store, so we have already started the ds. Either way,
+             * make sure it's there.
              */
             NeoStoreXaDataSource nioneoDataSource = ensureDataSourceStarted( xaDataSourceManager, resolver );
-            checkDataConsistency( xaDataSourceManager, resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri );
+
+            if ( cancellationRequest.cancellationRequested() )
+            {
+                return null;
+            }
+
+            checkDataConsistency( xaDataSourceManager, resolver.resolveDependency( RequestContextFactory.class ),
+                    nioneoDataSource, masterUri );
+
+            if ( cancellationRequest.cancellationRequested() )
+            {
+                return null;
+            }
 
             URI slaveUri = startHaCommunication( haCommunicationLife, xaDataSourceManager, nioneoDataSource, me, masterUri );
 
@@ -328,7 +361,7 @@ public class SwitchToSlave
         return URI.create( "ha://" + host + ":" + port + "?serverId=" + serverId );
     }
 
-    private void copyStoreFromMaster( URI masterUri ) throws Throwable
+    private void copyStoreFromMaster( URI masterUri, CancellationRequest cancellationRequest ) throws Throwable
     {
         FileSystemAbstraction fs = resolver.resolveDependency( FileSystemAbstraction.class );
         // Must be called under lock on XaDataSourceManager
@@ -357,7 +390,7 @@ public class SwitchToSlave
                 public void done()
                 {
                 }
-            } );
+            }, cancellationRequest );
 
             startServicesAgain();
             console.log( "Finished copying store from master" );
