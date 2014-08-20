@@ -357,4 +357,23 @@ public class Exceptions
             }
         };
     }
+
+    public static String briefOneLineStackTraceInformation( Predicate<StackTraceElement> toInclude )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
+        {
+            if ( toInclude.accept( element ) )
+            {
+                builder.append( builder.length() > 0 ? "," : "" )
+                       .append( simpleClassName( element.getClassName() ) + "#" + element.getMethodName() );
+            }
+        }
+        return builder.toString();
+    }
+
+    private static String simpleClassName( String className )
+    {
+        return className.substring( className.lastIndexOf( '.' ) );
+    }
 }

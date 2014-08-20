@@ -108,4 +108,9 @@ public class NetworkWritableLogChannel implements WritableLogChannel
     public void close() throws IOException
     {
     }
+
+    @Override
+    public void emptyBufferIntoChannelAndClearIt() throws IOException
+    {
+    }
 }

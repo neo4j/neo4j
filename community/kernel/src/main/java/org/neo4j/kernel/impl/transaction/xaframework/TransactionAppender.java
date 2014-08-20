@@ -61,4 +61,6 @@ public interface TransactionAppender
      * of the supplied transaction was {@code <=} last committed transaction id.
      */
     boolean append( CommittedTransactionRepresentation transaction ) throws IOException;
+    
+    void close();
 }

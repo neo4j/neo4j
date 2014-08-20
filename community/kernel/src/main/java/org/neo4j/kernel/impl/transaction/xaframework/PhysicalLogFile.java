@@ -100,10 +100,10 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         logRotationControl.awaitAllTransactionsClosed();
         logRotationControl.forceEverything();
         /*
-         *  We simply increment the version, essentially "rotating" away
-         *  the current active log file, to avoid having a recovery on
-         *  next startup. Not necessary, simply speeds up the startup
-         *  process.
+         * We simply increment the version, essentially "rotating" away
+         * the current active log file, to avoid having a recovery on
+         * next startup. Not necessary, simply speeds up the startup
+         * process.
          */
         logVersionRepository.incrementAndGetVersion();
     }
@@ -147,10 +147,12 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public synchronized void checkRotation() throws IOException
+    public void checkRotation() throws IOException
     {
-        // Whereas channel.size() should be fine, we're safer calling position() due to possibility
-        // of this file being memory mapped or whatever.
+        /*
+         * Whereas channel.size() should be fine, we're safer calling position() due to possibility
+         * of this file being memory mapped or whatever.
+         */
         if ( channel.position() >= rotateAtSize )
         {
             forceRotate();
@@ -159,21 +161,29 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
 
     // Do not expose this through the interface; only used in robustness testing.
     public synchronized void forceRotate() throws IOException
-    {
-        channel = rotate( channel );
-        writer.setChannel( channel );
+    {   // The above synchronization is for managing concurrent access to f.ex. stop()
+        
+        /*
+         * First we flush the store. If we fail now or during the flush, on recovery we'll discover
+         * the current log file and replay it. Everything will be ok.
+         */
+        logRotationControl.awaitAllTransactionsClosed();
+        logRotationControl.forceEverything();
+        
+        /* We synchronize on the writer because we want to have a monitor that another thread
+         * doing force (think batching of writes), such that it can't see a bad state of the writer
+         * even when rotating underlying channels.
+         */
+        synchronized ( writer )
+        {
+            channel = rotate( channel );
+            writer.setChannel( channel );
+        }
     }
 
     private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog )
             throws IOException
     {
-        /*
-         * First we flush the store. If we fail now or during the flush, on
-         * recovery we'll discover the current log file and replay it. Everything
-         * will be ok.
-         */
-        logRotationControl.awaitAllTransactionsClosed();
-        logRotationControl.forceEverything();
         /*
          * The store is now flushed. If we fail now the recovery code will open the
          * current log file and replay everything. That's unnecessary but totally ok.

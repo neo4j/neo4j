@@ -43,7 +43,6 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
     @Override
     public void force() throws IOException
     {
-        emptyBufferIntoChannelAndClearIt();
         channel.force( false );
     }
 
@@ -52,7 +51,8 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
         this.channel = channel;
     }
 
-    private void emptyBufferIntoChannelAndClearIt() throws IOException
+    @Override
+    public void emptyBufferIntoChannelAndClearIt() throws IOException
     {
         buffer.flip();
         channel.write( buffer );

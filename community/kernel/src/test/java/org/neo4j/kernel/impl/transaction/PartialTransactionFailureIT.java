@@ -97,8 +97,8 @@ public class PartialTransactionFailureIT
 
         adversary.enable();
         CountDownLatch latch = new CountDownLatch( 1 );
-        Thread t1 = new Thread( createRelationship( db, a, b, latch ) );
-        Thread t2 = new Thread( createRelationship( db, c, d, latch ) );
+        Thread t1 = new Thread( createRelationship( db, a, b, latch ), "T1" );
+        Thread t2 = new Thread( createRelationship( db, c, d, latch ), "T2" );
         t1.start();
         t2.start();
         // Wait for both threads to get going

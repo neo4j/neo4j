@@ -113,6 +113,8 @@ public class GraphDatabaseServiceTest
             {
             }
         }
+        
+        db.shutdown();
     }
 
     @Test
@@ -136,6 +138,8 @@ public class GraphDatabaseServiceTest
             {
             }
         }
+
+        db.shutdown();
     }
 
     @Test
@@ -159,6 +163,8 @@ public class GraphDatabaseServiceTest
                 }
             }
         }
+
+        db.shutdown();
     }
 
     @Test

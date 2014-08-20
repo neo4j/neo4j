@@ -126,6 +126,11 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public void close() throws IOException
     {
     }
+    
+    @Override
+    public void emptyBufferIntoChannelAndClearIt() throws IOException
+    {
+    }
 
     @Override
     public byte get() throws ReadPastEndException

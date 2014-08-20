@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.io.File;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -54,8 +56,8 @@ public class TestDenseNodeRelChainPositionIT
         File dbPath = TargetDirectory.forTest( getClass() )
                 .cleanDirectory( "givenDenseNodeWhenAskForWrongDirectionThenIncorrectNrOfRelsReturned" );
         // Given
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dbPath.getAbsolutePath() )
-                .newGraphDatabase();
+        GraphDatabaseAPI db = cleanup.add( (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
+                dbPath.getAbsolutePath() ).newGraphDatabase() );
 
         Node node1;
         try (Transaction tx = db.beginTx())
@@ -84,4 +86,6 @@ public class TestDenseNodeRelChainPositionIT
             assertEquals(denseNodeThreshold, Iterables.count( rels2 ) );
         }
     }
+    
+    public final @Rule CleanupRule cleanup = new CleanupRule();
 }
