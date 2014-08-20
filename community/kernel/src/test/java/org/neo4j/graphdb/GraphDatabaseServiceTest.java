@@ -44,7 +44,7 @@ public class GraphDatabaseServiceTest
         // When
         try
         {
-            Transaction tx = db.beginTx();
+            db.beginTx();
             fail();
         }
         catch ( Exception e )

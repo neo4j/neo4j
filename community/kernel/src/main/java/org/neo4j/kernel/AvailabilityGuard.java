@@ -24,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
@@ -208,6 +209,30 @@ public class AvailabilityGuard
             }
 
             return false;
+        }
+    }
+    
+    public <EXCEPTION extends Throwable> void checkAvailability( long millis, Class<EXCEPTION> cls )
+            throws EXCEPTION
+    {
+        if ( !isAvailable( millis ) )
+        {
+            EXCEPTION exception;
+            try
+            {
+                exception = cls.getConstructor( String.class ).newInstance(
+                        "Timeout waiting for database to become available and allow new transactions. Waited " +
+                                Format.duration( millis ) + ". " + describeWhoIsBlocking() );
+            }
+            catch ( NoSuchMethodException e )
+            {
+                throw new Error( "Bad exception class given to this method, it doesn't have a (String) constructor", e );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+            throw exception;
         }
     }
 
