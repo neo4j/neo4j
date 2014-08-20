@@ -2,10 +2,14 @@ package org.neo4j.server;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.UriBuilder;
 
 import com.sun.jersey.spi.container.ContainerRequest;
 import com.sun.jersey.spi.container.ContainerRequestFilter;
+
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static javax.ws.rs.core.Response.status;
 
 /**
  * Changes the value of the base and request URIs to match the provided
@@ -14,7 +18,7 @@ import com.sun.jersey.spi.container.ContainerRequestFilter;
  * In doing so, it means Neo4j server can use those URIs as if they were the
  * actual request URIs.
  */
-public class XForwardHostFilter implements ContainerRequestFilter
+public class XForwardFilter implements ContainerRequestFilter
 {
     private static final String X_FORWARD_HOST_HEADER_KEY = "X-Forwarded-Host";
     private static final String X_FORWARD_PROTO_HEADER_KEY = "X-Forwarded-Proto";
@@ -29,7 +33,9 @@ public class XForwardHostFilter implements ContainerRequestFilter
         }
         catch ( URISyntaxException e )
         {
-            // Do nothing, but maybe should log
+            throw new WebApplicationException( status( INTERNAL_SERVER_ERROR )
+                    .entity( e.getMessage() )
+                    .build() );
         }
         return containerRequest;
     }

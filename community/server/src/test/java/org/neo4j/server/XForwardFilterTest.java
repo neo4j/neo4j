@@ -24,7 +24,7 @@ public class XForwardFilterTest
         // given
         final String xForwardHostAndPort = "jimwebber.org:1234";
 
-        XForwardHostFilter filter = new XForwardHostFilter();
+        XForwardFilter filter = new XForwardFilter();
 
         InBoundHeaders headers = new InBoundHeaders();
         headers.add( X_FORWARD_HOST_HEADER_KEY, xForwardHostAndPort );
@@ -46,7 +46,7 @@ public class XForwardFilterTest
         // given
         final String xForwardHostAndPort = "jimwebber.org:1234";
 
-        XForwardHostFilter filter = new XForwardHostFilter();
+        XForwardFilter filter = new XForwardFilter();
 
         InBoundHeaders headers = new InBoundHeaders();
         headers.add( X_FORWARD_HOST_HEADER_KEY, xForwardHostAndPort );
@@ -68,7 +68,7 @@ public class XForwardFilterTest
         // given
         final String theProtocol = "https";
 
-        XForwardHostFilter filter = new XForwardHostFilter();
+        XForwardFilter filter = new XForwardFilter();
 
         InBoundHeaders headers = new InBoundHeaders();
         headers.add( X_FORWARD_PROTO_HEADER_KEY, theProtocol );
@@ -90,7 +90,7 @@ public class XForwardFilterTest
         // given
         final String theProtocol = "https";
 
-        XForwardHostFilter filter = new XForwardHostFilter();
+        XForwardFilter filter = new XForwardFilter();
 
         InBoundHeaders headers = new InBoundHeaders();
         headers.add( X_FORWARD_PROTO_HEADER_KEY, theProtocol );
