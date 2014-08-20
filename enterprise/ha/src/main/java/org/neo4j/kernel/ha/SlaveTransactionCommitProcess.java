@@ -47,7 +47,7 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
     }
 
     @Override
-    public synchronized long commit( TransactionRepresentation representation ) throws TransactionFailureException
+    public long commit( TransactionRepresentation representation ) throws TransactionFailureException
     {
         try
         {
