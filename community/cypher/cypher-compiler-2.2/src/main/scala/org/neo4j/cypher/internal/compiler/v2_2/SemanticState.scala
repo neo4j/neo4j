@@ -49,6 +49,8 @@ case class Scope(symbolTable: Map[String, Symbol], parent: Option[Scope]) {
 
   def updateIdentifier(identifier: String, types: TypeSpec, positions: Seq[InputPosition]) =
     copy(symbolTable = symbolTable.updated(identifier, Symbol(identifier, positions, types)))
+
+  def isEmpty: Boolean = symbolTable.isEmpty && parent.map(_.isEmpty).getOrElse(true)
 }
 
 object Scope {
@@ -73,6 +75,8 @@ case class SemanticState(scope: Scope, typeTable: IdentityMap[ast.Expression, Ex
       case Some(symbol) =>
         Left(SemanticError(s"${identifier.name} already declared", identifier.position, symbol.positions:_*))
     }
+
+
 
   def implicitIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(identifier.name) match {

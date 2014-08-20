@@ -209,6 +209,13 @@ class SemanticStateTest extends CypherFunSuite {
     s3.expressionType(exp2).expected should equal(Some(CTAny: TypeSpec))
   }
 
+  test("should gracefully update an identifier") {
+    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
+    val s2: SemanticState = s1.newScope.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTRelationship).right.get
+    s1.symbolTypes("foo") should equal(CTNode.invariant)
+    s2.symbolTypes("foo") should equal(CTRelationship.invariant)
+  }
+
   implicit class ChainableSemanticStateEither(either: Either[SemanticError, SemanticState]) {
     def then(next: SemanticState => Either[SemanticError, SemanticState]): Either[SemanticError, SemanticState] = {
       either match {

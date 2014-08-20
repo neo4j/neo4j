@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.Normal
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.reattachAliasedExpressions
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders._
@@ -39,22 +39,25 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
-  def producePlan(in: PreparedQuery, planContext: PlanContext): PipeInfo = in.abstractQuery match {
-    case q: PeriodicCommitQuery =>
-      producePlan(in.copy(abstractQuery = q.query)(in.semanticTable), planContext).
-      copy(periodicCommit = Some(PeriodicCommitInfo(q.batchSize)))
+  def producePlan(in: PreparedQuery, planContext: PlanContext): PipeInfo = {
+    val rewrite = in.rewrite(reattachAliasedExpressions)
+    rewrite.abstractQuery match {
+      case PeriodicCommitQuery(q: Query, batchSize) =>
+        buildQuery(q, planContext).
+          copy(periodicCommit = Some(PeriodicCommitInfo(batchSize)))
 
-    case q: Query =>
-      buildQuery(q, planContext)
+      case q: Query =>
+        buildQuery(q, planContext)
 
-    case q: IndexOperation =>
-      buildIndexQuery(q)
+      case q: IndexOperation =>
+        buildIndexQuery(q)
 
-    case q: UniqueConstraintOperation =>
-      buildConstraintQuery(q)
+      case q: UniqueConstraintOperation =>
+        buildConstraintQuery(q)
 
-    case q: Union =>
-      buildUnionQuery(q, planContext)
+      case q: Union =>
+        buildUnionQuery(q, planContext)
+    }
   }
 
   private val unionBuilder = new UnionBuilder(this)

@@ -125,6 +125,42 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toSet should equal(Set(Map("a" -> a)))
   }
 
+  test("Can ORDER BY an aggregating key") {
+    createNode("bar" -> "A")
+    createNode("bar" -> "A")
+    createNode("bar" -> "B")
+
+    val result = executeWithNewPlanner(
+      "MATCH (a) WITH a.bar as bars, count(*) as relCount ORDER BY a.bar RETURN *"
+    )
+
+    result should not be empty
+  }
+
+  test("Can ORDER BY a DISTINCT column") {
+    createNode("bar" -> "A")
+    createNode("bar" -> "A")
+    createNode("bar" -> "B")
+
+    val result = executeWithNewPlanner(
+      "MATCH (a) WITH DISTINCT a.bar as bars ORDER BY a.bar RETURN *"
+    )
+
+    result should not be empty
+  }
+
+  test("Can use WHERE on distinct columns") {
+    createNode("bar" -> "A")
+    createNode("bar" -> "A")
+    createNode("bar" -> "B")
+
+    val result = executeWithNewPlanner(
+      "MATCH (a) WITH DISTINCT a.bar as bars WHERE a.bar = 'B' RETURN *"
+    )
+
+    result should not be empty
+  }
+
   test("nulls passing through WITH") {
     executeWithNewPlanner("optional match (a:Start) with a match a-->b return *") should be (empty)
   }

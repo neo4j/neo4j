@@ -19,16 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.hoistExpressionsInClosingClauses
 import org.neo4j.cypher.internal.{PlanType, LRUCache}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.hoistExpressionsInClosingClauses
 import org.neo4j.cypher.internal.compiler.v2_2.commands.AbstractQuery
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Planner, PlanningMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{Planner, PlanningMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
+import org.neo4j.cypher.internal.{LRUCache, PlanType}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
@@ -57,7 +60,7 @@ trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCache
 trait AstCacheMonitor extends CypherCacheMonitor[PreparedQuery, CacheAccessor[PreparedQuery, ExecutionPlan]]
 
 object CypherCompilerFactory {
-  val monitorTag = "cypher2.1"
+  val monitorTag = "cypher2.2"
 
   def ronjaCompiler(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
@@ -106,11 +109,11 @@ case class CypherCompiler(parser: CypherParser,
 
   def prepareQuery(queryText: String, planType: PlanType): PreparedQuery = {
     val parsedStatement = parser.parse(queryText)
-    semanticChecker.check(queryText, parsedStatement)
-    val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, parsedStatement)
-    val table = semanticChecker.check(queryText, parsedStatement)
-    val query: AbstractQuery = rewrittenStatement.asQuery.setQueryText(queryText)
-    PreparedQuery(rewrittenStatement, query, queryText, extractedParams, planType)(table)
+    val cleanedStatement = parsedStatement.endoRewrite(hoistExpressionsInClosingClauses)
+    semanticChecker.check(queryText, cleanedStatement)
+    val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, cleanedStatement)
+    val table = semanticChecker.check(queryText, rewrittenStatement)
+    PreparedQuery(rewrittenStatement, queryText, extractedParams, planType)(table)
   }
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {

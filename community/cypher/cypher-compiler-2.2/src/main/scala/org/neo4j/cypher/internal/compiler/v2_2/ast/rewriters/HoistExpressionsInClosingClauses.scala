@@ -19,34 +19,41 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Return
+import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, Rewriter}
 
-object reattachAliasedExpressions extends Rewriter {
+object hoistExpressionsInClosingClauses extends Rewriter {
   def apply(in: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(in)
 
   private val findingRewriter: Rewriter = Rewriter.lift {
-    case r@Return(_, ListedReturnItems(items), orderBy, _, _) =>
+    case r@Return(distinct, returnItems @ ListedReturnItems(items), orderBy, _, _) if returnItems.containsAggregate || distinct =>
       val innerRewriter = expressionRewriter(items)
       r.copy(
         orderBy = r.orderBy.endoRewrite(innerRewriter)
       )(r.position)
 
-    case w@With(_, ListedReturnItems(items), orderBy, _, _, where) =>
+    case w@With(distinct, returnItems @ ListedReturnItems(items), orderBy, _, _, where) if returnItems.containsAggregate || distinct =>
       val innerRewriter = expressionRewriter(items)
       w.copy(
-        orderBy = w.orderBy.endoRewrite(innerRewriter)
+        orderBy = w.orderBy.endoRewrite(innerRewriter),
+        where = w.where.endoRewrite(innerRewriter)
       )(w.position)
   }
 
   private def expressionRewriter(items: Seq[ReturnItem]): Rewriter = {
-    val aliasedExpressions: Map[String, Expression] = items.map { returnItem =>
-      (returnItem.name, returnItem.expression)
+    val evaluatedExpressions: Map[Expression, String] = items.map { returnItem =>
+      (returnItem.expression, returnItem.name)
     }.toMap
+    val aliases: Seq[Identifier] = evaluatedExpressions.map { case (expr, name) =>
+      Identifier(name)(expr.position)
+    }.toSeq
 
     bottomUp(Rewriter.lift {
-      case id@Identifier(name) if aliasedExpressions.contains(name) => aliasedExpressions(name)
+      case expression: Expression if !expression.exists(PartialFunction(aliases.contains)) =>
+        val aliasOpt: Option[String] = evaluatedExpressions.get(expression)
+        val aliasIdentitifier: Option[Identifier] = aliasOpt.map(Identifier(_)(expression.position))
+
+        aliasIdentitifier.getOrElse(expression)
     })
   }
 }
