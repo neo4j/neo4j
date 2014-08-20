@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.com.RequestContext.anonymous;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -40,6 +38,7 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.progress.ProgressListener;
@@ -61,6 +60,8 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.RequestContext.anonymous;
 
 /**
  * Client-side convenience service for doing backups from a running database instance.
@@ -125,7 +126,7 @@ class BackupService
         try
         {
             StoreCopyClient storeCopier = new StoreCopyClient( tuningConfiguration, loadKernelExtensions(),
-                    new ConsoleLogger( StringLogger.SYSTEM ), new DefaultFileSystemAbstraction() );
+                    new ConsoleLogger( StringLogger.SYSTEM ), new DevNullLoggingService(), new DefaultFileSystemAbstraction() );
             storeCopier.copyStore( new StoreCopyClient.StoreCopyRequester()
             {
                 private BackupClient client;
@@ -144,7 +145,8 @@ class BackupService
                 {
                     client.stop();
                 }
-            } );
+            }, CancellationRequest.NONE );
+
             targetDb = startTemporaryDb( targetDirectory );
         }
         catch ( IOException e )

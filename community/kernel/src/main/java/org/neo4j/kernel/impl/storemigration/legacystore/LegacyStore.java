@@ -30,9 +30,9 @@ public interface LegacyStore extends Closeable
     @Override
     void close() throws IOException;
 
-    org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader getNodeStoreReader();
+    LegacyNodeStoreReader getNodeStoreReader();
 
-    org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader getRelStoreReader();
+    LegacyRelationshipStoreReader getRelStoreReader();
 
     void copyLegacyIndexStoreFile( File toDirectory ) throws IOException;
 }

@@ -1295,4 +1295,12 @@ RETURN a.name""")
   }
 
   private def relsById(in: Seq[Relationship]): Seq[Relationship] = in.sortBy(_.getId)
+
+  test("MATCH n WITH n.prop AS n2 RETURN n2.prop") {
+    // Given a single node
+    val node = createNode("prop" -> "42")
+
+    // then
+    intercept[SyntaxException](executeWithNewPlanner("MATCH n WITH n.prop AS n2 RETURN n2.prop"))
+  }
 }

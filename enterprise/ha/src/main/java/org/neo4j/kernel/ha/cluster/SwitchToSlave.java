@@ -37,6 +37,7 @@ import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -81,8 +82,8 @@ import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 public class SwitchToSlave
 {
     // TODO solve this with lifecycle instance grouping or something
-    @SuppressWarnings( "rawtypes" )
-    private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {
+    @SuppressWarnings("unchecked")
+    private static final Class<? extends Lifecycle>[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[]{
             StoreLockerLifecycleAdapter.class,
             NeoStoreXaDataSource.class,
             RequestContextFactory.class,
@@ -127,7 +128,20 @@ public class SwitchToSlave
                 config.get( HaSettings.com_chunk_size ).intValue()  );
     }
 
-    public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri ) throws Throwable
+    /**
+     * Performs a switch to the slave state. Starts the communication endpoints, switches components to the slave state
+     * and ensures that the current database is appropriate for this cluster. It also broadcasts the appropriate
+     * Slave Is Available event
+     * @param haCommunicationLife The LifeSupport instance to register the network facilities required for communication
+     *                            with the rest of the cluster
+     * @param me The URI this instance must bind to
+     * @param masterUri The URI of the master for which this instance must become slave to
+     * @param cancellationRequest A handle for gracefully aborting the switch
+     * @return The URI that was broadcasted as the slave endpoint or null if the task was cancelled
+     * @throws Throwable
+     */
+    public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri, CancellationRequest
+            cancellationRequest ) throws Throwable
     {
         console.log( "ServerId " + config.get( ClusterSettings.server_id ) + ", moving to slave for master " +
                 masterUri );
@@ -137,14 +151,28 @@ public class SwitchToSlave
         idGeneratorFactory.switchToSlave();
         if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
         {
-            copyStoreFromMaster( masterUri );
+            copyStoreFromMaster( masterUri, cancellationRequest );
         }
 
+        /*
+         * The following check is mandatory, since the store copy can be cancelled and if it was actually happening
+         * then we can't continue, as there is no store in place
+         */
+        if ( cancellationRequest.cancellationRequested() )
+        {
+            return null;
+        }
+        
         NeoStoreXaDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreXaDataSource.class );
         nioneoDataSource.afterModeSwitch();
 
         checkDataConsistency( resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri );
 
+        if ( cancellationRequest.cancellationRequested() )
+        {
+            return null;
+        }
+        
         URI slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri );
 
         console.log( "ServerId " + config.get( ClusterSettings.server_id ) +
@@ -292,7 +320,7 @@ public class SwitchToSlave
         return URI.create( "ha://" + host + ":" + port + "?serverId=" + serverId );
     }
 
-    private void copyStoreFromMaster( URI masterUri ) throws Throwable
+    private void copyStoreFromMaster( URI masterUri, CancellationRequest cancellationRequest ) throws Throwable
     {
         FileSystemAbstraction fs = resolver.resolveDependency( FileSystemAbstraction.class );
         // Must be called under lock on XaDataSourceManager
@@ -300,13 +328,12 @@ public class SwitchToSlave
         try
         {
             // Remove the current store - neostore file is missing, nothing we can really do
-//            stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
             final MasterClient copyMaster = newMasterClient( masterUri, null, life );
             life.start();
 
             // This will move the copied db to the graphdb location
             console.log( "Copying store from master" );
-            new StoreCopyClient( config, kernelExtensions, console, fs ).copyStore(
+            new StoreCopyClient( config, kernelExtensions, console, logging, fs ).copyStore(
                     new StoreCopyClient.StoreCopyRequester()
             {
                 @Override
@@ -320,7 +347,7 @@ public class SwitchToSlave
                 public void done()
                 {   // Nothing to clean up here
                 }
-            } );
+            }, cancellationRequest );
 
             startServicesAgain();
             console.log( "Finished copying store from master" );
@@ -344,8 +371,7 @@ public class SwitchToSlave
 
     private void startServicesAgain() throws Throwable
     {
-        List<Class> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
-        for ( Class<?> serviceClass : services )
+        for ( Class<? extends Lifecycle> serviceClass : SERVICES_TO_RESTART_FOR_STORE_COPY )
         {
             ((Lifecycle) resolver.resolveDependency( serviceClass )).start();
         }
@@ -353,7 +379,7 @@ public class SwitchToSlave
 
     private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
     {
-        List<Class> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
+        List<Class<? extends Lifecycle>> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
         Collections.reverse( services );
         for ( Class serviceClass : services )
         {

@@ -30,6 +30,7 @@ import org.neo4j.com.Response;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -53,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.writeLogHeader;
@@ -72,6 +74,7 @@ public class StoreCopyClient
     private final Config config;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final ConsoleLogger console;
+    private final Logging logging;
     private final FileSystemAbstraction fs;
 
     /**
@@ -86,15 +89,17 @@ public class StoreCopyClient
     }
 
     public StoreCopyClient( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
-            ConsoleLogger console, FileSystemAbstraction fs )
+            ConsoleLogger console, Logging logging, FileSystemAbstraction fs )
     {
         this.config = config;
         this.kernelExtensions = kernelExtensions;
         this.console = console;
+        this.logging = logging;
         this.fs = fs;
     }
 
-    public void copyStore( StoreCopyRequester requester ) throws IOException
+    public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest )
+            throws IOException
     {
         // Clear up the current temp directory if there
         File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
@@ -113,10 +118,16 @@ public class StoreCopyClient
         {
             requester.done();
         }
+        
+        // This is a good place to check if the switch has been cancelled
+        checkCancellation( cancellationRequest, tempStore );
 
         // Run recovery, so that the transactions we just wrote into the active log will be applied.
         GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
         graphDatabaseService.shutdown();
+        
+        // This is a good place to check if the switch has been cancelled
+        checkCancellation( cancellationRequest, tempStore );
 
         // All is well, move the streamed files to the real store directory
         for ( File candidate : tempStore.listFiles( STORE_FILE_FILTER ) )
@@ -188,12 +199,18 @@ public class StoreCopyClient
     private GraphDatabaseService newTempDatabase( File tempStore )
     {
         return new GraphDatabaseFactory()
+                .setLogging( logging )
                 .setKernelExtensions( kernelExtensions )
                 .newEmbeddedDatabaseBuilder( tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade, config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )
-                .setConfig( InternalAbstractGraphDatabase.Configuration.log_configuration_file, "neo4j-backup-logback.xml" )
+                .setConfig( InternalAbstractGraphDatabase.Configuration.log_configuration_file, logConfigFileName() )
                 .newGraphDatabase();
+    }
+    
+    String logConfigFileName()
+    {
+        return "neo4j-backup-logback.xml";
     }
 
     private StoreWriter decorateWithProgressIndicator( final StoreWriter actual )
@@ -228,6 +245,14 @@ public class StoreCopyClient
         {
             FileUtils.deleteRecursively( directory );
             directory.mkdir();
+        }
+    }
+    
+    private void checkCancellation( CancellationRequest cancellationRequest, File tempStore ) throws IOException
+    {
+        if ( cancellationRequest.cancellationRequested() )
+        {
+            cleanDirectory( tempStore );
         }
     }
 

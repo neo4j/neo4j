@@ -32,12 +32,14 @@ import org.mockito.InOrder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
+import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.Unzip;
+import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -49,6 +51,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class TestPerformUpgradeIfNecessary
@@ -110,21 +113,28 @@ public class TestPerformUpgradeIfNecessary
     @Test
     public void shouldUpgradeDatabase() throws IOException
     {
+        // Given
         Configuration serverConfig = buildProperties( true );
         prepareSampleLegacyDatabase( STORE_DIRECTORY );
 
         Monitor monitor = mock( Monitor.class );
-        PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
-        		loadNeo4jProperties(), DEV_NULL, monitor );
+        TestLogging logging = new TestLogging();
 
+        PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
+        		loadNeo4jProperties(), logging, monitor );
+
+        // When
         boolean exit = upgrader.run();
 
+        // Then
         assertEquals( true, exit );
 
         InOrder order = inOrder( monitor );
         order.verify( monitor, times( 1 ) ).migrationNeeded();
         order.verify( monitor, times( 1 ) ).migrationCompleted();
         order.verifyNoMoreInteractions();
+
+        logging.getMessagesLog( ParallelBatchImporter.class ).assertAtLeastOnce( info( "Import completed" ) );
     }
 
     private Configuration buildProperties(boolean allowStoreUpgrade) throws IOException
