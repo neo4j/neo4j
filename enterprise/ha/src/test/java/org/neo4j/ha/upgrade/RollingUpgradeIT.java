@@ -26,6 +26,7 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +72,8 @@ import static org.neo4j.kernel.ha.HaSettings.ha_server;
 public class RollingUpgradeIT
 {
     private static final String OLD_VERSION = "2.0.4";
+
+    private static final int CLUSTER_SIZE = 3;
 
     public static final RelationshipType type1 = DynamicRelationshipType.withName( "type1" );
     public static final RelationshipType type2 = DynamicRelationshipType.withName( "type2" );
@@ -181,18 +184,17 @@ public class RollingUpgradeIT
                 DIR.cacheDirectory( "download" ), OLD_VERSION + "-enterprise" );
         String classpath = assembleClassPathFromPackage( oldVersionPackage );
         debug( "Starting " + OLD_VERSION + " cluster in separate jvms" );
-        @SuppressWarnings( "rawtypes" )
-        Future[] legacyDbFutures = new Future[3];
-        for ( int i = 0; i < legacyDbFutures.length; i++ )
+        List<Future<LegacyDatabase>> legacyDbFutures = new ArrayList<>( CLUSTER_SIZE );
+        for ( int i = 0; i < CLUSTER_SIZE; i++ )
         {
-            legacyDbFutures[i] = LegacyDatabaseImpl.start( classpath,
-                    storeDir( i ), config( i ) );
+            Future<LegacyDatabase> dbStart = LegacyDatabaseImpl.start( classpath, storeDir( i ), config( i ) );
+            legacyDbFutures.add( dbStart );
             debug( "  Started " + i );
         }
-        legacyDbs = new LegacyDatabase[legacyDbFutures.length];
-        for ( int i = 0; i < legacyDbFutures.length; i++ )
+        legacyDbs = new LegacyDatabase[CLUSTER_SIZE];
+        for ( int i = 0; i < CLUSTER_SIZE; i++ )
         {
-            legacyDbs[i] = (LegacyDatabase) legacyDbFutures[i].get();
+            legacyDbs[i] = legacyDbFutures.get( i ).get();
         }
 
         for ( LegacyDatabase db : legacyDbs )
@@ -201,9 +203,9 @@ public class RollingUpgradeIT
             db.awaitStarted( 10, TimeUnit.SECONDS );
             debug( "  " + db.getStoreDir() + " fully started" );
         }
-        for ( int i = 0; i < legacyDbs.length; i++ )
+        for ( LegacyDatabase legacyDb : legacyDbs )
         {
-            long node = legacyDbs[i].createNode();
+            long node = legacyDb.createNode();
             for ( LegacyDatabase db : legacyDbs )
             {
                 db.verifyNodeExists( node );

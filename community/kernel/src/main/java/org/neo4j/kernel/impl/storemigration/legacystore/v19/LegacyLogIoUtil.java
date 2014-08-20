@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -36,20 +35,28 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 public class LegacyLogIoUtil
 {
+    public static interface CommandReader
+    {
+        XaCommand readCommand( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException;
+    }
+
     // Reads the transaction log format from 1.9
     private static final short LEGACY_FORMAT_VERSION = ((byte) 2 ) & 0xFF;
-    static final int LOG_HEADER_SIZE = 16;
+
+    private static final int LOG_HEADER_SIZE = 16;
+
+    private final CommandReader commandReader;
+
+    public LegacyLogIoUtil( CommandReader commandReader )
+    {
+        this.commandReader = commandReader;
+    }
 
     public static long[] readLogHeader( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
-        StoreChannel channel = fileSystem.open( file, "r" );
-        try
+        try ( StoreChannel channel = fileSystem.open( file, "r" ) )
         {
-            return readLogHeader( ByteBuffer.allocateDirect( 100*1000 ), channel, true );
-        }
-        finally
-        {
-            channel.close();
+            return readLogHeader( ByteBuffer.allocateDirect( 100 * 1000 ), channel, true );
         }
     }
 
@@ -78,7 +85,7 @@ public class LegacyLogIoUtil
         return new long[] { version, previousCommittedTx };
     }
 
-    public static LogEntry readEntry( ByteBuffer buffer, ReadableByteChannel channel ) throws IOException
+    public LogEntry readEntry( ByteBuffer buffer, ReadableByteChannel channel ) throws IOException
     {
         try
         {
@@ -90,7 +97,7 @@ public class LegacyLogIoUtil
         }
     }
 
-    public static LogEntry readLogEntry( ByteBuffer buffer, ReadableByteChannel channel )
+    public LogEntry readLogEntry( ByteBuffer buffer, ReadableByteChannel channel )
             throws IOException, ReadPastEndException
     {
         byte entry = readNextByte( buffer, channel );
@@ -161,12 +168,11 @@ public class LegacyLogIoUtil
                 readNextLong( buf, channel ), readNextLong( buf, channel ) );
     }
 
-    private static LogEntry.Command readTxCommandEntry(
-            ByteBuffer buf, ReadableByteChannel channel )
-            throws IOException, ReadPastEndException
+    private LogEntry.Command readTxCommandEntry( ByteBuffer buf,
+                                                 ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
         int identifier = readNextInt( buf, channel );
-        XaCommand command = LegacyCommandReader.readCommand( channel, buf );
+        XaCommand command = commandReader.readCommand( channel, buf );
         if ( command == null )
         {
             return null;

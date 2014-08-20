@@ -164,24 +164,30 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         // Finish the import of nodes and relationships
         importer.shutdown();
         if ( legacyStore instanceof Legacy19Store )
-        { // we need may need to upgrade the property keys
-            PropertyStore propertyStore = storeFactory( fileSystem, migrationDir, dependencyResolver )
+        {
+            Legacy19Store legacy19Store = (Legacy19Store) legacyStore;
+
+            // we need may need to upgrade the property keys
+            PropertyStore propertyStore = storeFactory( fileSystem, migrationDir )
                     .newPropertyStore( new File( migrationDir.getPath(),
                                                  NeoStore.DEFAULT_NAME + StoreFactory.PROPERTY_STORE_NAME ) );
             try
             {
-                migratePropertyKeys( (Legacy19Store) legacyStore, propertyStore );
+                migratePropertyKeys( legacy19Store, propertyStore );
             }
             finally
             {
                 propertyStore.close();
             }
+
+            legacy19Store.migrateTransactionLogs( fileSystem, migrationDir, storeDir );
+            legacy19Store.migrateLuceneLogs( fileSystem, migrationDir, storeDir );
         }
         // Close
         legacyStore.close();
     }
 
-    private StoreFactory storeFactory( FileSystemAbstraction fileSystem, File migrationDir, DependencyResolver resolve )
+    private StoreFactory storeFactory( FileSystemAbstraction fileSystem, File migrationDir )
     {
         return new StoreFactory(
                 StoreFactory.configForNeoStore( config, new File( migrationDir, NeoStore.DEFAULT_NAME ) ),
@@ -379,6 +385,12 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
                 true,   // allow overwrite target files
                 StoreFileType.values() );
         StoreFile20.ensureStoreVersion( fileSystem, storeDir, StoreFile20.currentStoreFiles() );
+
+        if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
+        {
+            Legacy19Store.moveRewrittenTransactionLogs( migrationDir, storeDir );
+            Legacy19Store.moveRewrittenLuceneLogs( migrationDir, storeDir );
+        }
     }
 
     @Override
