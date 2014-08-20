@@ -28,141 +28,141 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_2.RelTypeId
 import scala.collection.mutable
 
-class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
-  test("select(label scan) < select(all nodes scan)") {
-    val semanticTable = newMockedSemanticTable
-    val statistics = newMockedStatistics
-    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
-    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
-
-    val cost1 = cost(
-      Selection(
-        Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
-        NodeByLabelScan("a", Left("Label"))
-      )
-    )
-
-    val cost2 = cost(
-      Selection(
-        Seq(
-          Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
-          HasLabels(Identifier("a")_, Seq(LabelName("Label")_))_
-        ),
-        AllNodesScan("a")
-      )
-    )
-
-    cost1 should be < cost2
-  }
-
-  test("label scan < select(all nodes scan)") {
-    val semanticTable = newMockedSemanticTable
-    val statistics = newMockedStatistics
-    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
-    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
-
-    val cost1 = cost(
-      NodeByLabelScan("a", Left("Label"))
-    )
-
-    val cost2 = cost(
-      Selection(
-        Seq(
-          Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
-          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("12")_)_
-        ),
-        AllNodesScan("b")
-      )
-    )
-
-    cost1 should be < cost2
-  }
-
-  test("all node scan < select(all nodes scan)") {
-    val semanticTable = newMockedSemanticTable
-    val statistics = newMockedStatistics
-    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
-    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
-
-    val cost1 = cost(
-      AllNodesScan("a")
-    )
-
-    val cost2 = cost(
-      Selection(
-        Seq(
-          Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
-          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("12")_)_
-        ),
-        AllNodesScan("b")
-      )
-    )
-
-
-    cost1 should be < cost2
-  }
-
-  test("expand(select(all nodes scan)) < expand(all node scan)") {
-    val semanticTable = newMockedSemanticTable
-    val statistics = newMockedStatistics
-    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
-    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
-
-    val cost1 = cost(
-      Expand(
-        Selection(
-          Seq(
-            Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
-            Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("12")_)_
-          ),
-          AllNodesScan("b")
-        ),
-        "b", Direction.OUTGOING, Seq.empty, "c", "r1", SimplePatternLength
-      )
-    )
-
-    val cost2 = cost(
-      Expand(
-        AllNodesScan("a"),
-        "a", Direction.OUTGOING, Seq.empty, "d", "r2", SimplePatternLength
-      )
-    )
-
-    cost1 should be < cost2
-  }
-
-  test("expand(select(all nodes scan)) < select(expand(all node scan))") {
-    val semanticTable = newMockedSemanticTable
-    when(semanticTable.resolvedRelTypeNames).thenReturn(mutable.Map("x" -> RelTypeId(12)))
-
-    val statistics = newMockedStatistics
-    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
-    when(statistics.degreeByRelationshipTypeAndDirection(RelTypeId(12), Direction.BOTH)).thenReturn(Multiplier(2.1))
-    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
-
-    val relTypeX: Seq[RelTypeName] = Seq(RelTypeName("x")_)
-
-    val cost1 = cost(
-      Expand(
-        Selection(
-          Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
-          AllNodesScan("a")
-        ),
-        "a", Direction.BOTH, relTypeX, "start", "rel", SimplePatternLength
-      )
-    )
-
-    val cost2 = cost(
-      Selection(
-        Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
-        Expand(
-          AllNodesScan("start"),
-          "start", Direction.BOTH, relTypeX, "a", "rel", SimplePatternLength
-        )
-      )
-    )
-
-    cost1 should be < cost2
-  }
-}
+//class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSupport {
+//
+//  test("select(label scan) < select(all nodes scan)") {
+//    val semanticTable = newMockedSemanticTable
+//    val statistics = newMockedStatistics
+//    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
+//    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
+//
+//    val cost1 = cost(
+//      Selection(
+//        Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
+//        NodeByLabelScan("a", Left("Label"))
+//      )
+//    )
+//
+//    val cost2 = cost(
+//      Selection(
+//        Seq(
+//          Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
+//          HasLabels(Identifier("a")_, Seq(LabelName("Label")_))_
+//        ),
+//        AllNodesScan("a")
+//      )
+//    )
+//
+//    cost1 should be < cost2
+//  }
+//
+//  test("label scan < select(all nodes scan)") {
+//    val semanticTable = newMockedSemanticTable
+//    val statistics = newMockedStatistics
+//    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
+//    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
+//
+//    val cost1 = cost(
+//      NodeByLabelScan("a", Left("Label"))
+//    )
+//
+//    val cost2 = cost(
+//      Selection(
+//        Seq(
+//          Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
+//          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("12")_)_
+//        ),
+//        AllNodesScan("b")
+//      )
+//    )
+//
+//    cost1 should be < cost2
+//  }
+//
+//  test("all node scan < select(all nodes scan)") {
+//    val semanticTable = newMockedSemanticTable
+//    val statistics = newMockedStatistics
+//    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
+//    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
+//
+//    val cost1 = cost(
+//      AllNodesScan("a")
+//    )
+//
+//    val cost2 = cost(
+//      Selection(
+//        Seq(
+//          Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
+//          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("12")_)_
+//        ),
+//        AllNodesScan("b")
+//      )
+//    )
+//
+//
+//    cost1 should be < cost2
+//  }
+//
+//  test("expand(select(all nodes scan)) < expand(all node scan)") {
+//    val semanticTable = newMockedSemanticTable
+//    val statistics = newMockedStatistics
+//    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
+//    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
+//
+//    val cost1 = cost(
+//      Expand(
+//        Selection(
+//          Seq(
+//            Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
+//            Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("12")_)_
+//          ),
+//          AllNodesScan("b")
+//        ),
+//        "b", Direction.OUTGOING, Seq.empty, "c", "r1", SimplePatternLength
+//      )
+//    )
+//
+//    val cost2 = cost(
+//      Expand(
+//        AllNodesScan("a"),
+//        "a", Direction.OUTGOING, Seq.empty, "d", "r2", SimplePatternLength
+//      )
+//    )
+//
+//    cost1 should be < cost2
+//  }
+//
+//  test("expand(select(all nodes scan)) < select(expand(all node scan))") {
+//    val semanticTable = newMockedSemanticTable
+//    when(semanticTable.resolvedRelTypeNames).thenReturn(mutable.Map("x" -> RelTypeId(12)))
+//
+//    val statistics = newMockedStatistics
+//    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
+//    when(statistics.degreeByRelationshipTypeAndDirection(RelTypeId(12), Direction.BOTH)).thenReturn(Multiplier(2.1))
+//    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
+//
+//    val relTypeX: Seq[RelTypeName] = Seq(RelTypeName("x")_)
+//
+//    val cost1 = cost(
+//      Expand(
+//        Selection(
+//          Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
+//          AllNodesScan("a")
+//        ),
+//        "a", Direction.BOTH, relTypeX, "start", "rel", SimplePatternLength
+//      )
+//    )
+//
+//    val cost2 = cost(
+//      Selection(
+//        Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
+//        Expand(
+//          AllNodesScan("start"),
+//          "start", Direction.BOTH, relTypeX, "a", "rel", SimplePatternLength
+//        )
+//      )
+//    )
+//
+//    cost1 should be < cost2
+//  }
+//}
