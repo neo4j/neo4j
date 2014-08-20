@@ -44,10 +44,12 @@ object QueryPlanProducer {
       ))
     )
 
-  def planAllNodesScan(idName: IdName) =
+  def planAllNodesScan(idName: IdName, argumentIds: Set[IdName]) =
     QueryPlan(
-      AllNodesScan(idName),
-      PlannerQuery(graph = QueryGraph(patternNodes = Set(idName))))
+      AllNodesScan(idName, argumentIds),
+      PlannerQuery(graph = QueryGraph(
+        argumentIds = argumentIds,
+        patternNodes = Set(idName))))
 
   def planApply(left: QueryPlan, right: QueryPlan) =
     QueryPlan(
@@ -69,12 +71,14 @@ object QueryPlanProducer {
                                        startNode: IdName,
                                        endNode: IdName,
                                        pattern: PatternRelationship,
+                                       argumentIds: Set[IdName],
                                        solvedPredicates: Seq[Expression] = Seq.empty) =
     QueryPlan(
-      DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode),
+      DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode, argumentIds),
       PlannerQuery(graph = QueryGraph.empty
-        .addPatternRel(pattern).
-        addPredicates(solvedPredicates: _*)
+        .addPatternRel(pattern)
+        .addPredicates(solvedPredicates: _*)
+        .addArgumentId(argumentIds.toSeq)
       )
     )
 
@@ -95,22 +99,27 @@ object QueryPlanProducer {
       Selection(predicates, left.plan),
       left.solved)
 
-  def planNodeByIdSeek(idName: IdName, nodeIds: Seq[Expression], solvedPredicates: Seq[Expression] = Seq.empty) =
+  def planNodeByIdSeek(idName: IdName, nodeIds: Seq[Expression],
+                       solvedPredicates: Seq[Expression] = Seq.empty,
+                       argumentIds: Set[IdName]) =
     QueryPlan(
-      NodeByIdSeek(idName, nodeIds),
+      NodeByIdSeek(idName, nodeIds, argumentIds),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
+        .addArgumentId(argumentIds.toSeq)
       )
     )
 
-  def planNodeByLabelScan(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression], solvedHint: Option[UsingScanHint] = None) =
+  def planNodeByLabelScan(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression],
+                          solvedHint: Option[UsingScanHint] = None, argumentIds: Set[IdName]) =
     QueryPlan(
-      NodeByLabelScan(idName, label),
+      NodeByLabelScan(idName, label, argumentIds),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
         .addHints(solvedHint)
+        .addArgumentId(argumentIds.toSeq)
       )
     )
 
@@ -118,13 +127,15 @@ object QueryPlanProducer {
                         label: ast.LabelToken,
                         propertyKey: ast.PropertyKeyToken,
                         valueExpr: QueryExpression[Expression], solvedPredicates: Seq[Expression] = Seq.empty,
-                        solvedHint: Option[UsingIndexHint] = None) =
+                        solvedHint: Option[UsingIndexHint] = None,
+                        argumentIds: Set[IdName]) =
     QueryPlan(
-      NodeIndexSeek(idName, label, propertyKey, valueExpr),
+      NodeIndexSeek(idName, label, propertyKey, valueExpr, argumentIds),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
         .addHints(solvedHint)
+        .addArgumentId(argumentIds.toSeq)
       )
     )
 
@@ -139,13 +150,15 @@ object QueryPlanProducer {
                               propertyKey: ast.PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],
                               solvedPredicates: Seq[Expression] = Seq.empty,
-                              solvedHint: Option[UsingIndexHint] = None) =
+                              solvedHint: Option[UsingIndexHint] = None,
+                              argumentIds: Set[IdName]) =
     QueryPlan(
-      NodeIndexUniqueSeek(idName, label, propertyKey, valueExpr),
+      NodeIndexUniqueSeek(idName, label, propertyKey, valueExpr, argumentIds),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
         .addHints(solvedHint)
+        .addArgumentId(argumentIds.toSeq)
       )
     )
 
@@ -234,18 +247,20 @@ object QueryPlanProducer {
                                          leftNode: IdName,
                                          rightNode: IdName,
                                          pattern: PatternRelationship,
+                                         argumentIds: Set[IdName],
                                          solvedPredicates: Seq[Expression] = Seq.empty) =
     QueryPlan(
-      UndirectedRelationshipByIdSeek(idName, relIds, leftNode, rightNode),
+      UndirectedRelationshipByIdSeek(idName, relIds, leftNode, rightNode, argumentIds),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternRel(pattern)
+        .addArgumentId(argumentIds.toSeq)
       )
     )
 
   def planQueryArgumentRow(queryGraph: QueryGraph): QueryPlan = {
     val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
     val patternRels = queryGraph.patternRelationships.filter(rel => queryGraph.argumentIds.contains(rel.name))
-    val otherIds = queryGraph.argumentIds -- patternNodes -- patternRels.map(_.name)
+    val otherIds = queryGraph.argumentIds -- patternNodes
     planArgumentRow(patternNodes, patternRels, otherIds)
   }
 
@@ -263,7 +278,8 @@ object QueryPlanProducer {
       PlannerQuery(graph =
         QueryGraph(
           argumentIds = coveredIds,
-          patternNodes = patternNodes
+          patternNodes = patternNodes,
+          patternRelationships = Set.empty
         ))
     )
 

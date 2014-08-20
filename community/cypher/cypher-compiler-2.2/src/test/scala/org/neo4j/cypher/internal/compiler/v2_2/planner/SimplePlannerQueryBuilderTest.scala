@@ -1014,5 +1014,65 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     )
   }
 
+  test("MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
+      buildPlannerQuery("MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b", normalize = true)
+
+    println(query.toString)
+  }
+
+  test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
+      buildPlannerQuery("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2", normalize = true)
+
+    query.graph.patternNodes should equal(Set(IdName("a1"), IdName("b1")))
+    query.graph.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r"), (IdName("a1"), IdName("b1")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    ))
+    query.horizon should equal(RegularQueryProjection(
+      projections = Map(
+        "r" -> Identifier("r")_,
+        "a1" -> Identifier("a1")_,
+        "b1" -> Identifier("b1")_
+      ),
+      shuffle = QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("1")_))
+    ))
+
+    val tail = query.tail.get
+    tail.graph.argumentIds should equal(Set(IdName("r"), IdName("a1")))
+    tail.graph.patternNodes should equal(Set())
+
+    val optionalMatch :: Nil = tail.graph.optionalMatches
+    optionalMatch.argumentIds should equal(Set(IdName("a1"), IdName("r")))
+  }
+
+  test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2, a2") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
+      buildPlannerQuery("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2, a2", normalize = true)
+
+    query.graph.patternNodes should equal(Set(IdName("a1"), IdName("b1")))
+    query.graph.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r"), (IdName("a1"), IdName("b1")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    ))
+    query.horizon should equal(RegularQueryProjection(
+      projections = Map(
+        "r" -> Identifier("r")_,
+        "a1" -> Identifier("a1")_,
+        "b1" -> Identifier("b1")_
+      ),
+      shuffle = QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("1")_))
+    ))
+
+    val tail = query.tail.get
+    tail.graph.argumentIds should equal(Set(IdName("r"), IdName("a1")))
+    tail.graph.patternNodes should equal(Set())
+
+    val optionalMatch :: Nil = tail.graph.optionalMatches
+    optionalMatch.argumentIds should equal(Set(IdName("a1"), IdName("r")))
+    optionalMatch.selections should equal(Selections(Set(
+      Predicate(Set(IdName("a1"), IdName("a2")), Equals(Identifier("a1")_, Identifier("a2")_)_)
+    )))
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }

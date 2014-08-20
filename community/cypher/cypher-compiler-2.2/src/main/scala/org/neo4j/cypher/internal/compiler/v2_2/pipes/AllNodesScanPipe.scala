@@ -28,7 +28,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 case class AllNodesScanPipe(ident: String)(implicit pipeMonitor: PipeMonitor) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    state.query.nodeOps.all.map(n => ExecutionContext.from(ident -> n))
+    state.query.nodeOps.all.map(n =>
+      state.initialContext.getOrElse(ExecutionContext.empty) += (ident -> n)
+    )
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 

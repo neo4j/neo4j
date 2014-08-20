@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.Direction
 
 object SimplePlannerQueryBuilder {
@@ -48,7 +49,7 @@ object SimplePlannerQueryBuilder {
         patternRelationships = relationships.toSet,
         patternNodes = patternNodes.toSet
       ).addPredicates(predicates: _*)
-      qg.addArgumentId(qg.coveredIds.filter(_.name.isNamed).toSeq)
+      qg.addArgumentId(qg.allCoveredIds.filter(_.name.isNamed).toSeq)
     }
   }
 
@@ -113,7 +114,7 @@ object SimplePlannerQueryBuilder {
   }
 }
 
-class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
+class SimplePlannerQueryBuilder extends PlannerQueryBuilder with CollectionSupport {
 
   import SimplePlannerQueryBuilder.PatternDestructuring._
 
@@ -182,7 +183,9 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
   override def produce(parsedQuery: Query): QueryPlanInput = parsedQuery match {
     case Query(None, SingleQuery(clauses)) =>
-      val singleQueryPlanInput = produceQueryGraphFromClauses(SingleQueryPlanInput.empty, clauses)
+      val input @ SingleQueryPlanInput(query, table) = produceQueryGraphFromClauses(SingleQueryPlanInput.empty, clauses)
+      val singleQueryPlanInput = input.copy(q = fixArgumentIds(input.q))
+
       QueryPlanInput(
         query = UnionQuery(Seq(singleQueryPlanInput.q), distinct = false),
         patternInExpression = singleQueryPlanInput.patternExprTable
@@ -194,7 +197,10 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         case _: UnionAll      => false
         case _: UnionDistinct => true
       }
-      val plannedQueries: Seq[SingleQueryPlanInput] = queries.reverseMap(x => produceQueryGraphFromClauses(SingleQueryPlanInput.empty, x.clauses))
+      val plannedQueries: Seq[SingleQueryPlanInput] = queries.reverseMap(x => {
+        val input @ SingleQueryPlanInput(query, table) = produceQueryGraphFromClauses(SingleQueryPlanInput.empty, x.clauses)
+        input.copy(q = fixArgumentIds(input.q))
+      })
       val table = plannedQueries.map(_.patternExprTable).reduce(_ ++ _)
       QueryPlanInput(
         query = UnionQuery(plannedQueries.map(_.q), distinct),
@@ -283,9 +289,9 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         val tailInput: SingleQueryPlanInput = SingleQueryPlanInput(PlannerQuery(QueryGraph(selections = selections)), newPatternInExpressionTable)
         val tailPlannedOutput = produceQueryGraphFromClauses(tailInput, tl)
 
-        val inputIds = input.q.graph.coveredIds
+        val inputIds = input.q.graph.allCoveredIds
         val tailQuery = tailPlannedOutput.q
-        val argumentIds = inputIds intersect tailQuery.graph.coveredIds
+        val argumentIds = inputIds intersect tailQuery.graph.allCoveredIds
         val items = QueryProjection.forIds(inputIds)
         val shuffle = QueryShuffle(
           produceSortItems(optOrderBy),
@@ -313,7 +319,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         val tail = produceQueryGraphFromClauses(tailInput, tl)
 
         val inputIds = projection.keySet.map(IdName)
-        val argumentIds = inputIds intersect tail.q.graph.coveredIds
+        val argumentIds = inputIds intersect tail.q.graph.allCoveredIds
 
         val newQuery =
           input.q
@@ -327,8 +333,8 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         val tailInput: SingleQueryPlanInput = SingleQueryPlanInput(PlannerQuery.empty, input.patternExprTable)
         val tailPlannedOutput: SingleQueryPlanInput = produceQueryGraphFromClauses(tailInput, tl)
         val tailQuery: PlannerQuery = tailPlannedOutput.q
-        val inputIds = input.q.graph.coveredIds
-        val argumentIds = inputIds intersect tailQuery.graph.coveredIds
+        val inputIds = input.q.graph.allCoveredIds
+        val argumentIds = inputIds intersect tailQuery.graph.allCoveredIds
         val unwind = UnwindProjection(IdName(identifier.name), expression)
 
         val newQuery =
@@ -344,6 +350,16 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
       case x =>
         throw new CantHandleQueryException(x.toString())
     }
+  }
+
+  private def fixArgumentIds(plannerQuery: PlannerQuery): PlannerQuery = {
+    val optionalMatches = plannerQuery.graph.optionalMatches
+    val (_, newOptionalMatches) = optionalMatches.foldMap(plannerQuery.graph.coveredIds) { case (args, qg) =>
+      (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.allCoveredIds))
+    }
+    plannerQuery
+      .updateGraph(_.withOptionalMatches(newOptionalMatches))
+      .updateTail(fixArgumentIds)
   }
 
   private def produceSortItems(optOrderBy: Option[OrderBy]) =

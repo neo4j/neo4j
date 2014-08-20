@@ -68,10 +68,13 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   def withArgumentIds(newArgumentIds: Set[IdName]): QueryGraph =
     copy(argumentIds = newArgumentIds)
 
-
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
-    val argumentIds = coveredIds intersect optionalMatch.coveredIds
+    val argumentIds = allCoveredIds intersect optionalMatch.allCoveredIds
     copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentId(argumentIds.toSeq))
+  }
+
+  def withOptionalMatches(optionalMatches: Seq[QueryGraph]): QueryGraph = {
+    copy(optionalMatches = optionalMatches)
   }
 
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
@@ -84,10 +87,17 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] =
     patternRelationships.filter { r => r.left == id || r.right == id }
 
+  def allPatternNodes: Set[IdName] =
+    patternNodes ++ optionalMatches.flatMap(_.allPatternNodes)
+
   def coveredIds: Set[IdName] = {
     val patternIds = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships)
-    val optionalMatchIds = optionalMatches.flatMap(_.coveredIds)
-    patternIds ++ argumentIds ++ optionalMatchIds
+    patternIds ++ argumentIds ++ selections.predicates.flatMap(_.dependencies)
+  }
+
+  def allCoveredIds: Set[IdName] = {
+    val optionalMatchIds = optionalMatches.flatMap(_.allCoveredIds)
+    coveredIds ++ optionalMatchIds
   }
 
   val allHints: Set[Hint] =

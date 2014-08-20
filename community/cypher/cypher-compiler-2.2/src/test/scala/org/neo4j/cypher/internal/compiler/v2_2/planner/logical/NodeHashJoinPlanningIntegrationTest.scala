@@ -48,8 +48,8 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         planSelection(
           Seq(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
           planNodeHashJoin("b",
-            planExpand(planAllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength, r1),
-            planExpand(planAllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength, r2)
+            planExpand(planAllNodesScan("a", Set.empty), "a", Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength, r1),
+            planExpand(planAllNodesScan("c", Set.empty), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength, r2)
           )
         ),
         expressions = Map("b" -> Identifier("b") _)

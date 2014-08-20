@@ -40,22 +40,22 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
   import GuessingEstimation._
 
   def apply(plan: LogicalPlan): Cardinality = plan match {
-    case AllNodesScan(_) =>
+    case AllNodesScan(_, _) =>
       statistics.nodesCardinality
 
-    case NodeByLabelScan(_, Left(_)) =>
+    case NodeByLabelScan(_, Left(_), _) =>
       statistics.nodesCardinality * LABEL_NOT_FOUND_SELECTIVITY
 
-    case NodeByLabelScan(_, Right(labelId)) =>
+    case NodeByLabelScan(_, Right(labelId), _) =>
       statistics.nodesWithLabelCardinality(labelId)
 
-    case NodeByIdSeek(_, nodeIds) =>
+    case NodeByIdSeek(_, nodeIds, _) =>
       Cardinality(nodeIds.size)
 
-    case NodeIndexSeek(_, _, _, _) =>
+    case NodeIndexSeek(_, _, _, _, _) =>
       statistics.nodesCardinality * INDEX_SEEK_SELECTIVITY
 
-    case NodeIndexUniqueSeek(_, _, _, _) =>
+    case NodeIndexUniqueSeek(_, _, _, _, _) =>
       Cardinality(1)
 
     case NodeHashJoin(_, left, right) =>
@@ -114,10 +114,10 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case selectOrSemiApply @ LetSelectOrAntiSemiApply(outer, inner, _, expr) =>
       cardinality(outer) * predicateSelectivity(Seq(expr)) // TODO: This is not true. We should calculate cardinality on QG and not LP
 
-    case DirectedRelationshipByIdSeek(_, relIds, _, _) =>
+    case DirectedRelationshipByIdSeek(_, relIds, _, _, _) =>
       Cardinality(relIds.size)
 
-    case UndirectedRelationshipByIdSeek(_, relIds, _, _) =>
+    case UndirectedRelationshipByIdSeek(_, relIds, _, _, _) =>
       Cardinality(relIds.size * 2)
 
     case Projection(left, _) =>

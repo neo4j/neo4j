@@ -31,8 +31,9 @@ import org.neo4j.graphdb.Node
 case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: Seq[Expression])(implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val nodeIds = nodeIdsExpr.map(_.apply(ExecutionContext.empty)(state))
-    new IdSeekIterator[Node](ident, state.query.nodeOps, nodeIds.iterator)
+    val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
+    val nodeIds = nodeIdsExpr.map(_.apply(ctx)(state))
+    new IdSeekIterator[Node](ident, state.query.nodeOps, nodeIds.iterator).map(ctx.clone() ++ _)
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)

@@ -21,6 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 
-case class NodeByIdSeek(idName: IdName, nodeIds: Seq[Expression]) extends LogicalLeafPlan {
-  def availableSymbols: Set[IdName] = Set(idName)
+case class NodeByIdSeek(idName: IdName, nodeIds: Seq[Expression], argumentIds: Set[IdName]) extends LogicalLeafPlan {
+  def availableSymbols: Set[IdName] = argumentIds + idName
 }

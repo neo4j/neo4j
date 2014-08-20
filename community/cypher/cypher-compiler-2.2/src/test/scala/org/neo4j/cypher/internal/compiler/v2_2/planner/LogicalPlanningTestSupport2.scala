@@ -150,7 +150,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           semanticTable.resolvedLabelIds(name) -> cardinality
       }
       val labelScanCardinality: PartialFunction[LogicalPlan, Cardinality] = {
-        case NodeByLabelScan(_, Right(labelId)) if labelIdCardinality.contains(labelId) =>
+        case NodeByLabelScan(_, Right(labelId), _) if labelIdCardinality.contains(labelId) =>
           labelIdCardinality(labelId)
       }
 

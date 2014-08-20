@@ -32,3 +32,8 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     plan
   }
 }
+
+// MATCH n OPTIONAL MATCH m-[r]->(n)
+
+
+

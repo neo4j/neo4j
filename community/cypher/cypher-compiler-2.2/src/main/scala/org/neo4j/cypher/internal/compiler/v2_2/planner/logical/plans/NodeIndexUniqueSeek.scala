@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.QueryExpression
 case class NodeIndexUniqueSeek(idName: IdName,
                                label: LabelToken,
                                propertyKey: PropertyKeyToken,
-                               valueExpr: QueryExpression[Expression])
+                               valueExpr: QueryExpression[Expression],
+                               argumentIds: Set[IdName])
                               extends LogicalLeafPlan {
-  def availableSymbols = Set(idName)
+  def availableSymbols = argumentIds + idName
 }

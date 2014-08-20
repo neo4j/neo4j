@@ -45,7 +45,7 @@ class ExpandTest
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val plan = PlanTable(Map(Set(aNode) -> planAllNodesScan(aNode)))
+    val plan = PlanTable(Map(Set(aNode) -> planAllNodesScan(aNode, Set.empty)))
 
     val qg = createQuery()
 

@@ -36,7 +36,9 @@ case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])(im
     optLabelId match {
       case Some(labelId) =>
         val nodes = state.query.getNodesByLabel(labelId.id)
-        nodes.map(n => ExecutionContext.from(ident -> n))
+        nodes.map(n =>
+          state.initialContext.getOrElse(ExecutionContext.empty) += (ident -> n)
+        )
       case None =>
         Iterator.empty
     }

@@ -33,6 +33,8 @@ object cartesianProduct extends CandidateGenerator[PlanTable] {
         for {
           planA <- plans
           planB <- plans if planA.plan != planB.plan
+          if planA.solved.graph.argumentIds.isEmpty
+          if planB.solved.graph.argumentIds.isEmpty
         } yield planCartesianProduct(planA, planB)
       CandidateList(cartesianProducts)
     } else {

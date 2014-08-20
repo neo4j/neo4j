@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 case class DirectedRelationshipByIdSeek(idName: IdName,
                                         relIds: Seq[Expression],
                                         startNode: IdName,
-                                        endNode: IdName) extends LogicalLeafPlan {
+                                        endNode: IdName,
+                                        argumentIds: Set[IdName]) extends LogicalLeafPlan {
 
-  def availableSymbols: Set[IdName] = Set(idName, startNode, endNode)
+  def availableSymbols: Set[IdName] = argumentIds ++ Set(idName, startNode, endNode)
 }

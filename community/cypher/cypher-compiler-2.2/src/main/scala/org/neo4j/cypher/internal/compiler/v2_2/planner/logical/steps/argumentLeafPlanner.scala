@@ -30,7 +30,6 @@ object argumentLeafPlanner extends LeafPlanner {
     if (givenNodeIds.isEmpty)
       Candidates()
     else
-      // TODO: This looks suspiciously wrong
-      Candidates(planArgumentRow(patternNodes = givenNodeIds, patternRels = Set.empty, other = Set.empty))
+      Candidates(planQueryArgumentRow(qg))
   }
 }

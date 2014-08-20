@@ -61,7 +61,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
 
     argumentLeafPlanner(qg) should equal(Candidates(
-      planArgumentRow(Set("a", "b"))
+      planArgumentRow(Set("a", "b"), Set.empty, Set("c"))
     ))
   }
 }
