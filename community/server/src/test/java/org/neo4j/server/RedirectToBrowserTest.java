@@ -76,5 +76,4 @@ public class RedirectToBrowserTest extends ExclusiveServerTestBase
         assertEquals( new URI( "https://foo.bar:8734/browser" ), response.getLocation() );
         response.close();
     }
-
 }
