@@ -77,7 +77,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertHasTxLocation( begin );
 
         String commitResource = begin.stringFromContent( "commit" );
-        assertThat( commitResource, matches( "http://localhost:\\d+/db/data/transaction/\\d/commit" ) );
+        assertThat( commitResource, matches( "http://localhost:\\d+/db/data/transaction/\\d+/commit" ) );
         assertThat( begin.get( "transaction" ).get( "expires" ).asText(), isValidRFCTimestamp() );
 
         // execute
@@ -105,8 +105,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertHasTxLocation( begin );
 
         // execute
-        Response execute = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] " +
-                "}" ) );
+         http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         // rollback
         Response commit = http.DELETE( begin.location() );
@@ -164,11 +163,10 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        Response execute1 = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
-                " }" ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         // commit
-        Response commit = http.POST( commitResource );
+        http.POST( commitResource );
 
         // execute
         Response execute2 = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
@@ -380,7 +378,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        Response execute = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' }, " +
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' }, " +
                 "{ 'statement': 'CREATE n' } ] }" ) );
 
         // commit
@@ -400,15 +398,15 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        Response execute1 = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
                 " }" ) );
 
         // execute
-        Response execute2 = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
                 " }" ) );
 
         // commit
-        Response commit = http.POST( commitResource );
+        http.POST( commitResource );
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 2 ) );
     }
