@@ -35,6 +35,7 @@ import static org.junit.Assert.assertEquals;
 
 public class CollectUserAgentFilterIT extends AbstractRestFunctionalTestBase
 {
+    public static final String USER_AGENT = "test/1.0";
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
@@ -46,7 +47,7 @@ public class CollectUserAgentFilterIT extends AbstractRestFunctionalTestBase
     @Test
     public void shouldRecordUserAgent() throws Exception {
         sendRequest( "test/1.0" );
-        assertThat(CollectUserAgentFilter.instance().getUserAgents(), hasItem( "test/1.0" ));
+        assertThat(CollectUserAgentFilter.instance().getUserAgents(), hasItem( USER_AGENT ));
     }
 
     private void sendRequest(String userAgent) {
