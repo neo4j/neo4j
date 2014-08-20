@@ -19,17 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{SelectivityModel, CardinalityModel, CostModel}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
-object SimpleMetricsFactory extends MetricsFactory {
-  def newCostModel(cardinality: CardinalityModel): CostModel =
-    new CardinalityCostModel(cardinality)
+/*
+A very simplistic cost model. Each row returned by an operator costs 1. That's it.
+ */
+case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel {
 
-  def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable): CardinalityModel =
-    new StatisticsBackedCardinalityModel(statistics, selectivity)(semanticTable)
+  val costPerRow = CostPerRow(1)
 
-  def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable): SelectivityModel =
-    new StatisticsBasedSelectivityModel(statistics)(semanticTable)
+  def apply(plan: LogicalPlan): Cost =
+    cardinality(plan) * costPerRow +
+    plan.lhs.map(this).getOrElse(Cost(0)) +
+    plan.rhs.map(this).getOrElse(Cost(0))
 }
