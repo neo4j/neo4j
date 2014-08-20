@@ -23,8 +23,7 @@ import java.io.File;
 
 import org.junit.Test;
 
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Outcome;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
@@ -34,6 +33,8 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 
 public class CurrentDatabaseTest
 {
@@ -46,9 +47,9 @@ public class CurrentDatabaseTest
 
         File neoStoreDb = new File( workingDirectory, "neostore.nodestore.db" );
         when( storeVersionCheck.hasVersion( eq( neoStoreDb ), anyString() ) )
-                .thenReturn( Pair.<Outcome,String>of( Outcome.missingStoreFile, null ) );
+                .thenReturn( new Result( Outcome.missingStoreFile, null, neoStoreDb.getName() ) );
         when( storeVersionCheck.hasVersion( not( eq( neoStoreDb ) ), anyString() ) )
-                .thenReturn( Pair.<Outcome,String>of( Outcome.ok, null ) );
+                .thenReturn( new Result( Outcome.ok, null, neoStoreDb.getName() ) );
 
         assertFalse( new CurrentDatabase( storeVersionCheck ).storeFilesAtCurrentVersion( workingDirectory ) );
     }
@@ -60,7 +61,7 @@ public class CurrentDatabaseTest
 
         StoreVersionCheck storeVersionCheck = mock( StoreVersionCheck.class );
         when( storeVersionCheck.hasVersion( any( File.class ), anyString() ) ).
-                thenReturn( Pair.<Outcome, String>of( Outcome.ok, null ) );
+                thenReturn( new Result( Outcome.ok, null, null ) );
 
         assertTrue( new CurrentDatabase( storeVersionCheck ).storeFilesAtCurrentVersion( workingDirectory ) );
     }

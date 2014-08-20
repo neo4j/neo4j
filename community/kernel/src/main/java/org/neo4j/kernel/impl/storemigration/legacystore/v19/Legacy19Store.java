@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyRelationship20StoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20RelationshipStoreReader;
 
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 
@@ -60,7 +60,7 @@ public class Legacy19Store implements LegacyStore
     private final Collection<Closeable> allStoreReaders = new ArrayList<>();
     private Legacy19NodeStoreReader nodeStoreReader;
     private Legacy19PropertyIndexStoreReader propertyIndexReader;
-    private LegacyPropertyStoreReader propertyStoreReader;
+    private Legacy19PropertyStoreReader propertyStoreReader;
     private org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader relStoreReader;
 
     private final FileSystemAbstraction fs;
@@ -90,8 +90,8 @@ public class Legacy19Store implements LegacyStore
     {
         allStoreReaders.add( nodeStoreReader = new Legacy19NodeStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
         allStoreReaders.add( propertyIndexReader = new Legacy19PropertyIndexStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ) ) );
-        allStoreReaders.add( propertyStoreReader = new LegacyPropertyStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STORE_NAME ) ) );
-        allStoreReaders.add( relStoreReader = new LegacyRelationship20StoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME) ) );
+        allStoreReaders.add( propertyStoreReader = new Legacy19PropertyStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STORE_NAME ) ) );
+        allStoreReaders.add( relStoreReader = new Legacy20RelationshipStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME) ) );
     }
 
     public File getStorageFileName()
@@ -192,7 +192,7 @@ public class Legacy19Store implements LegacyStore
         return propertyIndexReader;
     }
 
-    public LegacyPropertyStoreReader getPropertyStoreReader()
+    public Legacy19PropertyStoreReader getPropertyStoreReader()
     {
         return propertyStoreReader;
     }

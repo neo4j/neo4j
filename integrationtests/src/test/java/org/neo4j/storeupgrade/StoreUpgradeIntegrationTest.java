@@ -53,25 +53,17 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 @RunWith(Enclosed.class)
-public class StoreUpgradeTest
+public class StoreUpgradeIntegrationTest
 {
-    /*
-     * TODO 2.2-future
-     *
-     * This test claims that we can upgrade from 1.9/2.0 to 2.2, this does not work when running HA since we cannot
-     * parse the 1.9/2.0 log files since we changed the format of such files. It does work when using a single instance
-     * since we didn't change the storage format and in such case we do not read the old logs.
-     *
-     * We need to understand if this is a feature we need to have in 2.2 or not.
-     */
-
     @RunWith(Theories.class)
     public static class StoreUpgradeSingleInstanceTest
     {
@@ -149,8 +141,9 @@ public class StoreUpgradeTest
         }
     }
 
+    // TODO 2.2-future: fix this in order to check if it can upgrade from 1.9 and 2.0
     @RunWith(Theories.class)
-    public static class StoreUpgradeHATest
+    public static class StoreUpgradeHAInstanceTest
     {
         // NOTE: the zip files must contain the database files and NOT the graph.db folder itself!!!
         @DataPoints
@@ -190,17 +183,59 @@ public class StoreUpgradeTest
             clusterManager.start();
 
             ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( allSeesAllAsAvailable() );
+            HighlyAvailableGraphDatabase master, slave;
+            try
+            {
+                cluster.await( allSeesAllAsAvailable() );
 
-            HighlyAvailableGraphDatabase master = cluster.getMaster();
-            checkInstance( store, master );
-            HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-            checkInstance( store, slave );
+                master = cluster.getMaster();
+                checkInstance( store, master );
+                slave = cluster.getAnySlave();
+                checkInstance( store, slave );
+            }
+            finally
+            {
+                clusterManager.shutdown();
+            }
 
-            clusterManager.shutdown();
 
             assertConsistentStore( new File( master.getStoreDir() ) );
             assertConsistentStore( new File( slave.getStoreDir() ) );
+        }
+    }
+
+    @RunWith(Theories.class)
+    public static class NotCleanlyShutdownStoreUpgradeTest
+    {
+        // NOTE: the zip files must contain the database files and NOT the graph.db folder itself!!!
+        @DataPoints
+        public static final Store[] stores = new Store[]{
+                new Store( "0.A.3-to-be-recovered.zip", -1 /* ignored */, -1 /* ignored */ ),
+        };
+
+        @Test
+        @Theory
+        public void migratingFromANotCleanlyShutdownStoreShouldNotStartAndFail( Store store ) throws Throwable
+        {
+            // migrate the store using a single instance
+            File dir = store.prepareDirectory();
+            GraphDatabaseFactory factory = new GraphDatabaseFactory();
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir.getAbsolutePath() );
+            builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+            try
+            {
+                GraphDatabaseService db = builder.newGraphDatabase();
+                db.shutdown();
+                fail( "It should have failed." );
+            }
+            catch ( RuntimeException ex )
+            {
+                final UpgradingStoreVersionNotFoundException expected =
+                        new UpgradingStoreVersionNotFoundException( "neostore.nodestore.db" );
+                final Throwable cause = ex.getCause().getCause().getCause();
+                assertEquals( expected.getClass(), cause.getClass() );
+                assertEquals( expected.getMessage(), cause.getMessage() );
+            }
         }
     }
 
@@ -219,7 +254,7 @@ public class StoreUpgradeTest
 
         public File prepareDirectory() throws IOException
         {
-            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeTest.class, resourceName );
+            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeIntegrationTest.class, resourceName );
             new File( dir, "messages.log" ).delete(); // clear the log
             return dir;
         }

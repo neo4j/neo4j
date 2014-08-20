@@ -17,51 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore.v20;
+package org.neo4j.kernel.impl.storemigration.legacystore.v21;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
-import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
-
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 
 /**
  * Reader for a database in an older store format version.
- *
+ * <p/>
  * Since only one store migration is supported at any given version (migration from the previous store version)
  * the reader code is specific for the current upgrade and changes with each store format version.
- *
+ * <p/>
  * {@link #LEGACY_VERSION} marks which version it's able to read.
  */
-public class Legacy20Store implements LegacyStore
+public class Legacy21Store implements LegacyStore
 {
-    public static final String LEGACY_VERSION = "v0.A.1";
-
-    private final File storageFileName;
-    private final Collection<Closeable> allStoreReaders = new ArrayList<>();
-    private org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader nodeStoreReader;
-    private org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader relStoreReader;
+    public static final String LEGACY_VERSION = "v0.A.3";
 
     private final FileSystemAbstraction fs;
+    private final File storageFileName;
 
-    public Legacy20Store( FileSystemAbstraction fs, File storageFileName ) throws IOException
+    public Legacy21Store( FileSystemAbstraction fs, File storageFileName ) throws IOException
     {
         this.fs = fs;
         this.storageFileName = storageFileName;
         assertLegacyAndCurrentVersionHaveSameLength( LEGACY_VERSION, CommonAbstractStore.ALL_STORES_VERSION );
-        initStorage();
     }
 
     /**
@@ -77,14 +65,6 @@ public class Legacy20Store implements LegacyStore
         }
     }
 
-    protected void initStorage() throws IOException
-    {
-        allStoreReaders.add( nodeStoreReader = new Legacy20NodeStoreReader( fs,
-                new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
-        allStoreReaders.add( relStoreReader = new Legacy20RelationshipStoreReader( fs,
-                new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME ) ) );
-    }
-
     @Override
     public File getStorageFileName()
     {
@@ -93,61 +73,32 @@ public class Legacy20Store implements LegacyStore
 
     public static long getUnsignedInt( ByteBuffer buf )
     {
-        return buf.getInt()&0xFFFFFFFFL;
+        return buf.getInt() & 0xFFFFFFFFL;
     }
 
     protected static long longFromIntAndMod( long base, long modifier )
     {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
+        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
     }
 
     @Override
     public void close() throws IOException
     {
-        for ( Closeable storeReader : allStoreReaders )
-        {
-            storeReader.close();
-        }
+        // nothing to close
     }
 
     @Override
     public org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader getNodeStoreReader()
     {
-        return nodeStoreReader;
+        // not needed
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader getRelStoreReader()
     {
-        return relStoreReader;
-    }
-
-    static void readIntoBuffer( StoreChannel fileChannel, ByteBuffer buffer, long atPosition, int nrOfBytes )
-    {
-        try
-        {
-            fileChannel.position( atPosition );
-            readIntoBuffer( fileChannel, buffer, nrOfBytes );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    static void readIntoBuffer( StoreChannel fileChannel, ByteBuffer buffer, int nrOfBytes )
-    {
-        buffer.clear();
-        buffer.limit( nrOfBytes );
-        try
-        {
-            fileChannel.read( buffer );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        buffer.flip();
+        // not needed
+        throw new UnsupportedOperationException();
     }
 
     @Override

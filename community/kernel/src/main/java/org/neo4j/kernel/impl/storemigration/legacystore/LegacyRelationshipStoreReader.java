@@ -23,14 +23,11 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
 public interface LegacyRelationshipStoreReader extends Closeable
 {
     long getMaxId();
-
-    void accept( long approximateStartId, Visitor<ReusableRelationship, RuntimeException> visitor ) throws IOException;
 
     Iterator<RelationshipRecord> iterator( long approximateStartId ) throws IOException;
 

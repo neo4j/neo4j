@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,7 +36,7 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 
-public class LegacyRelationship20StoreReader implements Closeable, LegacyRelationshipStoreReader
+public class Legacy20RelationshipStoreReader implements LegacyRelationshipStoreReader
 
 {
     public static final String FROM_VERSION = "RelationshipStore " + Legacy20Store.LEGACY_VERSION;
@@ -46,7 +45,7 @@ public class LegacyRelationship20StoreReader implements Closeable, LegacyRelatio
     private final StoreChannel fileChannel;
     private final long maxId;
 
-    public LegacyRelationship20StoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
+    public Legacy20RelationshipStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
     {
         fileChannel = fs.open( fileName, "r" );
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
@@ -62,40 +61,6 @@ public class LegacyRelationship20StoreReader implements Closeable, LegacyRelatio
     /**
      * @param approximateStartId the scan will start at the beginning of the page this id is located in.
      */
-    @Override
-    public void accept( long approximateStartId, Visitor<ReusableRelationship, RuntimeException> visitor ) throws IOException
-    {
-        ByteBuffer buffer = ByteBuffer.allocateDirect( 4 * 1024 * RECORD_SIZE );
-        ReusableRelationship rel = new ReusableRelationship();
-
-        long position = (approximateStartId * RECORD_SIZE) - ( (approximateStartId * RECORD_SIZE) % buffer.capacity()),
-             fileSize = fileChannel.size();
-
-        while(position < fileSize)
-        {
-            int recordOffset = 0;
-            buffer.clear();
-            fileChannel.read( buffer, position );
-            // Visit each record in the page
-            while(recordOffset < buffer.capacity() && (recordOffset + position) < fileSize)
-            {
-                buffer.position(recordOffset);
-                long id = (position + recordOffset) / RECORD_SIZE;
-
-                readRecord(buffer, id, rel);
-
-                if(visitor.visit( rel ))
-                {
-                    return;
-                }
-
-                recordOffset += RECORD_SIZE;
-            }
-
-            position += buffer.capacity();
-        }
-    }
-
     @Override
     public Iterator<RelationshipRecord> iterator( final long approximateStartId ) throws IOException
     {

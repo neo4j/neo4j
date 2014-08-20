@@ -22,17 +22,21 @@ package upgrade;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -40,7 +44,9 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
 import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
@@ -64,12 +70,42 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFi
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
+@RunWith(Parameterized.class)
 public class StoreUpgraderTest
 {
+    @Rule
+    public final TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
+
+    private final String version;
+    private File dbDirectory;
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+
+    public StoreUpgraderTest( String version )
+    {
+        this.version = version;
+    }
+
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> versions()
+    {
+        return Arrays.asList(
+                new Object[]{Legacy19Store.LEGACY_VERSION},
+                new Object[]{Legacy20Store.LEGACY_VERSION},
+                new Object[]{Legacy21Store.LEGACY_VERSION}
+        );
+    }
+
+    @Before
+    public void prepareDb() throws IOException
+    {
+        dbDirectory = new File( directory.directory(), version );
+        prepareSampleLegacyDatabase( version, fileSystem, dbDirectory );
+    }
+
     @Test
     public void shouldUpgradeAnOldFormatStore() throws IOException, ConsistencyCheckIncompleteException
     {
-        assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, Legacy20Store.LEGACY_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, version ) );
 
         newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
                 .migrateIfNeeded( dbDirectory );
@@ -166,7 +202,7 @@ public class StoreUpgraderTest
                     .migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
-        catch ( StoreUpgrader.UpgradingStoreVersionNotFoundException e )
+        catch ( StoreUpgrader.UnableToUpgradeException e )
         {
             // expected
         }
@@ -181,7 +217,7 @@ public class StoreUpgraderTest
         File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName()
                 + "shouldRefuseToUpgradeIfAllOfTheStoresWeNotShutDownCleanly-comparison" );
 
-        truncateAllFiles( fileSystem, dbDirectory );
+        truncateAllFiles( fileSystem, dbDirectory, version );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
 
@@ -191,7 +227,7 @@ public class StoreUpgraderTest
                     .migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
-        catch ( StoreUpgrader.UpgradingStoreVersionNotFoundException e )
+        catch ( StoreUpgrader.UnableToUpgradeException e )
         {
             // expected
         }
@@ -299,20 +335,6 @@ public class StoreUpgraderTest
         };
     }
 
-    protected void writeFile( FileSystemAbstraction fileSystem, File file, String contents ) throws IOException
-    {
-        try ( Writer writer = fileSystem.openAsWriter( file, "UTF-8", false ) )
-        {
-            writer.write( contents );
-        }
-    }
-
-    public final
-    @Rule
-    TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
-    private File dbDirectory;
-    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator )
     {
         StoreUpgrader upgrader = new StoreUpgrader( config, fileSystem, StoreUpgrader.NO_MONITOR );
@@ -320,10 +342,11 @@ public class StoreUpgraderTest
         return upgrader;
     }
 
-    @Before
-    public void before() throws Exception
+    private void writeFile( FileSystemAbstraction fileSystem, File file, String contents ) throws IOException
     {
-        dbDirectory = directory.directory();
-        prepareSampleLegacyDatabase( fileSystem, dbDirectory );
+        try ( Writer writer = fileSystem.openAsWriter( file, "UTF-8", false ) )
+        {
+            writer.write( contents );
+        }
     }
 }

@@ -69,7 +69,7 @@ public class LogFiles
         {
             if ( filter.accept( fromDirectory, logFile.getName() ) )
             {
-                StoreFile20.moveFile( fs, logFile.getName(), fromDirectory, toDirectory, false, false );
+                StoreFile.moveFile( fs, logFile.getName(), fromDirectory, toDirectory, false, false );
             }
         }
     }
