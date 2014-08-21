@@ -28,6 +28,7 @@ import java.util.Properties;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.mockito.InOrder;
+
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -40,8 +41,14 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.Unzip;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
 import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
@@ -49,9 +56,11 @@ import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class TestPerformUpgradeIfNecessary
 {
-    public static final File HOME_DIRECTORY = TargetDirectory.forTest( TestPerformUpgradeIfNecessary.class )
-            .cleanDirectory( "home" );
-    public static final File STORE_DIRECTORY = new File( new File( HOME_DIRECTORY, "data" ), "graph.db" );
+    private final File HOME_DIRECTORY =
+            TargetDirectory.forTest( TestPerformUpgradeIfNecessary.class ).cleanDirectory( "home" );
+    private final File STORE_DIRECTORY = new File( new File( HOME_DIRECTORY, "data" ), "graph.db" );
+    private final File CONF_DIRECTORY = new File( HOME_DIRECTORY, "conf" );
+    private final File NEO4J_PROPERTIES = new File( CONF_DIRECTORY, "neo4j.properties" );
 
     @Test
     public void shouldExitImmediatelyIfStoreIsAlreadyAtLatestVersion() throws IOException
@@ -133,52 +142,33 @@ public class TestPerformUpgradeIfNecessary
     private Configuration buildProperties(boolean allowStoreUpgrade) throws IOException
     {
         FileUtils.deleteRecursively( HOME_DIRECTORY );
-        File confDir = new File( HOME_DIRECTORY, "conf" );
-        confDir.mkdirs();
+        assertTrue( CONF_DIRECTORY.mkdirs() );
 
         Properties databaseProperties = new Properties();
         if (allowStoreUpgrade)
         {
             databaseProperties.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
         }
-        String databasePropertiesFileName = new File( confDir, "neo4j.properties" ).getAbsolutePath();
-        databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
+
+        databaseProperties.store( new FileWriter( NEO4J_PROPERTIES.getAbsolutePath() ), null );
 
         Configuration serverProperties = new MapBasedConfiguration();
         serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, STORE_DIRECTORY.getPath() );
-        serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, databasePropertiesFileName );
+        serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, NEO4J_PROPERTIES.getAbsolutePath() );
 
         return serverProperties;
     }
 
     private Map<String,String> loadNeo4jProperties() throws IOException
     {
-        String databasePropertiesFileName = new File( new File( HOME_DIRECTORY, "conf" ),
-                "neo4j.properties" ).getAbsolutePath();
-        return MapUtil.load(new File(databasePropertiesFileName));
+        return MapUtil.load( new File( NEO4J_PROPERTIES.getAbsolutePath() ) );
     }
 
-    public static void prepareSampleLegacyDatabase( File workingDirectory ) throws IOException
+    private void prepareSampleLegacyDatabase( File workingDirectory ) throws IOException
     {
-        File resourceDirectory = findOldFormatStoreDirectory();
-
+        File resourceDirectory = Unzip.unzip( TestPerformUpgradeIfNecessary.class, "exampledb.zip" );
         deleteRecursively( workingDirectory );
         assertTrue( workingDirectory.mkdirs() );
-
         copyRecursively( resourceDirectory, workingDirectory );
-    }
-
-    public static File findOldFormatStoreDirectory() throws IOException
-    {
-        return Unzip.unzip( TestPerformUpgradeIfNecessary.class, "exampledb.zip" );
-    }
-
-    private String dots( int count )
-    {
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < count; i++) {
-            builder.append( "." );
-        }
-        return builder.toString();
     }
 }
