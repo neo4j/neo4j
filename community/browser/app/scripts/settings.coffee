@@ -43,3 +43,26 @@ angular.module('neo4jApp.settings', [])
     maxRawSize: 5000 # bytes
     scrollToTop: yes # When new frames are inserted in to the stream
   })
+
+angular.module('neo4jApp.settings')
+.service('SettingsStore', ['localStorageService','Settings'
+  (localStorageService, Settings) ->
+    originalSettings = angular.copy(Settings)
+    load: ->
+      settings = localStorageService.get('settings')
+      if angular.isObject(settings)
+        angular.extend(Settings, settings)
+
+    reset: ->
+      localStorageService.remove('settings')
+      angular.extend(Settings, originalSettings)
+
+    save: ->
+      localStorageService.set('settings', angular.copy(Settings))
+
+])
+
+angular.module('neo4jApp.settings')
+.run(['SettingsStore', (SettingsStore) ->
+  SettingsStore.load()
+])

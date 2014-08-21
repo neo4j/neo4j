@@ -144,18 +144,23 @@ angular.module('neo4jApp')
       type: 'config'
       templateUrl: 'views/frame-config.html'
       matches: ["#{cmdchar}config"]
-      exec: ['Settings', (Settings) ->
+      exec: ['Settings', 'SettingsStore', (Settings, SettingsStore) ->
         (input, q) ->
-          matches = /^[^\w]*config\s+([^:]+):?([\S\s]+)?$/.exec(input)
+          # special command for reset
+          if argv(input)[1] is "reset"
+            SettingsStore.reset()
+            q.resolve(Settings)
+            return q.promise
 
+          matches = /^[^\w]*config\s+([^:]+):?([\S\s]+)?$/.exec(input)
           if (matches?)
             [key, value] = [matches[1], matches[2]]
             if (value?)
-              try
-                value = eval(value)
-              catch
+              value = try eval(value)
 
               Settings[key] = value
+              # Persist new config
+              SettingsStore.save()
             else
               value = Settings[key]
 
