@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
@@ -29,12 +30,12 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.Relationship
 
-case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expression], toNode: String, fromNode: String)
+case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityByIdRhs, toNode: String, fromNode: String)
                                              (implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
-    val relIds = relIdExpr.flatMap(expr => Option(expr.apply(ctx)(state)))
+    val relIds = relIdExpr.expressions(ctx, state).flatMap(Option(_))
     new IdSeekIterator[Relationship](ident, state.query.relationshipOps, relIds.iterator).flatMap {
       ctx =>
         val r = ctx(ident) match {
@@ -69,7 +70,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expr
     this
   }
 
-  override def localEffects = relIdExpr.effects
+  override def localEffects = Effects.READS_ENTITIES
 
   def sources: Seq[Pipe] = Seq.empty
 }

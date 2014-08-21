@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
-
 case class DirectedRelationshipByIdSeek(idName: IdName,
-                                        relIds: Seq[Expression],
+                                        relIds: EntityByIdRhs,
                                         startNode: IdName,
                                         endNode: IdName,
                                         argumentIds: Set[IdName]) extends LogicalLeafPlan {

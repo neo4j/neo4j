@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.Pipe
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityByIdRhs => PipeEntityByIdRhs}
 import org.neo4j.cypher
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_2.commands
@@ -60,6 +61,7 @@ object PlanDescription {
     case class LabelName(label: String) extends Argument
     case class KeyNames(keys: Seq[String]) extends Argument
     case class KeyExpressions(expressions: Seq[commands.expressions.Expression]) extends Argument
+    case class EntityByIdRhs(value: PipeEntityByIdRhs) extends Argument
   }
 }
 

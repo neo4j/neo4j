@@ -39,7 +39,7 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = NodeByIdSeekPipe("a", Seq(Literal(17))).createResults(queryState)
+    val result = NodeByIdSeekPipe("a", EntityByIdExprs(Seq(Literal(17)))).createResults(queryState)
 
     // then
     result.map(_("a")).toList should equal(List(node))
@@ -60,7 +60,7 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     )
 
     // whens
-    val result = NodeByIdSeekPipe("a", Seq(Literal(42), Literal(21), Literal(11))).createResults(queryState)
+    val result = NodeByIdSeekPipe("a", EntityByIdExprs(Seq(Literal(42), Literal(21), Literal(11)))).createResults(queryState)
 
     // then
     result.map(_("a")).toList should equal(List(node1, node2, node3))

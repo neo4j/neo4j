@@ -29,13 +29,13 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.Relationship
 
 
-case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expression], toNode: String, fromNode: String)
+case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityByIdRhs, toNode: String, fromNode: String)
                                            (implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
-    val relIds = relIdExpr.flatMap(expr => Option(expr.apply(ctx)(state)))
-    new IdSeekIterator[Relationship](ident, state.query.relationshipOps, relIds.iterator).map {
+    val relIdExprs = relIdExpr.expressions(ctx, state).flatMap(Option(_))
+    new IdSeekIterator[Relationship](ident, state.query.relationshipOps, relIdExprs.iterator).map {
       ctx =>
         val r = ctx(ident)
         r match {
@@ -53,7 +53,8 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expres
     arguments = Seq(
       Arguments.IntroducedIdentifier(ident),
       Arguments.IntroducedIdentifier(toNode),
-      Arguments.IntroducedIdentifier(fromNode)) ++ relIdExpr.map(e => Arguments.LegacyExpression(e))
+      Arguments.IntroducedIdentifier(fromNode),
+      Arguments.EntityByIdRhs(relIdExpr))
   )
 
   def symbols = new SymbolTable(Map(ident -> CTRelationship, toNode -> CTNode, fromNode -> CTNode))

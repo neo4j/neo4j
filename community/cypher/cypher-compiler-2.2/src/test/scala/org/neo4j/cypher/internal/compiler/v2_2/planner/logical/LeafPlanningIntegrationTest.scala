@@ -111,8 +111,33 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE id(n) = 42 RETURN n").plan.plan should equal (
       Selection(
         List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", Seq(SignedDecimalIntegerLiteral("42")_), Set.empty)
+        NodeByIdSeek("n", EntityByIdExprs(Seq(SignedDecimalIntegerLiteral("42")_)), Set.empty)
       )
+    )
+  }
+
+  test("should build plans for node by ID when the predicate is IN and rhs is a param") {
+    (new given {
+      knownLabels = Set("Awesome")
+    } planFor "MATCH (n:Awesome) WHERE id(n) IN {param} RETURN n").plan.plan should equal (
+      Selection(
+        List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
+        NodeByIdSeek("n", EntityByIdParameter(Parameter("param")_), Set.empty)
+      )
+    )
+  }
+
+  test("should build plans for directed rel by ID when the predicate is IN and rhs is a param") {
+    (new given {
+    } planFor "MATCH (a)-[r]->(b) WHERE id(r) IN {param} RETURN a, r, b").plan.plan should equal (
+      DirectedRelationshipByIdSeek("r", EntityByIdParameter(Parameter("param")_), "a", "b", Set.empty)
+    )
+  }
+
+  test("should build plans for undirected rel by ID when the predicate is IN and rhs is a param") {
+    (new given {
+    } planFor "MATCH (a)-[r]-(b) WHERE id(r) IN {param} RETURN a, r, b").plan.plan should equal (
+      UndirectedRelationshipByIdSeek("r", EntityByIdParameter(Parameter("param")_), "a", "b", Set.empty)
     )
   }
 
@@ -122,7 +147,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE id(n) IN [42, 64] RETURN n").plan.plan should equal (
       Selection(
         List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("64")_), Set.empty)
+        NodeByIdSeek("n", EntityByIdExprs(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("64")_)), Set.empty)
       )
     )
   }

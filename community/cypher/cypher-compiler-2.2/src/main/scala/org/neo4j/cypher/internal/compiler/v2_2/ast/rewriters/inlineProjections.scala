@@ -89,7 +89,7 @@ object inlineProjections extends Rewriter {
     input.endoRewrite(topDown(inliningRewriter))
   }
 
-  private def aliasedReturnItemRewriter(inlineExpressions: Expression => Expression, inlineInAliases: Boolean): (ReturnItem => ReturnItem) = {
+  private def aliasedReturnItemRewriter(inlineExpressions: Expression => Expression, inlineInAliases: Boolean): PartialFunction[ReturnItem, ReturnItem] = {
     if (inlineInAliases) {
       case item: AliasedReturnItem =>
         item.copy(
