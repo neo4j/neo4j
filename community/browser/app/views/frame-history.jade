@@ -6,5 +6,5 @@ div(fullscreen)
         article.guide
           ul.undecorated
             li(ng-repeat="history_command in frame.response track by $index") 
-              pre.code.oneline(click-to-code="history_command", exec-on="dblclick")
+              pre.code.oneline(click-to-code="history_command", dblclick-to-exec="true")
                 | {{history_command}}

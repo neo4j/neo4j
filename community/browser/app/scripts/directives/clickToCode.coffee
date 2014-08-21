@@ -27,9 +27,9 @@ angular.module('neo4jApp.directives')
       code = scope.$eval(attrs.clickToCode)
       element.click (e) ->
         applyAction(Editor.setContent)
-      element.dblclick (e) ->
-        return unless attrs.execOn == 'dblclick'
-        applyAction(Editor.execScript)
+      if attrs.dblclickToExec == 'true'
+        element.dblclick (e) ->
+          applyAction(Editor.execScript)
       applyAction = (fn) ->
         return unless code?.length
         fn.call(Editor, code.trim())
