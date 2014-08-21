@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.lang.Math.max;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -71,6 +64,14 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.Math.max;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -719,7 +720,10 @@ public class XaLogicalLog implements LogLoader
         Cursor<LogEntry, IOException> cursor = reader.cursor( fileChannel ); // no try-with-resources, we need the channel open
         try
         {
-            while( cursor.next( consumer ) );
+            while( cursor.next( consumer ) )
+            {
+                ;
+            }
         }
         catch ( IOException e )
         {
@@ -845,7 +849,10 @@ public class XaLogicalLog implements LogLoader
         SkipPrepareLogEntryWriter consumer = new SkipPrepareLogEntryWriter( identifier, targetBuffer );
         try ( Cursor<LogEntry, IOException> cursor = reader.cursor( logChannel ) )
         {
-            while ( cursor.next( consumer ) );
+            while ( cursor.next( consumer ) )
+            {
+                ;
+            }
         }
 
         // position now minus position before is how much we read from disk
@@ -884,17 +891,22 @@ public class XaLogicalLog implements LogLoader
 
     public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
 
-    public synchronized Pair<Integer, Long> getMasterForCommittedTransaction( long txId ) throws IOException
+    public synchronized Pair<Integer, Long> getMasterForCommittedTransaction( long txId, boolean forceRead )
+            throws IOException
     {
         if ( txId == 1 )
         {
             return Pair.of( MASTER_ID_REPRESENTING_NO_MASTER, 0L );
         }
 
-        TxPosition cache = positionCache.getStartPosition( txId );
-        if ( cache != null )
+        // If we're not forced to read from source directly, then go ahead and check the position cache
+        if ( !forceRead )
         {
-            return Pair.of( cache.masterId, cache.checksum );
+            TxPosition cache = positionCache.getStartPosition( txId );
+            if ( cache != null )
+            {
+                return Pair.of( cache.masterId, cache.checksum );
+            }
         }
 
         LogExtractor extractor = getLogExtractor( txId, txId );
@@ -902,7 +914,12 @@ public class XaLogicalLog implements LogLoader
         {
             if ( extractor.extractNext( NullLogBuffer.INSTANCE ) != -1 )
             {
-                return Pair.of( extractor.getLastStartEntry().getMasterId(), extractor.getLastTxChecksum() );
+                Pair<Integer, Long> result = Pair.of( extractor.getLastStartEntry().getMasterId(), extractor.getLastTxChecksum() );
+                if ( forceRead )
+                {
+                    positionCache.cacheStartPosition( txId, extractor.getLastStartEntry(), extractor.getCurrentLogVersion() );
+                }
+                return result;
             }
             throw new NoSuchTransactionException( txId );
         }
@@ -1076,7 +1093,10 @@ public class XaLogicalLog implements LogLoader
         masterHandler.startLog();
         try ( Cursor<LogEntry, IOException> cursor = reader.cursor( byteChannel ) )
         {
-            while( cursor.next( translatingEntryConsumer ) );
+            while( cursor.next( translatingEntryConsumer ) )
+            {
+                ;
+            }
         }
         catch( IOException e )
         {
@@ -1106,7 +1126,10 @@ public class XaLogicalLog implements LogLoader
         slaveHandler.startLog();
         try ( Cursor<LogEntry, IOException> cursor = slaveLogReader.cursor( byteChannel ) )
         {
-            while( cursor.next( translatingEntryConsumer ) );
+            while( cursor.next( translatingEntryConsumer ) )
+            {
+                ;
+            }
             success = true;
         }
         catch( Exception e )
@@ -1451,7 +1474,10 @@ public class XaLogicalLog implements LogLoader
 
             try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( log ) )
             {
-                while( cursor.next( consumer ) );
+                while( cursor.next( consumer ) )
+                {
+                    ;
+                }
             }
             return consumer.getTimeWritten();
         }

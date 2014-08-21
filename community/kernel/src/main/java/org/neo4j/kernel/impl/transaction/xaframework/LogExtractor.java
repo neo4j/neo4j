@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
@@ -102,11 +103,6 @@ public class LogExtractor
             return logHeaderCache.get( logVersion );
         }
         
-        public void putStartPosition( long txId, TxPosition position )
-        {
-            txStartPositionCache.put( txId, position );
-        }
-        
         public TxPosition getStartPosition( long txId )
         {
             return txStartPositionCache.get( txId );
@@ -119,10 +115,10 @@ public class LogExtractor
                 throw new RuntimeException( "StartEntry.position is " + startEntry.getStartPosition() );
             }
 
-            TxPosition result = new TxPosition( logVersion, startEntry.getMasterId(), startEntry.getIdentifier(),
+            TxPosition position = new TxPosition( logVersion, startEntry.getMasterId(), startEntry.getIdentifier(),
                     startEntry.getStartPosition(), startEntry.getChecksum() );
-            putStartPosition( txId, result );
-            return result;
+            txStartPositionCache.put( txId, position );
+            return position;
         }
     }
     
@@ -204,7 +200,10 @@ public class LogExtractor
         for ( long txId = startTxId; txId <= endTxIdHint; txId++ )
         {
             TxPosition position = cache.positionOf( txId );
-            if ( position == null ) return null;
+            if ( position == null )
+            {
+                return null;
+            }
             if ( earliest == null || position.earlierThan( earliest ) )
             {
                 earliest = position;
@@ -256,7 +255,10 @@ public class LogExtractor
                 if ( result != -1 )
                 {
                     // TODO Should be assertions?
-                    if ( previousCommitEntry != null && result == previousCommitEntry.getTxId() ) continue;
+                    if ( previousCommitEntry != null && result == previousCommitEntry.getTxId() )
+                    {
+                        continue;
+                    }
                     if ( result != nextExpectedTxId )
                     {
                         throw new RuntimeException( "Expected txId " + nextExpectedTxId + ", but got " + result +
@@ -272,7 +274,10 @@ public class LogExtractor
                 {
                     continueInNextLog();
                 }
-                else break;
+                else
+                {
+                    break;
+                }
             }
             return -1;
         }
@@ -428,6 +433,11 @@ public class LogExtractor
         }
         return new long[] { version, committedTx };
     }
+    
+    public long getCurrentLogVersion()
+    {
+        return version;
+    }
 
     private interface LogEntryCollector
     {
@@ -448,7 +458,7 @@ public class LogExtractor
         private final Map<Long, List<LogEntry>> futureQueue = new HashMap<>();
         private long nextExpectedTxId;
         private LogEntry.Start lastStartEntry;
-        private LogEntryWriter logEntryWriter;
+        private final LogEntryWriter logEntryWriter;
 
         KnownTxIdCollector( long startTxId, LogEntryWriter logEntryWriter )
         {
@@ -496,10 +506,16 @@ public class LogExtractor
             else if ( entry instanceof LogEntry.Commit )
             {
                 long commitTxId = ((LogEntry.Commit) entry).getTxId();
-                if ( commitTxId < startTxId ) return null;
+                if ( commitTxId < startTxId )
+                {
+                    return null;
+                }
                 identifier = entry.getIdentifier();
                 List<LogEntry> entries = transactions.get( identifier );
-                if ( entries == null ) return null;
+                if ( entries == null )
+                {
+                    return null;
+                }
                 entries.add( entry );
                 if ( nextExpectedTxId != startTxId && commitTxId < nextExpectedTxId )
                 {   // Have returned some previous tx
@@ -548,7 +564,10 @@ public class LogExtractor
         {
             for ( LogEntry entry : list )
             {
-                if ( entry instanceof LogEntry.Commit ) return entry;
+                if ( entry instanceof LogEntry.Commit )
+                {
+                    return entry;
+                }
             }
             throw new NoSuchTransactionException( txId, "No commit entry in " + list );
         }
@@ -584,8 +603,14 @@ public class LogExtractor
 
         public boolean earlierThan( TxPosition other )
         {
-            if ( version < other.version ) return true;
-            if ( version > other.version ) return false;
+            if ( version < other.version )
+            {
+                return true;
+            }
+            if ( version > other.version )
+            {
+                return false;
+            }
             return position < other.position;
         }
 
@@ -626,7 +651,10 @@ public class LogExtractor
                 if ( !fileSystem.fileExists( name ) )
                 {
                     name = activeLogFiles.get( version );
-                    if ( name == null ) throw new NoSuchLogVersionException( version );
+                    if ( name == null )
+                    {
+                        throw new NoSuchLogVersionException( version );
+                    }
                 }
                 StoreChannel channel = fileSystem.open( name, "r" );
                 channel.position( position );
@@ -636,7 +664,10 @@ public class LogExtractor
             private long maxKey( Map<Long, File> activeLogFiles )
             {
                 long max = 0;
-                for ( Long key : activeLogFiles.keySet() ) max = max( max, key );
+                for ( Long key : activeLogFiles.keySet() )
+                {
+                    max = max( max, key );
+                }
                 return max;
             }
 
@@ -647,7 +678,9 @@ public class LogExtractor
                 {
                     File candidateFile = new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + postfix );
                     if ( !fileSystem.fileExists( candidateFile ) )
+                    {
                         continue;
+                    }
                     long[] header = VersionAwareLogEntryReader.readLogHeader( fileSystem, candidateFile );
                     result.put( header[0], candidateFile );
                 }

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 import java.util.regex.Pattern;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
@@ -177,7 +178,7 @@ public class NoOpLogicalLog extends XaLogicalLog
     }
 
     @Override
-    public synchronized Pair<Integer, Long> getMasterForCommittedTransaction( long txId ) throws IOException
+    public synchronized Pair<Integer, Long> getMasterForCommittedTransaction( long txId, boolean forceRead ) throws IOException
     {
         return null;
     }
