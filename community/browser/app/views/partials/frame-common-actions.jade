@@ -1,15 +1,22 @@
 .code-bar
-  .actions
-    .toggle(ng-if='frame.type == "cypher" && availableModes.length > 1')
+  ul.actions.list-inline
+    li.toggle(ng-if='frame.type == "cypher" && availableModes.length > 1')
       a.toggle-graph(ng-class='{active: isActive("graph")}', ng-click='setActive("graph")') Graph
       .switch
         label(ng-class='{right: isActive("table")}', ng-click='setActive()')
           .switch-inner
           .handle
       a.toggle-table(ng-class='{active: isActive("table")}', ng-click='setActive("table")') Table
-    a.button.fa.fa-download(exportable ng-click='exportJSON(frame.response)', tooltip-placement='bottom', tooltip='Export JSON', ng-show='frame.exportable')
-    a.button.fa.fa-expand(ng-click="toggleFullscreen(true)", tooltip-placement='bottom', tooltip='Fullscreen', ng-show='frame.fullscreenable')
-    a.button.fa.fa-times-circle(ng-click='frames.close(frame)', tooltip-placement='bottom', tooltip='Close')
+    li.dropdown(ng-if='frame.type == "cypher"')
+      a.button.fa.fa-download.dropdown-toggle(ng-show='frame.exportable')
+      ul.dropdown-menu
+        li
+          a(exportable ng-click='exportJSON(frame.response)') Export JSON
+          a(exportable ng-click='exportCSV(frame.response.table)') Export CSV
+    li
+      a.button.fa.fa-expand(ng-click="toggleFullscreen(true)", tooltip-placement='bottom', tooltip='Fullscreen', ng-show='frame.fullscreenable')
+    li
+      a.button.fa.fa-times-circle(ng-click='frames.close(frame)', tooltip-placement='bottom', tooltip='Close')
   .status
     span.prompt.code(ng-if='frame.type == "cypher"') $
     span.code.mono(click-to-code='frame.input') {{frame.input | uncomment}}
