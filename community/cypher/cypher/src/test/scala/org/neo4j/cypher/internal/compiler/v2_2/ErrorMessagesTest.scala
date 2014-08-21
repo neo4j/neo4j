@@ -392,6 +392,13 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
+  test("should forbid bound relationship list in shortestPath pattern parts") {
+    expectError(
+      "WITH [] AS r LIMIT 1 MATCH p = shortestPath(src-[r*]->dst) RETURN src, dst",
+      "Bound relationships not allowed in shortestPath(...)"
+    )
+  }
+
   def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))
