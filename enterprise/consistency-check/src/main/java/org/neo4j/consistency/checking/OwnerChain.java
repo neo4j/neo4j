@@ -108,6 +108,10 @@ enum OwnerChain
                 public void checkReference( PropertyRecord record, PrimitiveRecord owner,
                                             ConsistencyReport.PropertyConsistencyReport report, RecordAccess records )
                 {
+                    if ( !owner.inUse() && !record.inUse() )
+                    {
+                        return;
+                    }
                     if ( !owner.inUse() || Record.NO_NEXT_PROPERTY.is( owner.getNextProp() ) )
                     {
                         wrongOwner( report );
