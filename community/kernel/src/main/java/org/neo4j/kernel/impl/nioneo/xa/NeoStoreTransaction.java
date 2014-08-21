@@ -623,7 +623,7 @@ public class NeoStoreTransaction extends XaTransaction
         if ( getCommitTxId() != neoStore.getLastCommittedTx() + 1 )
         {
             throw new RuntimeException( "Tx id: " + getCommitTxId() +
-                                        " not next transaction (" + neoStore.getLastCommittedTx() + ")" );
+                    " not next transaction ( currently at " + neoStore.getLastCommittedTx() + ")" );
         }
 
         try

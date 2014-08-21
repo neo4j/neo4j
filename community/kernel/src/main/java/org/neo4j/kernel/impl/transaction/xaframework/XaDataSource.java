@@ -268,6 +268,17 @@ public abstract class XaDataSource implements Lifecycle
 
     public Pair<Integer,Long> getMasterForCommittedTx( long txId ) throws IOException
     {
+        return getMasterForCommittedTx( txId, false );
+    }
+    
+    /**
+     * @param txId the transaction id to get the information for.
+     * @param forceRead if {@code true} bypasses any cache and goes to read directly from the source.
+     * @return a master id and checksum for a committed transaction {@code txId}.
+     * @throws IOException if there were problems reading the information.
+     */
+    public Pair<Integer,Long> getMasterForCommittedTx( long txId, boolean forceRead ) throws IOException
+    {
         throw new UnsupportedOperationException( getClass().getName() );
     }
 

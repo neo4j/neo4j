@@ -38,7 +38,7 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
 {
     private final StringLogger logger;
     private XaDataSource dataSource;
-    private DependencyResolver resolver;
+    private final DependencyResolver resolver;
 
     public BranchDetectingTxVerifier( DependencyResolver resolver /* I'd like to get in StringLogger, XaDataSource instead */ )
     {
@@ -62,7 +62,8 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
                 throw new BranchedDataException(
                         "The cluster contains two logically different versions of the database. " +
                         "This will be automatically resolved. Details: " + stringify( txId, masterId, checksum ) +
-                        " does not match " + readChecksum );
+                        " does not match " + readChecksum +
+                        ", uncached: " + dataSource().getMasterForCommittedTx( txId, true ) );
             }
         }
         catch ( IOException e )
