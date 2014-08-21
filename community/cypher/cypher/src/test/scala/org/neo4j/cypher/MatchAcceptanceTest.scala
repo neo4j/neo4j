@@ -1411,8 +1411,6 @@ RETURN a.name""")
     actual should equal(List(Map("a1" -> node1, "r" -> relationship, "b2" -> null, "a2" -> null)))
   }
 
-  private def relsById(in: Seq[Relationship]): Seq[Relationship] = in.sortBy(_.getId)
-
   test("MATCH n WITH n.prop AS n2 RETURN n2.prop") {
     // Given a single node
     val node = createNode("prop" -> "42")
@@ -1420,4 +1418,7 @@ RETURN a.name""")
     // then
     intercept[SyntaxException](executeWithNewPlanner("MATCH n WITH n.prop AS n2 RETURN n2.prop"))
   }
+
+  private def relsById(in: Seq[Relationship]): Seq[Relationship] = in.sortBy(_.getId)
+
 }

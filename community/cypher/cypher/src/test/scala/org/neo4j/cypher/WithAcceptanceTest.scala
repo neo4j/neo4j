@@ -161,6 +161,21 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result should not be empty
   }
 
+  test("Can solve a simple pattern with the relationship and one endpoint bound") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val rel = relate(node1, node2)
+
+    val result = executeWithNewPlanner(
+      "WITH {a} AS b, {b} AS tmp, {r} AS r WITH b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b",
+      "a" -> node1, "b" -> node2, "r" -> rel
+    )
+
+    result.toList should equal(List(
+      Map("a" -> node1, "b" -> node2, "r" -> rel)
+    ))
+  }
+
   test("nulls passing through WITH") {
     executeWithNewPlanner("optional match (a:Start) with a match a-->b return *") should be (empty)
   }
