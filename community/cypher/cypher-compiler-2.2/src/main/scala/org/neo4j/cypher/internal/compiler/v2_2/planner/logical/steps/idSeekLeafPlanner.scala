@@ -45,23 +45,23 @@ object idSeekLeafPlanner extends LeafPlanner {
         queryGraph.patternRelationships.find(_.name.name == idName) match {
           case Some(relationship) =>
             val types = relationship.types.toList
-            val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate))
+            val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), queryGraph.argumentIds)
             planRelTypeFilter(seekPlan, idExpr, types)
           case None =>
-            planNodeByIdSeek(IdName(idName), idValues, Seq(predicate))
+            planNodeByIdSeek(IdName(idName), idValues, Seq(predicate), queryGraph.argumentIds)
         }
     }
 
     CandidateList(candidatePlans)
   }
 
-  private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicates: Seq[Expression]): QueryPlan = {
+  private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicates: Seq[Expression], argumentIds: Set[IdName]): QueryPlan = {
     val (left, right) = relationship.nodes
     val name = relationship.name
     relationship.dir match {
-      case BOTH     => planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, predicates)
-      case INCOMING => planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, predicates)
-      case OUTGOING => planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, predicates)
+      case BOTH     => planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates)
+      case INCOMING => planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, argumentIds, predicates)
+      case OUTGOING => planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates)
     }
   }
 

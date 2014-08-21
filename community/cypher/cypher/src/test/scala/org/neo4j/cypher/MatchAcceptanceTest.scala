@@ -1294,6 +1294,62 @@ RETURN a.name""")
     actual should equal(expected)
   }
 
+  test("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val relationship = relate(node1, node2)
+
+    // when
+    val result = executeWithNewPlanner("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")
+
+    // should give us all rels
+    val actual = result.toList
+
+    actual should equal(List(Map(("a2" -> node1), ("r" -> relationship),("b2" -> node2))))
+  }
+
+  test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)-[r]->(b2) RETURN a1, r, b2") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val relationship = relate(node1, node2)
+
+    // when
+    val result = executeWithNewPlanner("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)-[r]->(b2) RETURN a1, r, b2")
+
+    // should give us all rels
+    val actual = result.toList
+
+    actual should equal(List(Map("a1" -> node1, "r" -> relationship, "b2" -> node2)))
+  }
+
+  test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val relationship = relate(node1, node2)
+
+    // when
+    val result = executeWithNewPlanner("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2")
+
+    // should give us all rels
+    val actual = result.toList
+
+    actual should equal(List(Map("a1" -> node1, "r" -> relationship, "b2" -> null)))
+  }
+
+  test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2, a2") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val relationship = relate(node1, node2)
+
+    // when
+    val result = executeWithNewPlanner("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2, a2")
+
+    // should give us all rels
+    val actual = result.toList
+
+    actual should equal(List(Map("a1" -> node1, "r" -> relationship, "b2" -> null, "a2" -> null)))
+  }
+
   private def relsById(in: Seq[Relationship]): Seq[Relationship] = in.sortBy(_.getId)
 
   test("MATCH n WITH n.prop AS n2 RETURN n2.prop") {

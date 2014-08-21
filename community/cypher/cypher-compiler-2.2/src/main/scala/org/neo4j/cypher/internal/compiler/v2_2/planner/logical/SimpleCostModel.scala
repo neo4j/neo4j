@@ -46,22 +46,22 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
     case _: AllNodesScan =>
       cardinality(plan) * STORE_ACCESS_COST_PER_ROW
 
-    case NodeIndexSeek(_, _, _, SingleQueryExpression(_)) =>
+    case NodeIndexSeek(_, _, _, SingleQueryExpression(_), _) =>
       cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW
 
-    case NodeIndexSeek(_, _, _, ManyQueryExpression(Collection(elements))) =>
+    case NodeIndexSeek(_, _, _, ManyQueryExpression(Collection(elements)), _) =>
       cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW * elements.size
 
-    case NodeIndexSeek(_, _, _, ManyQueryExpression(_)) =>
+    case NodeIndexSeek(_, _, _, ManyQueryExpression(_), _) =>
       cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW * 10 // This is a wild guess.
 
-    case NodeIndexUniqueSeek(_, _, _, SingleQueryExpression(_)) =>
+    case NodeIndexUniqueSeek(_, _, _, SingleQueryExpression(_), _) =>
       cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW
 
-    case NodeIndexUniqueSeek(_, _, _, ManyQueryExpression(Collection(elements))) =>
+    case NodeIndexUniqueSeek(_, _, _, ManyQueryExpression(Collection(elements)), _) =>
       cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW * elements.size
 
-    case NodeIndexUniqueSeek(_, _, _, ManyQueryExpression(_)) =>
+    case NodeIndexUniqueSeek(_, _, _, ManyQueryExpression(_), _) =>
       cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW * 10 // This is a wild guess.
 
     case _: NodeByLabelScan =>

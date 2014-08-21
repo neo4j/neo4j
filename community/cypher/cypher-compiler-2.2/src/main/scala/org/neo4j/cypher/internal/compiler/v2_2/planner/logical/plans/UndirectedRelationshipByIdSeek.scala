@@ -21,8 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 
-case class UndirectedRelationshipByIdSeek(idName: IdName, relIds: Seq[Expression], leftNode: IdName, rightNode: IdName)
+case class UndirectedRelationshipByIdSeek(idName: IdName,
+                                          relIds: Seq[Expression],
+                                          leftNode: IdName,
+                                          rightNode: IdName,
+                                          argumentIds: Set[IdName])
   extends LogicalLeafPlan {
 
-  def availableSymbols = Set(idName, leftNode, rightNode)
+  def availableSymbols = argumentIds ++ Set(idName, leftNode, rightNode)
 }

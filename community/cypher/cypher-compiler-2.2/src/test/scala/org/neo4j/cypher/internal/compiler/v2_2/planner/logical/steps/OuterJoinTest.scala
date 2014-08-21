@@ -68,7 +68,7 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case AllNodesScan(IdName("b")) => Cardinality(1) // Make sure we start the inner plan using b
+      case AllNodesScan(IdName("b"), _) => Cardinality(1) // Make sure we start the inner plan using b
       case _                         => Cardinality(1000)
     })
 

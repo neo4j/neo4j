@@ -47,7 +47,7 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
   private def canSolveAllPredicates(selections:Selections, ids:Set[IdName]) = selections.predicatesGiven(ids) == selections.flatPredicates
 
   private def findSinglePatternRelationship(outerPlan: QueryPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
-    val singleArgumentAvailable = optionalQG.argumentIds.size == 1 && outerPlan.plan.availableSymbols(optionalQG.argumentIds.head)
+    val singleArgumentAvailable = optionalQG.argumentIds.size == 1 && outerPlan.plan.availableSymbols(optionalQG.argumentIds.head) && optionalQG.patternNodes(optionalQG.argumentIds.head)
     val isSolved = outerPlan.solved.graph.optionalMatches.contains(optionalQG)
     val hasOnlyOnePatternRelationship = optionalQG.patternRelationships.size == 1
 

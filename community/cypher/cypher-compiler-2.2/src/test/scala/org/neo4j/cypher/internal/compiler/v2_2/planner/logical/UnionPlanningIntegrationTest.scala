@@ -33,8 +33,8 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
     logicalPlan should equal(
       Union(
-        NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("A"))),
-        NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("B"))))
+        NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("A")), Set.empty),
+        NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("B")), Set.empty))
     )
   }
   test("MATCH (a:A) RETURN a UNION MATCH (a:B) RETURN a") {
@@ -46,8 +46,8 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     logicalPlan should equal(
       Aggregation(
         left = Union(
-          NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("A"))),
-          NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("B")))),
+          NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("A")), Set.empty),
+          NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("B")), Set.empty)),
         groupingExpressions = Map("a" -> ident("a")),
         aggregationExpression = Map.empty
       )

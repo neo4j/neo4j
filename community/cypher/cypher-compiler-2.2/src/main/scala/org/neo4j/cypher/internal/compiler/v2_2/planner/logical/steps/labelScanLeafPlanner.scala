@@ -38,7 +38,7 @@ object labelScanLeafPlanner extends LeafPlanner {
           case hint@UsingScanHint(Identifier(`identName`), `labelName`) => hint
         }
 
-        planNodeByLabelScan(idName, labelName.either, Seq(labelPredicate), hint)
+        planNodeByLabelScan(idName, labelName.either, Seq(labelPredicate), hint, qg.argumentIds)
       }
     )
   }

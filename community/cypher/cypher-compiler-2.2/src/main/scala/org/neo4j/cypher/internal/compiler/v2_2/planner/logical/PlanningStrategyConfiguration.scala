@@ -33,7 +33,6 @@ object PlanningStrategyConfiguration {
     pickBestCandidate = pickBestPlan,
     applySelections = selectPatternPredicates(selectCovered),
     leafPlanners = LeafPlannerList(
-      // arguments from the outside in case we are in a sub query,
       argumentLeafPlanner,
 
       // MATCH n WHERE id(n) = {id} RETURN n

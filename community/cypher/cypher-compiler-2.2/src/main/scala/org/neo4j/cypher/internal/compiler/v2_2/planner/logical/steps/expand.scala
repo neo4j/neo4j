@@ -31,7 +31,7 @@ object expand extends CandidateGenerator[PlanTable] {
       plan <- planTable.plans
       nodeId <- plan.solved.graph.patternNodes
       patternRel <- queryGraph.findRelationshipsEndingOn(nodeId)
-      if !plan.solved.graph.patternRelationships(patternRel)
+      if !plan.availableSymbols(patternRel.name)
     } yield {
       val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)

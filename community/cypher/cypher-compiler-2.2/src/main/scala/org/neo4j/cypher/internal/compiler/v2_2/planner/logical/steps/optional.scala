@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CandidateList
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 
+/**
+ * Only used for the specific case where we don't have any arguments, e.g. MATCH n OPTIONAL MATCH m-[:X]->(x) RETURN n, x
+ */
 object optional extends CandidateGenerator[PlanTable] {
   def apply(ignored: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
     val optionalCandidates =

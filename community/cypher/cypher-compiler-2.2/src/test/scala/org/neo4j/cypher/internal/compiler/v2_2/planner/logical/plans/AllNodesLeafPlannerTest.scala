@@ -43,6 +43,6 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val resultPlans = allNodesLeafPlanner(queryGraph)
 
     // then
-    resultPlans should equal(Candidates(planAllNodesScan(IdName("n"))))
+    resultPlans should equal(Candidates(planAllNodesScan(IdName("n"), Set.empty)))
   }
 }

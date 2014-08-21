@@ -35,7 +35,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         planTailApply(
           left = planStarProjection(
             planLimit(
-              planAllNodesScan("a"),
+              planAllNodesScan("a", Set.empty),
               UnsignedDecimalIntegerLiteral("1") _
             ),
             Map[String, Expression]("a" -> ident("a"))
@@ -60,7 +60,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
               planTailApply(
                 planStarProjection(
                   planLimit(
-                    planAllNodesScan("a"),
+                    planAllNodesScan("a", Set.empty),
                     UnsignedDecimalIntegerLiteral("1") _
                   ),
                   Map[String, Expression]("a" -> ident("a"))
@@ -87,7 +87,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         planTailApply(
           planStarProjection(
             planLimit(
-              planAllNodesScan("a"),
+              planAllNodesScan("a", Set.empty),
               UnsignedDecimalIntegerLiteral("1") _
             ),
             Map[String, Expression]("a" -> ident("a"))
@@ -112,7 +112,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         planTailApply(
           planStarProjection(
             planLimit(
-              planAllNodesScan("a"),
+              planAllNodesScan("a", Set.empty),
               UnsignedDecimalIntegerLiteral("1") _
             ),
             Map[String, Expression]("a" -> ident("a"))
@@ -132,8 +132,10 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val plan = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r").plan.plan
 
     plan match {
-      case Projection(Apply(_, ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("u"), IdName("v"), true, SimplePatternLength)), _) =>
-        sr.availableSymbols should equal(Set(IdName("r")))
+      case Projection(Apply(_, Selection(_, ProjectEndpoints(
+        AllNodesScan(IdName("u"), args), IdName("r"), IdName("u$$$_"), IdName("v"), true, SimplePatternLength
+      ))), _) =>
+        args should equal(Set(IdName("r")))
     }
   }
 

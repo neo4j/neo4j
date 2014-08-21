@@ -29,7 +29,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans containing semi apply for a single pattern predicate") {
    planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a").plan.plan should equal(
       SemiApply(
-        AllNodesScan("a"),
+        AllNodesScan("a", Set.empty),
         Expand(
           SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
@@ -41,7 +41,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans containing anti semi apply for a single negated pattern predicate") {
     planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a").plan.plan should equal(
       AntiSemiApply(
-        AllNodesScan("a"),
+        AllNodesScan("a", Set.empty),
         Expand(
           SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED31", "  UNNAMED23", SimplePatternLength
@@ -54,7 +54,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a").plan.plan should equal(
       SemiApply(
         SemiApply(
-          AllNodesScan("a"),
+          AllNodesScan("a", Set.empty),
           Expand(
             SingleRow(Set("a"))(),
             "a", Direction.OUTGOING, Seq(RelTypeName("Y")_), "  UNNAMED44", "  UNNAMED36", SimplePatternLength
@@ -71,7 +71,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans containing select or semi apply for a pattern predicate and an expression") {
     planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a").plan.plan should equal(
       SelectOrSemiApply(
-        AllNodesScan("a"),
+        AllNodesScan("a", Set.empty),
         Expand(
           SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
@@ -84,7 +84,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans containing select or semi apply for a pattern predicate and multiple expressions") {
     planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a").plan.plan should equal(
       SelectOrSemiApply(
-        AllNodesScan("a"),
+        AllNodesScan("a", Set.empty),
         Expand(
           SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED42", "  UNNAMED34", SimplePatternLength
@@ -100,7 +100,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans containing select or anti semi apply for a single negated pattern predicate") {
     planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a").plan.plan should equal(
       SelectOrAntiSemiApply(
-        AllNodesScan("a"),
+        AllNodesScan("a", Set.empty),
         Expand(
           SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED45", "  UNNAMED37", SimplePatternLength
@@ -115,7 +115,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       Projection(
         SelectOrAntiSemiApply(
           LetSelectOrSemiApply(
-            AllNodesScan("a"),
+            AllNodesScan("a", Set.empty),
             Expand(
               SingleRow(Set("a"))(),
               "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED41", "  UNNAMED33", SimplePatternLength
@@ -139,7 +139,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       Projection(
         SelectOrAntiSemiApply(
           LetSemiApply(
-            AllNodesScan("a"),
+            AllNodesScan("a", Set.empty),
             Expand(
               SingleRow(Set("a"))(),
               "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
@@ -162,7 +162,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       Projection(
         SelectOrAntiSemiApply(
           LetAntiSemiApply(
-            AllNodesScan("a"),
+            AllNodesScan("a", Set.empty),
             Expand(
               SingleRow(Set("a"))(),
               "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED31", "  UNNAMED23", SimplePatternLength

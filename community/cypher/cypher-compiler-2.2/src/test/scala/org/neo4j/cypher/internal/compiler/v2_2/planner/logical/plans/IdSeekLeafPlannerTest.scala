@@ -71,7 +71,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     resultPlans should equal(Candidates(
       planNodeByIdSeek(IdName("n"), Seq(
         SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-      ), Seq(expr))
+      ), Seq(expr), Set.empty)
     ))
   }
 
@@ -110,7 +110,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // then
     resultPlans should equal(Candidates(planDirectedRelationshipByIdSeek(IdName("r"), Seq(
       SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-    ), from, end, patternRel, Seq(expr))))
+    ), from, end, patternRel, Set.empty, Seq(expr))))
   }
 
   test("simple undirected relationship by id seek with a collection of relationship ids") {
@@ -147,7 +147,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // then
     resultPlans should equal(Candidates(planUndirectedRelationshipByIdSeek(IdName("r"), Seq(
       SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-    ), from, end, patternRel, Seq(expr))))
+    ), from, end, patternRel, Set.empty, Seq(expr))))
   }
 
   test("simple undirected typed relationship by id seek with a collection of relationship ids") {
@@ -191,7 +191,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     resultPlans should equal(Candidates(
       planHiddenSelection(
         Seq(Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_),
-        planUndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedDecimalIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
+        planUndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedDecimalIntegerLiteral("42")_), from, end, patternRel, Set.empty, Seq(expr))
       )
     ))
   }
@@ -243,7 +243,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)(pos)
           ))_
         ),
-        planUndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedDecimalIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
+        planUndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedDecimalIntegerLiteral("42")_), from, end, patternRel, Set.empty, Seq(expr))
     )))
   }
 }

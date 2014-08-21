@@ -48,7 +48,9 @@ case class NodeIndexSeekPipe(ident: String,
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val index = indexFactory(state)
     val resultNodes = indexQuery(valueExpr, ExecutionContext.empty, state, index, label.name, propertyKey.name)
-    resultNodes.map(node => ExecutionContext.from(ident -> node))
+    resultNodes.map(node =>
+      state.initialContext.getOrElse(ExecutionContext.empty) += (ident -> node)
+    )
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)

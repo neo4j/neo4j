@@ -76,7 +76,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
         }
       }
     }
@@ -94,7 +94,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
         }
       }
     }
@@ -112,7 +112,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
-          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
+          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
         }
       }
     }
@@ -132,7 +132,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
         }
 
         resultPlans.plans.map(_.solved.graph) should beLike {
@@ -156,7 +156,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
-          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
+          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
         }
 
         resultPlans.plans.map(_.solved.graph) should beLike {

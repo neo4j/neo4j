@@ -29,8 +29,8 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans for simple cartesian product") {
     planFor("MATCH n, m RETURN n, m").plan.plan should equal(
       CartesianProduct(
-        AllNodesScan(IdName("m")),
-        AllNodesScan(IdName("n")))
+        AllNodesScan(IdName("m"), Set.empty),
+        AllNodesScan(IdName("n"), Set.empty))
     )
   }
 
@@ -60,10 +60,10 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan.plan.plan should equal(
       CartesianProduct(
-        NodeByLabelScan("a", Right(labelId("A"))),
+        NodeByLabelScan("a", Right(labelId("A")), Set.empty),
         CartesianProduct(
-          NodeByLabelScan("c", Right(labelId("C"))),
-          NodeByLabelScan("b", Right(labelId("B")))
+          NodeByLabelScan("c", Right(labelId("C")), Set.empty),
+          NodeByLabelScan("b", Right(labelId("B")), Set.empty)
         )
       )
     )
@@ -82,8 +82,8 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan.plan.plan should equal(
       CartesianProduct(
-        NodeByLabelScan("b", Right(labelId("B"))),
-        NodeByLabelScan("a", Right(labelId("A")))
+        NodeByLabelScan("b", Right(labelId("B")), Set.empty),
+        NodeByLabelScan("a", Right(labelId("A")), Set.empty)
       )
     )
   }

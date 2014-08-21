@@ -63,7 +63,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val resultPlans = labelScanLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(planNodeByLabelScan(idName, Left("Awesome"), Seq(hasLabels))))
+    resultPlans should equal(Candidates(planNodeByLabelScan(idName, Left("Awesome"), Seq(hasLabels), None, Set.empty)))
   }
 
   test("simple label scan with a compile-time label ID") {
@@ -94,6 +94,6 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val resultPlans = labelScanLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(planNodeByLabelScan(idName, Right(labelId), Seq(hasLabels))))
+    resultPlans should equal(Candidates(planNodeByLabelScan(idName, Right(labelId), Seq(hasLabels), None, Set.empty)))
   }
 }

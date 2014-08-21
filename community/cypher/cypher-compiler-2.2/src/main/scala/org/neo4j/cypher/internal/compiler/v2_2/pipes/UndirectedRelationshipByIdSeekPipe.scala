@@ -33,7 +33,8 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expr
                                              (implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val relIds = relIdExpr.flatMap(expr => Option(expr.apply(ExecutionContext.empty)(state)))
+    val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
+    val relIds = relIdExpr.flatMap(expr => Option(expr.apply(ctx)(state)))
     new IdSeekIterator[Relationship](ident, state.query.relationshipOps, relIds.iterator).flatMap {
       ctx =>
         val r = ctx(ident) match {
@@ -48,7 +49,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expr
           ctx.newWith(Seq(ident -> r, toNode -> e, fromNode -> s)),
           ctx.newWith(Seq(ident -> r, toNode -> s, fromNode -> e))
         )
-    }
+    }.map(ctx.clone() ++ _)
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)

@@ -33,14 +33,15 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expres
                                            (implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val relIds = relIdExpr.flatMap(expr => Option(expr.apply(ExecutionContext.empty)(state)))
+    val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
+    val relIds = relIdExpr.flatMap(expr => Option(expr.apply(ctx)(state)))
     new IdSeekIterator[Relationship](ident, state.query.relationshipOps, relIds.iterator).map {
       ctx =>
         val r = ctx(ident)
         r match {
           case r: Relationship => ctx += (fromNode -> r.getStartNode) += (toNode -> r.getEndNode)
         }
-    }
+    }.map(ctx.clone() ++ _)
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)

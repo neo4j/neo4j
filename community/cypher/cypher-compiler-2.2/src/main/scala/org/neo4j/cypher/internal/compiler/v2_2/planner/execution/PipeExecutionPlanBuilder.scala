@@ -75,25 +75,25 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case sr @ SingleRow(ids) =>
           NullPipe(new SymbolTable(sr.typeInfo))
 
-        case AllNodesScan(IdName(id)) =>
+        case AllNodesScan(IdName(id), _) =>
           AllNodesScanPipe(id)
 
-        case NodeByLabelScan(IdName(id), label) =>
+        case NodeByLabelScan(IdName(id), label, _) =>
           NodeByLabelScanPipe(id, label)
 
-        case NodeByIdSeek(IdName(id), nodeIdExpr) =>
+        case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
           NodeByIdSeekPipe(id, nodeIdExpr.map(buildExpression))
 
-        case DirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode)) =>
+        case DirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
           DirectedRelationshipByIdSeekPipe(id, relIdExpr.map(buildExpression), toNode, fromNode)
 
-        case UndirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode)) =>
+        case UndirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
           UndirectedRelationshipByIdSeekPipe(id, relIdExpr.map(buildExpression), toNode, fromNode)
 
-        case NodeIndexSeek(IdName(id), label, propertyKey, valueExpr) =>
+        case NodeIndexSeek(IdName(id), label, propertyKey, valueExpr, _) =>
           NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), unique = false)
 
-        case NodeIndexUniqueSeek(IdName(id), label, propertyKey, valueExpr) =>
+        case NodeIndexUniqueSeek(IdName(id), label, propertyKey, valueExpr, _) =>
           NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), unique = true)
 
         case Selection(predicates, left) =>

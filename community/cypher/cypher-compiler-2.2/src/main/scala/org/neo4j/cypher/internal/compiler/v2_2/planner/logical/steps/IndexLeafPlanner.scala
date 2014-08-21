@@ -46,7 +46,8 @@ abstract class IndexLeafPlanner extends LeafPlanner {
           case hint @ UsingIndexHint(Identifier(`name`), `labelName`, Identifier(`propertyName`)) => hint
         }
         val entryConstructor: (Seq[Expression]) => QueryPlan =
-          constructPlan(idName, LabelToken(labelName, labelId), PropertyKeyToken(propertyKeyName, propertyKeyName.id.head), queryExpression, hint)
+          constructPlan(idName, LabelToken(labelName, labelId), PropertyKeyToken(propertyKeyName, propertyKeyName.id.head),
+                        queryExpression, hint, qg.argumentIds)
         entryConstructor(Seq(propertyPredicate, labelPredicate))
       }
     }
@@ -63,7 +64,8 @@ abstract class IndexLeafPlanner extends LeafPlanner {
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],
-                              hint: Option[UsingIndexHint])
+                              hint: Option[UsingIndexHint],
+                              argumentIds: Set[IdName])
                              (implicit context: LogicalPlanningContext,
                               subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (Seq[Expression]) => QueryPlan
 
@@ -77,11 +79,12 @@ object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],
-                              hint: Option[UsingIndexHint])
+                              hint: Option[UsingIndexHint],
+                              argumentIds: Set[IdName])
                              (implicit context: LogicalPlanningContext,
                               subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
-      planNodeIndexUniqueSeek(idName, label, propertyKey, valueExpr, predicates, hint)
+      planNodeIndexUniqueSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
 
 
   protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
@@ -93,11 +96,12 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],
-                              hint: Option[UsingIndexHint])
+                              hint: Option[UsingIndexHint],
+                              argumentIds: Set[IdName])
                              (implicit context: LogicalPlanningContext,
                               subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
-      planNodeIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint)
+      planNodeIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
 
   protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
     context.planContext.getIndexRule(label, property)
