@@ -1383,6 +1383,55 @@ RETURN a.name""")
     actual shouldNot be(empty)
   }
 
+  test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val node3 = createNode()
+    val rel1 = relate(node1, node2, "Y")
+    val rel2 = relate(node2, node3, "Y")
+
+    // when
+    val result = executeWithNewPlanner("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS a LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
+
+    val actual = result.toList
+
+    actual should equal(List(
+      Map("first" -> node1, "second" -> node3)
+    ))
+  }
+
+  test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS first, b AS second LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val node3 = createNode()
+    val rel1 = relate(node1, node2, "Y")
+    val rel2 = relate(node2, node3, "Y")
+
+    // when
+    val result = executeWithNewPlanner("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS first, b AS second LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
+
+    val actual = result.toList
+
+    actual should equal(List(
+      Map("first" -> node1, "second" -> node3)
+    ))
+  }
+
+  test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS second, b AS first LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val node3 = createNode()
+    val rel1 = relate(node1, node2, "Y")
+    val rel2 = relate(node2, node3, "Y")
+
+    // when
+    val result = executeWithNewPlanner("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS second, b AS first LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
+
+    val actual = result.toList
+
+    actual should be(empty)
+  }
+
   test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2") {
     val node1 = createNode()
     val node2 = createNode()

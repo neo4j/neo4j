@@ -27,6 +27,24 @@ import org.neo4j.cypher.internal.compiler.v2_2.bottomUp
 
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 
+  test("should inline: MATCH a, b, c WITH c AS c, b AS a RETURN c") {
+    val result = projectionInlinedAst("MATCH a, b, c WITH c AS c, b AS a RETURN c")
+
+    result should equal(ast("MATCH a, b, c WITH c AS c, b AS a RETURN c"))
+  }
+
+  test("should inline: WITH {b} AS tmp, {r} AS r WITH {a} AS b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b") {
+    val result = projectionInlinedAst("WITH {a} AS b, {b} AS tmp, {r} AS r WITH b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b")
+
+    result should equal(ast("WITH {a} AS b, {b} AS tmp, {r} AS r WITH b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b"))
+  }
+
+  test("should inline: MATCH a, b, c WITH c AS d, b AS a RETURN d") {
+    val result = projectionInlinedAst("MATCH a, b, c WITH c AS d, b AS a RETURN d")
+
+    result should equal(ast("MATCH a, b, c WITH c AS c, b AS a RETURN c AS d"))
+  }
+
   test("should  inline: MATCH n WITH n AS m RETURN m => MATCH n RETURN n") {
     val result = projectionInlinedAst("MATCH n WITH n AS m RETURN m")
 
