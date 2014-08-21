@@ -39,19 +39,3 @@ div(ng-controller="CypherResultCtrl", fullscreen)
           .status-bar
             .status
               span Running...
-
-
-      //- .status-bar(ng-class='{error: frame.hasErrors, loading: frame.isLoading}')
-      //-   .status
-      //-     div(ng-hide='frame.isLoading')
-      //-       span(ng-show='frame.hasErrors')
-      //-         .fa.fa-exclamation-triangle
-      //-         {{frame.errorText}}
-      //-       div(ng-hide='frame.hasErrors')
-      //-         div(ng-show='frame.response.table')
-      //-           .fa.fa-ok
-      //-           include partials/result-status
-
-      //-   .actions
-      //-     a.fa.fa-table(ng-class='{active: isActive("table")}', ng-click='setActive("table")')
-      //-     a.fa.fa-code-fork(ng-class='{active: isActive("graph")}', ng-click='setActive("graph")')
