@@ -279,12 +279,12 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
 
     private Iterator<Slave> filter( Iterator<Slave> slaves, final Integer externalAuthorServerId )
     {
-        return externalAuthorServerId == null ? slaves : new FilteringIterator<Slave>( slaves, new Predicate<Slave>()
+        return externalAuthorServerId == null ? slaves : new FilteringIterator<>( slaves, new Predicate<Slave>()
         {
             @Override
             public boolean accept( Slave item )
             {
-                return item.getServerId() != externalAuthorServerId.intValue();
+                return item.getServerId() != externalAuthorServerId;
             }
         } );
     }
@@ -378,6 +378,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         };
     }
 
+    @Override
     public int getCurrentMasterId()
     {
         return config.getServerId().toIntegerIndex();

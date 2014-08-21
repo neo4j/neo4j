@@ -40,6 +40,7 @@ import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
@@ -330,7 +331,7 @@ public class ClusterTest
 
         try
         {
-            System.out.println(db.isAvailable( 10 ));
+            assertTrue( "Single instance cluster was not formed in time", db.isAvailable( 1_000 ) );
         }
         finally
         {
