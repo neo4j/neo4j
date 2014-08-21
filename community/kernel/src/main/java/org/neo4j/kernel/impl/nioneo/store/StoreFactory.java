@@ -193,7 +193,7 @@ public class StoreFactory
                 fileSystemAbstraction, stringLogger, nameStore );
     }
 
-    private RelationshipStore newRelationshipStore(File baseFileName)
+    public RelationshipStore newRelationshipStore( File baseFileName )
     {
         return new RelationshipStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
