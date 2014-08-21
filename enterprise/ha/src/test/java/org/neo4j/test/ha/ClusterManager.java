@@ -278,7 +278,7 @@ public class ClusterManager
         this.storeDirInitializer = null;
     }
 
-    private ClusterManager( Builder builder )
+    public ClusterManager( Builder builder )
     {
         this.clustersProvider = builder.provider;
         this.root = builder.root;
