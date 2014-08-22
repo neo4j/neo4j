@@ -42,9 +42,9 @@ class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {
     }
 
     SemanticTable(
-      types = semanticState.typeTable,
-      symbols = semanticState.identifiers,
-      scopes = semanticState.scopeTable.mapValues(_.visibleNames)
+      typeInfo = semanticState.typeTable,
+      symbolPosition = semanticState.identifiers,
+      namesInScope = semanticState.scopeTable.mapValues(_.visibleNames)
     )
   }
 }

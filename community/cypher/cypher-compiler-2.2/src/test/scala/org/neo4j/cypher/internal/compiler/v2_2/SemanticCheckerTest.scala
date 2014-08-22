@@ -52,6 +52,6 @@ class SemanticCheckerTest extends CypherFunSuite {
       case r: Return => (_, _) => Some(r)
       case _         => (acc, children) => children(acc)
     }
-    ret.map( x => table.scopes(x.position) )
+    ret.map( x => table.namesInScope(x.position) )
   }
 }

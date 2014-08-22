@@ -37,7 +37,7 @@ case class reattachAliasedExpressions(table: SemanticTable) extends Rewriter {
   }
 
   private def projectionsMap(scopeStart: InputPosition, items: Seq[ReturnItem]) = {
-    val namesInScope = table.scopes(scopeStart)
+    val namesInScope = table.namesInScope(scopeStart)
     items.collect { case item if !namesInScope.contains(item.name) => item.name -> item.expression }.toMap
   }
 

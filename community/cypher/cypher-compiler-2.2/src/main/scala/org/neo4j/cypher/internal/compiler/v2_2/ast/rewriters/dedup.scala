@@ -77,7 +77,7 @@ case class dedup(table: SemanticTable) extends Rewriter {
 
   private def rewriteIdentifiers(identifiersToIgnore: Set[String] = Set.empty): PartialFunction[AnyRef, AnyRef] = {
     case id@Identifier(name) if !identifiersToIgnore(name) =>
-      val newName = name + table.symbols(id).offset.toString
+      val newName = name + table.symbolPosition(id).offset.toString
       Identifier(newName)(id.position)
   }
 }
