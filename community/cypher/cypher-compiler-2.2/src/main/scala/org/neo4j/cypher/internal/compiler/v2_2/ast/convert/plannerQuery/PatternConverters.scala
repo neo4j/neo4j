@@ -101,25 +101,4 @@ object PatternConverters {
 
     }
   }
-
-  implicit class ReturnItemConverter(val items: Seq[ReturnItem]) extends AnyVal {
-    def asQueryProjection(distinct: Boolean): QueryProjection = {
-      val (aggregatingItems: Seq[ReturnItem], groupingKeys: Seq[ReturnItem]) =
-        items.partition(item => IsAggregate(item.expression))
-
-      def turnIntoMap(x: Seq[ReturnItem]) = x.map(e => e.name -> e.expression).toMap
-
-      val projectionMap = turnIntoMap(groupingKeys)
-      val aggregationsMap = turnIntoMap(aggregatingItems)
-
-      if (projectionMap.values.exists(containsAggregate))
-        throw new InternalException("Grouping keys contains aggregation. AST has not been rewritten?")
-
-      if (aggregationsMap.nonEmpty || distinct)
-        AggregatingQueryProjection(groupingKeys = projectionMap, aggregationExpressions = aggregationsMap)
-      else
-        RegularQueryProjection(projections = projectionMap)
-    }
-  }
-
 }

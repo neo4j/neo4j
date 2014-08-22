@@ -49,6 +49,14 @@ object ExpressionConverters {
     }
   }
 
+  implicit class QueryGraphExtractor(val expression: Expression) extends AnyVal {
+    def extractPatternExpressions: Seq[PatternExpression] =
+      expression.treeFold(Seq.empty[PatternExpression]) {
+        case p: PatternExpression =>
+          (acc, _) => acc :+ p
+      }
+  }
+
   implicit class PredicateConverter(val predicate: Expression) extends AnyVal {
     def asPredicates: Set[Predicate] = {
       predicate.treeFold(Set.empty[Predicate]) {
