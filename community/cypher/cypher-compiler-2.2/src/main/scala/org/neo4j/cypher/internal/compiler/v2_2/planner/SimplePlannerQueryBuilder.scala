@@ -23,7 +23,7 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
@@ -96,44 +96,14 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder with CollectionSuppo
   import org.neo4j.cypher.internal.compiler.v2_2.planner.SimplePlannerQueryBuilder.PatternDestructuring._
 
   private def getSelectionsAndSubQueries(optWhere: Option[Where]): (Selections, Seq[(PatternExpression, QueryGraph)]) = {
+    val selections = optWhere.asSelections
+    val subQueries = selections.getContainedPatternExpressions.toSeq.map(x => x -> x.asQueryGraph)
 
-    val predicates = optWhere.map(SelectionPredicates.fromWhere).getOrElse(Set.empty)
-
-    val predicatesWithCorrectDeps = predicates.map {
-      case Predicate(deps, e: PatternExpression) =>
-        Predicate(deps.filter(x => isNamed(x.name)), e)
-      case Predicate(deps, ors@Ors(exprs)) =>
-        val newDeps = exprs.foldLeft(Set.empty[IdName]) { (acc, exp) =>
-          exp match {
-            case exp: PatternExpression => acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
-            case _                      => acc ++ SelectionPredicates.idNames(exp)
-          }
-        }
-        Predicate(newDeps, ors)
-      case p                               => p
-    }
-
-    val subQueries = predicatesWithCorrectDeps.flatMap {
-      case Predicate(_, Ors(orOperands)) =>
-        orOperands.collect {
-          case expr: PatternExpression => expr -> expr.asQueryGraph
-          case Not(expr: PatternExpression) => expr -> expr.asQueryGraph
-        }
-
-      case Predicate(_, Not(expr: PatternExpression)) =>
-        Seq(expr -> expr.asQueryGraph)
-
-      case Predicate(_, expr: PatternExpression) =>
-        Seq(expr -> expr.asQueryGraph)
-
-      case _ => Seq.empty
-    }
-
-    (Selections(predicates), subQueries.toSeq)
+    (selections, subQueries)
   }
 
   private def extractPatternInExpressionFromWhere(optWhere: Option[Where]): Seq[(PatternExpression, QueryGraph)] = {
-    val expressions = optWhere.map(SelectionPredicates.fromWhere).getOrElse(Set.empty).map(_.exp).toSeq
+    val expressions = optWhere.asSelections.flatPredicates
 
     def containsNestedPatternExpressions(expr: Expression): Boolean = expr match {
       case _: PatternExpression      => false

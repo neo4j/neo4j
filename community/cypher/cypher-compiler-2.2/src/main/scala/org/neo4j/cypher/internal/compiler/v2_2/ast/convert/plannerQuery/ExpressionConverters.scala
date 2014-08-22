@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{LabelPredicateNormalizer, PropertyPredicateNormalizer, MatchPredicateNormalizerChain}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, RelationshipChain, PatternExpression}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.SimplePlannerQueryBuilder.PatternDestructuring
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, topDown}
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalizerChain, PropertyPredicateNormalizer}
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SimplePlannerQueryBuilder.PatternDestructuring
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{Predicate, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, topDown}
 
 object ExpressionConverters {
   val normalizer = MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer)
@@ -47,4 +48,73 @@ object ExpressionConverters {
       qg.addArgumentId(qg.coveredIds.filter(_.name.isNamed).toSeq)
     }
   }
+
+  implicit class PredicateConverter(val predicate: Expression) extends AnyVal {
+    def asPredicates: Set[Predicate] = {
+      predicate.treeFold(Set.empty[Predicate]) {
+        // n:Label
+        case p@HasLabels(Identifier(name), labels) =>
+          (acc, _) => acc ++ labels.map {
+            label: LabelName =>
+              Predicate(Set(IdName(name)), p.copy(labels = Seq(label))(p.position))
+          }
+        // and
+        case _: Ands =>
+          (acc, children) => children(acc)
+        case p: Expression =>
+          (acc, _) => acc + Predicate(p.idNames, p)
+      }.map(filterUnnamed).toSet
+    }
+
+    private def filterUnnamed(predicate: Predicate): Predicate = predicate match {
+      case Predicate(deps, e: PatternExpression) =>
+        Predicate(deps.filter(x => isNamed(x.name)), e)
+      case Predicate(deps, e@Not(_: PatternExpression)) =>
+        Predicate(deps.filter(x => isNamed(x.name)), e)
+      case Predicate(deps, ors@Ors(exprs)) =>
+        val newDeps = exprs.foldLeft(Set.empty[IdName]) { (acc, exp) =>
+          exp match {
+            case e: PatternExpression =>
+              acc ++ e.idNames.filter(x => isNamed(x.name))
+            case e@Not(_: PatternExpression) =>
+              acc ++ e.idNames.filter(x => isNamed(x.name))
+            case e if e.exists { case _: PatternExpression => true} =>
+              acc ++ (e.idNames -- unnamedIdNamesInNestedPatternExpressions(e))
+            case e =>
+              acc ++ e.idNames
+          }
+        }
+        Predicate(newDeps, ors)
+      case Predicate(deps, expr) if expr.exists { case _: PatternExpression => true} =>
+        Predicate(deps -- unnamedIdNamesInNestedPatternExpressions(expr), expr)
+      case p => p
+    }
+
+    private def unnamedIdNamesInNestedPatternExpressions(expression: Expression) = {
+      val patternExpressions = expression.treeFold(Seq.empty[PatternExpression]) {
+        case p: PatternExpression => (acc, _) => acc :+ p
+      }
+
+      val unnamedIdsInPatternExprs = patternExpressions.flatMap(_.idNames)
+        .filterNot(x => isNamed(x.name))
+        .toSet
+
+      unnamedIdsInPatternExprs
+    }
+
+  }
+
+  implicit class IdExtractor(val exp: Expression) extends AnyVal {
+    def idNames: Set[IdName] = exp.treeFold(Set.empty[IdName]) {
+      case p: FilteringExpression =>
+        (acc, _) => acc ++
+                    p.expression.idNames ++
+                    p.innerPredicate.map(_.idNames).getOrElse(Set.empty) -
+                    IdName(p.identifier.name)
+
+      case Identifier(name) =>
+        (acc, _) => acc + IdName(name)
+    }
+  }
+
 }
