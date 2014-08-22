@@ -37,51 +37,35 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
+import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 @RunWith( Theories.class )
 public class StoreUpgradeTest
 {
-    private static class Store
-    {
-        private final String resourceName;
-        final long expectedNodeCount;
-
-        private Store( String resourceName, long expectedNodeCount )
-        {
-            this.resourceName = resourceName;
-            this.expectedNodeCount = expectedNodeCount;
-        }
-
-        public File prepareDirectory() throws IOException
-        {
-            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeTest.class, resourceName );
-            new File( dir, "messages.log" ).delete(); // clear the log
-            return dir;
-        }
-    }
-
     @DataPoints
     public static final Store[] stores = new Store[] {
-            new Store( "/upgrade/0.A.1-db.zip", 1071 ),
-            new Store( "0.A.1-db2.zip", 8 )
+            new Store( "/upgrade/0.A.1-db.zip", 1071, 18 ),
+            new Store( "0.A.1-db2.zip", 8, 11 ),
+            new Store( "0.A.0-db.zip", 4, 4)
     };
-
-    private long countAllNodes( GraphDatabaseService db )
-    {
-        return count( GlobalGraphOperations.at( db ).getAllNodes() );
-    }
 
     @Test
     @Theory
@@ -94,11 +78,9 @@ public class StoreUpgradeTest
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir.getAbsolutePath() );
         builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
         GraphDatabaseService db = builder.newGraphDatabase();
-
-        try ( Transaction ignore = db.beginTx() )
+        try
         {
-            long count = countAllNodes( db );
-            assertThat( count, is( store.expectedNodeCount ) );
+            checkInstance( store, (GraphDatabaseAPI) db );
         }
         finally
         {
@@ -129,18 +111,11 @@ public class StoreUpgradeTest
 
             Bootstrapper bootstrapper = Bootstrapper.loadMostDerivedBootstrapper();
             bootstrapper.start();
-
             try
             {
                 NeoServer server = bootstrapper.getServer();
                 Database database = server.getDatabase();
-                GraphDatabaseAPI db = database.getGraph();
-
-                try ( Transaction ignore = db.beginTx() )
-                {
-                    long count = countAllNodes( db );
-                    assertThat( count, is( store.expectedNodeCount ) );
-                }
+                checkInstance( store, database.getGraph() );
             }
             finally
             {
@@ -155,4 +130,88 @@ public class StoreUpgradeTest
         assertConsistentStore( dir );
     }
 
+    @Test
+    @Theory
+    public void migratingOlderDataAndThanStartAClusterUsingTheNewerDataShouldWork( Store store ) throws Throwable
+    {
+        // migrate the store using a single instance
+        File dir = store.prepareDirectory();
+        GraphDatabaseFactory factory = new GraphDatabaseFactory();
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir.getAbsolutePath() );
+        builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+        GraphDatabaseService db = builder.newGraphDatabase();
+        try
+        {
+            checkInstance( store, (GraphDatabaseAPI) db );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+
+        assertConsistentStore( dir );
+
+        // start the cluster with the db migrated from the old instance
+        File haDir = new File( dir.getParentFile(), "ha-stuff" );
+        FileUtils.deleteRecursively( haDir );
+        ClusterManager clusterManager = new ClusterManager(
+                new ClusterManager.Builder( haDir ).withSeedDir( dir ).withProvider( clusterOfSize( 2 ) )
+        );
+
+        clusterManager.start();
+
+        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+        HighlyAvailableGraphDatabase master, slave;
+        try
+        {
+            cluster.await( allSeesAllAsAvailable() );
+
+            master = cluster.getMaster();
+            checkInstance( store, master );
+            slave = cluster.getAnySlave();
+            checkInstance( store, slave );
+        }
+        finally
+        {
+            clusterManager.shutdown();
+        }
+
+        assertConsistentStore( new File( master.getStoreDir() ) );
+        assertConsistentStore( new File( slave.getStoreDir() ) );
+    }
+
+    private static class Store
+    {
+        private final String resourceName;
+        final long expectedNodeCount;
+        final long lastTxId;
+
+        private Store( String resourceName, long expectedNodeCount, long lastTxId )
+        {
+            this.resourceName = resourceName;
+            this.expectedNodeCount = expectedNodeCount;
+            this.lastTxId = lastTxId;
+        }
+
+        public File prepareDirectory() throws IOException
+        {
+            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeTest.class, resourceName );
+            new File( dir, "messages.log" ).delete(); // clear the log
+            return dir;
+        }
+    }
+
+    private static void checkInstance( Store store, GraphDatabaseAPI db )
+    {
+        try ( Transaction ignored = db.beginTx() )
+        {
+            long count = count( GlobalGraphOperations.at( db ).getAllNodes() );
+            assertThat( count, is( store.expectedNodeCount ) );
+
+            long lastCommittedTxId = db.getDependencyResolver()
+                    .resolveDependency( NeoStoreXaDataSource.class )
+                    .getLastCommittedTxId();
+            assertEquals( store.lastTxId, lastCommittedTxId );
+        }
+    }
 }
