@@ -52,15 +52,8 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition
 }
 
 case class ReturnAll()(val position: InputPosition) extends ReturnItems {
-  var seenIdentifiers: Option[Set[String]] = None
 
-  def semanticCheck =
-    updateSeenIdentifiers
-
-  private def updateSeenIdentifiers = (s: SemanticState) => {
-    seenIdentifiers = Some(s.scope.symbolTable.keySet)
-    SemanticCheckResult.success(s)
-  }
+  def semanticCheck: SemanticCheck = SemanticCheckResult.success
 
   def declareIdentifiers(currentState: SemanticState) = s =>
     SemanticCheckResult.success(s.importScope(currentState.scope))

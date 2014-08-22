@@ -1099,7 +1099,7 @@ RETURN a.name""")
     result.toList should equal (List(Map("a" -> a, "b" -> b)))
   }
 
-  test("should handle queries that cant be index solved because expressions lack dependencies with two disjoin patterns") {
+  test("should handle queries that cant be index solved because expressions lack dependencies with two disjoint patterns") {
     // given
     val a = createLabeledNode(Map("property" -> 42), "Label")
     val b = createLabeledNode(Map("property" -> 42), "Label")

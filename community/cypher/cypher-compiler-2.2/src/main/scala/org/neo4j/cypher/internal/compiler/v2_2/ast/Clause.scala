@@ -36,6 +36,8 @@ sealed trait ClosingClause extends Clause with SemanticChecking with ScopeStartR
   def skip: Option[Skip]
   def limit: Option[Limit]
 
+  def withReturnItems(newReturnItems: ReturnItems): ClosingClause
+
   def semanticCheck =
     registerScopeStart chain
     returnItems.semanticCheck chain
@@ -260,6 +262,8 @@ case class With(
     checkAliasedReturnItems chain
     where.semanticCheck
 
+  def withReturnItems(newReturnItems: ReturnItems) = copy(returnItems = newReturnItems)(position)
+
   private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
     case li: ListedReturnItems => li.items.filter(!_.alias.isDefined).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
     case _                     => Seq()
@@ -289,6 +293,8 @@ case class Return(
     limit: Option[Limit])(val position: InputPosition) extends ClosingClause {
 
   def name = "RETURN"
+
+  def withReturnItems(newReturnItems: ReturnItems) = copy(returnItems = newReturnItems)(position)
 
   protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state =>
     if (returnItems == ReturnAll()(null) && state.scope.isEmpty) {

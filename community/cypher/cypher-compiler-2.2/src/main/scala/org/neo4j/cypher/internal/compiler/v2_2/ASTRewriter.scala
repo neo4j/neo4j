@@ -41,9 +41,10 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       normalizeNotEquals,
       normalizeEqualsArgumentOrder,
       addUniquenessPredicates,
-      expandStar,
+      expandStar(table),
       isolateAggregation,
-      aliasReturnItems)
+      aliasReturnItems
+    )
 
     val rewriter = inSequence(rewriters: _*)
     val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]

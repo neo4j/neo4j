@@ -51,9 +51,9 @@ class SemanticStateTest extends CypherFunSuite {
         val positions = state.scope.localSymbol("foo").map(_.positions).get
         positions should equal(Seq(identifier1.position, identifier2.position, identifier3.position))
 
-        state.identifiers(identifier1) should equal(position)
-        state.identifiers(identifier2) should equal(position)
-        state.identifiers(identifier3) should equal(position)
+        state.symbolIdentifiers(identifier1) should equal(identifier1)
+        state.symbolIdentifiers(identifier2) should equal(identifier1)
+        state.symbolIdentifiers(identifier3) should equal(identifier1)
     }
   }
 
@@ -154,8 +154,8 @@ class SemanticStateTest extends CypherFunSuite {
     val s2 = s1.pushScope.declareIdentifier(identifier2, CTString).right.get
 
     s2.symbolTypes("foo") should equal(CTString: TypeSpec)
-    s2.identifiers(identifier1) should equal(pos1)
-    s2.identifiers(identifier2) should equal(pos2)
+    s2.symbolIdentifiers(identifier1) should equal(identifier1)
+    s2.symbolIdentifiers(identifier2) should equal(identifier2)
   }
 
   test("should override symbol in parent (2)") {
@@ -170,9 +170,9 @@ class SemanticStateTest extends CypherFunSuite {
     val s3 = s2.pushScope.declareIdentifier(identifier3, CTString).right.get
 
     s3.symbolTypes("foo") should equal(CTString: TypeSpec)
-    s3.identifiers(identifier1) should equal(pos1)
-    s3.identifiers(identifier2) should equal(pos1)
-    s3.identifiers(identifier3) should equal(pos3)
+    s3.symbolIdentifiers(identifier1) should equal(identifier1)
+    s3.symbolIdentifiers(identifier2) should equal(identifier1)
+    s3.symbolIdentifiers(identifier3) should equal(identifier3)
   }
 
   test("should extend symbol in parent") {
@@ -216,8 +216,8 @@ class SemanticStateTest extends CypherFunSuite {
     val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
     val s2 = s1.ensureIdentifierDefined(identifier2).right.get
     s2.clearSymbols.expressionType(identifier2).actual should equal(CTNode: TypeSpec)
-    s2.identifiers(identifier2) should equal(position)
-    s2.identifiers(identifier1) should equal(position)
+    s2.symbolIdentifiers(identifier1) should equal(identifier1)
+    s2.symbolIdentifiers(identifier2) should equal(identifier1)
   }
 
   test("should not return symbol of identifier after clear") {
@@ -241,10 +241,10 @@ class SemanticStateTest extends CypherFunSuite {
     val s3 = s2.implicitIdentifier(id3, CTNode).right.get
     val result = s3.popScope.implicitIdentifier(id4, CTNode).right.get
 
-    result.identifiers(id1) should equal(position1)
-    result.identifiers(id2) should equal(position2)
-    result.identifiers(id3) should equal(position2)
-    result.identifiers(id4) should equal(position1)
+    result.symbolIdentifiers(id1) should equal(id1)
+    result.symbolIdentifiers(id2) should equal(id2)
+    result.symbolIdentifiers(id3) should equal(id2)
+    result.symbolIdentifiers(id4) should equal(id2)
   }
 
   test("should maintain separate TypeInfo for equivalent expressions") {

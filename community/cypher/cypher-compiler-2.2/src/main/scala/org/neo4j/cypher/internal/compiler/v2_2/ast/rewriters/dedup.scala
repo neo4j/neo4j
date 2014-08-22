@@ -27,7 +27,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 
 case class dedup(table: SemanticTable) extends Rewriter {
 
-  def apply(v1: AnyRef) = rewriteTopDown.apply(v1)
+  def apply(input: AnyRef) = {
+    val  result = rewriteTopDown.apply(input)
+    result
+  }
 
   private val topDownButNoAliases: Rewriter = Rewriter.lift(rewriteIdentifiers() orElse {
     case returnItem@AliasedReturnItem(e, id) =>
@@ -77,7 +80,7 @@ case class dedup(table: SemanticTable) extends Rewriter {
 
   private def rewriteIdentifiers(identifiersToIgnore: Set[String] = Set.empty): PartialFunction[AnyRef, AnyRef] = {
     case id@Identifier(name) if !identifiersToIgnore(name) =>
-      val newName = name + table.symbolPosition(id).offset.toString
+      val newName = name + table.symbolIdentifiers(id).position.offset.toString
       Identifier(newName)(id.position)
   }
 }

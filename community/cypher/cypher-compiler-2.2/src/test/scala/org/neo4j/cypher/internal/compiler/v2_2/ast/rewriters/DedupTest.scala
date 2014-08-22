@@ -66,8 +66,36 @@ class DedupTest extends CypherFunSuite {
 
   test("sorting is deduped") {
     assertRewrite(
+      "match n return n as x order by n.prop",
+      "match n6 return n6 as x order by n6.prop"
+    )
+  }
+
+  test("sorting is deduped 2") {
+    assertRewrite(
+      "match n return n as x order by x.prop",
+      "match n6 return n6 as x order by x.prop"
+    )
+  }
+
+  test("sorting is deduped 3") {
+    assertRewrite(
+      "match a, b return a as x order by b.prop",
+      "match a6, b9 return a6 as x order by b9.prop"
+    )
+  }
+
+  test("sorting after aggregation is deduped") {
+    assertRewrite(
       "match n with n as n, count(n) as c return n.prop + c as X order by n.prop + c",
       "match n6 with n6 as n18, count(n6) as c33 return n18.prop + c33 as X order by n18.prop + c33"
+    )
+  }
+
+  test("match two nodes and compare a property between them") {
+    assertRewrite(
+      "match (a), (b) where a:Label and b:Label and a.property = b.property return a as a, b as b",
+      "match (a7), (b12) where a7:Label and b12:Label and a7.property = b12.property return a7 as a, b12 as b"
     )
   }
 

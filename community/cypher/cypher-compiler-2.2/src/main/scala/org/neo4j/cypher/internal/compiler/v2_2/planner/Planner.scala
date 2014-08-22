@@ -99,8 +99,8 @@ case class PlanRewriter(table: SemanticTable, shouldDedup: Boolean = true) {
     builder += splitInCollectionsToIsolateConstants
     builder += CNFNormalizer
     builder += collapseInCollectionsContainingConstants
-    if (shouldDedup)
-      builder += dedup(table)
+//    if (shouldDedup)
+//      builder += dedup(table)
     builder += nameVarLengthRelationships
     builder += namePatternPredicates
     builder += inlineProjections
