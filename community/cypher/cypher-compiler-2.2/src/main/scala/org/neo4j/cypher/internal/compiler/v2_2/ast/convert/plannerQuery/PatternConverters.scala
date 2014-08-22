@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryProjection, AggregatingQueryProjection, RegularQueryProjection, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, ShortestPathPattern}
 
 object PatternConverters {
@@ -98,6 +99,26 @@ object PatternConverters {
           throw new CantHandleQueryException
       }
 
+    }
+  }
+
+  implicit class ReturnItemConverter(val items: Seq[ReturnItem]) extends AnyVal {
+    def asQueryProjection(distinct: Boolean): QueryProjection = {
+      val (aggregatingItems: Seq[ReturnItem], groupingKeys: Seq[ReturnItem]) =
+        items.partition(item => IsAggregate(item.expression))
+
+      def turnIntoMap(x: Seq[ReturnItem]) = x.map(e => e.name -> e.expression).toMap
+
+      val projectionMap = turnIntoMap(groupingKeys)
+      val aggregationsMap = turnIntoMap(aggregatingItems)
+
+      if (projectionMap.values.exists(containsAggregate))
+        throw new InternalException("Grouping keys contains aggregation. AST has not been rewritten?")
+
+      if (aggregationsMap.nonEmpty || distinct)
+        AggregatingQueryProjection(groupingKeys = projectionMap, aggregationExpressions = aggregationsMap)
+      else
+        RegularQueryProjection(projections = projectionMap)
     }
   }
 

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Not, Ors, PatternExpression, Where}
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{Predicate, Selections}
-import ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{Predicate, QueryShuffle, Selections}
 
 object ClauseConverters {
 
@@ -68,6 +68,13 @@ object ClauseConverters {
       }
 
       subQueries
+    }
+  }
+
+  implicit class SortItems(val optOrderBy: Option[OrderBy]) {
+    def asQueryShuffle = {
+      val sortItems: Seq[SortItem] = optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
+      QueryShuffle(sortItems, None, None)
     }
   }
 }

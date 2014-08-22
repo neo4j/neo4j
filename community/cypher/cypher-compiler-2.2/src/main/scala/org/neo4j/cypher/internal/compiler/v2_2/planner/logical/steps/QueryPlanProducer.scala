@@ -304,7 +304,7 @@ object QueryPlanProducer {
   def planSkip(inner: QueryPlan, count: Expression) =
     QueryPlan(
       SkipPlan(inner.plan, count),
-      inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSkip(Some(count)))))
+      inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSkipExpression(count))))
     )
 
   def planUnwind(inner: QueryPlan, name: IdName, expression: Expression) =
@@ -316,7 +316,7 @@ object QueryPlanProducer {
   def planLimit(inner: QueryPlan, count: Expression) =
     QueryPlan(
       LimitPlan(inner.plan, count),
-      inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withLimit(Some(count)))))
+      inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withLimitExpression(count))))
     )
 
   def planSort(inner: QueryPlan, descriptions: Seq[SortDescription], items: Seq[ast.SortItem]) =
@@ -329,7 +329,7 @@ object QueryPlanProducer {
     QueryPlan(
       SortedLimit(inner.plan, limit, items),
       inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(
-        _.withLimit(Some(limit))
+        _.withLimitExpression(limit)
          .withSortItems(items))))
     )
 
@@ -338,8 +338,8 @@ object QueryPlanProducer {
       QueryPlan(
         SortedLimit(inner.plan, ast.Add(limit, skip)(limit.position), items),
         inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(
-          _.withSkip(Some(skip))
-           .withLimit(Some(limit))
+          _.withSkipExpression(skip)
+           .withLimitExpression(limit)
            .withSortItems(items))))
       ),
       skip
