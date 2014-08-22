@@ -49,8 +49,11 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     @Override
     public void removeNodeFromCache( long nodeId )
     {
-        nodeManager.removeNodeFromCache( nodeId );
-        persistenceCache.evictNode( nodeId );
+        if ( nodeId != -1 )
+        {
+            nodeManager.removeNodeFromCache( nodeId );
+            persistenceCache.evictNode( nodeId );
+        }
     }
 
     @Override
