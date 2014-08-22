@@ -1,11 +1,15 @@
 .legend(ng-controller='LegendCtrl', ng-model='frame.results.graph')
-  .legend-row(ng-if='labels[""].count')
+  .legend-row(ng-if='labels[""].count', ng-class="{contracted: labelsContracted}")
+    .row-toggle(ng-click="labelsContracted = !labelsContracted")
+      .fa(ng-class="labelsContracted ? 'fa-caret-down' : 'fa-caret-up'")
     ul.list-unstyled.list-labels
       li(ng-repeat='(label, node) in labels', ng-class="{active: currentItem == node}")
         .contents(ng-click="onItemClick(node, 'label')")
           .label.label-node.class-name(ng-style='{"background-color": node.style.props.color, "color": node.style.props["text-color-internal"]}') {{label || '*'}}
             span.count ({{node.count}})
-  .legend-row(ng-if='types[""].count')
+  .legend-row(ng-if='types[""].count', ng-class="{contracted: labelsContracted}")
+    .row-toggle(ng-click="labelsContracted = !labelsContracted")
+      .fa(ng-class="labelsContracted ? 'fa-caret-down' : 'fa-caret-up'")
     ul.list-unstyled.list-relationships
       li(ng-repeat='(type, rel) in types', ng-class="{active: currentItem == node}")
         .contents(ng-click="onItemClick(rel, 'relationshipType')")
