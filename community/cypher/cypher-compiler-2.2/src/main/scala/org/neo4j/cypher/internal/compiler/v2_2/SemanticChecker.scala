@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.StatementConverters._
+import StatementConverters._
 import org.neo4j.cypher.SyntaxException
 
 class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {

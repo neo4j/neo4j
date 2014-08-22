@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.OtherConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.{PatternConverters, OtherConverters, ExpressionConverters}
+import ExpressionConverters._
+import OtherConverters._
+import PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.PatternPartToPathExpression
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{True, Predicate => CommandPredicate}

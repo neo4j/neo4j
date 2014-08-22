@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.hoistExpressionsInClosingClauses
 import org.neo4j.cypher.internal.{PlanType, LRUCache}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.StatementConverters._
+import StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.hoistExpressionsInClosingClauses
 import org.neo4j.cypher.internal.compiler.v2_2.commands.AbstractQuery
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._

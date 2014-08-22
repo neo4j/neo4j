@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast.convert
+package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands
 
 import PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_2._
@@ -384,7 +384,7 @@ object ExpressionConverters {
   }
 
   implicit class PathConverter(val e: ast.PathExpression) extends AnyVal {
-    import commandexpressions.ProjectedPath._
+    import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.ProjectedPath._
 
     def asCommandProjectedPath: commandexpressions.ProjectedPath = {
       def project(pathStep: PathStep): Projector = pathStep match {

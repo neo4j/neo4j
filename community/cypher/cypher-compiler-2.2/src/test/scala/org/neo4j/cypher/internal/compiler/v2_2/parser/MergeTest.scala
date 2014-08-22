@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.parser
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
+import StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{MergeAst, expressions}

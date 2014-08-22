@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Parameter}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityByIdRhs => CommandEntityByIdRhs, EntityByIdParameter => CommandEntityByIdParameter, EntityByIdExprs => CommandEntityByIdExprs}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 
 sealed trait EntityByIdRhs {
   def asEntityByIdRhs: CommandEntityByIdRhs
