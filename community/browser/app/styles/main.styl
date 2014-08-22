@@ -179,17 +179,20 @@ table.json-object
       > *
         display: table-row
       svg
-        bottom: 0
         height: 100%
-        left: 0
-        position: absolute
-        right: 0
-        top: 0
       .graph-contents
         position: relative
         height: 100%
   .legend
     max-height: none;
+
+// Hack to prevent SVG wrapped in a table-row container to grow indefinitely
+.browser-firefox .fullscreen-container svg
+  position: absolute
+  bottom: 0
+  left: 0
+  right: 0
+  top: 0
 
 .key.code
   display: inline-block
