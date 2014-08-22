@@ -99,6 +99,9 @@ For Debian packages, see the instructions at  http://debian.neo4j.org.
 Neo4j can participate in the normal system startup and shutdown process.
 The following procedure should work on most popular Linux distributions:
 
+[NOTE]
+You will require adminstrative rights on the machine to perform these tasks.
+
 . `cd $NEO4J_HOME`
 . `sudo ./bin/neo4j-installer install`
 +
@@ -133,7 +136,7 @@ This will stop the server, if running, and remove it.
 
 Note that if you chose to create a new user account, on uninstall you will be prompted to remove it from the system.
 
-[NOTE]
+[CAUTION]
 This approach to running Neo4j as a server is deprecated.
 We strongly advise you to run Neo4j from a package where feasible.
 
