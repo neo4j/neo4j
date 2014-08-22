@@ -17,7 +17,6 @@ neo.viz = (el, measureSize, graph, layout, style) ->
     viz.trigger.apply(null, args)
 
   onCanvasClick = (el) ->
-    console.log el
     _trigger('canvasClicked', el)
 
   onNodeClick = (node) -> _trigger('nodeClicked', node)
