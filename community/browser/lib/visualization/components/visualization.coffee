@@ -12,18 +12,26 @@ neo.viz = (el, measureSize, graph, layout, style) ->
   # To be overridden
   viz.trigger = (event, args...) ->
 
-  onNodeClick = (node) => viz.trigger('nodeClicked', node)
+  _trigger = (args...) ->
+    d3.event?.stopPropagation()
+    viz.trigger.apply(null, args)
 
-  onNodeDblClick = (node) => viz.trigger('nodeDblClicked', node)
+  onCanvasClick = (el) ->
+    console.log el
+    _trigger('canvasClicked', el)
 
-  onRelationshipClick = (relationship) =>
-    viz.trigger('relationshipClicked', relationship)
+  onNodeClick = (node) -> _trigger('nodeClicked', node)
 
-  onNodeMouseOver = (node) -> viz.trigger('nodeMouseOver', node)
-  onNodeMouseOut = (node) -> viz.trigger('nodeMouseOut', node)
+  onNodeDblClick = (node) -> _trigger('nodeDblClicked', node)
 
-  onRelMouseOver = (rel) -> viz.trigger('relMouseOver', rel)
-  onRelMouseOut = (rel) -> viz.trigger('relMouseOut', rel)
+  onRelationshipClick = (relationship) ->
+    _trigger('relationshipClicked', relationship)
+
+  onNodeMouseOver = (node) -> _trigger('nodeMouseOver', node)
+  onNodeMouseOut = (node) -> _trigger('nodeMouseOut', node)
+
+  onRelMouseOver = (rel) -> _trigger('relMouseOver', rel)
+  onRelMouseOut = (rel) -> _trigger('relMouseOut', rel)
 
   render = ->
     geometry.onTick(graph)
@@ -49,13 +57,10 @@ neo.viz = (el, measureSize, graph, layout, style) ->
 
     layers = el.selectAll("g.layer").data(["relationships", "nodes"])
 
-    # Background click event
-    el.on('click', ->
-      viz.trigger('canvasClicked', el)
-    )
-
-    layers.enter().append("g")
+    layers
+    .enter().append("g")
     .attr("class", (d) -> "layer " + d )
+    .on('click', onCanvasClick) # Background click event
 
     nodes         = graph.nodes()
     relationships = graph.relationships()

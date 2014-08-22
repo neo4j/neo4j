@@ -110,8 +110,8 @@ angular.module('neo4jApp.controllers')
               $rootScope.$apply() unless $rootScope.$$phase
             )
           .on('relationshipClicked', (d) ->
-              toggleSelection(d)
-            )
+            toggleSelection(d)
+          )
           .on('nodeMouseOver', itemMouseOver)
           .on('nodeMouseOut', itemMouseOut)
           .on('relMouseOver', itemMouseOver)
