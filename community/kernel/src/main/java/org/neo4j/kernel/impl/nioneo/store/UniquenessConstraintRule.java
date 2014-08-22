@@ -64,7 +64,7 @@ public class UniquenessConstraintRule extends AbstractSchemaRule
     @Override
     protected String innerToString()
     {
-        return ", propertyKeys=" + Arrays.toString( propertyKeyIds );
+        return ", propertyKeys=" + Arrays.toString( propertyKeyIds ) + ", ownedIndex=" + ownedIndexRule;
     }
 
     @Override

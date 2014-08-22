@@ -20,6 +20,7 @@
 package org.neo4j.kernel;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Map;
 
 import org.junit.Before;
@@ -36,6 +37,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -56,6 +58,29 @@ public class AutoConfiguratorTest
     public void given()
     {
         storeDir = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
+    }
+
+    @Test
+    public void shouldNotConfigureMemoryMappingWhenUnableToAccessPhysicalMemorySize() throws Exception
+    {
+        // given
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        ConsoleLogger logger = Mockito.mock( ConsoleLogger.class );
+        mockFileSize( fs, "nodestore.db", 200 * GiB );
+        mockFileSize( fs, "relationshipstore.db", 200 * GiB );
+        mockFileSize( fs, "propertystore.db", 200 * GiB );
+        mockFileSize( fs, "propertystore.db.strings", 200 * GiB );
+        mockFileSize( fs, "propertystore.db.arrays", 200 * GiB );
+        long vmMemory = 512 * MiB;
+        long physicalMemory = -1;
+
+        // when
+        AutoConfigurator autoConf = new AutoConfigurator( fs, storeDir, true, physicalMemory, vmMemory, logger );
+
+        // then
+        verify( logger ).warn( "Could not determine the size of the physical memory. Continuing but without memory mapped buffers." );
+        verifyNoMoreInteractions( logger );
+        assertEquals( Collections.<String, String>emptyMap(), autoConf.configure() );
     }
 
     @Test

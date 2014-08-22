@@ -22,7 +22,6 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,7 +49,11 @@ public class AutoConfigurator
     AutoConfigurator( FileSystemAbstraction fs, File dbPath, boolean useMemoryMapped, long physicalMemory, long vmMemory,
                       ConsoleLogger logger )
     {
-        if (physicalMemory < vmMemory)
+        if ( physicalMemory == -1 )
+        {
+            logger.warn( "Could not determine the size of the physical memory. Continuing but without memory mapped buffers." );
+        }
+        else if ( physicalMemory < vmMemory )
         {
             logger.log( "WARNING! Physical memory("+(physicalMemory/(1024*1000))+"MB) is less than assigned JVM memory("+(vmMemory/(1024*1000))+"MB). Continuing but with available JVM memory set to available physical memory" );
             vmMemory = physicalMemory;
@@ -71,30 +74,20 @@ public class AutoConfigurator
         maxVmUsageMb = (int) (vmMemory / 1024 / 1024);
     }
 
-    private static long physicalMemory()
+    static long physicalMemory()
     {
-        OperatingSystemMXBean osBean =
-                ManagementFactory.getOperatingSystemMXBean();
-        long mem;
-        try
+        OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+        for ( Class<?> beanClass : osBean.getClass().getInterfaces() )
         {
-            Class<?> beanClass =
-                    Thread.currentThread().getContextClassLoader()
-                          .loadClass( "com.sun.management.OperatingSystemMXBean" );
-            Method method = beanClass.getMethod( "getTotalPhysicalMemorySize" );
-            mem = (Long) method.invoke( osBean );
+            try
+            {
+                return (Long) beanClass.getMethod( "getTotalPhysicalMemorySize" ).invoke( osBean );
+            }
+            catch ( Exception | LinkageError e )
+            { // ok we tried but probably 1.5 JVM or other class library implementation
+            }
         }
-        catch ( Exception e )
-        {
-            // ok we tried but probably 1.5 JVM or other class library implementation
-            mem = -1; // Be explicit about how this error is handled.
-        }
-        catch ( LinkageError e )
-        {
-            // ok we tried but probably 1.5 JVM or other class library implementation
-            mem = -1; // Be explicit about how this error is handled.
-        }
-        return mem;
+        return -1;
     }
 
     public String getNiceMemoryInformation()
