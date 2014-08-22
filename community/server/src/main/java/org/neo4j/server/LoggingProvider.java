@@ -26,6 +26,10 @@ import org.neo4j.server.database.InjectableProvider;
 
 import com.sun.jersey.api.core.HttpContext;
 
+/**
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ */
+@Deprecated
 @Provider
 public class LoggingProvider extends InjectableProvider<Logging>
 {
