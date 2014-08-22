@@ -23,77 +23,13 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
-object SimplePlannerQueryBuilder {
-
-
-  object PatternDestructuring {
-    def destruct(pattern: Pattern): (Seq[IdName], Seq[PatternRelationship], Seq[ShortestPathPattern]) =
-      pattern.patternParts.foldLeft((Seq.empty[IdName], Seq.empty[PatternRelationship], Seq.empty[ShortestPathPattern])) {
-        case ((accIdNames, accRels, accShortest), NamedPatternPart(ident, sps @ ShortestPaths(element, single))) =>
-          val (idNames, rels) = destruct(element)
-          val pathName = IdName(ident.name)
-          val newShortest = ShortestPathPattern(Some(pathName), rels.head, single)(sps)
-          (accIdNames ++ idNames , accRels, accShortest ++ Seq(newShortest))
-
-        case ((accIdNames, accRels, accShortest), sps @ ShortestPaths(element, single)) =>
-          val (idNames, rels) = destruct(element)
-          val newShortest = ShortestPathPattern(None, rels.head, single)(sps)
-          (accIdNames ++ idNames , accRels, accShortest ++ Seq(newShortest))
-
-        case ((accIdNames, accRels, accShortest), everyPath: EveryPath) =>
-          val (idNames, rels) = destruct(everyPath.element)
-          (accIdNames ++ idNames, accRels ++ rels, accShortest)
-
-        case _ =>
-          throw new CantHandleQueryException
-      }
-
-    private def destruct(element: PatternElement): (Seq[IdName], Seq[PatternRelationship]) = element match {
-      case relchain: RelationshipChain => destruct(relchain)
-      case node: NodePattern => destruct(node)
-    }
-
-    def destruct(chain: RelationshipChain): (Seq[IdName], Seq[PatternRelationship]) = chain match {
-      // (a)->[r]->(b)
-      case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None, _), RelationshipPattern(Some(relId), _, relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
-        val leftNode = IdName(leftNodeId.name)
-        val rightNode = IdName(rightNodeId.name)
-        val r = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, asPatternLength(length))
-        (Seq(leftNode, rightNode), Seq(r))
-
-      // ...->[r]->(b)
-      case RelationshipChain(relChain: RelationshipChain, RelationshipPattern(Some(relId), _, relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
-        val (idNames, rels) = destruct(relChain)
-        val leftNode = IdName(rels.last.right.name)
-        val rightNode = IdName(rightNodeId.name)
-        val resultRels = rels :+ PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, asPatternLength(length))
-        (idNames :+ rightNode, resultRels)
-
-      case _ =>
-        throw new CantHandleQueryException
-    }
-
-    private def destruct(node: NodePattern): (Seq[IdName], Seq[PatternRelationship]) =
-      (Seq(IdName(node.identifier.get.name)), Seq.empty)
-
-    private def asPatternLength(length: Option[Option[Range]]): PatternLength = length match {
-      case Some(Some(Range(Some(left), Some(right)))) => VarPatternLength(left.value.toInt, Some(right.value.toInt))
-      case Some(Some(Range(Some(left), None))) => VarPatternLength(left.value.toInt, None)
-      case Some(Some(Range(None, Some(right)))) => VarPatternLength(1, Some(right.value.toInt))
-      case Some(Some(Range(None, None))) => VarPatternLength.unlimited
-      case Some(None) => VarPatternLength.unlimited
-      case None => SimplePatternLength
-    }
-  }
-}
 
 class SimplePlannerQueryBuilder extends PlannerQueryBuilder with CollectionSupport {
-
-  import org.neo4j.cypher.internal.compiler.v2_2.planner.SimplePlannerQueryBuilder.PatternDestructuring._
 
   private def getSelectionsAndSubQueries(optWhere: Option[Where]): (Selections, Seq[(PatternExpression, QueryGraph)]) = {
     val selections = optWhere.asSelections
@@ -177,7 +113,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder with CollectionSuppo
         produceQueryGraphFromClauses(nextStep, tl)
 
       case Match(optional@false, pattern: Pattern, hints, optWhere) :: tl =>
-        val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
+        val patternContent = pattern.destructed
 
         val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
         val nestedPatternPredicates = extractPatternInExpressionFromWhere(optWhere)
@@ -186,17 +122,17 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder with CollectionSuppo
         val plannerQuery = input.q.updateGraph {
           qg => qg.
             addSelections(selections).
-            addPatternNodes(nodeIds: _*).
-            addPatternRels(rels).
+            addPatternNodes(patternContent.nodeIds: _*).
+            addPatternRels(patternContent.rels).
             addHints(hints).
-            addShortestPaths(shortest: _*)
+            addShortestPaths(patternContent.shortestPaths: _*)
         }
 
         val nextStep = input.copy(q = plannerQuery, patternExprTable = newPatternInExpressionTable)
         produceQueryGraphFromClauses(nextStep, tl)
 
       case Match(optional@true, pattern: Pattern, hints, optWhere) :: tl =>
-        val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
+        val patternContent = pattern.destructed
 
         val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
         val nestedPatternPredicates = extractPatternInExpressionFromWhere(optWhere)
@@ -204,10 +140,10 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder with CollectionSuppo
 
         val optionalMatch = QueryGraph(
           selections = selections,
-          patternNodes = nodeIds.toSet,
-          patternRelationships = rels.toSet,
+          patternNodes = patternContent.nodeIds.toSet,
+          patternRelationships = patternContent.rels.toSet,
           hints = hints.toSet,
-          shortestPathPatterns = shortest.toSet
+          shortestPathPatterns = patternContent.shortestPaths.toSet
         )
 
         val newQuery = input.q.updateGraph {

@@ -28,13 +28,9 @@ import ExpressionConverters._
 object ClauseConverters {
 
   implicit class OptionalWhereConverter(val optWhere: Option[Where]) {
-    def asSelections: Selections = {
-      val predicates = optWhere.
-        map(_.expression.asPredicates).
-        getOrElse(Set.empty)
-
-      Selections(predicates)
-    }
+    def asSelections = Selections(optWhere.
+      map(_.expression.asPredicates).
+      getOrElse(Set.empty))
   }
 
   implicit class SelectionsSubQueryExtraction(val selections: Selections) {

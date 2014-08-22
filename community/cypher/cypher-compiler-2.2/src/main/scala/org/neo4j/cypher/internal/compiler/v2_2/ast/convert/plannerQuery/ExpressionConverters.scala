@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalizerChain, PropertyPredicateNormalizer}
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.SimplePlannerQueryBuilder.PatternDestructuring
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{PatternLength, VarPatternLength, SimplePatternLength, IdName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Predicate, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, topDown}
 
@@ -40,10 +40,10 @@ object ExpressionConverters {
 
       val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
 
-      val (patternNodes, relationships) = PatternDestructuring.destruct(rewrittenChain)
+      val patternContent = rewrittenChain.destructed
       val qg = QueryGraph(
-        patternRelationships = relationships.toSet,
-        patternNodes = patternNodes.toSet
+        patternRelationships = patternContent.rels.toSet,
+        patternNodes = patternContent.nodeIds.toSet
       ).addPredicates(predicates: _*)
       qg.addArgumentId(qg.coveredIds.filter(_.name.isNamed).toSeq)
     }
@@ -114,6 +114,17 @@ object ExpressionConverters {
 
       case Identifier(name) =>
         (acc, _) => acc + IdName(name)
+    }
+  }
+
+  implicit class RangeConvertor(val length: Option[Option[Range]]) extends AnyVal {
+    def asPatternLength: PatternLength = length match {
+      case Some(Some(Range(Some(left), Some(right)))) => VarPatternLength(left.value.toInt, Some(right.value.toInt))
+      case Some(Some(Range(Some(left), None))) => VarPatternLength(left.value.toInt, None)
+      case Some(Some(Range(None, Some(right)))) => VarPatternLength(1, Some(right.value.toInt))
+      case Some(Some(Range(None, None))) => VarPatternLength.unlimited
+      case Some(None) => VarPatternLength.unlimited
+      case None => SimplePatternLength
     }
   }
 
