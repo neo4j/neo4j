@@ -19,22 +19,17 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
-import static java.net.URI.create;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.Iterables.count;
-
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -43,111 +38,125 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.test.ReflectionUtil;
+
+import static java.net.URI.create;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.sameInstance;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
+
+import static org.neo4j.helpers.collection.Iterables.count;
 
 public class HighAvailabilitySlavesTest
 {
-    private static InstanceId instanceId1 = new InstanceId( 1 );
-    private static URI clusterUri1 = create( "cluster://server1" );
-    private static URI haUri1 = create( "ha://server1?serverId="+ instanceId1.toIntegerIndex() );
-    private static InstanceId instanceId2 = new InstanceId( 2 );
-    private static URI clusterUri2 = create( "cluster://server2" );
-    private static URI haUri2 = create( "ha://server2?serverId="+ instanceId2.toIntegerIndex() );
-    private static InstanceId instanceId3 = new InstanceId( 3 );
-    private static URI clusterUri3 = create( "cluster://server3" );
-    private static URI haUri3 = create( "ha://server3?serverId="+ instanceId3.toIntegerIndex() );
+    private static final InstanceId INSTANCE_ID = new InstanceId( 1 );
+    private static final URI HA_URI = create( "ha://server1?serverId=" + INSTANCE_ID.toIntegerIndex() );
+    private static final URI CLUSTER_URI = create( "cluster://server2" );
 
     @Test
-    public void shouldRegisterItselfOnMonitors() throws Throwable
+    public void shouldRegisterItselfOnMonitors()
     {
         // given
         ClusterMembers clusterMembers = mock( ClusterMembers.class );
         Cluster cluster = mock( Cluster.class );
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
-        
-        // when
-        new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory).init();
-
-        // then
-        verify( cluster ).addClusterListener( Mockito.<ClusterListener>any() );
-    }
-    
-    @Test
-    public void shouldNotReturnUnavailableSlaves() throws Throwable
-    {
-        // given
-        Cluster cluster = mock( Cluster.class);
-        ClusterMembers clusterMembers = mock( ClusterMembers.class);
-        when( clusterMembers.getMembers() ).thenReturn( Iterables.<ClusterMember,ClusterMember>iterable(
-                new ClusterMember( instanceId1 ) ) );
-
-        SlaveFactory slaveFactory = mock( SlaveFactory.class );
-
-        HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory);
-        slaves.init();
 
         // when
-        Iterable<Slave> memberSlaves = slaves.getSlaves();
+        new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory ).init();
 
         // then
-        Assert.assertThat( count( memberSlaves ), CoreMatchers.equalTo( 0L ));
+        verify( cluster ).addClusterListener( any( ClusterListener.class ) );
     }
 
     @Test
-    public void shouldNotReturnAvailableButFailedSlaves() throws Throwable
-    {
-        // given
-        Cluster cluster = mock( Cluster.class);
-        ClusterMembers clusterMembers = mock( ClusterMembers.class);
-        when( clusterMembers.getMembers() ).thenReturn( Iterables.<ClusterMember,ClusterMember>iterable(
-                new ClusterMember( instanceId1 ).availableAs( "SLAVE", haUri1 ).failed() ) );
-
-        SlaveFactory slaveFactory = mock( SlaveFactory.class );
-
-        HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory);
-        slaves.init();
-
-        // when
-        Iterable<Slave> memberSlaves = slaves.getSlaves();
-
-        // then
-        Assert.assertThat( count( memberSlaves ), CoreMatchers.equalTo( 0L ));
-    }
-
-    @Test
-    public void shouldReturnAvailableAndAliveSlaves() throws Throwable
-    {
-        // given
-        Cluster cluster = mock( Cluster.class);
-        ClusterMembers clusterMembers = mock( ClusterMembers.class);
-        when( clusterMembers.getMembers() ).thenReturn( Iterables.<ClusterMember,ClusterMember>iterable(
-                new ClusterMember( instanceId1 ).availableAs( HighAvailabilityModeSwitcher.SLAVE, haUri1) ) );
-
-        SlaveFactory slaveFactory = mock( SlaveFactory.class );
-        when( slaveFactory.newSlave( (ClusterMember)any() ) ).thenReturn( mock(Slave.class));
-
-        HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory);
-        slaves.init();
-
-        // when
-        Iterable<Slave> memberSlaves = slaves.getSlaves();
-
-        // then
-        Assert.assertThat( count( memberSlaves ), CoreMatchers.equalTo( 1L ));
-    }
-    
-    @Test
-    public void shouldClearSlavesWhenNewMasterElected() throws Throwable
+    public void shouldNotReturnUnavailableSlaves()
     {
         // given
         Cluster cluster = mock( Cluster.class );
-        ClusterMembers clusterMembers = mock( ClusterMembers.class);
-        when( clusterMembers.getMembers() ).thenReturn( Iterables.<ClusterMember,ClusterMember>iterable(
-                new ClusterMember( instanceId1 ).availableAs( HighAvailabilityModeSwitcher.SLAVE, haUri1 ) ) );
+        ClusterMembers clusterMembers = mock( ClusterMembers.class );
+        when( clusterMembers.getMembers() ).thenReturn( Iterables.option( new ClusterMember( INSTANCE_ID ) ) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
-        when( slaveFactory.newSlave( (ClusterMember)any() ) ).thenReturn( mock(Slave.class), mock(Slave.class) );
 
-        HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory);
+        HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory );
+        slaves.init();
+
+        // when
+        Iterable<Slave> memberSlaves = slaves.getSlaves();
+
+        // then
+        assertThat( count( memberSlaves ), equalTo( 0L ) );
+    }
+
+    @Test
+    public void shouldNotReturnAvailableButFailedSlaves()
+    {
+        // given
+        Cluster cluster = mock( Cluster.class );
+        ClusterMembers clusterMembers = mock( ClusterMembers.class );
+        when( clusterMembers.getMembers() ).thenReturn( Iterables.option(
+                new ClusterMember( INSTANCE_ID ).availableAs( HighAvailabilityModeSwitcher.SLAVE, HA_URI ).failed() ) );
+
+        SlaveFactory slaveFactory = mock( SlaveFactory.class );
+
+        HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory );
+        slaves.init();
+
+        // when
+        Iterable<Slave> memberSlaves = slaves.getSlaves();
+
+        // then
+        assertThat( count( memberSlaves ), equalTo( 0L ) );
+    }
+
+    @Test
+    public void shouldReturnAvailableAndAliveSlaves()
+    {
+        // given
+        Cluster cluster = mock( Cluster.class );
+        ClusterMembers clusterMembers = mock( ClusterMembers.class );
+        when( clusterMembers.getMembers() ).thenReturn( Iterables.option(
+                new ClusterMember( INSTANCE_ID ).availableAs( HighAvailabilityModeSwitcher.SLAVE, HA_URI ) ) );
+
+        SlaveFactory slaveFactory = mock( SlaveFactory.class );
+        when( slaveFactory.newSlave( (ClusterMember) any() ) ).thenReturn( mock( Slave.class ) );
+
+        HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory );
+        slaves.init();
+
+        // when
+        Iterable<Slave> memberSlaves = slaves.getSlaves();
+
+        // then
+        assertThat( count( memberSlaves ), equalTo( 1L ) );
+    }
+
+    @Test
+    public void shouldClearSlavesWhenNewMasterElected()
+    {
+        // given
+        Cluster cluster = mock( Cluster.class );
+        ClusterMembers clusterMembers = mock( ClusterMembers.class );
+        when( clusterMembers.getMembers() ).thenReturn( Iterables.option(
+                new ClusterMember( INSTANCE_ID ).availableAs( HighAvailabilityModeSwitcher.SLAVE, HA_URI ) ) );
+
+        SlaveFactory slaveFactory = mock( SlaveFactory.class );
+        when( slaveFactory.newSlave( (ClusterMember) any() ) ).thenReturn( mock( Slave.class ), mock( Slave.class ) );
+
+        HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory );
         slaves.init();
 
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
@@ -156,11 +165,92 @@ public class HighAvailabilitySlavesTest
         // when
         Slave slave1 = slaves.getSlaves().iterator().next();
 
-        listener.getValue().elected( ClusterConfiguration.COORDINATOR, instanceId1, clusterUri2 );
+        listener.getValue().elected( ClusterConfiguration.COORDINATOR, INSTANCE_ID, CLUSTER_URI );
 
         Slave slave2 = slaves.getSlaves().iterator().next();
 
         // then
-        Assert.assertThat( slave2, not( sameInstance( slave1 ) ));
+        assertThat( slave2, not( sameInstance( slave1 ) ) );
+    }
+
+    @Test
+    public void shouldSupportConcurrentConsumptionOfSlaves() throws Exception
+    {
+        // Given
+        HighAvailabilitySlaves haSlaves = new HighAvailabilitySlaves(
+                clusterMembersOfSize( 1000 ), mock( Cluster.class ), slaveFactoryMock() );
+
+        // When
+        ExecutorService executor = Executors.newFixedThreadPool( 5 );
+        for ( int i = 0; i < 5; i++ )
+        {
+            executor.submit( slavesConsumingRunnable( haSlaves ) );
+        }
+        executor.shutdown();
+        executor.awaitTermination( 30, SECONDS );
+
+        // Then
+        int slavesCount = 0;
+        LifeSupport life = ReflectionUtil.getPrivateField( haSlaves, "life", LifeSupport.class );
+        for ( Lifecycle lifecycle : life.getLifecycleInstances() )
+        {
+            if ( lifecycle instanceof Slave )
+            {
+                slavesCount++;
+            }
+        }
+        assertEquals( "Unexpected number of slaves", 1000 - 1, slavesCount ); // One instance is master
+    }
+
+    private static ClusterMembers clusterMembersOfSize( int size )
+    {
+        List<ClusterMember> members = new ArrayList<ClusterMember>( size );
+        members.add( mockClusterMemberWithRole( HighAvailabilityModeSwitcher.MASTER ) );
+        for ( int i = 0; i < size - 1; i++ )
+        {
+            members.add( mockClusterMemberWithRole( HighAvailabilityModeSwitcher.SLAVE ) );
+        }
+
+        ClusterMembers clusterMembers = mock( ClusterMembers.class );
+        when( clusterMembers.getMembers() ).thenReturn( members );
+
+        return clusterMembers;
+    }
+
+    private static ClusterMember mockClusterMemberWithRole( String role )
+    {
+        ClusterMember member = mock( ClusterMember.class );
+        when( member.isAlive() ).thenReturn( true );
+        when( member.hasRole( eq( role ) ) ).thenReturn( true );
+        return member;
+    }
+
+    private static SlaveFactory slaveFactoryMock()
+    {
+        SlaveFactory slaveFactory = mock( SlaveFactory.class );
+        when( slaveFactory.newSlave( any( ClusterMember.class ) ) ).then( new Answer<Slave>()
+        {
+            @Override
+            public Slave answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return mock( Slave.class, withSettings().extraInterfaces( Lifecycle.class ) );
+            }
+        } );
+        return slaveFactory;
+    }
+
+    private static Runnable slavesConsumingRunnable( final HighAvailabilitySlaves haSlaves )
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                for ( Slave slave : haSlaves.getSlaves() )
+                {
+                    assertNotNull( slave );
+                }
+            }
+        };
     }
 }

@@ -157,7 +157,7 @@ public class StoreFactory
                 fileSystemAbstraction, stringLogger, versionMismatchHandler);
     }
 
-    private RelationshipTypeTokenStore newRelationshipTypeTokenStore( File baseFileName )
+    RelationshipTypeTokenStore newRelationshipTypeTokenStore( File baseFileName )
     {
         DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + NAMES_PART), IdType.RELATIONSHIP_TYPE_TOKEN_NAME );
         return new RelationshipTypeTokenStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
@@ -183,7 +183,7 @@ public class StoreFactory
                 fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler );
     }
 
-    private LabelTokenStore newLabelTokenStore( File baseFileName )
+    LabelTokenStore newLabelTokenStore( File baseFileName )
     {
         DynamicStringStore nameStore = newDynamicStringStore(new File( baseFileName.getPath() + NAMES_PART ),
                 IdType.LABEL_TOKEN_NAME );

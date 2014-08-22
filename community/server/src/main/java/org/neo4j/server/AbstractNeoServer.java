@@ -80,6 +80,11 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTim
 import static org.neo4j.server.configuration.Configurator.*;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 
+/**
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
+ */
+@Deprecated
 public abstract class AbstractNeoServer implements NeoServer
 {
     private static final long MINIMUM_TIMEOUT = 1000L;
