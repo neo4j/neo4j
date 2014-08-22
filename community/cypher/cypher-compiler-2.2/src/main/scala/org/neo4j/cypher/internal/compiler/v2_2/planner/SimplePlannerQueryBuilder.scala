@@ -19,39 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
-import org.neo4j.cypher.internal.compiler.v2_2.InputPosition.NONE
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, ast, Rewriter, topDown}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
-import org.neo4j.graphdb.Direction
 
 object SimplePlannerQueryBuilder {
 
-  object SubQueryExtraction {
-
-    val normalizer = MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer)
-
-    def extractQueryGraph(exp: PatternExpression): QueryGraph = {
-      val relChain: RelationshipChain = exp.pattern.element
-      val predicates: Vector[Expression] = relChain.fold(Vector.empty[Expression]) {
-        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
-        case _ => identity
-      }
-
-      val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
-
-      val (patternNodes, relationships) = PatternDestructuring.destruct(rewrittenChain)
-      val qg = QueryGraph(
-        patternRelationships = relationships.toSet,
-        patternNodes = patternNodes.toSet
-      ).addPredicates(predicates: _*)
-      qg.addArgumentId(qg.allCoveredIds.filter(_.name.isNamed).toSeq)
-    }
-  }
 
   object PatternDestructuring {
     def destruct(pattern: Pattern): (Seq[IdName], Seq[PatternRelationship], Seq[ShortestPathPattern]) =
@@ -116,10 +93,9 @@ object SimplePlannerQueryBuilder {
 
 class SimplePlannerQueryBuilder extends PlannerQueryBuilder with CollectionSupport {
 
-  import SimplePlannerQueryBuilder.PatternDestructuring._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.SimplePlannerQueryBuilder.PatternDestructuring._
 
   private def getSelectionsAndSubQueries(optWhere: Option[Where]): (Selections, Seq[(PatternExpression, QueryGraph)]) = {
-    import SimplePlannerQueryBuilder.SubQueryExtraction.extractQueryGraph
 
     val predicates = optWhere.map(SelectionPredicates.fromWhere).getOrElse(Set.empty)
 
@@ -140,15 +116,15 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder with CollectionSuppo
     val subQueries = predicatesWithCorrectDeps.flatMap {
       case Predicate(_, Ors(orOperands)) =>
         orOperands.collect {
-          case expr: PatternExpression => (expr, extractQueryGraph(expr))
-          case Not(expr: PatternExpression) => (expr, extractQueryGraph(expr))
+          case expr: PatternExpression => expr -> expr.asQueryGraph
+          case Not(expr: PatternExpression) => expr -> expr.asQueryGraph
         }
 
-      case Predicate(_, Not(patternExpr: PatternExpression)) =>
-        Seq((patternExpr, extractQueryGraph(patternExpr)))
+      case Predicate(_, Not(expr: PatternExpression)) =>
+        Seq(expr -> expr.asQueryGraph)
 
-      case Predicate(_, patternExpr: PatternExpression) =>
-        Seq((patternExpr, extractQueryGraph(patternExpr)))
+      case Predicate(_, expr: PatternExpression) =>
+        Seq(expr -> expr.asQueryGraph)
 
       case _ => Seq.empty
     }
@@ -171,14 +147,13 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder with CollectionSuppo
   }
 
   private def getPatternInExpressionQueryGraphs(expressions: Seq[Expression]): Seq[(PatternExpression, QueryGraph)] = {
-    import SimplePlannerQueryBuilder.SubQueryExtraction.extractQueryGraph
 
     val patternExpressions = expressions.treeFold(Seq.empty[PatternExpression]) {
       case p: PatternExpression =>
         (acc, _) => acc :+ p
     }
 
-    patternExpressions.map { e => (e, extractQueryGraph(e))}
+    patternExpressions.map { e => e -> e.asQueryGraph }
   }
 
   override def produce(parsedQuery: Query): QueryPlanInput = parsedQuery match {
