@@ -49,8 +49,11 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case NodeByLabelScan(_, Right(labelId), _) =>
       statistics.nodesWithLabelCardinality(labelId)
 
-    case NodeByIdSeek(_, nodeIds, _) =>
-      Cardinality(nodeIds.size)
+    case NodeByIdSeek(_, EntityByIdParameter(_), _) =>
+      Cardinality(1)
+
+    case NodeByIdSeek(_, EntityByIdExprs(exprs), _) =>
+      Cardinality(exprs.size)
 
     case NodeIndexSeek(_, _, _, _, _) =>
       statistics.nodesCardinality * INDEX_SEEK_SELECTIVITY
@@ -114,11 +117,17 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case selectOrSemiApply @ LetSelectOrAntiSemiApply(outer, inner, _, expr) =>
       cardinality(outer) * predicateSelectivity(Seq(expr)) // TODO: This is not true. We should calculate cardinality on QG and not LP
 
-    case DirectedRelationshipByIdSeek(_, relIds, _, _, _) =>
-      Cardinality(relIds.size)
+    case DirectedRelationshipByIdSeek(_, EntityByIdParameter(_), _, _, _) =>
+      Cardinality(1)
 
-    case UndirectedRelationshipByIdSeek(_, relIds, _, _, _) =>
-      Cardinality(relIds.size * 2)
+    case DirectedRelationshipByIdSeek(_, EntityByIdExprs(exprs), _, _, _) =>
+      Cardinality(exprs.size)
+
+    case UndirectedRelationshipByIdSeek(_, EntityByIdParameter(_), _, _, _) =>
+      Cardinality(2)
+
+    case UndirectedRelationshipByIdSeek(_, EntityByIdExprs(exprs), _, _, _) =>
+      Cardinality(exprs.size) * Multiplier(2)
 
     case Projection(left, _) =>
       cardinality(left)

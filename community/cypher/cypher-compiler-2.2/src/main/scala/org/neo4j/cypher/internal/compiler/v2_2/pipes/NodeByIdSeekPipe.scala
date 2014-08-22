@@ -21,18 +21,33 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.ParameterExpression
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CTNode, SymbolTable}
-import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.graphdb.Node
 
-case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: Seq[Expression])(implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
+sealed trait EntityByIdRhs {
+  def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any]
+}
+case class EntityByIdParameter(parameter: ParameterExpression) extends EntityByIdRhs {
+  def expressions(ctx: ExecutionContext, state: QueryState) =
+    parameter(ctx)(state) match {
+      case IsCollection(values) => values
+    }
+}
+case class EntityByIdExprs(exprs: Seq[Expression]) extends EntityByIdRhs {
+  def expressions(ctx: ExecutionContext, state: QueryState) =
+    exprs.map(_.apply(ctx)(state))
+}
+
+case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)(implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
-    val nodeIds = nodeIdsExpr.map(_.apply(ctx)(state))
+    val nodeIds = nodeIdsExpr.expressions(ctx, state)
     new IdSeekIterator[Node](ident, state.query.nodeOps, nodeIds.iterator).map(ctx.clone() ++ _)
   }
 

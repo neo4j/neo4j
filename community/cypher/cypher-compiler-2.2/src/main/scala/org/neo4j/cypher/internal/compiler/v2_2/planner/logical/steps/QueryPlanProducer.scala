@@ -67,7 +67,7 @@ object QueryPlanProducer {
       left.solved ++ right.solved)
 
   def planDirectedRelationshipByIdSeek(idName: IdName,
-                                       relIds: Seq[Expression],
+                                       relIds: EntityByIdRhs,
                                        startNode: IdName,
                                        endNode: IdName,
                                        pattern: PatternRelationship,
@@ -75,6 +75,22 @@ object QueryPlanProducer {
                                        solvedPredicates: Seq[Expression] = Seq.empty) =
     QueryPlan(
       DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode, argumentIds),
+      PlannerQuery(graph = QueryGraph.empty
+        .addPatternRel(pattern)
+        .addPredicates(solvedPredicates: _*)
+        .addArgumentId(argumentIds.toSeq)
+      )
+    )
+
+  def planUndirectedRelationshipByIdSeek(idName: IdName,
+                                         relIds: EntityByIdRhs,
+                                         leftNode: IdName,
+                                         rightNode: IdName,
+                                         pattern: PatternRelationship,
+                                         argumentIds: Set[IdName],
+                                         solvedPredicates: Seq[Expression] = Seq.empty) =
+    QueryPlan(
+      UndirectedRelationshipByIdSeek(idName, relIds, leftNode, rightNode, argumentIds),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternRel(pattern)
         .addPredicates(solvedPredicates: _*)
@@ -99,7 +115,7 @@ object QueryPlanProducer {
       Selection(predicates, left.plan),
       left.solved)
 
-  def planNodeByIdSeek(idName: IdName, nodeIds: Seq[Expression],
+  def planNodeByIdSeek(idName: IdName, nodeIds: EntityByIdRhs,
                        solvedPredicates: Seq[Expression] = Seq.empty,
                        argumentIds: Set[IdName]) =
     QueryPlan(
@@ -239,22 +255,6 @@ object QueryPlanProducer {
     QueryPlan(
       SemiApply(left.plan, right.plan),
       left.solved.updateTailOrSelf(_.updateGraph(_.addPredicates(predicate)))
-    )
-
-  //TODO: Clean up
-  def planUndirectedRelationshipByIdSeek(idName: IdName,
-                                         relIds: Seq[Expression],
-                                         leftNode: IdName,
-                                         rightNode: IdName,
-                                         pattern: PatternRelationship,
-                                         argumentIds: Set[IdName],
-                                         solvedPredicates: Seq[Expression] = Seq.empty) =
-    QueryPlan(
-      UndirectedRelationshipByIdSeek(idName, relIds, leftNode, rightNode, argumentIds),
-      PlannerQuery(graph = QueryGraph.empty
-        .addPatternRel(pattern)
-        .addArgumentId(argumentIds.toSeq)
-      )
     )
 
   def planQueryArgumentRow(queryGraph: QueryGraph): QueryPlan = {

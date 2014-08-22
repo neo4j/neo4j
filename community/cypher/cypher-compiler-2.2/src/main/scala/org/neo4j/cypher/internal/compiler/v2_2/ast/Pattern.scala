@@ -134,6 +134,7 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
     checkContainsSingle chain
     checkKnownEnds chain
     checkNoMinimalLength chain
+    checkRelIdentifiersUnknown chain
     element.semanticCheck(ctx)
 
   private def checkContext(ctx: SemanticContext): SemanticCheck = ctx match {
@@ -175,8 +176,22 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
     case _ =>
       None
   }
-}
 
+  private def checkRelIdentifiersUnknown: SemanticCheck = state => {
+    element match {
+      case RelationshipChain(_, rel, _) =>
+        rel.identifier.flatMap(id => state.symbol(id.name)) match {
+          case Some(symbol) if symbol.positions.length > 1 => {
+            SemanticCheckResult.error(state, SemanticError(s"Bound relationships not allowed in $name(...)", rel.position, symbol.positions(0)))
+          }
+          case _ =>
+            SemanticCheckResult.success(state)
+        }
+      case _ =>
+        SemanticCheckResult.success(state)
+    }
+  }
+}
 
 sealed abstract class PatternElement extends ASTNode {
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck

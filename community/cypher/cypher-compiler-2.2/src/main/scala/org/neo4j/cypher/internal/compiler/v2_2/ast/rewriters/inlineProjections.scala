@@ -33,7 +33,8 @@ object inlineProjections extends Rewriter {
     val removePatternPartNames = TypedRewriter[Pattern](bottomUp(namedPatternPartRemover))
     val inlineIdentifiers = TypedRewriter[ASTNode](context.identifierRewriter)
     val inlinePatterns = TypedRewriter[Pattern](context.patternRewriter)
-    val inlineReturnItems = inlineReturnItemsFactory(inlineIdentifiers.narrowed)
+    val withInlineReturnItems = inlineReturnItemsFactory(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, inlineInAliases = true))
+    val returnInlineReturnItems = inlineReturnItemsFactory(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, inlineInAliases = false))
 
     val inliningRewriter = Rewriter.lift {
       case withClause @ With(false, returnItems @ ListedReturnItems(items), orderBy, _, _, _) =>
@@ -41,21 +42,21 @@ object inlineProjections extends Rewriter {
 
         def identifierOnly(item: AliasedReturnItem) = item.expression == item.identifier
         def identifierAlreadyInScope(ident: Identifier) = !context.projections.contains(ident)
-        def shadows(item: AliasedReturnItem) = identifierAlreadyInScope(item.identifier) && !identifierOnly(item)
+
+        val aliasedItems = items.collect { case item: AliasedReturnItem => item }
 
         // Do not remove grouping keys from a WITH with aggregation.
         val containsAggregation = items.map(_.expression).exists(containsAggregate)
-        val resultProjections = if (containsAggregation) {
-          items
+        val newReturnItems = if (containsAggregation) {
+          returnItems
         } else {
-          items.collect {
-            case item@AliasedReturnItem(expr, ident) if shadows(item) => item
+          val resultProjections = aliasedItems.filter(item => identifierAlreadyInScope(item.identifier))
+          if (resultProjections.forall(identifierOnly)) {
+            ReturnAll()(pos)
+          } else {
+            withInlineReturnItems(returnItems.copy(items = aliasedItems)(pos))
           }
         }
-
-        val newReturnItems =
-          if (resultProjections.isEmpty) ReturnAll()(pos)
-          else inlineReturnItems(returnItems.copy(items = resultProjections)(pos))
 
         withClause.copy(
           returnItems = newReturnItems,
@@ -64,7 +65,7 @@ object inlineProjections extends Rewriter {
 
       case returnClause @ Return(_, returnItems: ListedReturnItems, orderBy, skip, limit) =>
         returnClause.copy(
-          returnItems = inlineReturnItems(returnItems),
+          returnItems = returnInlineReturnItems(returnItems),
           orderBy = orderBy.map(inlineIdentifiers.narrowed),
           skip = skip.map(inlineIdentifiers.narrowed),
           limit = limit.map(inlineIdentifiers.narrowed)
@@ -88,12 +89,25 @@ object inlineProjections extends Rewriter {
     input.endoRewrite(topDown(inliningRewriter))
   }
 
-  private def inlineReturnItemsFactory(inlineExpressions: Expression => Expression) =
+  private def aliasedReturnItemRewriter(inlineExpressions: Expression => Expression, inlineInAliases: Boolean): PartialFunction[ReturnItem, ReturnItem] = {
+    if (inlineInAliases) {
+      case item: AliasedReturnItem =>
+        item.copy(
+          identifier = inlineExpressions(item.identifier) match {
+            case identifier: Identifier => identifier
+            case _ => item.identifier
+          },
+          expression = inlineExpressions(item.expression))(item.position)
+    } else {
+      case item: AliasedReturnItem =>
+        item.copy(
+          expression = inlineExpressions(item.expression))(item.position)
+    }
+  }
+
+  private def inlineReturnItemsFactory(inlineExpressions: ReturnItem => ReturnItem) =
     (returnItems: ListedReturnItems) =>
       returnItems.copy(
-        items = returnItems.items.collect {
-          case item: AliasedReturnItem =>
-            item.copy( expression = inlineExpressions(item.expression))(item.position)
-        }
+        items = returnItems.items.map(inlineExpressions)
       )(returnItems.position)
 }
