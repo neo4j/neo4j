@@ -29,8 +29,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner._
 
 object ClauseConverters {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters.SingleQueryPlanInput
-
   implicit class OptionalWhereConverter(val optWhere: Option[Where]) extends AnyVal {
     def asSelections = Selections(optWhere.
       map(_.expression.asPredicates).
@@ -103,7 +101,7 @@ object ClauseConverters {
   }
 
   implicit class ClauseConverter(val clause: Clause) extends AnyVal {
-    def addToQueryPlanInput(acc: SingleQueryPlanInput): SingleQueryPlanInput = clause match {
+    def addToQueryPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
       case c: Return => c.addReturnToQueryPlanInput(acc)
       case c: Match => c.addMatchToQueryPlanInput(acc)
       case x         => throw new CantHandleQueryException(x.toString)
@@ -111,7 +109,7 @@ object ClauseConverters {
   }
 
   implicit class ReturnConverter(val clause: Return) extends AnyVal {
-    def addReturnToQueryPlanInput(acc: SingleQueryPlanInput): SingleQueryPlanInput = clause match {
+    def addReturnToQueryPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
       case Return(distinct, ListedReturnItems(items), optOrderBy, skip, limit) =>
 
         val newPatternInExpressionTable =
@@ -139,7 +137,7 @@ object ClauseConverters {
   }
 
   implicit class MatchConverter(val clause: Match) extends AnyVal {
-    def addMatchToQueryPlanInput(acc: SingleQueryPlanInput): SingleQueryPlanInput = {
+    def addMatchToQueryPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
       val patternContent = clause.pattern.destructed
 
       val selections = clause.where.asSelections

@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryProjection, AggregatingQueryProjection, RegularQueryProjection, CantHandleQueryException}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, ShortestPathPattern}
 
 object PatternConverters {
