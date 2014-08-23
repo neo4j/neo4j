@@ -19,28 +19,42 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 
 object StatementConverters {
-  object SingleQueryPlanInput {
-    val empty = new PlannerQueryBuilder(PlannerQuery.empty, Map.empty)
+
+  implicit class SingleQueryPartConverter(val q: SingleQuery) {
+    def asPlannerQueryBuilder: PlannerQueryBuilder =
+      q.clauses.foldLeft(PlannerQueryBuilder.empty) {
+        case (acc, clause) => clause.addToQueryPlanInput(acc)
+      }
   }
 
   implicit class QueryConverter(val query: Query) {
     def asQueryPlanInput: QueryPlanInput = query match {
-      case Query(None, SingleQuery(clauses)) =>
-        val input = clauses.foldLeft(SingleQueryPlanInput.empty) {
-          case (acc, clause) => clause.addToQueryPlanInput(acc)
-        }
-
-        val singeQueryPlanInput = input.build()
-
+      case Query(None, queryPart: SingleQuery) =>
+        val builder = queryPart.asPlannerQueryBuilder
         QueryPlanInput(
-          query = UnionQuery(Seq(singeQueryPlanInput), distinct = false),
-          patternInExpression = input.patternExprTable
+          query = UnionQuery(Seq(builder.build()), distinct = false),
+          patternInExpression = builder.patternExprTable
         )
+
+      case Query(None, u: ast.Union) =>
+        val queries: Seq[SingleQuery] = u.unionedQueries
+        val distinct = u match {
+          case _: UnionAll => false
+          case _: UnionDistinct => true
+        }
+        val plannedQueries: Seq[PlannerQueryBuilder] = queries.reverseMap(x => x.asPlannerQueryBuilder)
+        val table = plannedQueries.map(_.patternExprTable).reduce(_ ++ _)
+        QueryPlanInput(
+          query = UnionQuery(plannedQueries.map(_.build()), distinct),
+          patternInExpression = table
+        )
+
 
       case _ =>
         throw new CantHandleQueryException

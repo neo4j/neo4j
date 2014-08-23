@@ -815,7 +815,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail should be(empty)
   }
 
-  ignore("RETURN 1 as x UNION RETURN 2 as x") {
+  test("RETURN 1 as x UNION RETURN 2 as x") {
     val QueryPlanInput(query, _) = buildPlannerQuery("RETURN 1 as x UNION RETURN 2 as x")
     query.distinct should equal(true)
     query.queries should have size 2
@@ -829,7 +829,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     q2.horizon should equal(RegularQueryProjection(Map("x" -> SignedDecimalIntegerLiteral("2")(pos))))
   }
 
-  ignore("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x") {
+  test("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x") {
     val QueryPlanInput(query, _) = buildPlannerQuery("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x")
     query.distinct should equal(false)
     query.queries should have size 3
