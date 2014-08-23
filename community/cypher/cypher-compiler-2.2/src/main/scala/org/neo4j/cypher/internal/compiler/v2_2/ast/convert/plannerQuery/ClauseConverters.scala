@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
@@ -103,7 +104,8 @@ object ClauseConverters {
 
   implicit class ClauseConverter(val clause: Clause) extends AnyVal {
     def addToQueryPlanInput(acc: SingleQueryPlanInput): SingleQueryPlanInput = clause match {
-      case r: Return => r.addReturnToQueryPlanInput(acc)
+      case c: Return => c.addReturnToQueryPlanInput(acc)
+      case c: Match => c.addMatchToQueryPlanInput(acc)
       case x         => throw new CantHandleQueryException(x.toString)
     }
   }
@@ -125,12 +127,48 @@ object ClauseConverters {
           asQueryProjection(distinct).
           withShuffle(shuffle)
 
-        val plannerQuery = acc.q.withHorizon(projection)
+        val plannerQuery = acc.build().withHorizon(projection)
 
         acc.copy(
           q = plannerQuery,
           patternExprTable = newPatternInExpressionTable
         )
+      case _ =>
+        throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
     }
   }
+
+  implicit class MatchConverter(val clause: Match) extends AnyVal {
+    def addMatchToQueryPlanInput(acc: SingleQueryPlanInput): SingleQueryPlanInput = {
+      val patternContent = clause.pattern.destructed
+
+      val selections = clause.where.asSelections
+      val subQueries = selections.getContainedPatternExpressions
+
+      if (clause.optional) {
+        acc.
+          updateGraph { qg => qg.withAddedOptionalMatch(
+          QueryGraph(
+            selections = selections,
+            patternNodes = patternContent.nodeIds.toSet,
+            patternRelationships = patternContent.rels.toSet,
+            hints = clause.hints.toSet,
+            shortestPathPatterns = patternContent.shortestPaths.toSet
+          ))
+        }.
+          addPatternExpressions(subQueries.toSeq: _*)
+      } else {
+        acc.updateGraph {
+          qg => qg.
+            addSelections(selections).
+            addPatternNodes(patternContent.nodeIds: _*).
+            addPatternRels(patternContent.rels).
+            addHints(clause.hints).
+            addShortestPaths(patternContent.shortestPaths: _*)
+        }.
+          addPatternExpressions(subQueries.toSeq: _*)
+      }
+    }
+  }
+
 }
