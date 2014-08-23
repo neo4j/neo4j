@@ -112,10 +112,7 @@ object ClauseConverters {
     def addReturnToQueryPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
       case Return(distinct, ListedReturnItems(items), optOrderBy, skip, limit) =>
 
-        val newPatternInExpressionTable =
-          acc.patternExprTable ++
-          items.flatMap(_.expression.extractPatternExpressions).
-            map(x => x -> x.asQueryGraph)
+        val newPatternInExpressionTable = items.flatMap(_.expression.extractPatternExpressions)
 
         val shuffle = optOrderBy.asQueryShuffle.
           withSkip(skip).
@@ -125,12 +122,10 @@ object ClauseConverters {
           asQueryProjection(distinct).
           withShuffle(shuffle)
 
-        val plannerQuery = acc.build().withHorizon(projection)
+        acc.
+          withHorizon(projection).
+          addPatternExpressions(newPatternInExpressionTable:_*)
 
-        acc.copy(
-          q = plannerQuery,
-          patternExprTable = newPatternInExpressionTable
-        )
       case _ =>
         throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
     }
