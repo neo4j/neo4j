@@ -29,8 +29,6 @@ import org.neo4j.graphdb.Direction
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val builder = new SimplePlannerQueryBuilder
-
   val nIdent: Identifier = Identifier("n")_
   val A: LabelName = LabelName("A")_
   val B: LabelName = LabelName("B")_

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
@@ -165,13 +166,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   }
 
   case class LogicalPlanningEnvironment(config: LogicalPlanningConfiguration) {
-    private val plannerQueryBuilder = new SimplePlannerQueryBuilder
     private val planner: Planner = new Planner(
       monitors,
       metricsFactory,
       monitor,
       tokenResolver,
-      plannerQueryBuilder,
       None,
       strategy,
       queryGraphSolver
@@ -256,7 +255,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val plannerQuery: QueryPlan = Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          val QueryPlanInput(unionQuery, patternInExpression) = plannerQueryBuilder.produce(ast)
+          val QueryPlanInput(unionQuery, patternInExpression) = ast.asQueryPlanInput
           val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
           val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
           val plannerQuery = unionQuery.queries.head
@@ -275,7 +274,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          val QueryPlanInput(unionQuery, patternInExpression) = plannerQueryBuilder.produce(ast)
+          val QueryPlanInput(unionQuery, patternInExpression) = ast.asQueryPlanInput
           val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
           val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
           (strategy.plan(unionQuery)(context, patternInExpression), semanticTable)

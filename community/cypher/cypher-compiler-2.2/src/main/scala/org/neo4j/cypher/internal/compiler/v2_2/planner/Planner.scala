@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
 
@@ -35,7 +36,6 @@ case class Planner(monitors: Monitors,
                    metricsFactory: MetricsFactory,
                    monitor: PlanningMonitor,
                    tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
-                   plannerQueryBuilder: PlannerQueryBuilder = new SimplePlannerQueryBuilder,
                    maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
                    strategy: PlanningStrategy = new QueryPlanningStrategy(),
                    queryGraphSolver: QueryGraphSolver = new GreedyQueryGraphSolver()) extends PipeBuilder {
@@ -62,7 +62,7 @@ case class Planner(monitors: Monitors,
 
   def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (LogicalPlan, PipeExecutionBuilderContext) = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
-    val QueryPlanInput(plannerQuery, patternInExpression) = plannerQueryBuilder.produce(ast)
+    val QueryPlanInput(plannerQuery, patternInExpression) = ast.asQueryPlanInput
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
 
