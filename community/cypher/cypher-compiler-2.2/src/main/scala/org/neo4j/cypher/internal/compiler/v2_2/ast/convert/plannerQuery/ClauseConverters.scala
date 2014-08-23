@@ -104,6 +104,7 @@ object ClauseConverters {
     def addToQueryPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
       case c: Return => c.addReturnToQueryPlanInput(acc)
       case c: Match => c.addMatchToQueryPlanInput(acc)
+      case c: With => c.addWithToQueryPlanInput(acc)
       case x         => throw new CantHandleQueryException(x.toString)
     }
   }
@@ -128,6 +129,13 @@ object ClauseConverters {
 
       case _ =>
         throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
+    }
+  }
+
+  implicit class ReturnItemsConverter(val clause: ReturnItems) extends AnyVal {
+    def asReturnItems(current: QueryGraph): Seq[ReturnItem] = clause match {
+      case _: ReturnAll => QueryProjection.forIds(current.allCoveredIds)
+      case ListedReturnItems(items) => items
     }
   }
 
@@ -164,4 +172,56 @@ object ClauseConverters {
     }
   }
 
+  implicit class WithConverter(val clause: With) extends AnyVal {
+
+    private implicit def returnItemsToIdName(s: Seq[ReturnItem]):Set[IdName] =
+      s.map(item => IdName(item.name)).toSet
+
+    def addWithToQueryPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
+
+      /*
+      When encountering a WITH that is not an event horizon, and we have no optional matches in the current QueryGraph,
+      we simply continue building on the current PlannerQuery. Our ASTRewriters rewrite queries in such a way that
+      a lot of queries have these WITH clauses.
+
+      Handles: ... WITH * [WHERE <predicate>] ...
+       */
+      case With(false, _: ReturnAll, None, None, None, where) if !builder.currentQueryGraph.hasOptionalPatterns =>
+        val selections = where.asSelections
+        val subQueries = selections.getContainedPatternExpressions
+
+        builder.
+          updateGraph(_.addSelections(selections)).
+          addPatternExpressions(subQueries)
+
+      /*
+      When encountering a WITH that is an event horizon, we introduce the horizon and start a new empty QueryGraph.
+
+      Handles all other WITH clauses
+       */
+      case With(distinct, projection: ReturnItems, orderBy, skip, limit, where) =>
+        val selections = where.asSelections
+        val subQueries = selections.getContainedPatternExpressions
+        val returnItems = projection.asReturnItems(builder.currentQueryGraph)
+
+        val shuffle =
+          orderBy.
+            asQueryShuffle.
+            withLimit(limit).
+            withSkip(skip)
+
+        val queryProjection =
+          returnItems.
+            asQueryProjection(distinct).
+            withShuffle(shuffle)
+
+        builder.
+          withHorizon(queryProjection).
+          withTail(PlannerQuery(QueryGraph(selections = selections))).
+          addPatternExpressions(subQueries)
+
+
+      case _ =>
+        throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)    }
+  }
 }

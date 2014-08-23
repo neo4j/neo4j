@@ -45,14 +45,15 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, patternExprTable: Ma
   }
 
   def currentlyAvailableIdentifiers: Set[IdName] =
-    currentPlannerQuery.graph.coveredIds
+    currentQueryGraph.coveredIds
 
-  def currentPlannerQuery: PlannerQuery = {
+  def currentQueryGraph: QueryGraph = {
     var current = q
     while(current.tail.nonEmpty) {
       current = current.tail.get
     }
-    current
+
+    current.graph
   }
 
   def build(): PlannerQuery = {
@@ -67,7 +68,14 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, patternExprTable: Ma
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 
-    fixArgumentIdsOnOptionalMatch(q)
+    val fixedArgumentIds = q.reverseFoldMap {
+      case (headPQ, tailPQ) =>
+        val inputIds = headPQ.graph.allCoveredIds
+        val argumentIds = inputIds intersect tailPQ.graph.allCoveredIds
+        tailPQ.updateGraph(_.withArgumentIds(argumentIds))
+    }
+
+    fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
   }
 }
 

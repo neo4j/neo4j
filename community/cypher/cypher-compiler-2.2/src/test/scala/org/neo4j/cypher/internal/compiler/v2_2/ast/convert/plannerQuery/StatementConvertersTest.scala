@@ -451,21 +451,21 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  ignore("MATCH (a) WITH 1 as b RETURN b") {
+  test("MATCH (a) WITH 1 as b RETURN b") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH (a) WITH 1 as b RETURN b", normalize = true)
     query.graph.patternNodes should equal(Set(IdName("a")))
     query.horizon should equal(RegularQueryProjection(Map("b" -> SignedDecimalIntegerLiteral("1")_)))
     query.tail should equal(None)
   }
 
-  ignore("WITH 1 as b RETURN b") {
+  test("WITH 1 as b RETURN b") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("WITH 1 as b RETURN b", normalize = true)
 
     query.horizon should equal(RegularQueryProjection(Map("b" -> SignedDecimalIntegerLiteral("1")_)))
     query.tail should equal(None)
   }
 
-  ignore("MATCH (a) WITH a WHERE TRUE RETURN a") {
+  test("MATCH (a) WITH a WHERE TRUE RETURN a") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH (a) WITH a WHERE TRUE RETURN a", normalize = true)
     query.tail should be(empty)
     query.graph.patternNodes should equal(Set(IdName("a")))
@@ -604,14 +604,14 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           limit = None)))
   }
 
-  ignore("match (a) with * return a") {
+  test("match (a) with * return a") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a) with * return a")
     query.graph.patternNodes should equal(Set(IdName("a")))
     query.horizon should equal(RegularQueryProjection(Map[String, Expression]("a" -> Identifier("a")_)))
     query.tail should equal(None)
   }
 
-  ignore("MATCH a WITH a LIMIT 1 MATCH a-[r]->b RETURN a, b") {
+  test("MATCH a WITH a LIMIT 1 MATCH a-[r]->b RETURN a, b") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH a WITH a LIMIT 1 MATCH a-[r]->b RETURN a, b", normalize = true)
     query.graph should equal(
       QueryGraph
@@ -637,7 +637,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  ignore("optional match (a:Foo) with a match (a)-[r]->(b) return a") {
+  test("optional match (a:Foo) with a match (a)-[r]->(b) return a") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("optional match (a:Foo) with a match (a)-[r]->(b) return a", normalize = true)
 
     query.graph should equal(
@@ -660,7 +660,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  ignore("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b") {
+  test("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
     query.tail should not be empty
     query.graph.selections.predicates should equal(Set(
@@ -691,7 +691,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         QueryShuffle()))
   }
 
-  ignore("MATCH (a:Start) WITH a.prop AS property MATCH (b) WHERE id(b) = property RETURN b") {
+  test("MATCH (a:Start) WITH a.prop AS property MATCH (b) WHERE id(b) = property RETURN b") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
     query.tail should be(empty)
     query.graph.selections.predicates should equal(Set(
@@ -711,7 +711,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           limit = None)))
   }
 
-  ignore("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b") {
+  test("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
     query.tail should not be empty
     query.graph.selections.predicates should equal(Set(
@@ -857,7 +857,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.graph.patternNodes should equal(Set(IdName("n")))
   }
 
-  ignore("match n with distinct n.prop as x return x") {
+  test("match n with distinct n.prop as x return x") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _) = buildPlannerQuery("match n with distinct n.prop as x return x")
     query.horizon should equal(AggregatingQueryProjection(
       groupingKeys = Map("x" -> property),
@@ -867,7 +867,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.graph.patternNodes should equal(Set(IdName("n")))
   }
 
-  ignore("match n with distinct * return x") {
+  test("match n with distinct * return x") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _) = buildPlannerQuery("match n with distinct * return x")
     query.horizon should equal(AggregatingQueryProjection(
       groupingKeys = Map("n" -> ident("n")),
@@ -877,7 +877,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.graph.patternNodes should equal(Set(IdName("n")))
   }
 
-  ignore("WITH DISTINCT 1 as b RETURN b") {
+  test("WITH DISTINCT 1 as b RETURN b") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _) = buildPlannerQuery("WITH DISTINCT 1 as b RETURN b", normalize = true)
 
     query.horizon should equal(AggregatingQueryProjection(
@@ -888,7 +888,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail should not be empty
   }
 
-  ignore("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN *") {
+  test("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN *") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable) = buildPlannerQuery("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner", normalize = true)
 
     query.graph.patternNodes should equal(Set(IdName("owner")))
@@ -903,7 +903,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tailQuery.horizon should equal(RegularQueryProjection(Map("owner" -> ident("owner"))))
   }
 
-  ignore("MATCH (owner) WITH owner, COUNT(*) AS xyz WITH owner, xyz > 0 as collection WHERE (owner)--() RETURN owner") {
+  test("MATCH (owner) WITH owner, COUNT(*) AS xyz WITH owner, xyz > 0 as collection WHERE (owner)--() RETURN owner") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable) = buildPlannerQuery(
       """MATCH (owner)
         |WITH owner, COUNT(*) AS xyz
@@ -1022,7 +1022,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     println(query.toString)
   }
 
-  ignore("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2") {
+  test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
       buildPlannerQuery("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2", normalize = true)
 
@@ -1047,7 +1047,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     optionalMatch.argumentIds should equal(Set(IdName("a1"), IdName("r")))
   }
 
-  ignore("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2, a2") {
+  test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2, a2") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
       buildPlannerQuery("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2, a2", normalize = true)
 
