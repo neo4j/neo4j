@@ -105,6 +105,7 @@ object ClauseConverters {
       case c: Return => c.addReturnToQueryPlanInput(acc)
       case c: Match => c.addMatchToQueryPlanInput(acc)
       case c: With => c.addWithToQueryPlanInput(acc)
+      case c: Unwind => c.addUnwindToQueryPlanInput(acc)
       case x         => throw new CantHandleQueryException(x.toString)
     }
   }
@@ -149,6 +150,8 @@ object ClauseConverters {
       if (clause.optional) {
         acc.
           updateGraph { qg => qg.withAddedOptionalMatch(
+          // When adding QueryGraphs for optional matches, we always start with a new one.
+          // It's either all or nothing per match clause.
           QueryGraph(
             selections = selections,
             patternNodes = patternContent.nodeIds.toSet,
@@ -223,5 +226,17 @@ object ClauseConverters {
 
       case _ =>
         throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)    }
+  }
+
+  implicit class UnwindConverter(val clause: Unwind) extends AnyVal {
+
+    def addUnwindToQueryPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder =
+      builder.
+        withHorizon(
+          UnwindProjection(
+            identifier = IdName(clause.identifier.name),
+            exp = clause.expression)
+        ).
+        withTail(PlannerQuery.empty)
   }
 }

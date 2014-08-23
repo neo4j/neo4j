@@ -59,6 +59,5 @@ object StatementConverters {
       case _ =>
         throw new CantHandleQueryException
     }
-
   }
 }

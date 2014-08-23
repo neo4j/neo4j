@@ -926,7 +926,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     ))
   }
 
-  ignore("UNWIND [1,2,3] AS x RETURN x") {
+  test("UNWIND [1,2,3] AS x RETURN x") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _) = buildPlannerQuery("UNWIND [1,2,3] AS x RETURN x", normalize = true)
 
     val one = SignedDecimalIntegerLiteral("1")(pos)
@@ -948,7 +948,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   val three = SignedDecimalIntegerLiteral("3")(pos)
   val collection = Collection(Seq(one, two, three))(pos)
 
-  ignore("UNWIND [1,2,3] AS x MATCH (n) WHERE n.prop = x RETURN n") {
+  test("UNWIND [1,2,3] AS x MATCH (n) WHERE n.prop = x RETURN n") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
       buildPlannerQuery("UNWIND [1,2,3] AS x MATCH (n) WHERE n.prop = x RETURN n", normalize = true)
 
@@ -966,7 +966,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tail.horizon should equal(RegularQueryProjection(Map("n" -> ident("n"))))
   }
 
-  ignore("MATCH n UNWIND n.prop as x RETURN x") {
+  test("MATCH n UNWIND n.prop as x RETURN x") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
       buildPlannerQuery("MATCH n UNWIND n.prop as x RETURN x", normalize = true)
 
@@ -982,7 +982,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tail.horizon should equal(RegularQueryProjection(Map("x" -> ident("x"))))
   }
 
-  ignore("MATCH (row) WITH collect(row) AS rows UNWIND rows AS node RETURN node") {
+  test("MATCH (row) WITH collect(row) AS rows UNWIND rows AS node RETURN node") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
       buildPlannerQuery("MATCH (row) WITH collect(row) AS rows UNWIND rows AS node RETURN node", normalize = true)
 
@@ -1018,8 +1018,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
       buildPlannerQuery("MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b", normalize = true)
-
-    println(query.toString)
   }
 
   test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2") {
