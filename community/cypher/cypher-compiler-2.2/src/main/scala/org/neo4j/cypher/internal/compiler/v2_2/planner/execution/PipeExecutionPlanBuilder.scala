@@ -33,8 +33,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
-case class PipeExecutionBuilderContext(patternExpressionPlans: Map[ast.PatternExpression, LogicalPlan]) {
-  def plan(expr: ast.PatternExpression) = patternExpressionPlans(expr)
+case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan) {
+  def plan(expr: ast.PatternExpression) = f(expr)
 }
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {

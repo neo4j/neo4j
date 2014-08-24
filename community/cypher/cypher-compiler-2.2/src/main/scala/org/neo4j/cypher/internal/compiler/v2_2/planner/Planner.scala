@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
@@ -62,18 +63,20 @@ case class Planner(monitors: Monitors,
 
   def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (LogicalPlan, PipeExecutionBuilderContext) = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
-    val QueryPlanInput(plannerQuery, patternInExpression) = ast.asQueryPlanInput
+    val QueryPlanInput(plannerQuery) = ast.asQueryPlanInput
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
 
     val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
-    val plan = strategy.plan(plannerQuery)(context, patternInExpression)
+    val plan = strategy.plan(plannerQuery)(context)
 
-    val pipeBuildContext = PipeExecutionBuilderContext(patternInExpression.mapValues{ qg =>
-      val argLeafPlan = Some(planQueryArgumentRow(qg))
-      val queryPlan = queryGraphSolver.plan(qg)(context, patternInExpression, argLeafPlan)
+    val pipeBuildContext = PipeExecutionBuilderContext((e: PatternExpression) => {
+      val expressionQueryGraph = e.asQueryGraph
+      val argLeafPlan = Some(planQueryArgumentRow(expressionQueryGraph))
+      val queryPlan = queryGraphSolver.plan(expressionQueryGraph)(context, argLeafPlan)
       queryPlan.plan
     })
+
 
     (plan, pipeBuildContext)
   }

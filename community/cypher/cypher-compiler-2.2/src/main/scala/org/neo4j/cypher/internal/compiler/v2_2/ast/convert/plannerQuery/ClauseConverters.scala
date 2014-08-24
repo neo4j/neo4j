@@ -89,8 +89,7 @@ object ClauseConverters {
           withShuffle(shuffle)
 
         acc.
-          withHorizon(projection).
-          addPatternExpressions(returnItems.getContainedPatternExpressions)
+          withHorizon(projection)
 
       case _ =>
         throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
@@ -128,8 +127,7 @@ object ClauseConverters {
             hints = clause.hints.toSet,
             shortestPathPatterns = patternContent.shortestPaths.toSet
           ))
-        }.
-          addPatternExpressions(subQueries.toSeq: _*)
+        }
       } else {
         acc.updateGraph {
           qg => qg.
@@ -138,8 +136,7 @@ object ClauseConverters {
             addPatternRels(patternContent.rels).
             addHints(clause.hints).
             addShortestPaths(patternContent.shortestPaths: _*)
-        }.
-          addPatternExpressions(subQueries.toSeq: _*)
+        }
       }
     }
   }
@@ -160,11 +157,9 @@ object ClauseConverters {
        */
       case With(false, _: ReturnAll, None, None, None, where) if !builder.currentQueryGraph.hasOptionalPatterns =>
         val selections = where.asSelections
-        val subQueries = selections.getContainedPatternExpressions
 
         builder.
-          updateGraph(_.addSelections(selections)).
-          addPatternExpressions(subQueries)
+          updateGraph(_.addSelections(selections))
 
       /*
       When encountering a WITH that is an event horizon, we introduce the horizon and start a new empty QueryGraph.
@@ -188,8 +183,7 @@ object ClauseConverters {
 
         builder.
           withHorizon(queryProjection).
-          withTail(PlannerQuery(QueryGraph(selections = selections))).
-          addPatternExpressions(selections.getContainedPatternExpressions ++ projection.getContainedPatternExpressions)
+          withTail(PlannerQuery(QueryGraph(selections = selections)))
 
 
       case _ =>

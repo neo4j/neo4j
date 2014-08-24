@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{UnionQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 trait PlanningStrategy {
-  def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): LogicalPlan
+  def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): LogicalPlan
 }
 
 trait QueryGraphSolver {
-  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): QueryPlan
+  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): QueryPlan
 }

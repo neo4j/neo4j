@@ -19,21 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryHorizon, QueryGraph, PlannerQuery}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, QueryGraph, QueryHorizon}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 
-case class PlannerQueryBuilder(private val q: PlannerQuery, patternExprTable: Map[PatternExpression, QueryGraph])
+case class PlannerQueryBuilder(private val q: PlannerQuery)
   extends CollectionSupport {
-  def addPatternExpressions(expressions: PatternExpression*): PlannerQueryBuilder =
-    copy(patternExprTable = patternExprTable ++ expressions.map(x => x -> x.asQueryGraph))
-
-  def addPatternExpressions(expressions: Set[PatternExpression]): PlannerQueryBuilder =
-    addPatternExpressions(expressions.toSeq:_*)
-
   def updateGraph(f: QueryGraph => QueryGraph): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.updateGraph(f)))
 
@@ -80,5 +72,5 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, patternExprTable: Ma
 }
 
 object PlannerQueryBuilder {
-  val empty = new PlannerQueryBuilder(PlannerQuery.empty, Map.empty)
+  val empty = new PlannerQueryBuilder(PlannerQuery.empty)
 }

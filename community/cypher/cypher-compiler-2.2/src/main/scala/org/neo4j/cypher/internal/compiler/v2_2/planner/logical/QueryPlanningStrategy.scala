@@ -30,7 +30,7 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
 
   import QueryPlanProducer._
 
-  def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): LogicalPlan = unionQuery match {
+  def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): LogicalPlan = unionQuery match {
     case UnionQuery(queries, distinct) =>
       val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p).plan)
       val unionPlan = logicalPlans.reduce[LogicalPlan] {
@@ -45,7 +45,7 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
     case _ => throw new CantHandleQueryException
   }
 
-  protected def planSingleQuery(query: PlannerQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): QueryPlan = {
+  protected def planSingleQuery(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): QueryPlan = {
     val firstPart = planPart(query, leafPlan)
     val projectedFirstPart = planEventHorizon(query, firstPart)
     val finalPlan = planWithTail(projectedFirstPart, query.tail)
@@ -60,22 +60,22 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
     Aggregation(p, returnAll.toMap, Map.empty)
   }
 
-  private def planWithTail(pred: QueryPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = remaining match {
+  private def planWithTail(pred: QueryPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): QueryPlan = remaining match {
     case Some(query) =>
       val lhs = pred
       val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))
       val applyPlan = planTailApply(lhs, rhs)
-      val projectedPlan = planEventHorizon(query, applyPlan)(context, subQueryLookupTable)
+      val projectedPlan = planEventHorizon(query, applyPlan)(context)
       planWithTail(projectedPlan, query.tail)
     case None =>
       pred
   }
 
-  private def planPart(query: PlannerQuery, leafPlan: Option[QueryPlan])(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = {
-    context.strategy.plan(query.graph)(context, subQueryLookupTable, leafPlan)
+  private def planPart(query: PlannerQuery, leafPlan: Option[QueryPlan])(implicit context: LogicalPlanningContext): QueryPlan = {
+    context.strategy.plan(query.graph)(context, leafPlan)
   }
 
-  private def planEventHorizon(query: PlannerQuery, plan: QueryPlan)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = {
+  private def planEventHorizon(query: PlannerQuery, plan: QueryPlan)(implicit context: LogicalPlanningContext): QueryPlan = {
     val selectedPlan = config.applySelections(plan, query.graph)
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>

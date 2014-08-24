@@ -103,5 +103,5 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
 case class FakePlanningStrategy(plans: QueryPlan*) extends QueryGraphSolver {
   val queue = mutable.Queue[QueryPlan](plans:_*)
-  override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None) = queue.dequeue()
+  override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None) = queue.dequeue()
 }

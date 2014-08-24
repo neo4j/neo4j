@@ -38,8 +38,7 @@ object StatementConverters {
       case Query(None, queryPart: SingleQuery) =>
         val builder = queryPart.asPlannerQueryBuilder
         QueryPlanInput(
-          query = UnionQuery(Seq(builder.build()), distinct = false),
-          patternInExpression = builder.patternExprTable
+          query = UnionQuery(Seq(builder.build()), distinct = false)
         )
 
       case Query(None, u: ast.Union) =>
@@ -49,10 +48,8 @@ object StatementConverters {
           case _: UnionDistinct => true
         }
         val plannedQueries: Seq[PlannerQueryBuilder] = queries.reverseMap(x => x.asPlannerQueryBuilder)
-        val table = plannedQueries.map(_.patternExprTable).reduce(_ ++ _)
         QueryPlanInput(
-          query = UnionQuery(plannedQueries.map(_.build()), distinct),
-          patternInExpression = table
+          query = UnionQuery(plannedQueries.map(_.build()), distinct)
         )
 
 
