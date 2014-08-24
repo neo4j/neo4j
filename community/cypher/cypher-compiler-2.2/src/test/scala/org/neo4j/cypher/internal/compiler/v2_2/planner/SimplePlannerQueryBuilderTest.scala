@@ -1074,5 +1074,33 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     )))
   }
 
+  test("MATCH (a:A) OPTIONAL MATCH (a)-->(b:B) OPTIONAL MATCH (a)-->(c:C) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
+      buildPlannerQuery("MATCH (a:A) OPTIONAL MATCH (a)-->(b:B) OPTIONAL MATCH (a)-->(c:C) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d", normalize = true)
+
+    query.graph.patternNodes should equal(Set(IdName("a")))
+    query.graph.patternRelationships should equal(Set.empty)
+
+    query.horizon should equal(RegularQueryProjection(
+      projections = Map(
+        "x" -> FunctionInvocation(FunctionName("coalesce")_, distinct = false, Vector(ident("b"), ident("c")))(pos)
+      )
+    ))
+
+    val optionalMatch1 :: optionalMatch2 :: Nil = query.graph.optionalMatches
+    optionalMatch1.argumentIds should equal (Set(IdName("a")))
+    optionalMatch1.patternNodes should equal (Set(IdName("a"), IdName("b")))
+
+
+    optionalMatch2.argumentIds should equal (Set(IdName("a")))
+    optionalMatch2.patternNodes should equal (Set(IdName("a"), IdName("c")))
+
+    val tail = query.tail.get
+    tail.graph.argumentIds should equal(Set(IdName("x")))
+    tail.graph.patternNodes should equal(Set(IdName("x"), IdName("d")))
+
+    tail.graph.optionalMatches should be (empty)
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }

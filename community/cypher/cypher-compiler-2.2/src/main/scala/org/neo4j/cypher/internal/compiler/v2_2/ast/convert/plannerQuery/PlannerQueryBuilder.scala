@@ -70,7 +70,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, patternExprTable: Ma
 
     val fixedArgumentIds = q.reverseFoldMap {
       case (headPQ, tailPQ) =>
-        val inputIds = headPQ.graph.allCoveredIds
+        val inputIds = headPQ.graph.allCoveredIds ++ headPQ.horizon.exposedSymbols
         val argumentIds = inputIds intersect tailPQ.graph.allCoveredIds
         tailPQ.updateGraph(_.withArgumentIds(argumentIds))
     }
