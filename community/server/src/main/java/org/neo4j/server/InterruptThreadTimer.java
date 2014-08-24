@@ -24,7 +24,10 @@ import java.util.TimerTask;
 
 /**
  * Interrupts a thread after a given timeout, can be cancelled if needed.
+ *
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release
  */
+@Deprecated
 public abstract class InterruptThreadTimer
 {
     public enum State

@@ -25,6 +25,11 @@ import com.sun.jersey.api.core.HttpContext;
 
 import org.neo4j.server.database.InjectableProvider;
 
+/**
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
+ */
+@Deprecated
 @Provider
 public class NeoServerProvider extends InjectableProvider<NeoServer>
 {

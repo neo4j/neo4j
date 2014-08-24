@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
-
 import java.net.URI;
 import java.util.Map;
 
@@ -33,13 +28,18 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.com.master.Slaves;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
 
 /**
  * Keeps active connections to {@link Slave slaves} for a master to communicate to
@@ -49,12 +49,12 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
 {
     private final LifeSupport life = new LifeSupport();
     private final Map<ClusterMember, Slave> slaves = new CopyOnWriteHashMap<ClusterMember, Slave>();
-    private ClusterMembers clusterMembers;
-    private Cluster cluster;
-    private SlaveFactory slaveFactory;
+    private final ClusterMembers clusterMembers;
+    private final Cluster cluster;
+    private final SlaveFactory slaveFactory;
     private HighAvailabilitySlaves.HASClusterListener clusterListener;
 
-    public HighAvailabilitySlaves( ClusterMembers clusterMembers, Cluster cluster, SlaveFactory slaveFactory)
+    public HighAvailabilitySlaves( ClusterMembers clusterMembers, Cluster cluster, SlaveFactory slaveFactory )
     {
         this.clusterMembers = clusterMembers;
         this.cluster = cluster;
@@ -69,9 +69,16 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
             @Override
             public Slave apply( ClusterMember from )
             {
-                Slave slave = life.add( slaveFactory.newSlave( from ));
-                slaves.put( from, slave );
-                return slave;
+                synchronized ( HighAvailabilitySlaves.this )
+                {
+                    Slave presentSlave = slaves.get( from );
+                    if ( presentSlave == null )
+                    {
+                        presentSlave = life.add( slaveFactory.newSlave( from ) );
+                        slaves.put( from, presentSlave );
+                    }
+                    return presentSlave;
+                }
             }
         };
     }
@@ -86,7 +93,7 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
                         filter( inRole( HighAvailabilityModeSwitcher.SLAVE ),
                                 clusterMembers.getMembers() ) ) );
     }
-    
+
     @Override
     public void init()
     {
@@ -95,7 +102,7 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
         clusterListener = new HASClusterListener();
         cluster.addClusterListener( clusterListener );
     }
-    
+
     @Override
     public void start() throws Throwable
     {

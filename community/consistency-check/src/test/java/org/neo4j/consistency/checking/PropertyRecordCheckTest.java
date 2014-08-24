@@ -670,4 +670,59 @@ public class PropertyRecordCheckTest
         verify( report ).ownerDoesNotReferenceBack();
         verifyNoMoreInteractions( report );
     }
+
+    @Test
+    public void shouldNotReportMissingPropertyForDeletedNodeWithProperty()
+    {
+        // given
+        PropertyRecord oldProperty = add( inUse( new PropertyRecord( 10 ) ) );
+        NodeRecord oldNode = add( inUse( new NodeRecord( 20, false, 0, 0 ) ) );
+        oldProperty.setNodeId( oldNode.getId() );
+        oldNode.setNextProp( oldProperty.getId() );
+
+        PropertyRecord newProperty = add( notInUse( new PropertyRecord( 10 ) ) );
+        NodeRecord newNode = add( notInUse( new NodeRecord( 20, false, 0, 0 ) ) );
+        newProperty.setNodeId( newNode.getId() );
+        newNode.setNextProp( newProperty.getId() );
+
+        // when
+        ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
+
+        // then
+        verifyNoMoreInteractions( report );
+    }
+
+    @Test
+    public void shouldNotReportMissingPropertyForDeletedRelationshipWithProperty()
+    {
+        // given
+        NodeRecord oldNode1 = add( inUse( new NodeRecord( 1, false, NONE, NONE ) ) );
+        NodeRecord oldNode2 = add( inUse( new NodeRecord( 2, false, NONE, NONE ) ) );
+
+        RelationshipRecord oldRel = add( inUse( new RelationshipRecord( 42, 1, 2, 7 ) ) );
+        oldNode1.setNextRel( oldRel.getId() );
+        oldNode2.setNextRel( oldRel.getId() );
+
+        PropertyRecord oldProperty = add( inUse( new PropertyRecord( 101 ) ) );
+        oldProperty.setRelId( oldRel.getId() );
+        oldRel.setNextProp( oldProperty.getId() );
+
+
+        NodeRecord newNode1 = add( notInUse( new NodeRecord( 1, false, NONE, NONE ) ) );
+        NodeRecord newNode2 = add( notInUse( new NodeRecord( 2, false, NONE, NONE ) ) );
+
+        RelationshipRecord newRel = add( notInUse( new RelationshipRecord( 42, 1, 2, 7 ) ) );
+        newNode1.setNextRel( newRel.getId() );
+        newNode2.setNextRel( newRel.getId() );
+
+        PropertyRecord newProperty = add( notInUse( new PropertyRecord( 101 ) ) );
+        newProperty.setRelId( newRel.getId() );
+        newRel.setNextProp( newProperty.getId() );
+
+        // when
+        ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
+
+        // then
+        verifyNoMoreInteractions( report );
+    }
 }
