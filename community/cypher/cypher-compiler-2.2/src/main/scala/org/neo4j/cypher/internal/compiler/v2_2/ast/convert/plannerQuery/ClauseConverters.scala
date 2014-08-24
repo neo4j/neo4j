@@ -23,9 +23,8 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 
 object ClauseConverters {
 
@@ -36,41 +35,8 @@ object ClauseConverters {
   }
 
   implicit class SelectionsSubQueryExtraction(val selections: Selections) extends AnyVal {
-    def getContainedPatternExpressions: Set[PatternExpression] = {
-      val predicates = selections.predicates
-      val predicatesWithCorrectDeps = predicates.map {
-        case Predicate(deps, e: PatternExpression) =>
-          Predicate(deps.filter(x => isNamed(x.name)), e)
-        case Predicate(deps, ors@Ors(exprs)) =>
-          val newDeps = exprs.foldLeft(Set.empty[IdName]) { (acc, exp) =>
-            exp match {
-              case exp: PatternExpression => acc ++ exp.idNames.filter(x => isNamed(x.name))
-              case _                      => acc ++ exp.idNames
-            }
-          }
-          Predicate(newDeps, ors)
-        case p                               => p
-      }
-
-      val subQueries: Set[PatternExpression] = predicatesWithCorrectDeps.flatMap {
-        case Predicate(_, Ors(orOperands)) =>
-          orOperands.collect {
-            case expr: PatternExpression      => expr
-            case Not(expr: PatternExpression) => expr
-          }
-
-        case Predicate(_, Not(expr: PatternExpression)) =>
-          Some(expr)
-
-        case Predicate(_, expr: PatternExpression) =>
-          Some(expr)
-
-        case _ =>
-          None
-      }
-
-      subQueries
-    }
+    def getContainedPatternExpressions: Set[PatternExpression] =
+      selections.flatPredicates.flatMap(_.extractPatternExpressions).toSet
   }
 
   implicit class SortItems(val optOrderBy: Option[OrderBy]) extends AnyVal {
@@ -112,9 +78,7 @@ object ClauseConverters {
 
   implicit class ReturnConverter(val clause: Return) extends AnyVal {
     def addReturnToQueryPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
-      case Return(distinct, ListedReturnItems(items), optOrderBy, skip, limit) =>
-
-        val newPatternInExpressionTable = items.flatMap(_.expression.extractPatternExpressions)
+      case Return(distinct, returnItems@ListedReturnItems(items), optOrderBy, skip, limit) =>
 
         val shuffle = optOrderBy.asQueryShuffle.
           withSkip(skip).
@@ -126,7 +90,7 @@ object ClauseConverters {
 
         acc.
           withHorizon(projection).
-          addPatternExpressions(newPatternInExpressionTable:_*)
+          addPatternExpressions(returnItems.getContainedPatternExpressions)
 
       case _ =>
         throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
@@ -137,6 +101,11 @@ object ClauseConverters {
     def asReturnItems(current: QueryGraph): Seq[ReturnItem] = clause match {
       case _: ReturnAll => QueryProjection.forIds(current.allCoveredIds)
       case ListedReturnItems(items) => items
+    }
+
+    def getContainedPatternExpressions:Set[PatternExpression] = clause match {
+      case _: ReturnAll => Set.empty
+      case ListedReturnItems(items) => items.flatMap(_.expression.extractPatternExpressions).toSet
     }
   }
 
@@ -204,7 +173,6 @@ object ClauseConverters {
        */
       case With(distinct, projection: ReturnItems, orderBy, skip, limit, where) =>
         val selections = where.asSelections
-        val subQueries = selections.getContainedPatternExpressions
         val returnItems = projection.asReturnItems(builder.currentQueryGraph)
 
         val shuffle =
@@ -221,7 +189,7 @@ object ClauseConverters {
         builder.
           withHorizon(queryProjection).
           withTail(PlannerQuery(QueryGraph(selections = selections))).
-          addPatternExpressions(subQueries)
+          addPatternExpressions(selections.getContainedPatternExpressions ++ projection.getContainedPatternExpressions)
 
 
       case _ =>

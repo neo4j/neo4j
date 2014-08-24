@@ -1073,5 +1073,48 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )))
   }
 
+  test("match (a:Start), (b:End) with a-[*]->b as path, count(a) as c return path, c") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), table) =
+      buildPlannerQuery("match (a:Start), (b:End) with a-[*]->b as path, count(a) as c return path, c", normalize = true)
+
+    table should have size 1
+    val exp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(ident("a")), Seq(), None, naked = true) _,
+      RelationshipPattern(Some(ident("  UNNAMED31")), optional = false, Seq.empty, Some(None), None, Direction.OUTGOING) _,
+      NodePattern(Some(ident("b")), Seq(), None, naked = true) _
+    ) _) _)
+
+    table.keys.head should equal(exp)
+  }
+
+  test("match (a:Start), (b:End) return a-[*]->b as path") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), table) =
+      buildPlannerQuery("match (a:Start), (b:End) with a-[*]->b as path, count(a) as c return path, c", normalize = true)
+
+    table should have size 1
+    val exp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(ident("a")), Seq(), None, naked = true) _,
+      RelationshipPattern(Some(ident("  UNNAMED31")), optional = false, Seq.empty, Some(None), None, Direction.OUTGOING) _,
+      NodePattern(Some(ident("b")), Seq(), None, naked = true) _
+    ) _) _)
+
+    table.keys.head should equal(exp)
+  }
+
+  test("match (a:Start), (b:End) where (case when id(n) >= 0 then length(a-[*]->b) else 42 end) > 0 return n") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), table) =
+      buildPlannerQuery("match (a:Start), (b:End) where (case when id(n) >= 0 then length(a-[*]->b) else 42 end) > 0 return n", normalize = true)
+
+    table should have size 1
+    val exp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(ident("a")), Seq(), None, naked = true) _,
+      RelationshipPattern(Some(ident("  UNNAMED66")), optional = false, Seq.empty, Some(None), None, Direction.OUTGOING) _,
+      NodePattern(Some(ident("b")), Seq(), None, naked = true) _
+    ) _) _)
+
+    table.keys.head should equal(exp)
+  }
+
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }
