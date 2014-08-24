@@ -255,7 +255,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val plannerQuery: QueryPlan = Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          val QueryPlanInput(unionQuery) = ast.asQueryPlanInput
+          val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
           val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
           val plannerQuery = unionQuery.queries.head
@@ -274,7 +274,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          val QueryPlanInput(unionQuery) = ast.asQueryPlanInput
+          val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
           val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
           (strategy.plan(unionQuery)(context), semanticTable)

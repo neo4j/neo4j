@@ -63,12 +63,12 @@ case class Planner(monitors: Monitors,
 
   def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (LogicalPlan, PipeExecutionBuilderContext) = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
-    val QueryPlanInput(plannerQuery) = ast.asQueryPlanInput
+    val unionQuery = ast.asUnionQuery
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
 
     val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
-    val plan = strategy.plan(plannerQuery)(context)
+    val plan = strategy.plan(unionQuery)(context)
 
     val pipeBuildContext = PipeExecutionBuilderContext((e: PatternExpression) => {
       val expressionQueryGraph = e.asQueryGraph

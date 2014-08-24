@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{PatternExpression, Query}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Query
 
 case class QueryPlanInput(query: UnionQuery)
 

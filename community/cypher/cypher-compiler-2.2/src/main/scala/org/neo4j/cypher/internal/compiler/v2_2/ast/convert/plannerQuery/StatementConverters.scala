@@ -34,12 +34,10 @@ object StatementConverters {
   }
 
   implicit class QueryConverter(val query: Query) {
-    def asQueryPlanInput: QueryPlanInput = query match {
+    def asUnionQuery: UnionQuery = query match {
       case Query(None, queryPart: SingleQuery) =>
         val builder = queryPart.asPlannerQueryBuilder
-        QueryPlanInput(
-          query = UnionQuery(Seq(builder.build()), distinct = false)
-        )
+        UnionQuery(Seq(builder.build()), distinct = false)
 
       case Query(None, u: ast.Union) =>
         val queries: Seq[SingleQuery] = u.unionedQueries
@@ -48,10 +46,7 @@ object StatementConverters {
           case _: UnionDistinct => true
         }
         val plannedQueries: Seq[PlannerQueryBuilder] = queries.reverseMap(x => x.asPlannerQueryBuilder)
-        QueryPlanInput(
-          query = UnionQuery(plannedQueries.map(_.build()), distinct)
-        )
-
+        UnionQuery(plannedQueries.map(_.build()), distinct)
 
       case _ =>
         throw new CantHandleQueryException
