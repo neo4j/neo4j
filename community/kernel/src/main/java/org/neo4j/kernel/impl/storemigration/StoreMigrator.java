@@ -368,8 +368,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
             filesToDelete = allExcept(
                     StoreFile20.NODE_STORE,
                     StoreFile20.RELATIONSHIP_STORE,
-                    StoreFile20.RELATIONSHIP_GROUP_STORE,
-                    StoreFile20.SCHEMA_STORE );
+                    StoreFile20.RELATIONSHIP_GROUP_STORE );
             leftoverFiles = new StoreFile20[]{StoreFile20.NODE_STORE, StoreFile20.RELATIONSHIP_STORE};
         }
         StoreFile20.deleteStoreFile( fileSystem, migrationDir, filesToDelete );
