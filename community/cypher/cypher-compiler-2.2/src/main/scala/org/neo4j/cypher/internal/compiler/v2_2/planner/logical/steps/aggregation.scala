@@ -19,24 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Expression}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.AggregatingQueryProjection
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, QueryPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v2_2.planner.AggregatingQueryProjection
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Expression}
 
 object aggregation {
   def apply(plan: QueryPlan, aggregation: AggregatingQueryProjection)(implicit context: LogicalPlanningContext): QueryPlan = {
+
     val aggregationProjections: Map[String, Expression] = aggregation.groupingKeys
     val availableSymbolProjections: Map[String, Identifier] = plan.plan.availableSymbols.map {
       case IdName(x) => x -> Identifier(x)(null)
     }.toMap
-
     // Writes down the grouping values
     val expressionsMap: Map[String, Expression] = availableSymbolProjections ++ aggregationProjections
 
     // TODO: we need to project here since the pipe does not do that, when moving to the new runtime the aggregation pipe MUST do the projection itself
     val projectedPlan = projection(plan, expressionsMap)
-    planAggregation(projectedPlan, aggregation.groupingKeys, aggregation.aggregationExpressions)
+    planAggregation(projectedPlan, aggregationProjections, aggregation.aggregationExpressions)
   }
 }

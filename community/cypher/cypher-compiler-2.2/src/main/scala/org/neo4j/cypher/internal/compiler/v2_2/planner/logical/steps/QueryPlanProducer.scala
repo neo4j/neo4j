@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v2_2.InputPosition.NONE
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.SortDescription
@@ -318,13 +319,11 @@ object QueryPlanProducer {
       inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withLimitExpression(count))))
     )
 
-  def planSort(inner: QueryPlan, descriptions: Seq[SortDescription], items: Seq[ast.SortItem]) = {
-    require(items.forall(_.expression.isInstanceOf[ast.Identifier]))
+  def planSort(inner: QueryPlan, descriptions: Seq[SortDescription], items: Seq[ast.SortItem]) =
     QueryPlan(
       Sort(inner.plan, descriptions),
       inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(items))))
     )
-  }
 
   def planSortedLimit(inner: QueryPlan, limit: Expression, items: Seq[ast.SortItem]) =
     QueryPlan(

@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, PlannerQuery, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, PlanTransformer}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{CantHandleQueryException, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{PlanTransformer, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 object verifyBestPlan extends PlanTransformer[PlannerQuery] {
   def apply(plan: QueryPlan, expected: PlannerQuery)(implicit context: LogicalPlanningContext): QueryPlan = {
@@ -31,3 +32,8 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     plan
   }
 }
+
+// MATCH n OPTIONAL MATCH m-[r]->(n)
+
+
+
