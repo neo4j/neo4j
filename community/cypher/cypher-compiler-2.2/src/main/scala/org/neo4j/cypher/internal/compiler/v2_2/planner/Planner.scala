@@ -97,18 +97,23 @@ case class PlanRewriter(table: SemanticTable, shouldDedup: Boolean = true) {
   val rewriter = {
     val builder = Seq.newBuilder[(AnyRef) => Option[AnyRef]]
 
-    builder += rewriteEqualityToInCollection
-    builder += splitInCollectionsToIsolateConstants
-    builder += CNFNormalizer
-    builder += collapseInCollectionsContainingConstants
-//    if (shouldDedup)
-//      builder += dedup(table)
-    builder += nameVarLengthRelationships
-    builder += namePatternPredicates
-    builder += inlineProjections
+//    builder += TaggedRewriter("rewriteEqualityToInCollection", rewriteEqualityToInCollection)
+//    builder += TaggedRewriter("splitInCollectionsToIsolateConstants", splitInCollectionsToIsolateConstants)
+//    builder += TaggedRewriter("CNFNormalizer", CNFNormalizer)
+//    builder += TaggedRewriter("collapseInCollectionsContainingConstants", collapseInCollectionsContainingConstants)
+    if (shouldDedup)
+      builder += TaggedRewriter("dedup", dedup(table))
+    builder += TaggedRewriter("nameVarLengthRelationships", nameVarLengthRelationships)
+    builder += TaggedRewriter("namePatternPredicates", namePatternPredicates)
+    builder += TaggedRewriter("inlineProjections", inlineProjections)
     inSequence(builder.result(): _*)
   }
 
-  def rewriteStatement(statement: Statement) = statement.endoRewrite(rewriter)
+  def rewriteStatement(statement: Statement) = {
+    print(s"Planner in:\n\t${Some(statement)}\n\n")
+    val result = statement.endoRewrite(rewriter)
+    print(s"Planner out:\n\t${Some(result)}\n\n")
+    result
+  }
 }
 

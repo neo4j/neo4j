@@ -100,6 +100,13 @@ class DedupTest extends CypherFunSuite {
     )
   }
 
+  test("passing node on via WITH is deduped") {
+    assertRewrite(
+      "MATCH a WITH a AS a MATCH a-->b RETURN a AS a",
+      "MATCH a6 WITH a6 AS a18 MATCH a18-->b30 RETURN a18 AS a"
+    )
+  }
+
   test("should reject return *") {
     val (original, table) = parseAndCheck("MATCH a RETURN *")
     evaluating {
@@ -129,7 +136,9 @@ class DedupTest extends CypherFunSuite {
 
   def assertRewrite(originalQuery: String, expectedQuery: String) {
     val (original, table) = parseAndCheck(originalQuery)
+    println(original)
     val expected = parser.parse(expectedQuery)
+    println(expected)
 
     val result = dedup(table)(original).getOrElse(fail("Rewriter did not accept query"))
     assert(result === expected, s"\n$originalQuery")

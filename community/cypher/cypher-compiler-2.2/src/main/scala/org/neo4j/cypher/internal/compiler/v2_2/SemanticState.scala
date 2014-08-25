@@ -89,6 +89,7 @@ case class SemanticState(scope: Scope,
   def clearSymbols = copy(scope = Scope.empty)
 
   def symbol(name: String): Option[Symbol] = scope.symbol(name)
+  
   def symbolTypes(name: String) = symbol(name).map(_.types).getOrElse(TypeSpec.all)
 
   def importScope(importedScope: Scope) = copy(scope = scope.importScope(importedScope))

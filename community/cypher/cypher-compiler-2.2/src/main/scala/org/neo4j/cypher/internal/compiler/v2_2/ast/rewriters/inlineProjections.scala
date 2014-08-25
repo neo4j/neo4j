@@ -25,7 +25,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 
 object inlineProjections extends Rewriter {
 
-  def apply(in: AnyRef): Option[AnyRef] = instance.apply(in)
+  def apply(in: AnyRef): Option[AnyRef] = {
+    val result = instance.apply(in)
+    result
+  }
 
   val instance = Rewriter.lift { case input: Statement =>
     val context = inliningContextCreator(input)

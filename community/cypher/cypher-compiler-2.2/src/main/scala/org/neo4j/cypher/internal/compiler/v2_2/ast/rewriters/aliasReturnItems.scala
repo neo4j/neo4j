@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.{AliasedReturnItem, Identifie
 object aliasReturnItems extends Rewriter {
 
   private val instance = Rewriter.lift {
-    case item @ UnaliasedReturnItem(expr, string) =>
-      AliasedReturnItem(expr, Identifier(string)(expr.position))(item.position)
+//    case item @ UnaliasedReturnItem(id: Identifier, string) =>  AliasedReturnItem(id, id)(item.position)
+    case item @ UnaliasedReturnItem(expr, string)           =>  AliasedReturnItem(expr, Identifier(string)(expr.position))(item.position)
   }
 
   def apply(input: AnyRef): Option[AnyRef] = bottomUp(instance).apply(input)

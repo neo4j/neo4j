@@ -32,6 +32,17 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toList should equal(List(Map("a" -> a, "b" -> b)))
   }
 
+  test("only passing on pattern nodes work 2") {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+
+    val result = executeWithNewPlanner(
+      "MATCH a WITH a AS a MATCH a-->b RETURN a, b"
+    )
+    result.toList should equal(List(Map("a" -> a, "b" -> b)))
+  }
+
   test("order by and limit can be used") {
     val a = createNode("A")
     createNode("B")

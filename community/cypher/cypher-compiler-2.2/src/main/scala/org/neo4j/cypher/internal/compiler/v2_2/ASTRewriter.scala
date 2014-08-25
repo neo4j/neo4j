@@ -33,23 +33,35 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
     else
       (Rewriter.lift(PartialFunction.empty), Map.empty[String, Any])
 
+    print(s"ASTRewriter in:\n\t${Some(statement)}\n\n")
+
     val rewriters = Seq(
-      foldConstants,
-      extractParameters,
-      nameMatchPatternElements,
-      normalizeMatchPredicates,
-      normalizeNotEquals,
-      normalizeEqualsArgumentOrder,
-      addUniquenessPredicates,
-      expandStar(table),
-      isolateAggregation,
-      aliasReturnItems
+      TaggedRewriter("foldConstants", foldConstants),
+      TaggedRewriter("extractParameters", extractParameters),
+      TaggedRewriter("nameMatchPatternElements", nameMatchPatternElements),
+      TaggedRewriter("normalizeMatchPredicates", normalizeMatchPredicates),
+      TaggedRewriter("normalizeNotEquals", normalizeNotEquals),
+      TaggedRewriter("normalizeEqualsArgumentOrder", normalizeEqualsArgumentOrder),
+      TaggedRewriter("addUniquenessPredicates", addUniquenessPredicates),
+      TaggedRewriter("expandStar", expandStar(table)),
+      TaggedRewriter("isolateAggregation", isolateAggregation),
+      TaggedRewriter("aliasReturnItems", aliasReturnItems)
     )
 
     val rewriter = inSequence(rewriters: _*)
     val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
 
+    print(s"ASTRewriter produced:\n\t${Some(rewrittenStatement)}\n\n")
+
     rewritingMonitor.finishRewriting(queryText, rewrittenStatement)
     (rewrittenStatement, extractedParameters)
+  }
+}
+
+case class TaggedRewriter(tag: String, rewriter: Rewriter) extends Rewriter {
+  def apply(in: AnyRef) = {
+    val result = rewriter(in)
+    print(s"$tag produced:\n\t$result\n\n")
+    result
   }
 }
