@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator
 
-object nameMatchPatternElements extends Rewriter {
+case object nameMatchPatternElements extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(that)
 
   private val namingRewriter: Rewriter = Rewriter.lift {
@@ -45,7 +45,7 @@ object nameMatchPatternElements extends Rewriter {
 }
 
 // TODO: When Ronja is the only planner left, move these to nameMatchPatternElements
-object nameVarLengthRelationships extends Rewriter {
+case object nameVarLengthRelationships extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(that)
 
   private val namingRewriter: Rewriter = Rewriter.lift {
@@ -62,7 +62,7 @@ object nameVarLengthRelationships extends Rewriter {
 }
 
 // TODO: When Ronja is the only planner left, move these to nameMatchPatternElements
-object namePatternPredicates extends Rewriter {
+case object namePatternPredicates extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(that)
 
   private val namingRewriter: Rewriter = Rewriter.lift {

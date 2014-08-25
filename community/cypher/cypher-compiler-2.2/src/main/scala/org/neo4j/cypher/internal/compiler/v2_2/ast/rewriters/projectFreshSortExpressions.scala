@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp, topDown}
 
-object projectFreshSortExpressions extends Rewriter {
+case object projectFreshSortExpressions extends Rewriter {
 
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 

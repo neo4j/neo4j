@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.repeat
 
-object CNFNormalizer extends Rewriter {
+case object CNFNormalizer extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
 
   private val instance: Rewriter = inSequence(

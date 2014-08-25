@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import Foldable._
 
-object projectNamedPaths extends Rewriter {
+case object projectNamedPaths extends Rewriter {
 
   private def getRewriter(paths: Map[Identifier, PathExpression],
                           blacklist: IdentityMap[Identifier, Boolean]) = Rewriter.lift {

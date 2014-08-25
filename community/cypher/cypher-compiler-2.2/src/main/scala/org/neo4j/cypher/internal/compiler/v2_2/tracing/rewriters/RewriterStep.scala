@@ -17,23 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
 
-case object rewriteEqualityToInCollection extends Rewriter {
-  override def apply(that: AnyRef) = bottomUp(instance).apply(that)
+object RewriterStep {
+   type Named[T] = Product with T
 
-  private val instance: Rewriter = Rewriter.lift {
-    // id(a) = value
-    case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), p@ConstantExpression(idValueExpr))
-      if func.function == Some(functions.Id) =>
+   implicit def namedProductRewriter(p: Named[Rewriter]) = ApplyRewriter(p.productPrefix, p)
+   implicit def productRewriterCondition(p: Named[Any => Seq[String]]) = RewriterCondition(p.productPrefix, p)
 
-      In(func, Collection(Seq(idValueExpr))(p.position))(predicate.position)
-    // a.prop = value
-    case predicate@Equals(prop@Property(id: Identifier, propKeyName), p@ConstantExpression(idValueExpr)) =>
+   def enableCondition(p: Named[Any => Seq[String]]) = EnableRewriterCondition(p)
+   def disableCondition(p: Named[Any => Seq[String]]) = DisableRewriterCondition(p)
+ }
 
-      In(prop, Collection(Seq(idValueExpr))(p.position))(predicate.position)
-  }
-}
+sealed trait RewriterStep
+final case class ApplyRewriter(name: String, rewriter: Rewriter) extends RewriterStep
+final case class EnableRewriterCondition(cond: RewriterCondition) extends RewriterStep
+final case class DisableRewriterCondition(cond: RewriterCondition) extends RewriterStep
+case object EmptyRewriterStep extends RewriterStep

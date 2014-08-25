@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
-object inlineProjections extends Rewriter {
+case object inlineProjections extends Rewriter {
 
   def apply(in: AnyRef): Option[AnyRef] = instance.apply(in)
 

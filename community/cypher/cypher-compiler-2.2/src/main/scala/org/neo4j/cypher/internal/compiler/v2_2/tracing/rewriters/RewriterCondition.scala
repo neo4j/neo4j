@@ -17,7 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters
 
-case object normalizeMatchPredicates
-  extends MatchPredicateNormalization(MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer))
+final case class RewriterCondition(name: String, condition: Any => Seq[String])
+  extends (Any => Option[RewriterConditionFailure]) {
+
+  def apply(input: Any): Option[RewriterConditionFailure] = {
+    val problems = condition(input)
+    if (problems.isEmpty) None else Some(RewriterConditionFailure(name, problems))
+  }
+}
+
+case class RewriterConditionFailure(name: String, problems: Seq[String])

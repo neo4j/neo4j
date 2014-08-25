@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Return
 
-object reattachAliasedExpressions extends Rewriter {
+case object reattachAliasedExpressions extends Rewriter {
   def apply(in: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(in)
 
   private val findingRewriter: Rewriter = Rewriter.lift {
