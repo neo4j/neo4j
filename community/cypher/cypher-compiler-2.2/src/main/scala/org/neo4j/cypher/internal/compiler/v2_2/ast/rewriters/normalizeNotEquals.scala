@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_2.{topDown, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Not, Equals, NotEquals}
 
-object normalizeNotEquals extends Rewriter {
+case object normalizeNotEquals extends Rewriter {
   override def apply(that: AnyRef): Option[AnyRef] = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {

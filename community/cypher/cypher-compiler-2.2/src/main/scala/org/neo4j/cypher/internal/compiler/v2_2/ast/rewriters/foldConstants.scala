@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import ast._
 import org.neo4j.cypher
 
-object foldConstants extends Rewriter {
+case object foldConstants extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] =
   try {
     bottomUp(instance).apply(that)

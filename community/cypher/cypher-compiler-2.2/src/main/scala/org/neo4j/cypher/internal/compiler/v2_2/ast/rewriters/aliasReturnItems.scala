@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{AliasedReturnItem, Identifier, UnaliasedReturnItem}
 
-object aliasReturnItems extends Rewriter {
+case object aliasReturnItems extends Rewriter {
 
   private val instance = Rewriter.lift {
     case item @ UnaliasedReturnItem(expr, string) =>

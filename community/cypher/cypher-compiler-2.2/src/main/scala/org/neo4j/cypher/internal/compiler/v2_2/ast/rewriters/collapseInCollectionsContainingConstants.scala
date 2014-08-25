@@ -23,7 +23,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, Rewriter}
 
-object collapseInCollectionsContainingConstants extends Rewriter {
+case object collapseInCollectionsContainingConstants extends Rewriter {
   override def apply(that: AnyRef) = bottomUp(instance).apply(that)
 
   case class InValue(lhs: Expression, expr: Expression)

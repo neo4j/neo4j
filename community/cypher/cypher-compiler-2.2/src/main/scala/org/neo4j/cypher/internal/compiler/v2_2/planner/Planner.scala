@@ -83,7 +83,11 @@ case class Planner(monitors: Monitors,
 }
 
 object Planner {
-  val rewriter = inSequence(
+
+  import RewriterStep._
+
+  // val rewriter = TracingRewriterStepSequencer("planner")(
+  val rewriter = RewriterStepSequencer("planner")(
     rewriteEqualityToInCollection,
     splitInCollectionsToIsolateConstants,
     CNFNormalizer,
@@ -101,3 +105,4 @@ trait PlanningMonitor {
   def foundPlan(q: String, p: LogicalPlan)
   def successfulPlanning(q: String, p: PipeInfo)
 }
+

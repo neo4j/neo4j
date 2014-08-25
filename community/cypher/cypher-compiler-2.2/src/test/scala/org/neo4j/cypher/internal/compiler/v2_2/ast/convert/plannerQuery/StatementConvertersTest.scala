@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.Statemen
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.graphdb.Direction
 
-
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   val nIdent: Identifier = Identifier("n")_

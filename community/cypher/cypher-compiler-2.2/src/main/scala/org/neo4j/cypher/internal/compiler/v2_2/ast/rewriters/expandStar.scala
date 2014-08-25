@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator
 
-object expandStar extends Rewriter {
+case object expandStar extends Rewriter {
 
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 
