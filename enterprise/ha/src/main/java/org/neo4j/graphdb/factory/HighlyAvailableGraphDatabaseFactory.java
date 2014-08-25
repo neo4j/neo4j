@@ -32,7 +32,7 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
 
     public GraphDatabaseService newHighlyAvailableDatabase( String path )
     {
-        return newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        return newHighlyAvailableDatabaseBuilder( path ).newGraphDatabase();
     }
 
     public GraphDatabaseBuilder newHighlyAvailableDatabaseBuilder( final String path )
