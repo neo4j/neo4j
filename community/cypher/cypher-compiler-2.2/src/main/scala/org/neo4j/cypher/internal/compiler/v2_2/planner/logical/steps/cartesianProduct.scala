@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 
 object cartesianProduct extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable, ignored: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
+  def apply(planTable: PlanTable, ignored: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
     if (planTable.size > 1) {
       val plans = planTable.plans
       val cartesianProducts =

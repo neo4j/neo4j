@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.parser
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters
+import ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{expressions => legacy}
 import org.parboiled.scala._
 

@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner
+package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, Predicate, Selections}
 import org.neo4j.graphdb.Direction
 
-class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
-  import org.neo4j.cypher.internal.compiler.v2_2.planner.SimplePlannerQueryBuilder.SubQueryExtraction.extractQueryGraph
+class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   val aNode: ast.NodePattern = ast.NodePattern(Some(ast.Identifier("a")(pos)), Seq.empty, None, naked = false)_
   val bNode: ast.NodePattern = ast.NodePattern(Some(ast.Identifier("b")(pos)), Seq.empty, None, naked = false)_
@@ -49,7 +49,7 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val patternExpression = createPatternExpression(aNode, rRel, bNode)
 
     // When
-    val qg = extractQueryGraph(patternExpression)
+    val qg = patternExpression.asQueryGraph
 
     // Then
     qg.selections should equal(Selections())
@@ -63,7 +63,7 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val patternExpression = createPatternExpression(aNode, rRelWithType, bNode)
 
     // When
-    val qg = extractQueryGraph(patternExpression)
+    val qg = patternExpression.asQueryGraph
 
     // Then
     qg.selections should equal(Selections())
@@ -77,7 +77,7 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val patternExpression = createPatternExpression(aNode, rRel, anonymousNode)
 
     // When
-    val qg = extractQueryGraph(patternExpression)
+    val qg = patternExpression.asQueryGraph
 
     // Then
     qg.selections should equal(Selections())
@@ -92,7 +92,7 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val patternExpression = createPatternExpression(aNode, rRel, bNode.copy(labels = Seq(labelName))(pos))
 
     // When
-    val qg = extractQueryGraph(patternExpression)
+    val qg = patternExpression.asQueryGraph
 
     // Then
     val predicate: ast.HasLabels = ast.HasLabels(ast.Identifier("b")(pos), Seq(labelName))_

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.docbuilders.internalDocBuilder
@@ -71,5 +72,5 @@ case class Selections(predicates: Set[Predicate] = Set.empty)
 
   def ++(other: Selections): Selections = Selections(predicates ++ other.predicates)
 
-  def ++(expressions: Expression*): Selections = Selections(predicates ++ expressions.flatMap(SelectionPredicates.extractPredicates))
+  def ++(expressions: Expression*): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
 }

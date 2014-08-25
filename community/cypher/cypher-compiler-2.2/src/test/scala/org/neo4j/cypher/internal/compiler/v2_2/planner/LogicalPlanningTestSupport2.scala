@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
@@ -62,7 +63,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   var tokenResolver = new SimpleTokenResolver()
   var monitor = mock[PlanningMonitor]
   var strategy = new QueryPlanningStrategy() {
-    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): QueryPlan =
+    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): QueryPlan =
      planSingleQuery(query)
   }
   var queryGraphSolver = new GreedyQueryGraphSolver()
@@ -88,7 +89,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def getLogicalPlanFor(query: String): (LogicalPlan, SemanticTable) =
       LogicalPlanningEnvironment(this).getLogicalPlanFor(query)
 
-    def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {
+    def withLogicalPlanningContext[T](f: LogicalPlanningContext => T): T = {
       LogicalPlanningEnvironment(this).withLogicalPlanningContext(f)
     }
 
@@ -165,13 +166,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   }
 
   case class LogicalPlanningEnvironment(config: LogicalPlanningConfiguration) {
-    private val plannerQueryBuilder = new SimplePlannerQueryBuilder
     private val planner: Planner = new Planner(
       monitors,
       metricsFactory,
       monitor,
       tokenResolver,
-      plannerQueryBuilder,
       None,
       strategy,
       queryGraphSolver
@@ -256,11 +255,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val plannerQuery: QueryPlan = Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          val QueryPlanInput(unionQuery, patternInExpression) = plannerQueryBuilder.produce(ast)
+          val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
           val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
           val plannerQuery = unionQuery.queries.head
-          strategy.internalPlan(plannerQuery)(context, patternInExpression)
+          strategy.internalPlan(plannerQuery)(context)
       }
 
       SemanticPlan(plannerQuery, semanticTable)
@@ -275,21 +274,21 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          val QueryPlanInput(unionQuery, patternInExpression) = plannerQueryBuilder.produce(ast)
+          val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
           val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
-          (strategy.plan(unionQuery)(context, patternInExpression), semanticTable)
+          (strategy.plan(unionQuery)(context), semanticTable)
       }
     }
 
-    def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {
+    def withLogicalPlanningContext[T](f: LogicalPlanningContext => T): T = {
       val ctx = LogicalPlanningContext(
         planContext = planContext,
         metrics = metricsFactory.newMetrics(config.graphStatistics, semanticTable),
         semanticTable = semanticTable,
         strategy = queryGraphSolver
       )
-      f(ctx, table)
+      f(ctx)
     }
   }
 

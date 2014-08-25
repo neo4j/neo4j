@@ -49,7 +49,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   })
 
   val passThrough = new PlanTransformer[QueryGraph] {
-    def apply(input: QueryPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = input
+    def apply(input: QueryPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): QueryPlan = input
   }
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
@@ -228,7 +228,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val patternExp2 = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(ident("a")), Seq(), None, naked = false)_,
       RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, dir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(LabelName("APA")_), None, naked = false)_
+      NodePattern(Some(ident("  UNNAMED4")), Seq(), None, naked = false)_
     )_)_)
 
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
@@ -276,7 +276,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(ident("a")), Seq(), None, naked = false)_,
       RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, dir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(LabelName("APA")_), None, naked = false)_
+      NodePattern(Some(ident("  UNNAMED4")), Seq(), None, naked = false)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -323,7 +323,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(ident("a")), Seq(), None, naked = false)_,
       RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, dir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(LabelName("APA")_), None, naked = false)_
+      NodePattern(Some(ident("  UNNAMED4")), Seq(), None, naked = false)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -375,7 +375,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(ident("a")), Seq(), None, naked = false)_,
       RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, dir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(LabelName("APA")_), None, naked = false)_
+      NodePattern(Some(ident("  UNNAMED4")), Seq(), None, naked = false)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -427,7 +427,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(ident("a")), Seq(), None, naked = false)_,
       RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, dir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(LabelName("APA")_), None, naked = false)_
+      NodePattern(Some(ident("  UNNAMED4")), Seq(), None, naked = false)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 

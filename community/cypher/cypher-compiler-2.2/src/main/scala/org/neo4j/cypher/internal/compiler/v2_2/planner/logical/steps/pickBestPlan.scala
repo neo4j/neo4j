@@ -25,6 +25,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 object pickBestPlan extends CandidateSelector {
-  def apply(candidateList: CandidateList)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): Option[QueryPlan] =
+  def apply(candidateList: CandidateList)(implicit context: LogicalPlanningContext): Option[QueryPlan] =
     candidateList.bestPlan(context.cost)
 }

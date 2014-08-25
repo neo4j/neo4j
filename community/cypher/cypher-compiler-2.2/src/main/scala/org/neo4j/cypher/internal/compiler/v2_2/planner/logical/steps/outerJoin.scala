@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanPr
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 object outerJoin extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
+  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
 
     val outerJoinPlans = for {
       optionalQG <- queryGraph.optionalMatches

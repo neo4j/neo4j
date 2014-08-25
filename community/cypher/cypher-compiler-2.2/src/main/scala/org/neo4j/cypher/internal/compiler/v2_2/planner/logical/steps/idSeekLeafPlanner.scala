@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanPr
 import org.neo4j.graphdb.Direction.{BOTH, INCOMING, OUTGOING}
 
 object idSeekLeafPlanner extends LeafPlanner {
-  def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]) = {
+  def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) = {
     val predicates: Seq[Expression] = queryGraph.selections.flatPredicates
 
     val idSeekPredicates: Seq[(In, Expression, EntityByIdRhs)] = predicates.collect {

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.{SingleQueryExpression, 
 
 
 abstract class IndexLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]) = {
+  def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
     implicit val semanticTable = context.semanticTable
     val predicates: Seq[Expression] = qg.selections.flatPredicates
     val labelPredicateMap: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
@@ -66,8 +66,7 @@ abstract class IndexLeafPlanner extends LeafPlanner {
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[IdName])
-                             (implicit context: LogicalPlanningContext,
-                              subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (Seq[Expression]) => QueryPlan
+                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => QueryPlan
 
 
 
@@ -81,8 +80,7 @@ object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[IdName])
-                             (implicit context: LogicalPlanningContext,
-                              subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (Seq[Expression]) => QueryPlan =
+                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
       planNodeIndexUniqueSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
 
@@ -98,8 +96,7 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[IdName])
-                             (implicit context: LogicalPlanningContext,
-                              subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (Seq[Expression]) => QueryPlan =
+                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
       planNodeIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
 

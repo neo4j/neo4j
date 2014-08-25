@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.parser
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
+import StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.{commands => legacyCommands, _}
 import org.parboiled.scala._
 import org.parboiled.scala.rules.Rule1

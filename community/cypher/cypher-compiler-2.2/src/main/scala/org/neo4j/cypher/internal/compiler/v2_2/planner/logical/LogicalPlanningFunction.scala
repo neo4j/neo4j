@@ -24,15 +24,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 trait LogicalPlanningFunction1[-A, +B] {
-  def apply(input: A)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): B
+  def apply(input: A)(implicit context: LogicalPlanningContext): B
 
-  def asFunctionInContext(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): A => B = apply
+  def asFunctionInContext(implicit context: LogicalPlanningContext): A => B = apply
 }
 
 trait LogicalPlanningFunction2[-A1, -A2, +B] {
-  def apply(input1: A1, input2: A2)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): B
+  def apply(input1: A1, input2: A2)(implicit context: LogicalPlanningContext): B
 
-  def asFunctionInContext(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (A1, A2) => B = apply
+  def asFunctionInContext(implicit context: LogicalPlanningContext): (A1, A2) => B = apply
 }
 
 trait CandidateGenerator[T] extends LogicalPlanningFunction2[T, QueryGraph, CandidateList]
@@ -40,14 +40,14 @@ trait CandidateGenerator[T] extends LogicalPlanningFunction2[T, QueryGraph, Cand
 object CandidateGenerator {
   implicit final class RichCandidateGenerator[T](self: CandidateGenerator[T]) {
     def orElse(other: CandidateGenerator[T]): CandidateGenerator[T] = new CandidateGenerator[T] {
-      def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
+      def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
         val ownCandidates = self(input1, input2)
         if (ownCandidates.isEmpty) other(input1, input2) else ownCandidates
       }
     }
 
     def +||+(other: CandidateGenerator[T]): CandidateGenerator[T] = new CandidateGenerator[T] {
-      override def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList =
+      override def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList =
         self(input1, input2) ++ other(input1, input2)
     }
   }

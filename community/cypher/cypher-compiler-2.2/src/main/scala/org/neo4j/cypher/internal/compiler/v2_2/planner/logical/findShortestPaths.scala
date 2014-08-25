@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import QueryPlanProducer._
 
 object findShortestPaths extends CandidateGenerator[PlanTable] {
-  def apply(input: PlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
+  def apply(input: PlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
 
     val patterns = qg.shortestPathPatterns
     val plans = patterns.flatMap { (shortestPath: ShortestPathPattern) =>
