@@ -31,10 +31,12 @@ sealed trait QueryHorizon {
 sealed abstract class QueryProjection extends QueryHorizon with internalDocBuilder.AsPrettyToString {
   def projections: Map[String, Expression]
   def shuffle: QueryShuffle
-  def keySet: Set[String]
   def updateShuffle(f: QueryShuffle => QueryShuffle) = withShuffle(f(shuffle))
   def withProjections(projections: Map[String, Expression]): QueryProjection
   def withShuffle(shuffle: QueryShuffle): QueryProjection
+
+  val keySet: Set[String] = projections.keySet
+  val exposedSymbols: Set[IdName] = keySet.map(IdName.apply)
 }
 
 object QueryProjection {
@@ -83,8 +85,6 @@ object QueryShuffle {
 
 final case class RegularQueryProjection(projections: Map[String, Expression] = Map.empty,
                                         shuffle: QueryShuffle = QueryShuffle.empty) extends QueryProjection {
-  def keySet: Set[String] = projections.keySet
-
   def ++(other: RegularQueryProjection) =
     RegularQueryProjection(
       projections = projections ++ other.projections,
@@ -96,8 +96,6 @@ final case class RegularQueryProjection(projections: Map[String, Expression] = M
 
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
-
-  def exposedSymbols: Set[IdName] = projections.keys.map(IdName.apply).toSet
 }
 
 final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression] = Map.empty,
@@ -109,20 +107,16 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
     "Everything can't be empty"
   )
 
-  def projections: Map[String, Expression] = groupingKeys
-
-  def keySet: Set[String] = groupingKeys.keySet ++ aggregationExpressions.keySet
+  def projections: Map[String, Expression] = groupingKeys ++ aggregationExpressions
 
   override def withProjections(groupingKeys: Map[String, Expression]): AggregatingQueryProjection =
-    copy(groupingKeys = groupingKeys)
+    this
 
   def withAggregatingExpressions(aggregationExpressions: Map[String, Expression]) =
     copy(aggregationExpressions = aggregationExpressions)
 
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
-
-  def exposedSymbols: Set[IdName] = (groupingKeys.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
 }
 
 case class UnwindProjection(identifier: IdName, exp: Expression) extends QueryHorizon {
