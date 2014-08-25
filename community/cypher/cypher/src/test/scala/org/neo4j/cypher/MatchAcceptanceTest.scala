@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.graphdb._
-import org.junit.Assert._
 import org.neo4j.cypher.internal.PathImpl
+import org.neo4j.graphdb._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
@@ -1049,5 +1048,18 @@ RETURN x0.name""")
     // should give us a number in the middle, not all or nothing
     count should not equal(0)
     count should not equal(100)
+  }
+
+  test("should return shortest paths when only one side is bound") {
+    createNodes("A", "B")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+
+    val result = execute("match a:A match p = shortestPath(a-[*]-b) return p").toList.head("p").asInstanceOf[Path]
+    graph.inTx {
+      result.startNode() should equal(node("A"))
+      result.endNode() should equal(node("B"))
+      result.length() should equal(1)
+      result.lastRelationship() should equal (r1)
+    }
   }
 }
