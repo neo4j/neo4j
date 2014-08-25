@@ -97,26 +97,29 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   }
 
   case class RealLogicalPlanningConfiguration() extends LogicalPlanningConfiguration {
+
     def cardinalityModel(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable) = {
       val model = new StatisticsBackedCardinalityModel(statistics, selectivity)(semanticTable)
       ({
         case (plan: LogicalPlan) => model(plan)
       })
     }
+
     def selectivityModel(statistics: GraphStatistics, semanticTable: SemanticTable) = {
       val model = new StatisticsBasedSelectivityModel(statistics)(semanticTable)
       ({
         case (expr: Expression) => model(expr)
       })
     }
+
     def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost] = {
       val model = new SimpleCostModel(cardinality)
       ({
         case (plan: LogicalPlan) => model(plan)
       })
     }
-    def graphStatistics: GraphStatistics =
-      HardcodedGraphStatistics
+
+    def graphStatistics: GraphStatistics = HardcodedGraphStatistics
     def indexes = Set.empty
     def uniqueIndexes = Set.empty
     def labelCardinality = Map.empty
@@ -173,7 +176,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       tokenResolver,
       None,
       strategy,
-      queryGraphSolver
+      queryGraphSolver,
+      shouldDedup = false
     )
 
     lazy val semanticTable: SemanticTable = {
@@ -249,10 +253,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def planFor(queryString: String): SemanticPlan = {
       val parsedStatement = parser.parse(queryString)
-      semanticChecker.check(queryString, parsedStatement)
-      val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement)
+      val table = semanticChecker.check(queryString, parsedStatement)
+      val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement, table)
       val semanticTable = semanticChecker.check(queryString, rewrittenStatement)
-      val plannerQuery: QueryPlan = Planner.rewriteStatement(rewrittenStatement) match {
+      val plannerQuery: QueryPlan = PlanRewriter(semanticTable, shouldDedup = false).rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
           val unionQuery = ast.asUnionQuery
@@ -267,11 +271,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def getLogicalPlanFor(queryString: String): (LogicalPlan, SemanticTable) = {
       val parsedStatement = parser.parse(queryString)
-      semanticChecker.check(queryString, parsedStatement)
-      val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement)
+      val table = semanticChecker.check(queryString, parsedStatement)
+      val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement, table)
       val semanticTable = semanticChecker.check(queryString, rewrittenStatement)
 
-      Planner.rewriteStatement(rewrittenStatement) match {
+      PlanRewriter(semanticTable, shouldDedup = false).rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
           val unionQuery = ast.asUnionQuery

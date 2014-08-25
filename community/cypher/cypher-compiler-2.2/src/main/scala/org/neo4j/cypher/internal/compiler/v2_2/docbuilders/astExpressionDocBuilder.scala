@@ -34,6 +34,9 @@ case object astExpressionDocBuilder extends CachingDocBuilder[Any] {
     case Property(map, PropertyKeyName(name)) => (inner) =>
       inner(map) :: "." :: name
 
+    case PropertyKeyName(name) => (inner) =>
+      name
+
     case LabelName(name) => (inner) =>
       ":" :: name
 

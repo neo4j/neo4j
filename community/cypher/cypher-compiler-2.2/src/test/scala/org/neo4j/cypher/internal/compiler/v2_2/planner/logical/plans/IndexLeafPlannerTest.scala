@@ -119,7 +119,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("plans index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_
+    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, PropertyKeyName("prop")_)_
 
     new given {
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))
@@ -143,7 +143,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("plans unique index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_
+    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, PropertyKeyName("prop")_)_
 
     new given {
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))

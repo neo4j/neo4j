@@ -20,22 +20,61 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
+import org.neo4j.cypher.internal.compiler.v2_2.{SemanticCheckMonitor, SemanticChecker}
 
-class ReattachAliasedExpressionsTest extends CypherFunSuite with RewriteTest {
+class ReattachAliasedExpressionsTest extends CypherFunSuite {
 
-  override def rewriterUnderTest: Rewriter = reattachAliasedExpressions
+  import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserFixture._
+
+  test("inlines aliases: MATCH n RETURN n AS x ORDER BY x.name") {
+    assertRewrite(
+      "MATCH n RETURN n AS x ORDER BY x.name",
+      "MATCH n RETURN n AS x ORDER BY n.name"
+    )
+  }
 
   test("MATCH a RETURN a.x AS newAlias ORDER BY newAlias") {
     assertRewrite(
       "MATCH a RETURN a.x AS newAlias ORDER BY newAlias",
-      "MATCH a RETURN a.x AS newAlias ORDER BY a.x")
+      "MATCH a RETURN a.x AS newAlias ORDER BY a.x"
+    )
   }
 
   test("MATCH a RETURN count(*) AS foo ORDER BY foo") {
     assertRewrite(
-      "MATCH a RETURN count(*) AS foo ORDER BY foo",
-      "MATCH a RETURN count(*) AS foo ORDER BY count(*)")
+      "MATCH a RETURN a.x AS newAlias ORDER BY newAlias",
+      "MATCH a RETURN a.x AS newAlias ORDER BY a.x"
+    )
+  }
+
+  test("MATCH x WITH x AS x RETURN count(x) AS foo ORDER BY foo") {
+    assertRewrite(
+      "MATCH x WITH x AS x RETURN count(x) AS foo ORDER BY foo",
+      "MATCH x WITH x AS x RETURN count(x) AS foo ORDER BY count(x)"
+    )
+  }
+
+  test("MATCH a WITH a.x AS newAlias ORDER BY newAlias RETURN *") {
+    assertRewrite(
+      "MATCH a WITH a.x AS newAlias ORDER BY newAlias RETURN *",
+      "MATCH a WITH a.x AS newAlias ORDER BY a.x RETURN *"
+    )
+  }
+
+  test("MATCH a WITH count(*) AS foo ORDER BY foo RETURN *") {
+    assertRewrite(
+      "MATCH a WITH count(*) AS foo ORDER BY foo RETURN *",
+      "MATCH a WITH count(*) AS foo ORDER BY count(*) RETURN *"
+    )
+  }
+
+  test("MATCH x WITH x AS x WITH count(x) AS foo ORDER BY foo RETURN *") {
+    assertRewrite(
+      "MATCH x WITH x AS x WITH count(x) AS foo ORDER BY foo RETURN *",
+      "MATCH x WITH x AS x WITH count(x) AS foo ORDER BY count(x) RETURN *"
+    )
   }
 
   test("MATCH a RETURN collect(a) AS foo ORDER BY length(foo)") {
@@ -44,32 +83,27 @@ class ReattachAliasedExpressionsTest extends CypherFunSuite with RewriteTest {
       "MATCH a RETURN collect(a) AS foo ORDER BY length(collect(a))")
   }
 
-  test("MATCH x WITH x AS x RETURN count(x) AS foo ORDER BY foo") {
-    assertRewrite(
-      "MATCH x WITH x AS x RETURN count(x) AS foo ORDER BY foo",
-      "MATCH x WITH x AS x RETURN count(x) AS foo ORDER BY count(x)")
-  }
-
-  test("MATCH a WITH a.x AS newAlias ORDER BY newAlias RETURN *") {
-    assertRewrite(
-      "MATCH a WITH a.x AS newAlias ORDER BY newAlias RETURN *",
-      "MATCH a WITH a.x AS newAlias ORDER BY a.x RETURN *")
-  }
-
-  test("MATCH a WITH count(*) AS foo ORDER BY foo RETURN *") {
-    assertRewrite(
-      "MATCH a WITH count(*) AS foo ORDER BY foo RETURN *",
-      "MATCH a WITH count(*) AS foo ORDER BY count(*) RETURN *")
-  }
-
-  test("MATCH x WITH x AS x WITH count(x) AS foo ORDER BY foo RETURN *") {
-    assertRewrite(
-      "MATCH x WITH x AS x WITH count(x) AS foo ORDER BY foo RETURN *",
-      "MATCH x WITH x AS x WITH count(x) AS foo ORDER BY count(x) RETURN *")
-  }
-
   test("MATCH x WITH x.prop as prop WHERE prop = 42 RETURN prop *") {
-    assertIsNotRewritten( // The legacy planner does not want this to be done for WHERE clauses... *sigh*
+    assertIsNotRewritten(// The legacy planner does not want this to be done for WHERE clauses... *sigh*
       "MATCH x WITH x.prop as prop WHERE prop = 42 RETURN prop")
+  }
+
+  val semantickChecker = new SemanticChecker(mock[SemanticCheckMonitor])
+
+  def assertRewrite(originalQuery: String, expectedQuery: String) {
+    val original = parser.parse(originalQuery)
+    val expected = parser.parse(expectedQuery)
+    val table = semantickChecker.check(originalQuery, original)
+
+    val result = reattachAliasedExpressions(table)(original).get
+    assert(result === expected, s"\n$originalQuery")
+  }
+
+  def assertIsNotRewritten(q: String) {
+    val original: Statement = parser.parse(q)
+    val table = semantickChecker.check(q, original)
+
+    val result = original.endoRewrite(reattachAliasedExpressions(table))
+    assert(result === original, s"\n$result")
   }
 }

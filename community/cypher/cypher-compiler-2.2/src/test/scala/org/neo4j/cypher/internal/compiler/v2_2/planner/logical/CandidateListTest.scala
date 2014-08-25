@@ -23,7 +23,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, UsingIndexHint}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{PropertyKeyName, LabelName, UsingIndexHint}
 
 class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -33,9 +33,9 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 
     }
   }
 
-  val hint1: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
-  val hint2: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, ident("age"))_
-  val hint3: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, ident("income"))_
+  val hint1: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, PropertyKeyName("name")_)_
+  val hint2: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, PropertyKeyName("age")_)_
+  val hint3: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, PropertyKeyName("income")_)_
 
   test("picks the right plan by cost, no matter the cardinality") {
     val a = fakeQueryPlanFor("a")

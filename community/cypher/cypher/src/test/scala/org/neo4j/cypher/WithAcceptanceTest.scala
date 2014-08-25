@@ -179,4 +179,24 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   test("nulls passing through WITH") {
     executeWithNewPlanner("optional match (a:Start) with a match a-->b return *") should be (empty)
   }
+
+  test("path expressions make it safely through WITH") {
+    executeWithNewPlanner("match p=a with p limit 1 return p") should be (empty)
+  }
+
+  ignore("complicated WITH/named path query still behaves as expected") { // Need dedup for this to work
+    val start = createLabeledNode("Start")
+    val aNode = createLabeledNode("A")
+    val bNode = createLabeledNode("B")
+    relate(start, aNode)
+    relate(start, bNode)
+    val result = executeWithNewPlanner(
+      """MATCH p = (:Start)-->(:A)
+        |WITH p as p1
+        |MATCH p = (:Start)-->(:B)
+        |WITH p1 as p1, p as p2
+        |RETURN nodes(p1)[-1] as A, nodes(p2)[-1] as B""".stripMargin).toList
+
+    result should be(List(Map("A" -> aNode, "B" -> bNode)))
+  }
 }

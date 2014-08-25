@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserFixture._
 
-class ExpandStarTest extends CypherFunSuite with RewriteTest {
-  val rewriterUnderTest: Rewriter = expandStar
+class ExpandStarTest extends CypherFunSuite {
+  import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserFixture._
 
   test("rewrites * in return") {
     assertRewrite(
@@ -84,6 +85,14 @@ class ExpandStarTest extends CypherFunSuite with RewriteTest {
       "match a,x,y with a match b return a, b")
   }
 
-  override protected def parseForRewriting(queryText: String) =
-    super.parseForRewriting(queryText).endoRewrite(aliasReturnItems)
+  val semantickChecker = new SemanticChecker(mock[SemanticCheckMonitor])
+
+  def assertRewrite(originalQuery: String, expectedQuery: String) {
+    val original = parser.parse(originalQuery)
+    val expected = parser.parse(expectedQuery)
+    val table = semantickChecker.check(originalQuery, original)
+
+    val result = expandStar(table)(original).getOrElse(fail("Rewriter did not accept query"))
+    assert(result === expected, s"\n$originalQuery")
+  }
 }
