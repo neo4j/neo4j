@@ -26,13 +26,13 @@ object hoistExpressionsInClosingClauses extends Rewriter {
   def apply(in: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(in)
 
   private val findingRewriter: Rewriter = Rewriter.lift {
-    case r@Return(distinct, returnItems @ ListedReturnItems(items), orderBy, _, _) if returnItems.containsAggregate || distinct =>
+    case r@Return(distinct, returnItems @ ListedReturnItems(items), orderBy, _, _) =>
       val innerRewriter = expressionRewriter(items)
       r.copy(
         orderBy = r.orderBy.endoRewrite(innerRewriter)
       )(r.position)
 
-    case w@With(distinct, returnItems @ ListedReturnItems(items), orderBy, _, _, where) if returnItems.containsAggregate || distinct =>
+    case w@With(distinct, returnItems @ ListedReturnItems(items), orderBy, _, _, where) =>
       val innerRewriter = expressionRewriter(items)
       w.copy(
         orderBy = w.orderBy.endoRewrite(innerRewriter),

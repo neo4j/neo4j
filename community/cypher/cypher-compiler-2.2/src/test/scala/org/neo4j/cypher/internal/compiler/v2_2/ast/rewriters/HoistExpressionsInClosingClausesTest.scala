@@ -25,8 +25,18 @@ import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
 class HoistExpressionsInClosingClausesTest extends CypherFunSuite with RewriteTest {
   override def rewriterUnderTest: Rewriter = hoistExpressionsInClosingClauses
 
-  test("does not hoist when no aggregation or distinct is found") {
-    assertIsNotRewritten("MATCH n RETURN n.prop AS x ORDER BY n.prop")
+  test("does hoist when no aggregation or distinct is found") {
+    assertRewrite(
+      "MATCH n RETURN n.prop AS x ORDER BY n.prop",
+      "MATCH n RETURN n.prop AS x ORDER BY x"
+    )
+  }
+
+  test("does hoist when no aggregation or distinct is found in WITH") {
+    assertRewrite(
+      "MATCH n WITH n.prop AS x ORDER BY n.prop RETURN x",
+      "MATCH n WITH n.prop AS x ORDER BY x RETURN x"
+    )
   }
 
   test("does hoist when aggregating and ORDER BY grouping key expression") {

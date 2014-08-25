@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{AliasedReturnItem, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_2.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
 
 class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
 
-  import QueryPlanProducer._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
 
   def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): LogicalPlan = unionQuery match {
     case UnionQuery(queries, distinct) =>
@@ -38,7 +36,7 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
       }
 
       if (distinct)
-        distinctiy(unionPlan)
+        distinctify(unionPlan)
       else
         unionPlan
 
@@ -52,7 +50,7 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
     verifyBestPlan(finalPlan, query)
   }
 
-  private def distinctiy(p: LogicalPlan): LogicalPlan = {
+  private def distinctify(p: LogicalPlan): LogicalPlan = {
     val returnAll = QueryProjection.forIds(p.availableSymbols) map {
       case AliasedReturnItem(e, Identifier(key)) => key -> e // This smells awful.
     }
@@ -80,11 +78,12 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
         val aggregationPlan = aggregation(selectedPlan, aggregatingProjection)
-        sortSkipAndLimit(aggregationPlan, query)
+        val projectionPlan = projection(aggregationPlan, aggregatingProjection.projections)
+        sortSkipAndLimit(projectionPlan, query)
 
       case queryProjection: RegularQueryProjection =>
-        val sortedAndLimited = sortSkipAndLimit(selectedPlan, query)
-        projection(sortedAndLimited, queryProjection.projections)
+        val projectionPlan = projection(selectedPlan, queryProjection.projections)
+        sortSkipAndLimit(projectionPlan, query)
 
       case UnwindProjection(identifier, expression) =>
         planUnwind(plan, identifier, expression)
