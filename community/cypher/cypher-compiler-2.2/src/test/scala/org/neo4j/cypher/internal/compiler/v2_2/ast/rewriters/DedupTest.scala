@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.{SemanticCheckMonitor, SemanticChecker}
 
@@ -99,12 +100,36 @@ class DedupTest extends CypherFunSuite {
     )
   }
 
+  test("should reject return *") {
+    val (original, table) = parseAndCheck("MATCH a RETURN *")
+    evaluating {
+      dedup(table)(original)
+    } should produce[InternalException]
+  }
+
+  test("should reject return a") {
+    val (original, table) = parseAndCheck("MATCH a RETURN a")
+    evaluating {
+      dedup(table)(original)
+    } should produce[InternalException]
+  }
+
+  test("should accept return a as b") {
+    val (original, table) = parseAndCheck("MATCH a RETURN a AS b")
+    dedup(table)(original)
+  }
+
   val semantickChecker = new SemanticChecker(mock[SemanticCheckMonitor])
 
+  def parseAndCheck(query: String) = {
+    val original = parser.parse(query)
+    val table = semantickChecker.check(query, original)
+    (original, table)
+  }
+
   def assertRewrite(originalQuery: String, expectedQuery: String) {
-    val original = parser.parse(originalQuery)
+    val (original, table) = parseAndCheck(originalQuery)
     val expected = parser.parse(expectedQuery)
-    val table = semantickChecker.check(originalQuery, original)
 
     val result = dedup(table)(original).getOrElse(fail("Rewriter did not accept query"))
     assert(result === expected, s"\n$originalQuery")

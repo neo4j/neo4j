@@ -35,7 +35,7 @@ case class expandStar(table: SemanticTable) extends Rewriter {
         case retAll: ReturnAll if scope.nonEmpty =>
           val namesInScope = scope.keySet
           val identifiers = namesInScope.filter(UnNamedNameGenerator.isNamed).toSeq.sorted.map(scope)
-          val items = identifiers.map(ident => UnaliasedReturnItem(ident, ident.name)(ident.position))
+          val items = identifiers.map(ident => AliasedReturnItem(ident, ident)(ident.position))
           clause.withReturnItems(ListedReturnItems(items)(retAll.position))
         case _ =>
           clause

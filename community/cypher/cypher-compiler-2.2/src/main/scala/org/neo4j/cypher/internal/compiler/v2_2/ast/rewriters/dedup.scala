@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 import org.neo4j.cypher.internal.compiler.v2_2._
@@ -28,7 +29,20 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 case class dedup(table: SemanticTable) extends Rewriter {
 
   def apply(input: AnyRef) = {
-    val  result = rewriteTopDown.apply(input)
+
+    val problemCollector = Seq.newBuilder[String]
+    input.foreach {
+      case item: UnaliasedReturnItem =>
+        problemCollector += s"Encountered forbidden unaliased return item $item"
+
+      case all: ReturnAll =>
+        problemCollector += s"Encountered forbidden return all $all"
+    }
+    val problems = problemCollector.result()
+    if (problems.nonEmpty)
+      throw new InternalException(s"dedup preconditions failed: ${problems.mkString(", ")}")
+
+    val result = rewriteTopDown.apply(input)
     result
   }
 

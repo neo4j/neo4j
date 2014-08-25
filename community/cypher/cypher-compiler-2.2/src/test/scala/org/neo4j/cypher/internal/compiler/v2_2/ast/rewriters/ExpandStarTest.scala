@@ -30,59 +30,59 @@ class ExpandStarTest extends CypherFunSuite {
   test("rewrites * in return") {
     assertRewrite(
       "match n return *",
-      "match n return n")
+      "match n return n as n")
 
     assertRewrite(
       "match n,c return *",
-      "match n,c return c,n")
+      "match n,c return c as c, n as n")
 
     assertRewrite(
       "match n-->c return *",
-      "match n-->c return c,n")
+      "match n-->c return c as c, n as n")
 
     assertRewrite(
       "match n-[r]->c return *",
-      "match n-[r]->c return c,n,r")
+      "match n-[r]->c return c as c, n as n, r as r")
 
     assertRewrite(
       "create (n) return *",
-      "create (n) return n")
+      "create (n) return n as n")
 
     assertRewrite(
       "match p = shortestPath((a)-[r*]->(x)) return *",
-      "match p = shortestPath((a)-[r*]->(x)) return a,p,r,x")
+      "match p = shortestPath((a)-[r*]->(x)) return a as a, p as p, r as r, x as x")
   }
 
   test("rewrites * in with") {
     assertRewrite(
       "match n with * return n",
-      "match n with n return n")
+      "match n with n as n return n")
 
     assertRewrite(
       "match n,c with * return n",
-      "match n,c with c,n return n")
+      "match n,c with c as c, n as n return n")
 
     assertRewrite(
       "match n-->c with * return n",
-      "match n-->c with c,n return n")
+      "match n-->c with c as c, n as n return n")
 
     assertRewrite(
       "match n-[r]->c with * return n",
-      "match n-[r]->c with c,n,r return n")
+      "match n-[r]->c with c as c, n as n, r as r return n")
 
     assertRewrite(
       "create (n) with * return n",
-      "create (n) with n return n")
+      "create (n) with n as n return n")
 
     assertRewrite(
       "match p = shortestPath((a)-[r*]->(x)) with * return p",
-      "match p = shortestPath((a)-[r*]->(x)) with a,p,r,x return p")
+      "match p = shortestPath((a)-[r*]->(x)) with a as a, p as p, r as r, x as x return p")
   }
 
   test("symbol shadowing should be taken into account") {
     assertRewrite(
       "match a,x,y with a match b return *",
-      "match a,x,y with a match b return a, b")
+      "match a,x,y with a match b return a as a, b as b")
   }
 
   val semantickChecker = new SemanticChecker(mock[SemanticCheckMonitor])

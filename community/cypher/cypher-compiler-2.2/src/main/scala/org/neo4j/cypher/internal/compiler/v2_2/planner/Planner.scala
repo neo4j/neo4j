@@ -50,8 +50,10 @@ case class Planner(monitors: Monitors,
   }
 
   private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo = {
+    println(statement)
     PlanRewriter(semanticTable).rewriteStatement(statement) match {
       case ast: Query =>
+        println(ast)
         monitor.startedPlanning(query)
         val (logicalPlan, pipeBuildContext) = produceQueryPlan(ast, semanticTable)(planContext)
         monitor.foundPlan(query, logicalPlan)
