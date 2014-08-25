@@ -42,7 +42,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class DummyIndexExtensionFactory extends
         KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies> implements IndexImplementation, Lifecycle
 {
-    static final String IDENTIFIER = "test-dummy-neo-index";
+    public static final String IDENTIFIER = "test-dummy-neo-index";
+    public static final String KEY_FAIL_ON_MUTATE = "fail_on_mutate";
     private InternalAbstractGraphDatabase db;
     private IndexProviders indexProviders;
 
@@ -97,13 +98,18 @@ public class DummyIndexExtensionFactory extends
     @Override
     public Index<Node> nodeIndex( String indexName, Map<String, String> config )
     {
-        return new DummyNodeIndex( indexName, db );
+        return new DummyNodeIndex( indexName, db, failing( config ) );
+    }
+
+    private boolean failing( Map<String, String> config )
+    {
+        return Boolean.parseBoolean( config.get( KEY_FAIL_ON_MUTATE ) );
     }
 
     @Override
     public RelationshipIndex relationshipIndex( String indexName, Map<String, String> config )
     {
-        return new DummyRelationshipIndex( indexName, db );
+        return new DummyRelationshipIndex( indexName, db, failing( config ) );
     }
 
     @Override
@@ -122,11 +128,13 @@ public class DummyIndexExtensionFactory extends
     {
         private final String name;
         private final InternalAbstractGraphDatabase db;
+        private final boolean failing;
 
-        public DummyIndex( String name, InternalAbstractGraphDatabase db )
+        public DummyIndex( String name, InternalAbstractGraphDatabase db, boolean failing )
         {
             this.name = name;
             this.db = db;
+            this.failing = failing;
         }
 
         @Override
@@ -168,31 +176,31 @@ public class DummyIndexExtensionFactory extends
         @Override
         public void add( T entity, String key, Object value )
         {
-            throw new UnsupportedOperationException();
+            mutate();
         }
 
         @Override
         public void remove( T entity, String key, Object value )
         {
-            throw new UnsupportedOperationException();
+            mutate();
         }
 
         @Override
         public void remove( T entity, String key )
         {
-            throw new UnsupportedOperationException();
+            mutate();
         }
 
         @Override
         public void remove( T entity )
         {
-            throw new UnsupportedOperationException();
+            mutate();
         }
 
         @Override
         public void delete()
         {
-            throw new UnsupportedOperationException();
+            mutate();
         }
 
         @Override
@@ -200,13 +208,21 @@ public class DummyIndexExtensionFactory extends
         {
             throw new UnsupportedOperationException();
         }
+
+        private void mutate()
+        {
+            if ( failing )
+            {
+                throw new UnsupportedOperationException();
+            }
+        }
     }
 
     private class DummyNodeIndex extends DummyIndex<Node>
     {
-        public DummyNodeIndex( String name, InternalAbstractGraphDatabase db )
+        public DummyNodeIndex( String name, InternalAbstractGraphDatabase db, boolean failing )
         {
-            super( name, db );
+            super( name, db, failing );
         }
 
         @Override
@@ -218,9 +234,9 @@ public class DummyIndexExtensionFactory extends
 
     private class DummyRelationshipIndex extends DummyIndex<Relationship> implements RelationshipIndex
     {
-        public DummyRelationshipIndex( String name, InternalAbstractGraphDatabase db )
+        public DummyRelationshipIndex( String name, InternalAbstractGraphDatabase db, boolean failing )
         {
-            super( name, db );
+            super( name, db, failing );
         }
 
         @Override

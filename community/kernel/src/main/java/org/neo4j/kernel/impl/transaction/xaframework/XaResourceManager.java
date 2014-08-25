@@ -508,6 +508,16 @@ public class XaResourceManager
         if ( onePhase && (!isReadOnly && !xaTransaction.isRecovered()) )
         {
             prepareKernelTx( xaTransaction );
+            
+            /* Hi MP Here. Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
+             * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
+             * previously made changes in that same transaction, and so at some point a transaction may have
+             * changes and at another point, after more changes seemingly, the transaction may not have any changes.
+             * However, to track that "undoing" of the changes is a bit tedious, intrusive and hard to maintain
+             * and get right.... So to really make sure the transaction has changes we re-check after prepare,
+             * where transaction state changes has been reset and converted into actual record changes.
+             */
+            isReadOnly = xaTransaction.isReadOnly();
         }
 
         synchronized ( this )
