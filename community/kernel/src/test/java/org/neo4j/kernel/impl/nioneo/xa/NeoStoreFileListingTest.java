@@ -86,7 +86,6 @@ public class NeoStoreFileListingTest
             "neostore.relationshiptypestore.db.names.id",
             "neostore.schemastore.db",
             "neostore.schemastore.db.id",
-            PhysicalLogFile.DEFAULT_NAME + ".1",
             PhysicalLogFile.DEFAULT_NAME + ".active",
             PhysicalLogFile.DEFAULT_NAME + ".v0",
             PhysicalLogFile.DEFAULT_NAME + ".v1",

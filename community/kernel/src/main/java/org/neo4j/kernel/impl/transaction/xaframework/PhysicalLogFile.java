@@ -308,4 +308,10 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
             highTransactionId = previousLogLastTxId;
         }
     }
+
+    @Override
+    public File currentLogFile()
+    {
+        return logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() );
+    }
 }

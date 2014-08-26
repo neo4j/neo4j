@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -28,6 +29,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface LogFile extends Lifecycle
 {
+
     public interface LogFileVisitor
     {
         boolean visit( LogPosition position, ReadableLogChannel channel ) throws IOException;
@@ -50,4 +52,6 @@ public interface LogFile extends Lifecycle
     void accept( LogHeaderVisitor visitor ) throws IOException;
 
     void checkRotation() throws IOException;
+
+    File currentLogFile();
 }

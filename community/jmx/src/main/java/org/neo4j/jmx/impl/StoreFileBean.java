@@ -27,7 +27,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.jmx.StoreFile;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 
 @Service.Implementation(ManagementBeanProvider.class)
 public final class StoreFileBean extends ManagementBeanProvider
@@ -50,9 +50,8 @@ public final class StoreFileBean extends ManagementBeanProvider
         private static final String PROPERTY_STORE = "neostore.propertystore.db";
         private static final String ARRAY_STORE = "neostore.propertystore.db.arrays";
         private static final String STRING_STORE = "neostore.propertystore.db.strings";
-        private static final String LOGICAL_LOG1 = PhysicalLogFile.DEFAULT_NAME + ".1";
-        private static final String LOGICAL_LOG2 = PhysicalLogFile.DEFAULT_NAME + ".2";
         private File storePath;
+        private LogFile logFile;
 
         StoreFileImpl( ManagementData management ) throws NotCompliantMBeanException
         {
@@ -64,22 +63,27 @@ public final class StoreFileBean extends ManagementBeanProvider
                 @Override
                 public void registered( NeoStoreXaDataSource ds )
                 {
-                    File path;
-                    try
-                    {
-                        path = new File( ds.getStoreDir() ).getCanonicalFile().getAbsoluteFile();
-                    }
-                    catch ( IOException e )
-                    {
-                        path = new File( ds.getStoreDir() ).getAbsoluteFile();
-                    }
-                    storePath = path;
+                    logFile = ds.getDependencyResolver().resolveDependency( LogFile.class );
+                    storePath = resolvePath( ds );
                 }
 
                 @Override
                 public void unregistered( NeoStoreXaDataSource ds )
                 {
+                    logFile = null;
                     storePath = null;
+                }
+
+                private File resolvePath( NeoStoreXaDataSource ds )
+                {
+                    try
+                    {
+                        return new File( ds.getStoreDir() ).getCanonicalFile().getAbsoluteFile();
+                    }
+                    catch ( IOException e )
+                    {
+                        return new File( ds.getStoreDir() ).getAbsoluteFile();
+                    }
                 }
             } );
         }
@@ -93,17 +97,7 @@ public final class StoreFileBean extends ManagementBeanProvider
         @Override
         public long getLogicalLogSize()
         {
-            if ( storePath == null )
-            {
-                return 0;
-            }
-
-            File logicalLog = new File( storePath, LOGICAL_LOG1 );
-            if ( !logicalLog.isFile() )
-            {
-                logicalLog = new File( storePath, LOGICAL_LOG2 );
-            }
-            return sizeOf( logicalLog );
+            return logFile == null ? 0 : sizeOf( logFile.currentLogFile() );
         }
 
         private static long sizeOf( File file )
@@ -115,7 +109,12 @@ public final class StoreFileBean extends ManagementBeanProvider
             else if ( file.isDirectory() )
             {
                 long size = 0;
-                for ( File child : file.listFiles() )
+                File[] files = file.listFiles();
+                if ( files == null )
+                {
+                    return 0;
+                }
+                for ( File child : files )
                 {
                     size += sizeOf( child );
                 }
