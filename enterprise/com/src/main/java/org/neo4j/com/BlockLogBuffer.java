@@ -72,20 +72,31 @@ public class BlockLogBuffer implements Closeable
      * are moved over at the beginning of the cleared buffer.
      *
      * @return the buffer
+     * @throws IOException
      */
-    private BlockLogBuffer checkFlush()
+    private BlockLogBuffer checkFlush() throws IOException
     {
         if ( byteBuffer.position() > MAX_SIZE )
         {
-            target.writeBytes( byteArray, 0, MAX_SIZE );
-            monitor.bytesWritten( MAX_SIZE );
-            int pos = byteBuffer.position();
-            clearInternalBuffer();
-            byteBuffer.put( byteArray, MAX_SIZE, pos - MAX_SIZE );
+            flush( MAX_SIZE );
         }
         return this;
     }
-
+    
+    private void flush( int howManyBytesToWrite ) throws IOException
+    {
+        target.writeBytes( byteArray, 0, howManyBytesToWrite );
+        monitor.bytesWritten( howManyBytesToWrite );
+        int pos = byteBuffer.position();
+        clearInternalBuffer();
+        byteBuffer.put( byteArray, howManyBytesToWrite, pos - howManyBytesToWrite );
+    }
+    
+//    @Override
+//    public void emptyBufferIntoChannelAndClearIt() throws IOException
+//    {
+//        flush( byteBuffer.position() );
+//    }
 
     public BlockLogBuffer put( byte b ) throws IOException
     {

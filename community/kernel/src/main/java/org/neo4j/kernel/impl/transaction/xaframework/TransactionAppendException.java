@@ -21,22 +21,28 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-
-public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppender
+/**
+ * An {@link IOException} with some added information to know very precisely where the failure happened
+ * so that the caller can react accordingly.
+ */
+public class TransactionAppendException extends IOException
 {
-    public PhysicalTransactionAppender( LogFile logFile, TxIdGenerator txIdGenerator,
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore )
-    {
-        super( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore );
-    }
+    private final long newTransactionIdGenerated;
 
-    @Override
-    protected void force( long ticket ) throws IOException
+    public TransactionAppendException( Exception cause, long newTransactionIdGenerated )
     {
-        synchronized ( channel )
-        {
-            channel.force();
-        }
+        super( cause );
+        this.newTransactionIdGenerated = newTransactionIdGenerated;
+    }
+    
+    public boolean hasNewTransactionIdGenerated()
+    {
+        return newTransactionIdGenerated != -1;
+    }
+    
+    public long newTransactionIdGenerated()
+    {
+        assert hasNewTransactionIdGenerated();
+        return newTransactionIdGenerated;
     }
 }

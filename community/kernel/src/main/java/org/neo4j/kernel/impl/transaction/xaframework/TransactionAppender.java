@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 /**
  * Writing groups of commands, in a way that is guaranteed to be recoverable, i.e. consistently readable,
@@ -29,12 +28,16 @@ import java.util.concurrent.Future;
 public interface TransactionAppender
 {
     /**
-     * @param transaction transaction to write.
-     * @return a {@link Future} where when it is {@link Future#isDone() done} the commands can be read
-     * back consistently. The completed future will hand back the transaction id of.
-     * @throws IOException
+     * @param transaction transaction representation to append.
+     * @return transaction id the appended transaction got.
+     * @throws TransactionAppendException if there was a problem appending the transaction.
+     * If the append got so far as to
+     * {@link TransactionAppendException#hasNewTransactionIdGenerated() generate a new transaction id} the
+     * {@link TransactionAppendException exception} is able to
+     * {@link TransactionAppendException#newTransactionIdGenerated() return that id} so that the caller
+     * can notify services that the particular transaction has failed, and is closed in general.
      */
-    Future<Long> append( TransactionRepresentation transaction ) throws IOException;
+    long append( TransactionRepresentation transaction ) throws TransactionAppendException;
 
     /**
      * TODO the fact that this method returns a boolean and may "silently" ignore transactions
@@ -60,5 +63,10 @@ public interface TransactionAppender
      * @throws IOException if there was a problem writing the transaction, or if the transaction id
      * of the supplied transaction was {@code <=} last committed transaction id.
      */
-    boolean append( CommittedTransactionRepresentation transaction ) throws IOException;
+    boolean append( CommittedTransactionRepresentation transaction ) throws TransactionAppendException;
+    
+    /**
+     * Closes resources held by this appender.
+     */
+    void close();
 }

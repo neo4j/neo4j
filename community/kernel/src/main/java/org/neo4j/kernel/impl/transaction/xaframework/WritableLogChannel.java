@@ -26,6 +26,15 @@ public interface WritableLogChannel extends Closeable
 {
     byte getLogFormatVersion();
 
+    /**
+     * Writes any changes not present in the channel yet and clears the buffer.
+     */
+    void emptyBufferIntoChannelAndClearIt() throws IOException;
+    
+    /**
+     * Forces the data that has already been written to the underlying channel, down to disk.
+     * Must not write any data to the channel.
+     */
     void force() throws IOException;
 
     WritableLogChannel put( byte value ) throws IOException;

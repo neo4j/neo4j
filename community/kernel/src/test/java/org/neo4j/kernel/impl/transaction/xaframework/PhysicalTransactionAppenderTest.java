@@ -35,9 +35,16 @@ import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEn
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.Exceptions.contains;
+import static org.neo4j.helpers.Exceptions.exceptionWithMessage;
 
 public class PhysicalTransactionAppenderTest
 {
@@ -161,10 +168,44 @@ public class PhysicalTransactionAppenderTest
         }
         catch ( IOException e )
         {
-            assertEquals( "Tried to apply transaction with txId=" + (latestCommittedTxWhenStarted + 2) +
-                    " but last committed txId=" + latestCommittedTxWhenStarted, e.getMessage() );
+            assertTrue( contains( e, exceptionWithMessage(
+                    "Tried to apply transaction with txId=" + (latestCommittedTxWhenStarted + 2) +
+                    " but last committed txId=" + latestCommittedTxWhenStarted ) ) );
         }
-
+    }
+    
+    @Test
+    public void shouldExposeGeneratedTransactionIdToThrownExceptionInFailedLogAppend() throws Exception
+    {
+        // GIVEN
+        long txId = 3;
+        String failureMessage = "Forces a failure";
+        WritableLogChannel channel = spy( new InMemoryLogChannel() );
+        when( channel.putInt( anyInt() ) ).thenThrow( new IOException( failureMessage ) );
+        LogFile logFile = mock( LogFile.class );
+        when( logFile.getWriter() ).thenReturn( channel );
+        TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
+        when( txIdGenerator.generate( any( TransactionRepresentation.class ) ) ).thenReturn( txId );
+        TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 10 );
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        TransactionAppender appender = new PhysicalTransactionAppender( logFile,
+                txIdGenerator, metadataCache, transactionIdStore );
+        
+        // WHEN
+        TransactionRepresentation transaction = mock( TransactionRepresentation.class );
+        when( transaction.additionalHeader() ).thenReturn( new byte[0] );
+        try
+        {
+            appender.append( transaction );
+            fail( "Expected append to fail. Something is wrong with the test itself" );
+        }
+        catch ( TransactionAppendException e )
+        {
+            // THEN
+            assertTrue( e.hasNewTransactionIdGenerated() );
+            assertEquals( txId, e.newTransactionIdGenerated() );
+            assertTrue( contains( e, failureMessage, IOException.class ) );
+        }
     }
 
     private Collection<Command> singleCreateNodeCommand()

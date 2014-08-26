@@ -31,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
@@ -1331,9 +1330,7 @@ public class NeoStoreTransactionTest
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws InterruptedException, ExecutionException, IOException
     {
     	TransactionAppender appenderMock = mock( TransactionAppender.class );
-        Future<Long> futureMock = mock( Future.class );
-        when( futureMock.get() ).thenReturn( nextTxId++ );
-        when( appenderMock.append( Matchers.<TransactionRepresentation>any()) ).thenReturn( futureMock );
+        when( appenderMock.append( Matchers.<TransactionRepresentation>any()) ).thenReturn( nextTxId++ );
         LogicalTransactionStore txStoreMock = mock ( LogicalTransactionStore.class );
         when( txStoreMock.getAppender() ).thenReturn(appenderMock);
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
