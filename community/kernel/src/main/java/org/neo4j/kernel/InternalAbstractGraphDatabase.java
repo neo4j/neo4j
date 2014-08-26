@@ -61,7 +61,9 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.CountingPageCacheMonitor;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -279,6 +281,7 @@ public abstract class InternalAbstractGraphDatabase
     protected UpdateableSchemaState updateableSchemaState;
     protected Monitors monitors;
     protected TransactionCounters transactionMonitor = new TransactionCounters();
+    protected CountingPageCacheMonitor pageCacheMonitor = new CountingPageCacheMonitor();
     protected final LifeSupport life = new LifeSupport();
     private final Map<String, CacheProvider> cacheProviders;
     protected AvailabilityGuard availabilityGuard;
@@ -669,7 +672,7 @@ public abstract class InternalAbstractGraphDatabase
 
         SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
         LifecycledPageCache lifecycledPageCache = new LifecycledPageCache(
-                factory, swapperFactory, jobScheduler, config, monitors );
+                factory, swapperFactory, jobScheduler, config, pageCacheMonitor );
 
         logging.getMessagesLog( InternalAbstractGraphDatabase.class ).info(
                 "Using PageCache implementation " + factory.getImplementationName() +
@@ -1357,6 +1360,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( TransactionMonitor.class.isAssignableFrom( type ) )
             {
                 return type.cast( transactionMonitor );
+            }
+            else if ( PageCacheMonitor.class.isAssignableFrom( type ) )
+            {
+                return type.cast( pageCacheMonitor );
             }
             else if ( Caches.class.isAssignableFrom( type ) )
             {

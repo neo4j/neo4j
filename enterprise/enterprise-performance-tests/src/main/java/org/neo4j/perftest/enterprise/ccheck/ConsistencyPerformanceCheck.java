@@ -28,6 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -131,7 +132,7 @@ public class ConsistencyPerformanceCheck
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
         Monitors monitors = new Monitors();
         pageCache = new LifecycledPageCache(
-                pageCacheFactory, swapperFactory, jobScheduler, tuningConfiguration, monitors );
+                pageCacheFactory, swapperFactory, jobScheduler, tuningConfiguration, monitors.newMonitor( PageCacheMonitor.class ) );
         jobScheduler.init();
         pageCache.start();
         DirectStoreAccess directStoreAccess = createScannableStores( configuration.get( DataGenerator.store_dir ),
