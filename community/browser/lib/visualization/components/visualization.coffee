@@ -2,8 +2,23 @@ neo.viz = (el, measureSize, graph, layout, style) ->
   viz =
     style: style
 
-  el = d3.select(el)
+  root = d3.select(el)
+  base_group = root.append('g').attr("transform", "translate(0,0)")
+  rect = base_group.append("rect")
+    .style("fill", "none")
+    .style("pointer-events", "all")
+    #Make the rect cover the whole surface
+    .attr('x', '-2500')
+    .attr('y', '-2500')
+    .attr('width', '5000')
+    .attr('height', '5000')
+
+  container = base_group.append('g')
   geometry = new NeoD3Geometry(style)
+
+  # This flags that a panning is ongoing and won't trigger
+  # 'canvasClick' event when panning ends.
+  panning = no
 
   # Arbitrary dimension used to keep force layout aligned with
   # the centre of the svg view-port.
@@ -12,64 +27,73 @@ neo.viz = (el, measureSize, graph, layout, style) ->
   # To be overridden
   viz.trigger = (event, args...) ->
 
-  _trigger = (args...) ->
-    d3.event?.stopPropagation()
-    viz.trigger.apply(null, args)
+  onNodeClick = (node) => viz.trigger('nodeClicked', node)
 
-  onCanvasClick = (el) ->
-    _trigger('canvasClicked', el)
+  onNodeDblClick = (node) => viz.trigger('nodeDblClicked', node)
 
-  onNodeClick = (node) -> _trigger('nodeClicked', node)
+  onRelationshipClick = (relationship) =>
+    d3.event.stopPropagation()
+    viz.trigger('relationshipClicked', relationship)
 
-  onNodeDblClick = (node) -> _trigger('nodeDblClicked', node)
+  onNodeMouseOver = (node) -> viz.trigger('nodeMouseOver', node)
+  onNodeMouseOut = (node) -> viz.trigger('nodeMouseOut', node)
 
-  onRelationshipClick = (relationship) ->
-    _trigger('relationshipClicked', relationship)
+  onRelMouseOver = (rel) -> viz.trigger('relMouseOver', rel)
+  onRelMouseOut = (rel) -> viz.trigger('relMouseOut', rel)
 
-  onNodeMouseOver = (node) -> _trigger('nodeMouseOver', node)
-  onNodeMouseOut = (node) -> _trigger('nodeMouseOut', node)
+  panned = ->
+    panning = yes
+    container.attr("transform", "translate(" + d3.event.translate + ")scale(1)")
 
-  onRelMouseOver = (rel) -> _trigger('relMouseOver', rel)
-  onRelMouseOut = (rel) -> _trigger('relMouseOut', rel)
+  zoomBehavior = d3.behavior.zoom().on("zoom", panned)
+
+  # Background click event
+  # Check if panning is ongoing
+  rect.on('click', ->
+    if not panning then viz.trigger('canvasClicked', el)
+  )
+
+  base_group.call(zoomBehavior)
+      .on("dblclick.zoom", null)
+      #Single click is not panning
+      .on("click.zoom", -> panning = no)
 
   render = ->
     geometry.onTick(graph)
 
-    nodeGroups = el.selectAll('g.node')
+    nodeGroups = container.selectAll('g.node')
     .attr('transform', (d) ->
           "translate(#{ d.x },#{ d.y })")
 
     for renderer in neo.renderers.node
       nodeGroups.call(renderer.onTick, viz)
 
-    relationshipGroups = el.selectAll('g.relationship')
+    relationshipGroups = container.selectAll('g.relationship')
     .attr('transform', (d) ->
           "translate(#{ d.source.x } #{ d.source.y }) rotate(#{ d.naturalAngle + 180 })")
 
     for renderer in neo.renderers.relationship
       relationshipGroups.call(renderer.onTick, viz)
 
+
   force = layout.init(render)
 
   viz.update = ->
     return unless graph
 
-    layers = el.selectAll("g.layer").data(["relationships", "nodes"])
-
-    layers
-    .enter().append("g")
+    layers = container.selectAll("g.layer").data(["relationships", "nodes"])
+    layers.enter().append("g")
     .attr("class", (d) -> "layer " + d )
-    .on('click', onCanvasClick) # Background click event
 
     nodes         = graph.nodes()
     relationships = graph.relationships()
 
-    relationshipGroups = el.select("g.layer.relationships")
+    relationshipGroups = container.select("g.layer.relationships")
     .selectAll("g.relationship").data(relationships, (d) -> d.id)
 
     relationshipGroups.enter().append("g")
     .attr("class", "relationship")
-    .on("click", onRelationshipClick)
+    .on("mousedown", onRelationshipClick)
     .on('mouseover', onRelMouseOver)
     .on('mouseout', onRelMouseOut)
 
@@ -80,7 +104,7 @@ neo.viz = (el, measureSize, graph, layout, style) ->
 
     relationshipGroups.exit().remove();
 
-    nodeGroups = el.select("g.layer.nodes")
+    nodeGroups = container.select("g.layer.nodes")
     .selectAll("g.node").data(nodes, (d) -> d.id)
 
     nodeGroups.enter().append("g")
@@ -89,19 +113,20 @@ neo.viz = (el, measureSize, graph, layout, style) ->
     .call(clickHandler)
     .on('mouseover', onNodeMouseOver)
     .on('mouseout', onNodeMouseOut)
-
+  
     for renderer in neo.renderers.node
       nodeGroups.call(renderer.onGraphChange, viz);
 
     nodeGroups.exit().remove();
 
     force.update(graph, [layoutDimension, layoutDimension])
+
     viz.resize()
     viz.trigger('updated')
 
   viz.resize = ->
     size = measureSize()
-    el.attr('viewBox', [
+    root.attr('viewBox', [
       0, (layoutDimension - size.height) / 2, layoutDimension, size.height
     ].join(' '))
 
