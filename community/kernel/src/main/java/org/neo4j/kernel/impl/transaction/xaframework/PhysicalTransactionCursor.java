@@ -36,7 +36,7 @@ public class PhysicalTransactionCursor implements IOCursor<CommittedTransactionR
     private final LogEntryReader<ReadableLogChannel> entryReader;
     private CommittedTransactionRepresentation current;
 
-    public PhysicalTransactionCursor( ReadableLogChannel channel, LogEntryReader<ReadableLogChannel> entryReader)
+    public PhysicalTransactionCursor( ReadableLogChannel channel, LogEntryReader<ReadableLogChannel> entryReader )
     {
         this.channel = channel;
         this.entryReader = entryReader;

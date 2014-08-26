@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 /**
  * Reads log files from legacy (1.9) stores, and produces current (2.0) command objects from them.
  */
-public class LegacyCommandReader
+public class Legacy19CommandReader
 {
     static PropertyBlock readPropertyBlock( ReadableByteChannel byteChannel,
                                             ByteBuffer buffer ) throws IOException

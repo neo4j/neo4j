@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +54,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -134,14 +136,68 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
 
         progressMonitor.started();
 
-        LegacyStore legacyStore;
-        if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
+        if ( versionToUpgradeFrom.equals( Legacy21Store.LEGACY_VERSION ) )
         {
-            legacyStore = new Legacy19Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+            migrateByCopyingFile( fileSystem, storeDir, migrationDir );
         }
         else
         {
-            legacyStore = new Legacy20Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+            migrateWithBatchImporter( fileSystem, storeDir, migrationDir, dependencyResolver );
+        }
+        progressMonitor.finished();
+    }
+
+    private void migrateByCopyingFile( FileSystemAbstraction fileSystem, File storeDir, final File migrationDir )
+            throws IOException
+    {
+        progressMonitor.percentComplete( 0 );
+
+        // copy the files and avoid copying the migration directory in the case it is inside the store directory
+        final FileFilter allButMigrationDir = new FileFilter()
+        {
+            @Override
+            public boolean accept( File pathname )
+            {
+                return !migrationDir.equals( pathname );
+            }
+        };
+
+        for ( File file : storeDir.listFiles( allButMigrationDir ) )
+        {
+            final File to = new File( migrationDir, file.getName() );
+            if ( file.isDirectory() )
+            {
+                fileSystem.copyRecursively( file, to );
+            }
+            else
+            {
+                fileSystem.copyFile( file, to );
+            }
+        }
+
+        progressMonitor.percentComplete( 50 );
+
+        // set the new store version in the store files
+        StoreFile.ensureStoreVersion( fileSystem, migrationDir, StoreFile.currentStoreFiles() );
+
+        progressMonitor.percentComplete( 100 );
+    }
+
+    private void migrateWithBatchImporter( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
+                                           DependencyResolver dependencyResolver )
+            throws IOException
+    {
+        LegacyStore legacyStore;
+        switch ( versionToUpgradeFrom )
+        {
+            case Legacy19Store.LEGACY_VERSION:
+                legacyStore = new Legacy19Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+                break;
+            case Legacy20Store.LEGACY_VERSION:
+                legacyStore = new Legacy20Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+                break;
+            default:
+                throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom );
         }
 
         ExecutionMonitor executionMonitor = new CoarseBoundedProgressExecutionMonitor(
@@ -159,14 +215,16 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         IdMapper idMapper = IdMappers.actualIds();
         importer.doImport( nodes, relationships, idMapper );
-        progressMonitor.finished();
 
         // Finish the import of nodes and relationships
         importer.shutdown();
         if ( legacyStore instanceof Legacy19Store )
         { // we may need to upgrade the property keys
-            StandardPageCache pageCache = new StandardPageCache( fileSystem, 1000, 8192 );
-            PropertyStore propertyStore = storeFactory( fileSystem, pageCache, migrationDir, dependencyResolver ).newPropertyStore();
+            // TODO 2.2-future: fixme if we set the number of page to 1000 the store migration from 19 when
+            // we deduplicate property will loop forever in the page cache trying to free pages.
+            StandardPageCache pageCache = new StandardPageCache( fileSystem, 10_000, 8192 );
+            PropertyStore propertyStore = storeFactory( fileSystem, pageCache, migrationDir, dependencyResolver )
+                    .newPropertyStore();
             try
             {
                 migratePropertyKeys( (Legacy19Store) legacyStore, propertyStore );
@@ -254,15 +312,15 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         }
     }
 
-    private StoreFile20[] allExcept( StoreFile20... exceptions )
+    private StoreFile[] allExcept( StoreFile... exceptions )
     {
-        List<StoreFile20> result = new ArrayList<>();
-        result.addAll( Arrays.asList( StoreFile20.values() ) );
-        for ( StoreFile20 except : exceptions )
+        List<StoreFile> result = new ArrayList<>();
+        result.addAll( Arrays.asList( StoreFile.values() ) );
+        for ( StoreFile except : exceptions )
         {
             result.remove( except );
         }
-        return result.toArray( new StoreFile20[result.size()] );
+        return result.toArray( new StoreFile[result.size()] );
     }
 
     private Iterable<InputRelationship> legacyRelationshipsAsInput( LegacyStore legacyStore )
@@ -334,58 +392,83 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     {
         // The batch importer will create a whole store. so
         // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
-        StoreFile20.deleteIdFile( fileSystem, migrationDir, allExcept( StoreFile20.RELATIONSHIP_GROUP_STORE ) );
 
-        StoreFile20[] filesToDelete;
-        StoreFile20[] leftoverFiles;
-        if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
+        StoreFile[] filesToDelete;
+        StoreFile[] leftoverFiles;
+        StoreFile[] idFilesToDelete;
+        switch ( versionToUpgradeFrom )
         {
-            filesToDelete = allExcept(
-                    StoreFile20.NODE_STORE,
-                    StoreFile20.RELATIONSHIP_STORE,
-                    StoreFile20.RELATIONSHIP_GROUP_STORE,
-                    StoreFile20.LABEL_TOKEN_STORE,
-                    StoreFile20.NODE_LABEL_STORE,
-                    StoreFile20.PROPERTY_STORE,
-                    StoreFile20.PROPERTY_KEY_TOKEN_STORE,
-                    StoreFile20.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                    StoreFile20.LABEL_TOKEN_NAMES_STORE,
-                    StoreFile20.SCHEMA_STORE );
-            leftoverFiles = new StoreFile20[]{StoreFile20.NODE_STORE,
-                                              StoreFile20.RELATIONSHIP_STORE,
-                                              StoreFile20.PROPERTY_STORE,
-                                              StoreFile20.PROPERTY_KEY_TOKEN_STORE,
-                                              StoreFile20.PROPERTY_KEY_TOKEN_NAMES_STORE,};
+            case Legacy19Store.LEGACY_VERSION:
+                filesToDelete = allExcept(
+                        StoreFile.NODE_STORE,
+                        StoreFile.RELATIONSHIP_STORE,
+                        StoreFile.RELATIONSHIP_GROUP_STORE,
+                        StoreFile.LABEL_TOKEN_STORE,
+                        StoreFile.NODE_LABEL_STORE,
+                        StoreFile.PROPERTY_STORE,
+                        StoreFile.PROPERTY_KEY_TOKEN_STORE,
+                        StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                        StoreFile.LABEL_TOKEN_NAMES_STORE,
+                        StoreFile.SCHEMA_STORE
+                );
+                idFilesToDelete = allExcept(
+                        StoreFile.RELATIONSHIP_GROUP_STORE
+                );
+                leftoverFiles = new StoreFile[]{
+                        StoreFile.NODE_STORE,
+                        StoreFile.RELATIONSHIP_STORE,
+                        StoreFile.PROPERTY_STORE,
+                        StoreFile.PROPERTY_KEY_TOKEN_STORE,
+                        StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE
+                };
+                break;
+            case Legacy20Store.LEGACY_VERSION:
+                // Note: We don't overwrite the label stores in 2.0
+                filesToDelete = allExcept(
+                        StoreFile.NODE_STORE,
+                        StoreFile.RELATIONSHIP_STORE,
+                        StoreFile.RELATIONSHIP_GROUP_STORE,
+                        StoreFile.SCHEMA_STORE );
+                idFilesToDelete = allExcept(
+                        StoreFile.RELATIONSHIP_GROUP_STORE
+                );
+                leftoverFiles = new StoreFile[]{
+                        StoreFile.NODE_STORE,
+                        StoreFile.RELATIONSHIP_STORE
+                };
+                break;
+            case Legacy21Store.LEGACY_VERSION:
+                filesToDelete = idFilesToDelete = leftoverFiles = new StoreFile[]{};
+                break;
+            default:
+                throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom );
         }
-        else
-        {
-            // Note: We don't overwrite the label stores in 2.0
-            filesToDelete = allExcept(
-                    StoreFile20.NODE_STORE,
-                    StoreFile20.RELATIONSHIP_STORE,
-                    StoreFile20.RELATIONSHIP_GROUP_STORE,
-                    StoreFile20.SCHEMA_STORE );
-            leftoverFiles = new StoreFile20[]{StoreFile20.NODE_STORE, StoreFile20.RELATIONSHIP_STORE};
-        }
-        StoreFile20.deleteStoreFile( fileSystem, migrationDir, filesToDelete );
+
+        StoreFile.deleteStoreFile( fileSystem, migrationDir, filesToDelete );
+        StoreFile.deleteIdFile( fileSystem, migrationDir, idFilesToDelete );
 
         // Move the current ones into the leftovers directory
-        StoreFile20.move( fileSystem, storeDir, leftOversDir,
-                          IteratorUtil.asIterable( leftoverFiles ),
-                          false, false, StoreFileType.STORE );
+        StoreFile.move( fileSystem, storeDir, leftOversDir,
+                IteratorUtil.asIterable( leftoverFiles ), // files
+                false,  // does not allow to skip non existent source files
+                false,  // does not allow to overwrite target files
+                StoreFileType.STORE );
 
         // Move the migrated ones into the store directory
-        StoreFile20.move( fileSystem, migrationDir, storeDir, StoreFile20.currentStoreFiles(),
-                true,   // allow skip non existent source files
-                true,   // allow overwrite target files
+        StoreFile.move( fileSystem, migrationDir, storeDir,
+                StoreFile.currentStoreFiles(), // files
+                true,   // allow to skip non existent source files
+                true,   // allow to overwrite target files
                 StoreFileType.values() );
-        StoreFile20.ensureStoreVersion( fileSystem, storeDir, StoreFile20.currentStoreFiles() );
+
+        // ensure the store version is correct
+        StoreFile.ensureStoreVersion( fileSystem, storeDir, StoreFile.currentStoreFiles() );
     }
 
     @Override
     public void cleanup( FileSystemAbstraction fileSystem, File migrationDir ) throws IOException
     {
-        for ( StoreFile20 storeFile : StoreFile20.values() )
+        for ( StoreFile storeFile : StoreFile.values() )
         {
             fileSystem.deleteFile( new File( migrationDir, storeFile.storeFileName() ) );
             fileSystem.deleteFile( new File( migrationDir, storeFile.idFileName() ) );

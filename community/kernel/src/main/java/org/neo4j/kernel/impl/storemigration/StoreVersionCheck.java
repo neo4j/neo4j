@@ -23,10 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+
+import static org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 
 public class StoreVersionCheck
 {
@@ -37,32 +38,33 @@ public class StoreVersionCheck
         this.fs = fs;
     }
 
-    public Pair<Outcome,String> hasVersion( File storeFile, String expectedVersion )
+    public Result hasVersion( File storeFile, String expectedVersion )
     {
         StoreChannel fileChannel = null;
+        String storeFilename = storeFile.getName();
         byte[] expectedVersionBytes = UTF8.encode( expectedVersion );
         try
         {
             if ( !fs.fileExists( storeFile ) )
             {
-                return Pair.of( Outcome.missingStoreFile, null );
+                return new Result( Outcome.missingStoreFile, null, storeFilename );
             }
 
             fileChannel = fs.open( storeFile, "r" );
             if ( fileChannel.size() < expectedVersionBytes.length )
             {
-                return Pair.of( Outcome.storeVersionNotFound, null );
+                return new Result( Outcome.storeVersionNotFound, null, storeFilename );
             }
 
             String actualVersion = readVersion( fileChannel, expectedVersionBytes.length );
             if ( !actualVersion.startsWith( typeDescriptor( expectedVersion ) ) )
             {
-                return Pair.of( Outcome.storeVersionNotFound, actualVersion );
+                return new Result( Outcome.storeVersionNotFound, actualVersion, storeFilename );
             }
-            
+
             if ( !expectedVersion.equals( actualVersion ) )
             {
-                return Pair.of( Outcome.unexpectedUpgradingStoreVersion, actualVersion );
+                return new Result( Outcome.unexpectedUpgradingStoreVersion, actualVersion, storeFilename );
             }
         }
         catch ( IOException e )
@@ -83,7 +85,7 @@ public class StoreVersionCheck
                 }
             }
         }
-        return Pair.of( Outcome.ok, null );
+        return new Result( Outcome.ok, null, storeFilename );
     }
 
     private String typeDescriptor( String expectedVersion )
@@ -103,24 +105,38 @@ public class StoreVersionCheck
         fileChannel.read( ByteBuffer.wrap( foundVersionBytes ) );
         return UTF8.decode( foundVersionBytes );
     }
-    
-    public static enum Outcome
-    {
-        ok( true ),
-        missingStoreFile( false ),
-        storeVersionNotFound( false ),
-        unexpectedUpgradingStoreVersion( false );
-        
-        private final boolean success;
 
-        private Outcome( boolean success )
+    public static class Result
+    {
+        public final Outcome outcome;
+        public final String actualVersion;
+        public final String storeFilename;
+
+        public Result( Outcome outcome, String actualVersion, String storeFilename )
         {
-            this.success = success;
+            this.outcome = outcome;
+            this.actualVersion = actualVersion;
+            this.storeFilename = storeFilename;
         }
-        
-        public boolean isSuccessful()
+
+        public static enum Outcome
         {
-            return this.success;
+            ok( true ),
+            missingStoreFile( false ),
+            storeVersionNotFound( false ),
+            unexpectedUpgradingStoreVersion( false );
+
+            private final boolean success;
+
+            private Outcome( boolean success )
+            {
+                this.success = success;
+            }
+
+            public boolean isSuccessful()
+            {
+                return this.success;
+            }
         }
     }
 }

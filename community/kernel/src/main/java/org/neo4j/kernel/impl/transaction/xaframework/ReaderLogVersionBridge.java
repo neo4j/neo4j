@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.openForVersion;
 
 public class ReaderLogVersionBridge implements LogVersionBridge
 {
@@ -39,31 +38,18 @@ public class ReaderLogVersionBridge implements LogVersionBridge
     }
 
     @Override
-    public VersionedStoreChannel next( VersionedStoreChannel channel ) throws IOException
+    public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
     {
         PhysicalLogVersionedStoreChannel nextChannel;
         try
         {
-            nextChannel = openLogChannel( new LogPosition( channel.getVersion() + 1, 0 ) );
+            nextChannel = openForVersion( logFiles, fileSystem, channel.getVersion() + 1 );
         }
         catch ( FileNotFoundException e )
         {
             return channel;
         }
-        // TODO read header properly
         channel.close();
-        nextChannel.position( VersionAwareLogEntryReader.LOG_HEADER_SIZE );
         return nextChannel;
     }
-
-    private PhysicalLogVersionedStoreChannel openLogChannel( LogPosition position ) throws IOException
-    {
-        long version = position.getLogVersion();
-        final File fileToOpen = logFiles.getLogFileForVersion( version );
-        final StoreChannel rawChannel = fileSystem.open( fileToOpen, "r" );
-        final PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel( rawChannel, version );
-        channel.position( position.getByteOffset() );
-        return channel;
-    }
-
 }

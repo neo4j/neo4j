@@ -25,17 +25,37 @@ import java.util.Arrays;
 
 import org.neo4j.io.fs.StoreChannel;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.CURRENT_LOG_VERSION;
+
 public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChannel
 {
     private final byte[] bytes = new byte[1000];
     private final ByteBuffer asWriter = ByteBuffer.wrap( bytes );
     private final ByteBuffer asReader = ByteBuffer.wrap( bytes );
+    private final byte logFormatVersion;
+
+    public InMemoryLogChannel()
+    {
+        this( CURRENT_LOG_VERSION );
+    }
+
+    public InMemoryLogChannel( byte logFormatVersion )
+    {
+
+        this.logFormatVersion = logFormatVersion;
+    }
 
     public void reset()
     {
         asWriter.clear();
         asReader.clear();
         Arrays.fill( bytes, (byte) 0 );
+    }
+
+    @Override
+    public byte getLogFormatVersion()
+    {
+        return logFormatVersion;
     }
 
     @Override

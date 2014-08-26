@@ -37,12 +37,12 @@ public interface LogVersionBridge
      * if no bridging needed or end was reached.
      * @throws IOException
      */
-    VersionedStoreChannel next( VersionedStoreChannel channel ) throws IOException;
+    LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException;
 
     public static final LogVersionBridge NO_MORE_CHANNELS = new LogVersionBridge()
     {
         @Override
-        public VersionedStoreChannel next( VersionedStoreChannel channel ) throws IOException
+        public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
         {
             return channel;
         }

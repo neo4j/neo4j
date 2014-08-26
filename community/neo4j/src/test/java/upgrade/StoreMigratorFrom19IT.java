@@ -29,9 +29,9 @@ import org.junit.Test;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -51,7 +51,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatStoreDirectory;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatHugeStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
 public class StoreMigratorFrom19IT
@@ -62,7 +62,7 @@ public class StoreMigratorFrom19IT
         // GIVEN
         StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR );
         upgrader.addParticipant( new StoreMigrator( monitor, fs ) );
-        File legacyStoreDir = find19FormatStoreDirectory( storeDir );
+        File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir );
 
         // WHEN
         upgrader.migrateIfNeeded( legacyStoreDir );
@@ -77,7 +77,6 @@ public class StoreMigratorFrom19IT
 
         try
         {
-            System.out.println( "Verifying at " + storeDir );
             DatabaseContentVerifier verifier = new DatabaseContentVerifier( database );
             verifier.verifyNodes( 110_000 );
             verifier.verifyRelationships( 99_900 );

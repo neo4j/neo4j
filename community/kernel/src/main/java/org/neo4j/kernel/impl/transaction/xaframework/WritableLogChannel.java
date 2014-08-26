@@ -24,6 +24,8 @@ import java.io.IOException;
 
 public interface WritableLogChannel extends Closeable
 {
+    byte getLogFormatVersion();
+
     void force() throws IOException;
 
     WritableLogChannel put( byte value ) throws IOException;

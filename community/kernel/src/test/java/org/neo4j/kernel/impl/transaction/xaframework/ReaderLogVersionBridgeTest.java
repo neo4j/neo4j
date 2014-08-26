@@ -22,8 +22,12 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -35,11 +39,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.CURRENT_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.encodeLogVersion;
+
 public class ReaderLogVersionBridgeTest
 {
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final PhysicalLogFiles logFiles = mock( PhysicalLogFiles.class );
-    private final VersionedStoreChannel channel = mock( VersionedStoreChannel.class );
+    private final LogVersionedStoreChannel channel = mock( LogVersionedStoreChannel.class );
 
     private final File file = mock( File.class );
     private final long version = 10l;
@@ -52,14 +60,28 @@ public class ReaderLogVersionBridgeTest
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( fs, logFiles );
 
         when( channel.getVersion() ).thenReturn( version );
+        when( channel.getLogFormatVersion() ).thenReturn( CURRENT_LOG_VERSION );
         when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
         when( fs.open( file, "r" ) ).thenReturn( newStoreChannel );
+        when( newStoreChannel.read( Matchers.<ByteBuffer>any() ) ).then( new Answer<Integer>()
+        {
+            @Override
+            public Integer answer( InvocationOnMock invocationOnMock ) throws Throwable
+            {
+                ByteBuffer buffer = (ByteBuffer) invocationOnMock.getArguments()[0];
+                buffer.putLong( encodeLogVersion( version + 1 ) );
+                buffer.putLong( 42 );
+                return LOG_HEADER_SIZE;
+            }
+        } );
 
         // when
-        final VersionedStoreChannel result = bridge.next( channel );
+        final LogVersionedStoreChannel result = bridge.next( channel );
 
         // then
-        assertEquals( new PhysicalLogVersionedStoreChannel( newStoreChannel, version + 1 ), result );
+        PhysicalLogVersionedStoreChannel expected =
+                new PhysicalLogVersionedStoreChannel( newStoreChannel, version + 1, CURRENT_LOG_VERSION );
+        assertEquals( expected, result );
         verify( channel, times( 1 ) ).close();
     }
 
@@ -74,7 +96,7 @@ public class ReaderLogVersionBridgeTest
         when( fs.open( file, "r" ) ).thenThrow( new FileNotFoundException() );
 
         // when
-        final VersionedStoreChannel result = bridge.next( channel );
+        final LogVersionedStoreChannel result = bridge.next( channel );
 
         // then
         assertEquals( channel, result );

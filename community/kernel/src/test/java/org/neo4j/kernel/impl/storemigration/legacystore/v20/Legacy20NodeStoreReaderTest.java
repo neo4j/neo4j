@@ -19,54 +19,44 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.Unzip.unzip;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Iterator;
 
 import org.junit.Test;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
+import org.neo4j.test.TargetDirectory;
 
-public class ReadRecordsTestIT
+import static org.junit.Assert.assertEquals;
+
+public class Legacy20NodeStoreReaderTest
 {
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+
     @Test
     public void shouldReadNodeRecords() throws IOException
     {
-        File storeDir = unzip( getClass(), "exampledb.zip" );
-        Legacy20NodeStoreReader nodeStoreReader = new Legacy20NodeStoreReader( fs,
-                new File( storeDir, "neostore.nodestore.db" ) );
+        File storeDir = TargetDirectory.forTest( Legacy20NodeStoreReader.class ).makeGraphDbDir();
+        MigrationTestUtils.find20FormatStoreDirectory( storeDir );
+        Legacy20NodeStoreReader nodeStoreReader =
+                new Legacy20NodeStoreReader( fs, new File( storeDir, "neostore.nodestore.db" ) );
         assertEquals( 1003, nodeStoreReader.getMaxId() );
 
-        final AtomicInteger nodeCount = new AtomicInteger( 0 );
-        nodeStoreReader.accept( new org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader.Visitor()
+        int nodeCount = 0;
+        Iterator<NodeRecord> iterator = nodeStoreReader.iterator();
+        while ( iterator.hasNext() )
         {
-            @Override
-            public void visit( NodeRecord record )
+            NodeRecord record = iterator.next();
+            if ( record.inUse() )
             {
-                if(record.inUse())
-                {
-                    nodeCount.incrementAndGet();
-                }
+                nodeCount++;
             }
-        } );
-        assertEquals( 501, nodeCount.get() );
+        }
+        assertEquals( 501, nodeCount );
         nodeStoreReader.close();
-    }
-
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-
-    private File exampleDbStore( String fileName ) throws IOException
-    {
-        return new File( exampleDbStore(), fileName );
-    }
-
-    private File exampleDbStore() throws IOException
-    {
-        return MigrationTestUtils.find20FormatStoreDirectory();
     }
 }

@@ -17,15 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.neo4j.io.fs.StoreChannel;
-
-public interface VersionedStoreChannel extends StoreChannel
+public class LogEntryParserDispatcher<T extends LogEntryParser>
 {
-    long getVersion();
+    private final Map<Byte, T> parsers;
 
-    void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException;
+    public LogEntryParserDispatcher( T[] parsers )
+    {
+        this.parsers = new HashMap<>( parsers.length * 2 );
+        for ( T parser : parsers )
+        {
+            this.parsers.put( parser.byteCode(), parser );
+        }
+    }
+
+    public LogEntryParser dispatch( byte type )
+    {
+        return parsers.get( type );
+    }
 }
