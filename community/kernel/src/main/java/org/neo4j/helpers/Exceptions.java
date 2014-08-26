@@ -132,6 +132,18 @@ public class Exceptions
             }
         };
     }
+    
+    public static Predicate<Throwable> exceptionWithMessage( final String message )
+    {
+        return new Predicate<Throwable>()
+        {
+            @Override
+            public boolean accept( Throwable item )
+            {
+                return item.getMessage().equals( message );
+            }
+        };
+    }
 
     private Exceptions()
     {

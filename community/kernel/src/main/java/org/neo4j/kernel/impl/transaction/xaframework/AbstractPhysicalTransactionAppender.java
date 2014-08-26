@@ -20,9 +20,7 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 
-import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
@@ -65,22 +63,29 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     }
 
     @Override
-    public Future<Long> append( TransactionRepresentation transaction ) throws IOException
+    public long append( TransactionRepresentation transaction ) throws TransactionAppendException
     {
-        long transactionId, ticket;
-        synchronized ( this )
+        long transactionId = -1;
+        try
         {
-            // We put log rotation check outside the private append method since it must happen before
-            // we generate the next transaction id
-            logFile.checkRotation();
-            transactionId = txIdGenerator.generate( transaction );
-            append( transaction, transactionId );
-            ticket = getCurrentTicket();
+            long ticket;
+            synchronized ( this )
+            {
+                // We put log rotation check outside the private append method since it must happen before
+                // we generate the next transaction id
+                logFile.checkRotation();
+                transactionId = txIdGenerator.generate( transaction );
+                append( transaction, transactionId );
+                ticket = getCurrentTicket();
+            }
+            
+            force( ticket );
+            return transactionId;
         }
-        
-        force( ticket );
-        
-        return FutureAdapter.present( transactionId );
+        catch ( Exception e )
+        {
+            throw new TransactionAppendException( e, transactionId );
+        }
     }
 
     protected long getCurrentTicket()
@@ -92,36 +97,42 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
 
     @Override
     public boolean append( CommittedTransactionRepresentation transaction )
-            throws IOException
+            throws TransactionAppendException
     {
-        boolean result = false;
-        long ticket;
-        synchronized ( this )
+        long transactionId = -1;
+        try
         {
-            logFile.checkRotation();
-            long txId = transaction.getCommitEntry().getTxId();
-            long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
-            if ( lastCommittedTxId + 1 == txId )
+            boolean result = false;
+            long ticket;
+            synchronized ( this )
             {
-                txIdGenerator.generate( transaction.getTransactionRepresentation() );
-                append( transaction.getTransactionRepresentation(), txId );
-                ticket = getCurrentTicket();
-                result = true;
+                logFile.checkRotation();
+                long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
+                long candidateTransactionId = transaction.getCommitEntry().getTxId();
+                if ( lastCommittedTxId + 1 == candidateTransactionId )
+                {
+                    transactionId = txIdGenerator.generate( transaction.getTransactionRepresentation() );
+                    append( transaction.getTransactionRepresentation(), transactionId );
+                    ticket = getCurrentTicket();
+                    result = true;
+                }
+                else if ( lastCommittedTxId + 1 < candidateTransactionId )
+                {
+                    throw new IOException( "Tried to apply transaction with txId=" + candidateTransactionId +
+                            " but last committed txId=" + lastCommittedTxId );
+                }
+                else
+                {
+                    return false;
+                }
             }
-            else if ( lastCommittedTxId + 1 < txId )
-            {
-                throw new IOException( "Tried to apply transaction with txId=" + txId +
-                        " but last committed txId=" + lastCommittedTxId );
-            }
-            else
-            {
-                return false;
-            }
+            force( ticket );
+            return result;
         }
-        
-        force( ticket );
-        
-        return result;
+        catch ( Exception e )
+        {
+            throw new TransactionAppendException( e, transactionId );
+        }
     }
     
     @Override
