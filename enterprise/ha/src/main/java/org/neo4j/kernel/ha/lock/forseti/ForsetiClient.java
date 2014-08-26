@@ -31,6 +31,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
 
+import static java.lang.String.format;
+
 /**
  * These clients act as agents against the lock manager. The clients hold and release locks.
  *
@@ -682,11 +684,11 @@ public class ForsetiClient implements Locks.Client
 
     public String describeWaitList()
     {
-        StringBuilder sb = new StringBuilder( this + " waits for [" );
+        StringBuilder sb = new StringBuilder( format( "%nClient[%d] waits for [", id() ) );
         PrimitiveIntIterator iter = waitList.iterator();
-        while(iter.hasNext())
+        for ( int i = 0; iter.hasNext(); i++ )
         {
-            sb.append( iter.next() ).append( ", " );
+            sb.append( i > 0 ? "," : "" ).append( iter.next() );
         }
         sb.append( "]" );
         return sb.toString();

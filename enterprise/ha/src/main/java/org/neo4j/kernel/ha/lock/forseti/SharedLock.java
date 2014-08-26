@@ -71,7 +71,7 @@ class SharedLock implements ForsetiLockManager.Lock
      * This data structure is, however, not optimal, since it requires O(n) at worst to search for a slot and to remove
      * a client from the array. This should be revisited in the future.
      */
-    private AtomicReferenceArray<ForsetiClient>[] clientsHoldingThisLock = new AtomicReferenceArray[4];
+    private final AtomicReferenceArray<ForsetiClient>[] clientsHoldingThisLock = new AtomicReferenceArray[4];
 
     /** Client that holds the update lock, if any. */
     private ForsetiClient updateHolder;
@@ -203,12 +203,14 @@ class SharedLock implements ForsetiLockManager.Lock
         for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
         {
             AtomicReferenceArray<ForsetiClient> holders = clientsHoldingThisLock[i];
+            boolean first = true;
             for ( int j = 0; holders != null && j < holders.length(); j++ )
             {
                 ForsetiClient current = holders.get( j );
                 if(current != null)
                 {
-                    sb.append( current.describeWaitList() ).append( ", " );
+                    sb.append( first ? "" : ", " ).append( current.describeWaitList() );
+                    first = false;
                 }
             }
         }
