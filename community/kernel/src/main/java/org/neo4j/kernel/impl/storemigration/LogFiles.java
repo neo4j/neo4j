@@ -30,7 +30,8 @@ public class LogFiles
 {
     public static final class LogicalLogFilenameFilter implements FilenameFilter
     {
-        private static final String logFilenamePatterns = PhysicalLogFile.REGEX_DEFAULT_NAME + ".*";
+        private static final String logFilenamePatterns =
+                PhysicalLogFile.REGEX_DEFAULT_NAME + PhysicalLogFile.REGEX_DEFAULT_VERSION_SUFFIX + ".*";
 
         @Override
         public boolean accept( File dir, String name )

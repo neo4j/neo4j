@@ -44,10 +44,10 @@ import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderP
  */
 public class PhysicalLogFile extends LifecycleAdapter implements LogFile
 {
-    public static final String DEFAULT_NAME = "nioneo_logical.log";
-    public static final String REGEX_DEFAULT_NAME = "nioneo_logical\\.log";
-    public static final String DEFAULT_VERSION_SUFFIX = ".v";
-    public static final String REGEX_DEFAULT_VERSION_SUFFIX = "\\.v";
+    public static final String DEFAULT_NAME = "neostore.transaction.db";
+    public static final String REGEX_DEFAULT_NAME = "neostore\\.transaction\\.db";
+    public static final String DEFAULT_VERSION_SUFFIX = ".";
+    public static final String REGEX_DEFAULT_VERSION_SUFFIX = "\\.";
     private final long rotateAtSize;
     private final FileSystemAbstraction fileSystem;
     private final LogPruneStrategy pruneStrategy;

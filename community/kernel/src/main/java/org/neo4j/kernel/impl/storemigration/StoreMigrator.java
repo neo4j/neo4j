@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
@@ -72,6 +73,9 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.allLegacyLogFilesFilter;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.getLegacyLogVersion;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.versionedLegacyLogFilesFilter;
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
@@ -425,6 +429,26 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
 
         // ensure the store version is correct
         StoreFile.ensureStoreVersion( fileSystem, storeDir, StoreFile.currentStoreFiles() );
+
+        renameLogFiles( fileSystem, storeDir );
+    }
+
+    private void renameLogFiles( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
+    {
+        // rename files
+        for ( File file : fileSystem.listFiles( storeDir, versionedLegacyLogFilesFilter ) )
+        {
+            final String oldName = file.getName();
+            final long version = getLegacyLogVersion( oldName );
+            final String newName = PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + version;
+            fileSystem.renameFile( file, new File( file.getParent(), newName ) );
+        }
+
+        // delete old an unused log files
+        for ( File file : fileSystem.listFiles( storeDir, allLegacyLogFilesFilter ) )
+        {
+            fileSystem.deleteFile( file );
+        }
     }
 
     @Override
