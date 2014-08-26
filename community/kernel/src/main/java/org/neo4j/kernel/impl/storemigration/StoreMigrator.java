@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -137,50 +136,13 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         progressMonitor.started();
 
         if ( versionToUpgradeFrom.equals( Legacy21Store.LEGACY_VERSION ) )
-        {
-            migrateByCopyingFile( fileSystem, storeDir, migrationDir );
+        {   // Don't migrate any store here
         }
         else
         {
             migrateWithBatchImporter( fileSystem, storeDir, migrationDir, dependencyResolver );
         }
         progressMonitor.finished();
-    }
-
-    private void migrateByCopyingFile( FileSystemAbstraction fileSystem, File storeDir, final File migrationDir )
-            throws IOException
-    {
-        progressMonitor.percentComplete( 0 );
-
-        // copy the files and avoid copying the migration directory in the case it is inside the store directory
-        final FileFilter allButMigrationDir = new FileFilter()
-        {
-            @Override
-            public boolean accept( File pathname )
-            {
-                return !migrationDir.equals( pathname );
-            }
-        };
-
-        for ( File file : storeDir.listFiles( allButMigrationDir ) )
-        {
-            final File to = new File( migrationDir, file.getName() );
-            if ( file.isDirectory() )
-            {
-                fileSystem.copyRecursively( file, to );
-            }
-            else
-            {
-                fileSystem.copyFile( file, to );
-            }
-        }
-
-        progressMonitor.percentComplete( 50 );
-
-        // set the new store version in the store files
-        StoreFile.ensureStoreVersion( fileSystem, migrationDir, StoreFile.currentStoreFiles() );
-
-        progressMonitor.percentComplete( 100 );
     }
 
     private void migrateWithBatchImporter( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
