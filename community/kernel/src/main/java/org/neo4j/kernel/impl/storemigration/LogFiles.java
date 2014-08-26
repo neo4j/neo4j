@@ -30,21 +30,12 @@ public class LogFiles
 {
     public static final class LogicalLogFilenameFilter implements FilenameFilter
     {
-        private static final String[] logFilenamePatterns = { "active_tx_log",
-                PhysicalLogFile.REGEX_DEFAULT_NAME + ".*", /* covers current log, active log marker and backups */
-                "tm_tx_log\\..*" };
+        private static final String logFilenamePatterns = PhysicalLogFile.REGEX_DEFAULT_NAME + ".*";
 
         @Override
         public boolean accept( File dir, String name )
         {
-            for ( String pattern : logFilenamePatterns )
-            {
-                if ( name.matches( pattern ) )
-                {
-                    return true;
-                }
-            }
-            return false;
+            return name.matches( logFilenamePatterns );
         }
     }
 

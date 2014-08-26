@@ -55,7 +55,6 @@ public class NeoStoreFileListingTest
     private ProviderLookup legacyIndexes;
 
     private final static String[] STANDARD_STORE_DIR_FILES = new String[]{
-            "active_tx_log",
             "lock",
             "messages.log",
             "neostore",
@@ -90,8 +89,7 @@ public class NeoStoreFileListingTest
             PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0",
             PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "1",
             PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "2",
-            "store_lock",
-            "tm_tx_log.1"};
+            "store_lock"};
 
     private final static String[] STANDARD_STORE_DIR_DIRECTORIES = new String[]{"schema", "index", "branched"};
 
