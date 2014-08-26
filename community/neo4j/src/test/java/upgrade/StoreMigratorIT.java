@@ -98,6 +98,7 @@ public class StoreMigratorIT
             verifier.verifyNodeIdsReused();
             verifier.verifyRelationshipIdsReused();
             verifier.verifyLegacyIndex();
+            verifier.verifyIndex();
         }
         finally
         {
