@@ -118,14 +118,14 @@ public class StoreCopyClient
         {
             requester.done();
         }
-        
+
         // This is a good place to check if the switch has been cancelled
         checkCancellation( cancellationRequest, tempStore );
 
         // Run recovery, so that the transactions we just wrote into the active log will be applied.
         GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
         graphDatabaseService.shutdown();
-        
+
         // This is a good place to check if the switch has been cancelled
         checkCancellation( cancellationRequest, tempStore );
 
@@ -186,8 +186,8 @@ public class StoreCopyClient
                         "use this backup as a seed for a cluster, you need to start a stand-alone database on " +
                         "it, and commit one write transaction, to create the transaction log needed to seed the " +
                         "cluster. To avoid this happening, make sure you never manually delete transaction log " +
-                        "files (nioneo_logical.log.vXXX), and that you configure the database to keep at least a " +
-                        "few days worth of transaction logs." );
+                        "files (" + PhysicalLogFile.DEFAULT_NAME + ".vXXX), and that you configure the database to " +
+                        "keep at least a few days worth of transaction logs." );
             }
         }
         finally
@@ -207,7 +207,7 @@ public class StoreCopyClient
                 .setConfig( InternalAbstractGraphDatabase.Configuration.log_configuration_file, logConfigFileName() )
                 .newGraphDatabase();
     }
-    
+
     String logConfigFileName()
     {
         return "neo4j-backup-logback.xml";

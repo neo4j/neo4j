@@ -58,7 +58,8 @@ public class ServerUtilTest
         XaDataSource dataSource = mock( XaDataSource.class );
 
         FileResourceIterator storeFiles = new FileResourceIterator( fs, testDirectory, "neostore.nodestore.db" );
-        FileResourceIterator logicalLogs = new FileResourceIterator( fs, testDirectory, "nioneo_logical.log.v0" );
+        FileResourceIterator logicalLogs = new FileResourceIterator( fs, testDirectory,
+        PhysicalLogFile.DEFAULT_NAME + ".v0" );
 
         when( dataSource.listStoreFiles() ).thenReturn( storeFiles );
         when( dataSource.listLogicalLogs() ).thenReturn( logicalLogs );
@@ -88,7 +89,7 @@ public class ServerUtilTest
         // then
         verify( storeWriter ).write( eq( "neostore.nodestore.db" ), any( ReadableByteChannel.class ),
                 any( ByteBuffer.class ), any( Boolean.class ) );
-        verify( storeWriter, never() ).write( eq( "nioneo_logical.log.v0" ), any( ReadableByteChannel.class ),
+        verify( storeWriter, never() ).write( eq( PhysicalLogFile.DEFAULT_NAME + ".v0" ), any( ReadableByteChannel.class ),
                 any( ByteBuffer.class ), any( Boolean.class ) );
 
     }
@@ -102,7 +103,7 @@ public class ServerUtilTest
         XaDataSource dataSource = mock( XaDataSource.class );
 
         FileResourceIterator storeFiles = new FileResourceIterator( fs, testDirectory );
-        FileResourceIterator logicalLogs = new FileResourceIterator( fs, testDirectory, "nioneo_logical.log.v0" );
+        FileResourceIterator logicalLogs = new FileResourceIterator( fs, testDirectory, PhysicalLogFile.DEFAULT_NAME + ".v0" );
 
         when( dataSource.listStoreFiles() ).thenReturn( storeFiles );
         when( dataSource.listLogicalLogs() ).thenReturn( logicalLogs );
@@ -130,7 +131,7 @@ public class ServerUtilTest
                 StringLogger.DEV_NULL, true, storeWriter, fs, BackupMonitor.NONE );
 
         // then
-        verify( storeWriter ).write( eq( "nioneo_logical.log.v0" ), any( ReadableByteChannel.class ),
+        verify( storeWriter ).write( eq( PhysicalLogFile.DEFAULT_NAME + ".v0" ), any( ReadableByteChannel.class ),
                 any( ByteBuffer.class ), any( Boolean.class ) );
     }
 
@@ -144,8 +145,9 @@ public class ServerUtilTest
 
         FileResourceIterator storeFiles = new FileResourceIterator( fs, testDirectory, "neostore.nodestore.db" );
 
-        FileResourceIterator logicalLogs = new FileResourceIterator( fs, testDirectory, "nioneo_logical.log.v0" );
-        logicalLogs.deleteBeforeCopy( "nioneo_logical.log.v0" );
+        FileResourceIterator logicalLogs = new FileResourceIterator( fs, testDirectory,
+        PhysicalLogFile.DEFAULT_NAME + ".v0" );
+        logicalLogs.deleteBeforeCopy( PhysicalLogFile.DEFAULT_NAME + ".v0" );
 
         when( dataSource.listStoreFiles() ).thenReturn( storeFiles );
         when( dataSource.listLogicalLogs() ).thenReturn( logicalLogs );

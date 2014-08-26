@@ -46,6 +46,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -167,12 +168,12 @@ public class UpgradeStoreIT
 
         File oldLogDir = new File( path, "1.2-logs" );
         assertTrue( oldLogDir.exists() );
-        assertTrue( new File( oldLogDir, "nioneo_logical.log.v0" ).exists() );
-        assertTrue( new File( oldLogDir, "nioneo_logical.log.v1" ).exists() );
-        assertTrue( new File( oldLogDir, "nioneo_logical.log.v2" ).exists() );
-        assertFalse( new File( path, "nioneo_logical.log.v0" ).exists() );
-        assertFalse( new File( path, "nioneo_logical.log.v1" ).exists() );
-        assertFalse( new File( path, "nioneo_logical.log.v2" ).exists() );
+        assertTrue( new File( oldLogDir, PhysicalLogFile.DEFAULT_NAME + ".v0" ).exists() );
+        assertTrue( new File( oldLogDir, PhysicalLogFile.DEFAULT_NAME + ".v1" ).exists() );
+        assertTrue( new File( oldLogDir, PhysicalLogFile.DEFAULT_NAME + ".v2" ).exists() );
+        assertFalse( new File( path, PhysicalLogFile.DEFAULT_NAME + ".v0" ).exists() );
+        assertFalse( new File( path, PhysicalLogFile.DEFAULT_NAME + ".v1" ).exists() );
+        assertFalse( new File( path, PhysicalLogFile.DEFAULT_NAME + ".v2" ).exists() );
     }
 
     @Test

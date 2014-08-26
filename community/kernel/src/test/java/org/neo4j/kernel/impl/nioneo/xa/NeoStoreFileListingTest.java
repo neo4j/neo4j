@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -34,6 +34,7 @@ import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -54,46 +55,46 @@ public class NeoStoreFileListingTest
     private ProviderLookup legacyIndexes;
 
     private final static String[] STANDARD_STORE_DIR_FILES = new String[]{
-           "active_tx_log",
-           "lock",
-           "messages.log",
-           "neostore",
-           "neostore.id",
-           "neostore.labeltokenstore.db",
-           "neostore.labeltokenstore.db.id",
-           "neostore.labeltokenstore.db.names",
-           "neostore.labeltokenstore.db.names.id",
-           "neostore.nodestore.db",
-           "neostore.nodestore.db.id",
-           "neostore.nodestore.db.labels",
-           "neostore.nodestore.db.labels.id",
-           "neostore.propertystore.db",
-           "neostore.propertystore.db.arrays",
-           "neostore.propertystore.db.arrays.id",
-           "neostore.propertystore.db.id",
-           "neostore.propertystore.db.index",
-           "neostore.propertystore.db.index.id",
-           "neostore.propertystore.db.index.keys",
-           "neostore.propertystore.db.index.keys.id",
-           "neostore.propertystore.db.strings",
-           "neostore.propertystore.db.strings.id",
-           "neostore.relationshipstore.db",
-           "neostore.relationshipstore.db.id",
-           "neostore.relationshiptypestore.db",
-           "neostore.relationshiptypestore.db.id",
-           "neostore.relationshiptypestore.db.names",
-           "neostore.relationshiptypestore.db.names.id",
-           "neostore.schemastore.db",
-           "neostore.schemastore.db.id",
-           "nioneo_logical.log.1",
-           "nioneo_logical.log.active",
-           "nioneo_logical.log.v0",
-           "nioneo_logical.log.v1",
-           "nioneo_logical.log.v2",
-           "store_lock",
-           "tm_tx_log.1"};
+            "active_tx_log",
+            "lock",
+            "messages.log",
+            "neostore",
+            "neostore.id",
+            "neostore.labeltokenstore.db",
+            "neostore.labeltokenstore.db.id",
+            "neostore.labeltokenstore.db.names",
+            "neostore.labeltokenstore.db.names.id",
+            "neostore.nodestore.db",
+            "neostore.nodestore.db.id",
+            "neostore.nodestore.db.labels",
+            "neostore.nodestore.db.labels.id",
+            "neostore.propertystore.db",
+            "neostore.propertystore.db.arrays",
+            "neostore.propertystore.db.arrays.id",
+            "neostore.propertystore.db.id",
+            "neostore.propertystore.db.index",
+            "neostore.propertystore.db.index.id",
+            "neostore.propertystore.db.index.keys",
+            "neostore.propertystore.db.index.keys.id",
+            "neostore.propertystore.db.strings",
+            "neostore.propertystore.db.strings.id",
+            "neostore.relationshipstore.db",
+            "neostore.relationshipstore.db.id",
+            "neostore.relationshiptypestore.db",
+            "neostore.relationshiptypestore.db.id",
+            "neostore.relationshiptypestore.db.names",
+            "neostore.relationshiptypestore.db.names.id",
+            "neostore.schemastore.db",
+            "neostore.schemastore.db.id",
+            PhysicalLogFile.DEFAULT_NAME + ".1",
+            PhysicalLogFile.DEFAULT_NAME + ".active",
+            PhysicalLogFile.DEFAULT_NAME + ".v0",
+            PhysicalLogFile.DEFAULT_NAME + ".v1",
+            PhysicalLogFile.DEFAULT_NAME + ".v2",
+            "store_lock",
+            "tm_tx_log.1"};
 
-    private final static String[] STANDARD_STORE_DIR_DIRECTORIES = new String[]{ "schema", "index", "branched"};
+    private final static String[] STANDARD_STORE_DIR_DIRECTORIES = new String[]{"schema", "index", "branched"};
 
     @Before
     public void setUp() throws IOException
@@ -101,41 +102,21 @@ public class NeoStoreFileListingTest
         labelScanStore = mock( LabelScanStore.class );
         indexingService = mock( IndexingService.class );
         legacyIndexes = mock( ProviderLookup.class );
-        when( legacyIndexes.providers() ).thenReturn( Arrays.<IndexImplementation>asList() );
+        when( legacyIndexes.providers() ).thenReturn( Collections.<IndexImplementation>emptyList() );
         storeDir = mock( File.class );
-
-        // Defaults, overridden in individual tests
-        filesInStoreDirAre( new String[]{}, new String[]{} );
-        scanStoreFilesAre( new String[]{} );
-        indexFilesAre( new String[]{} );
     }
-
-//    @Test
-//    public void shouldOnlyListLogicalLogs() throws Exception
-//    {
-//        // Given
-//        filesInStoreDirAre( STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
-//        NeoStoreFileListing fileListing = newFileListing();
-//
-//        // When
-//        ResourceIterator<File> result = fileListing.listLogicalLogs();
-//
-//        // Then
-//        assertThat( asSetOfPaths( result ), equalTo( asSet(
-//                "nioneo_logical.log.v0",
-//                "nioneo_logical.log.v1",
-//                "nioneo_logical.log.v2") ) );
-//    }
 
     @Test
     public void shouldOnlyListNeoStoreFiles() throws Exception
     {
         // Given
         filesInStoreDirAre( STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
+        scanStoreFilesAre( new String[]{} );
+        indexFilesAre( new String[]{} );
         NeoStoreFileListing fileListing = newFileListing();
 
         // When
-        ResourceIterator<File> result = fileListing.listStoreFiles(  );
+        ResourceIterator<File> result = fileListing.listStoreFiles();
 
         // Then
         assertThat( asSetOfPaths( result ), equalTo( asSet(
@@ -160,6 +141,8 @@ public class NeoStoreFileListingTest
     {
         // Given
         filesInStoreDirAre( STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
+        scanStoreFilesAre( new String[]{} );
+        indexFilesAre( new String[]{} );
         NeoStoreFileListing fileListing = newFileListing();
 
         // When
@@ -188,13 +171,15 @@ public class NeoStoreFileListingTest
     {
         // Given
         filesInStoreDirAre( STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
+        scanStoreFilesAre( new String[]{} );
+        indexFilesAre( new String[]{} );
         NeoStoreFileListing fileListing = newFileListing();
 
         // When
         ResourceIterator<File> result = fileListing.listStoreFiles();
 
         // Then
-        assertThat( asSetOfPaths( result ), equalTo(asSet(
+        assertThat( asSetOfPaths( result ), equalTo( asSet(
                 "neostore.labeltokenstore.db",
                 "neostore.labeltokenstore.db.names",
                 "neostore.nodestore.db",
@@ -208,7 +193,7 @@ public class NeoStoreFileListingTest
                 "neostore.relationshiptypestore.db",
                 "neostore.relationshiptypestore.db.names",
                 "neostore.schemastore.db",
-                "neostore" )));
+                "neostore" ) ) );
     }
 
     @Test
@@ -224,7 +209,7 @@ public class NeoStoreFileListingTest
         ResourceIterator<File> result = fileListing.listStoreFiles();
 
         // Then
-        assertThat( asSetOfPaths( result ), equalTo(asSet(
+        assertThat( asSetOfPaths( result ), equalTo( asSet(
                 "blah/scan.store",
                 "scan.more",
                 "schema/index/my.index",
@@ -242,7 +227,7 @@ public class NeoStoreFileListingTest
                 "neostore.relationshiptypestore.db",
                 "neostore.relationshiptypestore.db.names",
                 "neostore.schemastore.db",
-                "neostore")));
+                "neostore" ) ) );
     }
 
     @Test
@@ -251,7 +236,7 @@ public class NeoStoreFileListingTest
         // Given
         filesInStoreDirAre( STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
         ResourceIterator<File> scanSnapshot = scanStoreFilesAre( new String[]{"blah/scan.store", "scan.more"} );
-        ResourceIterator<File> indexSnapshot = indexFilesAre( new String[]{"schema/index/my.index" } );
+        ResourceIterator<File> indexSnapshot = indexFilesAre( new String[]{"schema/index/my.index"} );
         NeoStoreFileListing fileListing = newFileListing();
 
         ResourceIterator<File> result = fileListing.listStoreFiles();
@@ -272,7 +257,7 @@ public class NeoStoreFileListingTest
     private Set<String> asSetOfPaths( ResourceIterator<File> result )
     {
         List<String> fnames = new ArrayList<>();
-        while(result.hasNext())
+        while ( result.hasNext() )
         {
             fnames.add( result.next().getPath() );
         }
@@ -284,7 +269,7 @@ public class NeoStoreFileListingTest
         ArrayList<File> files = new ArrayList<>();
         mockFiles( filenames, files, false );
         mockFiles( dirs, files, true );
-        when(storeDir.listFiles()).thenReturn( files.toArray( new File[files.size()] ) );
+        when( storeDir.listFiles() ).thenReturn( files.toArray( new File[files.size()] ) );
     }
 
     private ResourceIterator<File> scanStoreFilesAre( String[] fileNames ) throws IOException
@@ -292,7 +277,7 @@ public class NeoStoreFileListingTest
         ArrayList<File> files = new ArrayList<>();
         mockFiles( fileNames, files, false );
         ResourceIterator<File> snapshot = spy( asResourceIterator( files.iterator() ) );
-        when(labelScanStore.snapshotStoreFiles()).thenReturn( snapshot );
+        when( labelScanStore.snapshotStoreFiles() ).thenReturn( snapshot );
         return snapshot;
     }
 
@@ -300,8 +285,8 @@ public class NeoStoreFileListingTest
     {
         ArrayList<File> files = new ArrayList<>();
         mockFiles( fileNames, files, false );
-        ResourceIterator<File> snapshot = spy(asResourceIterator( files.iterator() ));
-        when(indexingService.snapshotStoreFiles()).thenReturn( snapshot );
+        ResourceIterator<File> snapshot = spy( asResourceIterator( files.iterator() ) );
+        when( indexingService.snapshotStoreFiles() ).thenReturn( snapshot );
         return snapshot;
     }
 
@@ -311,13 +296,13 @@ public class NeoStoreFileListingTest
         {
             File file = mock( File.class );
 
-            String[] fileNameParts = filename.split( "/" );
-            when(file.getName()).thenReturn( fileNameParts[fileNameParts.length-1] );
+            String[] fileNameParts = filename.split( File.separator );
+            when( file.getName() ).thenReturn( fileNameParts[fileNameParts.length - 1] );
 
-            when(file.isFile()).thenReturn( !isDirectories );
-            when(file.isDirectory()).thenReturn( isDirectories );
-            when(file.exists()).thenReturn( true );
-            when(file.getPath()).thenReturn( filename );
+            when( file.isFile() ).thenReturn( !isDirectories );
+            when( file.isDirectory() ).thenReturn( isDirectories );
+            when( file.exists() ).thenReturn( true );
+            when( file.getPath() ).thenReturn( filename );
             files.add( file );
         }
     }

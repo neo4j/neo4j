@@ -21,13 +21,13 @@ package org.neo4j.jmx.impl;
 
 import java.io.File;
 import java.io.IOException;
-
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.StoreFile;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 
 @Service.Implementation(ManagementBeanProvider.class)
 public final class StoreFileBean extends ManagementBeanProvider
@@ -50,8 +50,8 @@ public final class StoreFileBean extends ManagementBeanProvider
         private static final String PROPERTY_STORE = "neostore.propertystore.db";
         private static final String ARRAY_STORE = "neostore.propertystore.db.arrays";
         private static final String STRING_STORE = "neostore.propertystore.db.strings";
-        private static final String LOGICAL_LOG1 = "nioneo_logical.log.1";
-        private static final String LOGICAL_LOG2 = "nioneo_logical.log.2";
+        private static final String LOGICAL_LOG1 = PhysicalLogFile.DEFAULT_NAME + ".1";
+        private static final String LOGICAL_LOG2 = PhysicalLogFile.DEFAULT_NAME + ".2";
         private File storePath;
 
         StoreFileImpl( ManagementData management ) throws NotCompliantMBeanException
