@@ -94,25 +94,40 @@ public class NeoTransactionIndexApplier extends NeoCommandHandler.Adapter
 
         if ( !nodeCommands.isEmpty() || !propertyCommands.isEmpty() )
         {
-            indexingService.updateIndexes( new LazyIndexUpdates(
-                    nodeStore, propertyStore, propertyCommands, nodeCommands, propertyLoader ) );
+            updateIndexes();
+        }
+    }
+
+    private void updateIndexes()
+    {
+        LazyIndexUpdates updates = new LazyIndexUpdates(
+                nodeStore, propertyStore, propertyCommands, nodeCommands, propertyLoader );
+        
+        // We only allow a single writer at the time to update the schema index stores
+        synchronized ( indexingService )
+        {
+            indexingService.updateIndexes( updates );
         }
     }
 
     private void updateLabelScanStore()
     {
-        Collections.sort(labelUpdates, nodeLabelUpdateComparator );
-
-        try ( LabelScanWriter writer = labelScanStore.newWriter() )
+        Collections.sort( labelUpdates, nodeLabelUpdateComparator );
+        
+        // We only allow a single writer at the time to update the label scan store
+        synchronized ( labelScanStore )
         {
-            for ( NodeLabelUpdate update : labelUpdates )
+            try ( LabelScanWriter writer = labelScanStore.newWriter() )
             {
-                writer.write( update );
+                for ( NodeLabelUpdate update : labelUpdates )
+                {
+                    writer.write( update );
+                }
             }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( e );
+            }
         }
     }
 
