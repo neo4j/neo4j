@@ -138,7 +138,7 @@ public class StoreUpgrader implements DependencySatisfier
         {
             upgradeConfiguration.checkConfigurationAllowsAutomaticUpgrade();
         }
-        catch ( UpgradeNotAllowedByConfigurationException e )
+        catch ( UpgradeNotAllowedException e )
         {
             monitor.migrationNotAllowed();
             throw e;
