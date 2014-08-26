@@ -136,6 +136,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
+import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
@@ -441,7 +442,7 @@ public abstract class InternalAbstractGraphDatabase
         // Component monitoring
         this.monitors = createMonitors();
 
-        storeMigrationProcess = new StoreUpgrader( new ConfigMapUpgradeConfiguration( config ), fileSystem,
+        storeMigrationProcess = new StoreUpgrader( createUpgradeConfiguration(), fileSystem,
                 monitors.newMonitor( StoreUpgrader.Monitor.class ) );
 
         // Apply autoconfiguration for memory settings
@@ -614,6 +615,11 @@ public abstract class InternalAbstractGraphDatabase
 
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
+    }
+
+    protected UpgradeConfiguration createUpgradeConfiguration()
+    {
+        return new ConfigMapUpgradeConfiguration( config );
     }
 
     protected Monitors createMonitors()

@@ -91,6 +91,8 @@ import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
@@ -178,6 +180,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         life.add( new StartupWaiter() );
 
         diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine, clusterClient ) );
+    }
+
+    @Override
+    protected UpgradeConfiguration createUpgradeConfiguration()
+    {
+        return new HAUpgradeConfiguration();
     }
 
     @Override
@@ -731,6 +739,15 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         public void start() throws Throwable
         {
             availabilityGuard.isAvailable( stateSwitchTimeoutMillis );
+        }
+    }
+
+    private static final class HAUpgradeConfiguration implements UpgradeConfiguration
+    {
+        @Override
+        public void checkConfigurationAllowsAutomaticUpgrade()
+        {
+            throw new UpgradeNotAllowedByDatabaseModeException();
         }
     }
 }
