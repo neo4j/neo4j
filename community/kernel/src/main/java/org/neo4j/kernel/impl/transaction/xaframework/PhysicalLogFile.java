@@ -46,6 +46,8 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
 {
     public static final String DEFAULT_NAME = "nioneo_logical.log";
     public static final String REGEX_DEFAULT_NAME = "nioneo_logical\\.log";
+    public static final String DEFAULT_VERSION_SUFFIX = ".v";
+    public static final String REGEX_DEFAULT_VERSION_SUFFIX = "\\.v";
     private final long rotateAtSize;
     private final FileSystemAbstraction fileSystem;
     private final LogPruneStrategy pruneStrategy;

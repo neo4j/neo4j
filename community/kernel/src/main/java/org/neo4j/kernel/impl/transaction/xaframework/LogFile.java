@@ -29,7 +29,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface LogFile extends Lifecycle
 {
-
     public interface LogFileVisitor
     {
         boolean visit( LogPosition position, ReadableLogChannel channel ) throws IOException;

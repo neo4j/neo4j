@@ -186,8 +186,8 @@ public class StoreCopyClient
                         "use this backup as a seed for a cluster, you need to start a stand-alone database on " +
                         "it, and commit one write transaction, to create the transaction log needed to seed the " +
                         "cluster. To avoid this happening, make sure you never manually delete transaction log " +
-                        "files (" + PhysicalLogFile.DEFAULT_NAME + ".vXXX), and that you configure the database to " +
-                        "keep at least a few days worth of transaction logs." );
+                        "files (" + PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX +"XXX), " +
+                        "and that you configure the database to keep at least a few days worth of transaction logs." );
             }
         }
         finally
@@ -247,7 +247,7 @@ public class StoreCopyClient
             directory.mkdir();
         }
     }
-    
+
     private void checkCancellation( CancellationRequest cancellationRequest, File tempStore ) throws IOException
     {
         if ( cancellationRequest.cancellationRequested() )

@@ -168,12 +168,12 @@ public class UpgradeStoreIT
 
         File oldLogDir = new File( path, "1.2-logs" );
         assertTrue( oldLogDir.exists() );
-        assertTrue( new File( oldLogDir, PhysicalLogFile.DEFAULT_NAME + ".v0" ).exists() );
-        assertTrue( new File( oldLogDir, PhysicalLogFile.DEFAULT_NAME + ".v1" ).exists() );
-        assertTrue( new File( oldLogDir, PhysicalLogFile.DEFAULT_NAME + ".v2" ).exists() );
-        assertFalse( new File( path, PhysicalLogFile.DEFAULT_NAME + ".v0" ).exists() );
-        assertFalse( new File( path, PhysicalLogFile.DEFAULT_NAME + ".v1" ).exists() );
-        assertFalse( new File( path, PhysicalLogFile.DEFAULT_NAME + ".v2" ).exists() );
+        assertTrue( new File( oldLogDir, PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0" ).exists() );
+        assertTrue( new File( oldLogDir, PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "1" ).exists() );
+        assertTrue( new File( oldLogDir, PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "2" ).exists() );
+        assertFalse( new File( path, PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0" ).exists() );
+        assertFalse( new File( path, PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "1" ).exists() );
+        assertFalse( new File( path, PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "2" ).exists() );
     }
 
     @Test

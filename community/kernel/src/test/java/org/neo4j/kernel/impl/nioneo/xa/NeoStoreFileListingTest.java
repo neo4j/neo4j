@@ -87,9 +87,9 @@ public class NeoStoreFileListingTest
             "neostore.schemastore.db",
             "neostore.schemastore.db.id",
             PhysicalLogFile.DEFAULT_NAME + ".active",
-            PhysicalLogFile.DEFAULT_NAME + ".v0",
-            PhysicalLogFile.DEFAULT_NAME + ".v1",
-            PhysicalLogFile.DEFAULT_NAME + ".v2",
+            PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0",
+            PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "1",
+            PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "2",
             "store_lock",
             "tm_tx_log.1"};
 

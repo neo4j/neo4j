@@ -70,7 +70,7 @@ public class TestBrokenStoreRecovery
             0,
             new ProcessStreamHandler( process, true ).waitForResult() );
         trimFileToSize( new File( storeDir, "neostore.propertystore.db" ), 42 );
-        File log = new File( storeDir, PhysicalLogFile.DEFAULT_NAME + ".v0" );
+        File log = new File( storeDir, PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0" );
         trimFileToSize( log, 78 );
         new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() ).shutdown();
     }
