@@ -57,6 +57,9 @@ neo.viz = (el, measureSize, graph, layout, style) ->
       .on("dblclick.zoom", null)
       #Single click is not panning
       .on("click.zoom", -> panning = no)
+      .on("DOMMouseScroll.zoom", null)
+      .on("wheel.zoom", null)
+      .on("mousewheel.zoom", null)
 
   render = ->
     geometry.onTick(graph)
