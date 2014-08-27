@@ -37,6 +37,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
@@ -44,12 +45,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
 
 import static java.util.TimeZone.getTimeZone;
-
 import static javax.transaction.xa.Xid.MAXBQUALSIZE;
 import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
 
 import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles.getLogVersion;
 import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.readLogHeader;
 
 public class DumpLogicalLog
@@ -121,7 +122,7 @@ public class DumpLogicalLog
             for ( String fileAsString : arguments.orphans() )
             {
                 new DumpLogicalLog( new DefaultFileSystemAbstraction() )
-                        .dump( fileAsString, "nioneo_logical.log", printer.getFor( fileAsString ), timeZone );
+                        .dump( fileAsString, PhysicalLogFile.DEFAULT_NAME, printer.getFor( fileAsString ), timeZone );
             }
         }
     }
@@ -232,15 +233,16 @@ public class DumpLogicalLog
                 return versionOf( o1 ).compareTo( versionOf( o2 ) );
             }
 
-            private Integer versionOf( String string )
+            private Long versionOf( String string )
             {
-                String toFind = ".v";
-                int index = string.indexOf( toFind );
-                if ( index == -1 )
+                try
                 {
-                    return Integer.MAX_VALUE;
+                    return getLogVersion( string );
                 }
-                return Integer.valueOf( string.substring( index + toFind.length() ) );
+                catch ( RuntimeException ignored )
+                {
+                    return Long.MAX_VALUE;
+                }
             }
         };
     }

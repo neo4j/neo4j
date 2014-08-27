@@ -44,7 +44,10 @@ import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersion
  */
 public class PhysicalLogFile extends LifecycleAdapter implements LogFile
 {
-    public static final String DEFAULT_NAME = "nioneo_logical.log";
+    public static final String DEFAULT_NAME = "neostore.transaction.db";
+    public static final String REGEX_DEFAULT_NAME = "neostore\\.transaction\\.db";
+    public static final String DEFAULT_VERSION_SUFFIX = ".";
+    public static final String REGEX_DEFAULT_VERSION_SUFFIX = "\\.";
     private final long rotateAtSize;
     private final FileSystemAbstraction fileSystem;
     private final LogPruneStrategy pruneStrategy;
@@ -169,14 +172,14 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     // Do not expose this through the interface; only used in robustness testing.
     public synchronized void forceRotate() throws IOException
     {   // The above synchronization is for managing concurrent access to f.ex. stop()
-        
+
         /*
          * First we flush the store. If we fail now or during the flush, on recovery we'll discover
          * the current log file and replay it. Everything will be ok.
          */
         logRotationControl.awaitAllTransactionsClosed();
         logRotationControl.forceEverything();
-        
+
         /* We synchronize on the writer because we want to have a monitor that another thread
          * doing force (think batching of writes), such that it can't see a bad state of the writer
          * even when rotating underlying channels.
@@ -313,5 +316,11 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
             logVersion--;
             highTransactionId = previousLogLastTxId;
         }
+    }
+
+    @Override
+    public File currentLogFile()
+    {
+        return logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() );
     }
 }
