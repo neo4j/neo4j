@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{UsingIndexHint, RelTypeName}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.CachingDocBuilder
 
-case object astDocBuilder extends CachingDocBuilder[Any] {
+case object astDocBuilder extends CustomDocBuilder[Any] {
 
   import Doc._
 
-  override protected def newNestedDocGenerator = {
+  override def newDocGenerator = DocGenerator {
     case relTypeName: RelTypeName => (inner) =>
       text(relTypeName.name)
 

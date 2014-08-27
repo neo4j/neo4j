@@ -17,10 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty
+package org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders
 
-trait PrettyToString {
-  self: Pretty[_] with HasDocFormatter =>
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
-  override def toString = printToString(docFormatter(toDoc))
+case object defaultDocBuilder extends CustomDocBuilderChain[Any] {
+
+  val builders = Seq(
+    // pretty printing the structure of docs themselves
+    docStructureDocBuilder.uplifted[Any],
+
+    // pretty printing anything that implements Pretty[T]
+    prettyDocBuilder.uplifted[Any],
+
+    // pretty printing anything common scala value (product, array, primitive)
+    scalaDocBuilder,
+
+    // pretty printing by falling back to toString()
+    toStringDocBuilder
+  )
 }

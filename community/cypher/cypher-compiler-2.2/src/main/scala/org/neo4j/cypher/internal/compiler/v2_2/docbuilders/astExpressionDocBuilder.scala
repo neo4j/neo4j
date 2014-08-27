@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.quoteString
+import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.{CachingDocBuilder, quoteString}
 
-case object astExpressionDocBuilder extends CachingDocBuilder[Any] {
+case object astExpressionDocBuilder extends CustomDocBuilder[Any] {
 
   import Doc._
 
-  override protected def newNestedDocGenerator = {
+  override def newDocGenerator = DocGenerator {
     case Identifier(name) => (inner) =>
       text(name)
 

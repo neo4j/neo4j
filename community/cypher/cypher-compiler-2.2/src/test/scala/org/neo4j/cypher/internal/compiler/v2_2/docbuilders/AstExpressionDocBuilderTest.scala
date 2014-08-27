@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{simpleDocBuilder, DocBuilderTestSuite}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{defaultDocBuilder, DocBuilderTestSuite}
 
 class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  val docBuilder = astExpressionDocBuilder orElse simpleDocBuilder
+  val docBuilder = astExpressionDocBuilder orElse defaultDocBuilder
 
   test("Identifier(\"a\") => a") {
     format(ident("a")) should equal("a")

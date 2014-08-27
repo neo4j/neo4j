@@ -17,22 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_2.perty.impl
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{CustomDocBuilder, DocGenerator}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryShuffle
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
-object queryShuffleDocBuilder extends CustomDocBuilder[Any] {
+import scala.reflect.ClassTag
 
-  override def newDocGenerator = DocGenerator {
-    case shuffle: QueryShuffle => (inner) =>
-      val sortItemDocs = shuffle.sortItems.map(inner)
-      val sortItems = if (sortItemDocs.isEmpty) nil else group("ORDER BY" :/: sepList(sortItemDocs))
-
-      val skip = shuffle.skip.fold(nil)(skip => group("SKIP" :/: inner(skip)))
-      val limit = shuffle.limit.fold(nil)(limit => group("LIMIT" :/: inner(limit)))
-
-      sortItems :+: skip :+: limit
-  }
-}
+// Lift nested doc generator as a doc builder
+case class SimpleDocBuilder[T: ClassTag](docGenerator: DocGenerator[T]) extends DocBuilder[T]

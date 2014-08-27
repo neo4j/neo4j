@@ -17,22 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_2.perty.impl
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{CustomDocBuilder, DocGenerator}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryShuffle
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
-object queryShuffleDocBuilder extends CustomDocBuilder[Any] {
+import scala.collection.mutable
 
-  override def newDocGenerator = DocGenerator {
-    case shuffle: QueryShuffle => (inner) =>
-      val sortItemDocs = shuffle.sortItems.map(inner)
-      val sortItems = if (sortItemDocs.isEmpty) nil else group("ORDER BY" :/: sepList(sortItemDocs))
+class StringPrintingConverter(var builder: mutable.StringBuilder = new mutable.StringBuilder()) extends PrintingConverter[String] {
+  def clear() {
+    builder.clear()
+  }
 
-      val skip = shuffle.skip.fold(nil)(skip => group("SKIP" :/: inner(skip)))
-      val limit = shuffle.limit.fold(nil)(limit => group("LIMIT" :/: inner(limit)))
+  def result() = builder.result()
 
-      sortItems :+: skip :+: limit
+  def +=(elem: PrintCommand) = {
+    elem match {
+      case PrintText(text) =>
+        builder = builder ++= text
+
+      case PrintNewLine(indent) =>
+        builder += '\n'
+        var remaining = indent
+        while (remaining > 0) {
+          builder = builder += ' '
+          remaining  -= 1
+        }
+    }
+    this
   }
 }
