@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20RelationshipStoreReader;
 
@@ -46,10 +47,10 @@ import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDe
 
 /**
  * Reader for a database in an older store format version.
- *
+ * <p/>
  * Since only one store migration is supported at any given version (migration from the previous store version)
  * the reader code is specific for the current upgrade and changes with each store format version.
- *
+ * <p/>
  * {@link #LEGACY_VERSION} marks which version it's able to read.
  */
 public class Legacy19Store implements LegacyStore
@@ -61,7 +62,7 @@ public class Legacy19Store implements LegacyStore
     private Legacy19NodeStoreReader nodeStoreReader;
     private Legacy19PropertyIndexStoreReader propertyIndexReader;
     private Legacy19PropertyStoreReader propertyStoreReader;
-    private org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader relStoreReader;
+    private LegacyRelationshipStoreReader relStoreReader;
 
     private final FileSystemAbstraction fs;
 
@@ -86,27 +87,32 @@ public class Legacy19Store implements LegacyStore
         }
     }
 
-    protected void initStorage() throws IOException
+    private void initStorage() throws IOException
     {
-        allStoreReaders.add( nodeStoreReader = new Legacy19NodeStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
-        allStoreReaders.add( propertyIndexReader = new Legacy19PropertyIndexStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ) ) );
-        allStoreReaders.add( propertyStoreReader = new Legacy19PropertyStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STORE_NAME ) ) );
-        allStoreReaders.add( relStoreReader = new Legacy20RelationshipStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME) ) );
+        allStoreReaders.add( nodeStoreReader = new Legacy19NodeStoreReader( fs,
+                new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
+        allStoreReaders.add( propertyIndexReader = new Legacy19PropertyIndexStoreReader( fs,
+                new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ) ) );
+        allStoreReaders.add( propertyStoreReader = new Legacy19PropertyStoreReader( fs,
+                new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STORE_NAME ) ) );
+        allStoreReaders.add( relStoreReader = new Legacy20RelationshipStoreReader( fs,
+                new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME ) ) );
     }
 
+    @Override
     public File getStorageFileName()
     {
         return storageFileName;
     }
 
-    public static long getUnsignedInt(ByteBuffer buf)
+    public static long getUnsignedInt( ByteBuffer buf )
     {
-        return buf.getInt()&0xFFFFFFFFL;
+        return buf.getInt() & 0xFFFFFFFFL;
     }
 
     protected static long longFromIntAndMod( long base, long modifier )
     {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
+        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
     }
 
     @Override
@@ -176,13 +182,14 @@ public class Legacy19Store implements LegacyStore
                 buildTypeDescriptorAndVersion( DynamicArrayStore.TYPE_DESCRIPTOR ) );
     }
 
+    @Override
     public LegacyNodeStoreReader getNodeStoreReader()
     {
         return nodeStoreReader;
     }
 
     @Override
-    public org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader getRelStoreReader()
+    public LegacyRelationshipStoreReader getRelStoreReader()
     {
         return relStoreReader;
     }
@@ -212,6 +219,7 @@ public class Legacy19Store implements LegacyStore
         buffer.flip();
     }
 
+    @Override
     public void copyLegacyIndexStoreFile( File toDirectory ) throws IOException
     {
         File legacyDirectory = storageFileName.getParentFile();

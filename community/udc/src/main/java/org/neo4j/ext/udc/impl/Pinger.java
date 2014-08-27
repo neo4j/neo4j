@@ -19,21 +19,22 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import static org.neo4j.ext.udc.UdcConstants.PING;
-
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Map;
 
+import org.neo4j.helpers.HostnamePort;
+
+import static org.neo4j.ext.udc.UdcConstants.PING;
+
 public class Pinger
 {
-
-    private final String address;
+    private final HostnamePort address;
     private final UdcInformationCollector collector;
     private int pingCount = 0;
 
-    public Pinger( String address, UdcInformationCollector collector )
+    public Pinger( HostnamePort address, UdcInformationCollector collector )
     {
         this.address = address;
         this.collector = collector;

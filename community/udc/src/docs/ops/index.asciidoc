@@ -66,5 +66,5 @@ There are three ways you can disable UDC:
 +
 _Where $\{neo4j-version} is the Neo4j version in use._
 
-. Lastly, if you are using a packaged version of Neo4j, and do not want to make any change to the jars, a system property setting like this will also make sure that UDC is never activated: +-Dneo4j.ext.udc.enabled=false+.
+. Lastly, if you are using a packaged version of Neo4j, and do not want to make any change to the jars, setting the configuration parameter +neo4j.ext.udc.enabled=false+ in +neo4j.properties+ will ensure that UDC is never activated.
 
