@@ -53,4 +53,25 @@ public final class Strings
             return result.toString();
         }
     };
+
+    public static boolean isBlank( String str )
+    {
+        if ( str == null || str.isEmpty() )
+        {
+            return true;
+        }
+        for ( int i = 0; i < str.length(); i++ )
+        {
+            if ( !Character.isWhitespace( str.charAt( i ) ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static String defaultIfBlank( String str, String defaultStr )
+    {
+        return isBlank( str ) ? defaultStr : str;
+    }
 }

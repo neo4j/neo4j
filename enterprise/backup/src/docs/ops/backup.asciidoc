@@ -24,11 +24,9 @@ Regardless of the mode a backup is created with, the resulting files represent a
 
 The database to be backed up is specified using an address with syntax
 
-<host>[:port]{,<host>[:port]}...
+-host <host> [-port <port>]
 
-The <host>[:<port>] part
-points to a host running the database, on port _port_ if not the default. The additional _host:port_ arguments
-are useful for passing multiple cluster members.
+Address represented by <host> and <port> points to a host running the database, on port _port_ if not the default.
 
 [IMPORTANT]
 As of version 1.9, backups are enabled by default. That means that the configuration parameter `online_backup_enabled` defaults to true and that
@@ -43,19 +41,19 @@ To perform a backup from a running embedded or server database run:
 ----
 # Performing a full backup: create a blank directory and run the backup tool
 mkdir /mnt/backup/neo4j-backup
-./neo4j-backup -from 192.168.1.34 -to /mnt/backup/neo4j-backup
+./neo4j-backup -host 192.168.1.34 -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup: just specify the location of your previous backup
-./neo4j-backup -from 192.168.1.34 -to /mnt/backup/neo4j-backup
+./neo4j-backup -host 192.168.1.34 -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup where the service is registered on a custom port
-./neo4j-backup -from 192.168.1.34:9999 -to /mnt/backup/neo4j-backup
+./neo4j-backup -host 192.168.1.34 -port 9999 -to /mnt/backup/neo4j-backup
 ----
 
 [[backup-java]]
 == Online Backup from Java ==
 
-In order to programmatically backup your data full or subsequently incremental from a 
+In order to programmatically backup your data full or subsequently incremental from a
 JVM based program, you need to write Java code like
 
 [snippet,java]
@@ -72,17 +70,17 @@ OnlineBackup]
 [[backup-ha]]
 == High Availability ==
 
-To perform a backup on an HA cluster you specify one or more members of the target HA cluster.
-Note that the addresses you must provide are the cluster server addresses and not the HA server addresses.
+To perform a backup on an HA cluster you specify one member of the target HA cluster.
+Note that the address you must provide is a cluster server address and not an HA server address.
 That is, use the value of the +ha.cluster_server+ setting in the configuration.
 
 [source,shell]
 ----
-# Performing a backup from HA cluster, specifying only one cluster member
-./neo4j-backup -from 192.168.1.15:6362 -to /mnt/backup/neo4j-backup
+# Performing a backup from HA cluster, specifying cluster member with default port
+./neo4j-backup -host 192.168.1.15 -to /mnt/backup/neo4j-backup
 
-# Performing a backup from HA cluster, specifying two possible cluster members
-./neo4j-backup -from 192.168.1.15:5001,192.168.1.16:5002 -to /mnt/backup/neo4j-backup
+# Performing a backup from HA cluster, specifying cluster member with custom port
+./neo4j-backup -host 192.168.1.15 -port 9191 -to /mnt/backup/neo4j-backup
 ----
 
 [[backup-restoring]]
