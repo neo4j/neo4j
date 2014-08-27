@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{catchErrors, d
 case object internalDocBuilder extends CustomDocBuilderChain[Any] {
 
   val builders = Seq(
-    astExpressionDocBuilder,
-    astDocBuilder,
     plannerDocBuilder,
     defaultDocBuilder
   )

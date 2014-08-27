@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.SemanticError
+import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import Doc._
 
 object FunctionInvocation {
   def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
@@ -40,6 +42,11 @@ case class FunctionInvocation(functionName: FunctionName, distinct: Boolean, arg
   def semanticCheck(ctx: SemanticContext) = function match {
     case None    => SemanticError(s"Unknown function '$name'", position)
     case Some(f) => f.semanticCheckHook(ctx, this)
+  }
+
+  override def toDoc = {
+    val callDoc = block(functionName.name)(sepList(args.map(pretty)))
+    if (distinct) "DISTINCT" :/: callDoc else callDoc
   }
 }
 

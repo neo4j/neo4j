@@ -19,22 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{DocBuilderTestSuite, defaultDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocFormatters, PrintNewLine, PrintText, condense}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocFormatters, condense, PrintNewLine, PrintText}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{toStringDocBuilder, scalaDocBuilder, DocBuilderTestSuite}
 
 class QueryGraphDocBuilderTest extends DocBuilderTestSuite[Any] {
 
   val docBuilder =
       queryGraphDocBuilder orElse
-      astExpressionDocBuilder orElse
-      astDocBuilder orElse
       plannerDocBuilder orElse
-      scalaDocBuilder orElse
-      toStringDocBuilder
+      defaultDocBuilder
 
   private val rel1 = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(), SimplePatternLength)
   private val rel2 = PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.INCOMING, Seq(RelTypeName("X")(null)), SimplePatternLength)

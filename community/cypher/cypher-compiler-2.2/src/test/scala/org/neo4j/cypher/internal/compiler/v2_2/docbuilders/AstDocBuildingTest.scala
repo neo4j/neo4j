@@ -22,9 +22,21 @@ package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{defaultDocBuilder, DocBuilderTestSuite}
 
-class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
+class AstDocBuildingTest extends DocBuilderTestSuite[Any] {
 
-  val docBuilder = astExpressionDocBuilder orElse defaultDocBuilder
+  val docBuilder = defaultDocBuilder
+
+  test("LabelName(a) => :a") {
+    format(LabelName("a")(pos)) should equal(":a")
+  }
+
+  test("RelTypeName(a) => a") {
+    format(RelTypeName("a")(pos)) should equal("a")
+  }
+
+  test("PropertyKeyName(a) => a") {
+    format(PropertyKeyName("a")(pos)) should equal("a")
+  }
 
   test("Identifier(\"a\") => a") {
     format(ident("a")) should equal("a")
@@ -134,5 +146,15 @@ class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
     val expr: Expression = FunctionInvocation( functionName = name, distinct = true, args = args)_
 
     format(expr) should equal("DISTINCT split(1, 2)")
+  }
+
+  test("USING INDEX n:Person(name)") {
+    val astNode: ASTNode = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
+    format(astNode) should equal("USING INDEX n:Person(name)")
+  }
+
+  test("USING SCAN n:Person") {
+    val astNode: ASTNode = UsingScanHint(ident("n"), LabelName("Person")_)_
+    format(astNode) should equal("USING SCAN n:Person")
   }
 }
