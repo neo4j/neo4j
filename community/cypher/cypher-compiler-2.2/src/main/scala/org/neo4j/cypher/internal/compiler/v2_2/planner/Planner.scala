@@ -90,6 +90,7 @@ object Planner {
     collapseInCollectionsContainingConstants,
     nameVarLengthRelationships,
     namePatternPredicates,
+    projectNamedPaths,
     inlineProjections
   )
 

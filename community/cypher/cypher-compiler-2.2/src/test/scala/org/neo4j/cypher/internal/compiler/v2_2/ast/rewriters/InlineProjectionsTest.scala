@@ -154,56 +154,6 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     evaluating { projectionInlinedAst("CREATE (n) RETURN n") } should produce[CantHandleQueryException]
   }
 
-  test("MATCH p = (a) RETURN p" ) {
-    val returns = parseReturnedExpr("MATCH p = (a) RETURN p")
-
-    val expected = PathExpression(
-      NodePathStep(Identifier("a")_, NilPathStep)
-    )_
-
-    returns should equal(expected: PathExpression)
-  }
-
-  test("MATCH p = (a)-[r]->(b) RETURN p" ) {
-    val returns = parseReturnedExpr("MATCH p = (a)-[r]->(b) RETURN p")
-
-    val expected = PathExpression(
-      NodePathStep(Identifier("a")_, SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep))
-    )_
-
-    returns should equal(expected: PathExpression)
-  }
-
-  test("MATCH p = (b)<-[r]->(a) RETURN p" ) {
-    val returns = parseReturnedExpr("MATCH p = (b)<-[r]-(a) RETURN p")
-
-    val expected = PathExpression(
-      NodePathStep(Identifier("b")_, SingleRelationshipPathStep(Identifier("r")_, Direction.INCOMING, NilPathStep))
-    )_
-
-    returns should equal(expected: PathExpression)
-  }
-
-  test("MATCH p = (a)-[r*]->(b) RETURN p" ) {
-    val returns = parseReturnedExpr("MATCH p = (a)-[r*]->(b) RETURN p")
-
-    val expected = PathExpression(
-      NodePathStep(Identifier("a")_, MultiRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep))
-    )_
-
-    returns should equal(expected: PathExpression)
-  }
-
-  test("MATCH p = (b)<-[r*]-(a) RETURN p" ) {
-    val returns = parseReturnedExpr("MATCH p = (b)<-[r*]-(a) RETURN p")
-
-    val expected = PathExpression(
-      NodePathStep(Identifier("b")_, MultiRelationshipPathStep(Identifier("r")_, Direction.INCOMING, NilPathStep))
-    )_
-
-    returns should equal(expected: PathExpression)
-  }
-
   test("MATCH n WITH n.prop AS x WITH x LIMIT 10 RETURN x" ) {
     val result = projectionInlinedAst("MATCH n WITH n.prop AS x WITH x LIMIT 10 RETURN x")
 
