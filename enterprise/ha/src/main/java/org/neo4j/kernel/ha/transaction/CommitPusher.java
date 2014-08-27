@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.masterTransactionPushing;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,13 +34,15 @@ import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.masterTransactionPushing;
+
 public class CommitPusher extends LifecycleAdapter
 {
     private static class PullUpdateFuture
             extends FutureTask<Object>
     {
-        private Slave slave;
-        private long txId;
+        private final Slave slave;
+        private final long txId;
 
         public PullUpdateFuture( Slave slave, long txId )
         {
@@ -53,7 +53,7 @@ public class CommitPusher extends LifecycleAdapter
                 {
                     return null;
                 }
-            });
+            } );
             this.slave = slave;
             this.txId = txId;
         }
@@ -82,7 +82,9 @@ public class CommitPusher extends LifecycleAdapter
         }
     }
 
-    private final Map<Integer, BlockingQueue<PullUpdateFuture>> pullUpdateQueues = new HashMap<>(  );
+    private static final int PULL_UPDATES_QUEUE_SIZE = 100;
+
+    private final Map<Integer, BlockingQueue<PullUpdateFuture>> pullUpdateQueues = new HashMap<>();
     private final JobScheduler scheduler;
 
     public CommitPusher( JobScheduler scheduler )
@@ -94,13 +96,10 @@ public class CommitPusher extends LifecycleAdapter
     {
         PullUpdateFuture pullRequest = new PullUpdateFuture( slave, txId );
 
-        BlockingQueue<PullUpdateFuture> queue = pullUpdateQueues.get( slave.getServerId() );
-
-        // Create a new queue if needed
-        queue = queue == null ? createNewQueue( slave ) : queue;
+        BlockingQueue<PullUpdateFuture> queue = getOrCreateQueue( slave );
 
         // Add our request to the queue
-        while( !queue.offer( pullRequest ) )
+        while ( !queue.offer( pullRequest ) )
         {
             Thread.yield();
         }
@@ -117,20 +116,24 @@ public class CommitPusher extends LifecycleAdapter
         }
         catch ( ExecutionException e )
         {
-            if (e.getCause() instanceof RuntimeException)
-                throw ((RuntimeException)e.getCause());
+            if ( e.getCause() instanceof RuntimeException )
+            {
+                throw ((RuntimeException) e.getCause());
+            }
             else
+            {
                 throw new RuntimeException( e.getCause() );
+            }
         }
     }
 
-    private synchronized BlockingQueue<PullUpdateFuture> createNewQueue( Slave slave )
+    private synchronized BlockingQueue<PullUpdateFuture> getOrCreateQueue( Slave slave )
     {
         BlockingQueue<PullUpdateFuture> queue = pullUpdateQueues.get( slave.getServerId() );
-        if (queue == null)
+        if ( queue == null )
         {
             // Create queue and worker
-            queue = new ArrayBlockingQueue<>( 100 );
+            queue = new ArrayBlockingQueue<>( PULL_UPDATES_QUEUE_SIZE );
             pullUpdateQueues.put( slave.getServerId(), queue );
 
             final BlockingQueue<PullUpdateFuture> finalQueue = queue;
@@ -143,7 +146,7 @@ public class CommitPusher extends LifecycleAdapter
                 {
                     try
                     {
-                        while (true)
+                        while ( true )
                         {
                             // Poll queue and call pullUpdate
                             currentPulls.clear();
@@ -154,7 +157,8 @@ public class CommitPusher extends LifecycleAdapter
                             try
                             {
                                 PullUpdateFuture pullUpdateFuture = currentPulls.get( 0 );
-                                Response<Void> response = pullUpdateFuture.getSlave().pullUpdates( pullUpdateFuture.getTxId() );
+                                Response<Void> response =
+                                        pullUpdateFuture.getSlave().pullUpdates( pullUpdateFuture.getTxId() );
                                 response.close();
 
                                 // Notify the futures
@@ -182,5 +186,4 @@ public class CommitPusher extends LifecycleAdapter
         }
         return queue;
     }
-
 }

@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v19;
 
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.NeoStoreCommand;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyKeyTokenCommand;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipCommand;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -41,6 +34,13 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.NeoStoreCommand;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyKeyTokenCommand;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipCommand;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand;
 
 /**
  * Reads log files from legacy (1.9) stores, and produces current (2.0) command objects from them.
@@ -128,7 +128,7 @@ public class Legacy19CommandReader
         }
         buffer.flip();
         long id = buffer.getLong();
-        assert id >= 0 && id <= ( 1l << 36 ) - 1 : id
+        assert id >= 0 && id <= (1l << 36) - 1 : id
                 + " is not a valid dynamic record id";
         int type = buffer.getInt();
         byte inUseFlag = buffer.get();
@@ -154,11 +154,11 @@ public class Legacy19CommandReader
             }
             buffer.flip();
             int nrOfBytes = buffer.getInt();
-            assert nrOfBytes >= 0 && nrOfBytes < ( ( 1 << 24 ) - 1 ) : nrOfBytes
+            assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
                     + " is not valid for a number of bytes field of a dynamic record";
             long nextBlock = buffer.getLong();
-            assert ( nextBlock >= 0 && nextBlock <= ( 1l << 36 - 1 ) )
-                    || ( nextBlock == Record.NO_NEXT_BLOCK.intValue() ) : nextBlock
+            assert (nextBlock >= 0 && nextBlock <= (1l << 36 - 1))
+                    || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
                     + " is not valid for a next record field of a dynamic record";
             record.setNextBlock( nextBlock );
             buffer.clear();
@@ -228,7 +228,11 @@ public class Legacy19CommandReader
             buffer.flip();
             record = new NodeRecord( id, false, buffer.getLong(), buffer.getLong() );
         }
-        else record = new NodeRecord( id, false, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
+        else
+        {
+            record = new NodeRecord( id, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
+                    Record.NO_NEXT_PROPERTY.intValue() );
+        }
         record.setInUse( inUse );
         NodeCommand toReturn = new NodeCommand();
         toReturn.init( record, record );
@@ -292,7 +296,10 @@ public class Legacy19CommandReader
     {
         buffer.clear();
         buffer.limit( 8 );
-        if ( byteChannel.read( buffer ) != buffer.limit() ) return null;
+        if ( byteChannel.read( buffer ) != buffer.limit() )
+        {
+            return null;
+        }
         buffer.flip();
         long nextProp = buffer.getLong();
         NeoStoreRecord record = new NeoStoreRecord();
@@ -302,7 +309,8 @@ public class Legacy19CommandReader
         return toReturn;
     }
 
-    public static Command readPropertyIndexCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
+    public static Command readPropertyIndexCommand( ReadableByteChannel byteChannel,
+                                                    ByteBuffer buffer ) throws IOException
     {
         // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
         buffer.clear();
@@ -364,12 +372,12 @@ public class Legacy19CommandReader
         record.setNextProp( nextProp );
         record.setPrevProp( prevProp );
         boolean inUse = false;
-        if ( ( inUseFlag & Record.IN_USE.byteValue() ) == Record.IN_USE.byteValue() )
+        if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
         {
             inUse = true;
         }
         boolean nodeProperty = true;
-        if ( ( inUseFlag & Record.REL_PROPERTY.byteValue() ) == Record.REL_PROPERTY.byteValue() )
+        if ( (inUseFlag & Record.REL_PROPERTY.byteValue()) == Record.REL_PROPERTY.byteValue() )
         {
             nodeProperty = false;
         }
@@ -424,7 +432,7 @@ public class Legacy19CommandReader
             record.addDeletedRecord( read );
         }
 
-        if ( ( inUse && !record.inUse() ) || ( !inUse && record.inUse() ) )
+        if ( (inUse && !record.inUse()) || (!inUse && record.inUse()) )
         {
             throw new IllegalStateException( "Weird, inUse was read in as "
                     + inUse
@@ -477,7 +485,7 @@ public class Legacy19CommandReader
         return toReturn;
     }
 
-    public static Command readCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
+    public Command readCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
     {
         buffer.clear();
         buffer.limit( 1 );
@@ -501,7 +509,8 @@ public class Legacy19CommandReader
                 return readRelationshipTypeCommand( byteChannel, buffer );
             case NEOSTORE_COMMAND:
                 return readNeoStoreCommand( byteChannel, buffer );
-            case NONE: return null;
+            case NONE:
+                return null;
             default:
                 throw new IOException( "Unknown command type[" + commandType + "]" );
         }

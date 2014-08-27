@@ -228,10 +228,18 @@ public abstract class Command
                 cacheAccess.patchDeletedRelationshipNodes( getKey(), beforeUpdate.getFirstNode(),
                         beforeUpdate.getFirstNextRel(), beforeUpdate.getSecondNode(), beforeUpdate.getSecondNextRel() );
             }
-            if ( record.getFirstNode() != -1 || record.getSecondNode() != -1 )
-            {
-                cacheAccess.removeNodeFromCache( record.getFirstNode() );
-                cacheAccess.removeNodeFromCache( record.getSecondNode() );
+            if ( !record.inUse() )
+            { // the relationship was deleted - invalidate the cached versions of the related nodes
+                if ( before != null )
+                { // reading from the log
+                    cacheAccess.removeNodeFromCache( before.getFirstNode() );
+                    cacheAccess.removeNodeFromCache( before.getSecondNode() );
+                }
+                else
+                { // applying from in-memory transaction state
+                    cacheAccess.removeNodeFromCache( record.getFirstNode() );
+                    cacheAccess.removeNodeFromCache( record.getSecondNode() );
+                }
             }
         }
 

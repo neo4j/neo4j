@@ -22,6 +22,7 @@ package org.neo4j.ext.udc.impl;
 import java.util.Timer;
 
 import org.neo4j.ext.udc.UdcSettings;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
@@ -66,7 +67,7 @@ public class UdcKernelExtension implements Lifecycle
 
         int firstDelay = config.get( UdcSettings.first_delay );
         int interval = config.get( UdcSettings.interval );
-        String hostAddress = config.get(UdcSettings.udc_host);
+        HostnamePort hostAddress = config.get(UdcSettings.udc_host);
 
         UdcInformationCollector collector = new DefaultUdcInformationCollector( config, xadsm, kernelData );
         UdcTimerTask task = new UdcTimerTask( hostAddress, collector );

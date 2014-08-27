@@ -203,6 +203,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
                 {
                     record = getRecord( (int) id, cursor, true );
                 } while ( cursor.shouldRetry() );
+                record.setIsLight( true );
                 return record;
             }
             else

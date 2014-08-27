@@ -28,6 +28,9 @@ import org.neo4j.server.configuration.ServerConfigurator;
  * A bootstrapper for the Neo4j Server that takes an already instantiated
  * {@link org.neo4j.kernel.GraphDatabaseAPI}, and optional configuration, and launches a
  * server using that database.
+ *
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
  */
 @Deprecated
 public class WrappingNeoServerBootstrapper extends Bootstrapper

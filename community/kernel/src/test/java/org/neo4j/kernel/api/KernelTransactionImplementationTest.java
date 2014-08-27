@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.List;
+
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
@@ -33,6 +37,7 @@ import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.test.DoubleLatch;
@@ -41,6 +46,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -314,6 +321,16 @@ public class KernelTransactionImplementationTest
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.currentTimeMillis();
         when( recordState.isReadOnly() ).thenReturn( false );
+        doAnswer( new Answer<Void>()
+        {
+            @Override
+            public Void answer( InvocationOnMock invocationOnMock ) throws Throwable
+            {
+                List<Command> commands = (List<Command>) invocationOnMock.getArguments()[0];
+                commands.add( new Command.NodeCommand() );
+                return null;
+            }
+        } ).when( recordState ).extractCommands( anyListOf( Command.class ) );
         try ( KernelTransactionImplementation transaction = newTransaction() )
         {
             transaction.initialize( headerInformation, 5L );

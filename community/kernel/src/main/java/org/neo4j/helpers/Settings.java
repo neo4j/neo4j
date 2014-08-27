@@ -104,8 +104,11 @@ public final class Settings
         Function<Function<String, String>, String> defaultLookup;
         if ( defaultValue != null )
         {
+            // This is explicitly an identity comparison. We are comparing against the known instance above,
+            // using String.equals() here would mean that we could not have settings that have the string "mandatory"
+            // as its default value.
             //noinspection StringEquality
-            if ( defaultValue.equals( MANDATORY ) )
+            if ( defaultValue == MANDATORY ) // yes, this really is supposed to be ==
             {
                 defaultLookup = mandatory( valueLookup );
             }

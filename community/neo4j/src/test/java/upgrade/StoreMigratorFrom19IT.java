@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -62,7 +61,7 @@ public class StoreMigratorFrom19IT
         // GIVEN
         StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR );
         upgrader.addParticipant( new StoreMigrator( monitor, fs ) );
-        File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir );
+        File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // WHEN
         upgrader.migrateIfNeeded( legacyStoreDir );
@@ -72,16 +71,12 @@ public class StoreMigratorFrom19IT
         assertTrue( monitor.isStarted() );
         assertTrue( monitor.isFinished() );
         GraphDatabaseService database = cleanup.add(
-                new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() )
+                new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.absolutePath() )
         );
 
         try
         {
-            DatabaseContentVerifier verifier = new DatabaseContentVerifier( database );
-            verifier.verifyNodes( 110_000 );
-            verifier.verifyRelationships( 99_900 );
-            verifier.verifyNodeIdsReused();
-            verifier.verifyRelationshipIdsReused();
+            verifyDatabaseContents( database );
         }
         finally
         {
@@ -93,7 +88,21 @@ public class StoreMigratorFrom19IT
         verifyNeoStore( neoStore );
         neoStore.close();
 
-        assertConsistentStore( storeDir );
+        assertConsistentStore( storeDir.directory() );
+    }
+
+    private static void verifyDatabaseContents( GraphDatabaseService db )
+    {
+        DatabaseContentVerifier verifier = new DatabaseContentVerifier( db );
+        verifyNumberOfNodesAndRelationships( verifier );
+        verifier.verifyNodeIdsReused();
+        verifier.verifyRelationshipIdsReused();
+    }
+
+    private static void verifyNumberOfNodesAndRelationships( DatabaseContentVerifier verifier )
+    {
+        verifier.verifyNodes( 110_000 );
+        verifier.verifyRelationships( 99_900 );
     }
 
     private static void verifyNeoStore( NeoStore neoStore )
@@ -105,8 +114,7 @@ public class StoreMigratorFrom19IT
         assertEquals( 1004L + 3, neoStore.getLastCommittedTransactionId() ); // prior verifications add 3 transactions
     }
 
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+    private final FileSystemAbstraction fs = new org.neo4j.io.fs.DefaultFileSystemAbstraction();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
     private final IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
     private StoreFactory storeFactory;
@@ -116,7 +124,7 @@ public class StoreMigratorFrom19IT
     {
         Config config = MigrationTestUtils.defaultConfig();
         storeFactory = new StoreFactory(
-                StoreFactory.configForStoreDir( config, storeDir ),
+                StoreFactory.configForStoreDir( config, storeDir.directory() ),
                 idGeneratorFactory,
                 cleanup.add( new StandardPageCache( fs, 1000, 1000 ) ),
                 fs,
@@ -124,7 +132,9 @@ public class StoreMigratorFrom19IT
                 new Monitors() );
     }
 
-    public final
     @Rule
-    CleanupRule cleanup = new CleanupRule();
+    public final CleanupRule cleanup = new CleanupRule();
+
+    @Rule
+    public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
 }

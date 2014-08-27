@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
@@ -124,6 +125,7 @@ public class ClusterMember
         else if ( role.equals( HighAvailabilityModeSwitcher.SLAVE ) )
         {
             copy.remove( HighAvailabilityModeSwitcher.MASTER );
+            copy.remove( OnlineBackupKernelExtension.BACKUP );
         }
         copy.put( role, roleUri );
         return new ClusterMember( this.memberId, copy, this.alive );
