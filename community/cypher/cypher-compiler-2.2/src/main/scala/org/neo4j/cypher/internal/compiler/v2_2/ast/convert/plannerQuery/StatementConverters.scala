@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.{Foldable, ast}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
@@ -33,23 +33,43 @@ object StatementConverters {
       }
   }
 
+  val NODE_BLACKLIST: Set[Class[_ <: ASTNode]] = Set(
+    classOf[And],
+    classOf[Or],
+    // classOf[ReturnAll],
+    classOf[UnaliasedReturnItem]
+  )
+
+  import Foldable._
+  def findBlacklistedNodes(node: AnyRef): Seq[ASTNode] = {
+    node.treeFold(Seq.empty[ASTNode]) {
+      case node: ASTNode if NODE_BLACKLIST.contains(node.getClass) =>
+        (acc, children)  => children(acc :+ node)
+    }
+  }
+
   implicit class QueryConverter(val query: Query) {
-    def asUnionQuery: UnionQuery = query match {
-      case Query(None, queryPart: SingleQuery) =>
-        val builder = queryPart.asPlannerQueryBuilder
-        UnionQuery(Seq(builder.build()), distinct = false)
+    def asUnionQuery: UnionQuery = {
+      val nodes = findBlacklistedNodes(query)
+      require(nodes.isEmpty, "Found a blacklisted AST node: " + nodes.head.toString)
 
-      case Query(None, u: ast.Union) =>
-        val queries: Seq[SingleQuery] = u.unionedQueries
-        val distinct = u match {
-          case _: UnionAll => false
-          case _: UnionDistinct => true
-        }
-        val plannedQueries: Seq[PlannerQueryBuilder] = queries.reverseMap(x => x.asPlannerQueryBuilder)
-        UnionQuery(plannedQueries.map(_.build()), distinct)
+      query match {
+        case Query(None, queryPart: SingleQuery) =>
+          val builder = queryPart.asPlannerQueryBuilder
+          UnionQuery(Seq(builder.build()), distinct = false)
 
-      case _ =>
-        throw new CantHandleQueryException
+        case Query(None, u: ast.Union) =>
+          val queries: Seq[SingleQuery] = u.unionedQueries
+          val distinct = u match {
+            case _: UnionAll => false
+            case _: UnionDistinct => true
+          }
+          val plannedQueries: Seq[PlannerQueryBuilder] = queries.reverseMap(x => x.asPlannerQueryBuilder)
+          UnionQuery(plannedQueries.map(_.build()), distinct)
+
+        case _ =>
+          throw new CantHandleQueryException
+      }
     }
   }
 }

@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{CantHandleQueryException, AstRewritingTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.bottomUp
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{AstRewritingTestSupport, CantHandleQueryException}
 
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 
@@ -36,7 +35,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   test("should inline: WITH {b} AS tmp, {r} AS r WITH {a} AS b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b") {
     val result = projectionInlinedAst("WITH {a} AS b, {b} AS tmp, {r} AS r WITH b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b")
 
-    result should equal(ast("WITH {a} AS b, {b} AS tmp, {r} AS r WITH b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b"))
+    result should equal(ast("WITH {a} AS b, {r} AS r WITH b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b"))
   }
 
   test("should inline: MATCH a, b, c WITH c AS d, b AS a RETURN d") {
@@ -48,25 +47,25 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   test("should  inline: MATCH n WITH n AS m RETURN m => MATCH n RETURN n") {
     val result = projectionInlinedAst("MATCH n WITH n AS m RETURN m")
 
-    result should equal(ast("MATCH n WITH * RETURN n AS m"))
+    result should equal(ast("MATCH n WITH n RETURN n AS m"))
   }
 
   test("should  inline: MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b") {
-    val result = projectionInlinedAst("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b")
+    val result = projectionInlinedAst("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b, property")
 
-    result should equal(ast("MATCH (a:Start) WITH * LIMIT 1 MATCH (b) WHERE id(b) = a.prop RETURN b"))
+    result should equal(ast("MATCH (a:Start) WITH a LIMIT 1 MATCH (b) WHERE id(b) = a.prop RETURN b, a.prop AS property"))
   }
 
   test("should inline: MATCH (a) WITH a WHERE TRUE RETURN a") {
     val result = projectionInlinedAst("MATCH (a) WITH a WHERE TRUE RETURN a")
 
-    result should equal(ast("MATCH (a) WITH * WHERE TRUE RETURN a"))
+    result should equal(ast("MATCH (a) WITH a WHERE TRUE RETURN a"))
   }
 
   test("should inline pattern identifiers when possible") {
     val result = projectionInlinedAst("MATCH n WITH n MATCH n-->x RETURN x")
 
-    result should equal(ast("MATCH n WITH * MATCH n-->x RETURN x"))
+    result should equal(ast("MATCH n WITH n MATCH n-->x RETURN x"))
   }
 
   test("should inline: WITH 1 AS x RETURN 1 + x => WITH * RETURN 1 + 1") {
@@ -76,7 +75,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   test("should inline: WITH 1 as b RETURN b => RETURN 1 AS `b`") {
-    val result = projectionInlinedAst(" WITH 1 as b RETURN b")
+    val result = projectionInlinedAst("WITH 1 as b RETURN b")
 
     result should equal(ast("WITH * RETURN 1 AS `b`"))
   }
@@ -94,7 +93,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   test("should inline multiple identifiers across multiple WITH clauses: WITH 1 as n WITH n+1 AS m RETURN m => RETURN 1+1 as m") {
-    val result = projectionInlinedAst("WITH 1 as n WITH n+1 AS m RETURN m")
+    val result = projectionInlinedAst("WITH 1 as n WITH n + 1 AS m RETURN m")
 
     result should equal(ast("WITH * WITH * RETURN 1+1 as `m`"))
   }
@@ -102,13 +101,13 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   test("should inline node patterns: MATCH (a) WITH a as b MATCH (b) RETURN b => MATCH (a) WITH * MATCH (a) RETURN a as `b`") {
     val result = projectionInlinedAst("MATCH (a) WITH a as b MATCH (b) RETURN b")
 
-    result should equal(ast("MATCH (a) WITH * MATCH (a) RETURN a as `b`"))
+    result should equal(ast("MATCH (a) WITH a AS a MATCH (a) RETURN a as `b`"))
   }
 
   test("should inline relationship patterns: MATCH ()-[a]->() WITH a as b MATCH ()-[b]->() RETURN b => MATCH ()-[a]->() WITH * MATCH ()-[a]->() RETURN a as `b`") {
     val result = projectionInlinedAst("MATCH ()-[a]->() WITH a as b MATCH ()-[b]->() RETURN b")
 
-    result should equal(ast("MATCH ()-[a]->() WITH * MATCH ()-[a]->() RETURN a as `b`"))
+    result should equal(ast("MATCH ()-[a]->() WITH a AS a MATCH ()-[a]->() RETURN a as `b`"))
   }
 
   test("should not inline aggregations: MATCH (a)-[r]->() WITH a, count(r) as b RETURN b as `b`") {
@@ -122,10 +121,10 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   // FIXME: 2014-4-30 Davide: No inlining due to missing scope information for the identifiers
-  test("should not inline identifiers which are reused multiple times: WITH 1 as n WITH 2 AS n RETURN n") {
+  ignore("should not inline identifiers which are reused multiple times: WITH 1 as n WITH 2 AS n RETURN n") {
     val result = projectionInlinedAst("WITH 1 as n WITH 2 AS n RETURN n")
 
-    result should equal(ast("WITH 1 as n WITH 2 AS n RETURN n as `n`"))
+    result should equal(ast("WITH * WITH * RETURN 2 as `n`"))
   }
 
   // FIXME: 2014-4-30 Davide: This is not yet supported by the inline rewriter due to missing scope information for the identifiers
@@ -157,7 +156,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   test("MATCH n WITH n.prop AS x WITH x LIMIT 10 RETURN x" ) {
     val result = projectionInlinedAst("MATCH n WITH n.prop AS x WITH x LIMIT 10 RETURN x")
 
-    result should equal(ast("MATCH n WITH n.prop AS x WITH * LIMIT 10 RETURN x"))
+    result should equal(ast("MATCH n WITH n WITH n LIMIT 10 RETURN n.prop AS x"))
   }
 
   test("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b" ) {
@@ -177,10 +176,16 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     result should equal(ast(
       """MATCH (owner)
         |WITH owner, COUNT(*) AS xyz
-        |WITH *
+        |WITH owner, xyz
         |WHERE (owner)--()
         |RETURN owner
       """.stripMargin))
+  }
+
+  test("WITH 1 as b RETURN b") {
+    val result = projectionInlinedAst("WITH 1 as b RETURN b")
+
+    result should equal(ast("WITH * RETURN 1 AS b"))
   }
 
   private def parseReturnedExpr(queryText: String) =

@@ -84,7 +84,7 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
 
       case queryProjection: RegularQueryProjection =>
         val sortedAndLimited = sortSkipAndLimit(selectedPlan, query)
-        projection(sortedAndLimited, queryProjection.projections)
+        projection(sortedAndLimited, queryProjection.projections, intermediate = query.tail.isDefined)
 
       case UnwindProjection(identifier, expression) =>
         planUnwind(plan, identifier, expression)

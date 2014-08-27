@@ -33,8 +33,8 @@ case class InliningContext(projections: Map[Identifier, Expression] = Map.empty,
       projections
     } else {
       newProjections.foldLeft(projections) {
-        case (m, (k, v)) if seen(k) => m - k
-        case (m, (k, v))            => m + (k -> inlineExpressions(v))
+        case (m, (k, v)) if seen(k) && k != v => m - k
+        case (m, (k, v))                      => m + (k -> inlineExpressions(v))
       }
     }
     copy(projections = resultProjections, seenIdentifiers = seenIdentifiers ++ newProjections.keySet)

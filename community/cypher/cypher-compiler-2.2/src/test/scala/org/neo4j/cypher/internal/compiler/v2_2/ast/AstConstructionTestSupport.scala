@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, DummyPosition}
 import org.neo4j.cypher.internal.commons.CypherTestSupport
 
 trait AstConstructionTestSupport extends CypherTestSupport {
-  protected val pos = DummyPosition(0)
+  protected implicit val pos = DummyPosition(0)
 
   implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 

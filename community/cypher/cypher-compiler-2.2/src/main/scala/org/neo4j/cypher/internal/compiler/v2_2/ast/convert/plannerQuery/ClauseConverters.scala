@@ -155,9 +155,17 @@ object ClauseConverters {
 
       Handles: ... WITH * [WHERE <predicate>] ...
        */
-      case With(false, _: ReturnAll, None, None, None, where) if !builder.currentQueryGraph.hasOptionalPatterns =>
+      case With(false, ReturnAll(), None, None, None, where)
+        if !builder.currentQueryGraph.hasOptionalPatterns =>
         val selections = where.asSelections
+        builder.
+          updateGraph(_.addSelections(selections))
 
+      case With(false, ListedReturnItems(items), None, None, None, where)
+        if !builder.currentQueryGraph.hasOptionalPatterns
+          && items.forall(item => !containsAggregate(item.expression))
+          && items.forall { case item: AliasedReturnItem => item.expression == item.identifier } =>
+        val selections = where.asSelections
         builder.
           updateGraph(_.addSelections(selections))
 
