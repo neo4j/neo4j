@@ -61,10 +61,10 @@ public abstract class BackupExtensionService extends Service
     /**
      * The source specific target to valid backup host translation method.
      * 
-     * @param from The URI as passed in the command line
+     * @param address Cluster address as passed in the command line
      * @param arguments all arguments to the backup command
      * @return A URI where the scheme is the service's name and there exist host
      *         and port parts that point to a backup source.
      */
-    public abstract URI resolve( URI from, Args arguments, Logging logging );
+    public abstract URI resolve( String address, Args arguments, Logging logging );
 }

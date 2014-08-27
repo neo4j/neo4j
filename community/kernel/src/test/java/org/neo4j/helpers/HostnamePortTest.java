@@ -21,6 +21,7 @@ package org.neo4j.helpers;
 
 import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 
 import org.junit.Test;
 
@@ -67,7 +68,7 @@ public class HostnamePortTest
         assertThat( hostnamePort.getPort(), equalTo( 1243 ) );
         assertThat( hostnamePort.getPorts(), equalTo( new int[] {1243, 1234} ) );
     }
-    
+
     @Test
     public void testSinglePortOnly() throws Exception
     {
@@ -138,5 +139,57 @@ public class HostnamePortTest
         String hostName = InetAddress.getLocalHost().getHostName();
         HostnamePort hostnamePort = new HostnamePort( hostName, 1234 );
         assertThat( hostnamePort.toString( null ), equalTo( InetAddress.getByName( hostName ).getHostAddress()+":1234" ) );
+    }
+
+    @Test
+    public void testIPv6Address()
+    {
+        HostnamePort hostnamePort = new HostnamePort( "[2001:cdba:0:0:0:0:3257:9652]" );
+
+        assertThat( hostnamePort.getHost( null ), equalTo( resolveHost( "[2001:cdba:0:0:0:0:3257:9652]" ) ) );
+        assertThat( hostnamePort.getPort(), equalTo( 0 ) );
+        assertThat( hostnamePort.getPorts(), equalTo( new int[]{0, 0} ) );
+    }
+
+    @Test
+    public void testIPv6AddressWithSchemeAndPort()
+    {
+        HostnamePort hostnamePort = new HostnamePort( "foo://[ff02::1:1]:9191" );
+
+        assertThat( hostnamePort.getHost( null ), equalTo( resolveHost( "[ff02::1:1]" ) ) );
+        assertThat( hostnamePort.getPort(), equalTo( 9191 ) );
+        assertThat( hostnamePort.getPorts(), equalTo( new int[]{9191, 9191} ) );
+    }
+
+    @Test
+    public void testIPv6Localhost()
+    {
+        HostnamePort hostnamePort = new HostnamePort( "[::1]" );
+
+        assertThat( hostnamePort.getHost( null ), equalTo( resolveHost( "[::1]" ) ) );
+        assertThat( hostnamePort.getPort(), equalTo( 0 ) );
+        assertThat( hostnamePort.getPorts(), equalTo( new int[]{0, 0} ) );
+    }
+
+    @Test
+    public void testIPv6LocalhostWithSchemeAndPort()
+    {
+        HostnamePort hostnamePort = new HostnamePort( "foo://[::1]:6362" );
+
+        assertThat( hostnamePort.getHost( null ), equalTo( resolveHost( "[::1]" ) ) );
+        assertThat( hostnamePort.getPort(), equalTo( 6362 ) );
+        assertThat( hostnamePort.getPorts(), equalTo( new int[]{6362, 6362} ) );
+    }
+
+    private static String resolveHost( String address )
+    {
+        try
+        {
+            return InetAddress.getByName( address ).getHostAddress();
+        }
+        catch ( UnknownHostException e )
+        {
+            throw new RuntimeException( "Unable to resolve host for '" + address + "'", e );
+        }
     }
 }

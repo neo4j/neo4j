@@ -78,7 +78,8 @@ public class BackupToolUrisTest
                     uri( "single://localhost" ),
                     uri( "single://127.0.0.1", 6264 ),
                     uri( "ha://test.server" ),
-                    uri( "ha://test.server", 1212 ) );
+                    uri( "ha://test.server", 1212 )
+            );
         }
 
         @Test
@@ -117,9 +118,6 @@ public class BackupToolUrisTest
                     uri( "single://localhost,ha://not-localhost" ),
                     uri( "single://127.0.0.1:6361,single://127.0.0.1:6362" ),
                     uri( "300.400.500.600" ),
-                    uri( "ha://82.94.100.12\\1212,127.0.0.*:1213" ),
-                    uri( "single://127.0.0.1,ha://127.0.0.2" ),
-                    uri( "single:/\\/20.30.40.50:11,60.70.80.90:22" ),
                     uri( "host-name_with*wrong$chars.com" ),
                     uri( "dir://my" ),
                     uri( "dir://my", 10 ),
@@ -127,7 +125,8 @@ public class BackupToolUrisTest
                     uri( "foo://127.0.1.1", 6567 ),
                     uri( "cat://localhost" ),
                     uri( "cat://localhost", 4444 ),
-                    uri( "notHA://instance1:,instance2:,instance3", 5454 ) );
+                    uri( "notHA://instance1:,instance2:,instance3", 5454 )
+            );
         }
 
         @Test
@@ -149,6 +148,59 @@ public class BackupToolUrisTest
             }
 
             verifyZeroInteractions( backupService, systemOut );
+        }
+    }
+
+    @RunWith(Parameterized.class)
+    public static class IPv6UriTests extends UriTests
+    {
+        public IPv6UriTests( String host, Integer port )
+        {
+            super( host, port );
+        }
+
+        @Parameterized.Parameters
+        public static List<Object[]> data()
+        {
+            return asList(
+                    uri( "[2001:cdba:0000:0000:0000:0000:3257:9652]" ),
+                    uri( "[2001:cdba:0000:0000:0000:0000:3257:9652]", 5656 ),
+                    uri( "[2001:cdba:0:0:0:0:3257:9652]" ),
+                    uri( "[2001:cdba:0:0:0:0:3257:9652]", 9091 ),
+                    uri( "[2001:cdba::3257:9652]" ),
+                    uri( "[2001:cdba::3257:9652]", 20 ),
+                    uri( "[2001:db8::1]", 9991 ),
+                    uri( "[2001:db8::1]", 1990 ),
+                    uri( "[::1]" ),
+                    uri( "[::1]", 8989 ),
+                    uri( "[fe80::]" ),
+                    uri( "[fe80::]", 1209 ),
+                    uri( "[::ffff:0:0]" ),
+                    uri( "[::ffff:0:0]", 4545 ),
+                    uri( "[ff02::1:1]" ),
+                    uri( "[ff02::1:1]", 6767 ),
+                    uri( "[2002::]" ),
+                    uri( "[2002::]", 3040 )
+            );
+        }
+
+        @Test
+        public void shouldExecuteBackupWithValidUri() throws Exception
+        {
+            // Given
+            String[] args = new String[]{"-host", host, "-port", String.valueOf( port ), "-to", "/var/backup/graph"};
+
+            // When
+            newBackupTool().run( args );
+
+            // Then
+            verify( backupService ).doIncrementalBackupOrFallbackToFull(
+                    eq( host ),
+                    eq( port ),
+                    eq( "/var/backup/graph" ),
+                    eq( true ),
+                    any( Config.class )
+            );
         }
     }
 
