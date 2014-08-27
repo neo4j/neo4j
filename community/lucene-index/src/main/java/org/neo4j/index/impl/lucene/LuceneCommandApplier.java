@@ -135,7 +135,10 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         }
         finally
         {
-            dataSource.releaseWriteLock();
+            if ( definitions != null )
+            {
+                dataSource.releaseWriteLock();
+            }
         }
     }
 
