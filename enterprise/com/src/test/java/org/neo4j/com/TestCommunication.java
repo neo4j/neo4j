@@ -57,7 +57,7 @@ public class TestCommunication
     {
         life.shutdown();
     }
-    
+
     @Test
     public void clientGetResponseFromServerViaComLayer() throws Throwable
     {
@@ -263,7 +263,6 @@ public class TestCommunication
     }
 
     @Test
-    @Ignore("getting build back to green")
     public void serverStopsStreamingToDeadClient() throws Throwable
     {
         MadeUpServer server = builder.server();
@@ -272,11 +271,12 @@ public class TestCommunication
         life.add( client );
         life.start();
 
-        int failAtSize = FRAME_LENGTH*2;
+        int failAtSize = FRAME_LENGTH/2;
         ClientCrashingWriter writer = new ClientCrashingWriter( client, failAtSize );
         try
         {
             client.fetchDataStream( writer, FRAME_LENGTH*10 );
+            assertTrue( writer.getSizeRead() >= failAtSize );
             fail( "Should fail in the middle" );
         }
         catch ( ComException e )
@@ -319,7 +319,7 @@ public class TestCommunication
             // one instead of getting a "channel closed".
         }
     }
-    
+
     @Test
     public void clientCanReadChunkSizeBiggerThanItsOwn() throws Throwable
     {   // Given that frameLength is the same for both client and server.
@@ -353,7 +353,7 @@ public class TestCommunication
         // from server are 10 times bigger than the clients chunk size.
         client.sendDataStream( new DataProducer( clientChunkSize*2 ) );
     }
-    
+
     @Test
     public void impossibleToHaveBiggerChunkSizeThanFrameSize() throws Throwable
     {
@@ -376,7 +376,7 @@ public class TestCommunication
         {   // Good
         }
     }
-    
+
     class Builder
     {
         private final int port;
@@ -385,13 +385,13 @@ public class TestCommunication
         private final byte applicationProtocolVersion;
         private final TxChecksumVerifier verifier;
         private final StoreId storeId;
-        
+
         public Builder()
         {
             this( PORT, FRAME_LENGTH, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION,
                     ALWAYS_MATCH, storeIdToUse );
         }
-        
+
         public Builder( int port, int chunkSize, byte internalProtocolVersion, byte applicationProtocolVersion,
                 TxChecksumVerifier verifier, StoreId storeId )
         {
@@ -402,53 +402,53 @@ public class TestCommunication
             this.verifier = verifier;
             this.storeId = storeId;
         }
-        
+
         public Builder port( int port )
         {
             return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
-        
+
         public Builder chunkSize( int chunkSize )
         {
             return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
-        
+
         public Builder internalProtocolVersion( byte internalProtocolVersion )
         {
             return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
-        
+
         public Builder applicationProtocolVersion( byte applicationProtocolVersion )
         {
             return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
-        
+
         public Builder verifier( TxChecksumVerifier verifier )
         {
             return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
-        
+
         public Builder storeId( StoreId storeId )
         {
             return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
-        
+
         public MadeUpServer server()
         {
             return new MadeUpServer( new MadeUpServerImplementation( storeId ), port,
                     internalProtocolVersion, applicationProtocolVersion, verifier, chunkSize );
         }
-        
+
         public MadeUpServer server( MadeUpCommunicationInterface target )
         {
             return new MadeUpServer( target, port, internalProtocolVersion, applicationProtocolVersion, verifier, chunkSize );
         }
-        
+
         public MadeUpClient client()
         {
             return new MadeUpClient( port, storeId, internalProtocolVersion, applicationProtocolVersion, chunkSize );
         }
-        
+
         public ServerInterface serverInOtherJvm()
         {
             ServerInterface server = new MadeUpServerProcess().start( new StartupData(
