@@ -65,12 +65,11 @@ public final class HaBackupProvider extends BackupExtensionService
     }
 
     @Override
-    public URI resolve( URI address, Args args, Logging logging )
+    public URI resolve( String address, Args args, Logging logging )
     {
-        String master = null;
+        String master;
         StringLogger logger = logging.getMessagesLog( HaBackupProvider.class );
-        logger.debug( "Asking cluster member(s) at '" + address
-                + "' for master" );
+        logger.debug( "Asking cluster member(s) at '" + address + "' for master" );
 
         String clusterName = args.get( ClusterSettings.cluster_name.name(), null );
         if ( clusterName == null )
@@ -81,8 +80,7 @@ public final class HaBackupProvider extends BackupExtensionService
 
         try
         {
-            master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
-                    2 ), clusterName, logging ); // skip the "//" part
+            master = getMasterServerInCluster( normalizeAddress( address ), clusterName, logging );
 
             logger.debug( "Found master '" + master + "' in cluster" );
             return URI.create( master );
@@ -91,6 +89,16 @@ public final class HaBackupProvider extends BackupExtensionService
         {
             throw new RuntimeException( e.getMessage() );
         }
+    }
+
+    private static String normalizeAddress( String address )
+    {
+        int index = address.indexOf( "://" );
+        if ( index != -1 )
+        {
+            return address.substring( index + 3 );
+        }
+        return address;
     }
 
     private String getMasterServerInCluster( String from, String clusterName, final Logging logging )
