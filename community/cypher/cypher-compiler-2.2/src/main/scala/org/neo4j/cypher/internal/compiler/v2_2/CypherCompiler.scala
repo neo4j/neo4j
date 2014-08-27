@@ -111,10 +111,10 @@ case class CypherCompiler(parser: CypherParser,
   def prepareQuery(queryText: String, planType: PlanType): PreparedQuery = {
     val parsedStatement = parser.parse(queryText)
     val cleanedStatement = parsedStatement.endoRewrite(hoistExpressionsInClosingClauses)
-    semanticChecker.check(queryText, cleanedStatement)
-    val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, cleanedStatement)
-    val table = semanticChecker.check(queryText, rewrittenStatement)
-    PreparedQuery(rewrittenStatement, queryText, extractedParams, planType)(table)
+    val initialTable = semanticChecker.check(queryText, cleanedStatement)
+    val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, cleanedStatement, initialTable)
+    val rewrittenTable = semanticChecker.check(queryText, rewrittenStatement)
+    PreparedQuery(rewrittenStatement, queryText, extractedParams, planType)(rewrittenTable)
   }
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {

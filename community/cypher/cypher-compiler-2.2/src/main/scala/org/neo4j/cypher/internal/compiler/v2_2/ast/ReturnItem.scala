@@ -30,10 +30,12 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition
   def semanticCheck = items.semanticCheck chain
     ensureProjectedToUniqueIds
 
-  def declareIdentifiers(currentState: SemanticState) =
-    items.foldSemanticCheck(item =>
-      Identifier(item.name)(null).declare(item.expression.types(currentState))
-    )
+  def declareIdentifiers(currentState: SemanticState) = {
+    items.foldSemanticCheck({ item =>
+      val identifier = item.alias.getOrElse(Identifier(item.name)(item.position))
+      identifier.declare(item.expression.types(currentState))
+    })
+  }
 
   private def ensureProjectedToUniqueIds: SemanticCheck = {
     items.groupBy(_.name).foldLeft(SemanticCheckResult.success) {
@@ -50,15 +52,8 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition
 }
 
 case class ReturnAll()(val position: InputPosition) extends ReturnItems {
-  var seenIdentifiers: Option[Set[String]] = None
 
-  def semanticCheck =
-    updateSeenIdentifiers
-
-  private def updateSeenIdentifiers = (s: SemanticState) => {
-    seenIdentifiers = Some(s.scope.symbolTable.keySet)
-    SemanticCheckResult.success(s)
-  }
+  def semanticCheck: SemanticCheck = SemanticCheckResult.success
 
   def declareIdentifiers(currentState: SemanticState) = s =>
     SemanticCheckResult.success(s.importScope(currentState.scope))
@@ -77,11 +72,12 @@ sealed trait ReturnItem extends ASTNode with SemanticCheckable {
 case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition) extends ReturnItem {
   val alias = expression match {
     case i: Identifier => Some(i)
-    case _ => None
+    case _             => None
   }
+
   val name = alias.map(_.name) getOrElse { inputText.trim }
 }
-
+// RETURN n.prop AS homeAddress
 case class AliasedReturnItem(expression: Expression, identifier: Identifier)(val position: InputPosition) extends ReturnItem {
   val alias = Some(identifier)
   val name = identifier.name

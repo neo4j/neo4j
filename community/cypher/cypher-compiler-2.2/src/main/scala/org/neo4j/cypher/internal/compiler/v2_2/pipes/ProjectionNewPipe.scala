@@ -27,9 +27,13 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
 
 case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
                             (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+
   val symbols: SymbolTable = {
     val newIdentifiers = expressions.map {
-      case (name, expression) => name -> expression.getType(source.symbols)
+      case (name, expression) =>
+        val key = name
+        val tpe = expression.getType(source.symbols)
+        key -> tpe
     }
 
     source.symbols.add(newIdentifiers)

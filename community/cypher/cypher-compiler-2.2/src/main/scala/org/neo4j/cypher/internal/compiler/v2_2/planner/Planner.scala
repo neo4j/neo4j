@@ -39,16 +39,21 @@ case class Planner(monitors: Monitors,
                    tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
                    maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
                    strategy: PlanningStrategy = new QueryPlanningStrategy(),
-                   queryGraphSolver: QueryGraphSolver = new GreedyQueryGraphSolver()) extends PipeBuilder {
+                   queryGraphSolver: QueryGraphSolver = new GreedyQueryGraphSolver(),
+                   shouldDedup: Boolean = true) extends PipeBuilder {
 
   val executionPlanBuilder:PipeExecutionPlanBuilder = maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(monitors))
 
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo =
-    producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
+    val table = inputQuery.semanticTable
+    producePlan(inputQuery.statement, table, inputQuery.queryText)(planContext)
+  }
 
   private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo = {
-    Planner.rewriteStatement(statement) match {
+    println(statement)
+    PlanRewriter(semanticTable).rewriteStatement(statement) match {
       case ast: Query =>
+        println(ast)
         monitor.startedPlanning(query)
         val (logicalPlan, pipeBuildContext) = produceQueryPlan(ast, semanticTable)(planContext)
         monitor.foundPlan(query, logicalPlan)
@@ -82,22 +87,33 @@ case class Planner(monitors: Monitors,
   }
 }
 
-object Planner {
-  val rewriter = inSequence(
-    rewriteEqualityToInCollection,
-    splitInCollectionsToIsolateConstants,
-    CNFNormalizer,
-    collapseInCollectionsContainingConstants,
-    nameVarLengthRelationships,
-    namePatternPredicates,
-    inlineProjections
-  )
-
-  def rewriteStatement(statement: Statement) = statement.endoRewrite(rewriter)
-}
-
 trait PlanningMonitor {
   def startedPlanning(q: String)
   def foundPlan(q: String, p: LogicalPlan)
   def successfulPlanning(q: String, p: PipeInfo)
 }
+
+case class PlanRewriter(table: SemanticTable, shouldDedup: Boolean = true) {
+  val rewriter = {
+    val builder = Seq.newBuilder[(AnyRef) => Option[AnyRef]]
+
+//    builder += TaggedRewriter("rewriteEqualityToInCollection", rewriteEqualityToInCollection)
+//    builder += TaggedRewriter("splitInCollectionsToIsolateConstants", splitInCollectionsToIsolateConstants)
+//    builder += TaggedRewriter("CNFNormalizer", CNFNormalizer)
+//    builder += TaggedRewriter("collapseInCollectionsContainingConstants", collapseInCollectionsContainingConstants)
+    if (shouldDedup)
+      builder += TaggedRewriter("dedup", dedup(table))
+    builder += TaggedRewriter("nameVarLengthRelationships", nameVarLengthRelationships)
+    builder += TaggedRewriter("namePatternPredicates", namePatternPredicates)
+    builder += TaggedRewriter("inlineProjections", inlineProjections)
+    inSequence(builder.result(): _*)
+  }
+
+  def rewriteStatement(statement: Statement) = {
+    print(s"Planner in:\n\t${Some(statement)}\n\n")
+    val result = statement.endoRewrite(rewriter)
+    print(s"Planner out:\n\t${Some(result)}\n\n")
+    result
+  }
+}
+

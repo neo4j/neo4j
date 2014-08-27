@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTNode, LabelName, AstConstructionTestSupport, UsingIndexHint}
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{simpleDocBuilder, DocBuilderTestSuite}
 
 class AstDocBuilderTest extends DocBuilderTestSuite[Any] with AstConstructionTestSupport {
@@ -27,7 +27,7 @@ class AstDocBuilderTest extends DocBuilderTestSuite[Any] with AstConstructionTes
   val docBuilder = astDocBuilder orElse astExpressionDocBuilder orElse simpleDocBuilder
 
   test("USING INDEX n:Person(name)") {
-    val astNode: ASTNode = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
+    val astNode: ASTNode = UsingIndexHint(ident("n"), LabelName("Person")_, PropertyKeyName("name")_)_
     format(astNode) should equal("USING INDEX n:Person(name)")
   }
 }

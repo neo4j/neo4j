@@ -19,25 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp}
 
-object expandStar extends Rewriter {
+case class expandStar(table: SemanticTable) extends Rewriter {
 
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    case x: ReturnAll if x.seenIdentifiers.nonEmpty =>
-
-      val identifiers = x.seenIdentifiers.get.filter(UnNamedNameGenerator.isNamed).toSeq.sorted
-
-      val returnItems: Seq[ReturnItem] = identifiers.map {
-        id =>
-          val ident = Identifier(id)(x.position)
-          AliasedReturnItem(ident, ident)(x.position)
-      }.toSeq
-
-      ListedReturnItems(returnItems)(x.position)
+    case clause: ClosingClause =>
+      val scope = table.scopes(clause.position)
+      clause.returnItems match {
+        case retAll: ReturnAll if scope.nonEmpty =>
+          val namesInScope = scope.keySet
+          val identifiers = namesInScope.filter(UnNamedNameGenerator.isNamed).toSeq.sorted.map(scope)
+          val items = identifiers.map(ident => AliasedReturnItem(ident, ident)(ident.position))
+          clause.withReturnItems(ListedReturnItems(items)(retAll.position))
+        case _ =>
+          clause
+      }
   }
 }

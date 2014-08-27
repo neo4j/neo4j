@@ -29,14 +29,17 @@ sealed trait Clause extends ASTNode with SemanticCheckable {
 
 sealed trait UpdateClause extends Clause
 
-sealed trait ClosingClause extends Clause with SemanticChecking {
+sealed trait ClosingClause extends Clause with SemanticChecking with ScopeStartRegistration {
   def distinct: Boolean
   def returnItems: ReturnItems
   def orderBy: Option[OrderBy]
   def skip: Option[Skip]
   def limit: Option[Limit]
 
+  def withReturnItems(newReturnItems: ReturnItems): ClosingClause
+
   def semanticCheck =
+    registerScopeStart chain
     returnItems.semanticCheck chain
     createSpecialScopeForOrderBy {
       orderBy.semanticCheck chain
@@ -55,7 +58,7 @@ sealed trait ClosingClause extends Clause with SemanticChecking {
     val mustHaveCleanScope = returnItems.containsAggregate || distinct
 
     val startState: SemanticCheck = s => {
-      val start = if (mustHaveCleanScope) s.clearSymbols else s.newScope
+      val start = if (mustHaveCleanScope) s.clearSymbols else s.pushScope
       val innerScopeWithAliases = returnItems.declareIdentifiers(s)(start)
       SemanticCheckResult.success(innerScopeWithAliases.state)
     }
@@ -102,7 +105,6 @@ case class Start(items: Seq[StartItem], where: Option[Where])(val position: Inpu
   def semanticCheck = items.semanticCheck chain where.semanticCheck
 }
 
-
 case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: Option[Where])(val position: InputPosition) extends Clause with SemanticChecking {
   def name = "MATCH"
 
@@ -124,7 +126,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
 
   def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {
-      case hint@UsingIndexHint(Identifier(identifier), LabelName(labelName), Identifier(property))
+      case hint@UsingIndexHint(Identifier(identifier), LabelName(labelName), PropertyKeyName(property))
         if !containsLabelPredicate(identifier, labelName)
           || !containsPropertyPredicate(identifier, property) =>
         SemanticError(
@@ -260,6 +262,8 @@ case class With(
     checkAliasedReturnItems chain
     where.semanticCheck
 
+  def withReturnItems(newReturnItems: ReturnItems) = copy(returnItems = newReturnItems)(position)
+
   private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
     case li: ListedReturnItems => li.items.filter(!_.alias.isDefined).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
     case _                     => Seq()
@@ -289,6 +293,8 @@ case class Return(
     limit: Option[Limit])(val position: InputPosition) extends ClosingClause {
 
   def name = "RETURN"
+
+  def withReturnItems(newReturnItems: ReturnItems) = copy(returnItems = newReturnItems)(position)
 
   protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state =>
     if (returnItems == ReturnAll()(null) && state.scope.isEmpty) {

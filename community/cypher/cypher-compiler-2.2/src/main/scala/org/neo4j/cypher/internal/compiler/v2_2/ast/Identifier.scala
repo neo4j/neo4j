@@ -42,4 +42,6 @@ case class Identifier(name: String)(val position: InputPosition) extends Express
 
   def ensureDefined() =
     (_: SemanticState).ensureIdentifierDefined(this)
+
+  override def toString() = s"Identifier($name)(${position.offset})@${Integer.toHexString(super.hashCode())}"
 }

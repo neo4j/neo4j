@@ -121,7 +121,6 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     result should equal(ast("MATCH (a)-[r]->() RETURN a, count(r) as `b`"))
   }
 
-  // FIXME: 2014-4-30 Davide: No inlining due to missing scope information for the identifiers
   test("should not inline identifiers which are reused multiple times: WITH 1 as n WITH 2 AS n RETURN n") {
     val result = projectionInlinedAst("WITH 1 as n WITH 2 AS n RETURN n")
 
@@ -164,6 +163,19 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     returns should equal(expected: PathExpression)
   }
 
+  test("MATCH p = (a) WITH p RETURN p" ) {
+    val q = projectionInlinedAst( "MATCH p = (a) WITH p RETURN p" )
+    val returns = q match {
+      case Query(_, SingleQuery(Seq(_, _, Return(_, ListedReturnItems(Seq(AliasedReturnItem(expr, Identifier("p")))), _, _, _)))) => expr
+    }
+
+    val expected = PathExpression(
+      NodePathStep(Identifier("a")_, NilPathStep)
+    )_
+
+    returns should equal(expected: PathExpression)
+  }
+
   test("MATCH p = (a)-[r]->(b) RETURN p" ) {
     val returns = parseReturnedExpr("MATCH p = (a)-[r]->(b) RETURN p")
 
@@ -173,6 +185,20 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
 
     returns should equal(expected: PathExpression)
   }
+
+  test("MATCH p = (a)-[r]->(b) WITH p RETURN p" ) {
+    val q = projectionInlinedAst( "MATCH p = (a)-[r]->(b) WITH p RETURN p" )
+    val returns = q match {
+      case Query(_, SingleQuery(Seq(_, _, Return(_, ListedReturnItems(Seq(AliasedReturnItem(expr, Identifier("p")))), _, _, _)))) => expr
+    }
+
+    val expected = PathExpression(
+      NodePathStep(Identifier("a")_, SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep))
+    )_
+
+    returns should equal(expected: PathExpression)
+  }
+
 
   test("MATCH p = (b)<-[r]->(a) RETURN p" ) {
     val returns = parseReturnedExpr("MATCH p = (b)<-[r]-(a) RETURN p")

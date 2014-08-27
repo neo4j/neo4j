@@ -25,7 +25,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 
 object inlineProjections extends Rewriter {
 
-  def apply(in: AnyRef): Option[AnyRef] = instance.apply(in)
+  def apply(in: AnyRef): Option[AnyRef] = {
+    val result = instance.apply(in)
+    result
+  }
 
   val instance = Rewriter.lift { case input: Statement =>
     val context = inliningContextCreator(input)
@@ -37,7 +40,7 @@ object inlineProjections extends Rewriter {
     val returnInlineReturnItems = inlineReturnItemsFactory(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, inlineInAliases = false))
 
     val inliningRewriter = Rewriter.lift {
-      case withClause @ With(false, returnItems @ ListedReturnItems(items), orderBy, _, _, _) =>
+      case withClause @ With(false, returnItems @ ListedReturnItems(items), orderBy, skip, limit, where) =>
         val pos = returnItems.position
 
         def identifierOnly(item: AliasedReturnItem) = item.expression == item.identifier
@@ -60,7 +63,10 @@ object inlineProjections extends Rewriter {
 
         withClause.copy(
           returnItems = newReturnItems,
-          orderBy = orderBy.map(inlineIdentifiers.narrowed)
+          orderBy = orderBy.map(inlineIdentifiers.narrowed),
+          where = where.map(inlineIdentifiers.narrowed),
+          skip = skip.map(inlineIdentifiers.narrowed),
+          limit = limit.map(inlineIdentifiers.narrowed)
         )(withClause.position)
 
       case returnClause @ Return(_, returnItems: ListedReturnItems, orderBy, skip, limit) =>

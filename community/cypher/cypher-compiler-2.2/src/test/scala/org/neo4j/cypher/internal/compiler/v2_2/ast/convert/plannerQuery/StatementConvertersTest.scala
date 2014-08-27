@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Direction
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
+
   val nIdent: Identifier = Identifier("n")_
   val A: LabelName = LabelName("A")_
   val B: LabelName = LabelName("B")_
@@ -44,7 +45,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val ast = parser.parse(query)
 
     val rewrittenAst: Statement = if (normalize) {
-      Planner.rewriteStatement(astRewriter.rewrite(query, ast)._1)
+      val table = semanticChecker.check(query, ast)
+      PlanRewriter(table, shouldDedup = false).rewriteStatement(astRewriter.rewrite(query, ast, table)._1)
     } else {
       ast
     }
@@ -751,7 +753,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n") {
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n")
 
-    query.graph.hints should equal(Set[Hint](UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_))
+    query.graph.hints should equal(Set[Hint](UsingIndexHint(ident("n"), LabelName("Awesome")_, PropertyKeyName("prop")_)_))
   }
 
   test("MATCH shortestPath(a-[r]->b) RETURN r") {
