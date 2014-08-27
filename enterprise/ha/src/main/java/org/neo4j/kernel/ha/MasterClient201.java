@@ -27,6 +27,7 @@ import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.Protocol;
+import org.neo4j.com.Protocol201;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.ResourceReleaser;
@@ -83,6 +84,12 @@ public class MasterClient201 extends Client<Master> implements MasterClient
                 readTimeoutSeconds, maxConcurrentChannels, chunkSize );
         this.lockReadTimeout = lockReadTimeout;
         this.monitor = monitors.newMonitor( ByteCounterMonitor.class, getClass() );
+    }
+
+    @Override
+    protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
+    {
+        return new Protocol201( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
 
     @Override

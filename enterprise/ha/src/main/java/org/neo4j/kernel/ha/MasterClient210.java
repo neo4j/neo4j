@@ -27,6 +27,7 @@ import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.Protocol;
+import org.neo4j.com.Protocol201;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.ResourceReleaser;
@@ -76,12 +77,26 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     private final ByteCounterMonitor monitor;
 
     public MasterClient210( String hostNameOrIp, int port, Logging logging, Monitors monitors, StoreId storeId,
-                            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize )
+                            long readTimeoutMillis, long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize )
     {
-        super( hostNameOrIp, port, logging, monitors, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
-                readTimeoutSeconds, maxConcurrentChannels, chunkSize );
-        this.lockReadTimeout = lockReadTimeout;
+        this( hostNameOrIp, port, logging, monitors, storeId, readTimeoutMillis, lockReadTimeoutMillis,
+                maxConcurrentChannels, chunkSize, PROTOCOL_VERSION );
+    }
+
+    MasterClient210( String hostNameOrIp, int port, Logging logging, Monitors monitors, StoreId storeId,
+                            long readTimeoutMillis, long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
+                            byte protocolVersion )
+    {
+        super( hostNameOrIp, port, logging, monitors, storeId, MasterServer.FRAME_LENGTH, protocolVersion,
+                readTimeoutMillis, maxConcurrentChannels, chunkSize );
+        this.lockReadTimeout = lockReadTimeoutMillis;
         this.monitor = monitors.newMonitor( ByteCounterMonitor.class, getClass() );
+    }
+
+    @Override
+    protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
+    {
+        return new Protocol201( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
 
     @Override

@@ -103,13 +103,18 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         this.readTimeout = readTimeout;
         // ResourcePool no longer controls max concurrent channels. Use this value for the pool size
         this.maxUnusedChannels = maxConcurrentChannels;
-        this.mismatchingVersionHandlers = new ArrayList<MismatchingVersionHandler>( 2 );
+        this.mismatchingVersionHandlers = new ArrayList<>( 2 );
         this.address = new InetSocketAddress( hostNameOrIp, port );
-        this.protocol = new Protocol( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
+        this.protocol = createProtocol( chunkSize, applicationProtocolVersion );
 
         msgLog.info( getClass().getSimpleName() + " communication channel created towards " + hostNameOrIp + ":" +
                 port );
         this.requestMonitor = monitors.newMonitor( RequestMonitor.class, getClass() );
+    }
+
+    protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
+    {
+        return new Protocol214( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
 
     @Override

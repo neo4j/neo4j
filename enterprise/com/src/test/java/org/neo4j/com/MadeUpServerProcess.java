@@ -28,13 +28,13 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData
 
     public static final int PORT = 8888;
 
-    private volatile transient MadeUpServer server;
+    private transient volatile MadeUpServer server;
 
     @Override
     protected void startup( StartupData data ) throws Throwable
     {
         MadeUpCommunicationInterface implementation = new MadeUpServerImplementation(
-                new StoreId( data.creationTime, data.storeId ) );
+                new StoreId( data.creationTime, data.storeId, data.creationTime, data.storeId ) );
         MadeUpServer localServer = new MadeUpServer( implementation, 8888, data.internalProtocolVersion,
                 data.applicationProtocolVersion, TxChecksumVerifier.ALWAYS_MATCH, data.chunkSize );
         localServer.init();

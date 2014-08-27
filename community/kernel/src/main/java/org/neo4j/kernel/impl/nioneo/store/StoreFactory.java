@@ -39,11 +39,11 @@ import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
-* Factory for Store implementations. Can also be used to create empty stores.
-*/
+ * Factory for Store implementations. Can also be used to create empty stores.
+ */
 public class StoreFactory
 {
-    public static abstract class Configuration
+    public abstract static class Configuration
     {
         public static final Setting<Integer> string_block_size = GraphDatabaseSettings.string_block_size;
         public static final Setting<Integer> array_block_size = GraphDatabaseSettings.array_block_size;
@@ -218,7 +218,7 @@ public class StoreFactory
         return createNeoStore( fileName, new StoreId() );
     }
 
-    public NeoStore createNeoStore( File fileName, StoreId storeId )
+    private NeoStore createNeoStore( File fileName, StoreId storeId )
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( NeoStore.TYPE_DESCRIPTOR ) );
         createNodeStore(new File( fileName.getPath() + NODE_STORE_NAME));
@@ -232,14 +232,18 @@ public class StoreFactory
 
         NeoStore neoStore = newNeoStore( fileName );
         /*
-        *  created time | random long | backup version | tx id | store version | next prop
-        */
-        for ( int i = 0; i < 6; i++ )
+        created time | random long | backup version | tx id | store version | next prop | latest constraint tx | upgrade time | upgrade id
+         */
+        for ( int i = 0; i < NeoStore.META_DATA_RECORD_COUNT; i++ )
         {
             neoStore.nextId();
         }
         neoStore.setCreationTime( storeId.getCreationTime() );
         neoStore.setRandomNumber( storeId.getRandomId() );
+        // If neoStore.creationTime == neoStore.upgradeTime && neoStore.randomNumber == neoStore.upgradeId
+        // then store has never been upgraded
+        neoStore.setUpgradeId( storeId.getRandomId() );
+        neoStore.setUpgradeTime( storeId.getCreationTime() );
         neoStore.setVersion( 0 );
         neoStore.setLastCommittedTx( 1 );
         neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );

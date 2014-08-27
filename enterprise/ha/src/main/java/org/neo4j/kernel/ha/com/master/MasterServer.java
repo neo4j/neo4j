@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.jboss.netty.channel.Channel;
+
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
@@ -34,7 +35,7 @@ import org.neo4j.com.Server;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.kernel.ha.HaRequestType210;
-import org.neo4j.kernel.ha.MasterClient210;
+import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -52,7 +53,7 @@ public class MasterServer extends Server<Master, Void>
     public MasterServer( Master requestTarget, Logging logging, Configuration config,
                          TxChecksumVerifier txVerifier, Monitors monitors )
     {
-        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient210.PROTOCOL_VERSION, txVerifier,
+        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient214.PROTOCOL_VERSION, txVerifier,
                 SYSTEM_CLOCK, monitors );
     }
 

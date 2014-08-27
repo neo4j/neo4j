@@ -624,7 +624,11 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     private static void writeStoreId( StoreId storeId, ChannelBuffer targetBuffer )
     {
-        targetBuffer.writeBytes( storeId.serialize() );
+        targetBuffer.writeLong( storeId.getCreationTime() );
+        targetBuffer.writeLong( storeId.getRandomId() );
+        targetBuffer.writeLong( StoreId.storeVersionAsLong );
+        targetBuffer.writeLong( storeId.getUpgradeTime() );
+        targetBuffer.writeLong( storeId.getUpgradeId() );
     }
 
     private static void writeTransactionStreams( TransactionStream txStream, ChannelBuffer buffer, ByteCounterMonitor bufferMonitor )

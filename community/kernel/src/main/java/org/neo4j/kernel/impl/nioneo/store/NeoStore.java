@@ -51,8 +51,8 @@ public class NeoStore extends AbstractStore
         return relTypeStore;
     }
 
-    public static abstract class Configuration
-        extends AbstractStore.Configuration
+    public abstract static class Configuration
+            extends AbstractStore.Configuration
     {
         public static final Setting<Integer> relationship_grab_size = GraphDatabaseSettings.relationship_grab_size;
         public static final Setting<Integer> dense_node_threshold = GraphDatabaseSettings.dense_node_threshold;
@@ -61,7 +61,7 @@ public class NeoStore extends AbstractStore
     public static final String TYPE_DESCRIPTOR = "NeoStore";
 
     /*
-     *  7 longs in header (long + in use), time | random | version | txid | store version | graph next prop | latest constraint tx
+     *  9 longs in header (long + in use), time | random | version | txid | store version | graph next prop | latest constraint tx | upgrade time | upgrade id
      */
     public static final int RECORD_SIZE = 9;
 
@@ -69,13 +69,18 @@ public class NeoStore extends AbstractStore
 
     // Positions of meta-data records
 
-    private static final int TIME_POSITION = 0;
-    private static final int RANDOM_POSITION = 1;
-    private static final int VERSION_POSITION = 2;
-    private static final int LATEST_TX_POSITION = 3;
-    private static final int STORE_VERSION_POSITION = 4;
-    private static final int NEXT_GRAPH_PROP_POSITION = 5;
-    private static final int LATEST_CONSTRAINT_TX_POSITION = 6;
+    public static final int TIME_POSITION = 0;
+    public static final int RANDOM_NUMBER_POSITION = 1;
+    public static final int VERSION_POSITION = 2;
+    public static final int LATEST_TX_POSITION = 3;
+    public static final int STORE_VERSION_POSITION = 4;
+    public static final int NEXT_GRAPH_PROP_POSITION = 5;
+    public static final int LATEST_CONSTRAINT_TX_POSITION = 6;
+    public static final int UPGRADE_ID_POSITION = 7;
+    public static final int UPGRADE_TIME_POSITION = 8;
+    static final int META_DATA_RECORD_COUNT = UPGRADE_TIME_POSITION + 1;
+
+    public static final int META_DATA_EXPECTED_SIZE = META_DATA_RECORD_COUNT * RECORD_SIZE;
 
     public static boolean isStorePresent( FileSystemAbstraction fs, Config config )
     {
@@ -400,27 +405,27 @@ public class NeoStore extends AbstractStore
 
     public StoreId getStoreId()
     {
-        return new StoreId( getCreationTime(), getRandomNumber() );
+        return new StoreId( getCreationTime(), getRandomNumber(), getUpgradeTime(), getUpgradeId() );
     }
 
     public long getCreationTime()
     {
-        return getRecord( 0 );
+        return getRecord( TIME_POSITION );
     }
 
     public void setCreationTime( long time )
     {
-        setRecord( 0, time );
+        setRecord( TIME_POSITION, time );
     }
 
     public long getRandomNumber()
     {
-        return getRecord( 1 );
+        return getRecord( RANDOM_NUMBER_POSITION );
     }
 
     public void setRandomNumber( long nr )
     {
-        setRecord( 1, nr );
+        setRecord( RANDOM_NUMBER_POSITION, nr );
     }
 
     public void setRecoveredStatus( boolean status )
@@ -451,12 +456,12 @@ public class NeoStore extends AbstractStore
 
     public long getVersion()
     {
-        return getRecord( 2 );
+        return getRecord( VERSION_POSITION );
     }
 
     public void setVersion( long version )
     {
-        setRecord( 2, version );
+        setRecord( VERSION_POSITION, version );
     }
 
     public synchronized void setLastCommittedTx( long txId )
@@ -467,7 +472,7 @@ public class NeoStore extends AbstractStore
             throw new InvalidRecordException( "Could not set tx commit id[" +
                 txId + "] since the current one is[" + current + "]" );
         }
-        setRecord( 3, txId );
+        setRecord( LATEST_TX_POSITION, txId );
         lastCommittedTx.set( txId );
     }
 
@@ -478,7 +483,7 @@ public class NeoStore extends AbstractStore
         {
             synchronized ( this )
             {
-                txId = getRecord( 3 );
+                txId = getRecord( LATEST_TX_POSITION );
                 lastCommittedTx.compareAndSet( -1, txId ); // CAS since multiple threads may pass the if check above
             }
         }
@@ -510,6 +515,26 @@ public class NeoStore extends AbstractStore
         long current = getVersion();
         setVersion( current + 1 );
         return current;
+    }
+
+    public long getUpgradeId()
+    {
+        return getRecord( UPGRADE_ID_POSITION );
+    }
+
+    public void setUpgradeId( long upgradeId )
+    {
+        setRecord( UPGRADE_ID_POSITION, upgradeId );
+    }
+
+    public long getUpgradeTime()
+    {
+        return getRecord( UPGRADE_TIME_POSITION );
+    }
+
+    public void setUpgradeTime( long upgradeTime )
+    {
+        setRecord( UPGRADE_TIME_POSITION, upgradeTime );
     }
 
     private long getRecord( long id )
@@ -544,22 +569,22 @@ public class NeoStore extends AbstractStore
 
     public long getStoreVersion()
     {
-        return getRecord( 4 );
+        return getRecord( STORE_VERSION_POSITION );
     }
 
     public void setStoreVersion( long version )
     {
-        setRecord( 4, version );
+        setRecord( STORE_VERSION_POSITION, version );
     }
 
     public long getGraphNextProp()
     {
-        return getRecord( 5 );
+        return getRecord( NEXT_GRAPH_PROP_POSITION );
     }
 
     public void setGraphNextProp( long propId )
     {
-        setRecord( 5, propId );
+        setRecord( NEXT_GRAPH_PROP_POSITION, propId );
     }
 
     /**
@@ -749,7 +774,7 @@ public class NeoStore extends AbstractStore
     public NeoStoreRecord asRecord()
     {
         NeoStoreRecord result = new NeoStoreRecord();
-        result.setNextProp( getRecord( 5 ) );
+        result.setNextProp( getRecord( NEXT_GRAPH_PROP_POSITION ) );
         return result;
     }
 

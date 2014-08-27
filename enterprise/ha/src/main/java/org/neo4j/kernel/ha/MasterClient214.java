@@ -17,51 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com;
+package org.neo4j.kernel.ha;
 
+import org.neo4j.com.Protocol;
+import org.neo4j.com.Protocol214;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
-public class Response<T> implements AutoCloseable
+public class MasterClient214 extends MasterClient210
 {
-    private final T response;
-    private final StoreId storeId;
-    private final TransactionStream transactions;
-    private final ResourceReleaser releaser;
+    public static final byte PROTOCOL_VERSION = 8;
 
-    public Response( T response, StoreId storeId,
-            TransactionStream transactions, ResourceReleaser releaser )
+    public MasterClient214( String hostNameOrIp, int port, Logging logging, Monitors monitors, StoreId storeId,
+                            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize )
     {
-        this.storeId = storeId;
-        this.response = response;
-        this.transactions = transactions;
-        this.releaser = releaser;
-    }
-
-    public T response() throws ServerFailureException
-    {
-        return response;
-    }
-
-    public StoreId getStoreId()
-    {
-        return storeId;
-    }
-
-    public TransactionStream transactions()
-    {
-        return transactions;
+        super( hostNameOrIp, port, logging, monitors, storeId, readTimeoutSeconds, lockReadTimeout,
+                maxConcurrentChannels, chunkSize, PROTOCOL_VERSION );
     }
 
     @Override
-    public void close()
+    protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
     {
-        try
-        {
-            transactions.close();
-        }
-        finally
-        {
-            releaser.release();
-        }
+        return new Protocol214( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
 }
