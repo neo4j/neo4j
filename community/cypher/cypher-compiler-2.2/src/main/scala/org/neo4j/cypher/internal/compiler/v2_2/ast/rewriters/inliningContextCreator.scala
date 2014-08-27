@@ -21,28 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.inliningContextCreator.InlineablePatternPart
-import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 
 object inliningContextCreator extends (ast.Statement => InliningContext) {
-
-  object InlineablePatternPart {
-    def unapply(v: Any): Option[AnonymousPatternPart] = v match {
-      case p: ShortestPaths        => None
-      case p: AnonymousPatternPart => Some(p)
-      case _                       => None
-    }
-  }
 
   def apply(input: ast.Statement): InliningContext = {
     input.treeFold(InliningContext()) {
       case (With(false, ListedReturnItems(items), _, _, _, _)) =>
         (context, children) => children(context.enterQueryPart(aliasedReturnItems(items)))
-
-      case Match(_, Pattern(parts), _, _) =>
-        (context, children) => children(context.enterQueryPart(
-          PatternPartToPathExpression.namedPatternPartPathExpressions(parts))
-        )
 
       case NodePattern(Some(identifier), _, _, _) =>
         (context, children) =>
@@ -60,9 +45,6 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
         case (With(false, ListedReturnItems(items), _, _, _, _)) =>
           (context, children) => children(context.enterQueryPart(aliasedReturnItems(items)))
 
-        case Match(_, Pattern(parts), _, _) =>
-          (context, children) => children(context.enterQueryPart(PatternPartToPathExpression.namedPatternPartPathExpressions(parts)))
-
         case NodePattern(Some(identifier), _, _, _) =>
           (context, children) =>
             if (context.alias(identifier).isEmpty) children(context.spoilIdentifier(identifier)) else children(context)
@@ -76,32 +58,4 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
 
   private def aliasedReturnItems(items: Seq[ReturnItem]): Map[Identifier, Expression] =
     items.collect { case AliasedReturnItem(expr, ident) => ident -> expr }.toMap
-}
-
-object PatternPartToPathExpression {
-  def namedPatternPartPathExpressions(parts: Seq[PatternPart]): Map[Identifier, PathExpression] =
-    parts.collect {
-      case part @ NamedPatternPart(identifier, InlineablePatternPart(patternPart)) =>
-        identifier -> PathExpression(patternPartPathExpression(patternPart))(part.position)
-    }.toMap
-
-  def patternPartPathExpression(patternPart: AnonymousPatternPart): PathStep = patternPart match {
-    case EveryPath(element) => flip(element, NilPathStep)
-    case _                  => throw new CantHandleQueryException
-  }
-
-  private def flip(element: PatternElement, step: PathStep): PathStep  = {
-    element match {
-      case NodePattern(node, _, _, _) =>
-        NodePathStep(node.get, step)
-
-      case RelationshipChain(relChain, RelationshipPattern(rel, _, _, length, _, direction), _) => length match {
-        case None =>
-          flip(relChain, SingleRelationshipPathStep(rel.get, direction, step))
-
-        case Some(_) =>
-          flip(relChain, MultiRelationshipPathStep(rel.get, direction, step))
-      }
-    }
-  }
 }
