@@ -293,7 +293,7 @@ public class NeoStoreFileListingTest
         {
             File file = mock( File.class );
 
-            String[] fileNameParts = filename.split( File.separator );
+            String[] fileNameParts = filename.split( "/" );
             when( file.getName() ).thenReturn( fileNameParts[fileNameParts.length - 1] );
 
             when( file.isFile() ).thenReturn( !isDirectories );
