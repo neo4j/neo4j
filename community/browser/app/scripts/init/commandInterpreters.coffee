@@ -141,30 +141,6 @@ angular.module('neo4jApp')
       ]
 
     FrameProvider.interpreters.push
-      type: 'account'
-      templateUrl: 'views/frame-login.html'
-      matches: ["#{cmdchar}login"]
-      exec: ['NTN', (NTN) ->
-        (input, q) ->
-          NTN.open()
-          .then(q.resolve, ->
-            q.reject(message: "Unable to log in")
-          )
-          q.promise
-      ]
-
-    FrameProvider.interpreters.push
-      type: 'account'
-      templateUrl: 'views/frame-logout.html'
-      matches: ["#{cmdchar}logout"]
-      exec: ['NTN', (NTN) ->
-        (input, q) ->
-          p = NTN.logout()
-          p.then(q.resolve, -> q.reject(message: "Unable to log out"))
-          q.promise
-      ]
-
-    FrameProvider.interpreters.push
       type: 'config'
       templateUrl: 'views/frame-config.html'
       matches: ["#{cmdchar}config"]
