@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.nioneo.xa.RecoveryVisitor.Monitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
@@ -56,7 +57,8 @@ public class RecoveryVisitorTest
     @Test
     public void shouldNotSetLastCommittedAndClosedTransactionIdWhenNoRecoveryHappened() throws IOException
     {
-        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, recoveredCount );
+        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, recoveredCount,
+                mock( RecoveryVisitor.Monitor.class ) );
 
         visitor.close();
 
@@ -66,7 +68,9 @@ public class RecoveryVisitorTest
     @Test
     public void shouldApplyVisitedTransactionToTheStoreAndSetLastCommittedAndClosedTransactionId() throws IOException
     {
-        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, recoveredCount );
+        Monitor monitor = mock( RecoveryVisitor.Monitor.class );
+        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, recoveredCount,
+                monitor );
 
         final TransactionRepresentation representation =
                 new PhysicalTransactionRepresentation( Collections.<Command>emptySet() );
@@ -79,6 +83,7 @@ public class RecoveryVisitorTest
         assertTrue( result );
         verify( storeApplier, times( 1 ) ).apply( representation, commitEntry.getTxId(), true );
         assertEquals( 1l, recoveredCount.get() );
+        verify( monitor ).transactionRecovered( commitEntry.getTxId() );
 
         visitor.close();
 

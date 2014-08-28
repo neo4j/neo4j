@@ -29,7 +29,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategy;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
@@ -141,12 +140,14 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     {
         if ( new LogRecoveryCheck( toRecover ).recoveryRequired() )
         {   // There's already data in here, which means recovery will need to be performed.
+            monitor.recoveryRequired( toRecover.getVersion() );
             ReadableLogChannel recoveredDataChannel =
                     new ReadAheadLogChannel( toRecover, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
             recoveredDataVisitor.visit( recoveredDataChannel );
             // intentionally keep it open since we're continuing using the underlying channel for the writer below
             logRotationControl.forceEverything();
         }
+        monitor.recoveryCompleted();
     }
 
     @Override
@@ -238,47 +239,16 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         assert header.logVersion == version;
         return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
     }
+    
     public interface Monitor
     {
+        void recoveryRequired( long recoveredLogVersion );
+        
+        void recoveryCompleted();
+        
         void opened( File logFile, long logVersion, long lastTransactionId, boolean clean );
 
         void failureToTruncate( File logFile, IOException e );
-    }
-
-    public static final Monitor NO_MONITOR = new Monitor()
-    {
-        @Override
-        public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
-        {
-        }
-
-        @Override
-        public void failureToTruncate( File logFile, IOException e )
-        {
-        }
-    };
-
-    public static class LoggingMonitor implements Monitor
-    {
-        private final StringLogger logger;
-
-        public LoggingMonitor( StringLogger logger )
-        {
-            this.logger = logger;
-        }
-
-        @Override
-        public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
-        {
-            logger.info( "Opened logical log [" + logFile + "] version=" + logVersion + ", lastTxId="
-                    + lastTransactionId + " (" + (clean ? "clean" : "recovered") + ")" );
-        }
-
-        @Override
-        public void failureToTruncate( File logFile, IOException e )
-        {
-            logger.warn( "Failed to truncate " + logFile + " at correct size", e );
-        }
     }
 
     @Override
