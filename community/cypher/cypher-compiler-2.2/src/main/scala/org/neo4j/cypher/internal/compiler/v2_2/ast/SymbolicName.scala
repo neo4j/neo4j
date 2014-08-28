@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{PrettyToString, Pretty, Doc}
-import org.neo4j.cypher.internal.compiler.v2_2.{PropertyKeyId, InputPosition}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{Doc, FixedDocGenerator}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, PropertyKeyId}
 
-trait SymbolicName extends Pretty with PrettyToString {
+trait SymbolicName {
   self: ASTNode =>
 
   def name: String
@@ -31,9 +31,9 @@ trait SymbolicName extends Pretty with PrettyToString {
 }
 
 final case class LabelName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName {
-  import Doc._
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
-  override def toDoc = ":" :: name
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = ":" :: name
 }
 
 object LabelName {
@@ -48,9 +48,9 @@ object LabelName {
 }
 
 final case class PropertyKeyName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName {
-  import Doc._
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
-  override def toDoc = name
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = name
 }
 
 object PropertyKeyName {
@@ -65,9 +65,9 @@ object PropertyKeyName {
 }
 
 final case class RelTypeName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName {
-  import Doc._
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
-  override def toDoc = name
+  override def toDoc(docGen: FixedDocGenerator[ASTNode]): Doc = name
 }
 
 object RelTypeName {

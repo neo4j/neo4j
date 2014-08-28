@@ -32,7 +32,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       selections: Selections = Selections(),
                       optionalMatches: Seq[QueryGraph] = Seq.empty,
                       hints: Set[Hint] = Set.empty,
-                      shortestPathPatterns: Set[ShortestPathPattern] = Set.empty) extends internalDocBuilder.PrettyToString{
+                      shortestPathPatterns: Set[ShortestPathPattern] = Set.empty) extends internalDocBuilder.GeneratorToString[Any] {
 
   def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
   def addPatternRel(rel: PatternRelationship): QueryGraph =

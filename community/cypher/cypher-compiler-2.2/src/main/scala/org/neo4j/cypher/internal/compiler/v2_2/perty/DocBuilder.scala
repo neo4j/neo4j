@@ -65,10 +65,10 @@ abstract class DocBuilderChain[T: ClassTag] extends CachingDocBuilder[T] {
 }
 
 // Public super class of custom doc builder
-abstract class CustomDocBuilder[T: ClassTag] extends CachingDocBuilder[T] with PrettyDocBuilder[T]
+abstract class CustomDocBuilder[T: ClassTag] extends CachingDocBuilder[T] with ToStringDocBuilder[T]
 
 // Public super class of custom doc builder chain
-abstract class CustomDocBuilderChain[T: ClassTag] extends DocBuilderChain[T] with PrettyDocBuilder[T] {
+abstract class CustomDocBuilderChain[T: ClassTag] extends DocBuilderChain[T] with ToStringDocBuilder[T] {
   override def newDocGenerator = super.newDocGenerator.map(docGen => catchErrors(docGen))
 }
 

@@ -37,6 +37,8 @@ package object perty {
   // Knows how to represent a value of type T as a Doc
   type FixedDocGenerator[-T] = PartialFunction[T, Doc]
 
+  type Representable[-T] = HasDocFormatter with HasDocGenerator[T]
+
   // Combines nested doc generator together with it's fixed doc generator
   final case class DocGenerator[T: ClassTag](nested: NestedDocGenerator[T])
     extends fixedPartialFunction(nested)
@@ -44,6 +46,11 @@ package object perty {
 
     def map[S: ClassTag](f: NestedDocGenerator[T] => NestedDocGenerator[S]) = DocGenerator[S](f(nested))
     def uplifted[S >: T: ClassTag]: DocGenerator[S] = DocGenerator(uplift[T, FixedDocGenerator[T] => Doc, S](nested))
+
+    def applyWithFallback[S <: T](inner: FixedDocGenerator[S])(v: T)(implicit tag: ClassTag[S]) = {
+      val fallback: NestedDocGenerator[T] = { case v: S => _ => inner(v) }
+      DocGenerator[T](nested orElse fallback)(implicitly[ClassTag[T]])(v)
+    }
   }
 
   object DocGenerator {

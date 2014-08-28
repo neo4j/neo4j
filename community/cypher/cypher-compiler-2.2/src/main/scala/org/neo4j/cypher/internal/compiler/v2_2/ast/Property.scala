@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -42,7 +42,8 @@ case class Property(map: Expression, propertyKey: PropertyKeyName)(val position:
     Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTNumber))
   )
 
-  override def toDoc = group(map :: "." :: propertyKey)
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    group(pretty(map) :: "." :: pretty(propertyKey))
 
   protected def possibleTypes = CTAny.invariant
 }

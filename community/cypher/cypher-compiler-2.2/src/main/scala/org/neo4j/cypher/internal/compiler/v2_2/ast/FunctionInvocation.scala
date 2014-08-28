@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.SemanticError
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{FixedDocGenerator, Doc}
 import Doc._
 
 object FunctionInvocation {
@@ -44,8 +44,8 @@ case class FunctionInvocation(functionName: FunctionName, distinct: Boolean, arg
     case Some(f) => f.semanticCheckHook(ctx, this)
   }
 
-  override def toDoc = {
-    val callDoc = block(functionName.name)(sepList(args.map(pretty)))
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = {
+    val callDoc = block(functionName.name)(sepList(args.map(pretty(_))))
     if (distinct) "DISTINCT" :/: callDoc else callDoc
   }
 }

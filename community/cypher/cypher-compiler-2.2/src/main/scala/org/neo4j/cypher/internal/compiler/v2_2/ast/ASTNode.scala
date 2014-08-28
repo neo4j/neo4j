@@ -20,15 +20,22 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.simpleDocBuilder
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{Pretty, PrettyToString}
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{defaultDocBuilder, simpleDocBuilder}
 
-trait ASTNode extends Product with Foldable with Rewritable with Pretty with PrettyToString {
+trait ASTNode
+  extends Product
+  with Foldable
+  with Rewritable
+  // disable pretty printing by using: with simpleDocBuilder.PrettyToString[ASTNode] {
+  with defaultDocBuilder.PrettyToString[ASTNode] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
   import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 
-  def toDoc = simpleDocBuilder.docGenerator(this)
+  // default to simpleDocBuilder whenever toDoc is not overridden
+  def toDoc(pretty: FixedDocGenerator[ASTNode]) =
+    simpleDocBuilder.docGenerator.applyWithFallback(pretty)(this)
 
   def position: InputPosition
 
