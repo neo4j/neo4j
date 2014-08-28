@@ -107,12 +107,6 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         super.rebuildIdGenerators();
     }
 
-    public void updateIdGenerators()
-    {
-        nameStore.updateHighId();
-        this.updateHighId();
-    }
-
     public void freeId( int id )
     {
         nameStore.freeId( id );
@@ -298,7 +292,6 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     protected void updateRecord( T record, PageCursor cursor )
     {
         int id = record.getId();
-        registerIdFromUpdateRecord( id );
         cursor.setOffset( offsetForId( id ) );
         if ( record.inUse() )
         {

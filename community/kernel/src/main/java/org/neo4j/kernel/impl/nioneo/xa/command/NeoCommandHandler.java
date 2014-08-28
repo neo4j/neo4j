@@ -44,6 +44,13 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
  * Implementations need to provide all these methods of course, but it is expected that they will delegate
  * the actual work to implementations that hold related functionality together, using a Facade pattern.
  * For example, it is conceivable that a CommandWriterHandler would use a NeoCommandHandler and a SchemaCommandHandler.
+ *
+ * The order in which the methods of a NeoCommandHandler is expected to be called is this:
+ * <ol>
+ * <li>zero or more calls to visit??? methods</li>
+ * <li>{@link #apply()}</li>
+ * <li>{@link #close()}</li>
+ * </ol>
  */
 public interface NeoCommandHandler extends AutoCloseable
 {
@@ -65,7 +72,16 @@ public interface NeoCommandHandler extends AutoCloseable
     boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException;
     boolean visitIndexCreateCommand( CreateCommand command ) throws IOException;
     boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException;
+    
+    /**
+     * Applies pending changes that might have been accumulated when visiting the commands.
+     * A command handler can expect a call to {@link #apply()} before {@link #close()}.
+     */
+    void apply();
 
+    /**
+     * Closes any resources acquired by this handler.
+     */
     @Override
     void close();
 
@@ -160,6 +176,10 @@ public interface NeoCommandHandler extends AutoCloseable
         public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
         {
             return true;
+        }
+        @Override
+        public void apply()
+        {
         }
 
         @Override

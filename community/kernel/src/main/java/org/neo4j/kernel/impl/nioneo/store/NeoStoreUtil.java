@@ -29,6 +29,8 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 
 import static java.lang.String.format;
 
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.RECORD_SIZE;
+
 public class NeoStoreUtil
 {
     private final long creationTime;
@@ -66,10 +68,13 @@ public class NeoStoreUtil
         {
             channel = fs.open( neoStoreFile( storeDir ), "r" );
             int recordsToRead = 6;
-            ByteBuffer buf = ByteBuffer.allocate( recordsToRead*NeoStore.RECORD_SIZE );
-            if ( channel.read( buf ) != recordsToRead*NeoStore.RECORD_SIZE )
+            ByteBuffer buf = ByteBuffer.allocate( recordsToRead*RECORD_SIZE );
+            int readBytes = channel.read( buf );
+            if ( readBytes != recordsToRead*RECORD_SIZE )
             {
-                throw new RuntimeException( "Unable to read neo store header information" );
+                throw new RuntimeException( format( "Unable to read neo store header information. " +
+                        "Wanted to read %d records, %d bytes each, but could only read %d bytes i.e. %f records",
+                        recordsToRead, RECORD_SIZE, readBytes, (double)(readBytes/RECORD_SIZE) ) );
             }
             buf.flip();
             creationTime = nextRecord( buf );
@@ -128,6 +133,11 @@ public class NeoStoreUtil
     public long getStoreVersion()
     {
         return storeVersion;
+    }
+    
+    public long getFirstGraphProp()
+    {
+        return firstGraphProp;
     }
 
     @Override

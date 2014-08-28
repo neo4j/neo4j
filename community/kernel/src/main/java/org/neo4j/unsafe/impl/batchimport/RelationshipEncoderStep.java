@@ -74,7 +74,7 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelat
         for ( InputRelationship batchRelationship : batch )
         {
             long relationshipId = batchRelationship.id();
-            relationshipStore.setHighId( relationshipId+1 );
+            relationshipStore.setHighestPossibleIdInUse( relationshipId );
             int typeId = batchRelationship.hasTypeId() ? batchRelationship.typeId() :
                     relationshipTypeRepository.getOrCreateId( batchRelationship.type() );
             RelationshipRecord relationshipRecord = new RelationshipRecord( relationshipId,

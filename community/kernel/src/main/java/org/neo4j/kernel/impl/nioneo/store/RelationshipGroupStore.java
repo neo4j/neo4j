@@ -179,7 +179,6 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         try
         {
             updateRecord( record );
-            registerIdFromUpdateRecord( record.getId() );
         }
         finally
         {
@@ -190,7 +189,6 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     private void updateRecord( RelationshipGroupRecord record, PageCursor cursor, boolean force )
     {
         long id = record.getId();
-        registerIdFromUpdateRecord( id );
         cursor.setOffset( offsetForId( id ) );
         if ( record.inUse() || force )
         {

@@ -53,13 +53,28 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
         this.indexApplier = indexApplier;
         this.legacyIndexApplier = legacyIndexApplier;
     }
+    
+    @Override
+    public void apply()
+    {
+        throw new UnsupportedOperationException( "This method should not be called, only I call apply() methods" );
+    }
 
     @Override
     public void close()
     {
-        indexApplier.close();
-        legacyIndexApplier.close();
-        storeApplier.close();
+        try
+        {
+            indexApplier.apply();
+            legacyIndexApplier.apply();
+            storeApplier.apply();
+        }
+        finally
+        {
+            indexApplier.close();
+            legacyIndexApplier.close();
+            storeApplier.close();
+        }
     }
 
     @Override

@@ -274,9 +274,6 @@ public abstract class GraphDatabaseSettings
             "i.e., 8 bytes.")
     public static final Setting<Integer> label_block_size = setting("label_block_size", INTEGER, "60",min(1));
 
-    @Description("Mark this database as a backup slave.")
-    public static final Setting<Boolean> backup_slave = setting("backup_slave", BOOLEAN, FALSE );
-
     @Description("An identifier that uniquely identifies this graph database instance within this JVM. " +
             "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
     public static final Setting<String> forced_kernel_id = setting("forced_kernel_id", STRING, NO_DEFAULT, illegalValueMessage( "invalid kernel identifier", matches( "[a-zA-Z0-9]*" ) ));

@@ -84,7 +84,7 @@ public class NeoTransactionIndexApplier extends NeoCommandHandler.Adapter
     }
 
     @Override
-    public void close()
+    public void apply()
     {
         if ( !labelUpdates.isEmpty() )
         {

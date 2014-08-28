@@ -74,6 +74,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private static final int STORE_VERSION_POSITION = 4;
     private static final int NEXT_GRAPH_PROP_POSITION = 5;
     private static final int LATEST_CONSTRAINT_TX_POSITION = 6;
+    static final int NUMBER_OF_RECORDS = 7;
     // NOTE: When adding new constants, remember to update the fields bellow,
     // and the apply() method!
 
@@ -124,29 +125,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         this.schemaStore = schemaStore;
         this.relGroupStore = relGroupStore;
         relGrabSize = conf.get( Configuration.relationship_grab_size );
-        /* [MP:2012-01-03] Fix for the problem in 1.5.M02 where store version got upgraded but
-         * corresponding store version record was not added. That record was added in the release
-         * thereafter so this missing record doesn't trigger an upgrade of the neostore file and so any
-         * unclean shutdown on such a db with 1.5.M02 < neo4j version <= 1.6.M02 would make that
-         * db unable to start for that version with a "Mismatching store version found" exception.
-         *
-         * This will make a cleanly shut down 1.5.M02, then started and cleanly shut down with 1.6.M03 (or higher)
-         * successfully add the missing record.
-         */
-        setRecovered();
-        initialiseFields();
-        try
-        {
-            if ( getCreationTime() != 0 /*Store that wasn't just now created*/&& getStoreVersion() == 0 /*Store is missing the store version record*/)
-            {
-                setStoreVersion( versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
-                updateHighId();
-            }
-        }
-        finally
-        {
-            unsetRecovered();
-        }
     }
 
     @Override
@@ -175,9 +153,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                  * in garbage.
                  * Yes, this has to be fixed to be prettier.
                  */
-                String foundVersion = versionLongToString( getStoreVersion( fileSystemAbstraction,
-                        configuration
-                                .get( org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration.neo_store ) ) );
+                String foundVersion = versionLongToString( getStoreVersion( fileSystemAbstraction, configuration
+                        .get( org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration.neo_store ) ) );
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
                     throw new IllegalStateException(
@@ -191,58 +168,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         {
             throw new UnderlyingStorageException( "Unable to check version " + getStorageFileName(), e );
         }
-    }
-
-    @Override
-    protected void verifyFileSizeAndTruncate() throws IOException
-    {
-        super.verifyFileSizeAndTruncate();
-        /* MP: 2011-11-23
-         * A little silent upgrade for the "next prop" record. It adds one record last to the neostore file.
-         * It's backwards compatible, that's why it can be a silent and automatic upgrade.
-         */
-        if ( getFileChannel().size() == RECORD_SIZE * 5 )
-        {
-            insertRecord( NEXT_GRAPH_PROP_POSITION, -1 );
-            registerIdFromUpdateRecord( NEXT_GRAPH_PROP_POSITION );
-        }
-        /* Silent upgrade for latest constraint introducing tx
-         */
-        if ( getFileChannel().size() == RECORD_SIZE * 6 )
-        {
-            insertRecord( LATEST_CONSTRAINT_TX_POSITION, 0 );
-            registerIdFromUpdateRecord( LATEST_CONSTRAINT_TX_POSITION );
-        }
-    }
-
-    /**
-     * This runs as part of verifyFileSizeAndTruncate, which runs before the store file has been
-     * mapped in the page cache. It is therefore okay for it to access the file channel directly.
-     */
-    private void insertRecord( int recordPosition, long value ) throws IOException
-    {
-        StoreChannel channel = getFileChannel();
-        long previousPosition = channel.position();
-        channel.position( RECORD_SIZE * recordPosition );
-        int trail = (int) (channel.size() - channel.position());
-        ByteBuffer trailBuffer = null;
-        if ( trail > 0 )
-        {
-            trailBuffer = ByteBuffer.allocate( trail );
-            channel.read( trailBuffer );
-            trailBuffer.flip();
-        }
-        ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
-        buffer.put( Record.IN_USE.byteValue() );
-        buffer.putLong( value );
-        buffer.flip();
-        channel.position( RECORD_SIZE * recordPosition );
-        channel.write( buffer );
-        if ( trail > 0 )
-        {
-            channel.write( trailBuffer );
-        }
-        channel.position( previousPosition );
     }
 
     /**
@@ -305,7 +230,10 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     public void flushNeoStoreOnly()
     {
         checkInitialized( lastCommittedTxField.get() );
-        setRecord( LATEST_TX_POSITION, lastCommittedTxField.get() );
+        if ( !isReadOnly() )
+        {
+            setRecord( LATEST_TX_POSITION, lastCommittedTxField.get() );
+        }
         try
         {
             storeFile.flush();
@@ -594,11 +522,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         scanAllFields( PF_SHARED_LOCK );
     }
 
-    private void initialiseFields()
-    {
-        scanAllFields( PF_EXCLUSIVE_LOCK );
-    }
-
     private void scanAllFields( int pf_flags )
     {
         try ( PageCursor cursor = storeFile.io( 0, pf_flags ) )
@@ -617,6 +540,14 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private void setRecord( long id, long value )
     {
         long pageId = pageIdForRecord( id );
+        
+        // We need to do a little special handling of high id in neostore since it's not updated in the same
+        // way as other stores. Other stores always gets updates via commands where records are updated and
+        // the one making the update can also track the high id in the event of recovery.
+        // Here methods can be called directly, for example setLatestConstraintIntroducingTx where it's
+        // unclear from the outside which record id that refers to, so here we need to manage high id ourselves.
+        setHighestPossibleIdInUse( id );
+        
         try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
         {
             if ( cursor.next() )
@@ -734,18 +665,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         schemaStore.rebuildIdGenerators();
         relGroupStore.rebuildIdGenerators();
         super.rebuildIdGenerators();
-    }
-
-    public void updateIdGenerators()
-    {
-        this.updateHighId();
-        relTypeStore.updateIdGenerators();
-        labelTokenStore.updateIdGenerators();
-        propStore.updateIdGenerators();
-        relStore.updateHighId();
-        nodeStore.updateIdGenerators();
-        schemaStore.updateHighId();
-        relGroupStore.updateHighId();
     }
 
     public int getRelationshipGrabSize()

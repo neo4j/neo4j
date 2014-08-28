@@ -249,8 +249,7 @@ public class IdGeneratorImpl implements IdGenerator
      * Sets the next free "high" id. This method should be called when an id
      * generator has been rebuilt. {@code id} must not be higher than {@code max}.
      *
-     * @param id
-     *            The next free id
+     * @param id The next free id returned from {@link #nextId()} if there are no existing free ids.
      */
     @Override
     public void setHighId( long id )
@@ -304,7 +303,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
         if ( id < 0 || id >= highId.get() )
         {
-            throw new IllegalArgumentException( "Illegal id[" + id + "]" );
+            throw new IllegalArgumentException( "Illegal id[" + id + "], highId is " + highId.get() );
         }
         releasedIdList.add( id );
         defraggedIdCount++;

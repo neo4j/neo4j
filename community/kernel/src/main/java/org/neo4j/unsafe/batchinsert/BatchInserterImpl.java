@@ -645,7 +645,7 @@ public class BatchInserterImpl implements BatchInserter
         long highId = nodeStore.getHighId();
         if ( highId <= id )
         {
-            nodeStore.setHighId( id + 1 );
+            nodeStore.setHighestPossibleIdInUse( id );
         }
         internalCreateNode( id, properties, labels );
     }

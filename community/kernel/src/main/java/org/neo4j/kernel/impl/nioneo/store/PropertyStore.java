@@ -207,7 +207,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     private void updateRecord( PropertyRecord record, PageCursor cursor )
     {
         long id = record.getId();
-        registerIdFromUpdateRecord( id );
         cursor.setOffset( (int) (id * RECORD_SIZE % storeFile.pageSize()) );
         if ( record.inUse() )
         {
@@ -480,14 +479,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         stringPropertyStore.rebuildIdGenerators();
         arrayPropertyStore.rebuildIdGenerators();
         super.rebuildIdGenerators();
-    }
-
-    public void updateIdGenerators()
-    {
-        propertyKeyTokenStore.updateIdGenerators();
-        stringPropertyStore.updateHighId();
-        arrayPropertyStore.updateHighId();
-        this.updateHighId();
     }
 
     public static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars,
