@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import symbols._
 
 sealed trait Hint extends ASTNode with SemanticCheckable {
@@ -30,11 +31,13 @@ sealed trait Hint extends ASTNode with SemanticCheckable {
 case class UsingIndexHint(identifier: Identifier, label: LabelName, property: Identifier)(val position: InputPosition) extends Hint {
   def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
 
-  override def toDoc = group("USING" :/: "INDEX" :/: group(identifier :: block(label)(property)))
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    group("USING" :/: "INDEX" :/: group(pretty(identifier) :: block(pretty(label))(pretty(property))))
 }
 
 case class UsingScanHint(identifier: Identifier, label: LabelName)(val position: InputPosition) extends Hint {
   def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
 
-  override def toDoc = group("USING" :/: "SCAN" :/: group(identifier :: label))
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    group("USING" :/: "SCAN" :/: group(pretty(identifier) :: pretty(label)))
 }

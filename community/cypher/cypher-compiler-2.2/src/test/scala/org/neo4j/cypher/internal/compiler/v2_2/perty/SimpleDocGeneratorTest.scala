@@ -121,12 +121,18 @@ class SimpleDocGeneratorTest extends CypherFunSuite {
   }
 
   test("DocGenerator uses toDoc as a fallback") {
-    object Rick extends Pretty {
-      def toDoc = "NEVER GONNA" :/: "GIVE YOU UP"
-      override def toString = fail("Called toString when expected to be rendered using toDoc")
+    object Rick extends Pretty[Any] {
+
+      def toDoc(pretty: FixedDocGenerator[Any]): Doc =
+        "NEVER GONNA" :/: "GIVE YOU UP"
+
+      override def toString =
+        "Called toString when expected to be rendered using toDoc"
     }
 
-    render(Rick) should equal("NEVER GONNA GIVE YOU UP")
+    val result = render(Rick)
+
+    result should equal("NEVER GONNA GIVE YOU UP")
   }
 
   private def render[T](v: T) =

@@ -20,27 +20,40 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.defaultDocBuilder
 
-trait Pretty extends HasDocFormatter {
-  def toDoc: Doc
+trait Pretty[+T] {
+  def toDoc(pretty: FixedDocGenerator[T]): Doc
 }
 
-trait PrettyToString {
-  self: Pretty =>
+trait PrettyToString[T] {
+  self: Pretty[T] with Representable[T] =>
 
-  override def toString = printToString(docFormatter(toDoc))
+  def docGenerator: FixedDocGenerator[T] = defaultDocBuilder.docGenerator
+
+  override def toString = printToString(self.docFormatter(toDoc(docGenerator)))
 }
 
-trait PrettyDocBuilder[T]  {
+trait GeneratorToString[T] {
+  self: T with Representable[T] =>
+
+  override def toString = printToString(docFormatter(docGenerator(self)))
+}
+
+trait ToStringDocBuilder[T]  {
   self: DocBuilder[T] =>
 
-  trait Pretty extends perty.Pretty {
-    prettySelf: T =>
+  trait Representable[S <: T] extends HasLineDocFormatter with HasDocGenerator[S]
 
-    override def toDoc = self.docGenerator(prettySelf)
+  trait GeneratorToString[S <: T] extends Representable[S] with perty.GeneratorToString[S] {
+    prettySelf: S =>
+
+    override def docGenerator: FixedDocGenerator[S] = self.docGenerator
   }
 
-  trait PrettyToString extends Pretty with perty.PrettyToString {
-    prettySelf: T =>
+  trait PrettyToString[S <: T] extends Representable[S] with perty.Pretty[S] with perty.PrettyToString[S] {
+    prettySelf: S =>
+
+    override def docGenerator: FixedDocGenerator[S] = self.docGenerator
   }
 }

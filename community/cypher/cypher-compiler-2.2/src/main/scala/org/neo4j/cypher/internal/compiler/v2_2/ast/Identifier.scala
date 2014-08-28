@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import symbols._
 
 case class Identifier(name: String)(val position: InputPosition) extends Expression with SymbolicName {
 
   import Doc._
 
-  override def toDoc = text(name)
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = name
 
   // check the identifier is defined and, if not, define it so that later errors are suppressed
   def semanticCheck(ctx: SemanticContext) = s => this.ensureDefined()(s) match {

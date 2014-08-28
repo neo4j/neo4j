@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{CustomDocBuilder, DocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{CustomDocBuilder, DocGenerator, Pretty}
 
-case object prettyDocBuilder extends CustomDocBuilder[perty.Pretty] {
-  override def newDocGenerator = DocGenerator {
-    case v: perty.Pretty => _ => v.toDoc
+case object prettyDocBuilder extends CustomDocBuilder[Pretty[Nothing]] {
+  override def newDocGenerator = DocGenerator[Pretty[Nothing]] {
+    case v: Pretty[_] => v.toDoc(_)
   }
 }

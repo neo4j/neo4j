@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import symbols._
 import Doc._
 
 case class CountStar()(val position: InputPosition) extends Expression with SimpleTyping {
   protected def possibleTypes = CTInteger
 
-  override def toDoc = "count(*)"
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = "count(*)"
 }
