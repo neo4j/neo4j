@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.writeLogHeader;
@@ -147,7 +148,8 @@ public class StoreCopyClient
             ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( fs, storeDir );
             LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
                     NO_PRUNING, new ReadOnlyTransactionIdStore( fs, storeDir ), logVersionRepository,
-                    PhysicalLogFile.NO_MONITOR, LogRotationControl.NO_ROTATION_CONTROL,
+                    new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
+                    LogRotationControl.NO_ROTATION_CONTROL,
                     transactionMetadataCache, new NoRecoveryAssertingVisitor() ) );
             life.start();
 

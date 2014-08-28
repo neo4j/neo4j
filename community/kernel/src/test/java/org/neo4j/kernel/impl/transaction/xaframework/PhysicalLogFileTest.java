@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -41,7 +42,10 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.readLogHeader;
@@ -80,15 +84,17 @@ public class PhysicalLogFileTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
+        Monitor monitor = mock( Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
                 LogPruneStrategyFactory.NO_PRUNING,
-                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
+                transactionIdStore, logVersionRepository, monitor, logRotationControl,
                 new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
 
         // WHEN
         try
         {
             life.start();
+            verify( monitor ).recoveryCompleted();
 
             WritableLogChannel writer = logFile.getWriter();
             LogPositionMarker positionMarker = new LogPositionMarker();
@@ -173,12 +179,13 @@ public class PhysicalLogFileTest
     {
         String name = "log";
         File file = new File( directory.directory(), name + ".1" );
+        final int logVersion = 1;
         writeSomeData( file, new Visitor<ByteBuffer, IOException>()
         {
             @Override
             public boolean visit( ByteBuffer buffer ) throws IOException
             {
-                writeLogHeader( buffer, 1, 3 );
+                writeLogHeader( buffer, logVersion, 3 );
                 buffer.clear();
                 buffer.position( LOG_HEADER_SIZE );
                 buffer.put( (byte) 2 );
@@ -190,8 +197,9 @@ public class PhysicalLogFileTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategyFactory.NO_PRUNING,
-                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
+        Monitor monitor = mock( Monitor.class );
+        life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategyFactory.NO_PRUNING,
+                transactionIdStore, logVersionRepository, monitor, logRotationControl,
                 new TransactionMetadataCache( 10, 100 ), new Visitor<ReadableLogChannel, IOException>()
                         {
                             @Override
@@ -213,6 +221,9 @@ public class PhysicalLogFileTest
         try
         {
             life.start();
+            InOrder order = inOrder( monitor );
+            order.verify( monitor, times( 1 ) ).recoveryRequired( logVersion );
+            order.verify( monitor, times( 1 ) ).recoveryCompleted();
         }
         finally
         {

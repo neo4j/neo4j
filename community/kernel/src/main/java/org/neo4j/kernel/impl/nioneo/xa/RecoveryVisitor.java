@@ -30,19 +30,25 @@ import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionReprese
 
 public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation, IOException>, Closeable
 {
+    public interface Monitor
+    {
+        void transactionRecovered( long txId );
+    }
+    
     private final TransactionIdStore store;
     private final TransactionRepresentationStoreApplier storeApplier;
     private final AtomicInteger recoveredCount;
-
+    private final Monitor monitor;
     private long lastTransactionIdApplied = -1;
 
     public RecoveryVisitor( TransactionIdStore store,
                             TransactionRepresentationStoreApplier storeApplier,
-                            AtomicInteger recoveredCount )
+                            AtomicInteger recoveredCount, Monitor monitor )
     {
         this.store = store;
         this.storeApplier = storeApplier;
         this.recoveredCount = recoveredCount;
+        this.monitor = monitor;
     }
 
     @Override
@@ -52,6 +58,7 @@ public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentati
         storeApplier.apply( transaction.getTransactionRepresentation(), txId, true );
         recoveredCount.incrementAndGet();
         lastTransactionIdApplied = txId;
+        monitor.transactionRecovered( txId );
         return true;
     }
 

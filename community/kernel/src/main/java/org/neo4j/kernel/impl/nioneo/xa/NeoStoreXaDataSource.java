@@ -463,7 +463,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                     return -1;
                                 }
                             }) );
-
+            
             LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
                     logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
 
@@ -473,13 +473,14 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                             cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
                             DEFAULT_HIGH_ID_TRACKING ) );
 
-            RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeApplier, recoveredCount );
+            LoggingLogFileMonitor logMonitor = new LoggingLogFileMonitor( logging.getMessagesLog( getClass() ) );
+            RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore,
+                    storeApplier, recoveredCount, logMonitor );
             Visitor<ReadableLogChannel, IOException> logFileRecoverer =
                     new LogFileRecoverer( new VersionAwareLogEntryReader(), recoveryVisitor );
             logFile = dependencies.satisfyDependency( new PhysicalLogFile( fs, logFiles,
                     config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), logPruneStrategy, neoStore,
-                    neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
-                    this, transactionMetadataCache, logFileRecoverer ) );
+                    neoStore, logMonitor, this, transactionMetadataCache, logFileRecoverer ) );
 
             final LogicalTransactionStore logicalTransactionStore = dependencies.satisfyDependency(
                     LogicalTransactionStore.class, new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
