@@ -234,7 +234,7 @@ return coalesce(a.title, a.name)""")
   test("aggregates inside normal functions should work") {
     createNode()
 
-    val result = executeWithNewPlanner("match a return length(collect(a))").toList
+    val result = executeWithNewPlanner("MATCH a WITH collect(a) AS `  AGGREGATION22` RETURN length(`  AGGREGATION22`) AS `length(collect(a))`").toList
     result should equal(List(Map("length(collect(a))" -> 1)))
   }
 
@@ -427,7 +427,7 @@ return coalesce(a.title, a.name)""")
 
   test("columns should not change when using order by and distinct") {
     val n = createNode()
-    val result = execute("match n return distinct n order by id(n)")
+    val result = executeWithNewPlanner("match n return distinct n order by id(n)")
 
     result.toList should equal(List(Map("n" -> n)))
   }
@@ -443,7 +443,7 @@ return coalesce(a.title, a.name)""")
     createNode()
 
     // then shouldn't throw
-    execute("match x RETURN DISTINCT x as otherName ORDER BY x.name ")
+    executeWithNewPlanner("match x RETURN DISTINCT x as otherName ORDER BY x.name ")
   }
 
   test("should propagate null through math funcs") {

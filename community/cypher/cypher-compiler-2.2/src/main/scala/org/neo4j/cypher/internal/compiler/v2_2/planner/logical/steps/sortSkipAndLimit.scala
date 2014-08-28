@@ -19,22 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{Descending, Ascending, SortDescription}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryProjection, QueryGraph, PlannerQuery}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{Ascending, Descending, SortDescription}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, QueryProjection}
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 
-  import QueryPlanProducer._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
 
   def apply(plan: QueryPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext): QueryPlan = query.horizon match {
     case p: QueryProjection =>
-    val shuffle = p.shuffle
-
+      val shuffle = p.shuffle
       val producedPlan = (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
         case (Nil, s, l) =>
           addLimit(l, addSkip(s, plan))

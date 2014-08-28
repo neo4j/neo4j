@@ -1070,5 +1070,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tail.graph.optionalMatches should be (empty)
   }
 
+  test("MATCH a WITH collect(a) AS `  AGGREGATION22` RETURN length(`  AGGREGATION22`) AS `length(collect(a))`") {
+    val UnionQuery(query :: Nil, _) =
+      buildPlannerQuery("MATCH a WITH collect(a) AS `  AGGREGATION22` RETURN length(`  AGGREGATION22`) AS `length(collect(a))`", normalize = true)
+
+    println("foo")
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }

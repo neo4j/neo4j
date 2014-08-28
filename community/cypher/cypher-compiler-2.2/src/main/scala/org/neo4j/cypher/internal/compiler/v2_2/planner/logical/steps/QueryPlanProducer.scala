@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.InputPosition.NONE
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.SortDescription
@@ -290,10 +289,7 @@ object QueryPlanProducer {
     QueryPlan( SingleRow(Set.empty)(Map.empty), PlannerQuery.empty )
 
   def planStarProjection(inner: QueryPlan, expressions: Map[String, Expression]) =
-    QueryPlan(
-      inner.plan,
-      inner.solved.updateTailOrSelf(_.updateQueryProjection(_.withProjections(expressions)))
-    )
+    inner
 
   def planRegularProjection(inner: QueryPlan, expressions: Map[String, Expression]) =
     QueryPlan(

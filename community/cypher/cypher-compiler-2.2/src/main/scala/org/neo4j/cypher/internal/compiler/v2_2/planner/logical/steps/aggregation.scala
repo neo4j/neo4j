@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Expression}
 
 object aggregation {
   def apply(plan: QueryPlan, aggregation: AggregatingQueryProjection)(implicit context: LogicalPlanningContext): QueryPlan = {
-
     val aggregationProjections: Map[String, Expression] = aggregation.groupingKeys
     val availableSymbolProjections: Map[String, Identifier] = plan.plan.availableSymbols.map {
       case IdName(x) => x -> Identifier(x)(null)
