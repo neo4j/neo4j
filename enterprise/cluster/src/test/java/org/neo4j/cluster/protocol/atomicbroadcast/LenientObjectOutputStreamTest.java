@@ -33,6 +33,7 @@ import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -95,6 +96,7 @@ public class LenientObjectOutputStreamTest
 
     private MemberIsAvailable memberIsAvailable()
     {
-        return new MemberIsAvailable( "r1", new InstanceId( 1 ), URI.create( "http://me" ), URI.create( "http://me?something" ) );
+        return new MemberIsAvailable( "r1", new InstanceId( 1 ), URI.create( "http://me" ),
+                URI.create( "http://me?something" ), StoreId.DEFAULT );
     }
 }

@@ -21,5 +21,5 @@ package org.neo4j.com;
 
 public interface MismatchingVersionHandler
 {
-    public void versionMismatched( int expected, int received );
+    public void versionMismatched( byte expected, byte received );
 }

@@ -21,13 +21,16 @@ package org.neo4j.kernel.ha;
 
 import org.neo4j.com.Protocol;
 import org.neo4j.com.Protocol214;
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
+
 public class MasterClient214 extends MasterClient210
 {
-    public static final byte PROTOCOL_VERSION = 8;
+    public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 8, INTERNAL_PROTOCOL_VERSION );
 
     public MasterClient214( String hostNameOrIp, int port, Logging logging, Monitors monitors, StoreId storeId,
                             long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize )
@@ -40,5 +43,11 @@ public class MasterClient214 extends MasterClient210
     protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
     {
         return new Protocol214( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
+    }
+
+    @Override
+    public ProtocolVersion getProtocolVersion()
+    {
+        return PROTOCOL_VERSION;
     }
 }

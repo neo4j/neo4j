@@ -26,6 +26,7 @@ import java.io.ObjectOutput;
 import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 /**
  * This message is broadcast when a member of the cluster declares that
@@ -38,17 +39,19 @@ public class MemberIsAvailable
     private InstanceId instanceId;
     private URI clusterUri;
     private URI roleUri;
+    private StoreId storeId;
 
     public MemberIsAvailable()
     {
     }
 
-    public MemberIsAvailable( String role, InstanceId instanceId, URI clusterUri, URI roleUri )
+    public MemberIsAvailable( String role, InstanceId instanceId, URI clusterUri, URI roleUri, StoreId storeId )
     {
         this.role = role;
         this.instanceId = instanceId;
         this.clusterUri = clusterUri;
         this.roleUri = roleUri;
+        this.storeId = storeId;
     }
 
     public String getRole()
@@ -71,6 +74,11 @@ public class MemberIsAvailable
         return roleUri;
     }
 
+    public StoreId getStoreId()
+    {
+        return storeId;
+    }
+
     @Override
     public void writeExternal( ObjectOutput out ) throws IOException
     {
@@ -78,6 +86,7 @@ public class MemberIsAvailable
         out.writeObject( instanceId );
         out.writeUTF( clusterUri.toString() );
         out.writeUTF( roleUri.toString() );
+        storeId.writeExternal( out );
     }
 
     @Override
@@ -86,7 +95,17 @@ public class MemberIsAvailable
         role = in.readUTF();
         instanceId = (InstanceId) in.readObject();
         clusterUri = URI.create( in.readUTF() );
-        roleUri = URI.create(in.readUTF() );
+        roleUri = URI.create( in.readUTF() );
+        // if MemberIsAvailable message comes from old instance than we can't read storeId
+        try
+        {
+            storeId = new StoreId();
+            storeId.readExternal( in );
+        }
+        catch ( IOException e )
+        {
+            storeId = StoreId.DEFAULT;
+        }
     }
 
     @Override

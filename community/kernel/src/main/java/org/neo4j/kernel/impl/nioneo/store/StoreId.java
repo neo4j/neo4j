@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.nio.ByteBuffer;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.security.SecureRandom;
 import java.util.Random;
 
-public final class StoreId
+public final class StoreId implements Externalizable
 {
     /*
      * This field represents the store version of the last Neo4j version which had the store version as part of
@@ -33,12 +36,14 @@ public final class StoreId
      */
     public static final long storeVersionAsLong = 13843131341501958l;
 
+    public static final StoreId DEFAULT = new StoreId( -1, -1, -1, -1 );
+
     private static final Random r = new SecureRandom();
 
-    private final long creationTime;
-    private final long randomId;
-    private final long upgradeTime;
-    private final long upgradeId;
+    private long creationTime;
+    private long randomId;
+    private long upgradeTime;
+    private long upgradeId;
 
     public StoreId()
     {
@@ -78,6 +83,24 @@ public final class StoreId
     public long getUpgradeId()
     {
         return upgradeId;
+    }
+
+    @Override
+    public void writeExternal( ObjectOutput out ) throws IOException
+    {
+        out.writeLong( creationTime );
+        out.writeLong( randomId );
+        out.writeLong( upgradeTime );
+        out.writeLong( upgradeId );
+    }
+
+    @Override
+    public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException
+    {
+        creationTime = in.readLong();
+        randomId = in.readLong();
+        upgradeTime = in.readLong();
+        upgradeId = in.readLong();
     }
 
     @Override

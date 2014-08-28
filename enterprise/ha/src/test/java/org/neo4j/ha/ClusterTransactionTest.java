@@ -22,8 +22,6 @@ package org.neo4j.ha;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
-import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
@@ -36,6 +34,9 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 public class ClusterTransactionTest
@@ -44,11 +45,11 @@ public class ClusterTransactionTest
     public void givenClusterWhenShutdownMasterThenCannotStartTransactionOnSlave() throws Throwable
     {
         // Given
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" )
-                .toURI() ),
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
-                MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005",
-                        HaSettings.tx_push_factor.name(), "2" ) );
+        ClusterManager clusterManager =
+                new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
+                        TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
+                        MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005",
+                                HaSettings.tx_push_factor.name(), "2" ) );
         try
         {
             clusterManager.start();
@@ -59,7 +60,7 @@ public class ClusterTransactionTest
             final GraphDatabaseAPI slave = clusterManager.getDefaultCluster().getAnySlave();
 
             // When
-            final FutureTask<Boolean> result = new FutureTask<Boolean>( new Callable()
+            final FutureTask<Boolean> result = new FutureTask<>( new Callable<Boolean>()
             {
                 @Override
                 public Boolean call() throws Exception
@@ -77,29 +78,29 @@ public class ClusterTransactionTest
                     }
                 }
             } );
-            master.getDependencyResolver().resolveDependency( LifeSupport.class ).addLifecycleListener( new
-                                                                                                                LifecycleListener()
-            {
-                @Override
-                public void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to )
-                {
-                    if ( instance.getClass().getName().contains( "DatabaseAvailability" ) && to == LifecycleStatus
-                            .STOPPED )
+            master.getDependencyResolver()
+                    .resolveDependency( LifeSupport.class )
+                    .addLifecycleListener( new LifecycleListener()
                     {
-                        result.run();
-                    }
-                }
-            } );
+                        @Override
+                        public void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to )
+                        {
+                            if ( instance.getClass().getName().contains( "DatabaseAvailability" ) &&
+                                    to == LifecycleStatus.STOPPED )
+                            {
+                                result.run();
+                            }
+                        }
+                    } );
 
             master.shutdown();
 
             // Then
-            Assert.assertThat( result.get(), CoreMatchers.equalTo( true ) );
+            assertThat( result.get(), equalTo( true ) );
         }
         finally
         {
             clusterManager.stop();
         }
-
     }
 }

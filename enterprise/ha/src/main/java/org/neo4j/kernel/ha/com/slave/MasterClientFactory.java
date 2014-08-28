@@ -20,10 +20,9 @@
 package org.neo4j.kernel.ha.com.slave;
 
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public interface MasterClientFactory
 {
-    public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId, LifeSupport life );
+    public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId );
 }

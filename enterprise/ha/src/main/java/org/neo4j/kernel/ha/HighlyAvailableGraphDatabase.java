@@ -107,7 +107,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
 import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
@@ -117,17 +116,13 @@ import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
-    private static final Iterable<Class<?>> SETTINGS_CLASSES
-            = iterable( GraphDatabaseSettings.class, HaSettings.class, ClusterSettings.class );
     private RequestContextFactory requestContextFactory;
     private Slaves slaves;
     private ClusterMembers members;
     private DelegateInvocationHandler<Master> masterDelegateInvocationHandler;
-    private Master master;
     private HighAvailabilityMemberStateMachine memberStateMachine;
     private UpdatePuller updatePuller;
     private LastUpdateTime lastUpdateTime;
-    private HighAvailabilityMemberContext memberContext;
     private ClusterClient clusterClient;
     private ClusterMemberEvents clusterEvents;
     private ClusterMemberAvailability clusterMemberAvailability;
@@ -135,18 +130,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
     private final LifeSupport paxosLife = new LifeSupport();
 
-    private DelegateInvocationHandler clusterEventsDelegateInvocationHandler;
-    private DelegateInvocationHandler memberContextDelegateInvocationHandler;
-    private DelegateInvocationHandler clusterMemberAvailabilityDelegateInvocationHandler;
-    private HighAvailabilityModeSwitcher highAvailabilityModeSwitcher;
-
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                          Iterable<CacheProvider> cacheProviders,
                                          Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
         this( storeDir, params, new GraphDatabaseDependencies( null,
-                Arrays.<Class<?>>asList( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ),
+                Arrays.asList( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ),
                 kernelExtensions, cacheProviders, txInterceptorProviders ) );
     }
 
@@ -160,8 +150,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected void create()
     {
         life.add( new BranchedDataMigrator( storeDir ) );
-        masterDelegateInvocationHandler = new DelegateInvocationHandler( Master.class );
-        master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
+        masterDelegateInvocationHandler = new DelegateInvocationHandler<>( Master.class );
+        Master master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
                 masterDelegateInvocationHandler );
 
         super.create();
@@ -295,14 +285,16 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected RemoteTxHook createTxHook()
     {
-        clusterEventsDelegateInvocationHandler = new DelegateInvocationHandler( ClusterMemberEvents.class );
-        memberContextDelegateInvocationHandler = new DelegateInvocationHandler( HighAvailabilityMemberContext.class );
-        clusterMemberAvailabilityDelegateInvocationHandler = new DelegateInvocationHandler( ClusterMemberAvailability
-                .class );
+        DelegateInvocationHandler<ClusterMemberEvents> clusterEventsDelegateInvocationHandler =
+                new DelegateInvocationHandler<>( ClusterMemberEvents.class );
+        DelegateInvocationHandler<HighAvailabilityMemberContext> memberContextDelegateInvocationHandler =
+                new DelegateInvocationHandler<>( HighAvailabilityMemberContext.class );
+        DelegateInvocationHandler<ClusterMemberAvailability> clusterMemberAvailabilityDelegateInvocationHandler =
+                new DelegateInvocationHandler<>( ClusterMemberAvailability.class );
 
         clusterEvents = (ClusterMemberEvents) Proxy.newProxyInstance( ClusterMemberEvents.class.getClassLoader(),
                 new Class[]{ClusterMemberEvents.class, Lifecycle.class}, clusterEventsDelegateInvocationHandler );
-        memberContext = (HighAvailabilityMemberContext) Proxy.newProxyInstance(
+        HighAvailabilityMemberContext memberContext = (HighAvailabilityMemberContext) Proxy.newProxyInstance(
                 HighAvailabilityMemberContext.class.getClassLoader(),
                 new Class[]{HighAvailabilityMemberContext.class}, memberContextDelegateInvocationHandler );
         clusterMemberAvailability = (ClusterMemberAvailability) Proxy.newProxyInstance(
@@ -344,7 +336,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         {
                             msgLog.error( String.format( "Instance %s has the same serverId as ours (%d) - will not " +
                                             "join this cluster",
-                                    member.getRoleUri(), config.get( ClusterSettings.server_id )
+                                    member.getRoleUri(), config.get( ClusterSettings.server_id ).toIntegerIndex()
                             ) );
                             return true;
                         }
@@ -457,19 +449,20 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     {
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory );
-        highAvailabilityModeSwitcher =
-                new HighAvailabilityModeSwitcher( new SwitchToSlave( logging.getConsoleLog(
-                        HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
-                        (HaIdGeneratorFactory) idGeneratorFactory,
-                        logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
-                        updateableSchemaState, monitors, kernelExtensions.listFactories()
-                ),
-                        new SwitchToMaster( logging, msgLog, this,
-                                (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
-                                masterDelegateInvocationHandler, clusterMemberAvailability, monitors ),
-                        clusterClient, clusterMemberAvailability,
-                        logging.getMessagesLog( HighAvailabilityModeSwitcher.class )
-                );
+        HighAvailabilityModeSwitcher highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( new
+                SwitchToSlave( logging.getConsoleLog(
+                HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
+                (HaIdGeneratorFactory) idGeneratorFactory,
+                logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
+                updateableSchemaState, monitors, kernelExtensions.listFactories()
+        ),
+                new SwitchToMaster( logging, msgLog, this,
+                        (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
+                        masterDelegateInvocationHandler, clusterMemberAvailability, monitors ),
+                clusterClient, clusterMemberAvailability,
+                dependencyResolver,
+                logging.getMessagesLog( HighAvailabilityModeSwitcher.class )
+        );
 
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );
         memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );

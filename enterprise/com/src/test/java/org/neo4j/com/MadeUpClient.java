@@ -42,11 +42,12 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
 {
     private final byte internalProtocolVersion;
 
-    public MadeUpClient( int port, StoreId storeIdToExpect,
-            byte internalProtocolVersion, byte applicationProtocolVersion, int chunkSize )
+    public MadeUpClient( int port, StoreId storeIdToExpect, byte internalProtocolVersion,
+                         byte applicationProtocolVersion, int chunkSize )
     {
         super( localhost(), port, new DevNullLoggingService(), new Monitors(), storeIdToExpect, FRAME_LENGTH,
-                applicationProtocolVersion, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000,
+                new ProtocolVersion( applicationProtocolVersion, internalProtocolVersion ),
+                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
                 chunkSize );
         this.internalProtocolVersion = internalProtocolVersion;

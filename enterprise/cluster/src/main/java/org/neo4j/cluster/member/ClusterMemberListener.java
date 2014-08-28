@@ -22,6 +22,7 @@ package org.neo4j.cluster.member;
 import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 /**
  * A HighAvailabilityListener is listening for events from elections and availability state.
@@ -44,8 +45,9 @@ public interface ClusterMemberListener
      * @param role
      * @param availableId the role connection information for the new role holder
      * @param atUri the URI at which the instance is available at
+     * @param storeId the identifier of a store that became available
      */
-    void memberIsAvailable( String role, InstanceId availableId, URI atUri );
+    void memberIsAvailable( String role, InstanceId availableId, URI atUri, StoreId storeId );
 
     /**
      * Called when a member is no longer available for fulfilling a particular role.
@@ -68,7 +70,7 @@ public interface ClusterMemberListener
         }
 
         @Override
-        public void memberIsAvailable( String role, InstanceId availableId, URI atURI )
+        public void memberIsAvailable( String role, InstanceId availableId, URI atURI, StoreId storeId )
         {
         }
 

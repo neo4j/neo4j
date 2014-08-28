@@ -46,7 +46,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 public class ServerTest
 {
-    private final Protocol protocol = new Protocol(1024, (byte)0, Server.INTERNAL_PROTOCOL_VERSION);
+    private final Protocol protocol = new Protocol214( 1024, (byte) 0, Server.INTERNAL_PROTOCOL_VERSION );
     private final TxChecksumVerifier checksumVerifier = mock( TxChecksumVerifier.class );
     private final RequestType reqType = mock( RequestType.class );
     private final RecordingChannel channel = new RecordingChannel();
@@ -85,7 +85,8 @@ public class ServerTest
 
     }
 
-    private MessageEvent message( RequestType reqType, RequestContext ctx, Channel serverToClientChannel, Serializer payloadSerializer ) throws IOException
+    private MessageEvent message( RequestType reqType, RequestContext ctx,
+                                  Channel serverToClientChannel, Serializer payloadSerializer ) throws IOException
     {
         ByteBuffer backingBuffer = ByteBuffer.allocate( 1024 );
 
@@ -109,13 +110,15 @@ public class ServerTest
 
     private Server<Object, Object> newServer( final TxChecksumVerifier checksumVerifier )
     {
-        return new Server<Object, Object>(null, mock( Server.Configuration.class), new DevNullLoggingService(),
-                Protocol.DEFAULT_FRAME_LENGTH, (byte)0, checksumVerifier, new TickingClock( 0, 1 ), mock( Monitors.class) )
+        return new Server<Object, Object>( null, mock( Server.Configuration.class ), new DevNullLoggingService(),
+                Protocol.DEFAULT_FRAME_LENGTH,
+                new ProtocolVersion( ((byte) 0), ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
+                checksumVerifier, new TickingClock( 0, 1 ), mock( Monitors.class ) )
         {
             @Override
             protected RequestType<Object> getRequestContext( byte id )
             {
-                return mock(RequestType.class);
+                return mock( RequestType.class );
             }
 
             @Override

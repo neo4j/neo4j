@@ -23,100 +23,55 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.com.MismatchingVersionHandler;
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.kernel.ha.MasterClient201;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class MasterClientResolver implements MasterClientFactory, MismatchingVersionHandler
 {
     private volatile MasterClientFactory currentFactory;
-    private volatile ProtocolVersionCombo currentVersion;
+    private volatile ProtocolVersion currentVersion;
+
+    private final Map<ProtocolVersion, MasterClientFactory> protocolToFactoryMapping;
 
     @Override
-    public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId, LifeSupport life )
+    public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId )
     {
         if ( currentFactory == null )
         {
             assignDefaultFactory();
         }
-        
-        MasterClient result = currentFactory.instantiate( hostNameOrIp, port, monitors, storeId, life );
+
+        MasterClient result = currentFactory.instantiate( hostNameOrIp, port, monitors, storeId );
         result.addMismatchingVersionHandler( this );
         return result;
     }
 
     @Override
-    public void versionMismatched( int expected, int received )
+    public void versionMismatched( byte expected, byte received )
     {
-        getFor( received, 2 );
+        getFor( new ProtocolVersion( received, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ) );
     }
-
-    private static final class ProtocolVersionCombo implements Comparable<ProtocolVersionCombo>
-    {
-        final int applicationProtocol;
-        final int internalProtocol;
-
-        ProtocolVersionCombo( int applicationProtocol, int internalProtocol )
-        {
-            this.applicationProtocol = applicationProtocol;
-            this.internalProtocol = internalProtocol;
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            if ( obj == null )
-            {
-                return false;
-            }
-            if ( obj.getClass() != ProtocolVersionCombo.class )
-            {
-                return false;
-            }
-            ProtocolVersionCombo other = (ProtocolVersionCombo) obj;
-            return other.applicationProtocol == applicationProtocol && other.internalProtocol == internalProtocol;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return ( 31 * applicationProtocol ) | internalProtocol;
-        }
-
-        @Override
-        public int compareTo( ProtocolVersionCombo o )
-        {
-            return ( applicationProtocol < o.applicationProtocol ? -1
-                    : ( applicationProtocol == o.applicationProtocol ? 0 : 1 ) );
-        }
-
-        static final ProtocolVersionCombo PC_201 = new ProtocolVersionCombo( MasterClient201.PROTOCOL_VERSION, 2 );
-        static final ProtocolVersionCombo PC_210 = new ProtocolVersionCombo( MasterClient210.PROTOCOL_VERSION, 2 );
-        static final ProtocolVersionCombo PC_214 = new ProtocolVersionCombo( MasterClient214.PROTOCOL_VERSION, 2 );
-    }
-
-    private final Map<ProtocolVersionCombo, MasterClientFactory> protocolToFactoryMapping;
 
     public MasterClientResolver( Logging logging, int readTimeout, int lockReadTimeout, int channels,
-            int chunkSize )
+                                 int chunkSize )
     {
         protocolToFactoryMapping = new HashMap<>();
-        protocolToFactoryMapping.put( ProtocolVersionCombo.PC_201, new F201( logging, readTimeout, lockReadTimeout,
+        protocolToFactoryMapping.put( MasterClient201.PROTOCOL_VERSION, new F201( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
-        protocolToFactoryMapping.put( ProtocolVersionCombo.PC_210, new F210( logging, readTimeout, lockReadTimeout,
+        protocolToFactoryMapping.put( MasterClient210.PROTOCOL_VERSION, new F210( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
-        protocolToFactoryMapping.put( ProtocolVersionCombo.PC_214, new F214( logging, readTimeout, lockReadTimeout,
+        protocolToFactoryMapping.put( MasterClient214.PROTOCOL_VERSION, new F214( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
     }
 
-    public MasterClientFactory getFor( int applicationProtocol, int internalProtocol )
+    private MasterClientFactory getFor( ProtocolVersion protocolVersion )
     {
-        ProtocolVersionCombo incomingCombo = new ProtocolVersionCombo( applicationProtocol, internalProtocol );
-        MasterClientFactory candidate = protocolToFactoryMapping.get( incomingCombo );
+        MasterClientFactory candidate = protocolToFactoryMapping.get( protocolVersion );
         /*
          * Things that can happen here regarding replacing the current factory, in order:
          * 1. We do not know the protocol - candidate is null: We don't change the current factory
@@ -124,17 +79,17 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
          * 3. We receive a version newer than the current one: Always replace the current factory
          * 4. We receive a version older than the current: Replace if downgrades are allowed, else leave as is.
          */
-        if ( (candidate != null) && (currentVersion == null || currentVersion.compareTo( incomingCombo ) <= 0) )
+        if ( (candidate != null) && (currentVersion == null || currentVersion.compareTo( protocolVersion ) <= 0) )
         {
             currentFactory = candidate;
-            currentVersion = incomingCombo;
+            currentVersion = protocolVersion;
         }
         return candidate;
     }
 
-    public MasterClientFactory assignDefaultFactory()
+    private MasterClientFactory assignDefaultFactory()
     {
-        return getFor( ProtocolVersionCombo.PC_214.applicationProtocol, ProtocolVersionCombo.PC_214.internalProtocol );
+        return getFor( MasterClient214.PROTOCOL_VERSION );
     }
 
     private abstract static class StaticMasterClientFactory implements MasterClientFactory
@@ -146,7 +101,7 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         protected final int chunkSize;
 
         StaticMasterClientFactory( Logging logging, int readTimeoutSeconds, int lockReadTimeout,
-                int maxConcurrentChannels, int chunkSize )
+                                   int maxConcurrentChannels, int chunkSize )
         {
             this.logging = logging;
             this.readTimeoutSeconds = readTimeoutSeconds;
@@ -159,17 +114,16 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
     private static final class F201 extends StaticMasterClientFactory
     {
         public F201( Logging logging, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
-                int chunkSize )
+                     int chunkSize )
         {
             super( logging, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
 
         @Override
-        public MasterClient instantiate( String hostNameOrIp, int port,
-                                         Monitors monitors, StoreId storeId, LifeSupport life )
+        public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId )
         {
-            return life.add( new MasterClient201( hostNameOrIp, port, logging, monitors, storeId,
-                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
+            return new MasterClient201( hostNameOrIp, port, logging, monitors, storeId,
+                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
     }
 
@@ -182,11 +136,10 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         }
 
         @Override
-        public MasterClient instantiate( String hostNameOrIp, int port,
-                                         Monitors monitors, StoreId storeId, LifeSupport life )
+        public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId )
         {
-            return life.add( new MasterClient210( hostNameOrIp, port, logging, monitors, storeId,
-                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
+            return new MasterClient210( hostNameOrIp, port, logging, monitors, storeId,
+                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
     }
 
@@ -199,11 +152,10 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         }
 
         @Override
-        public MasterClient instantiate( String hostNameOrIp, int port,
-                                         Monitors monitors, StoreId storeId, LifeSupport life )
+        public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId )
         {
-            return life.add( new MasterClient214( hostNameOrIp, port, logging, monitors, storeId,
-                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
+            return new MasterClient214( hostNameOrIp, port, logging, monitors, storeId,
+                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
     }
 }

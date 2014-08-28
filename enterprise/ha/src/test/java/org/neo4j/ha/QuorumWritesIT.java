@@ -40,6 +40,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
@@ -270,7 +271,7 @@ public class QuorumWritesIT
         events.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {
             @Override
-            public void memberIsAvailable( String role, InstanceId availableId, URI atUri )
+            public void memberIsAvailable( String role, InstanceId availableId, URI atUri, StoreId storeId )
             {
                 if ( role.equals( roleToWaitFor ) )
                 {

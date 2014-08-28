@@ -88,11 +88,9 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     private final RequestMonitor requestMonitor;
 
-    private int chunkSize;
-
     public Client( String hostNameOrIp, int port, Logging logging, Monitors monitors,
                    StoreId storeId, int frameLength,
-                   byte applicationProtocolVersion, long readTimeout,
+                   ProtocolVersion protocolVersion, long readTimeout,
                    int maxConcurrentChannels, int chunkSize )
     {
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
@@ -105,7 +103,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         this.maxUnusedChannels = maxConcurrentChannels;
         this.mismatchingVersionHandlers = new ArrayList<>( 2 );
         this.address = new InetSocketAddress( hostNameOrIp, port );
-        this.protocol = createProtocol( chunkSize, applicationProtocolVersion );
+        this.protocol = createProtocol( chunkSize, protocolVersion.getApplicationProtocol() );
 
         msgLog.info( getClass().getSimpleName() + " communication channel created towards " + hostNameOrIp + ":" +
                 port );
@@ -133,7 +131,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             {
                 ChannelFuture channelFuture = bootstrap.connect( address );
                 channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
-                Triplet<Channel, ChannelBuffer, ByteBuffer> channel = null;
+                Triplet<Channel, ChannelBuffer, ByteBuffer> channel;
                 if ( channelFuture.isSuccess() )
                 {
                     channel = Triplet.of( channelFuture.getChannel(),
@@ -219,7 +217,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             ByteBuffer input = channelContext.third();
 
 
-            Map<String, String> requestContext = new HashMap<String, String>();
+            Map<String, String> requestContext = new HashMap<>();
             requestContext.put( "type", type.toString() );
             requestContext.put( "slaveContext", context.toString() );
             requestContext.put( "serverAddress", channel.getRemoteAddress().toString() );
@@ -334,7 +332,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         ChannelPipeline pipeline = Channels.pipeline();
         addLengthFieldPipes( pipeline, frameLength );
-        BlockingReadHandler<ChannelBuffer> reader = new BlockingReadHandler<ChannelBuffer>(
+        BlockingReadHandler<ChannelBuffer> reader = new BlockingReadHandler<>(
                 new ArrayBlockingQueue<ChannelEvent>( 3, false ) );
         pipeline.addLast( "blockingHandler", reader );
         return pipeline;

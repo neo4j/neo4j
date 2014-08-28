@@ -27,6 +27,7 @@ import org.jboss.netty.channel.Channel;
 import org.neo4j.backup.BackupClient.BackupRequestType;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
@@ -70,7 +71,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
             {
                 return server;
             }
-        }, logging, FRAME_LENGTH, PROTOCOL_VERSION,
+        }, logging, FRAME_LENGTH, new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
                 TxChecksumVerifier.ALWAYS_MATCH, SYSTEM_CLOCK, monitors );
     }
 

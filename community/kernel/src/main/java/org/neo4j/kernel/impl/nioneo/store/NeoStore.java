@@ -199,18 +199,29 @@ public class NeoStore extends AbstractStore
          * A little silent upgrade for the "next prop" record. It adds one record last to the neostore file.
          * It's backwards compatible, that's why it can be a silent and automatic upgrade.
          */
-        if ( getFileChannel().size() == RECORD_SIZE*5 )
+        if ( getFileChannel().size() == RECORD_SIZE * 5 )
         {
             insertRecord( NEXT_GRAPH_PROP_POSITION, -1 );
             registerIdFromUpdateRecord( NEXT_GRAPH_PROP_POSITION );
         }
 
-        /* Silent upgrade for latest constraint introducing tx
+        /*
+         * Silent upgrade for latest constraint introducing tx
          */
-        if ( getFileChannel().size() == RECORD_SIZE*6 )
+        if ( getFileChannel().size() == RECORD_SIZE * 6 )
         {
             insertRecord( LATEST_CONSTRAINT_TX_POSITION, 0 );
             registerIdFromUpdateRecord( LATEST_CONSTRAINT_TX_POSITION );
+        }
+
+        /*
+         * Silent upgrade for upgrade id and upgrade time
+         */
+        if ( getFileChannel().size() == RECORD_SIZE * 7 )
+        {
+            insertRecord( UPGRADE_ID_POSITION, -1 );
+            insertRecord( UPGRADE_TIME_POSITION, -1 );
+            registerIdFromUpdateRecord( UPGRADE_TIME_POSITION );
         }
     }
 

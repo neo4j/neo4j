@@ -41,6 +41,7 @@ import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -54,6 +55,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
 import static org.neo4j.com.Protocol.writeString;
+import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 
 /**
  * The {@link org.neo4j.kernel.ha.com.master.Master} a slave should use to communicate with its master. It
@@ -71,7 +73,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
      * Version 6 since 2014-01-07
      * Version 7 since 2014-03-18
      */
-    public static final byte PROTOCOL_VERSION = 7;
+    public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 7, INTERNAL_PROTOCOL_VERSION );
 
     private final long lockReadTimeout;
     private final ByteCounterMonitor monitor;
@@ -85,7 +87,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
 
     MasterClient210( String hostNameOrIp, int port, Logging logging, Monitors monitors, StoreId storeId,
                             long readTimeoutMillis, long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
-                            byte protocolVersion )
+                            ProtocolVersion protocolVersion )
     {
         super( hostNameOrIp, port, logging, monitors, storeId, MasterServer.FRAME_LENGTH, protocolVersion,
                 readTimeoutMillis, maxConcurrentChannels, chunkSize );
@@ -350,6 +352,12 @@ public class MasterClient210 extends Client<Master> implements MasterClient
                 buffer.writeLong( endTxId );
             }
         }, VOID_DESERIALIZER );
+    }
+
+    @Override
+    public ProtocolVersion getProtocolVersion()
+    {
+        return PROTOCOL_VERSION;
     }
 
     @Override

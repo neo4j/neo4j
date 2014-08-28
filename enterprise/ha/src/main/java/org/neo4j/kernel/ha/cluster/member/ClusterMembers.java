@@ -33,6 +33,7 @@ import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 /**
@@ -64,15 +65,14 @@ public class ClusterMembers
         };
     }
 
-    private final Map<InstanceId, ClusterMember> members = new CopyOnWriteHashMap<InstanceId, ClusterMember>();
+    private final Map<InstanceId, ClusterMember> members = new CopyOnWriteHashMap<>();
 
-    public ClusterMembers( Cluster cluster, Heartbeat heartbeat, ClusterMemberEvents clusterMemberEvents,
-                           InstanceId me )
+    public ClusterMembers( Cluster cluster, Heartbeat heartbeat, ClusterMemberEvents events, InstanceId me )
     {
         this.me = me;
         cluster.addClusterListener( new HAMClusterListener() );
         heartbeat.addHeartbeatListener( new HAMHeartbeatListener() );
-        clusterMemberEvents.addClusterMemberListener( new HAMClusterMemberListener() );
+        events.addClusterMemberListener( new HAMClusterMemberListener() );
     }
 
     public Iterable<ClusterMember> getMembers()
@@ -84,7 +84,7 @@ public class ClusterMembers
     {
         for ( ClusterMember clusterMember : getMembers() )
         {
-            if ( clusterMember.getMemberId().equals( me ) )
+            if ( clusterMember.getInstanceId().equals( me ) )
             {
                 return clusterMember;
             }
@@ -92,22 +92,36 @@ public class ClusterMembers
         return null;
     }
 
+    public synchronized void waitForEvent( long timeout ) throws InterruptedException
+    {
+        wait( timeout );
+    }
+
+    private synchronized void eventOccurred()
+    {
+        notifyAll();
+    }
+
     private ClusterMember getMember( InstanceId server )
     {
         ClusterMember clusterMember = members.get( server );
         if ( clusterMember == null )
-            throw new IllegalStateException( "Member " + server + " not found in " + new HashMap(members) );
+        {
+            throw new IllegalStateException( "Member " + server + " not found in " + new HashMap<>( members ) );
+        }
         return clusterMember;
     }
-    
+
     private class HAMClusterListener extends ClusterListener.Adapter
     {
         @Override
         public void enteredCluster( ClusterConfiguration configuration )
         {
-            Map<InstanceId, ClusterMember> newMembers = new HashMap<InstanceId, ClusterMember>();
-            for ( InstanceId memberClusterUri : configuration.getMembers().keySet() )
-                newMembers.put( memberClusterUri, new ClusterMember( memberClusterUri ) );
+            Map<InstanceId, ClusterMember> newMembers = new HashMap<>();
+            for ( InstanceId memberClusterId : configuration.getMemberIds() )
+            {
+                newMembers.put( memberClusterId, new ClusterMember( memberClusterId ) );
+            }
             members.clear();
             members.putAll( newMembers );
         }
@@ -143,7 +157,7 @@ public class ClusterMembers
                 return;
             }
             this.masterId = coordinatorId;
-            Map<InstanceId, ClusterMember> newMembers = new CopyOnWriteHashMap<InstanceId, ClusterMember>();
+            Map<InstanceId, ClusterMember> newMembers = new HashMap<>();
             for ( Map.Entry<InstanceId, ClusterMember> memberEntry : members.entrySet() )
             {
                 newMembers.put( memberEntry.getKey(), memberEntry.getValue().unavailableAs(
@@ -154,15 +168,16 @@ public class ClusterMembers
         }
 
         @Override
-        public void memberIsAvailable( String role, InstanceId instanceId, URI roleUri )
+        public void memberIsAvailable( String role, InstanceId instanceId, URI roleUri, StoreId storeId )
         {
-            members.put( instanceId, getMember( instanceId ).availableAs( role, roleUri ) );
+            members.put( instanceId, getMember( instanceId ).availableAs( role, roleUri, storeId ) );
+            eventOccurred();
         }
 
         @Override
         public void memberIsUnavailable( String role, InstanceId unavailableId )
         {
-            ClusterMember member = null;
+            ClusterMember member;
             try
             {
                 member = getMember( unavailableId );
@@ -192,7 +207,7 @@ public class ClusterMembers
         @Override
         public void failed( InstanceId server )
         {
-            if (members.containsKey( server ))
+            if ( members.containsKey( server ) )
             {
                 members.put( server, getMember( server ).failed() );
             }
@@ -201,8 +216,10 @@ public class ClusterMembers
         @Override
         public void alive( InstanceId server )
         {
-            if (members.containsKey( server ))
+            if ( members.containsKey( server ) )
+            {
                 members.put( server, getMember( server ).alive() );
+            }
         }
     }
 }

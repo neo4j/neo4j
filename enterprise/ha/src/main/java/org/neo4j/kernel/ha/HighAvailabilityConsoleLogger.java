@@ -26,6 +26,7 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.ConsoleLogger;
 
 /**
@@ -131,9 +132,9 @@ public class HighAvailabilityConsoleLogger
      * @param atUri       the URI at which the instance is available at
      */
     @Override
-    public void memberIsAvailable( String role, InstanceId availableId, URI atUri )
+    public void memberIsAvailable( String role, InstanceId availableId, URI atUri, StoreId storeId )
     {
-        console.log( "Instance " + printId( availableId, atUri ) + "is available as " + role + " at " + atUri.toASCIIString() );
+        console.log( "Instance " + printId( availableId, atUri ) + "is available as " + role + " at " + atUri.toASCIIString() + " with " + storeId );
     }
 
     /**

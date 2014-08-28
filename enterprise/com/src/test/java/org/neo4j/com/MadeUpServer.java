@@ -66,8 +66,9 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
             {
                 return new HostnamePort( null, port );
             }
-        }, new DevNullLoggingService(), FRAME_LENGTH, applicationProtocolVersion, txVerifier, SYSTEM_CLOCK,
-                new Monitors());
+        }, new DevNullLoggingService(), FRAME_LENGTH,
+                new ProtocolVersion( applicationProtocolVersion, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
+                txVerifier, SYSTEM_CLOCK, new Monitors());
         this.internalProtocolVersion = internalProtocolVersion;
     }
 
@@ -146,8 +147,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
                 BlockLogReader reader = new BlockLogReader( input );
                 try
                 {
-                    Response<Void> response = master.sendDataStream( reader );
-                    return response;
+                    return master.sendDataStream( reader );
                 }
                 finally
                 {
@@ -155,9 +155,8 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
                     {
                         reader.close();
                     }
-                    catch ( IOException e )
+                    catch ( IOException ignored )
                     {
-                        throw new RuntimeException( e );
                     }
                 }
             }

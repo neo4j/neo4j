@@ -127,13 +127,9 @@ public class OnlineBackupKernelExtension implements Lifecycle
                                 }
                             } );
                 }
-                catch ( NoClassDefFoundError e )
+                catch ( NoClassDefFoundError | IllegalArgumentException e )
                 {
                     // Not running HA
-                }
-                catch ( IllegalArgumentException e ) // NOPMD
-                {
-                    // HA available, but not used
                 }
             }
             catch ( Throwable t )
@@ -157,13 +153,9 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 ClusterMemberAvailability client = getClusterMemberAvailability();
                 client.memberIsUnavailable( BACKUP );
             }
-            catch ( NoClassDefFoundError e )
+            catch ( NoClassDefFoundError | IllegalArgumentException e )
             {
                 // Not running HA
-            }
-            catch ( IllegalArgumentException e ) // NOPMD
-            {
-                // HA available, but not used
             }
         }
     }
@@ -177,7 +169,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
     {
 
         @Override
-        public void memberIsAvailable( String role, InstanceId available, URI availableAtUri )
+        public void memberIsAvailable( String role, InstanceId available, URI availableAtUri, StoreId storeId )
         {
             if ( graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterClient.class ).
                     getServerId().equals( available ) && "master".equals( role ) )
@@ -188,7 +180,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                     {
                         URI backupUri = createBackupURI();
                         ClusterMemberAvailability ha = getClusterMemberAvailability();
-                        ha.memberIsAvailable( BACKUP, backupUri );
+                        ha.memberIsAvailable( BACKUP, backupUri, storeId );
                     }
                     catch ( Throwable t )
                     {

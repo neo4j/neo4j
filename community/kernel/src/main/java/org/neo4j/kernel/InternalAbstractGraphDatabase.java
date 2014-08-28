@@ -1496,6 +1496,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( storeMigrationProcess );
             }
+            else if ( StoreId.class.isAssignableFrom( type ) )
+            {
+                return type.cast( storeId );
+            }
             else if ( AvailabilityGuard.class.isAssignableFrom( type ) )
             {
                 return (T) availabilityGuard;

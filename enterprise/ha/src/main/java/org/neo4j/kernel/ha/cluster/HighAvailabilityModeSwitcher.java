@@ -31,9 +31,11 @@ import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -55,6 +57,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     public static final String MASTER = "master";
     public static final String SLAVE = "slave";
+    public static final String UNKNOWN = "UNKNOWN";
+
     public static final String INADDR_ANY = "0.0.0.0";
 
     private volatile URI masterHaURI;
@@ -74,6 +78,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private final SwitchToMaster switchToMaster;
     private final Election election;
     private final ClusterMemberAvailability clusterMemberAvailability;
+    private final DependencyResolver dependencyResolver;
     private final StringLogger msgLog;
 
     private LifeSupport haCommunicationLife;
@@ -87,6 +92,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                                          SwitchToMaster switchToMaster,
                                          Election election,
                                          ClusterMemberAvailability clusterMemberAvailability,
+                                         DependencyResolver dependencyResolver,
                                          StringLogger msgLog )
     {
         this.switchToSlave = switchToSlave;
@@ -95,6 +101,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.msgLog = msgLog;
         this.haCommunicationLife = new LifeSupport();
+        this.dependencyResolver = dependencyResolver;
     }
 
     @Override
@@ -138,7 +145,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         if ( event.getNewState() == event.getOldState() && event.getOldState() == HighAvailabilityMemberState.MASTER )
         {
-            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
+            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, resolveStoreId() );
         }
         else
         {
@@ -146,11 +153,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             {
                 stateChanged( event );
             }
-            catch ( ExecutionException e )
-            {
-                throw new RuntimeException( e );
-            }
-            catch ( InterruptedException e )
+            catch ( ExecutionException | InterruptedException e )
             {
                 throw new RuntimeException( e );
             }
@@ -162,7 +165,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         if ( event.getNewState() == event.getOldState() && event.getOldState() == HighAvailabilityMemberState.SLAVE )
         {
-            clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI );
+            clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI, resolveStoreId() );
         }
         else
         {
@@ -170,11 +173,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             {
                 stateChanged( event );
             }
-            catch ( ExecutionException e )
-            {
-                throw new RuntimeException( e );
-            }
-            catch ( InterruptedException e )
+            catch ( ExecutionException | InterruptedException e )
             {
                 throw new RuntimeException( e );
             }
@@ -194,11 +193,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         {
             stateChanged( event );
         }
-        catch ( ExecutionException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( InterruptedException e )
+        catch ( ExecutionException | InterruptedException e )
         {
             throw new RuntimeException( e );
         }
@@ -286,7 +281,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
                 try
                 {
-                    masterHaURI = switchToMaster.switchToMaster( haCommunicationLife, me, cancellationHandle );
+                    masterHaURI = switchToMaster.switchToMaster( haCommunicationLife, me );
                 }
                 catch ( Throwable e )
                 {
@@ -294,8 +289,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
                     // Since this master switch failed, elect someone else
                     election.demote( getServerId( me ) );
-
-                    return;
                 }
             }
         }, cancellationHandle );
@@ -335,7 +328,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     haCommunicationLife.shutdown();
                     haCommunicationLife = new LifeSupport();
 
-                    URI resultingSlaveHaURI = switchToSlave.switchToSlave( haCommunicationLife, me, masterUri, cancellationHandle );
+                    URI resultingSlaveHaURI =
+                            switchToSlave.switchToSlave( haCommunicationLife, me, masterUri, cancellationHandle );
                     if ( resultingSlaveHaURI == null )
                     {
                         /*
@@ -390,6 +384,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
         this.cancellationHandle = cancellationHandle;
         modeSwitcherFuture = modeSwitcherExecutor.submit( switcher );
+    }
+
+    private StoreId resolveStoreId()
+    {
+        return dependencyResolver.resolveDependency( StoreId.class );
     }
 
     private static class CancellationHandle implements CancellationRequest
