@@ -32,7 +32,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_total_size;
@@ -48,10 +47,9 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
             PageSwapperFactory swapperFactory,
             JobScheduler scheduler,
             Config config,
-            Monitors monitors )
+            PageCacheMonitor monitor )
     {
         this.scheduler = scheduler;
-        PageCacheMonitor monitor = monitors.newMonitor( PageCacheMonitor.class );
         this.pageCache = pageCacheFactory.createPageCache(
                 swapperFactory,
                 calculateMaxPages( config ),

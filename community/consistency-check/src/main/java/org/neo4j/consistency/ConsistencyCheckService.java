@@ -30,6 +30,7 @@ import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -78,7 +79,7 @@ public class ConsistencyCheckService
         PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
         LifecycledPageCache pageCache = new LifecycledPageCache(
-                pageCacheFactory, swapperFactory, jobScheduler, tuningConfiguration, monitors );
+                pageCacheFactory, swapperFactory, jobScheduler, tuningConfiguration, monitors.newMonitor( PageCacheMonitor.class ) );
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
