@@ -34,6 +34,7 @@ import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -56,19 +57,29 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class BackupTool
 {
     private static final String TO = "to";
+    private static final String HOST = "host";
+    private static final String PORT = "port";
+
+    @Deprecated // preferred -host and -port separately
     private static final String FROM = "from";
+
     private static final String VERIFY = "verify";
+
     private static final String CONFIG = "config";
     public static final String DEFAULT_SCHEME = "single";
-
     static final String MISMATCHED_STORE_ID = "You tried to perform a backup from database %s, " +
             "but the target directory contained a backup from database %s. ";
 
     static final String WRONG_FROM_ADDRESS_SYNTAX = "Please properly specify a location to backup in the" +
-            " form <host>[:<port>]{,<host>[:<port>]}...";
+            " form " + dash( HOST ) + " <host> " + dash( PORT ) + " <port>";
 
     static final String UNKNOWN_SCHEMA_MESSAGE_PATTERN = "%s was specified as a backup module but it was not found. " +
             "Please make sure that the implementing service is on the classpath.";
+
+    static final String NO_SOURCE_SPECIFIED = "Please specify " + dash( HOST ) + " and optionally " + dash( PORT ) +
+            ", examples:\n" +
+            "  " + dash( HOST ) + " 192.168.1.34\n" +
+            "  " + dash( HOST ) + " 192.168.1.34 " + dash( PORT ) + " 1234";
 
     public static void main( String[] args )
     {
@@ -98,32 +109,77 @@ public class BackupTool
     {
         Args arguments = new Args( args );
 
-        checkArguments( arguments );
-
-        String from = arguments.get( FROM, null );
-        String to = arguments.get( TO, null );
-        boolean verify = arguments.getBoolean( VERIFY, true, true );
-        Config tuningConfiguration = readTuningConfiguration( TO, arguments );
-
-        URI backupURI = resolveBackupUri( from.trim(), arguments, tuningConfiguration );
-        if ( backupURI == null || backupURI.getHost() == null )
+        if ( !arguments.hasNonNull( TO ) )
         {
-            throw new ToolFailureException( WRONG_FROM_ADDRESS_SYNTAX );
+            throw new ToolFailureException( "Specify target location with " + dash( TO ) + " <target-directory>" );
         }
 
+        if ( arguments.hasNonNull( FROM ) && !arguments.has( HOST ) && !arguments.has( PORT ) )
+        {
+            runBackupWithLegacyArgs( arguments );
+        }
+        else if ( arguments.hasNonNull( HOST ) )
+        {
+            runBackup( arguments );
+        }
+        else
+        {
+            throw new ToolFailureException( NO_SOURCE_SPECIFIED );
+        }
+    }
+
+    private void runBackupWithLegacyArgs( Args args ) throws ToolFailureException
+    {
+        String from = args.get( FROM ).trim();
+        String to = args.get( TO ).trim();
+        boolean verify = args.getBoolean( VERIFY, true, true );
+        Config tuningConfiguration = readTuningConfiguration( TO, args );
+
+        URI backupURI = resolveBackupUri( from, args, tuningConfiguration );
+
+        HostnamePort hostnamePort = newHostnamePort( backupURI );
+
+        executeBackup( hostnamePort, to, verify, tuningConfiguration );
+    }
+
+    private void runBackup( Args args ) throws ToolFailureException
+    {
+        String host = args.get( HOST ).trim();
+        int port = args.getNumber( PORT, BackupServer.DEFAULT_PORT ).intValue();
+        String to = args.get( TO ).trim();
+        boolean verify = args.getBoolean( VERIFY, true, true );
+        Config tuningConfiguration = readTuningConfiguration( TO, args );
+
+        if ( host.contains( ":" ) )
+        {
+            if ( !host.startsWith( "[" ) )
+            {
+                host = "[" + host;
+            }
+            if ( !host.endsWith( "]" ) )
+            {
+                host += "]";
+            }
+        }
+
+        URI backupURI = newURI( DEFAULT_SCHEME + "://" + host + ":" + port ); // a bit of validation
+
+        HostnamePort hostnamePort = newHostnamePort( backupURI );
+
+        executeBackup( hostnamePort, to, verify, tuningConfiguration );
+    }
+
+    private void executeBackup( HostnamePort hostnamePort, String to,
+                                boolean verify, Config tuningConfiguration ) throws ToolFailureException
+    {
         try
         {
-            String str = backupURI.toASCIIString();
-            if ( str.contains( "://" ) )
-            {
-                str = str.split( "://" )[1];
-            }
-            systemOut.println( "Performing backup from '" + str + "'" );
-            doBackup( backupURI, to, verify, tuningConfiguration );
+            systemOut.println( "Performing backup from '" + hostnamePort + "'" );
+            doBackup( hostnamePort, to, verify, tuningConfiguration );
         }
-        catch ( TransactionFailureException e )
+        catch ( TransactionFailureException tfe )
         {
-            if ( e.getCause() instanceof UpgradeNotAllowedByConfigurationException )
+            if ( tfe.getCause() instanceof UpgradeNotAllowedByConfigurationException )
             {
                 try
                 {
@@ -132,36 +188,40 @@ public class BackupTool
                     moveExistingDatabase( fs, to );
 
                 }
-                catch ( IOException e1 )
+                catch ( IOException e )
                 {
                     throw new ToolFailureException( "There was a problem moving the old database out of the way" +
                             " - cannot continue, aborting.", e );
                 }
 
-                doBackup( backupURI, to, verify, tuningConfiguration );
+                doBackup( hostnamePort, to, verify, tuningConfiguration );
             }
             else
             {
                 throw new ToolFailureException( "TransactionFailureException " +
-                        "from existing backup at '" + from + "'.", e );
+                        "from existing backup at '" + hostnamePort + "'.", tfe );
             }
         }
     }
 
-    private static void checkArguments( Args arguments ) throws ToolFailureException
+    private void doBackup( HostnamePort hostnamePort, String to,
+                           boolean checkConsistency, Config config ) throws ToolFailureException
     {
-        if ( arguments.get( FROM, null ) == null )
+        try
         {
-            throw new ToolFailureException( "Please specify " + dash( FROM ) + ", examples:\n" +
-                    "  " + dash( FROM ) + " 192.168.1.34\n" +
-                    "  " + dash( FROM ) + " 192.168.1.34:1234\n" +
-                    "  " + dash( FROM ) + " 192.168.1.15:2181,192.168.1.16:2181" );
+            String host = hostnamePort.getHost();
+            int port = hostnamePort.getPort();
+            backupService.doIncrementalBackupOrFallbackToFull( host, port, to, checkConsistency, config );
+            systemOut.println( "Done" );
         }
-
-        if ( arguments.get( TO, null ) == null )
+        catch ( MismatchingStoreIdException e )
         {
-            throw new ToolFailureException( "Specify target location with " + dash( TO )
-                    + " <target-directory>" );
+            systemOut.println( "Backup failed." );
+            throw new ToolFailureException( String.format( MISMATCHED_STORE_ID, e.getExpected(), e.getEncountered() ) );
+        }
+        catch ( ComException e )
+        {
+            throw new ToolFailureException( "Couldn't connect to '" + hostnamePort + "'", e );
         }
     }
 
@@ -230,26 +290,39 @@ public class BackupTool
     private static URI resolveUriWithProvider( String providerName, String from, Args args, Config config )
             throws ToolFailureException
     {
-        URI uri = newURI( from );
-
         BackupExtensionService service;
         try
         {
             service = Service.load( BackupExtensionService.class, providerName );
         }
-        catch ( NoSuchElementException e1 )
+        catch ( NoSuchElementException e )
         {
             throw new ToolFailureException( String.format( UNKNOWN_SCHEMA_MESSAGE_PATTERN, providerName ) );
         }
 
         try
         {
-            return service.resolve( uri, args, newLogging( config ) );
+            return service.resolve( from, args, newLogging( config ) );
         }
         catch ( Throwable t )
         {
             throw new ToolFailureException( t.getMessage() );
         }
+    }
+
+    private static HostnamePort newHostnamePort( URI backupURI ) throws ToolFailureException
+    {
+        if ( backupURI == null || backupURI.getHost() == null )
+        {
+            throw new ToolFailureException( WRONG_FROM_ADDRESS_SYNTAX );
+        }
+        String host = backupURI.getHost();
+        int port = backupURI.getPort();
+        if ( port == -1 )
+        {
+            port = BackupServer.DEFAULT_PORT;
+        }
+        return new HostnamePort( host, port );
     }
 
     private static Logging newLogging( Config config )
@@ -273,46 +346,21 @@ public class BackupTool
         return logging;
     }
 
-    private void doBackup( URI from, String to, boolean checkConsistency, Config config ) throws ToolFailureException
-    {
-        try
-        {
-            backupService.doIncrementalBackupOrFallbackToFull( from.getHost(), extractPort( from ), to,
-                    checkConsistency, config );
-            systemOut.println( "Done" );
-        }
-        catch ( MismatchingStoreIdException e )
-        {
-            systemOut.println( "Backup failed." );
-            throw new ToolFailureException( String.format( MISMATCHED_STORE_ID, e.getExpected(), e.getEncountered() ) );
-        }
-        catch ( ComException e )
-        {
-            throw new ToolFailureException( "Couldn't connect to '" + from + "'", e );
-        }
-    }
-
-    private static int extractPort( URI from )
-    {
-        int port = from.getPort();
-        if ( port == -1 )
-        {
-            port = BackupServer.DEFAULT_PORT;
-        }
-        return port;
-    }
-
     private static void moveExistingDatabase( FileSystemAbstraction fs, String to ) throws IOException
     {
         File toDir = new File( to );
         File backupDir = new File( toDir, "old-version" );
         if ( !fs.mkdir( backupDir ) )
         {
-            throw new IOException( "Trouble making target backup directory "
-                    + backupDir.getAbsolutePath() );
+            throw new IOException( "Trouble making target backup directory " + backupDir.getAbsolutePath() );
         }
         StoreFile.move( fs, toDir, backupDir, StoreFile.currentStoreFiles(), false, false, StoreFileType.values() );
         LogFiles.move( fs, toDir, backupDir );
+    }
+
+    private static String dash( String name )
+    {
+        return "-" + name;
     }
 
     static class ToolFailureException extends Exception
@@ -336,10 +384,5 @@ public class BackupTool
             }
             System.exit( 1 );
         }
-    }
-
-    private static String dash( String name )
-    {
-        return "-" + name;
     }
 }
