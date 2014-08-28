@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -369,7 +368,7 @@ public class KernelTransactionImplementationTest
     {
         return new KernelTransactionImplementation( null, false, null, null, null, null, recordState,
                 null, neoStore, new NoOpClient(), hooks, null, headerInformation, commitProcess, transactionMonitor,
-                null, null, legacyIndexState, mock( Pool.class ), clock );
+                null, null, legacyIndexState, clock );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

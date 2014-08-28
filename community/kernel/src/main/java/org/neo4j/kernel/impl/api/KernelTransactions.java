@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.collection.pool.LinkedQueuePool;
-import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Clock;
@@ -120,33 +118,20 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                     labelScanStore, indexingService, updateableSchemaState, neoStoreTransaction, providerMap,
                     neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory.create(),
                     transactionCommitProcess, transactionMonitor, persistenceCache, storeLayer,
-                    legacyIndexTransactionState, localTxPool, Clock.SYSTEM_CLOCK );
+                    legacyIndexTransactionState, Clock.SYSTEM_CLOCK )
+            {
+                @Override
+                protected void dispose()
+                {
+                    allTransactions.remove( this );
+                }
+            };
 
             allTransactions.add( tx );
 
             return tx;
         }
     };
-
-    /**
-     * Global pool of transactions, wrapped by the thread-local marshland pool and so is not used directly.
-     */
-    private final LinkedQueuePool<KernelTransactionImplementation> globalTxPool
-            = new LinkedQueuePool<KernelTransactionImplementation>( 8, factory )
-    {
-        @Override
-        protected void dispose( KernelTransactionImplementation tx )
-        {
-            allTransactions.remove( tx );
-            tx.dispose();
-            super.dispose( tx );
-        }
-    };
-
-    /**
-     * Pool of unused transactions.
-     */
-    private final MarshlandPool<KernelTransactionImplementation> localTxPool = new MarshlandPool<>( globalTxPool );
 
     public KernelTransactions( NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier,
                                NeoStore neoStore, Locks locks, IntegrityValidator integrityValidator,
@@ -187,9 +172,9 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     public KernelTransaction newInstance()
     {
         assertDatabaseIsRunning();
-        return localTxPool.acquire().initialize(
+        return factory.newInstance().initialize(
                 transactionHeaderInformationFactory.create(),
-                neoStore.getLastCommittedTransactionId());
+                neoStore.getLastCommittedTransactionId() );
     }
 
     /**
@@ -223,8 +208,6 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                 tx.markForTermination();
             }
         }
-        localTxPool.disposeAll();
-        globalTxPool.disposeAll();
     }
 
     @Override
