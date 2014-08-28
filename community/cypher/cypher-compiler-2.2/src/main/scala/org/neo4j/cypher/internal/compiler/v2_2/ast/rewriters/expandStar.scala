@@ -28,7 +28,7 @@ object expandStar extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    case x: ReturnAll if x.seenIdentifiers.nonEmpty =>
+    case x: ReturnAll =>
       val identifiers = x.seenIdentifiers.get.filter(UnNamedNameGenerator.isNamed).toSeq.sorted
       val returnItems: Seq[ReturnItem] = identifiers.map { id =>
         val expr = Identifier(id)(x.position)

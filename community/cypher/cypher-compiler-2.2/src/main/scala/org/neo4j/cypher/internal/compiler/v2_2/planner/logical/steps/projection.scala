@@ -20,21 +20,22 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 
 object projection {
 
-  import QueryPlanProducer._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
 
-  def apply(plan: QueryPlan, projectionsMap: Map[String, Expression])(implicit context: LogicalPlanningContext): QueryPlan = {
+  def apply(plan: QueryPlan, projectionsMap: Map[String, Expression], intermediate: Boolean)(implicit context: LogicalPlanningContext): QueryPlan = {
     val ids = plan.availableSymbols
-    val projectAllCoveredIds = ids.map {
+    val projectAllCoveredIds: Set[(String, Expression)] = ids.map {
       case IdName(id) => id -> ast.Identifier(id)(null)
-    }.toMap
+    }
+    val projections: Set[(String, Expression)] = projectionsMap.toSeq.toSet
 
-    if (projectionsMap == projectAllCoveredIds)
+    if (intermediate && projections.subsetOf(projectAllCoveredIds) || projections == projectAllCoveredIds)
       planStarProjection(plan, projectionsMap)
     else
       planRegularProjection(plan, projectionsMap)

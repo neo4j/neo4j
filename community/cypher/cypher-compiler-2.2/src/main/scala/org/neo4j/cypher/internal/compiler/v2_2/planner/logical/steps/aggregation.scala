@@ -36,7 +36,7 @@ object aggregation {
     val expressionsMap: Map[String, Expression] = availableSymbolProjections ++ aggregationProjections
 
     // TODO: we need to project here since the pipe does not do that, when moving to the new runtime the aggregation pipe MUST do the projection itself
-    val projectedPlan = projection(plan, expressionsMap)
+    val projectedPlan = projection(plan, expressionsMap, intermediate = true)
     planAggregation(projectedPlan, aggregationProjections, aggregation.aggregationExpressions)
   }
 }
