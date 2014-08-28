@@ -80,6 +80,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             }
             
             force( ticket );
+            transactionIdStore.transactionCommitted( transactionId );
             return transactionId;
         }
         catch ( Exception e )
@@ -127,6 +128,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                 }
             }
             force( ticket );
+            transactionIdStore.transactionCommitted( transactionId );
             return result;
         }
         catch ( Exception e )
