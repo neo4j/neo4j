@@ -30,18 +30,18 @@ case object plannerDocBuilder extends DocBuilderChain[Any] {
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
   import org.neo4j.cypher.internal.compiler.v2_2.perty.DocBuilder._
 
-  val forNestedIdName = DocGenerator[Any] {
+  val forNestedIdName = asDocBuilder[Any] {
     case idName: IdName => (inner) =>
       text(idName.name)
   }
 
-  val forNestedPatternLength: DocBuilder[Any] = DocGenerator[Any] {
+  val forNestedPatternLength: DocBuilder[Any] = asDocBuilder[Any] {
     case VarPatternLength(min, None)      => (inner) => text(s"*${min.toString}..")
     case VarPatternLength(min, Some(max)) => (inner) => text(s"*${min.toString}..${max.toString}")
     case SimplePatternLength              => (inner) => nil
   }
 
-  val forNestedPatternRelationship: DocBuilder[Any] = DocGenerator[Any] {
+  val forNestedPatternRelationship: DocBuilder[Any] = asDocBuilder[Any] {
     case patRel: PatternRelationship => (inner) =>
       val leftEnd = if (patRel.dir == Direction.INCOMING) "<-[" else "-["
       val rightEnd = if (patRel.dir == Direction.OUTGOING) "]->" else "]-"
@@ -55,31 +55,31 @@ case object plannerDocBuilder extends DocBuilderChain[Any] {
       )
   }
 
-  val forNestedPredicate: DocBuilder[Any] = DocGenerator[Any] {
+  val forNestedPredicate: DocBuilder[Any] = asDocBuilder[Any] {
     case Predicate(dependencies, expr) => (inner) =>
       val pred = sepList(dependencies.map(inner), break = breakSilent)
       val predBlock = block("Predicate", open = "[", close = "]")(pred)
       block(predBlock)(inner(expr))
   }
 
-  val forNestedSelections: DocBuilder[Any] = DocGenerator[Any] {
+  val forNestedSelections: DocBuilder[Any] = asDocBuilder[Any] {
     case Selections(predicates) => (inner) =>
       sepList(predicates.map(inner).toList)
   }
 
-  val forNestedShortestPathPattern: DocBuilder[Any] = DocGenerator[Any] {
+  val forNestedShortestPathPattern: DocBuilder[Any] = asDocBuilder[Any] {
     case ShortestPathPattern(optName, rel, single) => (inner) =>
       val nameDoc = optName.fold(nil)(name => name.name :: " =")
       val relDoc = block(if (single) "shortestPath" else "allShortestPath")(inner(rel))
       nameDoc :+: relDoc
   }
 
-  def relTypeList(list: Seq[RelTypeName])(inner: FixedDocGenerator[Any]): Doc = list.map(inner).foldRight(nil) {
+  def relTypeList(list: Seq[RelTypeName])(inner: DocGenerator[Any]): Doc = list.map(inner).foldRight(nil) {
     case (hd, NilDoc) => ":" :: hd
     case (hd, tail)   => ":" :: hd :: "|" :: tail
   }
 
-  val builders: Seq[DocBuilder[Any]] =
+  val builders =
     Seq(
       forNestedIdName,
       forNestedPatternLength,

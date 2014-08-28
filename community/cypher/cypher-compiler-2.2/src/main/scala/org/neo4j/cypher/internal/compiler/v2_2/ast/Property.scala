@@ -21,13 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
 import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class Property(map: Expression, propertyKey: PropertyKeyName)(val position: InputPosition) extends Expression with FunctionTyping {
-
-  import Doc._
+  protected def possibleTypes = CTAny.invariant
 
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTMap), outputType = CTInteger),
@@ -41,10 +39,6 @@ case class Property(map: Expression, propertyKey: PropertyKeyName)(val position:
     Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTFloat)),
     Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTNumber))
   )
-
-  override def toDoc = group(map :: "." :: propertyKey)
-
-  protected def possibleTypes = CTAny.invariant
 }
 
 object LegacyProperty {

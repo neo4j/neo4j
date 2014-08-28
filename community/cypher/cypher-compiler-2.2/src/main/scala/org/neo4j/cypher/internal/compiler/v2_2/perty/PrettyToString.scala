@@ -17,32 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty.impl
+package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty._
+trait PrettyToString {
+  self: Pretty[_] with HasDocFormatter =>
 
-import scala.collection.mutable
-
-class StringPrintingConverter(var builder: mutable.StringBuilder = new mutable.StringBuilder()) extends PrintingConverter[String] {
-  def clear() {
-    builder.clear()
-  }
-
-  def result() = builder.result()
-
-  def +=(elem: PrintCommand) = {
-    elem match {
-      case PrintText(text) =>
-        builder = builder ++= text
-
-      case PrintNewLine(indent) =>
-        builder += '\n'
-        var remaining = indent
-        while (remaining > 0) {
-          builder = builder += ' '
-          remaining  -= 1
-        }
-    }
-    this
-  }
+  override def toString = printToString(docFormatter(toDoc))
 }

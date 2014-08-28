@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.docStructureDoc
  * (cf. http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.34.2200&rep=rep1&type=pdf)
  *
  */
-sealed abstract class Doc extends Pretty with PrettyToString with HasLineDocFormatter {
+sealed abstract class Doc extends docStructureDocBuilder.AsPrettyToString with HasLineDocFormatter {
 
   import Doc._
 
@@ -41,7 +41,7 @@ sealed abstract class Doc extends Pretty with PrettyToString with HasLineDocForm
 
   def toOption: Option[Doc] = Some(this)
 
-  override def toDoc = docStructureDocBuilder.docGenerator(this)
+  override def docGenerator: DocGenerator[Doc] = docStructureDocBuilder.docGenerator
 }
 
 object Doc {
@@ -63,10 +63,6 @@ object Doc {
   // unbreakable text doc
 
   implicit def text(value: String): Doc = TextDoc(value)
-
-  // instances of Pretty know how to convert themselves
-
-  implicit def pretty(pretty: Pretty): Doc = pretty.toDoc
 
   // breaks are either expanded to their value or a line break
 
@@ -168,7 +164,7 @@ final case class NestWith(indent: Int, content: Doc) extends NestingDoc {
   def optIndent = Some(indent)
 }
 
-final case class DocLiteral(doc: Doc) extends Pretty {
+final case class DocLiteral(doc: Doc) extends Pretty[DocLiteral] {
   override def toDoc =
     Doc.block("DocLiteral")(docStructureDocBuilder.docGenerator(doc))
 }

@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.{CachingDocBuilder, quoteString}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.quoteString
 
-case object docStructureDocBuilder extends CustomDocBuilder[Doc] {
+case object docStructureDocBuilder extends CachingDocBuilder[Doc] with TopLevelDocBuilder[Doc] {
 
   import Doc._
 
-  override def newDocGenerator = DocGenerator {
+  override protected def newNestedDocGenerator = {
     case ConsDoc(hd, tl)       => (inner) => inner(hd) :: "·" :: inner(tl)
     case NilDoc                => (inner) => "ø"
 

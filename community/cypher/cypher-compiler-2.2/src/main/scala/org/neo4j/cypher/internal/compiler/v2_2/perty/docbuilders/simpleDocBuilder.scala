@@ -19,21 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.CustomDocBuilderChain
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
-// Like defaultDocBuilder just without supporting Pretty.toDoc
-//
-// This is helpful when reflectively printing scala case classes whose toDoc leaves out information
-//
-case object simpleDocBuilder extends CustomDocBuilderChain[Any] {
+case object simpleDocBuilder extends DocBuilderChain[Any] with TopLevelDocBuilder[Any] {
+
   val builders = Seq(
-    // pretty printing the structure of docs themselves
     docStructureDocBuilder.uplifted[Any],
-
-    // pretty printing anything common scala value (product, array, primitive)
+    prettyDocBuilder.uplifted[Any],
     scalaDocBuilder,
-
-    // pretty printing by falling back to toString()
     toStringDocBuilder
   )
+
+  override protected def newNestedDocGenerator = catchErrors(super.newNestedDocGenerator)
 }

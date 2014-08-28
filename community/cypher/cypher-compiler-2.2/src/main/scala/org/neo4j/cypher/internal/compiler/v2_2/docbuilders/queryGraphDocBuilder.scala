@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.CachingDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 
-case object queryGraphDocBuilder extends CustomDocBuilder[Any] {
+case object queryGraphDocBuilder extends CachingDocBuilder[Any] {
 
   import Doc._
 
-  override def newDocGenerator = DocGenerator {
+  override protected def newNestedDocGenerator = {
     case qg: QueryGraph => (inner) =>
       val args = section("GIVEN", "*" :?: sepList(qg.argumentIds.map(inner)))
       val patterns = section("MATCH", sepList(

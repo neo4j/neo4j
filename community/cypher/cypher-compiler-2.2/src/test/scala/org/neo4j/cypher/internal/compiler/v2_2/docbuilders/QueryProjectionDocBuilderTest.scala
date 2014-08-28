@@ -19,19 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{AscSortItem, CountStar, DescSortItem, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.compiler.v2_2.perty.DocBuilder
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{DocBuilderTestSuite, defaultDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{CountStar, SignedDecimalIntegerLiteral, DescSortItem, AscSortItem}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{scalaDocBuilder, toStringDocBuilder, DocBuilderTestSuite}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.DocBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 
 class QueryProjectionDocBuilderTest extends DocBuilderTestSuite[Any] {
 
   val docBuilder: DocBuilder[Any] =
+    astExpressionDocBuilder orElse
     queryProjectionDocBuilder("WITH") orElse
     queryShuffleDocBuilder orElse
     plannerDocBuilder orElse
-    defaultDocBuilder
+    scalaDocBuilder orElse
+    toStringDocBuilder
 
   test("calls down to astExpressionDocBuilder") {
     format(ident("a")) should equal("a")
