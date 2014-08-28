@@ -203,7 +203,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     {
         long blockId = record.getId();
         long pageId = pageIdForRecord( blockId );
-        registerIdFromUpdateRecord( blockId );
         try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
         {
             if ( cursor.next() )

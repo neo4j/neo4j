@@ -20,31 +20,32 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.CachingDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import scala.annotation.tailrec
 
-case object plannerQueryDocBuilder extends CachingDocBuilder[Any] {
+case object plannerQueryDocBuilder extends CustomDocBuilder[Any] {
 
   import Doc._
 
-  override protected def newNestedDocGenerator = {
-    case plannerQuery: PlannerQuery => (inner: DocGenerator[Any]) =>
+  override def newDocGenerator = DocGenerator {
+    case plannerQuery: PlannerQuery => (inner: FixedDocGenerator[Any]) =>
       val allQueryDocs = queryDocs(inner, Some(plannerQuery), List.empty)
       group(breakList(allQueryDocs))
   }
 
   @tailrec
-  private def queryDocs(inner: DocGenerator[Any], optQuery: Option[PlannerQuery], docs: List[Doc]): List[Doc] = {
+  private def queryDocs(inner: FixedDocGenerator[Any], optQuery: Option[PlannerQuery], docs: List[Doc]): List[Doc] = {
     optQuery match {
       case None        => docs.reverse
       case Some(query) => queryDocs(inner, query.tail, queryDoc(inner, query) :: docs)
     }
   }
 
-  private def queryDoc(inner: DocGenerator[Any], query: PlannerQuery) = {
+  private def queryDoc(inner: FixedDocGenerator[Any], query: PlannerQuery) = {
     val graphDoc = inner(query.graph)
     val projectionPrefix = query.tail.fold("RETURN")(_ => "WITH")
-    val projectionDoc = queryProjectionDocBuilder(projectionPrefix).nestedDocGenerator(query.horizon)(inner)
+    val projectionDoc = queryProjectionDocBuilder(projectionPrefix).docGenerator.nested(query.horizon)(inner)
     group(graphDoc :/: projectionDoc)
   }
 }

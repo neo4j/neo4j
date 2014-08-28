@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 object projectEndpoints extends CandidateGenerator[PlanTable] with CollectionSupport {
 
-  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
+  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
     val projectedEndpointPlans = for {
       plan <- planTable.plans
       patternRel <- queryGraph.patternRelationships

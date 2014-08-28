@@ -24,19 +24,21 @@ import java.lang.reflect.Field;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.test.CleanupRule;
+
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.impl.StaticLoggerBinder;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -49,8 +51,7 @@ import static org.hamcrest.Matchers.notNullValue;
 @PrepareForTest(StaticLoggerBinder.class)
 public class LoggerFactoryIT
 {
-
-    private TemporaryFolder graphDbFolder = new TemporaryFolder();
+    private final TemporaryFolder graphDbFolder = new TemporaryFolder();
 
     @Before
     public void setupTempFolder() throws IOException
@@ -64,7 +65,6 @@ public class LoggerFactoryIT
         graphDbFolder.delete();
     }
 
-
     @Test
     public void shouldFallbackToClassicLoggingServiceIfCustomStaticLoggerBinder() throws Exception
     {
@@ -74,8 +74,8 @@ public class LoggerFactoryIT
         PowerMockito.mockStatic( StaticLoggerBinder.class );
         PowerMockito.when( StaticLoggerBinder.getSingleton() ).thenReturn( mockedInstance );
 
-        GraphDatabaseService graphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase( graphDbFolder
-                .getRoot().getAbsolutePath() );
+        GraphDatabaseService graphDatabaseService = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(
+                graphDbFolder.getRoot().getAbsolutePath() ) );
         assertGraphDatabaseLoggingMatches( "org.neo4j.kernel.logging.ClassicLoggingService", graphDatabaseService );
 
     }
@@ -83,8 +83,8 @@ public class LoggerFactoryIT
     @Test
     public void shouldUseLogbackServiceWithStandardStaticLoggerBinder() throws Exception
     {
-        GraphDatabaseService graphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase( graphDbFolder
-                .getRoot().getAbsolutePath() );
+        GraphDatabaseService graphDatabaseService = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(
+                graphDbFolder.getRoot().getAbsolutePath() ) );
         assertGraphDatabaseLoggingMatches( "org.neo4j.kernel.logging.LogbackService", graphDatabaseService );
     }
 
@@ -94,7 +94,6 @@ public class LoggerFactoryIT
      */
     static class DummyLoggerFactory implements ILoggerFactory
     {
-
         @Override
         public Logger getLogger( String name )
         {
@@ -146,4 +145,5 @@ public class LoggerFactoryIT
         }
     }
 
+    public final @Rule CleanupRule cleanup = new CleanupRule();
 }

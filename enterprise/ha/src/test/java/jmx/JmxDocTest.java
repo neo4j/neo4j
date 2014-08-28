@@ -19,8 +19,6 @@
  */
 package jmx;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -35,7 +33,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
 import javax.management.Descriptor;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -48,12 +45,15 @@ import javax.management.ObjectName;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.ha.CreateEmptyDb;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
 
 public class JmxDocTest
 {
@@ -64,7 +64,7 @@ public class JmxDocTest
     private static final String BEAN_NAME = "name";
     private static final List<String> QUERIES = Arrays.asList( new String[]{"org.neo4j:*"} );
     private static final String JAVADOC_URL = "link:javadocs/";
-    private static final int EXPECTED_NUMBER_OF_BEANS = 12;
+    private static final int EXPECTED_NUMBER_OF_BEANS = 13;
     private static final Set<String> EXCLUDES = new HashSet<String>()
     {
         {

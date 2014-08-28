@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 
 object allNodesLeafPlanner extends LeafPlanner {
-  def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]) =
+  def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) =
     CandidateList(
       queryGraph.patternNodes
         //.filterNot(queryGraph.argumentIds)

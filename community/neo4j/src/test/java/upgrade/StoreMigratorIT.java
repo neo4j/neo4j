@@ -34,6 +34,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -98,6 +99,7 @@ public class StoreMigratorIT
             verifier.verifyNodeIdsReused();
             verifier.verifyRelationshipIdsReused();
             verifier.verifyLegacyIndex();
+            verifier.verifyIndex();
         }
         finally
         {
@@ -164,7 +166,9 @@ public class StoreMigratorIT
         // when
         try
         {
-            new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
+            new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() )
+            .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
+            .newGraphDatabase();
             fail( "should have failed to start" );
         }
         // then

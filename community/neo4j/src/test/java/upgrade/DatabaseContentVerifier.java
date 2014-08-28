@@ -19,12 +19,16 @@
  */
 package upgrade;
 
+import java.util.List;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -123,6 +127,22 @@ public class DatabaseContentVerifier
             Relationship relationship1 = node1.createRelationshipTo( node2, withName( "REUSE" ) );
             assertEquals( 0, relationship1.getId() );
             transaction.success();
+        }
+    }
+
+    public void verifyIndex()
+    {
+        try ( Transaction tx = database.beginTx() )
+        {
+            List<IndexDefinition> indexDefinitions = Iterables.toList( database.schema().getIndexes() );
+            assertEquals( 1, indexDefinitions.size() );
+            IndexDefinition indexDefinition = indexDefinitions.get( 0 );
+            assertEquals( "Label", indexDefinition.getLabel().name() );
+            List<String> propKeys = Iterables.toList( indexDefinition.getPropertyKeys() );
+            assertEquals( 1, propKeys.size() );
+            String propKey = propKeys.get( 0 );
+            assertEquals( "prop", propKey );
+            tx.success();
         }
     }
 

@@ -63,7 +63,7 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
             {
                 throw new UnsupportedOperationException(  );
             }
-        }, transactionMetadataCache, transactionIdStore ) );
+        }, transactionMetadataCache, transactionIdStore, false ) );
     }
 
     @Override

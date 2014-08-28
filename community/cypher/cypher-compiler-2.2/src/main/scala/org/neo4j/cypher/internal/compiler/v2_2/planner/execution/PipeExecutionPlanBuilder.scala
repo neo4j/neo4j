@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.OtherConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.PatternPartToPathExpression
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.OtherConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.{ExpressionConverters, OtherConverters, PatternConverters}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{True, Predicate => CommandPredicate}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
@@ -32,8 +33,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
-case class PipeExecutionBuilderContext(patternExpressionPlans: Map[ast.PatternExpression, LogicalPlan]) {
-  def plan(expr: ast.PatternExpression) = patternExpressionPlans(expr)
+case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan) {
+  def plan(expr: ast.PatternExpression) = f(expr)
 }
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
@@ -46,7 +47,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case pattern: ast.PatternExpression =>
           val pos = pattern.position
           val pipe = buildPipe(context.plan(pattern))
-          val step = PatternPartToPathExpression.patternPartPathExpression(ast.EveryPath(pattern.pattern.element))
+          val step = projectNamedPaths.patternPartPathExpression(ast.EveryPath(pattern.pattern.element))
           ast.NestedPipeExpression(pipe, ast.PathExpression(step)(pos))(pos)
       }
 

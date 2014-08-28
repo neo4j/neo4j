@@ -19,13 +19,25 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
+import static java.net.URI.create;
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.member.ClusterMemberMatcher.sameMemberAs;
+
 import java.net.URI;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-
+import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
@@ -34,21 +46,8 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.net.URI.create;
-import static java.util.Arrays.asList;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
-import static org.neo4j.kernel.ha.cluster.member.ClusterMemberMatcher.sameMemberAs;
 
 public class ClusterMembersTest
 {
@@ -361,6 +360,77 @@ public class ClusterMembersTest
 
         // then
         assertThat( members.getSelf().getHARole(), equalTo( SLAVE ) );
+    }
+
+    @Test
+    public void missingMasterUnavailabilityEventForOtherInstanceStillRemovesBackupRole() throws Exception
+    {
+        // given
+        Cluster cluster = mock(Cluster.class);
+        Heartbeat heartbeat = mock( Heartbeat.class );
+        ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
+
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1 );
+        // initialized with the members of the cluster
+        ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
+        verify( cluster ).addClusterListener( listener.capture() );
+        listener.getValue().enteredCluster( clusterConfiguration( clusterUri1, clusterUri2, clusterUri3 ) );
+
+        ArgumentCaptor<ClusterMemberListener> clusterMemberListener = ArgumentCaptor.forClass( ClusterMemberListener.class );
+        verify( clusterMemberEvents ).addClusterMemberListener( clusterMemberListener.capture() );
+
+        // instance 2 is available as MASTER and BACKUP
+        clusterMemberListener.getValue().memberIsAvailable( OnlineBackupKernelExtension.BACKUP, clusterId2, clusterUri2 );
+        clusterMemberListener.getValue().memberIsAvailable( MASTER, clusterId2, clusterUri2 );
+
+        // when - instance 2 becomes available as SLAVE
+        clusterMemberListener.getValue().memberIsAvailable( SLAVE, clusterId2, clusterUri2 );
+
+        // then - instance 2 should be available ONLY as SLAVE
+        for ( ClusterMember clusterMember : members.getMembers() )
+        {
+            if ( clusterMember.getInstanceId() == clusterId2.toIntegerIndex() )
+            {
+                assertThat( Iterables.count( clusterMember.getRoles() ), equalTo( 1l ) );
+                assertThat( Iterables.single( clusterMember.getRoles() ), equalTo( SLAVE ) );
+                break; // that's the only member we care about
+            }
+        }
+    }
+
+    @Test
+    public void receivingInstanceFailureEventRemovesAllRolesForIt() throws Exception
+    {
+        // given
+        Cluster cluster = mock(Cluster.class);
+        Heartbeat heartbeat = mock( Heartbeat.class );
+        ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
+
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1 );
+        // initialized with the members of the cluster
+        ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
+        verify( cluster ).addClusterListener( listener.capture() );
+        listener.getValue().enteredCluster( clusterConfiguration( clusterUri1, clusterUri2, clusterUri3 ) );
+
+        ArgumentCaptor<ClusterMemberListener> clusterMemberListener = ArgumentCaptor.forClass( ClusterMemberListener.class );
+        verify( clusterMemberEvents ).addClusterMemberListener( clusterMemberListener.capture() );
+
+        // instance 2 is available as MASTER and BACKUP
+        clusterMemberListener.getValue().memberIsAvailable( OnlineBackupKernelExtension.BACKUP, clusterId2, clusterUri2 );
+        clusterMemberListener.getValue().memberIsAvailable( MASTER, clusterId2, clusterUri2 );
+
+        // when - instance 2 becomes failed
+        clusterMemberListener.getValue().memberIsFailed( clusterId2 );
+
+        // then - instance 2 should not be available as any roles
+        for ( ClusterMember clusterMember : members.getMembers() )
+        {
+            if ( clusterMember.getInstanceId() == clusterId2.toIntegerIndex() )
+            {
+                assertThat( Iterables.count( clusterMember.getRoles() ), equalTo( 0l ) );
+                break; // that's the only member we care about
+            }
+        }
     }
 
     private ClusterConfiguration clusterConfiguration( URI... uris )

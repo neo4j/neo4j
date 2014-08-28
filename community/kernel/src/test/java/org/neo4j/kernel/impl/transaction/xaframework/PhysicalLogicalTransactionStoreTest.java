@@ -76,7 +76,7 @@ public class PhysicalLogicalTransactionStoreTest
                 transactionIdStore, mock( LogVersionRepository.class), monitor, logRotationControl,
                 positionCache, noRecoveryAsserter() ) );
         TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
-        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, transactionIdStore ) );
+        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, transactionIdStore, true ) );
 
         try
         {
@@ -140,7 +140,7 @@ public class PhysicalLogicalTransactionStoreTest
             }
         } ) ) );
 
-        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, transactionIdStore ) );
+        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, transactionIdStore, true ) );
 
         // WHEN
         try
@@ -208,7 +208,7 @@ public class PhysicalLogicalTransactionStoreTest
         } )));
 
         LogicalTransactionStore store = life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
-                positionCache, transactionIdStore ) );
+                positionCache, transactionIdStore, true ) );
 
         // WHEN
         life.start();

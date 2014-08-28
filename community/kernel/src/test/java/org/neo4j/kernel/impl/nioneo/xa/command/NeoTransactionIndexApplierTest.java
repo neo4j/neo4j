@@ -75,7 +75,7 @@ public class NeoTransactionIndexApplierTest
 
         // when
         final boolean result = applier.visitNodeCommand( command );
-        applier.close();
+        applier.apply();
 
         // then
         assertTrue( result );
@@ -105,7 +105,7 @@ public class NeoTransactionIndexApplierTest
 
         // when
         final boolean result = applier.visitNodeCommand( command );
-        applier.close();
+        applier.apply();
 
         // then
         assertTrue( result );
@@ -137,7 +137,7 @@ public class NeoTransactionIndexApplierTest
 
         // when
         final boolean result = applier.visitPropertyCommand( command );
-        applier.close();
+        applier.apply();
 
         // then
         assertTrue( result );
@@ -165,7 +165,7 @@ public class NeoTransactionIndexApplierTest
 
         // when
         final boolean result = applier.visitPropertyCommand( command );
-        applier.close();
+        applier.apply();
 
         // then
         assertTrue( result );

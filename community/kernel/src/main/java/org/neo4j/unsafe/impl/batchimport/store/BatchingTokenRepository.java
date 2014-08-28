@@ -30,6 +30,8 @@ import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.xa.TokenCreator;
 
+import static java.lang.Math.max;
+
 /**
  * Batching version of a {@link TokenStore} where tokens can be created and retrieved, but only persisted
  * to storage as part of {@link #close() closing}.
@@ -95,11 +97,13 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
         store.setRecovered();
         try
         {
+            int highestId = (int) store.getHighestPossibleIdInUse();
             for ( T record : recordAccess.records() )
             {
                 store.updateRecord( record );
+                highestId = max( highestId, record.getId() );
             }
-            store.updateIdGenerators();
+            store.setHighestPossibleIdInUse( highestId );
         }
         finally
         {

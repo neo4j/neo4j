@@ -20,16 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{catchErrors, simpleDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{catchErrors, defaultDocBuilder}
 
-case object internalDocBuilder extends DocBuilderChain[Any] with TopLevelDocBuilder[Any] {
+case object internalDocBuilder extends CustomDocBuilderChain[Any] {
 
   val builders = Seq(
-    astExpressionDocBuilder,
-    astDocBuilder,
     plannerDocBuilder,
-    simpleDocBuilder
+    defaultDocBuilder
   )
-
-  override protected def newNestedDocGenerator = catchErrors(super.newNestedDocGenerator)
 }

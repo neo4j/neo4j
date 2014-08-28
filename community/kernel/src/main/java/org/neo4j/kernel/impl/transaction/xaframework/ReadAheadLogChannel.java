@@ -35,17 +35,23 @@ public class ReadAheadLogChannel implements ReadableLogChannel
     public static final int DEFAULT_READ_AHEAD_SIZE = 1024*4;
 
     private final ByteBuffer aheadBuffer;
-    private VersionedStoreChannel channel;
-    private final LogVersionBridge channelBridge;
+    private LogVersionedStoreChannel channel;
+    private final LogVersionBridge bridge;
     private final int readAheadSize;
 
-    public ReadAheadLogChannel( VersionedStoreChannel startingChannel, LogVersionBridge channelBridge, int readAheadSize )
+    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, int readAheadSize )
     {
         this.channel = startingChannel;
-        this.channelBridge = channelBridge;
+        this.bridge = bridge;
         this.readAheadSize = readAheadSize;
         this.aheadBuffer = ByteBuffer.allocate( readAheadSize );
         aheadBuffer.position( aheadBuffer.capacity() );
+    }
+
+    @Override
+    public byte getLogFormatVersion()
+    {
+        return channel.getLogFormatVersion();
     }
 
     @Override
@@ -132,7 +138,7 @@ public class ReadAheadLogChannel implements ReadableLogChannel
                 }
 
                 // ... we need to read even further, into the next version
-                VersionedStoreChannel nextChannel = channelBridge.next( channel );
+                LogVersionedStoreChannel nextChannel = bridge.next( channel );
                 assert nextChannel != null;
                 if ( nextChannel == channel )
                 {

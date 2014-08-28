@@ -109,6 +109,10 @@ enum OwnerChain
                                             CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
                                             RecordAccess records )
                 {
+                    if ( !owner.inUse() && !record.inUse() )
+                    {
+                        return;
+                    }
                     if ( !owner.inUse() || Record.NO_NEXT_PROPERTY.is( owner.getNextProp() ) )
                     {
                         wrongOwner( engine.report() );

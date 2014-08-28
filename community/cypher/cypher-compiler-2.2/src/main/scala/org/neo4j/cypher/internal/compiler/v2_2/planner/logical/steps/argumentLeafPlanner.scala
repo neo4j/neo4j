@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanPr
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 object argumentLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit ignored: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]) = {
+  def apply(qg: QueryGraph)(implicit ignored: LogicalPlanningContext) = {
     val givenNodeIds = qg.argumentIds intersect qg.patternNodes
     if (givenNodeIds.isEmpty)
       Candidates()

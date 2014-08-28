@@ -50,6 +50,10 @@ class ExpandStarTest extends CypherFunSuite with RewriteTest {
     assertRewrite(
       "match p = shortestPath((a)-[r*]->(x)) return *",
       "match p = shortestPath((a)-[r*]->(x)) return a,p,r,x")
+
+    assertRewrite(
+      "match p=(a:Start)-->b return *",
+      "match p=(a:Start)-->b return a, b, p")
   }
 
   test("rewrites * in with") {

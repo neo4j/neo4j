@@ -145,6 +145,9 @@ angular.module('neo4jApp.controllers')
 
       $(window).resize(resizeStream)
 
+      if !!navigator.userAgent.match(/Gecko\/[\d\.]+.*Firefox/)
+        $('html').addClass 'browser-firefox'
+
       $("body").bind "transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd", ->
         resizeStream()
   ]

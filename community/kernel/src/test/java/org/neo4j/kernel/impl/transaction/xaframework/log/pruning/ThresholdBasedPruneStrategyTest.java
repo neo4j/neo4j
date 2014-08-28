@@ -28,15 +28,14 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.Threshold;
-import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.ThresholdBasedPruneStrategy;
 
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
 
 public class ThresholdBasedPruneStrategyTest
 {
@@ -73,7 +72,7 @@ public class ThresholdBasedPruneStrategyTest
         when( fileSystem.fileExists( fileName2 ) ).thenReturn( true );
         when( fileSystem.fileExists( fileName1 ) ).thenReturn( true );
 
-        when( fileSystem.getFileSize( Matchers.<File>any() ) ).thenReturn( VersionAwareLogEntryReader.LOG_HEADER_SIZE + 1l );
+        when( fileSystem.getFileSize( Matchers.<File>any() ) ).thenReturn( LOG_HEADER_SIZE + 1l );
 
         when( threshold.reached( Matchers.<File>any(), anyLong(), Matchers.<LogFileInformation>any() ) ).thenReturn( false );
 
@@ -121,7 +120,7 @@ public class ThresholdBasedPruneStrategyTest
         when( fileSystem.fileExists( fileName2 ) ).thenReturn( true );
         when( fileSystem.fileExists( fileName1 ) ).thenReturn( true );
 
-        when( fileSystem.getFileSize( Matchers.<File>any() ) ).thenReturn( VersionAwareLogEntryReader.LOG_HEADER_SIZE + 1l );
+        when( fileSystem.getFileSize( Matchers.<File>any() ) ).thenReturn( LOG_HEADER_SIZE + 1l );
 
 
         when( logVersionRepository.getCurrentLogVersion() ).thenReturn( 7l );

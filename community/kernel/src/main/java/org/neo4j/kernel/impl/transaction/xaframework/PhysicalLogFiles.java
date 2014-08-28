@@ -24,11 +24,14 @@ import java.io.IOException;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
 
 import static java.lang.Math.max;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_VERSION_SUFFIX;
+import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.REGEX_DEFAULT_VERSION_SUFFIX;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.readLogHeader;
 
 /**
  * Used to figure out what logical log file to open when the database
@@ -59,7 +62,7 @@ public class PhysicalLogFiles
     public PhysicalLogFiles( File directory, String name, FileSystemAbstraction fileSystem )
     {
         this.logBaseName = new File( directory, name );
-        this.logFilePattern = Pattern.compile( name + "\\.v\\d+" );
+        this.logFilePattern = Pattern.compile( name + REGEX_DEFAULT_VERSION_SUFFIX + "\\d+" );
         this.fileSystem = fileSystem;
     }
 
@@ -70,7 +73,7 @@ public class PhysicalLogFiles
 
     public File getLogFileForVersion( long version )
     {
-        return new File( logBaseName.getPath() + ".v" + version );
+        return new File( logBaseName.getPath() + DEFAULT_VERSION_SUFFIX + version );
     }
 
     public boolean versionExists( long version )
@@ -78,7 +81,7 @@ public class PhysicalLogFiles
         return fileSystem.fileExists( getLogFileForVersion( version ) );
     }
 
-    public long[] extractHeader( long version ) throws IOException
+    public LogHeader extractHeader( long version ) throws IOException
     {
         return readLogHeader( fileSystem, getLogFileForVersion( version ) );
     }
@@ -109,13 +112,16 @@ public class PhysicalLogFiles
     public static long getLogVersion( File historyLogFile )
     {
         // Get version based on the name
-        String name = historyLogFile.getName();
-        String toFind = ".v";
-        int index = name.lastIndexOf( toFind );
+        return getLogVersion( historyLogFile.getName() );
+    }
+
+    public static long getLogVersion( String historyLogFilename )
+    {
+        int index = historyLogFilename.lastIndexOf( DEFAULT_VERSION_SUFFIX );
         if ( index == -1 )
         {
-            throw new RuntimeException( "Invalid log file '" + historyLogFile + "'" );
+            throw new RuntimeException( "Invalid log file '" + historyLogFilename + "'" );
         }
-        return Integer.parseInt( name.substring( index + toFind.length() ) );
+        return Long.parseLong( historyLogFilename.substring( index + DEFAULT_VERSION_SUFFIX.length() ) );
     }
 }

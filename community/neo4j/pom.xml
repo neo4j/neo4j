@@ -101,6 +101,19 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-ha</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-ha</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
       <scope>test</scope>
@@ -139,6 +152,16 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <argLine>-server -Xmx2g -XX:+UseG1GC -Dfile.encoding=UTF-8</argLine>
+          <forkCount>1</forkCount>
+          <reuseForks>false</reuseForks>
+        </configuration>
+      </plugin>
+
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
         <executions>

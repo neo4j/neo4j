@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.functions
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import ast.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters
+import ExpressionConverters._
 import commands.{expressions => commandexpressions}
 import symbols._
 

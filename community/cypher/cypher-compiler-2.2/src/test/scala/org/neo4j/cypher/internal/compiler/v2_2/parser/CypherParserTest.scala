@@ -27,11 +27,12 @@ import commands.values.TokenType.PropertyKey
 import helpers.LabelSupport
 import mutation._
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
 import org.neo4j.graphdb.Direction
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import ast.convert.StatementConverters._
+import StatementConverters._
 
 class CypherParserTest extends CypherFunSuite {
 

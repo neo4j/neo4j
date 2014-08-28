@@ -26,10 +26,11 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -72,8 +73,10 @@ public class KernelRecoveryTest
         db.shutdown();
 
         // Then the logical log should be in sync
+        File logFile = new File( "target/test-data/impermanent-db/" +
+                PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0" );
         assertThat(
-                logEntries( crashedFs, new File( "target/test-data/impermanent-db/nioneo_logical.log.v0" ) ),
+                logEntries( crashedFs, logFile ),
                 containsExactly(
                     // Tx before recovery
                     startEntry( -1, -1 ),

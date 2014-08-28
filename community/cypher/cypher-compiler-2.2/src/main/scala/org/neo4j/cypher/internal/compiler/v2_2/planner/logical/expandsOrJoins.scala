@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 
 object expandsOrJoins extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
+  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
     val projectedEndpoints = projectEndpoints(planTable, queryGraph)
     val expansions = expand(planTable, queryGraph)
     val joins = join(planTable, queryGraph)

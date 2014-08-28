@@ -26,6 +26,10 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.rrd.JobScheduler;
 import org.neo4j.server.rrd.ScheduledJob;
 
+/**
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ */
+@Deprecated
 public class RoundRobinJobScheduler implements JobScheduler
 {
     private final List<ScheduledJob> scheduledJobs = new LinkedList<ScheduledJob>();

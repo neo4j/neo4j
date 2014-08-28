@@ -132,6 +132,18 @@ public class Exceptions
             }
         };
     }
+    
+    public static Predicate<Throwable> exceptionWithMessage( final String message )
+    {
+        return new Predicate<Throwable>()
+        {
+            @Override
+            public boolean accept( Throwable item )
+            {
+                return item.getMessage().equals( message );
+            }
+        };
+    }
 
     private Exceptions()
     {
@@ -356,5 +368,24 @@ public class Exceptions
                 return item.getMethodName().equals( name );
             }
         };
+    }
+
+    public static String briefOneLineStackTraceInformation( Predicate<StackTraceElement> toInclude )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
+        {
+            if ( toInclude.accept( element ) )
+            {
+                builder.append( builder.length() > 0 ? "," : "" )
+                       .append( simpleClassName( element.getClassName() ) + "#" + element.getMethodName() );
+            }
+        }
+        return builder.toString();
+    }
+
+    private static String simpleClassName( String className )
+    {
+        return className.substring( className.lastIndexOf( '.' ) );
     }
 }

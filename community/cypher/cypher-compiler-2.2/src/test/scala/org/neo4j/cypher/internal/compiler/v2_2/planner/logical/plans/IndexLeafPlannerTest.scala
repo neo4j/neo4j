@@ -41,9 +41,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given {
       qg = queryGraph(inCollectionValue, hasLabels)
 
-      withLogicalPlanningContext { (ctx: LogicalPlanningContext, table: Map[PatternExpression, QueryGraph]) =>
+      withLogicalPlanningContext { (ctx: LogicalPlanningContext) =>
         // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx, table)
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
 
         // then
         resultPlans.plans shouldBe empty
@@ -54,9 +54,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given {
       qg = queryGraph(inCollectionValue, hasLabels)
 
-      withLogicalPlanningContext { (ctx, table) =>
+      withLogicalPlanningContext { (ctx) =>
         // when
-        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx, table)
+        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
 
         // then
         resultPlans.plans shouldBe empty
@@ -70,9 +70,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       indexOn("Awesome", "prop")
 
-      withLogicalPlanningContext { (ctx, table) =>
+      withLogicalPlanningContext { (ctx) =>
         // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx, table)
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
@@ -88,9 +88,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       indexOn("Awesome", "prop")
 
-      withLogicalPlanningContext { (ctx, table) =>
+      withLogicalPlanningContext { (ctx) =>
         // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx, table)
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
@@ -106,9 +106,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       uniqueIndexOn("Awesome", "prop")
 
-      withLogicalPlanningContext { (ctx, table) =>
+      withLogicalPlanningContext { (ctx) =>
         // when
-        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx, table)
+        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
@@ -126,9 +126,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       indexOn("Awesome", "prop")
 
-      withLogicalPlanningContext { (ctx, table) =>
+      withLogicalPlanningContext { (ctx) =>
         // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx, table)
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
@@ -150,9 +150,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       uniqueIndexOn("Awesome", "prop")
 
-      withLogicalPlanningContext { (ctx, table) =>
+      withLogicalPlanningContext { (ctx) =>
         // when
-        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx, table)
+        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
 
         // then
         resultPlans.plans.map(_.plan) should beLike {

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{PlanTransformer,
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 object verifyBestPlan extends PlanTransformer[PlannerQuery] {
-  def apply(plan: QueryPlan, expected: PlannerQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = {
+  def apply(plan: QueryPlan, expected: PlannerQuery)(implicit context: LogicalPlanningContext): QueryPlan = {
     val constructed = plan.solved
     if (expected != constructed)
       throw new CantHandleQueryException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed")

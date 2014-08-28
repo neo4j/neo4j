@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
 import org.neo4j.graphdb.Direction
+import collection.mutable
 
 trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport {
   self: CypherFunSuite =>
@@ -68,19 +69,23 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedGraphStatistics = mock[GraphStatistics]
 
-  def newMockedSemanticTable = mock[SemanticTable]
+  def newMockedSemanticTable: SemanticTable = {
+    val m = mock[SemanticTable]
+    when(m.resolvedLabelIds).thenReturn(mutable.Map.empty[String, LabelId])
+    m
+  }
 
   def newMockedMetricsFactory = spy(new SpyableMetricsFactory)
 
   def newMockedStrategy(plan: QueryPlan) = {
     val strategy = mock[QueryGraphSolver]
-    doReturn(plan).when(strategy).plan(any())(any(), any(), any())
+    doReturn(plan).when(strategy).plan(any())(any(), any())
     strategy
   }
 
   def newMockedLogicalPlanningContext(planContext: PlanContext,
                                         metrics: Metrics = self.mock[Metrics],
-                                        semanticTable: SemanticTable = self.mock[SemanticTable],
+                                        semanticTable: SemanticTable = newMockedSemanticTable,
                                         strategy: QueryGraphSolver = new GreedyQueryGraphSolver()): LogicalPlanningContext =
     LogicalPlanningContext(planContext, metrics, semanticTable, strategy)
 

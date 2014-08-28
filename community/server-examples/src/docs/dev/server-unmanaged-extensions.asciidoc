@@ -32,7 +32,8 @@ public MyCoolService( @Context GraphDatabaseService database )
 --------
 
 Remember, the unmanaged API is a very sharp tool.
-It's all to easy to compromise the server by deploying code this way, so think first and see if you can't use the managed extensions in preference.
+It's all to easy to compromise the server by deploying code this way, so think first and see if you could use one
+of the other APIs that come with Neo4j by default.
 However, a number of context parameters can be automatically provided for you, like the reference to the database.
 
 In order to specify the mount point of your extension, a full class looks like this:

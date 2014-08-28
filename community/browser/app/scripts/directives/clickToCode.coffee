@@ -24,10 +24,14 @@ angular.module('neo4jApp.directives')
   .directive 'clickToCode', ['Editor', (Editor) ->
     restrict: 'A'
     link: (scope, element, attrs) ->
+      code = scope.$eval(attrs.clickToCode)
       element.click (e) ->
-        code = scope.$eval(attrs.clickToCode)
-        return unless code?.length > 0
-        Editor.setContent(code.trim())
+        applyAction(Editor.setContent)
+      if attrs.dblclickToExec == 'true'
+        element.dblclick (e) ->
+          applyAction(Editor.execScript)
+      applyAction = (fn) ->
+        return unless code?.length
+        fn.call(Editor, code.trim())
         scope.$apply()
-
   ]

@@ -105,7 +105,7 @@ class CommitContext implements Closeable
             }
         }
     }
-
+    
     @Override
     public void close() throws IOException
     {

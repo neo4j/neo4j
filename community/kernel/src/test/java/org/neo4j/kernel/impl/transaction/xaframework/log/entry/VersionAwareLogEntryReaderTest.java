@@ -19,55 +19,40 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework.log.entry;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandType;
-import org.neo4j.kernel.impl.transaction.xaframework.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.decodeLogVersion;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.encodeLogVersion;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.LOG_VERSION_2_1;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.LOG_VERSION_2_2;
 
 public class VersionAwareLogEntryReaderTest
 {
+    private final LogEntryParserFactory logEntryParserFactory = new DefaultLogEntryParserFactory();
     private final CommandReaderFactory commandReaderFactory = new CommandReaderFactory.Default();
+    private final VersionAwareLogEntryReader logEntryReader =
+            new VersionAwareLogEntryReader( logEntryParserFactory, commandReaderFactory );
+
     private final byte version = (byte) -1;
 
     @Test
     public void shouldReadAStartLogEntry() throws IOException
     {
         // given
-        final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
-
         final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, 4, new byte[]{5}, new LogPosition( 0, 31 ) );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_2 );
 
         channel.put( version ); // version
-        channel.put( LogEntry.TX_START ); // type
+        channel.put( LogEntryByteCodes.TX_START ); // type
         channel.putInt( start.getMasterId() );
         channel.putInt( start.getLocalId() );
         channel.putLong( start.getTimeWritten() );
@@ -86,13 +71,11 @@ public class VersionAwareLogEntryReaderTest
     public void shouldReadACommitLogEntry() throws IOException
     {
         // given
-        final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
-
         final LogEntryCommit commit = new OnePhaseCommit( version, 42, 21 );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_2 );
 
         channel.put( version );
-        channel.put( LogEntry.TX_1P_COMMIT );
+        channel.put( LogEntryByteCodes.TX_1P_COMMIT );
         channel.putLong( commit.getTxId() );
         channel.putLong( commit.getTimeWritten() );
 
@@ -107,14 +90,12 @@ public class VersionAwareLogEntryReaderTest
     public void shouldReadACommandLogEntry() throws IOException
     {
         // given
-        final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
-
         Command.NodeCommand nodeCommand = new Command.NodeCommand();
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_2 );
 
         channel.put( version );
-        channel.put( LogEntry.COMMAND );
+        channel.put( LogEntryByteCodes.COMMAND );
         channel.put( NeoCommandType.NODE_COMMAND );
 
         // when
@@ -128,12 +109,10 @@ public class VersionAwareLogEntryReaderTest
     public void shouldReturnNullWhenThereIsNoCommand() throws IOException
     {
         // given
-        final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
-
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_2 );
 
         channel.put( version );
-        channel.put( LogEntry.COMMAND );
+        channel.put( LogEntryByteCodes.COMMAND );
         channel.put( NeoCommandType.NONE );
 
         // when
@@ -147,10 +126,9 @@ public class VersionAwareLogEntryReaderTest
     public void shouldReturnNullWhenLogEntryIsEmpty() throws IOException
     {
         // given
-        final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_2 );
         channel.put( version );
-        channel.put( LogEntry.EMPTY );
+        channel.put( LogEntryByteCodes.EMPTY );
 
         // when
         final LogEntry logEntry = logEntryReader.readLogEntry( channel );
@@ -163,8 +141,7 @@ public class VersionAwareLogEntryReaderTest
     public void shouldReturnNullWhenNotEnoughDataInTheChannel() throws IOException
     {
         // given
-        final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_2 );
 
         // when
         final LogEntry logEntry = logEntryReader.readLogEntry( channel );
@@ -173,145 +150,200 @@ public class VersionAwareLogEntryReaderTest
         assertNull( logEntry );
     }
 
-    // STATIC PART
-
     @Test
-    public void shouldWriteALogHeaderInTheGivenBuffer() throws IllegalLogFormatException
+    public void shouldParseOldStartEntry() throws IOException
     {
         // given
-        final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_1 );
+        final LogEntryStart start = new LogEntryStart( 1, 2, 3, 4, new byte[]{}, new LogPosition( 0, 37 ) );
 
-        final long logVersion = 1;
-        final long txId = 42;
+        channel.put( version );
+        channel.put( LogEntryByteCodes.TX_START );
+        // ignored data
+        channel.put( (byte) 1 ); // globalId length
+        channel.put( (byte) 0 ); // branchId length
+        channel.put( new byte[]{7}, 1 ); // globalId
+        channel.put( new byte[]{}, 0 ); // branchId
+        channel.putInt( 123 ); // identifier
+        channel.putInt( 456 ); // formatId
+        // actually used data
+        channel.putInt( start.getMasterId() );
+        channel.putInt( start.getLocalId() );
+        channel.putLong( start.getTimeWritten() );
+        channel.putLong( start.getLastCommittedTxWhenTransactionStarted() );
 
         // when
-        final ByteBuffer result = writeLogHeader( buffer, logVersion, txId );
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel );
 
         // then
-        assertTrue( buffer == result );
-        assertEquals( logVersion, decodeLogVersion( result.getLong(), true ) );
-        assertEquals( txId, result.getLong() );
+        assertEquals( start, logEntry );
     }
 
     @Test
-    public void shouldWriteALogHeaderInAFile() throws IOException
+    public void shouldParseOldOnePhaseCommit() throws IOException
     {
         // given
-        final File file = File.createTempFile( "WriteLogHeader", getClass().getSimpleName() );
-        final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_1 );
+        final OnePhaseCommit commit = new OnePhaseCommit( 42, 456 );
 
-        final long logVersion = 1;
-        final long txId = 42;
+        channel.put( version );
+        channel.put( LogEntryByteCodes.TX_1P_COMMIT );
+        // ignored data
+        channel.putInt( 123 ); // identifier
+        // actually used data
+        channel.putLong( commit.getTxId() );
+        channel.putLong( commit.getTimeWritten() );
 
         // when
-        writeLogHeader( fs, file, logVersion, txId );
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel );
 
         // then
-        final byte[] array = new byte[LOG_HEADER_SIZE];
-        try ( InputStream stream = fs.openAsInputStream( file ) )
-        {
-            stream.read( array );
-        }
-        final ByteBuffer result = ByteBuffer.wrap( array );
-
-        assertEquals( logVersion, decodeLogVersion( result.getLong(), true ) );
-        assertEquals( txId, result.getLong() );
+        assertEquals( commit, logEntry );
     }
 
     @Test
-    public void shouldReadALogHeaderFromAChannel() throws IOException
+    public void shouldParseOldTwoPhaseCommit() throws IOException
     {
         // given
-        final long logVersion = 1;
-        final long txId = 42;
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_1 );
+        final OnePhaseCommit commit = new OnePhaseCommit( 42, 456 );
 
-        final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
-        final ReadableByteChannel channel = mock( ReadableByteChannel.class );
-
-        when( channel.read( buffer ) ).thenAnswer( new Answer<Integer>()
-        {
-            @Override
-            public Integer answer( InvocationOnMock invocation ) throws Throwable
-            {
-                buffer.putLong( encodeLogVersion( logVersion ) );
-                buffer.putLong( txId );
-                return 8 + 8;
-            }
-        } );
+        channel.put( version );
+        channel.put( LogEntryByteCodes.TX_2P_COMMIT );
+        // ignored data
+        channel.putInt( 123 ); // identifier
+        // actually used data
+        channel.putLong( commit.getTxId() );
+        channel.putLong( commit.getTimeWritten() );
 
         // when
-        final long[] result = readLogHeader( buffer, channel, true );
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel );
 
         // then
-        assertEquals( logVersion, result[0] );
-        assertEquals( txId, result[1] );
+        assertEquals( commit, logEntry );
     }
 
     @Test
-    public void shouldFailWhenUnableToReadALogHeaderFromAChannel() throws IOException
+    public void shouldParseOldPrepareSkipItAndReadTheOneAfter() throws IOException
     {
         // given
-        final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
-        final ReadableByteChannel channel = mock( ReadableByteChannel.class );
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_1 );
+        final OnePhaseCommit commit = new OnePhaseCommit( 42, 456 );
 
-        when( channel.read( buffer ) ).thenReturn( 1 );
-
-        try
-        {
-            // when
-            readLogHeader( buffer, channel, true );
-            fail( "should have thrown" );
-        }
-        catch ( IOException ex )
-        {
-            // then
-            assertEquals( "Unable to read log version and last committed tx", ex.getMessage() );
-        }
-    }
-
-    @Test
-    public void shouldReadALogHeaderFromAFile() throws IOException
-    {
-        // given
-        final long logVersion = 1;
-        final long txId = 42;
-
-        final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        final File file = File.createTempFile( "ReadLogHeader", getClass().getSimpleName() );
-
-        final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
-        buffer.putLong( encodeLogVersion( logVersion ) );
-        buffer.putLong( txId );
-
-        try ( OutputStream stream = fs.openAsOutputStream( file, false ) )
-        {
-            stream.write( buffer.array() );
-        }
+        // PREPARE
+        channel.put( version );
+        channel.put( LogEntryByteCodes.TX_PREPARE );
+        // ignored data
+        channel.putInt( 123 ); // identifier
+        channel.putLong( 456 ); // timewritten
+        // 2P COMMIT
+        channel.put( version );
+        channel.put( LogEntryByteCodes.TX_2P_COMMIT );
+        // ignored data
+        channel.putInt( 123 ); // identifier
+        // actually used data
+        channel.putLong( commit.getTxId() );
+        channel.putLong( commit.getTimeWritten() );
 
         // when
-        final long[] result = readLogHeader( fs, file );
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel );
 
         // then
-        assertEquals( logVersion, result[0] );
-        assertEquals( txId, result[1] );
+        assertEquals( commit, logEntry );
     }
 
     @Test
-    public void shouldFailWhenUnablleToReadALogHeaderFromAFile() throws IOException
+    public void shouldParseOldDoneSkipItAndReadTheOneAfter() throws IOException
     {
         // given
-        final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        final File file = File.createTempFile( "ReadLogHeaderFail", getClass().getSimpleName() );
-        try
-        {
-            // when
-            readLogHeader( fs, file );
-            fail( "should have thrown" );
-        }
-        catch ( IOException ex )
-        {
-            // then
-            assertEquals( "Unable to read log version and last committed tx", ex.getMessage() );
-        }
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_1 );
+        final OnePhaseCommit commit = new OnePhaseCommit( 42, 456 );
+
+        // PREPARE
+        channel.put( version );
+        channel.put( LogEntryByteCodes.DONE );
+        // ignored data
+        channel.putInt( 123 ); // identifier
+        // 2P COMMIT
+        channel.put( version );
+        channel.put( LogEntryByteCodes.TX_2P_COMMIT );
+        // ignored data
+        channel.putInt( 123 ); // identifier
+        // actually used data
+        channel.putLong( commit.getTxId() );
+        channel.putLong( commit.getTimeWritten() );
+
+        // when
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel );
+
+        // then
+        assertEquals( commit, logEntry );
+    }
+
+    @Test
+    public void shouldParseAnOldCommandLogEntry() throws IOException
+    {
+        // given
+        Command.NodeCommand nodeCommand = new Command.NodeCommand();
+        final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_1 );
+
+        channel.put( version );
+        channel.put( LogEntryByteCodes.COMMAND );
+        // ignored data
+        channel.putInt( 42 ); // identifier ignored
+        // actual used data
+        channel.put( NeoCommandType.NODE_COMMAND );
+
+        // when
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel );
+
+        // then
+        assertEquals( command, logEntry );
+    }
+
+    @Test
+    public void shouldReturnNullWhenThereIsNoCommandOldVersion() throws IOException
+    {
+        // given
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_1 );
+
+        channel.put( version );
+        channel.put( LogEntryByteCodes.COMMAND );
+        channel.put( NeoCommandType.NONE );
+
+        // when
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel );
+
+        // then
+        assertNull( logEntry );
+    }
+
+    @Test
+    public void shouldParseOldLogEntryEmptyANdReturnNull() throws IOException
+    {
+        // given
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_1 );
+        channel.put( version );
+        channel.put( LogEntryByteCodes.EMPTY );
+
+        // when
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel );
+
+        // then
+        assertNull( logEntry );
+    }
+
+    @Test
+    public void shouldReturnNullWhenNotEnoughDataInTheChannelOnOldFormatToo() throws IOException
+    {
+        // given
+        final InMemoryLogChannel channel = new InMemoryLogChannel( LOG_VERSION_2_1 );
+
+        // when
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel );
+
+        // then
+        assertNull( logEntry );
     }
 }

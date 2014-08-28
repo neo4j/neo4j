@@ -26,7 +26,6 @@ import java.util.TimeZone;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 
 public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
 {
@@ -44,28 +43,14 @@ public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
         {
             for ( String file : arguments.orphans() )
             {
-                int dumped = new DumpLogicalLog( fs ).dump( file, printer.getFor( file ), timeZome );
+                int dumped = new DumpLogicalLog( fs ).dump( file, "lucene.log", printer.getFor( file ), timeZome );
                 if ( dumped == 0 && isAGraphDatabaseDirectory( file ) )
                 {   // If none were found and we really pointed to a neodb directory
                     // then go to its index folder and try there.
-                    new DumpLogicalLog( fs ).dump( new File( file, "index" ).getAbsolutePath(),
-                            printer.getFor( file ), timeZome );
+                    String path = new File( file, "index" ).getAbsolutePath();
+                    new DumpLogicalLog( fs ).dump( path, "lucene.log", printer.getFor( file ), timeZome );
                 }
             }
         }
     }
-
-    @Override
-    protected CommandReaderFactory instantiateCommandReaderFactory()
-    {
-        // TODO 2.2-future
-        return null;
-    }
-
-    @Override
-    protected String getLogPrefix()
-    {
-        return "lucene.log";
-    }
-
 }

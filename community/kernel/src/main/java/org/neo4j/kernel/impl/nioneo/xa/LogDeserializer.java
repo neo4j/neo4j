@@ -24,7 +24,9 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.DefaultLogEntryParserFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryParserFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
@@ -34,12 +36,12 @@ public class LogDeserializer implements LogReader<ReadableLogChannel>
 
     public LogDeserializer()
     {
-        this( new CommandReaderFactory.Default() );
+        this( new DefaultLogEntryParserFactory(), new CommandReaderFactory.Default() );
     }
 
-    public LogDeserializer( CommandReaderFactory commandReaderFactory )
+    public LogDeserializer( LogEntryParserFactory logEntryParserFactory, CommandReaderFactory commandReaderFactory )
     {
-        logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
+        logEntryReader = new VersionAwareLogEntryReader( logEntryParserFactory, commandReaderFactory );
     }
 
     @Override

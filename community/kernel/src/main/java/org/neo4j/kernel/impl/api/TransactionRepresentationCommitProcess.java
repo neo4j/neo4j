@@ -20,14 +20,13 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppendException;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
@@ -61,8 +60,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         // TODO catch different types of exceptions here, some which are OK
         catch ( IOException e )
         {
-            kernelHealth.panic( e );
-            throw new TransactionFailureException( Status.Transaction.CouldNotCommit, e,
+            throw exception( Status.Transaction.CouldNotCommit, e,
                     "Could not apply the transaction to the store after written to log" );
         }
         finally
@@ -72,31 +70,30 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         return transactionId;
     }
 
+    private TransactionFailureException exception( Status status, IOException e, String message )
+    {
+        kernelHealth.panic( e );
+        return new TransactionFailureException( status, e, message );
+    }
+
     private long persistTransaction( TransactionRepresentation tx ) throws TransactionFailureException
     {
-        // write it to the log
-        Future<Long> commitFuture;
         try
         {
-            commitFuture = logicalTransactionStore.getAppender().append( tx );
+            return logicalTransactionStore.getAppender().append( tx );
         }
-        catch ( IOException e )
+        catch ( TransactionAppendException e )
         {
-            kernelHealth.panic( e );
-            throw new TransactionFailureException( Status.Transaction.CouldNotWriteToLog, e,
+            // Special case where a new transaction id was generated, but the transaction failed to be appended
+            // and so there's a transaction that would otherwise never be notified as closed. The appender
+            // throws a specific exception for this scenario where it contains the generated transaction id if
+            // the append method got that far.
+            if ( e.hasNewTransactionIdGenerated() )
+            {
+                transactionIdStore.transactionClosed( e.newTransactionIdGenerated() );
+            }
+            throw exception( Status.Transaction.CouldNotWriteToLog, e,
                     "Could not write transaction representation to log" );
         }
-
-        // wait for the transaction to be written to the log
-        long transactionId;
-        try
-        {
-            transactionId = commitFuture.get();
-        }
-        catch ( InterruptedException | ExecutionException e )
-        {
-            throw new TransactionFailureException( Status.Transaction.CouldNotWriteToLog, e, "" );
-        }
-        return transactionId;
     }
 }

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
   extends QueryGraphSolver {
 
-  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None) = {
+  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None) = {
   import CandidateGenerator._
 
     val select = config.applySelections.asFunctionInContext

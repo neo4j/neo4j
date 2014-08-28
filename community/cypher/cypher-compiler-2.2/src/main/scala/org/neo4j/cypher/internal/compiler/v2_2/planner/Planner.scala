@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
@@ -27,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
 
@@ -35,7 +37,6 @@ case class Planner(monitors: Monitors,
                    metricsFactory: MetricsFactory,
                    monitor: PlanningMonitor,
                    tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
-                   plannerQueryBuilder: PlannerQueryBuilder = new SimplePlannerQueryBuilder,
                    maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
                    strategy: PlanningStrategy = new QueryPlanningStrategy(),
                    queryGraphSolver: QueryGraphSolver = new GreedyQueryGraphSolver()) extends PipeBuilder {
@@ -62,18 +63,20 @@ case class Planner(monitors: Monitors,
 
   def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (LogicalPlan, PipeExecutionBuilderContext) = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
-    val QueryPlanInput(plannerQuery, patternInExpression) = plannerQueryBuilder.produce(ast)
+    val unionQuery = ast.asUnionQuery
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
 
     val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
-    val plan = strategy.plan(plannerQuery)(context, patternInExpression)
+    val plan = strategy.plan(unionQuery)(context)
 
-    val pipeBuildContext = PipeExecutionBuilderContext(patternInExpression.mapValues{ qg =>
-      val argLeafPlan = Some(planQueryArgumentRow(qg))
-      val queryPlan = queryGraphSolver.plan(qg)(context, patternInExpression, argLeafPlan)
+    val pipeBuildContext = PipeExecutionBuilderContext((e: PatternExpression) => {
+      val expressionQueryGraph = e.asQueryGraph
+      val argLeafPlan = Some(planQueryArgumentRow(expressionQueryGraph))
+      val queryPlan = queryGraphSolver.plan(expressionQueryGraph)(context, argLeafPlan)
       queryPlan.plan
     })
+
 
     (plan, pipeBuildContext)
   }
@@ -87,6 +90,7 @@ object Planner {
     collapseInCollectionsContainingConstants,
     nameVarLengthRelationships,
     namePatternPredicates,
+    projectNamedPaths,
     inlineProjections
   )
 

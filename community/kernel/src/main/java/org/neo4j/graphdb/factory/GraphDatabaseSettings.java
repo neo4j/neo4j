@@ -39,7 +39,6 @@ import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.STRING;
@@ -51,6 +50,7 @@ import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.port;
 import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
@@ -274,9 +274,6 @@ public abstract class GraphDatabaseSettings
             "i.e., 8 bytes.")
     public static final Setting<Integer> label_block_size = setting("label_block_size", INTEGER, "60",min(1));
 
-    @Description("Mark this database as a backup slave.")
-    public static final Setting<Boolean> backup_slave = setting("backup_slave", BOOLEAN, FALSE );
-
     @Description("An identifier that uniquely identifies this graph database instance within this JVM. " +
             "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
     public static final Setting<String> forced_kernel_id = setting("forced_kernel_id", STRING, NO_DEFAULT, illegalValueMessage( "invalid kernel identifier", matches( "[a-zA-Z0-9]*" ) ));
@@ -292,6 +289,9 @@ public abstract class GraphDatabaseSettings
 
     @Description("Relationship count threshold for considering a node dense")
     public static final Setting<Integer> dense_node_threshold = setting( "dense_node_threshold", INTEGER, "50", min(1) );
+    
+    @Description("Whether or not transactions are appended to the log in batches")
+    public static final Setting<Boolean> batched_writes = setting( "batched_writes", BOOLEAN, Boolean.TRUE.toString() );
 
     private static String[] availableCaches()
     {

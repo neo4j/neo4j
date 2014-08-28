@@ -27,6 +27,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.CURRENT_LOG_VERSION;
+
 public class NetworkReadableLogChannel implements ReadableLogChannel
 {
     private final ChannelBuffer delegate;
@@ -34,6 +36,13 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
     public NetworkReadableLogChannel( ChannelBuffer input )
     {
         this.delegate = input;
+    }
+
+    @Override
+    public byte getLogFormatVersion()
+    {
+        // we send only latest version of logs over the wire
+        return CURRENT_LOG_VERSION;
     }
 
     @Override

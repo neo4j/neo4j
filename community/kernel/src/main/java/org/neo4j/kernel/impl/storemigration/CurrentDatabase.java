@@ -66,7 +66,7 @@ public class CurrentDatabase
             String expectedVersion = buildTypeDescriptorAndVersion( fileNamesToTypeDescriptors.get( fileName ) );
 
             if ( !storeVersionCheck.hasVersion(
-                    new File( storeDirectory, fileName ), expectedVersion ).first().isSuccessful() )
+                    new File( storeDirectory, fileName ), expectedVersion ).outcome.isSuccessful() )
             {
                 return false;
             }

@@ -508,7 +508,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public boolean isReadOnly()
     {
-        return (!hasTxState() || !txState.hasChanges()) && recordState.isReadOnly() &&
+        return !hasTxStateWithChanges() && recordState.isReadOnly() &&
                 legacyIndexTransactionState.isReadOnly();
     }
 
@@ -600,16 +600,27 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 recordState.extractCommands( commands );
                 legacyIndexTransactionState.extractCommands( commands );
 
-                // Finish up the whole transaction representation
-                PhysicalTransactionRepresentation transactionRepresentation =
-                        new PhysicalTransactionRepresentation( commands );
-                transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
-                        headerInformation.getMasterId(),
-                        headerInformation.getAuthorId(),
-                        startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis() );
+                /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
+                 * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
+                 * previously made changes in that same transaction, and so at some point a transaction may have
+                 * changes and at another point, after more changes seemingly, the transaction may not have any changes.
+                 * However, to track that "undoing" of the changes is a bit tedious, intrusive and hard to maintain
+                 * and get right.... So to really make sure the transaction has changes we re-check by looking if we
+                 * have produced any commands to add to the logical log.
+                 */
+                if ( !commands.isEmpty() )
+                {
+                    // Finish up the whole transaction representation
+                    PhysicalTransactionRepresentation transactionRepresentation =
+                            new PhysicalTransactionRepresentation( commands );
+                    transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
+                            headerInformation.getMasterId(),
+                            headerInformation.getAuthorId(),
+                            startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis() );
 
-                // Commit the transaction
-                commitProcess.commit( transactionRepresentation );
+                    // Commit the transaction
+                    commitProcess.commit( transactionRepresentation );
+                }
             }
 
             if ( hasTxStateWithChanges() )
@@ -644,7 +655,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throw new TransactionFailureException( Status.Transaction.CouldNotRollback, e,
                         "Could not drop created constraint indexes" );
             }
-            
+
             if ( hasTxStateWithChanges() )
             {
                 persistenceCache.invalidate( txState );

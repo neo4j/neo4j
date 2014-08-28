@@ -48,6 +48,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.DEFAULT_HIGH_ID_TRACKING;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
 
@@ -166,7 +167,7 @@ public class SchemaRuleCommandTest
     private final SchemaStore store = mock( SchemaStore.class );
     private final IndexingService indexes = mock( IndexingService.class );
     private final NeoTransactionStoreApplier executor = new NeoTransactionStoreApplier( neoStore, indexes,
-            mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, txId, false );
+            mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, txId, DEFAULT_HIGH_ID_TRACKING, false );
     private final PhysicalLogNeoCommandReaderV1 reader = new PhysicalLogNeoCommandReaderV1();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 

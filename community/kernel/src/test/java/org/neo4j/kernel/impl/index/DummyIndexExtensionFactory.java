@@ -39,7 +39,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class DummyIndexExtensionFactory extends
         KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies> implements IndexImplementation, Lifecycle
 {
-    static final String IDENTIFIER = "test-dummy-neo-index";
+    public static final String IDENTIFIER = "test-dummy-neo-index";
+    public static final String KEY_FAIL_ON_MUTATE = "fail_on_mutate";
     private InternalAbstractGraphDatabase db;
     private IndexProviders indexProviders;
 
@@ -85,6 +86,11 @@ public class DummyIndexExtensionFactory extends
     {
     }
 
+    private boolean failing( Map<String, String> config )
+    {
+        return Boolean.parseBoolean( config.get( KEY_FAIL_ON_MUTATE ) );
+    }
+
     @Override
     public Map<String, String> fillInDefaults( Map<String, String> config )
     {
@@ -125,21 +131,32 @@ public class DummyIndexExtensionFactory extends
 
     private static final LegacyIndexHits NO_HITS = new EmptyHits();
 
-    private static final LegacyIndex EMPTY_LEGACY_INDEX = new LegacyIndex()
+    private static class EmptyLegacyIndex implements LegacyIndex
     {
+
+        private final boolean failing;
+
+        private EmptyLegacyIndex( boolean failing )
+        {
+            this.failing = failing;
+        }
+
         @Override
         public void remove( long entity )
         {
+            mutate();
         }
 
         @Override
         public void remove( long entity, String key )
         {
+            mutate();
         }
 
         @Override
         public void remove( long entity, String key, Object value )
         {
+            mutate();
         }
 
         @Override
@@ -181,18 +198,29 @@ public class DummyIndexExtensionFactory extends
         @Override
         public void drop()
         {
+            mutate();
         }
 
         @Override
         public void addRelationship( long entity, String key, Object value, long startNode, long endNode )
         {
+            mutate();
         }
 
         @Override
         public void addNode( long entity, String key, Object value )
         {
+            mutate();
         }
-    };
+
+        private void mutate()
+        {
+            if ( failing )
+            {
+                throw new UnsupportedOperationException();
+            }
+        }
+    }
 
     @Override
     public LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory )
@@ -202,13 +230,13 @@ public class DummyIndexExtensionFactory extends
             @Override
             public LegacyIndex relationshipIndex( String indexName, Map<String, String> configuration )
             {
-                return EMPTY_LEGACY_INDEX;
+                return new EmptyLegacyIndex( failing( configuration ) );
             }
 
             @Override
             public LegacyIndex nodeIndex( String indexName, Map<String, String> configuration )
             {
-                return EMPTY_LEGACY_INDEX;
+                return new EmptyLegacyIndex( failing( configuration ) );
             }
 
             @Override

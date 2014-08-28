@@ -37,11 +37,8 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 
-import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.longFromIntAndMod;
-
 public class Legacy20NodeStoreReader implements LegacyNodeStoreReader
 {
-
     public static final String FROM_VERSION = "NodeStore " + Legacy20Store.LEGACY_VERSION;
     public static final int RECORD_SIZE = 14;
 
@@ -54,36 +51,10 @@ public class Legacy20NodeStoreReader implements LegacyNodeStoreReader
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
         maxId = (fileChannel.size() - endHeaderSize) / RECORD_SIZE;
     }
-
     @Override
     public long getMaxId()
     {
         return maxId;
-    }
-
-    public void accept( Visitor visitor ) throws IOException
-    {
-        ByteBuffer buffer = ByteBuffer.allocateDirect( 4 * 1024 * RECORD_SIZE );
-
-        long position = 0, fileSize = fileChannel.size();
-        while(position < fileSize)
-        {
-            int recordOffset = 0;
-            buffer.clear();
-            fileChannel.read( buffer, position );
-            // Visit each record in the page
-            while(recordOffset < buffer.capacity() && (recordOffset + position) < fileSize)
-            {
-                buffer.position(recordOffset);
-                long id = (position + recordOffset) / RECORD_SIZE;
-
-                visitor.visit( readRecord( buffer, id ) );
-
-                recordOffset += RECORD_SIZE;
-            }
-
-            position += buffer.capacity()   ;
-        }
     }
 
     @Override
@@ -164,8 +135,8 @@ public class Legacy20NodeStoreReader implements LegacyNodeStoreReader
             long lsbLabels = Legacy20Store.getUnsignedInt( buffer );
             long hsbLabels = buffer.get() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
             long labels = lsbLabels | (hsbLabels << 32);
-            nodeRecord = new NodeRecord( id, false, longFromIntAndMod( nextRel, relModifier ),
-                    longFromIntAndMod( nextProp, propModifier ) );
+            nodeRecord = new NodeRecord( id, false, Legacy20Store.longFromIntAndMod( nextRel, relModifier ),
+                    Legacy20Store.longFromIntAndMod( nextProp, propModifier ) );
             nodeRecord.setLabelField( labels, Collections.<DynamicRecord>emptyList() ); // no need to load 'em heavy
         }
         else

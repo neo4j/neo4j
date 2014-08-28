@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{expressions => legacy}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.ExpressionConverters._
+import ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{EntityByIdExprs => PlanEntityByIdExprs}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._

@@ -58,7 +58,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
 
 /**
  * Test for a problem where multiple threads getting an index for the first time

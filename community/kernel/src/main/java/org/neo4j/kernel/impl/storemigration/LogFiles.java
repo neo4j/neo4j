@@ -24,28 +24,19 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 
 public class LogFiles
 {
-    private static final class LogicalLogFilenameFilter implements
-            FilenameFilter
+    public static final class LogicalLogFilenameFilter implements FilenameFilter
     {
-        private static final String[] logFilenamePatterns = { "active_tx_log",
-                "nioneo_logical\\.log.*", /* covers current log, active log marker
-                                            and backups */
-                "tm_tx_log\\..*" };
+        private static final String logFilenamePatterns =
+                PhysicalLogFile.REGEX_DEFAULT_NAME + PhysicalLogFile.REGEX_DEFAULT_VERSION_SUFFIX + ".*";
 
         @Override
         public boolean accept( File dir, String name )
         {
-            for ( String pattern : logFilenamePatterns )
-            {
-                if ( name.matches( pattern ) )
-                {
-                    return true;
-                }
-            }
-            return false;
+            return name.matches( logFilenamePatterns );
         }
     }
 
@@ -58,8 +49,7 @@ public class LogFiles
      * @param toDirectory The directory to move the log files to
      * @throws IOException If any of the move operations fail for any reason.
      */
-    public static void move( FileSystemAbstraction fs, File fromDirectory,
-            File toDirectory ) throws IOException
+    public static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory ) throws IOException
     {
         assert fs.isDirectory( fromDirectory );
         assert fs.isDirectory( toDirectory );
@@ -69,7 +59,7 @@ public class LogFiles
         {
             if ( filter.accept( fromDirectory, logFile.getName() ) )
             {
-                StoreFile20.moveFile( fs, logFile.getName(), fromDirectory, toDirectory, false, false );
+                StoreFile.moveFile( fs, logFile.getName(), fromDirectory, toDirectory, false, false );
             }
         }
     }

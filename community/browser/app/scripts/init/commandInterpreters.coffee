@@ -68,6 +68,19 @@ angular.module('neo4jApp')
             true
       ]
 
+    # Show command history
+    FrameProvider.interpreters.push
+      type: 'history'
+      matches: "#{cmdchar}history"
+      templateUrl: 'views/frame-history.html'
+      exec: [
+        'Editor',
+        (Editor) ->
+          (input, q) ->
+            q.resolve(angular.copy(Editor.history))
+            q.promise
+      ]
+
     # FrameProvider.interpreters.push
     #   type: 'keys'
     #   templateUrl: 'views/frame-keys.html'
@@ -124,30 +137,6 @@ angular.module('neo4jApp')
           $http.get(url)
           .success(->q.resolve(page: url))
           .error(->q.reject(error("No such help topic")))
-          q.promise
-      ]
-
-    FrameProvider.interpreters.push
-      type: 'account'
-      templateUrl: 'views/frame-login.html'
-      matches: ["#{cmdchar}login"]
-      exec: ['NTN', (NTN) ->
-        (input, q) ->
-          NTN.open()
-          .then(q.resolve, ->
-            q.reject(message: "Unable to log in")
-          )
-          q.promise
-      ]
-
-    FrameProvider.interpreters.push
-      type: 'account'
-      templateUrl: 'views/frame-logout.html'
-      matches: ["#{cmdchar}logout"]
-      exec: ['NTN', (NTN) ->
-        (input, q) ->
-          p = NTN.logout()
-          p.then(q.resolve, -> q.reject(message: "Unable to log out"))
           q.promise
       ]
 

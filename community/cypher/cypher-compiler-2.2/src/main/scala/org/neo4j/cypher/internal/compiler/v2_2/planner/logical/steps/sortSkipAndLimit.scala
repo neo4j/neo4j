@@ -31,7 +31,7 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 
   import QueryPlanProducer._
 
-  def apply(plan: QueryPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = query.horizon match {
+  def apply(plan: QueryPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext): QueryPlan = query.horizon match {
     case p: QueryProjection =>
     val shuffle = p.shuffle
 

@@ -24,9 +24,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.docbuilders.internalDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 
-sealed trait QueryHorizon
+sealed trait QueryHorizon {
+  def exposedSymbols: Set[IdName]
+}
 
-sealed abstract class QueryProjection extends QueryHorizon with internalDocBuilder.AsPrettyToString {
+sealed abstract class QueryProjection extends QueryHorizon with internalDocBuilder.PrettyToString {
   def projections: Map[String, Expression]
   def shuffle: QueryShuffle
   def keySet: Set[String]
@@ -53,11 +55,13 @@ object QueryProjection {
 
 final case class QueryShuffle(sortItems: Seq[SortItem] = Seq.empty,
                               skip: Option[Expression] = None,
-                              limit: Option[Expression] = None) extends internalDocBuilder.AsPrettyToString {
+                              limit: Option[Expression] = None) extends internalDocBuilder.PrettyToString {
 
   def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
-  def withSkip(skip: Option[Expression]) = copy(skip = skip)
-  def withLimit(limit: Option[Expression]) = copy(limit = limit)
+  def withSkip(skip: Option[Skip]) = copy(skip = skip.map(_.expression))
+  def withSkipExpression(skip: Expression) = copy(skip = Some(skip))
+  def withLimit(limit: Option[Limit]) = copy(limit = limit.map(_.expression))
+  def withLimitExpression(limit: Expression) = copy(limit = Some(limit))
 
   def ++(other: QueryShuffle): QueryShuffle =
     copy(
@@ -92,6 +96,8 @@ final case class RegularQueryProjection(projections: Map[String, Expression] = M
 
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
+
+  def exposedSymbols: Set[IdName] = projections.keys.map(IdName.apply).toSet
 }
 
 final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression] = Map.empty,
@@ -115,6 +121,10 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
 
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
+
+  def exposedSymbols: Set[IdName] = (groupingKeys.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
 }
 
-case class UnwindProjection(identifier: IdName, exp: Expression) extends QueryHorizon
+case class UnwindProjection(identifier: IdName, exp: Expression) extends QueryHorizon {
+  def exposedSymbols: Set[IdName] = Set(identifier)
+}

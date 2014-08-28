@@ -26,21 +26,25 @@ import org.mockito.Matchers;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.HighIdTrackerFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.HighIdTracker;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.DEFAULT_HIGH_ID_TRACKING;
 
 public class TransactionRepresentationStoreApplierTest
 {
-
     private final IndexingService indexService = mock( IndexingService.class );
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private final NeoStore neoStore = mock( NeoStore.class );
@@ -49,15 +53,14 @@ public class TransactionRepresentationStoreApplierTest
     private final LegacyIndexApplier.ProviderLookup legacyIndexProviderLookup =
             mock( LegacyIndexApplier.ProviderLookup.class );
     private final IndexConfigStore indexConfigStore = mock( IndexConfigStore.class );
-
-
     private final int transactionId = 12;
 
     @Test
     public void transactionRepresentationShouldAcceptApplierVisitor() throws IOException
     {
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier( indexService,
-                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore );
+                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
+                DEFAULT_HIGH_ID_TRACKING );
 
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
 
@@ -69,14 +72,18 @@ public class TransactionRepresentationStoreApplierTest
     @Test
     public void shouldUpdateIdGeneratorsWhenOnRecovery() throws IOException
     {
+        HighIdTracker tracker = mock( HighIdTracker.class );
+        HighIdTrackerFactory highIdTrackerFactory = mock( HighIdTrackerFactory.class );
+        when( highIdTrackerFactory.create( true ) ).thenReturn( tracker );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier( indexService,
-                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore );
+                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
+                highIdTrackerFactory );
 
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
 
         applier.apply( transaction, transactionId, true );
 
         verify( transaction, times( 1 ) ).accept( Matchers.<Visitor<Command, IOException>>any() );
-        verify( neoStore, times( 1 ) ).updateIdGenerators();
+        verify( tracker, times( 1 ) ).apply();
     }
 }

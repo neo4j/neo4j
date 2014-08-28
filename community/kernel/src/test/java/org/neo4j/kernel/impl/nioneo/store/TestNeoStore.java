@@ -88,6 +88,7 @@ import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -306,7 +307,7 @@ public class TestNeoStore
         File file = new File( "." );
         for ( File nioFile : fs.get().listFiles( file ) )
         {
-            if ( nioFile.getName().startsWith( "nioneo_logical.log" ) )
+            if ( nioFile.getName().startsWith( PhysicalLogFile.DEFAULT_NAME ) )
             {
                 fs.get().deleteFile( nioFile );
             }

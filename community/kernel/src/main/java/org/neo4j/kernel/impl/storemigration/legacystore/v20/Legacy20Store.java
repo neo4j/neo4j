@@ -33,10 +33,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.StoreFile20;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
-
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 
 /**
  * Reader for a database in an older store format version.
@@ -82,7 +79,7 @@ public class Legacy20Store implements LegacyStore
     {
         allStoreReaders.add( nodeStoreReader = new Legacy20NodeStoreReader( fs,
                 new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
-        allStoreReaders.add( relStoreReader = new LegacyRelationship20StoreReader( fs,
+        allStoreReaders.add( relStoreReader = new Legacy20RelationshipStoreReader( fs,
                 new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME ) ) );
     }
 
@@ -108,34 +105,6 @@ public class Legacy20Store implements LegacyStore
         for ( Closeable storeReader : allStoreReaders )
         {
             storeReader.close();
-        }
-    }
-
-    public static void ensureStoreVersionTrailer( FileSystemAbstraction fs,
-            File storeDir, Iterable<StoreFile20> files ) throws IOException
-    {
-        for ( StoreFile20 file : files )
-        {
-            setStoreVersionTrailer( fs, new File( storeDir, file.storeFileName() ),
-                    buildTypeDescriptorAndVersion( file.typeDescriptor() ) );
-        }
-    }
-
-    public static void setStoreVersionTrailer( FileSystemAbstraction fs,
-            File targetStoreFileName, String versionTrailer ) throws IOException
-    {
-        byte[] trailer = UTF8.encode( versionTrailer );
-        long fileSize = 0;
-        try ( StoreChannel fileChannel = fs.open( targetStoreFileName, "rw" ) )
-        {
-            fileSize = fileChannel.size();
-            fileChannel.position( fileChannel.size() - trailer.length );
-            fileChannel.write( ByteBuffer.wrap( trailer ) );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new IllegalArgumentException( "size:" + fileSize + ", trailer:" + trailer.length +
-                    " for " + targetStoreFileName );
         }
     }
 

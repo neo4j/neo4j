@@ -28,7 +28,7 @@ case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean)
 
 case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
                         horizon: QueryHorizon = QueryProjection.empty,
-                        tail: Option[PlannerQuery] = None) extends internalDocBuilder.AsPrettyToString {
+                        tail: Option[PlannerQuery] = None) extends internalDocBuilder.PrettyToString {
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
     case None => copy(tail = Some(newTail))
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
@@ -39,12 +39,12 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
 
   def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
 
-  val allHints: Set[Hint] = tail match {
+  def allHints: Set[Hint] = tail match {
     case Some(tailPlannerQuery) => graph.allHints ++ tailPlannerQuery.allHints
     case None                   => graph.allHints
   }
 
-  val numHints: Int = tail match {
+  def numHints: Int = tail match {
     case Some(tailPlannerQuery) => graph.numHints + tailPlannerQuery.numHints
     case None                   => graph.numHints
   }
@@ -94,6 +94,17 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
   private def copy(graph: QueryGraph = graph,
                    horizon: QueryHorizon = horizon,
                    tail: Option[PlannerQuery] = tail) = PlannerQuery(graph, horizon, tail)
+
+  /*
+  Used to rewrite the PlannerQuery from the last PQ to the first, scanning pair wise
+   */
+  def reverseFoldMap(f: (PlannerQuery, PlannerQuery) => PlannerQuery): PlannerQuery = tail match {
+    case None => this
+    case Some(oldTail) =>
+      val mappedTail = oldTail.reverseFoldMap(f)
+      val newTail = f(this, mappedTail)
+      copy(tail = Some(newTail))
+  }
 }
 
 object PlannerQuery {

@@ -47,6 +47,7 @@ import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -230,7 +231,7 @@ public class BatchInserterImpl implements BatchInserter
         PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
         LifecycledPageCache pageCache = life.add( new LifecycledPageCache(
-                pageCacheFactory, swapperFactory, jobScheduler, config, monitors ) );
+                pageCacheFactory, swapperFactory, jobScheduler, config, monitors.newMonitor( PageCacheMonitor.class ) ) );
 
 
         msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );
@@ -644,7 +645,7 @@ public class BatchInserterImpl implements BatchInserter
         long highId = nodeStore.getHighId();
         if ( highId <= id )
         {
-            nodeStore.setHighId( id + 1 );
+            nodeStore.setHighestPossibleIdInUse( id );
         }
         internalCreateNode( id, properties, labels );
     }

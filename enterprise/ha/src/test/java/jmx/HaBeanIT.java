@@ -191,7 +191,8 @@ public class HaBeanIT
                 }
                 for ( String uri : info.getUris() )
                 {
-                    assertTrue( "roles should contain URIs", uri.startsWith( "ha://" ) );
+                    assertTrue( "roles should contain URIs",
+                            uri.startsWith( "ha://" ) || uri.startsWith( "backup://" ) );
                 }
             }
         }

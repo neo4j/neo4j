@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
@@ -257,6 +256,11 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     public TransactionManager getTransactionManagerBean()
     {
         return getBean( TransactionManager.class );
+    }
+
+    public PageCache getPageCacheBean()
+    {
+        return getBean( PageCache.class );
     }
 
     public HighAvailability getHighAvailabilityBean()

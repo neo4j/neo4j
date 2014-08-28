@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -55,7 +56,7 @@ public class LifecycledPageCacheTest
         PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fsRule.get() );
         PageCache cache = new LifecycledPageCache(
-                pageCacheFactory, swapperFactory, new Neo4jJobScheduler(), config, new Monitors() );
+                pageCacheFactory, swapperFactory, new Neo4jJobScheduler(), config, new Monitors().newMonitor( PageCacheMonitor.class ) );
 
         // Then
         assertThat(cache.pageSize(), equalTo(4096));
