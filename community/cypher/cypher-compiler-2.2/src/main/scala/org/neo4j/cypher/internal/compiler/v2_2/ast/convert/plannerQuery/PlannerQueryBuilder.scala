@@ -41,10 +41,9 @@ case class PlannerQueryBuilder(private val q: PlannerQuery)
 
   def currentQueryGraph: QueryGraph = {
     var current = q
-    while(current.tail.nonEmpty) {
+    while (current.tail.nonEmpty) {
       current = current.tail.get
     }
-
     current.graph
   }
 
