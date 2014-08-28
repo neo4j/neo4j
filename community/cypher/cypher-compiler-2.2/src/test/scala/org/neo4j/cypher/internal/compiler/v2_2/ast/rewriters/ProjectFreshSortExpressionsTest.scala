@@ -113,6 +113,13 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest {
     )
   }
 
+  test("match n where id(n) IN [0,1,2,3] return n.division, max(n.age) order by max(n.age)") {
+    assertRewrite(
+      "match n where id(n) IN [0,1,2,3] return n.division, max(n.age) order by max(n.age)",
+      "match n where id(n) IN [0,1,2,3] with n.division, max(n.age) with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`"
+    )
+  }
+
   override protected def parseForRewriting(queryText: String) =
     super.parseForRewriting(queryText)
       .endoRewrite(hoistExpressionsInClosingClauses)
