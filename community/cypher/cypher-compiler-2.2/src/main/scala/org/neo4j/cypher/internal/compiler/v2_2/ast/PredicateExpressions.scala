@@ -21,17 +21,18 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import symbols._
-
 import Doc._
 
 case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
 
-  override def toDoc = lhs :/: "AND" :/: rhs
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    pretty(lhs) :/: "AND" :/: pretty(rhs)
 }
 
 case class Ands(exprs: Set[Expression])(val position: InputPosition) extends Expression {
@@ -43,7 +44,8 @@ case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
     Signature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
 
-  override def toDoc = lhs :/: "OR" :/: rhs
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    pretty(lhs) :/: "OR" :/: pretty(rhs)
 }
 
 case class Ors(exprs: Set[Expression])(val position: InputPosition) extends Expression {
@@ -55,7 +57,8 @@ case class Xor(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
     Signature(Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
 
-  override def toDoc = lhs :/: "XOR" :/: rhs
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    pretty(lhs) :/: "XOR" :/: pretty(rhs)
 }
 
 case class Not(rhs: Expression)(val position: InputPosition) extends Expression with PrefixFunctionTyping {
@@ -63,7 +66,8 @@ case class Not(rhs: Expression)(val position: InputPosition) extends Expression 
     Signature(Vector(CTBoolean), outputType = CTBoolean)
   )
 
-  override def toDoc = "NOT" :/: rhs
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    "NOT" :/: pretty(rhs)
 }
 
 case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
@@ -71,7 +75,8 @@ case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition)
     Signature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
 
-  override def toDoc = lhs :/: "=" :/: rhs
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    pretty(lhs) :/: "=" :/: pretty(rhs)
 }
 
 case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
@@ -79,14 +84,16 @@ case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPositi
     Signature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
 
-  override def toDoc = lhs :/: "<>" :/: rhs
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    pretty(lhs) :/: "<>" :/: pretty(rhs)
 }
 
 case class InvalidNotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     SemanticError("Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing)", position)
 
-  override def toDoc = lhs :/: "!=" :/: rhs
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    pretty(lhs) :/: "!=" :/: pretty(rhs)
 }
 
 case class RegexMatch(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
@@ -123,7 +130,8 @@ case class LessThan(lhs: Expression, rhs: Expression)(val position: InputPositio
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
-  override def toDoc = group(lhs :/: "<" :/: rhs)
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    group(pretty(lhs) :/: "<" :/: pretty(rhs))
 }
 
 case class LessThanOrEqual(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
@@ -133,7 +141,8 @@ case class LessThanOrEqual(lhs: Expression, rhs: Expression)(val position: Input
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
-  override def toDoc = group(lhs :/: "<=" :/: rhs)
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    group(pretty(lhs) :/: "<=" :/: pretty(rhs))
 }
 
 case class GreaterThan(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
@@ -143,7 +152,8 @@ case class GreaterThan(lhs: Expression, rhs: Expression)(val position: InputPosi
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
-  override def toDoc = group(lhs :/: ">" :/: rhs)
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    group(pretty(lhs) :/: ">" :/: pretty(rhs))
 }
 
 case class GreaterThanOrEqual(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
@@ -153,5 +163,6 @@ case class GreaterThanOrEqual(lhs: Expression, rhs: Expression)(val position: In
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
-  override def toDoc = group(lhs :/: ">=" :/: rhs)
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    group(pretty(lhs) :/: ">=" :/: pretty(rhs))
 }

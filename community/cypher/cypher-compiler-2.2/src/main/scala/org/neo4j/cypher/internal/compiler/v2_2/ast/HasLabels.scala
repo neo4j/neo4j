@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import symbols._
 
 case class HasLabels(expression: Expression, labels: Seq[LabelName])(val position: InputPosition) extends Expression with SimpleTyping {
 
   import Doc._
 
-  override def toDoc = expression.toDoc :: breakList(labels.map(_.toDoc), break = breakSilent)
+  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
+    pretty(expression) :: breakList(labels.map(pretty(_)), break = breakSilent)
 
   protected def possibleTypes = CTBoolean
 

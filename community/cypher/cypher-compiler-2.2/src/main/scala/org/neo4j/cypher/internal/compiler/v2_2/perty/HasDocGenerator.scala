@@ -19,6 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-trait HasDocGenerator[T] {
+trait HasDocGenerator[-T] {
   def docGenerator: FixedDocGenerator[T]
 }

@@ -26,14 +26,14 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.docbuilders.internalDocBuilder
 
 case class Predicate(dependencies: Set[IdName], exp: Expression)
-  extends internalDocBuilder.PrettyToString {
+  extends internalDocBuilder.GeneratorToString[Any] {
 
   def hasDependenciesMet(symbols: Set[IdName]): Boolean =
     (dependencies -- symbols).isEmpty
 }
 
 case class Selections(predicates: Set[Predicate] = Set.empty)
-  extends internalDocBuilder.PrettyToString {
+  extends internalDocBuilder.GeneratorToString[Any] {
 
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
