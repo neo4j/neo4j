@@ -95,7 +95,10 @@ object Planner {
     inlineProjections
   )
 
-  def rewriteStatement(statement: Statement) = statement.endoRewrite(rewriter)
+  def rewriteStatement(statement: Statement) = {
+    val x= statement.endoRewrite(rewriter)
+    x
+  }
 }
 
 trait PlanningMonitor {

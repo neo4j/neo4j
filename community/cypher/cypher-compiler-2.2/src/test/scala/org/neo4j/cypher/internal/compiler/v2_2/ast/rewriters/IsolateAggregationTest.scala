@@ -112,6 +112,12 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
       "MATCH n WITH count(*) as `  AGGREGATION15`, max(id(n)) as `  AGGREGATION26` RETURN `  AGGREGATION15`+`  AGGREGATION26` as r")
   }
 
+  test("match a return length(collect(a))") {
+    assertRewrite(
+      "match a return length(collect(a))",
+      "MATCH a WITH collect(a) AS `  AGGREGATION22` RETURN length(`  AGGREGATION22`) AS `length(collect(a))`")
+  }
+
   override protected def parseForRewriting(queryText: String) =
     super.parseForRewriting(queryText).endoRewrite(aliasReturnItems)
 }

@@ -427,7 +427,7 @@ return coalesce(a.title, a.name)""")
 
   test("columns should not change when using order by and distinct") {
     val n = createNode()
-    val result = execute("match n return distinct n order by id(n)")
+    val result = executeWithNewPlanner("match n return distinct n order by id(n)")
 
     result.toList should equal(List(Map("n" -> n)))
   }
@@ -443,7 +443,7 @@ return coalesce(a.title, a.name)""")
     createNode()
 
     // then shouldn't throw
-    execute("match x RETURN DISTINCT x as otherName ORDER BY x.name ")
+    executeWithNewPlanner("match x RETURN DISTINCT x as otherName ORDER BY x.name ")
   }
 
   test("should propagate null through math funcs") {

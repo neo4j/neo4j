@@ -62,7 +62,7 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
 
     val context = inliningContextCreator(ast)
 
-    context.seenIdentifiers should equal(Set(identX1, identX2, identA, identB, identR))
+    context.seenIdentifiers should equal(Set(identA, identB, identR))
     context.projections should equal(Map.empty)
   }
 }
