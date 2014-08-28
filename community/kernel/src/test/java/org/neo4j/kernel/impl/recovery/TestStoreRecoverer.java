@@ -120,7 +120,7 @@ public class TestStoreRecoverer
         {
             TransactionAppender appender = new PhysicalTransactionAppender( logFile,
                     new DefaultTxIdGenerator( Providers.<TransactionIdStore>singletonProvider( transactionIdStore ) ),
-                    positionCache, transactionIdStore );
+                    positionCache, transactionIdStore, null );
             appender.append( singleNodeTransaction() );
         }
         finally

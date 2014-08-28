@@ -20,27 +20,34 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.junit.Test;
 import org.mockito.Matchers;
 
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.IdOrderingQueue;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.IdOrderingQueue.BYPASS;
+
 public class TransactionRepresentationStoreApplierTest
 {
-
     private final IndexingService indexService = mock( IndexingService.class );
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private final NeoStore neoStore = mock( NeoStore.class );
@@ -49,15 +56,13 @@ public class TransactionRepresentationStoreApplierTest
     private final LegacyIndexApplier.ProviderLookup legacyIndexProviderLookup =
             mock( LegacyIndexApplier.ProviderLookup.class );
     private final IndexConfigStore indexConfigStore = mock( IndexConfigStore.class );
-
-
     private final int transactionId = 12;
 
     @Test
     public void transactionRepresentationShouldAcceptApplierVisitor() throws IOException
     {
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier( indexService,
-                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore );
+                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore, BYPASS );
 
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
 
@@ -70,7 +75,7 @@ public class TransactionRepresentationStoreApplierTest
     public void shouldUpdateIdGeneratorsWhenOnRecovery() throws IOException
     {
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier( indexService,
-                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore );
+                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore, BYPASS );
 
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
 
@@ -78,5 +83,30 @@ public class TransactionRepresentationStoreApplierTest
 
         verify( transaction, times( 1 ) ).accept( Matchers.<Visitor<Command, IOException>>any() );
         verify( neoStore, times( 1 ) ).updateIdGenerators();
+    }
+    
+    @Test
+    public void shouldNotifyIdQueueWhenAppliedToLegacyIndexes() throws Exception
+    {
+        // GIVEN
+        IdOrderingQueue queue = mock( IdOrderingQueue.class );
+        TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier( indexService,
+                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore, queue );
+        TransactionRepresentation transaction = new PhysicalTransactionRepresentation( indexTransaction() );
+        
+        // WHEN
+        applier.apply( transaction, transactionId, false );
+        
+        // THEN
+        verify( queue ).removeHead( transactionId );
+    }
+
+    private Collection<Command> indexTransaction()
+    {
+        IndexDefineCommand definitions = new IndexDefineCommand();
+        definitions.init(
+                MapUtil.<String,Byte>genericMap( "one", (byte)1 ),
+                MapUtil.<String,Byte>genericMap( "two", (byte)2 ) );
+        return Arrays.<Command>asList( definitions );
     }
 }
