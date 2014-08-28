@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
+import Foldable._
 
 object inlineProjections extends Rewriter {
 
@@ -32,42 +33,18 @@ object inlineProjections extends Rewriter {
 
     val inlineIdentifiers = TypedRewriter[ASTNode](context.identifierRewriter)
     val inlinePatterns = TypedRewriter[Pattern](context.patternRewriter)
-    val withInlineReturnItems = inlineReturnItemsFactory(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, inlineInAliases = true))
-    val returnInlineReturnItems = inlineReturnItemsFactory(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, inlineInAliases = false))
+    val inlineReturnItemsInWith = Rewriter.lift(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, context, inlineAliases = true))
+    val inlineReturnItemsInReturn = Rewriter.lift(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, context, inlineAliases = false))
 
     val inliningRewriter = Rewriter.lift {
       case withClause @ With(false, returnItems @ ListedReturnItems(items), orderBy, _, _, _) =>
-        val pos = returnItems.position
-
-        def identifierOnly(item: AliasedReturnItem) = item.expression == item.identifier
-        def identifierAlreadyInScope(ident: Identifier) = !context.projections.contains(ident)
-
-        val aliasedItems = items.collect { case item: AliasedReturnItem => item }
-
-        // Do not remove grouping keys from a WITH with aggregation.
-        val containsAggregation = items.map(_.expression).exists(containsAggregate)
-        val newReturnItems = if (containsAggregation) {
-          returnItems
-        } else {
-          val resultProjections = aliasedItems.filter(item => identifierAlreadyInScope(item.identifier))
-          if (resultProjections.forall(identifierOnly)) {
-            ReturnAll()(pos)
-          } else {
-            withInlineReturnItems(returnItems.copy(items = aliasedItems)(pos))
-          }
-        }
-
         withClause.copy(
-          returnItems = newReturnItems,
-          orderBy = orderBy.map(inlineIdentifiers.narrowed)
+          returnItems = returnItems.rewrite(inlineReturnItemsInWith).asInstanceOf[ReturnItems]
         )(withClause.position)
 
       case returnClause @ Return(_, returnItems: ListedReturnItems, orderBy, skip, limit) =>
         returnClause.copy(
-          returnItems = returnInlineReturnItems(returnItems),
-          orderBy = orderBy.map(inlineIdentifiers.narrowed),
-          skip = skip.map(inlineIdentifiers.narrowed),
-          limit = limit.map(inlineIdentifiers.narrowed)
+          returnItems = returnItems.rewrite(inlineReturnItemsInReturn).asInstanceOf[ReturnItems]
         )(returnClause.position)
 
       case m @ Match(_, mPattern, mHints, mOptWhere) =>
@@ -88,25 +65,28 @@ object inlineProjections extends Rewriter {
     input.endoRewrite(topDown(inliningRewriter))
   }
 
-  private def aliasedReturnItemRewriter(inlineExpressions: Expression => Expression, inlineInAliases: Boolean): PartialFunction[ReturnItem, ReturnItem] = {
-    if (inlineInAliases) {
-      case item: AliasedReturnItem =>
-        item.copy(
-          identifier = inlineExpressions(item.identifier) match {
-            case identifier: Identifier => identifier
-            case _ => item.identifier
-          },
-          expression = inlineExpressions(item.expression))(item.position)
-    } else {
-      case item: AliasedReturnItem =>
-        item.copy(
-          expression = inlineExpressions(item.expression))(item.position)
-    }
+  private def aliasedReturnItemRewriter(inlineExpressions: Expression => Expression, context: InliningContext,
+                                        inlineAliases: Boolean): PartialFunction[AnyRef, AnyRef] = {
+    case lri @ ListedReturnItems(items) =>
+      val newItems = items.flatMap {
+        case item: AliasedReturnItem
+          if context.projections.contains(item.identifier) && inlineAliases =>
+          val expr = context.projections(item.identifier)
+          val dependencies = expr.treeFold(Set.empty[Identifier]) {
+            case id: Identifier if !context.projections.contains(id) || id == expr =>
+              (acc, children) => children(acc + id)
+          }
+          dependencies.map { id =>
+            AliasedReturnItem(id.copy()(id.position), id.copy()(id.position))(item.position)
+          }.toSeq
+        case item: AliasedReturnItem => Seq(
+          item.copy(expression = inlineExpressions(item.expression))(item.position)
+        )
+      }
+      if (newItems.isEmpty) {
+        ReturnAll()(lri.position)
+      } else {
+        lri.copy(items = newItems)(lri.position)
+      }
   }
-
-  private def inlineReturnItemsFactory(inlineExpressions: ReturnItem => ReturnItem) =
-    (returnItems: ListedReturnItems) =>
-      returnItems.copy(
-        items = returnItems.items.map(inlineExpressions)
-      )(returnItems.position)
 }
