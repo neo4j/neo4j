@@ -38,9 +38,10 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
     private final BatchingForceThread forceThread;
     
     public BatchingPhysicalTransactionAppender( LogFile logFile, TxIdGenerator txIdGenerator,
-            TransactionMetadataCache transactionMetadataCache, final TransactionIdStore transactionIdStore )
+            TransactionMetadataCache transactionMetadataCache, final TransactionIdStore transactionIdStore,
+            IdOrderingQueue legacyIndexTransactionOrdering )
     {
-        super( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore );
+        super( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
         forceThread = new BatchingForceThread( new BatchingForceThread.Operation()
         {
             private long lastSeenTransactionId;

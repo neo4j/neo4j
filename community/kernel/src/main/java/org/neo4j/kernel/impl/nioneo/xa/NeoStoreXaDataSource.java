@@ -100,6 +100,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
+import org.neo4j.kernel.impl.transaction.xaframework.IdOrderingQueue;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
@@ -110,6 +111,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
@@ -466,10 +468,11 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
                     logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
 
-            final TransactionRepresentationStoreApplier storeApplier = dependencies.satisfyDependency( new
-                    TransactionRepresentationStoreApplier(
-                    indexingService, labelScanStore, neoStore,
-                    cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore ) );
+            IdOrderingQueue legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
+            final TransactionRepresentationStoreApplier storeApplier = dependencies.satisfyDependency(
+                    new TransactionRepresentationStoreApplier(
+                            indexingService, labelScanStore, neoStore, cacheAccess, lockService,
+                            legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering ) );
 
             RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeApplier, recoveredCount );
             Visitor<ReadableLogChannel, IOException> logFileRecoverer =
@@ -481,7 +484,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
             final LogicalTransactionStore logicalTransactionStore = dependencies.satisfyDependency(
                     LogicalTransactionStore.class, new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
-                            transactionMetadataCache, neoStore, config.get( GraphDatabaseSettings.batched_writes ) ) );
+                            transactionMetadataCache, neoStore, legacyIndexTransactionOrdering,
+                            config.get( GraphDatabaseSettings.batched_writes ) ) );
 
             TransactionCommitProcess transactionCommitProcess = dependencies.satisfyDependency( TransactionCommitProcess.class,
                                         commitProcessFactory.create( logicalTransactionStore, kernelHealth,

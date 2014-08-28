@@ -51,10 +51,16 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write3bLengthAndString
 public class CommandWriter implements NeoCommandHandler
 {
     private final WritableLogChannel channel;
+    private boolean hasWrittenAnyLegacyIndexCommand;
 
     public CommandWriter( WritableLogChannel channel )
     {
         this.channel = channel;
+    }
+    
+    public void reset()
+    {
+        hasWrittenAnyLegacyIndexCommand = false;
     }
 
     @Override
@@ -246,12 +252,21 @@ public class CommandWriter implements NeoCommandHandler
     @Override
     public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
     {
+        // If there's any legacy index command in this transaction, there's an index define command
+        // so it's enough to check this command type.
+        hasWrittenAnyLegacyIndexCommand = true;
+        
         channel.put(  NeoCommandType.INDEX_DEFINE_COMMAND );
         byte zero = 0;
         writeIndexCommandHeader( zero, zero, zero, zero, zero, zero, zero );
         writeMap( command.getIndexNameIdRange() );
         writeMap( command.getKeyIdRange() );
         return true;
+    }
+    
+    public boolean hasWrittenAnyLegacyIndexCommand()
+    {
+        return hasWrittenAnyLegacyIndexCommand;
     }
 
     private void writeMap( Map<String, Byte> map ) throws IOException

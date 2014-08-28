@@ -36,7 +36,6 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     private long latestCommittedTxWhenStarted;
     private long timeCommitted;
 
-    // TODO 2.2-future recovered could be an aspect instead
     public PhysicalTransactionRepresentation( Collection<Command> commands )
     {
         this.commands = commands;
