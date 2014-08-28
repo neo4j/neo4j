@@ -17,17 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTNode, LabelName, AstConstructionTestSupport, UsingIndexHint}
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{simpleDocBuilder, DocBuilderTestSuite}
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
-class AstDocBuilderTest extends DocBuilderTestSuite[Any] with AstConstructionTestSupport {
+case object defaultDocBuilder extends CustomDocBuilderChain[Any] {
 
-  val docBuilder = astDocBuilder orElse astExpressionDocBuilder orElse simpleDocBuilder
+  val builders = Seq(
+    // pretty printing the structure of docs themselves
+    docStructureDocBuilder.uplifted[Any],
 
-  test("USING INDEX n:Person(name)") {
-    val astNode: ASTNode = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
-    format(astNode) should equal("USING INDEX n:Person(name)")
-  }
+    // pretty printing anything that implements Pretty[T]
+    prettyDocBuilder.uplifted[Any],
+
+    // pretty printing anything common scala value (product, array, primitive)
+    scalaDocBuilder,
+
+    // pretty printing by falling back to toString()
+    toStringDocBuilder
+  )
 }

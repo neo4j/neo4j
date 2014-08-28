@@ -19,80 +19,64 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
+import org.neo4j.cypher.internal.compiler.v2_2.perty.DocBuilder._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.catchErrors
+import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.{CachingDocBuilder, SimpleDocBuilder, SimpleDocBuilderChain}
+
 import scala.reflect.ClassTag
 
+// DocBuilders encapsulate and compose doc generators
 abstract class DocBuilder[T: ClassTag] extends HasDocGenerator[T] {
   self =>
 
-  import DocBuilder.asDocBuilder
-
-  def nestedDocGenerator: NestedDocGenerator[T]
   def docGenerator: DocGenerator[T]
 
   def orElse(other: DocBuilder[T]): DocBuilderChain[T] = other match {
-    case others: DocBuilderChain[T] => others.prepend(self)
+    case others: DocBuilderChain[T] => others.after(self)
     case _                          => SimpleDocBuilderChain(self, other)
   }
 
-  final def uplifted[S >: T: ClassTag]: DocBuilder[S] =
-    asDocBuilder(PartialFunctionSupport.uplift(self.nestedDocGenerator))
+  def uplifted[S >: T: ClassTag]: DocBuilder[S] = fromDocGenerator(docGenerator.uplifted)
 }
 
 object DocBuilder {
-  implicit def asDocBuilder[T: ClassTag](nestedDocGen: NestedDocGenerator[T]): DocBuilder[T] =
-    SimpleDocBuilder(nestedDocGen)
+  implicit def fromDocGenerator[T: ClassTag](docGen: DocGenerator[T]): DocBuilder[T] =
+    SimpleDocBuilder(docGen)
 }
 
-final case class SimpleDocBuilder[T: ClassTag](nestedDocGenerator: NestedDocGenerator[T]) extends DocBuilder[T] {
-  val docGenerator: DocGenerator[T] = PartialFunctionSupport.fix(nestedDocGenerator)
-}
-
-abstract class CachingDocBuilder[T: ClassTag] extends DocBuilder[T] {
-
-  def nestedDocGenerator = cachedDocGenerators.nestedDocGenerator
-  def docGenerator = cachedDocGenerators.docGenerator
-
-  protected def newNestedDocGenerator: NestedDocGenerator[T]
-
-  private object cachedDocGenerators {
-    lazy val nestedDocGenerator: NestedDocGenerator[T] = newNestedDocGenerator
-    lazy val docGenerator: DocGenerator[T] = PartialFunctionSupport.fix(nestedDocGenerator)
-  }
-}
-
+// Doc builder for combining other doc builders efficiently into a single, flat list
 abstract class DocBuilderChain[T: ClassTag] extends CachingDocBuilder[T] {
-  val builders: Seq[DocBuilder[T]]
+  def builders: Seq[DocBuilder[T]]
 
-  override protected def newNestedDocGenerator: NestedDocGenerator[T] =
-    builders
-      .map(_.nestedDocGenerator)
-      .reduceLeftOption(_ orElse _)
-      .getOrElse(PartialFunction.empty)
+  override def newDocGenerator: DocGenerator[T] =
+    DocGenerator(
+      builders
+        .map(_.docGenerator.nested)
+        .reduceLeftOption(_ orElse _)
+        .getOrElse(PartialFunction.empty)
+    )
 
   override def orElse(other: DocBuilder[T]): DocBuilderChain[T] = other match {
-    case chain: DocBuilderChain[T] => appendAll(chain.builders)
-    case _                         => append(other)
+    case chain: DocBuilderChain[T] => SimpleDocBuilderChain[T](builders ++ chain.builders: _*)
+    case _                         => SimpleDocBuilderChain[T](builders :+ other: _*)
   }
 
-  def appendAll(others: Seq[DocBuilder[T]]) = SimpleDocBuilderChain[T](builders ++ others: _*)
-
-  def prepend(builder: DocBuilder[T]) = SimpleDocBuilderChain[T](builder +: builders: _*)
-  def append(builder: DocBuilder[T]) = appendAll(Seq(builder))
+  def after(builder: DocBuilder[T]) = SimpleDocBuilderChain[T](builder +: builders: _*)
 }
 
-case class SimpleDocBuilderChain[T: ClassTag](builders: DocBuilder[T]*) extends DocBuilderChain[T]
+// Public super class of custom doc builder
+abstract class CustomDocBuilder[T: ClassTag] extends CachingDocBuilder[T] with PrettyDocBuilder[T]
 
-trait TopLevelDocBuilder[T]  {
-  self: DocBuilder[T] =>
-
-  trait AsPretty extends GeneratedPretty[T] {
-    prettySelf: T =>
-
-    override def docGenerator: DocGenerator[T] = self.docGenerator
-  }
-
-  trait AsPrettyToString extends AsPretty with PrettyToString {
-    prettySelf: T =>
-  }
+// Public super class of custom doc builder chain
+abstract class CustomDocBuilderChain[T: ClassTag] extends DocBuilderChain[T] with PrettyDocBuilder[T] {
+  override def newDocGenerator = super.newDocGenerator.map(docGen => catchErrors(docGen))
 }
+
+
+
+
+
+
+
+
+

@@ -20,16 +20,23 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{Doc, PrettyToString, Pretty}
+import Doc._
 
 case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with SemanticCheckable {
   def semanticCheck = sortItems.semanticCheck
 }
 
-sealed trait SortItem extends ASTNode with SemanticCheckable {
+sealed trait SortItem extends ASTNode with SemanticCheckable with Pretty with PrettyToString {
   def expression: Expression
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
 }
 
-case class AscSortItem(expression: Expression)(val position: InputPosition) extends SortItem
-case class DescSortItem(expression: Expression)(val position: InputPosition) extends SortItem
+case class AscSortItem(expression: Expression)(val position: InputPosition) extends SortItem {
+  override def toDoc = expression
+}
+
+case class DescSortItem(expression: Expression)(val position: InputPosition) extends SortItem {
+  override def toDoc = expression :/: "DESC"
+}
 

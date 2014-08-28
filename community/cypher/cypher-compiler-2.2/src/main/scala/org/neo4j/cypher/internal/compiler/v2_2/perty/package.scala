@@ -19,18 +19,39 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import org.neo4j.cypher.internal.helpers.PartialFunctionSupport._
+
 import scala.collection.mutable
-import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.{PageDocFormatter, LineDocFormatter}
-import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{docStructureDocBuilder, scalaDocBuilder}
+import scala.reflect.ClassTag
 
 /**
  * See pp.Doc
  */
 package object perty {
+  // Knows how to layout a doc as series if print commands
   type DocFormatter = Doc => Seq[PrintCommand]
-  type DocGenerator[-T] = PartialFunction[T, Doc]
-  type NestedDocGenerator[T] = PartialFunction[T, DocGenerator[T] => Doc]
+
+  // Given a doc generator for the layout of child components, knows how to represent a value of type T as a Doc
+  type NestedDocGenerator[T] = PartialFunction[T, FixedDocGenerator[T] => Doc]
+
+  // Knows how to represent a value of type T as a Doc
+  type FixedDocGenerator[-T] = PartialFunction[T, Doc]
+
+  // Combines nested doc generator together with it's fixed doc generator
+  final case class DocGenerator[T: ClassTag](nested: NestedDocGenerator[T])
+    extends fixedPartialFunction(nested)
+    with FixedDocGenerator[T] {
+
+    def map[S: ClassTag](f: NestedDocGenerator[T] => NestedDocGenerator[S]) = DocGenerator[S](f(nested))
+    def uplifted[S >: T: ClassTag]: DocGenerator[S] = DocGenerator(uplift[T, FixedDocGenerator[T] => Doc, S](nested))
+  }
+
+  object DocGenerator {
+    implicit def fromNestedDocGenerator[T: ClassTag](nestedDocGenerator: NestedDocGenerator[T]) =
+      DocGenerator(nestedDocGenerator)
+  }
+
+  // Builder for turning a sequence of print commands into a result of type T
   type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
 }
 

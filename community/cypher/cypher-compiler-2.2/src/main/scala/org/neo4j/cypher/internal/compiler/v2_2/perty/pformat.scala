@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.simpleDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.defaultDocBuilder
 
 object pformat {
   // Convert value to String after converting to a doc using the given generator and formatter
   def apply[T](value: T, formatter: DocFormatter = DocFormatters.defaultPageFormatter)
-              (implicit generator: DocGenerator[T] = simpleDocBuilder.docGenerator): String =
+              (implicit generator: FixedDocGenerator[T] = defaultDocBuilder.docGenerator): String =
     printToString(formatter(generator(value)))
 }
