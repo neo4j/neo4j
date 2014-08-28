@@ -51,7 +51,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should build plans that contain multiple WITH") {
     val rel = PatternRelationship("r1", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
 
-    val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b LIMIT 1 RETURN b as `b`").plan
+    val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b, r1 LIMIT 1 RETURN b as `b`").plan
     val expected =
       planRegularProjection(
         planTailApply(

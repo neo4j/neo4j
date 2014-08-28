@@ -20,17 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.ast
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.SortDescription
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{AscSortItem, PatternExpression}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{Ascending, SortDescription}
+import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{UnsignedDecimalIntegerLiteral, PatternExpression, AscSortItem}
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.Ascending
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  import QueryPlanProducer._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
 
   val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
   val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
@@ -95,54 +94,6 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     result.plan should equal(Sort(startPlan.plan, Seq(sortDescription)))
 
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(identifierSortItem))))
-  }
-
-  test("should add projection before sort if query graph contains sort items that are not identifiers") {
-    // given
-    val exp: ast.Expression = ast.Add(UnsignedDecimalIntegerLiteral("10") _, UnsignedDecimalIntegerLiteral("10") _) _
-    val expressionSortItem: AscSortItem = ast.AscSortItem(exp) _
-
-    implicit val (query, context, startPlan) = queryGraphWith(
-      sortItems = Seq(expressionSortItem)
-    )
-
-    // when
-    val result = sortSkipAndLimit(startPlan, query)
-
-    // then
-    result.plan should equal(
-      Sort(
-        left = Projection(
-          left = startPlan.plan,
-          expressions = Map("  FRESHID0" -> exp, "n" -> ast.Identifier("n") _)
-        ),
-        sortItems = Seq(Ascending("  FRESHID0"))
-      )
-    )
-  }
-
-  test("should add projection before sort with mixed identifier and non-identifier expressions") {
-    // given
-    val exp: ast.Expression = ast.Add(UnsignedDecimalIntegerLiteral("10") _, UnsignedDecimalIntegerLiteral("10") _) _
-    val expressionSortItem: AscSortItem = ast.AscSortItem(exp) _
-
-    implicit val (query, context, startPlan) = queryGraphWith(
-      sortItems = Seq(expressionSortItem, identifierSortItem)
-    )
-
-    // when
-    val result = sortSkipAndLimit(startPlan, query)
-
-    // then
-    result.plan should equal(
-      Sort(
-        left = Projection(
-          left = startPlan.plan,
-          expressions = Map("  FRESHID0" -> exp, "n" -> ast.Identifier("n") _)
-        ),
-        sortItems = Seq(Ascending("  FRESHID0"), Ascending("n"))
-      )
-    )
   }
 
   test("should add SortedLimit when query uses both ORDER BY and LIMIT") {
