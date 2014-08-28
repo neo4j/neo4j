@@ -31,6 +31,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.IdOrderingQueue.BYPASS;
+
 /**
  * Used for reading transactions off of file.
  */
@@ -63,7 +65,7 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
             {
                 throw new UnsupportedOperationException(  );
             }
-        }, transactionMetadataCache, transactionIdStore, false ) );
+        }, transactionMetadataCache, transactionIdStore, BYPASS, false ) );
     }
 
     @Override

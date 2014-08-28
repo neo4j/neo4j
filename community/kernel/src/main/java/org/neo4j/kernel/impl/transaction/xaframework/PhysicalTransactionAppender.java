@@ -26,9 +26,10 @@ import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppender
 {
     public PhysicalTransactionAppender( LogFile logFile, TxIdGenerator txIdGenerator,
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore )
+            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
+            IdOrderingQueue legacyIndexTransactionOrdering )
     {
-        super( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore );
+        super( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
     }
 
     @Override

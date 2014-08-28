@@ -33,8 +33,14 @@ import org.neo4j.kernel.impl.nioneo.xa.command.HighIdTracker;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionIndexApplier;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.nioneo.xa.command.RecoveredHighIdTracker;
+import org.neo4j.kernel.impl.transaction.xaframework.IdOrderingQueue;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
+/**
+ * Holistic application of {@link TransactionRepresentation transactions} onto the store. Includes application
+ * for the graph store, schema indexes and legacy indexes. It's expected that there's only one instance
+ * of this type for any given database.
+ */
 public class TransactionRepresentationStoreApplier
 {
     private final NeoStore neoStore;
@@ -46,11 +52,13 @@ public class TransactionRepresentationStoreApplier
     private final ProviderLookup legacyIndexProviderLookup;
     private final PropertyLoader propertyLoader;
     private final HighIdTrackerFactory highIdTrackerFactory;
+    private final IdOrderingQueue legacyIndexTransactionOrdering;
 
     public TransactionRepresentationStoreApplier(
             IndexingService indexingService, LabelScanStore labelScanStore, NeoStore neoStore,
             CacheAccessBackDoor cacheAccess, LockService lockService, ProviderLookup legacyIndexProviderLookup,
-            IndexConfigStore indexConfigStore, HighIdTrackerFactory highIdTrackerFactory )
+            IndexConfigStore indexConfigStore, HighIdTrackerFactory highIdTrackerFactory,
+            IdOrderingQueue legacyIndexTransactionOrdering )
     {
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
@@ -60,6 +68,7 @@ public class TransactionRepresentationStoreApplier
         this.legacyIndexProviderLookup = legacyIndexProviderLookup;
         this.indexConfigStore = indexConfigStore;
         this.highIdTrackerFactory = highIdTrackerFactory;
+        this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.propertyLoader = new PropertyLoader( neoStore );
     }
 
@@ -72,7 +81,7 @@ public class TransactionRepresentationStoreApplier
         NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( indexingService,
                 labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess, propertyLoader );
         LegacyIndexApplier legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,
-                legacyIndexProviderLookup, applyRecovered );
+                legacyIndexProviderLookup, legacyIndexTransactionOrdering, transactionId, applyRecovered );
 
         try ( CommandApplierFacade applier = new CommandApplierFacade(
                 storeApplier, indexApplier, legacyIndexApplier ) )
