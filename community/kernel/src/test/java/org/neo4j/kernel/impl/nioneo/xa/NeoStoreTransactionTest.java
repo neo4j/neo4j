@@ -1336,7 +1336,7 @@ public class NeoStoreTransactionTest
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
         when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
-                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null );
+                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null, null );
 
         // Call this just to make sure the counters have been initialized.
         // This is only a problem in a mocked environment like this.

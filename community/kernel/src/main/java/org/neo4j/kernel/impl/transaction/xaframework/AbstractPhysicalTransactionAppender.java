@@ -34,25 +34,39 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     private final TransactionIdStore transactionIdStore;
     private final TransactionLogWriter transactionLogWriter;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
+    private final CommandWriter commandWriter;
+
+    // For the graph store and schema indexes order-of-updates are managed by the high level entity locks
+    // such that changes are applied to the affected records in the same order that they are written to the
+    // log. For the legacy indexes there are no such locks, and hence no such ordering. This queue below
+    // is introduced to manage just that and is only used for transactions that contain any legacy index changes.
+    protected final IdOrderingQueue legacyIndexTransactionOrdering;
 
     public AbstractPhysicalTransactionAppender( LogFile logFile, TxIdGenerator txIdGenerator,
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore )
+            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
+            IdOrderingQueue legacyIndexTransactionOrdering )
     {
         this.logFile = logFile;
         this.transactionIdStore = transactionIdStore;
+        this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.channel = logFile.getWriter();
         this.txIdGenerator = txIdGenerator;
         this.transactionMetadataCache = transactionMetadataCache;
-
-        LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
-        this.transactionLogWriter = new TransactionLogWriter( logEntryWriter );
+        this.commandWriter = new CommandWriter( channel );
+        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriterv1( channel, commandWriter ) );
     }
 
-    private void append( TransactionRepresentation transaction, long transactionId ) throws IOException
+    /**
+     * @return whether or not this transaction contains any legacy index changes.
+     */
+    private boolean append( TransactionRepresentation transaction, long transactionId ) throws IOException
     {
         channel.getCurrentPosition( positionMarker );
         LogPosition logPosition = positionMarker.newPosition();
 
+        // Reset command writer so that we, after we've written the transaction, can ask it whether or
+        // not any legacy index command was written. If so then there's additional ordering to care about below.
+        commandWriter.reset();
         transactionLogWriter.append( transaction, transactionId );
 
         transactionMetadataCache.cacheTransactionMetadata( transactionId, logPosition, transaction.getMasterId(),
@@ -60,6 +74,14 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                         transaction.getMasterId(), transaction.getAuthorId() ) );
 
         channel.emptyBufferIntoChannelAndClearIt();
+        
+        // Offer this transaction id to the queue so that the legacy index applier can take part in the ordering
+        boolean hasLegacyIndexChanges = commandWriter.hasWrittenAnyLegacyIndexCommand();
+        if ( hasLegacyIndexChanges )
+        {
+            legacyIndexTransactionOrdering.offer( transactionId );
+        }
+        return hasLegacyIndexChanges;
     }
 
     @Override
@@ -69,22 +91,32 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         try
         {
             long ticket;
+            boolean hasLegacyIndexChanges;
             synchronized ( this )
             {
                 // We put log rotation check outside the private append method since it must happen before
                 // we generate the next transaction id
                 logFile.checkRotation();
                 transactionId = txIdGenerator.generate( transaction );
-                append( transaction, transactionId );
+                hasLegacyIndexChanges = append( transaction, transactionId );
                 ticket = getCurrentTicket();
             }
             
             force( ticket );
+            afterForce( transactionId, hasLegacyIndexChanges );
             return transactionId;
         }
         catch ( Exception e )
         {
             throw new TransactionAppendException( e, transactionId );
+        }
+    }
+
+    private void afterForce( long transactionId, boolean hasLegacyIndexChanges )
+    {
+        if ( hasLegacyIndexChanges )
+        {
+            legacyIndexTransactionOrdering.awaitHead( transactionId );
         }
     }
 
@@ -102,7 +134,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         long transactionId = -1;
         try
         {
-            boolean result = false;
+            boolean result = false, hasLegacyIndexChanges;
             long ticket;
             synchronized ( this )
             {
@@ -112,7 +144,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                 if ( lastCommittedTxId + 1 == candidateTransactionId )
                 {
                     transactionId = txIdGenerator.generate( transaction.getTransactionRepresentation() );
-                    append( transaction.getTransactionRepresentation(), transactionId );
+                    hasLegacyIndexChanges = append( transaction.getTransactionRepresentation(), transactionId );
                     ticket = getCurrentTicket();
                     result = true;
                 }
@@ -127,6 +159,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                 }
             }
             force( ticket );
+            afterForce( transactionId, hasLegacyIndexChanges );
             return result;
         }
         catch ( Exception e )

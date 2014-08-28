@@ -45,6 +45,7 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.exceptionWithMessage;
+import static org.neo4j.kernel.impl.transaction.xaframework.IdOrderingQueue.BYPASS;
 
 public class PhysicalTransactionAppenderTest
 {
@@ -59,7 +60,7 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, txIdGenerator, positionCache, transactionIdStore );
+                logFile, txIdGenerator, positionCache, transactionIdStore, BYPASS );
 
         // WHEN
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(
@@ -97,7 +98,7 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, txIdGenerator, positionCache, transactionIdStore );
+                logFile, txIdGenerator, positionCache, transactionIdStore, BYPASS );
 
 
         // WHEN
@@ -142,7 +143,7 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, txIdGenerator, positionCache, transactionIdStore );
+                logFile, txIdGenerator, positionCache, transactionIdStore, BYPASS );
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
@@ -189,7 +190,7 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 10 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender( logFile,
-                txIdGenerator, metadataCache, transactionIdStore );
+                txIdGenerator, metadataCache, transactionIdStore, BYPASS );
         
         // WHEN
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
