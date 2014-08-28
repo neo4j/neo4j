@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.SimpleDocBuilderChain
 
 class DocBuilderTest extends CypherFunSuite {
-  import DocBuilder.fromDocGenerator
+  import DocBuilder.asDocBuilder
 
-  val dummy1 = fromDocGenerator[Any](PartialFunction.empty)
-  val dummy2 = fromDocGenerator[Any](PartialFunction.empty)
-  val dummy3 = fromDocGenerator[Any](PartialFunction.empty)
+  val dummy1 = asDocBuilder[Any](PartialFunction.empty)
+  val dummy2 = asDocBuilder[Any](PartialFunction.empty)
+  val dummy3 = asDocBuilder[Any](PartialFunction.empty)
 
   test("single orElse chain prepends") {
     dummy1 orElse SimpleDocBuilderChain[Any](dummy2) should equal(SimpleDocBuilderChain[Any](dummy1, dummy2))
@@ -47,6 +46,6 @@ class DocBuilderTest extends CypherFunSuite {
   }
 
   test("constructs empty doc chain") {
-    SimpleDocBuilderChain[Any]().docGenerator.nested should equal(PartialFunction.empty)
+    SimpleDocBuilderChain[Any]().nestedDocGenerator should equal(PartialFunction.empty)
   }
 }

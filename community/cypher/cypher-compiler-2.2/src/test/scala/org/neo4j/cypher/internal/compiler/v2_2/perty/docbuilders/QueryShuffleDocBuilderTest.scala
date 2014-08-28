@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders
 
+import org.neo4j.cypher.internal.compiler.v2_2.docbuilders.{astExpressionDocBuilder, queryShuffleDocBuilder}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryShuffle
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{SignedDecimalIntegerLiteral, DescSortItem, AscSortItem}
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{toStringDocBuilder, scalaDocBuilder, DocBuilderTestSuite}
 
 class QueryShuffleDocBuilderTest extends DocBuilderTestSuite[Any] {
 
@@ -39,7 +39,7 @@ class QueryShuffleDocBuilderTest extends DocBuilderTestSuite[Any] {
     format(QueryShuffle(Seq(AscSortItem(ident("item"))_))) should equal("ORDER BY item")
   }
 
-  test("ORDER BY item DESC") {
+  test("ORDER BY item DEC") {
     format(QueryShuffle(Seq(DescSortItem(ident("item"))_))) should equal("ORDER BY item DESC")
   }
 

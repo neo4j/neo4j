@@ -19,28 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty
+trait Pretty[T] extends HasDocFormatter {
+  self: T =>
 
-trait Pretty extends HasDocFormatter {
   def toDoc: Doc
+
+  def format(docFormatter: DocFormatter = docFormatter)(implicit docGenerator: DocGenerator[T]) =
+    pformat(self, docFormatter)
 }
 
-trait PrettyToString {
-  self: Pretty =>
+trait GeneratedPretty[T] extends Pretty[T] with HasDocGenerator[T] {
+  self: T =>
 
-  override def toString = printToString(docFormatter(toDoc))
+  def toDoc: Doc = docGenerator(self)
+
+  override def format(docFormatter: DocFormatter = docFormatter)(implicit docGenerator: DocGenerator[T] = docGenerator) =
+    super.format(docFormatter)
 }
 
-trait PrettyDocBuilder[T]  {
-  self: DocBuilder[T] =>
 
-  trait Pretty extends perty.Pretty {
-    prettySelf: T =>
-
-    override def toDoc = self.docGenerator(prettySelf)
-  }
-
-  trait PrettyToString extends Pretty with perty.PrettyToString {
-    prettySelf: T =>
-  }
-}

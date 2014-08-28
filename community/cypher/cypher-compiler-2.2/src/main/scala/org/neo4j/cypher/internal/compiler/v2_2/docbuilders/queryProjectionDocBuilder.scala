@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{AscSortItem, DescSortItem, Expression}
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.CachingDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{AggregatingQueryProjection, QueryProjection, QueryShuffle, UnwindProjection}
 
-case class queryProjectionDocBuilder(prefix: String = "WITH") extends CustomDocBuilder[Any] {
+case class queryProjectionDocBuilder(prefix: String = "WITH") extends CachingDocBuilder[Any] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
-  override def newDocGenerator = DocGenerator {
+  override protected def newNestedDocGenerator = {
     case queryProjection: AggregatingQueryProjection =>
       val distinct = if (queryProjection.aggregationExpressions.isEmpty) "DISTINCT" else ""
       generateDoc(queryProjection.projections ++ queryProjection.aggregationExpressions, queryProjection.shuffle, distinct, prefix)
@@ -40,8 +39,8 @@ case class queryProjectionDocBuilder(prefix: String = "WITH") extends CustomDocB
       generateDoc(Map(queryProjection.identifier.name -> queryProjection.exp), QueryShuffle.empty, "", "UNWIND")
   }
 
-  private def generateDoc(projections: Map[String, Expression], queryShuffle: QueryShuffle, initialString: String, prefix: String): FixedDocGenerator[Any] => Doc = {
-    (inner: FixedDocGenerator[Any]) =>
+  private def generateDoc(projections: Map[String, Expression], queryShuffle: QueryShuffle, initialString: String, prefix: String): DocGenerator[Any] => Doc = {
+    (inner: DocGenerator[Any]) =>
 
       val projectionMapDoc = projections.collect {
         case (k, v) => group(inner(v) :/: "AS " :: s"`$k`")

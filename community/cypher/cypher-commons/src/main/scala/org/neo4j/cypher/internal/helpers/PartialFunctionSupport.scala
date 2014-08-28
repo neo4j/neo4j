@@ -44,8 +44,9 @@ object PartialFunctionSupport {
 
   def fix[A, B](f: PartialFunction[A, PartialFunction[A, B] => B]): PartialFunction[A, B] = new fixedPartialFunction(f)
 
-  class fixedPartialFunction[-A, +B](f: PartialFunction[A, PartialFunction[A, B] => B]) extends PartialFunction[A, B] {
+  final class fixedPartialFunction[-A, +B](f: PartialFunction[A, PartialFunction[A, B] => B]) extends PartialFunction[A, B] {
     def isDefinedAt(v: A) = f.isDefinedAt(v)
     def apply(v: A) = f(v)(this)
   }
+
 }

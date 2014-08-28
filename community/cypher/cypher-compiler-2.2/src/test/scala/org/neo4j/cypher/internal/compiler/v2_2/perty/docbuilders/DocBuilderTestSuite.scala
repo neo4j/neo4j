@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocBuilder, FixedDocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocBuilder, DocGenerator}
 
 abstract class DocBuilderTestSuite[T] extends DocGeneratorTestSuite[T] {
   val docBuilder: DocBuilder[T]
 
-  override def docGenerator: FixedDocGenerator[T] = docBuilder.docGenerator
+  override def docGenerator: DocGenerator[T] = docBuilder.docGenerator
 }

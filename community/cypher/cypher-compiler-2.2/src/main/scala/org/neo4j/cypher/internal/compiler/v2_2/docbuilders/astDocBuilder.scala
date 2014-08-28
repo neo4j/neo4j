@@ -17,11 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty.impl
+package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{UsingIndexHint, RelTypeName}
 
-import scala.reflect.ClassTag
+case object astDocBuilder extends CachingDocBuilder[Any] {
 
-// Lift nested doc generator as a doc builder
-case class SimpleDocBuilder[T: ClassTag](docGenerator: DocGenerator[T]) extends DocBuilder[T]
+  import Doc._
+
+  override protected def newNestedDocGenerator = {
+    case relTypeName: RelTypeName => (inner) =>
+      text(relTypeName.name)
+
+    case hint: UsingIndexHint => (inner) =>
+      group("USING" :/: "INDEX" :/: group(inner(hint.identifier) :: block(inner(hint.label))(inner(hint.property))))
+  }
+}
