@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+
 /**
  * Writing groups of commands, in a way that is guaranteed to be recoverable, i.e. consistently readable,
  * in the event of failure.
@@ -28,16 +30,14 @@ import java.io.IOException;
 public interface TransactionAppender
 {
     /**
+     * Appends a transaction to a log, effectively committing it. After this method have returned the
+     * returned transaction id should be visible in {@link TransactionIdStore#getLastCommittedTransactionId()}.
+     *
      * @param transaction transaction representation to append.
      * @return transaction id the appended transaction got.
-     * @throws TransactionAppendException if there was a problem appending the transaction.
-     * If the append got so far as to
-     * {@link TransactionAppendException#hasNewTransactionIdGenerated() generate a new transaction id} the
-     * {@link TransactionAppendException exception} is able to
-     * {@link TransactionAppendException#newTransactionIdGenerated() return that id} so that the caller
-     * can notify services that the particular transaction has failed, and is closed in general.
+     * @throws IOException if there was a problem appending the transaction.
      */
-    long append( TransactionRepresentation transaction ) throws TransactionAppendException;
+    long append( TransactionRepresentation transaction ) throws IOException;
 
     /**
      * TODO the fact that this method returns a boolean and may "silently" ignore transactions
@@ -63,7 +63,7 @@ public interface TransactionAppender
      * @throws IOException if there was a problem writing the transaction, or if the transaction id
      * of the supplied transaction was {@code <=} last committed transaction id.
      */
-    boolean append( CommittedTransactionRepresentation transaction ) throws TransactionAppendException;
+    boolean append( CommittedTransactionRepresentation transaction ) throws IOException;
     
     /**
      * Closes resources held by this appender.
