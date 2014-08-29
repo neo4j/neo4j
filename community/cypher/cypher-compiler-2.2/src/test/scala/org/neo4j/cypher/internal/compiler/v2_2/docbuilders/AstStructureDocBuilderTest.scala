@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{catchErrors, defaultDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{And, Expression}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{simpleDocBuilder, DocBuilderTestSuite}
 
-// Doc builder for printing any internal class
-case object internalDocBuilder extends CustomDocBuilderChain[Any] {
-  val builders = Seq(
-    // astDocBuilder /* ast only */
-    astStructureDocBuilder /* ast + structure */,
-    plannerDocBuilder,
-    defaultDocBuilder
-  )
+class AstStructureDocBuilderTest extends DocBuilderTestSuite[Any] {
+  val docBuilder = astStructureDocBuilder orElse simpleDocBuilder
+
+  test("Renders ast node together with its structure but only on the outer level") {
+    val expr: Expression = And(ident("a"), ident("b"))_
+
+    format(expr) should equal("/* ast */ a AND b /* And(Identifier(\"a\"), Identifier(\"b\")) */")
+  }
 }
