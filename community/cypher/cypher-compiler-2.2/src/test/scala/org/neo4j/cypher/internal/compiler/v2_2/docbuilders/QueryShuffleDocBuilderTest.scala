@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryShuffle
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{SignedDecimalIntegerLiteral, DescSortItem, AscSortItem}
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{defaultDocBuilder, toStringDocBuilder, scalaDocBuilder, DocBuilderTestSuite}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders._
 
 class QueryShuffleDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  val docBuilder = queryShuffleDocBuilder orElse defaultDocBuilder
+  val docBuilder = queryShuffleDocBuilder orElse astDocBuilder orElse simpleDocBuilder
 
   test("Empty query shuffle") {
     format(QueryShuffle()) should equal("")

@@ -108,6 +108,11 @@ object Doc {
     case (hd, tail)   => hd :: sep :: break :: tail
   }
 
+  def groupedSepList(docs: TraversableOnce[Doc], sep: Doc = ",", break: BreakingDoc = break): Doc = docs.foldRight(nil) {
+    case (hd, NilDoc) => hd :: nil
+    case (hd, tail)   => group(hd :: sep) :: break :: tail
+  }
+
   def block(name: Doc, open: Doc = "(", close: Doc = ")")(innerDoc: Doc): Doc =
     group(
       name ::

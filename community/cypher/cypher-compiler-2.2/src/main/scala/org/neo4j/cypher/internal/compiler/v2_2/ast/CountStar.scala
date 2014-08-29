@@ -26,6 +26,4 @@ import Doc._
 
 case class CountStar()(val position: InputPosition) extends Expression with SimpleTyping {
   protected def possibleTypes = CTInteger
-
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = "count(*)"
 }

@@ -17,13 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast
+package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.CustomDocBuilderChain
 
-case class Where(expression: Expression)(val position: InputPosition) extends ASTNode with ASTTerm with SemanticCheckable {
-  def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) chain
-    expression.expectType(CTBoolean.covariant)
+// Doc builder for printing any kind of ast node
+case object astDocBuilder extends CustomDocBuilderChain[Any] {
+  val builders = Seq(
+    astTermDocBuilder,
+    astParticleDocBuilder,
+    astExpressionDocBuilder
+  )
 }

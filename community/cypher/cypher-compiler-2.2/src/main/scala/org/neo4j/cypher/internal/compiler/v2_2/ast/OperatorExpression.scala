@@ -19,11 +19,34 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import symbols._
+trait OperatorExpression {
+  self: Expression =>
 
-case class Where(expression: Expression)(val position: InputPosition) extends ASTNode with ASTTerm with SemanticCheckable {
-  def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) chain
-    expression.expectType(CTBoolean.covariant)
+  def canonicalOperatorSymbol: String = self.productPrefix.toUpperCase
 }
+
+trait LeftUnaryOperatorExpression extends OperatorExpression {
+  self: Expression =>
+
+  def rhs: Expression
+}
+
+trait RightUnaryOperatorExpression extends OperatorExpression {
+  self: Expression =>
+
+  def lhs: Expression
+}
+
+trait BinaryOperatorExpression extends OperatorExpression {
+  self: Expression =>
+
+  def lhs: Expression
+  def rhs: Expression
+}
+
+trait MultiOperatorExpression  extends OperatorExpression {
+  self: Expression =>
+
+  def exprs: Set[Expression]
+}
+

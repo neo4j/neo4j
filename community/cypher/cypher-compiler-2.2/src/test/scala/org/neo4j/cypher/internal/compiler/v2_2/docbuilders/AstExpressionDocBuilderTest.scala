@@ -20,23 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{defaultDocBuilder, DocBuilderTestSuite}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{DocBuilderTestSuite, simpleDocBuilder}
 
-class AstDocBuildingTest extends DocBuilderTestSuite[Any] {
+class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  val docBuilder = defaultDocBuilder
-
-  test("LabelName(a) => :a") {
-    format(LabelName("a")(pos)) should equal(":a")
-  }
-
-  test("RelTypeName(a) => a") {
-    format(RelTypeName("a")(pos)) should equal("a")
-  }
-
-  test("PropertyKeyName(a) => a") {
-    format(PropertyKeyName("a")(pos)) should equal("a")
-  }
+  val docBuilder = astExpressionDocBuilder orElse astParticleDocBuilder orElse simpleDocBuilder
 
   test("Identifier(\"a\") => a") {
     format(ident("a")) should equal("a")
@@ -62,14 +50,44 @@ class AstDocBuildingTest extends DocBuilderTestSuite[Any] {
     format(expr) should equal("NOT a")
   }
 
+  test("IsNull(left) => left IS NULL") {
+    val expr: Expression = IsNull(ident("a"))_
+    format(expr) should equal("a IS NULL")
+  }
+
+  test("IsNotNull(left) => left IS NOT NULL") {
+    val expr: Expression = IsNotNull(ident("a"))_
+    format(expr) should equal("a IS NOT NULL")
+  }
+
   test("And(left, right) => left AND right") {
     val expr: Expression = And(ident("a"), ident("b"))_
     format(expr) should equal("a AND b")
   }
 
+  test("Ands(a, b, c) => a AND b AND c") {
+    val expr: Expression = Ands(Set(ident("a"), ident("b"), ident("c")))_
+    format(expr) should equal("a AND b AND c")
+  }
+
+  test("Ands(a) => a") {
+    val expr: Expression = Ands(Set(ident("a")))_
+    format(expr) should equal("a")
+  }
+
   test("Or(left, right) => left OR right") {
     val expr: Expression = Or(ident("a"), ident("b"))_
     format(expr) should equal("a OR b")
+  }
+
+  test("Or(a, b, c) => a OR b OR c") {
+    val expr: Expression = Ors(Set(ident("a"), ident("b"), ident("c")))_
+    format(expr) should equal("a OR b OR c")
+  }
+
+  test("Ors(a) => a") {
+    val expr: Expression = Ors(Set(ident("a")))_
+    format(expr) should equal("a")
   }
 
   test("Xor(left, right) => left XOR right") {
@@ -85,6 +103,11 @@ class AstDocBuildingTest extends DocBuilderTestSuite[Any] {
   test("NotEquals(left, right) => left <> right") {
     val expr: Expression = NotEquals(ident("a"), ident("b"))_
     format(expr) should equal("a <> b")
+  }
+
+  test("InvalidNotEquals(left, right) => left <> right") {
+    val expr: Expression = InvalidNotEquals(ident("a"), ident("b"))_
+    format(expr) should equal("a != b")
   }
 
   test("LessThan(left, right) => left < right") {
@@ -105,6 +128,16 @@ class AstDocBuildingTest extends DocBuilderTestSuite[Any] {
   test("GreaterThanOrEqual(left, right) => left >= right") {
     val expr: Expression = GreaterThanOrEqual(ident("a"), ident("b"))_
     format(expr) should equal("a >= b")
+  }
+
+  test("In(left, right) => left IN right") {
+    val expr: Expression = In(ident("a"), ident("b"))_
+    format(expr) should equal("a IN b")
+  }
+
+  test("RegexMatch(left, right) => left =~ right") {
+    val expr: Expression = RegexMatch(ident("a"), ident("b"))_
+    format(expr) should equal("a =~ b")
   }
 
   test("Number literals are printed as string value") {
@@ -148,13 +181,7 @@ class AstDocBuildingTest extends DocBuilderTestSuite[Any] {
     format(expr) should equal("DISTINCT split(1, 2)")
   }
 
-  test("USING INDEX n:Person(name)") {
-    val astNode: ASTNode = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
-    format(astNode) should equal("USING INDEX n:Person(name)")
-  }
-
-  test("USING SCAN n:Person") {
-    val astNode: ASTNode = UsingScanHint(ident("n"), LabelName("Person")_)_
-    format(astNode) should equal("USING SCAN n:Person")
+  test("count(*)") {
+    format(CountStar()(pos)) should equal("count(*)")
   }
 }

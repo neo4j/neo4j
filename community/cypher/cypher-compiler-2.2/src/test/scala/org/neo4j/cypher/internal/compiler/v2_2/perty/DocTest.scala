@@ -65,6 +65,10 @@ class DocTest extends CypherFunSuite {
     sepList(List("a", "b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(TextDoc(","), ConsDoc(BreakDoc, ConsDoc(TextDoc("b"))))))
   }
 
+  test("groupedSepList(a :: b) => cons(a, cons(',', breakCons(b)))") {
+    groupedSepList(List("a", "b")) should equal(ConsDoc(GroupDoc(ConsDoc(TextDoc("a"), TextDoc(","))), ConsDoc(BreakDoc, ConsDoc(TextDoc("b")))))
+  }
+
   test("nil :?: a => a") {
     nil :?: text("a") should equal(text("a"))
   }

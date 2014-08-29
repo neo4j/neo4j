@@ -42,9 +42,6 @@ case class Property(map: Expression, propertyKey: PropertyKeyName)(val position:
     Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTNumber))
   )
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    group(pretty(map) :: "." :: pretty(propertyKey))
-
   protected def possibleTypes = CTAny.invariant
 }
 

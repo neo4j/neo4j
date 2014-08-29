@@ -43,14 +43,9 @@ case class FunctionInvocation(functionName: FunctionName, distinct: Boolean, arg
     case None    => SemanticError(s"Unknown function '$name'", position)
     case Some(f) => f.semanticCheckHook(ctx, this)
   }
-
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = {
-    val callDoc = block(functionName.name)(sepList(args.map(pretty(_))))
-    if (distinct) "DISTINCT" :/: callDoc else callDoc
-  }
 }
 
-case class FunctionName(name: String)(val position: InputPosition) extends ASTNode {
+case class FunctionName(name: String)(val position: InputPosition) extends SymbolicName {
   override def equals(x: Any): Boolean = x match {
     case FunctionName(other) => other.toLowerCase == name.toLowerCase
     case _ => false
