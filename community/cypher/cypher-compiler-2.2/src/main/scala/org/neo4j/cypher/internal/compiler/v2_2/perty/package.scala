@@ -47,7 +47,9 @@ package object perty {
     def map[S: ClassTag](f: NestedDocGenerator[T] => NestedDocGenerator[S]) = DocGenerator[S](f(nested))
     def uplifted[S >: T: ClassTag]: DocGenerator[S] = DocGenerator(uplift[T, FixedDocGenerator[T] => Doc, S](nested))
 
-    def applyWithFallback[S <: T](inner: FixedDocGenerator[S])(v: T)(implicit tag: ClassTag[S]) = {
+    def applyWithInner(inner: FixedDocGenerator[T])(v: T): Doc = nested(v)(inner)
+
+    def applyWithFallback[S <: T](inner: FixedDocGenerator[S])(v: T)(implicit tag: ClassTag[S]): Doc = {
       val fallback: NestedDocGenerator[T] = { case v: S => _ => inner(v) }
       DocGenerator[T](nested orElse fallback)(implicitly[ClassTag[T]])(v)
     }

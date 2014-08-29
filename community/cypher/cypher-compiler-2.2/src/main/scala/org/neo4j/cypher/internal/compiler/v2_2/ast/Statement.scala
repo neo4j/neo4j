@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 
-trait Statement extends ASTNode {
+trait Statement extends ASTNode with ASTTerm {
   def semanticCheck: SemanticCheck
 }
 

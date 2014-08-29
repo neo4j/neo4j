@@ -31,6 +31,7 @@ class QueryProjectionDocBuilderTest extends DocBuilderTestSuite[Any] {
     queryProjectionDocBuilder("WITH") orElse
     queryShuffleDocBuilder orElse
     plannerDocBuilder orElse
+    astDocBuilder orElse
     defaultDocBuilder
 
   test("calls down to astExpressionDocBuilder") {
