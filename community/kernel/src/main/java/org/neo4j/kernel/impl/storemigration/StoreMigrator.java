@@ -341,48 +341,43 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
         StoreFile20.deleteIdFile( fileSystem, migrationDir, allExcept( StoreFile20.RELATIONSHIP_GROUP_STORE ) );
 
-        StoreFile20[] filesToDelete;
-        StoreFile20[] leftoverFiles;
+        Iterable<StoreFile20> filesToMove;
         if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
         {
-            filesToDelete = allExcept(
+            filesToMove = Arrays.asList(
                     StoreFile20.NODE_STORE,
                     StoreFile20.RELATIONSHIP_STORE,
                     StoreFile20.RELATIONSHIP_GROUP_STORE,
                     StoreFile20.LABEL_TOKEN_STORE,
                     StoreFile20.NODE_LABEL_STORE,
+                    StoreFile20.LABEL_TOKEN_NAMES_STORE,
                     StoreFile20.PROPERTY_STORE,
                     StoreFile20.PROPERTY_KEY_TOKEN_STORE,
                     StoreFile20.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                    StoreFile20.LABEL_TOKEN_NAMES_STORE,
-                    StoreFile20.SCHEMA_STORE );
-            leftoverFiles = new StoreFile20[]{StoreFile20.NODE_STORE,
-                                              StoreFile20.RELATIONSHIP_STORE,
-                                              StoreFile20.PROPERTY_STORE,
-                                              StoreFile20.PROPERTY_KEY_TOKEN_STORE,
-                                              StoreFile20.PROPERTY_KEY_TOKEN_NAMES_STORE,};
+                    StoreFile20.SCHEMA_STORE
+            );
         }
         else
         {
             // Note: We don't overwrite the label stores in 2.0
-            filesToDelete = allExcept(
+            filesToMove = Arrays.asList(
                     StoreFile20.NODE_STORE,
                     StoreFile20.RELATIONSHIP_STORE,
-                    StoreFile20.RELATIONSHIP_GROUP_STORE );
-            leftoverFiles = new StoreFile20[]{StoreFile20.NODE_STORE, StoreFile20.RELATIONSHIP_STORE};
+                    StoreFile20.RELATIONSHIP_GROUP_STORE);
         }
-        StoreFile20.deleteStoreFile( fileSystem, migrationDir, filesToDelete );
 
         // Move the current ones into the leftovers directory
-        StoreFile20.move( fileSystem, storeDir, leftOversDir,
-                          IteratorUtil.asIterable( leftoverFiles ),
-                          false, false, StoreFileType.STORE );
+        StoreFile20.move( fileSystem, storeDir, leftOversDir, filesToMove,
+                true,  // allow to skip non existent source files
+                false, // not allow to overwrite target files
+                StoreFileType.STORE );
 
         // Move the migrated ones into the store directory
-        StoreFile20.move( fileSystem, migrationDir, storeDir, StoreFile20.currentStoreFiles(),
-                true,   // allow skip non existent source files
-                true,   // allow overwrite target files
+        StoreFile20.move( fileSystem, migrationDir, storeDir, filesToMove,
+                true, // allow to skip non existent source files
+                true, // allow to overwrite target files
                 StoreFileType.values() );
+
         StoreFile20.ensureStoreVersion( fileSystem, storeDir, StoreFile20.currentStoreFiles() );
 
         if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
@@ -395,11 +390,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     @Override
     public void cleanup( FileSystemAbstraction fileSystem, File migrationDir ) throws IOException
     {
-        for ( StoreFile20 storeFile : StoreFile20.values() )
-        {
-            fileSystem.deleteFile( new File( migrationDir, storeFile.storeFileName() ) );
-            fileSystem.deleteFile( new File( migrationDir, storeFile.idFileName() ) );
-        }
+        fileSystem.deleteRecursively( migrationDir );
     }
 
     @Override
