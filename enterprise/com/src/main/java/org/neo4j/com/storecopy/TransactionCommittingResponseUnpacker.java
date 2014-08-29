@@ -29,30 +29,19 @@ import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adapter implements Lifecycle
 {
-    private static final int NO_SERVER_ID = -1;
-
     private final DependencyResolver resolver;
-    private final int serverId;
 
     private TransactionAppender appender;
     private TransactionRepresentationStoreApplier storeApplier;
     private TransactionIdStore transactionIdStore;
-    private TransactionMonitor transactionMonitor;
 
-    public TransactionCommittingResponseUnpacker( DependencyResolver resolver )
-    {
-        this( resolver, NO_SERVER_ID );
-    }
-
-    public TransactionCommittingResponseUnpacker( DependencyResolver resolver, int serverId )
+    public TransactionCommittingResponseUnpacker( DependencyResolver resolver)
     {
         this.resolver = resolver;
-        this.serverId = serverId;
     }
 
     @Override
@@ -69,28 +58,16 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
                 {
                     if ( appender.append( transaction ) )
                     {
-                        final boolean isMyTx = serverId != NO_SERVER_ID &&
-                                serverId == transaction.getTransactionRepresentation().getAuthorId();
                         final long transactionId = transaction.getCommitEntry().getTxId();
-                        if ( !isMyTx )
-                        {
-                            transactionMonitor.transactionStarted();
-                        }
-                        boolean success = false;
                         try
                         {
                             // TODO recovery=true needed?
                             storeApplier.apply( transaction.getTransactionRepresentation(), transactionId, true );
                             handler.accept( transaction );
-                            success = true;
                         }
                         finally
                         {
                             transactionIdStore.transactionClosed( transactionId );
-                            if ( !isMyTx )
-                            {
-                                transactionMonitor.transactionFinished( success );
-                            }
                         }
                     }
                 }
@@ -112,7 +89,6 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
         this.appender = resolver.resolveDependency( LogicalTransactionStore.class ).getAppender();
         this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class );
         this.transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
-        this.transactionMonitor = resolver.resolveDependency( TransactionMonitor.class );
     }
 
     @Override
@@ -121,7 +97,6 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
         this.appender = null;
         this.storeApplier = null;
         this.transactionIdStore = null;
-        this.transactionMonitor = null;
     }
 
     @Override

@@ -29,12 +29,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
-import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 
 public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommitProcess>
 {
@@ -47,15 +42,11 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
                                   RequestContextFactory requestContextFactory,
                                   HighAvailabilityMemberStateMachine memberStateMachine,
                                   TransactionCommittingResponseUnpacker unpacker,
-                                  LogicalTransactionStore logicalTransactionStore,
-                                  KernelHealth kernelHealth, NeoStore neoStore,
-                                  TransactionRepresentationStoreApplier storeApplier,
                                   NeoStoreInjectedTransactionValidator validator,
-                                  TransactionMonitor transactionMonitor,
                                   TransactionRepresentationCommitProcess innerCommitProcess )
     {
         super( memberStateMachine, delegate );
-        this.masterImpl = new MasterTransactionCommitProcess( innerCommitProcess, pusher, validator, transactionMonitor );
+        this.masterImpl = new MasterTransactionCommitProcess( innerCommitProcess, pusher, validator );
         this.slaveImpl = new SlaveTransactionCommitProcess( master, requestContextFactory, unpacker );
     }
 

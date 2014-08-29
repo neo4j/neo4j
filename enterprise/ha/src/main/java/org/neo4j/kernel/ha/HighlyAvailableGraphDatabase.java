@@ -173,7 +173,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         final int serverId = config.get( ClusterSettings.server_id ).toIntegerIndex();
         requestContextFactory = dependencies.satisfyDependency(new RequestContextFactory( serverId, getDependencyResolver() ));
 
-        this.unpacker = dependencies.satisfyDependency(new TransactionCommittingResponseUnpacker( dependencyResolver, serverId ));
+        this.unpacker = dependencies.satisfyDependency(new TransactionCommittingResponseUnpacker( dependencyResolver ));
 
         kernelProvider = new Provider<KernelAPI>()
         {
@@ -417,8 +417,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
                                 storeApplier, validator, recovery );
                 new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
-                        memberStateMachine, unpacker, logicalTransactionStore, kernelHealth, neoStore, storeApplier,
-                        validator, transactionMonitor, inner );
+                        memberStateMachine, unpacker, validator, inner );
 
                 return (TransactionCommitProcess) Proxy.newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
                         new Class[]{ TransactionCommitProcess.class }, commitProcessDelegate );
