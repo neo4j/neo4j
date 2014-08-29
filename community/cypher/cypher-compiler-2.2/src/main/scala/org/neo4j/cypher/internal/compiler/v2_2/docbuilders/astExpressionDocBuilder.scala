@@ -47,6 +47,7 @@ case class astExpressionConverter(pretty: FixedDocGenerator[Any]) extends (Expre
       case rightOp: RightUnaryOperatorExpression => rightOp.asDoc
       case multiOp: MultiOperatorExpression => multiOp.asDoc
       case fun: FunctionInvocation => fun.asDoc
+      case coll: Collection => coll.asDoc
       case countStar: CountStar => countStar.asDoc
     }
   }.toOption
@@ -71,7 +72,7 @@ case class astExpressionConverter(pretty: FixedDocGenerator[Any]) extends (Expre
   }
 
   implicit class BinOpConverter(binOp: BinaryOperatorExpression) {
-    def asDoc = group(binOp.lhs :/: binOp.canonicalOperatorSymbol) :/: binOp.rhs
+    def asDoc = group(binOp.lhs :/: binOp.canonicalOperatorSymbol :/: binOp.rhs)
   }
 
   implicit class LeftOpConverter(leftOp: LeftUnaryOperatorExpression) {
@@ -91,6 +92,10 @@ case class astExpressionConverter(pretty: FixedDocGenerator[Any]) extends (Expre
       val callDoc = block(fun.functionName)(sepList(fun.args.map(pretty)))
       if (fun.distinct) group("DISTINCT" :/: callDoc) else callDoc
     }
+  }
+
+  implicit class CollectionConverter(coll: Collection) {
+    def asDoc = "[" :: sepList(coll.expressions.map(pretty)) :: "]"
   }
 
   implicit class CountStarConverter(countStar: CountStar) {

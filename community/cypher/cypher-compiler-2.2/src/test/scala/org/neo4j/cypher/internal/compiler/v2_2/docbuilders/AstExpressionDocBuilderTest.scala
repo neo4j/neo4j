@@ -181,6 +181,24 @@ class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
     format(expr) should equal("DISTINCT split(1, 2)")
   }
 
+  test("Collection(a, b) => [a, b]") {
+    val expr: Collection = Collection(Seq(ident("a"), ident("b")))_
+
+    format(expr) should equal("[a, b]")
+  }
+
+  test("Collection(a) => [a]") {
+    val expr: Collection = Collection(Seq(ident("a")))_
+
+    format(expr) should equal("[a]")
+  }
+
+  test("Collection() => []") {
+    val expr: Collection = Collection(Seq())_
+
+    format(expr) should equal("[]")
+  }
+
   test("count(*)") {
     format(CountStar()(pos)) should equal("count(*)")
   }
