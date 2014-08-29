@@ -28,10 +28,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.LOG_VERSION_2_1;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.LOG_VERSION_1_9;
 
-// 2.1
-public enum LogEntryParsersV4 implements LogEntryParser
+// 1.9
+public enum LogEntryParsersV2 implements LogEntryParser
 {
     EMPTY
             {
@@ -103,10 +103,8 @@ public enum LogEntryParsersV4 implements LogEntryParser
                     int masterId = channel.getInt();
                     int authorId = channel.getInt();
                     long timeWritten = channel.getLong();
-                    long latestCommittedTxWhenStarted = channel.getLong();
 
-                    return new LogEntryStart( masterId, authorId, timeWritten,
-                            latestCommittedTxWhenStarted, new byte[]{}, position );
+                    return new LogEntryStart( masterId, authorId, timeWritten, -1, new byte[]{}, position );
                 }
 
                 @Override
@@ -129,7 +127,7 @@ public enum LogEntryParsersV4 implements LogEntryParser
                 {
                     // ignore identifier
                     channel.getInt();
-                    CommandReader commandReader = commandReaderFactory.newInstance( LOG_VERSION_2_1, version );
+                    CommandReader commandReader = commandReaderFactory.newInstance( LOG_VERSION_1_9, version );
                     Command command = commandReader.read( channel );
                     return command == null ? null : new LogEntryCommand( version, command );
                 }
@@ -181,6 +179,7 @@ public enum LogEntryParsersV4 implements LogEntryParser
                     channel.getInt();
                     long txId = channel.getLong();
                     long timeWritten = channel.getLong();
+
                     return new OnePhaseCommit( txId, timeWritten );
                 }
 

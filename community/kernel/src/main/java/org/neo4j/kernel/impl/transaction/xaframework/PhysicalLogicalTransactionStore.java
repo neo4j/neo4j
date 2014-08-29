@@ -62,7 +62,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
                 new BatchingPhysicalTransactionAppender( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore ) :
                 new PhysicalTransactionAppender( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore );
     }
-    
+
     @Override
     public void shutdown() throws Throwable
     {

@@ -125,7 +125,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         this( spi, monitor, logging, config, UNFINISHED_TRANSACTION_CLEANUP_DELAY );
     }
-    
+
     public MasterImpl( SPI spi, Monitor monitor, Logging logging, Config config, int unfinishedSessionsCheckInterval )
     {
         this.spi = spi;
@@ -150,7 +150,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         this.staleSlaveReaper.scheduleWithFixedDelay( reaper,
                 unfinishedSessionsCheckInterval, unfinishedSessionsCheckInterval, TimeUnit.SECONDS );
     }
-    
+
     @Override
     public void stop()
     {
@@ -336,7 +336,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Couldn't get master ID for " + txId, e );
+            throw new RuntimeException( "Couldn't get master ID for transaction id " + txId, e );
         }
     }
 
@@ -393,14 +393,14 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private LockSession resume( RequestContext context )
     {
         LockSession session = getLockSession( context );
-        
+
         session.resume();
-        
+
         // set time stamp to zero so that we don't even try to finish it off
         // if getting old. This is because if the tx is active and old then
         // it means it's waiting for a lock and we cannot do anything about it.
         session.resetTime();
-        
+
         return session;
     }
 
@@ -471,7 +471,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             }
             active = true;
         }
-        
+
         synchronized void suspend()
         {
             if ( !active )

@@ -28,6 +28,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.LOG_VERSION_2_2;
+
 // 2.2
 public enum LogEntryParsersV5 implements LogEntryParser
 {
@@ -92,7 +94,7 @@ public enum LogEntryParsersV5 implements LogEntryParser
                 public LogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
                                        CommandReaderFactory commandReaderFactory ) throws IOException
                 {
-                    CommandReader commandReader = commandReaderFactory.newInstance( version );
+                    CommandReader commandReader = commandReaderFactory.newInstance( LOG_VERSION_2_2, version );
                     Command command = commandReader.read( channel );
                     return command == null ? null : new LogEntryCommand( version, command );
                 }

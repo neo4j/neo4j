@@ -28,10 +28,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.LOG_VERSION_2_1;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.LOG_VERSION_2_0;
 
-// 2.1
-public enum LogEntryParsersV4 implements LogEntryParser
+// 2.0
+public enum LogEntryParsersV3 implements LogEntryParser
 {
     EMPTY
             {
@@ -129,7 +129,7 @@ public enum LogEntryParsersV4 implements LogEntryParser
                 {
                     // ignore identifier
                     channel.getInt();
-                    CommandReader commandReader = commandReaderFactory.newInstance( LOG_VERSION_2_1, version );
+                    CommandReader commandReader = commandReaderFactory.newInstance( LOG_VERSION_2_0, version );
                     Command command = commandReader.read( channel );
                     return command == null ? null : new LogEntryCommand( version, command );
                 }

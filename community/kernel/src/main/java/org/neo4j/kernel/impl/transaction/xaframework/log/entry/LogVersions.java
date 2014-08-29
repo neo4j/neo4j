@@ -32,9 +32,12 @@ public class LogVersions
      * version 4 as of 2014-02-06: neo4j 2.1 Dense nodes, split by type/direction into groups
      * version 5 as of 2014-05-23: neo4j 2.2 Removal of JTA / unified data source
      */
+    public static final byte LOG_VERSION_1_9 = (byte) 2;
+    public static final byte LOG_VERSION_2_0 = (byte) 3;
     public static final byte LOG_VERSION_2_1 = (byte) 4;
     public static final byte LOG_VERSION_2_2 = (byte) 5;
     public static final byte CURRENT_LOG_VERSION = LOG_VERSION_2_2;
+    public static final byte OLDEST_STILL_SUPPORTED_LOG_VERSION = LOG_VERSION_1_9;
 
 
 }

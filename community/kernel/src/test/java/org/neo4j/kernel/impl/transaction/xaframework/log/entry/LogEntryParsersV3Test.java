@@ -35,12 +35,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class LogEntryParserDispatcherV4Test
+public class LogEntryParsersV3Test
 {
-    private final LogEntryParserDispatcher<LogEntryParsersV4> dispatcher =
-            new LogEntryParserDispatcher<>( LogEntryParsersV4.values() );
+    private final LogEntryParserDispatcher<LogEntryParsersV3> dispatcher =
+            new LogEntryParserDispatcher<>( LogEntryParsersV3.values() );
     private final CommandReaderFactory.Default commandReaderFactory = new CommandReaderFactory.Default();
-    private final byte version = LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
+    private final byte version = LogEntryVersions.LEGACY_LOG_ENTRY_VERSION;
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 37 );
 

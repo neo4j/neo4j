@@ -63,8 +63,17 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
             LogEntryParserDispatcher dispatcher = logEntryParserFactory.newInstance( logFormatVersion );
             while ( true )
             {
-                byte version = channel.get();
+                /*
+                 * if the read type is negative than it is actually the log entry version
+                 * so we need to read an extra byte which will contain the type
+                 */
                 byte type = channel.get();
+                byte version = 0;
+                if ( type < 0 )
+                {
+                    version = type;
+                    type = channel.get();
+                }
 
                 LogEntryParser reader = dispatcher.dispatch( type );
                 if ( reader == null )
