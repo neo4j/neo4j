@@ -30,12 +30,12 @@ import Doc._
 
 sealed trait Literal extends Expression {
   def value: AnyRef
+  def asCanonicalStringVal: String
 }
 
 sealed trait NumberLiteral extends Literal {
   def stringVal: String
-
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = stringVal
+  def asCanonicalStringVal: String = stringVal
 }
 
 sealed trait IntegerLiteral extends NumberLiteral {
@@ -136,13 +136,13 @@ case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) 
 case class StringLiteral(value: String)(val position: InputPosition) extends Literal with SimpleTyping {
   protected def possibleTypes = CTString
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = quoteString(value)
+  def asCanonicalStringVal = quoteString(value)
 }
 
 case class Null()(val position: InputPosition) extends Literal with SimpleTyping {
   val value = null
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = "NULL"
+  def asCanonicalStringVal = "NULL"
 
   protected def possibleTypes = CTAny.covariant
 }
@@ -152,7 +152,7 @@ sealed trait BooleanLiteral extends Literal
 case class True()(val position: InputPosition) extends BooleanLiteral with SimpleTyping {
   val value: java.lang.Boolean = true
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = "true"
+  def asCanonicalStringVal = "true"
 
   protected def possibleTypes = CTBoolean
 }
@@ -160,7 +160,7 @@ case class True()(val position: InputPosition) extends BooleanLiteral with Simpl
 case class False()(val position: InputPosition) extends BooleanLiteral with SimpleTyping {
   val value: java.lang.Boolean = false
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = "false"
+  def asCanonicalStringVal = "false"
 
   protected def possibleTypes = CTBoolean
 }

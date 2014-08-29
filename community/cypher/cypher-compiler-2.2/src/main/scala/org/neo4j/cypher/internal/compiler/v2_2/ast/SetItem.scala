@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2._
 import symbols._
 
-sealed trait SetItem extends ASTNode with SemanticCheckable
+sealed trait SetItem extends ASTNode with ASTTerm with SemanticCheckable
 
 case class SetPropertyItem(property: Property, expression: Expression)(val position: InputPosition) extends SetItem {
   def semanticCheck =

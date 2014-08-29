@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.docbuilders.internalDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{defaultDocBuilder, simpleDocBuilder}
 
@@ -27,15 +28,11 @@ trait ASTNode
   extends Product
   with Foldable
   with Rewritable
-  // disable pretty printing by using: with simpleDocBuilder.PrettyToString[ASTNode] {
-  with defaultDocBuilder.PrettyToString[ASTNode] {
+  // disable pretty printing by using: with simpleDocBuilder.GeneratorToString[ASTNode] {
+  with internalDocBuilder.GeneratorToString[ASTNode] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
   import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
-
-  // default to simpleDocBuilder whenever toDoc is not overridden
-  def toDoc(pretty: FixedDocGenerator[ASTNode]) =
-    simpleDocBuilder.docGenerator.applyWithFallback(pretty)(this)
 
   def position: InputPosition
 
@@ -52,3 +49,15 @@ trait ASTNode
         constructor.invoke(this, args: _*).asInstanceOf[this.type]
     }
 }
+
+// This is used by pretty printing to distinguish between
+//
+// - expressions
+// - particles (non-expression ast nodes contained in expressions)
+// - terms (neither expressions nor particles, like Clause)
+//
+sealed trait ASTNodeType { self: ASTNode => }
+
+trait ASTExpression extends ASTNodeType { self: ASTNode => }
+trait ASTParticle extends ASTNodeType { self: ASTNode => }
+trait ASTTerm extends ASTNodeType { self: ASTNode => }

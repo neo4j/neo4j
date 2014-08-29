@@ -62,7 +62,7 @@ object Expression {
 import Expression._
 import Foldable._
 
-abstract class Expression extends ASTNode with SemanticChecking {
+abstract class Expression extends ASTNode with ASTExpression with SemanticChecking {
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 

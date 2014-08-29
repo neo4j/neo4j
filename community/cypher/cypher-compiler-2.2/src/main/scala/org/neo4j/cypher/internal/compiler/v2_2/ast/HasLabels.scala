@@ -28,9 +28,6 @@ case class HasLabels(expression: Expression, labels: Seq[LabelName])(val positio
 
   import Doc._
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    pretty(expression) :: breakList(labels.map(pretty(_)), break = breakSilent)
-
   protected def possibleTypes = CTBoolean
 
   override def semanticCheck(ctx: SemanticContext) =

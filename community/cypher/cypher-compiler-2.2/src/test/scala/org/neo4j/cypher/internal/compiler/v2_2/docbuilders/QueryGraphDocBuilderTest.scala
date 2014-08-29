@@ -31,6 +31,7 @@ class QueryGraphDocBuilderTest extends DocBuilderTestSuite[Any] {
   val docBuilder =
       queryGraphDocBuilder orElse
       plannerDocBuilder orElse
+      astDocBuilder orElse
       defaultDocBuilder
 
   private val rel1 = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(), SimplePatternLength)

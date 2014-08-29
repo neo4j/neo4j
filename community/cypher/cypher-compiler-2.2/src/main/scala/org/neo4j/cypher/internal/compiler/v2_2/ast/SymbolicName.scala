@@ -23,18 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.{Doc, FixedDocGenerator}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, PropertyKeyId}
 
-trait SymbolicName {
-  self: ASTNode =>
-
+trait SymbolicName extends ASTNode with ASTParticle {
   def name: String
   def position: InputPosition
 }
 
-final case class LabelName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName {
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = ":" :: name
-}
+final case class LabelName(name: String)(val position: InputPosition) extends SymbolicName
 
 object LabelName {
   implicit class LabelNameId(that: LabelName)(implicit semanticTable: SemanticTable) {
@@ -47,11 +41,7 @@ object LabelName {
   }
 }
 
-final case class PropertyKeyName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName {
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc = name
-}
+final case class PropertyKeyName(name: String)(val position: InputPosition) extends SymbolicName
 
 object PropertyKeyName {
   implicit class PropertyKeyNameId(that: PropertyKeyName)(implicit semanticTable: SemanticTable) {
@@ -64,11 +54,7 @@ object PropertyKeyName {
   }
 }
 
-final case class RelTypeName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName {
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-
-  override def toDoc(docGen: FixedDocGenerator[ASTNode]): Doc = name
-}
+final case class RelTypeName(name: String)(val position: InputPosition) extends SymbolicName
 
 object RelTypeName {
   implicit class RelTypeNameId(that: RelTypeName)(implicit semanticTable: SemanticTable) {

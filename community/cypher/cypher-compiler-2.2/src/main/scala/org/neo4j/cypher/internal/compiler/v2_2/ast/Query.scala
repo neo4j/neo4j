@@ -32,7 +32,7 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
     }
 }
 
-sealed trait QueryPart extends ASTNode with SemanticCheckable {
+sealed trait QueryPart extends ASTNode with ASTTerm with SemanticCheckable {
   def containsUpdates:Boolean
 }
 

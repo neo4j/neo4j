@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2._
 import symbols._
 
-sealed trait StartItem extends ASTNode with SemanticCheckable {
+sealed trait StartItem extends ASTNode with ASTTerm with SemanticCheckable {
   def identifier: Identifier
 }
 

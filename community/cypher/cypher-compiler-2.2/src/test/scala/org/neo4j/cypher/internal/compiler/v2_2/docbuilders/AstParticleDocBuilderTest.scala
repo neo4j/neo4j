@@ -17,13 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast
+package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{DocBuilderTestSuite, simpleDocBuilder}
 
-case class Where(expression: Expression)(val position: InputPosition) extends ASTNode with ASTTerm with SemanticCheckable {
-  def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) chain
-    expression.expectType(CTBoolean.covariant)
+class AstParticleDocBuilderTest extends DocBuilderTestSuite[Any] {
+
+  val docBuilder = astParticleDocBuilder orElse simpleDocBuilder
+
+  test("LabelName(a) => :a") {
+    format(LabelName("a")(pos)) should equal(":a")
+  }
+
+  test("RelTypeName(a) => a") {
+    format(RelTypeName("a")(pos)) should equal("a")
+  }
+
+  test("PropertyKeyName(a) => a") {
+    format(PropertyKeyName("a")(pos)) should equal("a")
+  }
+
+  test("FunctionName(a) => a") {
+    format(FunctionName("a")(pos)) should equal("a")
+  }
 }

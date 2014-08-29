@@ -67,7 +67,7 @@ object Pattern {
 
 import Pattern._
 
-case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode {
+case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode with ASTParticle {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     patternParts.foldSemanticCheck(_.declareIdentifiers(ctx)) chain
     patternParts.foldSemanticCheck(_.semanticCheck(ctx)) chain
@@ -84,14 +84,14 @@ case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) 
   }
 }
 
-case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode {
+case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode with ASTParticle {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     element.declareIdentifiers(ctx) chain
     element.semanticCheck(ctx)
 }
 
 
-sealed abstract class PatternPart extends ASTNode {
+sealed abstract class PatternPart extends ASTNode with ASTParticle {
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 }
@@ -193,7 +193,7 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
   }
 }
 
-sealed abstract class PatternElement extends ASTNode {
+sealed abstract class PatternElement extends ASTNode with ASTParticle {
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 }
@@ -255,7 +255,7 @@ case class RelationshipPattern(
     types: Seq[RelTypeName],
     length: Option[Option[Range]],
     properties: Option[Expression],
-    direction: Direction)(val position: InputPosition) extends ASTNode with SemanticChecking {
+    direction: Direction)(val position: InputPosition) extends ASTNode with ASTParticle with SemanticChecking {
 
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
     identifier.fold(SemanticCheckResult.success) {

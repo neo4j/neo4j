@@ -25,84 +25,74 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import symbols._
 import Doc._
 
-case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
-
+case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
-
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    pretty(lhs) :/: "AND" :/: pretty(rhs)
 }
 
-case class Ands(exprs: Set[Expression])(val position: InputPosition) extends Expression {
+case class Ands(exprs: Set[Expression])(val position: InputPosition) extends Expression with MultiOperatorExpression {
   override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
+
+  override def canonicalOperatorSymbol = "AND"
 }
 
-case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
-
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    pretty(lhs) :/: "OR" :/: pretty(rhs)
 }
 
-case class Ors(exprs: Set[Expression])(val position: InputPosition) extends Expression {
+case class Ors(exprs: Set[Expression])(val position: InputPosition) extends Expression with MultiOperatorExpression {
   override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
+
+  override def canonicalOperatorSymbol = "OR"
 }
 
-case class Xor(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class Xor(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
-
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    pretty(lhs) :/: "XOR" :/: pretty(rhs)
 }
 
-case class Not(rhs: Expression)(val position: InputPosition) extends Expression with PrefixFunctionTyping {
+case class Not(rhs: Expression)(val position: InputPosition) extends Expression with LeftUnaryOperatorExpression with PrefixFunctionTyping {
   val signatures = Vector(
     Signature(Vector(CTBoolean), outputType = CTBoolean)
   )
-
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    "NOT" :/: pretty(rhs)
 }
 
-case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    pretty(lhs) :/: "=" :/: pretty(rhs)
+  override def canonicalOperatorSymbol = "="
 }
 
-case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    pretty(lhs) :/: "<>" :/: pretty(rhs)
+  override def canonicalOperatorSymbol = "<>"
 }
 
-case class InvalidNotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression {
+case class InvalidNotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     SemanticError("Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing)", position)
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    pretty(lhs) :/: "!=" :/: pretty(rhs)
+  override def canonicalOperatorSymbol = "!="
 }
 
-case class RegexMatch(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class RegexMatch(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression  with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
+
+  override def canonicalOperatorSymbol = "=~"
 }
 
-case class In(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression {
+case class In(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   def semanticCheck(ctx: ast.Expression.SemanticContext): SemanticCheck =
     lhs.semanticCheck(ctx) chain
     lhs.expectType(CTAny.covariant) chain
@@ -111,58 +101,58 @@ case class In(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
     specifyType(CTBoolean)
 }
 
-case class IsNull(lhs: Expression)(val position: InputPosition) extends Expression with PostfixFunctionTyping {
+case class IsNull(lhs: Expression)(val position: InputPosition) extends Expression with RightUnaryOperatorExpression with PostfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTAny), outputType = CTBoolean)
   )
+
+  override def canonicalOperatorSymbol = "IS NULL"
 }
 
-case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Expression with PostfixFunctionTyping {
+case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Expression with RightUnaryOperatorExpression with PostfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTAny), outputType = CTBoolean)
   )
+
+  override def canonicalOperatorSymbol = "IS NOT NULL"
 }
 
-case class LessThan(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class LessThan(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    group(pretty(lhs) :/: "<" :/: pretty(rhs))
+  override def canonicalOperatorSymbol = "<"
 }
 
-case class LessThanOrEqual(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class LessThanOrEqual(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    group(pretty(lhs) :/: "<=" :/: pretty(rhs))
+  override def canonicalOperatorSymbol = "<="
 }
 
-case class GreaterThan(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class GreaterThan(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    group(pretty(lhs) :/: ">" :/: pretty(rhs))
+  override def canonicalOperatorSymbol = ">"
 }
 
-case class GreaterThanOrEqual(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class GreaterThanOrEqual(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
-  override def toDoc(pretty: FixedDocGenerator[ASTNode]): Doc =
-    group(pretty(lhs) :/: ">=" :/: pretty(rhs))
+  override def canonicalOperatorSymbol = ">="
 }
