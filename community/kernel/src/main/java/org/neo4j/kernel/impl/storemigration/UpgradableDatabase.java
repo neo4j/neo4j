@@ -25,7 +25,9 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Outcome;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.StoreFile19;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.StoreFile20;
 
 /**
  * Logic to check whether a database version is upgradable to the current version. It looks at the
