@@ -20,10 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.simpleDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{Pretty, PrettyToString}
 
-trait ASTNode extends Product with Foldable with Rewritable {
-  import Foldable._
-  import Rewritable._
+trait ASTNode extends Product with Foldable with Rewritable with Pretty with PrettyToString {
+
+  import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+  import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
+
+  def toDoc = simpleDocBuilder.docGenerator(this)
 
   def position: InputPosition
 

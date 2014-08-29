@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{NestedDocGenerator, Doc, CachingDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{CustomDocBuilder, DocGenerator}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
-object logicalPlanDocBuilder extends CachingDocBuilder[Any] {
+object logicalPlanDocBuilder extends CustomDocBuilder[Any] {
 
-  import Doc._
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
-  override protected def newNestedDocGenerator: NestedDocGenerator[Any] = {
+  override def newDocGenerator = DocGenerator {
     case plan: LogicalPlan => (inner) =>
       val optLeft = plan.lhs
       val optRight = plan.rhs

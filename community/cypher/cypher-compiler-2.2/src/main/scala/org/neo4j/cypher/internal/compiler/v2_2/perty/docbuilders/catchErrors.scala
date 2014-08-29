@@ -46,6 +46,6 @@ case class catchErrors[T: ClassTag](instance: NestedDocGenerator[T]) extends Nes
           "???"
 
         case e: Exception  =>
-          group("!!!" :/: Try(text(e.getMessage)).getOrElse(e.getClass.toString :: ":" :/: "Failed to get the message"))
+          group("!!!" :/: Try(text(e.getMessage)).getOrElse(e.getClass.toString :: ":" :/: "Failed to get the exception message"))
       }
 }
