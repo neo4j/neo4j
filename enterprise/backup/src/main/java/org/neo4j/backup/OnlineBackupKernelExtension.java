@@ -30,6 +30,7 @@ import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.com.ServerUtil;
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
@@ -113,7 +115,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
             try
             {
                 server = new BackupServer( backupProvider.newBackup(), config.get( online_backup_server ),
-                        logging, monitors );
+                        logging, monitors.newMonitor( ByteCounterMonitor.class, BackupServer.class ), monitors.newMonitor( RequestMonitor.class, BackupServer.class ) );
                 server.init();
                 server.start();
 

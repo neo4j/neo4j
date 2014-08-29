@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class DefaultSlaveFactory implements SlaveFactory
@@ -42,9 +44,10 @@ public class DefaultSlaveFactory implements SlaveFactory
     public Slave newSlave( ClusterMember clusterMember )
     {
         return new SlaveClient( clusterMember.getInstanceId(), clusterMember.getHAUri().getHost(),
-                clusterMember.getHAUri().getPort(), logging, monitors, storeId,
+                clusterMember.getHAUri().getPort(), logging, storeId,
                 2, // and that's 1 too many, because we push from the master from one thread only anyway
-                chunkSize );
+                chunkSize, monitors.newMonitor( ByteCounterMonitor.class, SlaveClient.class ),
+                monitors.newMonitor( RequestMonitor.class, SlaveClient.class ) );
     }
 
     @Override

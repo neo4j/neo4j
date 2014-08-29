@@ -30,7 +30,6 @@ import java.util.List;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.DependencySatisfier;
 
 /**
  * A migration process to migrate {@link StoreMigrationParticipant migration participants}, if there's
@@ -55,7 +54,7 @@ import org.neo4j.kernel.impl.util.DependencySatisfier;
  *
  * @see StoreMigrationParticipant
  */
-public class StoreUpgrader extends DependencySatisfier.Adapter
+public class StoreUpgrader
 {
     private static final String MIGRATION_DIRECTORY = "upgrade";
     private static final String MIGRATION_STATUS_FILE = "_status";
@@ -117,12 +116,6 @@ public class StoreUpgrader extends DependencySatisfier.Adapter
     {
         assert participant != null;
         this.participants.add( participant );
-    }
-
-    @Override
-    public <T> T satisfyDependency( Class<T> type, T dependency )
-    {
-        return dependencyResolver.satisfyDependency( type, dependency );
     }
 
     public void migrateIfNeeded( File storeDirectory )

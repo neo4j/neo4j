@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.monitoring;
 
-import static org.neo4j.helpers.collection.Iterables.append;
-import static org.neo4j.helpers.collection.Iterables.toArray;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -36,6 +33,27 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 
+import static org.neo4j.helpers.collection.Iterables.append;
+import static org.neo4j.helpers.collection.Iterables.toArray;
+
+/**
+ * This can be used to create monitor instances using a Dynamic Proxy, which when invoked can delegate to any number of
+ * listeners. Listeners typically also implement the monitor interface, but it's possible to use a reflective style
+ * to either do generic listeners, or avoid the performance penalty of Method.invoke().
+ *
+ * The creation of monitors and registration of listeners may happen in any order. Listeners can be registered before
+ * creating the actual monitor, and vice versa.
+ *
+ * Typically only the top level component that creates Monitors should have a reference to it. When creating subcomponents
+ * that uses monitors they should get instances of the monitor interface in the constructor, or if they need to create them
+ * on demand then pass in a {@link org.neo4j.function.Factory} for that monitor instead. This allows tests to not have to use
+ * Monitors, and instead can pass in mocks or similar.
+ *
+ * The other type of component that would have direct references to the Monitors instance are those that actually implement
+ * listening functionality, and must call addMonitorListener.
+ *
+ * Monitors is monitorable itself, through the {@link org.neo4j.kernel.monitoring.Monitors.Monitor} monitor interface.
+ */
 public class Monitors
 {
     public interface Monitor

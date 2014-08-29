@@ -33,9 +33,9 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMess
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastState;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerMessage;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerState;
-import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerState;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
@@ -62,7 +62,6 @@ import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.cluster.com.message.Message.internal;
 
@@ -72,15 +71,15 @@ import static org.neo4j.cluster.com.message.Message.internal;
 public class MultiPaxosServerFactory
         implements ProtocolServerFactory
 {
-    private Monitors monitors;
     private final ClusterConfiguration initialConfig;
     private final Logging logging;
+    private StateMachines.Monitor stateMachinesMonitor;
 
-    public MultiPaxosServerFactory( Monitors monitors, ClusterConfiguration initialConfig, Logging logging )
+    public MultiPaxosServerFactory( ClusterConfiguration initialConfig, Logging logging, StateMachines.Monitor stateMachinesMonitor )
     {
-        this.monitors = monitors;
         this.initialConfig = initialConfig;
         this.logging = logging;
+        this.stateMachinesMonitor = stateMachinesMonitor;
     }
 
     @Override
@@ -149,7 +148,7 @@ public class MultiPaxosServerFactory
                                                                 final MultiPaxosContext context,
                                                                 StateMachine[] machines )
     {
-        StateMachines stateMachines = new StateMachines( monitors.newMonitor( StateMachines.Monitor.class ), input,
+        StateMachines stateMachines = new StateMachines( stateMachinesMonitor, input,
                 output, timeouts, executor, stateMachineExecutor, me );
 
         for ( StateMachine machine : machines )

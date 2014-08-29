@@ -40,6 +40,9 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
 import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.StateMachines;
+import org.neo4j.cluster.com.NetworkReceiver;
+import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
@@ -58,6 +61,7 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
@@ -96,12 +100,15 @@ public class MultiPaxosServer
             LogbackService logging = new LogbackService( new Config( Collections.<String, String>emptyMap(),
                     InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ),
                     new LoggerContext() );
+            Monitors monitors = new Monitors();
             NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
-                    new MultiPaxosServerFactory( new Monitors(), new ClusterConfiguration( "default",
+                    new MultiPaxosServerFactory( new ClusterConfiguration( "default",
                             StringLogger.SYSTEM ),
-                            logging ),
-                    timeoutStrategy, new Monitors(), logging, new ObjectStreamFactory(),
-                    new ObjectStreamFactory()
+                            logging, monitors.newMonitor( StateMachines.Monitor.class ) ),
+                    timeoutStrategy, logging, new ObjectStreamFactory(), new ObjectStreamFactory(),
+                    monitors.newMonitor( NetworkReceiver.Monitor.class ),
+                    monitors.newMonitor( NetworkSender.Monitor.class ),
+                    monitors.newMonitor( NamedThreadFactory.Monitor.class )
             );
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();

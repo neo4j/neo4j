@@ -52,6 +52,9 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
 import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.StateMachines;
+import org.neo4j.cluster.com.NetworkReceiver;
+import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
@@ -173,15 +176,17 @@ public class ClusterNetworkTest
         {
             final URI uri = new URI( "neo4j://localhost:800" + (i + 1) );
 
+            Monitors monitors = new Monitors();
             NetworkedServerFactory factory = new NetworkedServerFactory( life,
-                    new MultiPaxosServerFactory( new Monitors(), new ClusterConfiguration( "default",
+                    new MultiPaxosServerFactory( new ClusterConfiguration( "default",
                             StringLogger.SYSTEM ),
                             new LogbackService( new Config( Collections.<String, String>emptyMap(),
                                     InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ),
-                                    (LoggerContext) LoggerFactory.getILoggerFactory() )
+                                    (LoggerContext) LoggerFactory.getILoggerFactory()), monitors.newMonitor(
+                            StateMachines.Monitor.class )
                     ),
-                    new FixedTimeoutStrategy( 1000 ), new Monitors(),
-                    logbackService, new ObjectStreamFactory(), new ObjectStreamFactory()
+                    new FixedTimeoutStrategy( 1000 ), logbackService, new ObjectStreamFactory(), new ObjectStreamFactory(),
+                    monitors.newMonitor( NetworkReceiver.Monitor.class ), monitors.newMonitor( NetworkSender.Monitor.class ), monitors.newMonitor( NamedThreadFactory.Monitor.class )
             );
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();

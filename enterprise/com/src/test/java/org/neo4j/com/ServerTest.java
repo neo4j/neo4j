@@ -19,17 +19,6 @@
  */
 package org.neo4j.com;
 
-import static junit.framework.TestCase.fail;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -38,9 +27,23 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
 import org.junit.Test;
+
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.TickingClock;
 import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+
+import static junit.framework.TestCase.fail;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
 
 public class ServerTest
 {
@@ -108,7 +111,8 @@ public class ServerTest
     private Server<Object, Object> newServer( final TxChecksumVerifier checksumVerifier )
     {
         return new Server<Object, Object>(null, mock( Server.Configuration.class), new DevNullLoggingService(),
-                Protocol.DEFAULT_FRAME_LENGTH, (byte)0, checksumVerifier, new TickingClock( 0, 1 ), mock( Monitors.class) )
+                Protocol.DEFAULT_FRAME_LENGTH, (byte)0, checksumVerifier, new TickingClock( 0, 1 ), mock(
+                ByteCounterMonitor.class), mock( RequestMonitor.class) )
         {
             @Override
             protected RequestType<Object> getRequestContext( byte id )

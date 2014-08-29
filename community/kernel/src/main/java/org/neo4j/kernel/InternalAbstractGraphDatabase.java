@@ -201,6 +201,8 @@ public abstract class InternalAbstractGraphDatabase
         implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
 
+    private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
+
     public interface Dependencies
     {
         /**
@@ -239,9 +241,9 @@ public abstract class InternalAbstractGraphDatabase
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
 
-    protected final KernelExtensions kernelExtensions;
+    protected KernelExtensions kernelExtensions;
 
-    protected final DependencyResolver dependencyResolver = new DependencyResolverImpl();
+    protected final DependencyResolver dependencyResolver;
     protected final Config config;
 
     protected File storeDir;
@@ -295,17 +297,15 @@ public abstract class InternalAbstractGraphDatabase
     {
         params.put( Configuration.store_dir.name(), storeDir );
 
+        this.dependencyResolver = new DependencyResolverImpl();
+
         // SPI - provided services
         this.cacheProviders = mapCacheProviders( dependencies.cacheProviders() );
+        kernelExtensionFactories = dependencies.kernelExtensions();
         config = new Config( params, getSettingsClasses(
-                dependencies.settingsClasses(), dependencies.kernelExtensions(), dependencies.cacheProviders() ) );
+                dependencies.settingsClasses(), kernelExtensionFactories, dependencies.cacheProviders() ) );
         this.logging = dependencies.logging();
 
-        this.kernelExtensions = new KernelExtensions(
-                dependencies.kernelExtensions(),
-                config,
-                getDependencyResolver(),
-                fail() );
         this.storeDir = config.get( Configuration.store_dir );
         accessTimeout = 1_000; // TODO make configurable
     }
@@ -399,6 +399,12 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void create()
     {
+        this.kernelExtensions = new KernelExtensions(
+                kernelExtensionFactories,
+                config,
+                getDependencyResolver(),
+                fail() );
+
         availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK );
 
         fileSystem = createFileSystemAbstraction();

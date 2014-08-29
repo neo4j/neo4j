@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
@@ -86,13 +86,18 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private final StoreId storeId;
     private ResourceReleaser resourcePoolReleaser;
     private final List<MismatchingVersionHandler> mismatchingVersionHandlers;
+    private ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
 
-    public Client( String hostNameOrIp, int port, Logging logging, Monitors monitors,
-                   StoreId storeId, int frameLength,
+    public Client( String hostNameOrIp, int port, Logging logging, StoreId storeId, int frameLength,
                    byte applicationProtocolVersion, long readTimeout,
-                   int maxConcurrentChannels, int chunkSize )
+                   int maxConcurrentChannels, int chunkSize, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
+        assert byteCounterMonitor != null;
+        assert requestMonitor != null;
+
+        this.byteCounterMonitor = byteCounterMonitor;
+        this.requestMonitor = requestMonitor;
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
 
         this.msgLog = logging.getMessagesLog( getClass() );
@@ -107,7 +112,6 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
         msgLog.info( getClass().getSimpleName() + " communication channel created towards " + hostNameOrIp + ":" +
                 port );
-        this.requestMonitor = monitors.newMonitor( RequestMonitor.class, getClass() );
     }
 
     @Override
@@ -337,6 +341,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
+        pipeline.addLast( "monitor", new MonitorChannelHandler(byteCounterMonitor) );
         addLengthFieldPipes( pipeline, frameLength );
         BlockingReadHandler<ChannelBuffer> reader = new BlockingReadHandler<>(
                 new ArrayBlockingQueue<ChannelEvent>( 100, false ) );

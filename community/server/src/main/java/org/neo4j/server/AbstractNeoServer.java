@@ -37,10 +37,12 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.RunCarefully;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -91,7 +93,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTimeout;
 import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY;
@@ -152,9 +153,9 @@ public abstract class AbstractNeoServer implements NeoServer
         this.logging = logging;
         this.log = logging.getConsoleLog( getClass() );
 
-        this.database = dbFactory.newDatabase( dbConfig, logging );
+        this.database = dependencyResolver.satisfyDependency(dbFactory.newDatabase( dbConfig, logging ));
 
-        this.preFlight = createPreflightTasks();
+        this.preFlight = dependencyResolver.satisfyDependency(createPreflightTasks());
         this.webServer = createWebServer();
 
         for ( ServerModule moduleClass : createServerModules() )
@@ -172,7 +173,7 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public void start() throws ServerStartupException
     {
-        interruptStartupTimer = createInterruptStartupTimer();
+        interruptStartupTimer = dependencyResolver.satisfyDependency(createInterruptStartupTimer());
 
         try
         {
@@ -756,38 +757,12 @@ public abstract class AbstractNeoServer implements NeoServer
         return dependencyResolver.resolveDependency( type );
     }
 
-    private final DependencyResolver dependencyResolver = new DependencyResolver.Adapter()
+    private final Dependencies dependencyResolver = new Dependencies(new Provider<DependencyResolver>()
     {
-        private <T> T resolveKnownSingleDependency( Class<T> type )
-        {
-            if ( type.equals( Database.class ) )
-            {
-                //noinspection unchecked
-                return (T) database;
-            }
-            else if ( type.equals( PreFlightTasks.class ) )
-            {
-                //noinspection unchecked
-                return (T) preFlight;
-            }
-            else if ( type.equals( InterruptThreadTimer.class ) )
-            {
-                //noinspection unchecked
-                return (T) interruptStartupTimer;
-            }
-
-            // TODO: Note that several component dependencies are inverted here. For instance, logging
-            // should be provided by the server to the kernel, not the other way around. Same goes for job
-            // scheduling and configuration. Probably several others as well.
-
-            DependencyResolver kernelDependencyResolver = database.getGraph().getDependencyResolver();
-            return kernelDependencyResolver.resolveDependency( type );
-        }
-
         @Override
-        public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
+        public DependencyResolver instance()
         {
-            return selector.select( type, option( resolveKnownSingleDependency( type ) ) );
+            return dependencyResolver.resolveDependency( Database.class ).getGraph().getDependencyResolver();
         }
-    };
+    });
 }

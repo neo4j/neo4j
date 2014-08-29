@@ -51,28 +51,22 @@ import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionReprese
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
 
 class DefaultMasterImplSPI implements MasterImpl.SPI
 {
     private static final int ID_GRAB_SIZE = 1000;
     private final DependencyResolver dependencyResolver;
     private final GraphDatabaseAPI graphDb;
-    private final Logging logging;
-    private final Monitors monitors;
     private final LogicalTransactionStore txStore;
     private final TransactionIdStore transactionIdStore;
     private final FileSystemAbstraction fileSystem;
     private final File storeDir;
     private final ResponsePacker responsePacker;
 
-    public DefaultMasterImplSPI( GraphDatabaseAPI graphDb, Logging logging, Monitors monitors )
+    public DefaultMasterImplSPI( GraphDatabaseAPI graphDb )
     {
         this.graphDb = graphDb;
-        this.logging = logging;
         this.dependencyResolver = graphDb.getDependencyResolver();
-        this.monitors = monitors;
 
         // Hmm, fetching the dependencies here instead of handing them in the constructor directly feels bad,
         // but it seems like there's some intricate usage and need for the db's dependency resolver.

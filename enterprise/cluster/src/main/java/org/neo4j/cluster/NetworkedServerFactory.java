@@ -40,7 +40,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * TODO
@@ -50,30 +49,37 @@ public class NetworkedServerFactory
     private LifeSupport life;
     private ProtocolServerFactory protocolServerFactory;
     private TimeoutStrategy timeoutStrategy;
-    private Monitors monitors;
+    private final NetworkReceiver.Monitor networkReceiverMonitor;
+    private final NetworkSender.Monitor networkSenderMonitor;
     private Logging logging;
     private ObjectInputStreamFactory objectInputStreamFactory;
     private ObjectOutputStreamFactory objectOutputStreamFactory;
+    private final NamedThreadFactory.Monitor namedThreadFactoryMonitor;
 
     public NetworkedServerFactory( LifeSupport life, ProtocolServerFactory protocolServerFactory,
                                    TimeoutStrategy timeoutStrategy,
-                                   Monitors monitors, Logging logging,
+                                   Logging logging,
                                    ObjectInputStreamFactory objectInputStreamFactory,
-                                   ObjectOutputStreamFactory objectOutputStreamFactory )
+                                   ObjectOutputStreamFactory objectOutputStreamFactory,
+                                   NetworkReceiver.Monitor networkReceiverMonitor,
+                                   NetworkSender.Monitor networkSenderMonitor,
+                                   NamedThreadFactory.Monitor namedThreadFactoryMonitor)
     {
         this.life = life;
         this.protocolServerFactory = protocolServerFactory;
         this.timeoutStrategy = timeoutStrategy;
-        this.monitors = monitors;
+        this.networkReceiverMonitor = networkReceiverMonitor;
+        this.networkSenderMonitor = networkSenderMonitor;
         this.logging = logging;
         this.objectInputStreamFactory = objectInputStreamFactory;
         this.objectOutputStreamFactory = objectOutputStreamFactory;
+        this.namedThreadFactoryMonitor = namedThreadFactoryMonitor;
     }
 
     public ProtocolServer newNetworkedServer( final Config config, AcceptorInstanceStore acceptorInstanceStore,
                                               ElectionCredentialsProvider electionCredentialsProvider )
     {
-        final NetworkReceiver receiver = new NetworkReceiver( monitors.newMonitor( NetworkReceiver.Monitor.class ),
+        final NetworkReceiver receiver = new NetworkReceiver( networkReceiverMonitor,
                 new NetworkReceiver.Configuration()
         {
             @Override
@@ -95,7 +101,7 @@ public class NetworkedServerFactory
             }
         }, logging );
 
-        final NetworkSender sender = new NetworkSender( monitors.newMonitor( NetworkSender.Monitor.class ),
+        final NetworkSender sender = new NetworkSender(networkSenderMonitor,
                 new NetworkSender.Configuration()
         {
             @Override
@@ -116,7 +122,7 @@ public class NetworkedServerFactory
             @Override
             public ExecutorService newInstance()
             {
-                return Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine", monitors.newMonitor(NamedThreadFactory.Monitor.class) ) );
+                return Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine", namedThreadFactoryMonitor ) );
             }
         } );
 

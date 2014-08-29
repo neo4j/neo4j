@@ -116,8 +116,7 @@ public class NetworkMock
         Logging logging = new LogbackService( new Config( Collections.<String, String>emptyMap(),
                 InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ), loggerContext );
 
-        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory( monitors,
-                new ClusterConfiguration( "default", StringLogger.SYSTEM ), logging );
+        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( "default", StringLogger.SYSTEM ), logging, monitors.newMonitor( StateMachines.Monitor.class ) );
 
         ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
         electionCredentialsProvider.listeningAt( serverUri );
