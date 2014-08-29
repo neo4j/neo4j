@@ -27,43 +27,44 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.{CustomDocBuilder, Doc, Doc
 import scala.util.Try
 
 case object astTermDocBuilder extends CustomDocBuilder[Any] {
-    def newDocGenerator = DocGenerator {
-      case term: ASTNode with ASTTerm =>
-        // use get() to find where we lack pretty printing support
-        inner => astTermConverter(inner)(term).getOrElse(simpleDocBuilder.docGenerator.applyWithInner(inner)(term))
+  def newDocGenerator = DocGenerator {
+    case term: ASTNode with ASTTerm =>
+      // use get() to find where we lack pretty printing support
+      inner => astTermConverter(inner)(term).getOrElse(simpleDocBuilder.docGenerator.applyWithInner(inner)(term))
+  }
+}
+
+case class astTermConverter(pretty: FixedDocGenerator[Any]) extends (ASTNode with ASTTerm => Option[Doc]) {
+  def apply(term: ASTNode with ASTTerm) = Try[Doc] {
+    term match {
+      case hint: Hint => hint.asDoc
+      case orderBy: OrderBy => orderBy.asDoc
+      case sortItem: SortItem => sortItem.asDoc
+    }
+  }.toOption
+
+  implicit def expressionAsDoc(expression: ASTNode with ASTExpression): Doc = pretty(expression)
+
+  implicit def particleAsDoc(particle: ASTNode with ASTParticle): Doc = pretty(particle)
+
+  implicit class OrderByConverter(orderBy: OrderBy) {
+    def asDoc = group("ORDER BY" :/: groupedSepList(orderBy.sortItems.map(pretty)))
+  }
+
+  implicit class SortItemConverter(sortIem: SortItem) {
+    def asDoc: Doc = sortIem match {
+      case AscSortItem(expression) => expression
+      case DescSortItem(expression) => group(expression :/: "DESC")
     }
   }
 
-  case class astTermConverter(pretty: FixedDocGenerator[Any]) extends (ASTNode with ASTTerm => Option[Doc]) {
-    def apply(term: ASTNode with ASTTerm) = Try[Doc] {
-      term match {
-        case hint: Hint => hint.asDoc
-        case orderBy: OrderBy => orderBy.asDoc
-        case sortItem: SortItem => sortItem.asDoc
-      }
-    }.toOption
+  implicit class HintConverter(hint: Hint) {
+    def asDoc = hint match {
+      case UsingIndexHint(identifier, label, property) =>
+        group("USING" :/: "INDEX" :/: group(pretty(identifier) :: block(pretty(label))(pretty(property))))
 
-    implicit def expressionAsDoc(expression: ASTNode with ASTExpression): Doc = pretty(expression)
-    implicit def particleAsDoc(particle: ASTNode with ASTParticle): Doc = pretty(particle)
-
-    implicit class OrderByConverter(orderBy: OrderBy) {
-      def asDoc = group("ORDER BY" :/: groupedSepList(orderBy.sortItems.map(pretty)))
-    }
-
-    implicit class SortItemConverter(sortIem: SortItem) {
-      def asDoc: Doc = sortIem match {
-        case AscSortItem(expression) => expression
-        case DescSortItem(expression) => group(expression :/: "DESC")
-      }
-    }
-
-    implicit class HintConverter(hint: Hint) {
-      def asDoc = hint match {
-        case UsingIndexHint(identifier, label, property) =>
-          group("USING" :/: "INDEX" :/: group(pretty(identifier) :: block(pretty(label))(pretty(property))))
-
-        case UsingScanHint(identifier, label) =>
-          group("USING" :/: "SCAN" :/: group(pretty(identifier) :: pretty(label)))
-      }
+      case UsingScanHint(identifier, label) =>
+        group("USING" :/: "SCAN" :/: group(pretty(identifier) :: pretty(label)))
     }
   }
+}

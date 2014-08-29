@@ -28,8 +28,10 @@ trait ASTNode
   extends Product
   with Foldable
   with Rewritable
-  // disable pretty printing by using: with simpleDocBuilder.GeneratorToString[ASTNode] {
-  with internalDocBuilder.GeneratorToString[ASTNode] {
+  with HasPageDocFormatter /* multi line */
+  // with HasLineDocFormatter  /* single line */
+  // with simpleDocBuilder.GeneratorToString[ASTNode] /* like scala.toString() */ {
+  with internalDocBuilder.GeneratorToString[ASTNode] /* see internalDocBuilder for more choices */ {
 
   import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
   import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
