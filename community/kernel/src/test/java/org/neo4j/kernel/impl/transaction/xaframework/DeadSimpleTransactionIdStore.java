@@ -24,43 +24,48 @@ import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 public class DeadSimpleTransactionIdStore implements TransactionIdStore
 {
     private long transactionId;
-    private long appliedTransactionId;
+    private long committedTransactionId;
+    private long closedTransactionId;
 
     public DeadSimpleTransactionIdStore( long initialTransactionId )
     {
-        this.transactionId = initialTransactionId;
-        this.appliedTransactionId = initialTransactionId;
+        setLastCommittedAndClosedTransactionId( initialTransactionId );
     }
 
     @Override
-    public long nextCommittedTransactionId()
+    public long nextCommittingTransactionId()
     {
         return ++transactionId;
+    }
+    
+    @Override
+    public void transactionCommitted( long transactionId )
+    {
+        committedTransactionId = transactionId;
     }
 
     @Override
     public long getLastCommittedTransactionId()
     {
-        return transactionId;
+        return committedTransactionId;
     }
 
     @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId )
     {
-        this.transactionId = transactionId;
-        this.appliedTransactionId = transactionId;
+        this.transactionId = this.committedTransactionId = this.closedTransactionId = transactionId;
     }
 
     @Override
     public void transactionClosed( long transactionId )
     {
-        appliedTransactionId = transactionId;
+        closedTransactionId = transactionId;
     }
 
     @Override
     public boolean closedTransactionIdIsOnParWithCommittedTransactionId()
     {
-        return appliedTransactionId == transactionId;
+        return closedTransactionId == committedTransactionId;
     }
 
     @Override

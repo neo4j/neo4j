@@ -98,13 +98,14 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private volatile long versionField = FIELD_NOT_INITIALIZED;
     // This is an atomic long since we, when incrementing last tx id, won't set the record in the page,
     // we do that when flushing, which is more performant and fine from a recovery POV.
-    private final AtomicLong lastCommittedTxField = new AtomicLong( FIELD_NOT_INITIALIZED );
+    private final AtomicLong lastCommittingTxField = new AtomicLong( FIELD_NOT_INITIALIZED );
     private volatile long storeVersionField = FIELD_NOT_INITIALIZED;
     private volatile long graphNextPropField = FIELD_NOT_INITIALIZED;
     private volatile long latestConstraintIntroducingTxField = FIELD_NOT_INITIALIZED;
 
     // This is not a field in the store, but something keeping track of which of the committed
     // transactions have been closed. Useful in rotation and shutdown.
+    private final OutOfOrderSequence lastCommittedTx = new ArrayQueueOutOfOrderSequence( -1, 200 );
     private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200 );
 
     private final int relGrabSize;
@@ -229,10 +230,10 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public void flushNeoStoreOnly()
     {
-        checkInitialized( lastCommittedTxField.get() );
+        checkInitialized( lastCommittingTxField.get() );
         if ( !isReadOnly() )
         {
-            setRecord( LATEST_TX_POSITION, lastCommittedTxField.get() );
+            setRecord( LATEST_TX_POSITION, lastCommittingTxField.get() );
         }
         try
         {
@@ -487,11 +488,12 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             randomNumberField = getRecordValue( cursor, RANDOM_POSITION );
             versionField = getRecordValue( cursor, VERSION_POSITION );
             long lastCommittedTxId = getRecordValue( cursor, LATEST_TX_POSITION );
-            lastCommittedTxField.set( lastCommittedTxId );
+            lastCommittingTxField.set( lastCommittedTxId );
             storeVersionField = getRecordValue( cursor, STORE_VERSION_POSITION );
             graphNextPropField = getRecordValue( cursor, NEXT_GRAPH_PROP_POSITION );
             latestConstraintIntroducingTxField = getRecordValue( cursor, LATEST_CONSTRAINT_TX_POSITION );
             lastClosedTx.set( lastCommittedTxId );
+            lastCommittedTx.set( lastCommittedTxId );
         } while ( cursor.shouldRetry() );
     }
 
@@ -779,17 +781,23 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     }
 
     @Override
-    public long nextCommittedTransactionId()
+    public long nextCommittingTransactionId()
     {
-        checkInitialized( lastCommittedTxField.get() );
-        return lastCommittedTxField.incrementAndGet();
+        checkInitialized( lastCommittingTxField.get() );
+        return lastCommittingTxField.incrementAndGet();
+    }
+    
+    @Override
+    public void transactionCommitted( long transactionId )
+    {
+        lastCommittedTx.offer( transactionId );
     }
 
     @Override
     public long getLastCommittedTransactionId()
     {
-        checkInitialized( lastCommittedTxField.get() );
-        return lastCommittedTxField.get();
+        checkInitialized( lastCommittingTxField.get() );
+        return lastCommittedTx.get();
     }
 
     // Ensures that all fields are read from the store, by checking the initial value of the field in question
@@ -804,9 +812,10 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId )
     {
-        checkInitialized( lastCommittedTxField.get() );
-        lastCommittedTxField.set( transactionId );
+        checkInitialized( lastCommittingTxField.get() );
+        lastCommittingTxField.set( transactionId );
         lastClosedTx.set( transactionId );
+        lastCommittedTx.set( transactionId );
     }
 
     @Override
@@ -818,6 +827,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public boolean closedTransactionIdIsOnParWithCommittedTransactionId()
     {
-        return lastClosedTx.get() == lastCommittedTxField.get();
+        return lastClosedTx.get() == lastCommittedTx.get();
     }
 }

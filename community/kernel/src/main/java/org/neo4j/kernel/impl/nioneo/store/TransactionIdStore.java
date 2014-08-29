@@ -21,9 +21,21 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 /**
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
- * {@code applied transaction id}. The committed transaction id is for writing into a log before making
+ * {@code closed transaction id}. The committed transaction id is for writing into a log before making
  * the changes to be made. After that the application of those transactions might be asynchronous and
  * completion of those are marked using {@link #transactionClosed(long)}.
+ *
+ * A transaction ID passes through a {@link TransactionIdStore} like this:
+ * <ol>
+ *   <li>{@link #nextCommittingTransactionId()} is called and an id is returned to a committer.
+ *   At this point that id isn't visible from any getter.</li>
+ *   <li>{@link #transactionCommitted(long)} is called with this id after the fact that the transaction
+ *   has been committed, i.e. written forcefully to a log. After this call the id may be visible from
+ *   {@link #getLastCommittedTransactionId()} if all ids before it have also been committed.</li>
+ *   <li>{@link #transactionClosed(long)} is called with this id again, this time after all changes the
+ *   transaction imposes have been applied to the store. At this point this id is regarded in
+ *   {@link #closedTransactionIdIsOnParWithCommittedTransactionId()} as well.
+ * </ol>
  */
 public interface TransactionIdStore
 {
@@ -32,10 +44,22 @@ public interface TransactionIdStore
 
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented
-     * with each call.
+     * with each call. Ids returned from this method will not be visible from {@link #getLastCommittedTransactionId()}
+     * until handed to {@link #transactionCommitted(long)}.
      */
-    long nextCommittedTransactionId();
+    long nextCommittingTransactionId();
 
+    /**
+     * Signals that a transaction with the given transaction id has been committed (i.e. appended to a log).
+     * Calls to this method may come in out-of-transaction-id order. The highest gap-free transaction id
+     * seen given to this method will be visible in {@link #getLastCommittedTransactionId()}.
+     * @param transactionId the applied transaction id.
+     */
+    void transactionCommitted( long transactionId );
+    
+    /**
+     * @return highest seen gap-free {@link #transactionCommitted(long) committed transaction id}.
+     */
     long getLastCommittedTransactionId();
 
     /**
@@ -44,7 +68,7 @@ public interface TransactionIdStore
     void setLastCommittedAndClosedTransactionId( long transactionId );
 
     /**
-     * Signals that a transaction with a given transaction id has been applied. Calls to this method
+     * Signals that a transaction with the given transaction id has been fully applied. Calls to this method
      * may come in out-of-transaction-id order.
      * @param transactionId the applied transaction id.
      */
@@ -60,7 +84,7 @@ public interface TransactionIdStore
     boolean closedTransactionIdIsOnParWithCommittedTransactionId();
 
     /**
-     * Forces the transaction id to persistent storage.
+     * Forces the transaction id counters to persistent storage.
      */
     void flush();
 }
