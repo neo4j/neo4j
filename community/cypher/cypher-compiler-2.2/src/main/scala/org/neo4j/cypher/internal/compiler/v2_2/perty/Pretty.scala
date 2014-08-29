@@ -43,7 +43,7 @@ trait GeneratorToString[T] {
 trait ToStringDocBuilder[T]  {
   self: DocBuilder[T] =>
 
-  trait Representable[S <: T] extends HasLineDocFormatter with HasDocGenerator[S]
+  trait Representable[S <: T] extends HasDocFormatter with HasDocGenerator[S]
 
   trait GeneratorToString[S <: T] extends Representable[S] with perty.GeneratorToString[S] {
     prettySelf: S =>
