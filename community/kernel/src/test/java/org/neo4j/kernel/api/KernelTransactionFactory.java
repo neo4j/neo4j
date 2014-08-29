@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -52,6 +51,6 @@ public class KernelTransactionFactory
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( PersistenceCache.class ),
                 mock( StoreReadLayer.class ),
-                mock( LegacyIndexTransactionState.class ), mock( Pool.class ), Clock.SYSTEM_CLOCK );
+                mock( LegacyIndexTransactionState.class ), Clock.SYSTEM_CLOCK );
     }
 }

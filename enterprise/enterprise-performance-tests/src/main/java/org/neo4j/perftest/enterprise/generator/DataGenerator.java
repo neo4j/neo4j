@@ -32,6 +32,7 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -133,7 +134,7 @@ public class DataGenerator
                 swapperFactory,
                 jobScheduler,
                 new Config(),
-                new Monitors() );
+                new Monitors().newMonitor( PageCacheMonitor.class ) );
         pageCache.start();
         StoreAccess stores = new StoreAccess( pageCache, storeDir );
         try

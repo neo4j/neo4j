@@ -445,9 +445,14 @@ public class CommandWriter implements NeoCommandHandler
         }
         writeDynamicRecords( record.getDeletedRecords() );
     }
+    
+    @Override
+    public void apply()
+    {   // Nothing to apply
+    }
 
     @Override
     public void close()
-    {
+    {   // Nothing to close
     }
 }

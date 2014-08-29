@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -75,7 +74,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final UpdateableSchemaState schemaState;
     private final StatementOperationParts operations;
     private final boolean readOnly;
-    private Locks.Client locks;
+    private final Locks.Client locks;
 
     // State
     private final TransactionRecordState recordState;
@@ -93,7 +92,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final PersistenceCache persistenceCache;
     private final StoreReadLayer storeLayer;
     private final LegacyIndexTransactionState legacyIndexTransactionState;
-    private final Pool<KernelTransactionImplementation> pool;
     private final Clock clock;
 
     // Some header information
@@ -114,7 +112,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             PersistenceCache persistenceCache,
                                             StoreReadLayer storeLayer,
                                             LegacyIndexTransactionState legacyIndexTransaction,
-                                            Pool<KernelTransactionImplementation> pool, Clock clock )
+                                            Clock clock )
     {
         this.operations = operations;
         this.readOnly = readOnly;
@@ -133,7 +131,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.persistenceCache = persistenceCache;
         this.storeLayer = storeLayer;
         this.legacyIndexTransactionState = legacyIndexTransaction;
-        this.pool = pool;
         this.clock = clock;
         this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
     }
@@ -508,7 +505,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public boolean isReadOnly()
     {
-        return (!hasTxState() || !txState.hasChanges()) && recordState.isReadOnly() &&
+        return !hasTxStateWithChanges() && recordState.isReadOnly() &&
                 legacyIndexTransactionState.isReadOnly();
     }
 
@@ -576,7 +573,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             closed = true;
             closing = false;
+            dispose();
         }
+    }
+
+    protected void dispose()
+    {
     }
 
     private void commit() throws TransactionFailureException
@@ -600,16 +602,27 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 recordState.extractCommands( commands );
                 legacyIndexTransactionState.extractCommands( commands );
 
-                // Finish up the whole transaction representation
-                PhysicalTransactionRepresentation transactionRepresentation =
-                        new PhysicalTransactionRepresentation( commands );
-                transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
-                        headerInformation.getMasterId(),
-                        headerInformation.getAuthorId(),
-                        startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis() );
+                /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
+                 * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
+                 * previously made changes in that same transaction, and so at some point a transaction may have
+                 * changes and at another point, after more changes seemingly, the transaction may not have any changes.
+                 * However, to track that "undoing" of the changes is a bit tedious, intrusive and hard to maintain
+                 * and get right.... So to really make sure the transaction has changes we re-check by looking if we
+                 * have produced any commands to add to the logical log.
+                 */
+                if ( !commands.isEmpty() )
+                {
+                    // Finish up the whole transaction representation
+                    PhysicalTransactionRepresentation transactionRepresentation =
+                            new PhysicalTransactionRepresentation( commands );
+                    transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
+                            headerInformation.getMasterId(),
+                            headerInformation.getAuthorId(),
+                            startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis() );
 
-                // Commit the transaction
-                commitProcess.commit( transactionRepresentation );
+                    // Commit the transaction
+                    commitProcess.commit( transactionRepresentation );
+                }
             }
 
             if ( hasTxStateWithChanges() )
@@ -644,7 +657,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throw new TransactionFailureException( Status.Transaction.CouldNotRollback, e,
                         "Could not drop created constraint indexes" );
             }
-            
+
             if ( hasTxStateWithChanges() )
             {
                 persistenceCache.invalidate( txState );
@@ -687,25 +700,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /** Release resources held up by this transaction & return it to the transaction pool. */
     private void release()
     {
-        locks.releaseAll();
-        pool.release( this );
-    }
-
-    /**
-     * To be called if this transaction is to be thrown away entirely. This is important, as without this call
-     * lock clients will not be returned to their pool.
-     */
-    public void dispose()
-    {
-        if(locks != null)
-        {
-            locks.close();
-        }
-
-        this.locks = null;
-        this.headerInformation = null;
-        this.transactionType = null;
-        this.hooksState = null;
-        this.txState = null;
+        locks.close();
     }
 }

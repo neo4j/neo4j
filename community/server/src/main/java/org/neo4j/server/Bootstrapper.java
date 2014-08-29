@@ -40,6 +40,11 @@ import org.neo4j.server.configuration.validation.Validator;
 
 import static java.lang.String.format;
 
+/**
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
+ */
+@Deprecated
 public abstract class Bootstrapper
 {
     public static final Integer OK = 0;

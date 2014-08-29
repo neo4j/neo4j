@@ -19,22 +19,6 @@
  */
 package org.neo4j.server;
 
-import static java.lang.Math.round;
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTimeout;
-import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
-import static org.neo4j.server.configuration.Configurator.SCRIPT_SANDBOXING_ENABLED_KEY;
-import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
-import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -43,10 +27,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.Filter;
 
 import org.apache.commons.configuration.Configuration;
+
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
@@ -102,6 +86,28 @@ import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
 import org.neo4j.shell.ShellSettings;
 
+import static java.lang.Math.round;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTimeout;
+import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
+import static org.neo4j.server.configuration.Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY;
+import static org.neo4j.server.configuration.Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED;
+import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
+import static org.neo4j.server.configuration.Configurator.SCRIPT_SANDBOXING_ENABLED_KEY;
+import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
+import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
+
+/**
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
+ */
+@Deprecated
 public abstract class AbstractNeoServer implements NeoServer
 {
     private static final long MINIMUM_TIMEOUT = 1000L;

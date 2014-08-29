@@ -122,8 +122,18 @@ public class NeoStoreFileListing
 
     private boolean neoStoreFile( String name )
     {
-        return (name.startsWith( NeoStore.DEFAULT_NAME ) || name.equals( IndexConfigStore.INDEX_DB_FILE_NAME ))
-                && !name.endsWith( ".id" );
+        if ( name.endsWith( ".id" ) )
+        {
+            return false;
+        }
+
+        if ( name.equals( IndexConfigStore.INDEX_DB_FILE_NAME ) )
+        {
+            return true;
+        }
+
+        return name.startsWith( NeoStore.DEFAULT_NAME ) &&
+                !name.startsWith( NeoStore.DEFAULT_NAME + ".transaction" );
     }
 
     private static final class MultiResource implements Resource

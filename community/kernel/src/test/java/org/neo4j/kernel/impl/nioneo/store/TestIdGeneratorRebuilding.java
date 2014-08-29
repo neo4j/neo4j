@@ -96,13 +96,14 @@ public class TestIdGeneratorRebuilding
         // ... that contain a number of records ...
         NodeRecord record = new NodeRecord( 0 );
         record.setInUse( true );
-        for ( int i = 0; i < 50; i++ )
+        int highestId = 50;
+        for ( int i = 0; i < highestId; i++ )
         {
             assertThat( store.nextId(), is( (long) i ) );
             record.setId( i );
             store.updateRecord( record );
         }
-        store.updateHighId(); // This is usually done in the commit path.
+        store.setHighestPossibleIdInUse( highestId );
 
         // ... and some have been deleted
         Long[] idsToFree = {2L, 3L, 5L, 7L};
@@ -151,7 +152,8 @@ public class TestIdGeneratorRebuilding
         // ... that contain a number of records ...
         DynamicRecord record = new DynamicRecord( 1 );
         record.setInUse( true, PropertyType.STRING.intValue() );
-        for ( int i = 1; i <= 50; i++ ) // id '0' is the dynamic store header
+        int highestId = 50;
+        for ( int i = 1; i <= highestId; i++ ) // id '0' is the dynamic store header
         {
             assertThat( store.nextId(), is( (long) i ) );
             record.setId( i );
@@ -163,7 +165,7 @@ public class TestIdGeneratorRebuilding
             record.setData( sb.toString().getBytes( "UTF-16" ) );
             store.updateRecord( record );
         }
-        store.updateHighId();
+        store.setHighestPossibleIdInUse( highestId );
 
         // ... and some have been deleted
         Long[] idsToFree = {2L, 3L, 5L, 7L};
@@ -212,13 +214,14 @@ public class TestIdGeneratorRebuilding
         int recordsPerPage = store.recordsPerPage();
         NodeRecord record = new NodeRecord( 0 );
         record.setInUse( true );
-        for ( int i = 0; i < recordsPerPage * 3; i++ ) // 3 pages worth of records
+        int highestId = recordsPerPage * 3; // 3 pages worth of records
+        for ( int i = 0; i < highestId; i++ )
         {
             assertThat( store.nextId(), is( (long) i ) );
             record.setId( i );
             store.updateRecord( record );
         }
-        store.updateHighId(); // This is usually done in the commit path.
+        store.setHighestPossibleIdInUse( highestId );
 
         // ... and some records at the end of a page have been deleted
         Long[] idsToFree = {recordsPerPage - 2L, recordsPerPage - 1L}; // id's are zero based, hence -2 and -1

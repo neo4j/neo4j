@@ -39,10 +39,6 @@ public abstract class CommandReaderFactory
         private byte lastVersion;
         private CommandReader lastReader;
 
-        public Default()
-        {
-        }
-
         @Override
         public CommandReader newInstance( byte logEntryVersion )
         {

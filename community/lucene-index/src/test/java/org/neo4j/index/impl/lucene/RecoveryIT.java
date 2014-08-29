@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -52,7 +53,8 @@ public class RecoveryIT
         process.destroy();
         process.waitFor();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(path );
+        System.out.println( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         Transaction transaction = db.beginTx();
         try
         {

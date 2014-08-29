@@ -31,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
@@ -134,6 +133,7 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.DEFAULT_HIGH_ID_TRACKING;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
@@ -1331,15 +1331,13 @@ public class NeoStoreTransactionTest
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws InterruptedException, ExecutionException, IOException
     {
     	TransactionAppender appenderMock = mock( TransactionAppender.class );
-        Future<Long> futureMock = mock( Future.class );
-        when( futureMock.get() ).thenReturn( nextTxId++ );
-        when( appenderMock.append( Matchers.<TransactionRepresentation>any()) ).thenReturn( futureMock );
+        when( appenderMock.append( Matchers.<TransactionRepresentation>any()) ).thenReturn( nextTxId++ );
         LogicalTransactionStore txStoreMock = mock ( LogicalTransactionStore.class );
         when( txStoreMock.getAppender() ).thenReturn(appenderMock);
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
         when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
-                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null );
+                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null, DEFAULT_HIGH_ID_TRACKING );
 
         // Call this just to make sure the counters have been initialized.
         // This is only a problem in a mocked environment like this.
@@ -1402,7 +1400,7 @@ public class NeoStoreTransactionTest
     {
 
         NeoTransactionStoreApplier storeApplier = new NeoTransactionStoreApplier(
-                neoStore, mockIndexing, cacheAccessBackDoor, locks, txId, true );
+                neoStore, mockIndexing, cacheAccessBackDoor, locks, txId, DEFAULT_HIGH_ID_TRACKING, true );
 
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
         when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );

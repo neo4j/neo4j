@@ -57,7 +57,7 @@ public class EntityStoreUpdaterStep<T extends PrimitiveRecord> extends ExecutorS
         for ( T entityRecord : batch.getEntityRecords() )
         {
             // +1 since "high id" is the next id to return, i.e. "high id" is "highest id in use"+1
-            entityStore.setHighId( entityRecord.getId()+1 );
+            entityStore.setHighestPossibleIdInUse( entityRecord.getId() );
             entityStore.updateRecord( entityRecord );
         }
         for ( PropertyRecord propertyRecord : batch.getPropertyRecords() )

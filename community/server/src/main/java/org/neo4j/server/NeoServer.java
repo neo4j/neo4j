@@ -28,6 +28,11 @@ import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.webadmin.rest.AdvertisableService;
 
+/**
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
+ */
+@Deprecated
 public interface NeoServer
 {
 	void init();

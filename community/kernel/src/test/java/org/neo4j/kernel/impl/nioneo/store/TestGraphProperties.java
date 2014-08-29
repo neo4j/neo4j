@@ -19,23 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
-import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
-import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.concurrent.Future;
 
@@ -43,14 +27,13 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -62,6 +45,20 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
+import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestGraphProperties
 {
@@ -249,62 +246,6 @@ public class TestGraphProperties
    }
 
     @Test
-    public void upgradeDoesntAccidentallyAssignPropertyChainZero() throws Exception
-    {
-        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory().setFileSystem( fileSystem );
-        String storeDir = new File( "test" ).getAbsolutePath();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        node.setProperty( "name", "Something" );
-        tx.success();
-        tx.finish();
-        db.shutdown();
-
-        truncateNeoStoreTo5Records( fileSystem, storeDir );
-
-        db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
-        PropertyContainer properties = properties( db );
-        assertThat( getPropertyKeys( db, properties ), isEmpty() );
-        tx = db.beginTx();
-        properties.setProperty( "a property", "a value" );
-        tx.success();
-        tx.finish();
-        clearCache( db );
-        assertThat( properties, inTx( db, hasProperty( "a property" ).withValue( "a value" ) ) );
-        db.shutdown();
-
-        db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
-        properties = properties( db );
-        assertThat( properties, inTx( db, hasProperty( "a property" ).withValue( "a value" ) ) );
-        db.shutdown();
-        fileSystem.shutdown();
-    }
-
-    private void truncateNeoStoreTo5Records( FileSystemAbstraction fileSystem, String storeDir ) throws IOException
-    {
-        // Remove the last record, next startup will look like as if we're upgrading an old store
-        File neoStoreFile = new File( storeDir, NeoStore.DEFAULT_NAME );
-        StoreChannel channel = fileSystem.open( neoStoreFile, "rw" );
-        channel.position( NeoStore.RECORD_SIZE * 7/*position of "next prop"*/ );
-        int trail = (int) (channel.size() - channel.position());
-        ByteBuffer trailBuffer = null;
-        if ( trail > 0 )
-        {
-            trailBuffer = ByteBuffer.allocate( trail );
-            channel.read( trailBuffer );
-            trailBuffer.flip();
-        }
-        channel.position( NeoStore.RECORD_SIZE * 5 );
-        if ( trail > 0 )
-        {
-            channel.write( trailBuffer );
-        }
-        channel.truncate( channel.position() );
-    }
-
-    @Test
     public void twoUncleanInARow() throws Exception
     {
         String storeDir = new File("dir").getAbsolutePath();
@@ -337,6 +278,7 @@ public class TestGraphProperties
         db.shutdown();
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         assertFalse( graphProperties.equals( properties( db ) ) );
+        db.shutdown();
     }
 
     private static class State

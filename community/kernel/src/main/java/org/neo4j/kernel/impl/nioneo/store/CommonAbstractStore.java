@@ -60,34 +60,27 @@ public abstract class CommonAbstractStore implements IdSequence
     {
         public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
         public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
-
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
-        public static final Setting<Boolean> backup_slave = GraphDatabaseSettings.backup_slave;
     }
 
-    public static final String ALL_STORES_VERSION = "v0.A.3";
+    public static final String ALL_STORES_VERSION = "v0.A.4";
     public static final String UNKNOWN_VERSION = "Unknown";
 
-    protected Config configuration;
+    protected final Config configuration;
     private final IdGeneratorFactory idGeneratorFactory;
     protected final PageCache pageCache;
     protected FileSystemAbstraction fileSystemAbstraction;
-
     protected final File storageFileName;
     protected final IdType idType;
     protected StringLogger stringLogger;
-    private IdGenerator idGenerator = null;
-    private StoreChannel fileChannel = null;
+    private IdGenerator idGenerator;
+    private StoreChannel fileChannel;
     protected PagedFile storeFile;
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
     private FileLock fileLock;
-
-    private boolean readOnly = false;
-    private boolean backupSlave = false;
-    private long highestUpdateRecordId = -1;
+    private final boolean readOnly;
     private final StoreVersionMismatchHandler versionMismatchHandler;
-    private final Monitors monitors;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -103,6 +96,7 @@ public abstract class CommonAbstractStore implements IdSequence
      * <CODE>initStorage</CODE> method fails
      *
      * @param idType The Id used to index into this store
+     * @param monitors
      */
     public CommonAbstractStore(
             File fileName,
@@ -123,7 +117,7 @@ public abstract class CommonAbstractStore implements IdSequence
         this.idType = idType;
         this.stringLogger = stringLogger;
         this.versionMismatchHandler = versionMismatchHandler;
-        this.monitors = monitors;
+        this.readOnly = configuration.get( Configuration.read_only );
 
         try
         {
@@ -171,8 +165,6 @@ public abstract class CommonAbstractStore implements IdSequence
      */
     protected void checkStorage()
     {
-        readOnly = configuration.get( Configuration.read_only );
-        backupSlave = configuration.get( Configuration.backup_slave );
         if ( !fileSystemAbstraction.fileExists( storageFileName ) )
         {
             throw new StoreNotFoundException( "No such store[" + storageFileName + "] in " + fileSystemAbstraction );
@@ -187,7 +179,7 @@ public abstract class CommonAbstractStore implements IdSequence
         }
         try
         {
-            if ( !readOnly || backupSlave )
+            if ( !readOnly )
             {
                 this.fileLock = fileSystemAbstraction.tryLock( storageFileName, fileChannel );
             }
@@ -285,7 +277,7 @@ public abstract class CommonAbstractStore implements IdSequence
     {
         try
         {
-            if ( !isReadOnly() || isBackupSlave() )
+            if ( !isReadOnly() )
             {
                 openIdGenerator();
             }
@@ -515,17 +507,12 @@ public abstract class CommonAbstractStore implements IdSequence
         return readOnly;
     }
 
-    boolean isBackupSlave()
-    {
-        return backupSlave;
-    }
-
     /**
      * Marks this store as "not ok".
      */
     protected void setStoreNotOk( Throwable cause )
     {
-        if ( readOnly && !isBackupSlave() )
+        if ( readOnly )
         {
             throw new UnderlyingStorageException(
                     "Cannot start up on non clean store as read only" );
@@ -572,26 +559,38 @@ public abstract class CommonAbstractStore implements IdSequence
      */
     public long getHighId()
     {
-        long genHighId = idGenerator != null ? idGenerator.getHighId() : -1;
-        long updateHighId = highestUpdateRecordId;
-        if ( updateHighId > genHighId )
-        {
-            return updateHighId;
-        }
-        return genHighId;
+        return idGenerator != null ? idGenerator.getHighId() : -1;
     }
 
     /**
-     * Sets the highest id in use (use this when rebuilding id generator).
+     * Sets the high id, i.e. highest id in use + 1 (use this when rebuilding id generator).
      *
      * @param highId The high id to set.
      */
     public void setHighId( long highId )
     {
+        // This method might get called during recovery, where we don't have a reliable id generator yet,
+        // so ignore these calls and let rebuildIdGenerators() figure out the high id after recovery.
         if ( idGenerator != null )
         {
-            idGenerator.setHighId( highId );
+            synchronized ( idGenerator )
+            {
+                if ( highId > idGenerator.getHighId() )
+                {
+                    idGenerator.setHighId( highId );
+                }
+            }
         }
+    }
+
+    /**
+     * Sets the highest id in use. After this call highId will be this given id + 1.
+     *
+     * @param highId The highest id in use to set.
+     */
+    public void setHighestPossibleIdInUse( long highId )
+    {
+        setHighId( highId+1 );
     }
 
     /**
@@ -603,7 +602,7 @@ public abstract class CommonAbstractStore implements IdSequence
     {
         if ( !storeOk )
         {
-            if ( readOnly && !backupSlave )
+            if ( readOnly )
             {
                 throw new ReadOnlyDbException();
             }
@@ -615,7 +614,7 @@ public abstract class CommonAbstractStore implements IdSequence
 
     public void rebuildIdGenerators()
     {
-        if ( readOnly && !backupSlave )
+        if ( readOnly )
         {
             throw new ReadOnlyDbException();
         }
@@ -678,12 +677,6 @@ public abstract class CommonAbstractStore implements IdSequence
     protected void openIdGenerator()
     {
         idGenerator = openIdGenerator( new File( storageFileName.getPath() + ".id" ), idType.getGrabSize() );
-        /* MP: 2011-11-23
-         * There may have been some migration done in the startup process, so if there have been some
-         * high id registered during, then update id generators. updateHighId does nothing if
-         * not registerIdFromUpdateRecord have been called.
-         */
-        updateHighId();
     }
 
     /**
@@ -772,7 +765,7 @@ public abstract class CommonAbstractStore implements IdSequence
         {
             throw new UnderlyingStorageException( "Failed to close store file: " + getStorageFileName(), e );
         }
-        if ( (isReadOnly() && !isBackupSlave()) || idGenerator == null || !storeOk )
+        if ( isReadOnly() || idGenerator == null || !storeOk )
         {
             releaseFileLockAndCloseFileChannel();
             return;
@@ -782,7 +775,7 @@ public abstract class CommonAbstractStore implements IdSequence
         idGenerator.close();
         IOException storedIoe = null;
         // hack for WINBLOWS
-        if ( !readOnly || backupSlave )
+        if ( !readOnly )
         {
             try
             {
@@ -858,13 +851,12 @@ public abstract class CommonAbstractStore implements IdSequence
     {
         if ( idGenerator != null )
         {
-            return idGenerator.getHighId() - 1;
+            return idGenerator.getHighestPossibleIdInUse();
         }
-        else
-        {   // If we ask for this before we've recovered we can only make a best-effort guess
-            // about the highest possible id in use.
-            return figureOutHighestIdInUse();
-        }
+        
+        // If we ask for this before we've recovered we can only make a best-effort guess
+        // about the highest possible id in use.
+        return figureOutHighestIdInUse();
     }
 
     /** @return The total number of ids in use. */
@@ -876,21 +868,6 @@ public abstract class CommonAbstractStore implements IdSequence
     public IdType getIdType()
     {
         return idType;
-    }
-
-    protected void registerIdFromUpdateRecord( long id )
-    {
-        highestUpdateRecordId = Math.max( highestUpdateRecordId, id + 1 );
-    }
-
-    protected void updateHighId()
-    {
-        long highId = highestUpdateRecordId;
-        highestUpdateRecordId = -1;
-        if ( highId > getHighId() )
-        {
-            setHighId( highId );
-        }
     }
 
     public void logVersions( StringLogger.LineLogger logger )

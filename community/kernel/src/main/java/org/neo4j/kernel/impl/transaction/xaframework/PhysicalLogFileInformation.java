@@ -75,8 +75,7 @@ public class PhysicalLogFileInformation implements LogFileInformation
         // Wasn't cached, go look for it
         if ( logFiles.versionExists( version ) )
         {
-            long[] headerLongs = logFiles.extractHeader( version );
-            long previousVersionLastCommittedTx = headerLongs[1];
+            long previousVersionLastCommittedTx = logFiles.extractHeader( version ).lastCommittedTxId;
             transactionMetadataCache.putHeader( version, previousVersionLastCommittedTx );
             return previousVersionLastCommittedTx + 1;
         }

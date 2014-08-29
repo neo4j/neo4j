@@ -67,8 +67,8 @@ public class StoreAssertions
     {
         assertEquals( 1317392957120L, neoStore.getCreationTime() );
         assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
-        assertEquals( 3l, neoStore.getCurrentLogVersion() );
+        assertEquals( 4l, neoStore.getCurrentLogVersion() );
         assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1007l, neoStore.getLastCommittedTransactionId() );
+        assertEquals( 1010l, neoStore.getLastCommittedTransactionId() );
     }
 }

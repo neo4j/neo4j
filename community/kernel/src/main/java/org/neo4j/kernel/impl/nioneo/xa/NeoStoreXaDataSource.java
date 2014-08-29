@@ -132,8 +132,10 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.DEFAULT_HIGH_ID_TRACKING;
 import static org.neo4j.kernel.impl.nioneo.xa.CacheLoaders.nodeLoader;
 import static org.neo4j.kernel.impl.nioneo.xa.CacheLoaders.relationshipLoader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
 
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
@@ -445,8 +447,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                 @Override
                                 public long getTimestampForVersion( long version ) throws IOException
                                 {
-                                    try ( ReadableLogChannel channel = logFile.getReader(
-                                            new LogPosition( version, VersionAwareLogEntryReader.LOG_HEADER_SIZE ) ) )
+                                    LogPosition position = new LogPosition( version, LOG_HEADER_SIZE );
+                                    try ( ReadableLogChannel channel = logFile.getReader( position ) )
                                     {
                                         LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader();
                                         LogEntry entry;
@@ -461,26 +463,28 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                     return -1;
                                 }
                             }) );
-
+            
             LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
                     logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
 
-            final TransactionRepresentationStoreApplier storeApplier = dependencies.satisfyDependency( new
-                    TransactionRepresentationStoreApplier(
-                    indexingService, labelScanStore, neoStore,
-                    cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore ) );
+            final TransactionRepresentationStoreApplier storeApplier = dependencies.satisfyDependency(
+                    new TransactionRepresentationStoreApplier(
+                            indexingService, labelScanStore, neoStore,
+                            cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
+                            DEFAULT_HIGH_ID_TRACKING ) );
 
-            RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeApplier, recoveredCount );
+            LoggingLogFileMonitor logMonitor = new LoggingLogFileMonitor( logging.getMessagesLog( getClass() ) );
+            RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore,
+                    storeApplier, recoveredCount, logMonitor );
             Visitor<ReadableLogChannel, IOException> logFileRecoverer =
                     new LogFileRecoverer( new VersionAwareLogEntryReader(), recoveryVisitor );
             logFile = dependencies.satisfyDependency( new PhysicalLogFile( fs, logFiles,
                     config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), logPruneStrategy, neoStore,
-                    neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
-                    this, transactionMetadataCache, logFileRecoverer ) );
+                    neoStore, logMonitor, this, transactionMetadataCache, logFileRecoverer ) );
 
             final LogicalTransactionStore logicalTransactionStore = dependencies.satisfyDependency(
                     LogicalTransactionStore.class, new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
-                            transactionMetadataCache, neoStore ));
+                            transactionMetadataCache, neoStore, config.get( GraphDatabaseSettings.batched_writes ) ) );
 
             TransactionCommitProcess transactionCommitProcess = dependencies.satisfyDependency( TransactionCommitProcess.class,
                                         commitProcessFactory.create( logicalTransactionStore, kernelHealth,

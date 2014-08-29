@@ -21,7 +21,10 @@ package org.neo4j.server;
 
 /**
  * Thrown during start-up of the server.
+ *
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release
  */
+@Deprecated
 public class ServerStartupException extends RuntimeException
 {
     /**

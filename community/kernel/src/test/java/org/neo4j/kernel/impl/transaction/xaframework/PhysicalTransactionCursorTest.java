@@ -25,9 +25,9 @@ import java.util.Arrays;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.OnePhaseCommit;
@@ -86,7 +86,7 @@ public class PhysicalTransactionCursorTest
         // given
         final PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, entryReader );
 
-        when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, NULL_ENTRY);
+        when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, NULL_ENTRY );
 
         // when
         final boolean result = cursor.next();
@@ -102,19 +102,17 @@ public class PhysicalTransactionCursorTest
         // given
         final PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, entryReader );
 
-
-        when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, A_COMMAND_ENTRY, A_COMMIT_ENTRY);
+        when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, A_COMMAND_ENTRY, A_COMMIT_ENTRY );
 
         // when
         cursor.next();
 
         // then
+        PhysicalTransactionRepresentation txRepresentation =
+                new PhysicalTransactionRepresentation( Arrays.asList( A_COMMAND_ENTRY.getXaCommand() ) );
         assertEquals(
-                new CommittedTransactionRepresentation(
-                        A_START_ENTRY,
-                        new PhysicalTransactionRepresentation( Arrays.asList( A_COMMAND_ENTRY.getXaCommand()
-                        ) ),
-                        A_COMMIT_ENTRY
-                ), cursor.get() );
+                new CommittedTransactionRepresentation( A_START_ENTRY, txRepresentation, A_COMMIT_ENTRY ),
+                cursor.get()
+        );
     }
 }

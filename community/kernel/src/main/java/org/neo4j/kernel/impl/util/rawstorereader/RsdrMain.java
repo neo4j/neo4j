@@ -26,14 +26,13 @@ import java.nio.ByteBuffer;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.transaction.xa.Xid;
 import javax.xml.bind.DatatypeConverter;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -50,15 +49,20 @@ import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.pagecache.PageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.StandardPageCacheFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static javax.transaction.xa.Xid.MAXBQUALSIZE;
+import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.readLogHeader;
 
 public class RsdrMain
 {
@@ -98,7 +102,7 @@ public class RsdrMain
         PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( files );
         LifecycledPageCache pageCache = new LifecycledPageCache(
-                pageCacheFactory, swapperFactory, jobScheduler, config, new Monitors() );
+                pageCacheFactory, swapperFactory, jobScheduler, config, new Monitors().newMonitor( PageCacheMonitor.class ) );
         pageCache.start();
         StringLogger logger = StringLogger.DEV_NULL;
         StoreFactory factory = new StoreFactory(
@@ -266,19 +270,16 @@ public class RsdrMain
     {
         File file = new File( neoStore.getStorageFileName().getParent(), fname );
         StoreChannel fileChannel = files.open( file, "r" );
-        ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
-        long[] header = VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, false );
-        long logVersion = header[0];
-        long prevLastCommittedTx = header[1];
+        ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + MAXGTRIDSIZE + MAXBQUALSIZE * 10 );
+        LogHeader logHeader = readLogHeader( buffer, fileChannel, false );
         console.printf( "Logical log version: %s with prev committed tx[%s]%n",
-                logVersion, prevLastCommittedTx );
+                logHeader.logVersion, logHeader.lastCommittedTxId );
 
         LogDeserializer deserializer = new LogDeserializer();
 
         PhysicalLogVersionedStoreChannel channel =
-                new PhysicalLogVersionedStoreChannel( fileChannel, logVersion );
-        ReadableLogChannel logChannel = new ReadAheadLogChannel(
-                channel, LogVersionBridge.NO_MORE_CHANNELS, 4096);
+                new PhysicalLogVersionedStoreChannel( fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
+        ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
         return deserializer.logEntries( logChannel );
     }
 

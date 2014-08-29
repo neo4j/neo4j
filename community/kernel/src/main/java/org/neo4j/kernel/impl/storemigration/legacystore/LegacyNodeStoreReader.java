@@ -33,9 +33,4 @@ public interface LegacyNodeStoreReader extends Closeable
 
     @Override
     void close() throws IOException;
-
-    public interface Visitor
-    {
-        void visit( NodeRecord record );
-    }
 }

@@ -46,7 +46,9 @@ import org.neo4j.kernel.impl.nioneo.xa.RelationshipLocker;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodes;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryVersions;
 
 public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, List<LogEntry>>
 {
@@ -56,7 +58,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
     private final RelationshipGroupGetter groupGetter;
     private final RelationshipCreator relationshipCreator;
     private final RelationshipDeleter deleter;
-    private DenseNodeTransactionTranslator.TranslatingNeoCommandVisitor commandVisitor = new TranslatingNeoCommandVisitor();
+    private final DenseNodeTransactionTranslator.TranslatingNeoCommandVisitor commandVisitor = new TranslatingNeoCommandVisitor();
 
     public DenseNodeTransactionTranslator( NeoStore neoStore )
     {
@@ -96,19 +98,20 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         LogEntry done = null;
         for ( LogEntry logEntry : from )
         {
-            if( logEntry.getVersion() == LogEntry.CURRENT_LOG_ENTRY_VERSION
-                    )
+            if ( logEntry.getVersion() == LogEntryVersions.CURRENT_LOG_ENTRY_VERSION )
+            {
                 throw new RuntimeException( "crap" );
+            }
 
             switch ( logEntry.getType() )
             {
-                case LogEntry.TX_START:
+                case LogEntryByteCodes.TX_START:
                     result.add( logEntry );
                     break;
-                case LogEntry.TX_1P_COMMIT:
+                case LogEntryByteCodes.TX_1P_COMMIT:
                     commit = logEntry;
                     break;
-                case LogEntry.COMMAND:
+                case LogEntryByteCodes.COMMAND:
                     try
                     {
                         if ( !handleCommand( (LogEntryCommand) logEntry ) )
@@ -176,7 +179,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
 
         for ( LogEntryCommand commandEntry : commands )
         {
-            Command command = (Command) commandEntry.getXaCommand();
+            Command command = commandEntry.getXaCommand();
             if ( command instanceof Command.RelationshipCommand )
             {
                 long id = ((Command.RelationshipCommand) command).getRecord().getId();
@@ -202,7 +205,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
 
     private boolean handleCommand( LogEntryCommand commandEntry ) throws IOException
     {
-        Command command = (Command) commandEntry.getXaCommand();
+        Command command = commandEntry.getXaCommand();
         return command.handle( commandVisitor );
     }
 
@@ -381,11 +384,15 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         {
             return false;
         }
+        
+        @Override
+        public void apply()
+        {
+        }
 
         @Override
         public void close()
         {
-
         }
 
         private void translateRelationshipCreation( Command.RelationshipCommand command )

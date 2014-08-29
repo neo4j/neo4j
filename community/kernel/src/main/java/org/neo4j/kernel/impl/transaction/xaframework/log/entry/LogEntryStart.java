@@ -27,6 +27,9 @@ import org.neo4j.helpers.Format;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodes.TX_START;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
+
 public class LogEntryStart extends LogEntry
 {
     private final int masterId;
@@ -128,6 +131,7 @@ public class LogEntryStart extends LogEntry
                 "time=" + timestamp( timeWritten, timeZone ) + "," +
                 "lastCommittedTxWhenTransactionStarted=" + lastCommittedTxWhenTransactionStarted + "," +
                 "additionalHeaderLength=" + (additionalHeader == null ? -1 : additionalHeader.length) +
+                "position=" + startPosition +
                 "]";
     }
 

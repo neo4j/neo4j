@@ -23,6 +23,9 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodes.COMMAND;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
+
 public class LogEntryCommand extends LogEntry
 {
     private final org.neo4j.kernel.impl.nioneo.xa.command.Command command;

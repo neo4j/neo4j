@@ -19,14 +19,13 @@
  */
 package org.neo4j.com;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 /**
@@ -39,7 +38,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
  * byte which is 0 for every non-last chunk and the actual number of bytes for
  * the last one (always > 0).
  */
-public class BlockLogBuffer implements WritableLogChannel
+public class BlockLogBuffer implements Closeable
 {
     // First byte of every chunk that is not the last one
     static final byte FULL_BLOCK_AND_MORE = 0;
@@ -73,64 +72,69 @@ public class BlockLogBuffer implements WritableLogChannel
      * are moved over at the beginning of the cleared buffer.
      *
      * @return the buffer
+     * @throws IOException
      */
-    private WritableLogChannel checkFlush()
+    private BlockLogBuffer checkFlush() throws IOException
     {
         if ( byteBuffer.position() > MAX_SIZE )
         {
-            target.writeBytes( byteArray, 0, MAX_SIZE );
-            monitor.bytesWritten( MAX_SIZE );
-            int pos = byteBuffer.position();
-            clearInternalBuffer();
-            byteBuffer.put( byteArray, MAX_SIZE, pos - MAX_SIZE );
+            flush( MAX_SIZE );
         }
         return this;
     }
+    
+    private void flush( int howManyBytesToWrite ) throws IOException
+    {
+        target.writeBytes( byteArray, 0, howManyBytesToWrite );
+        monitor.bytesWritten( howManyBytesToWrite );
+        int pos = byteBuffer.position();
+        clearInternalBuffer();
+        byteBuffer.put( byteArray, howManyBytesToWrite, pos - howManyBytesToWrite );
+    }
+    
+//    @Override
+//    public void emptyBufferIntoChannelAndClearIt() throws IOException
+//    {
+//        flush( byteBuffer.position() );
+//    }
 
-    @Override
-    public WritableLogChannel put( byte b ) throws IOException
+    public BlockLogBuffer put( byte b ) throws IOException
     {
         byteBuffer.put( b );
         return checkFlush();
     }
 
-    @Override
-    public WritableLogChannel putShort( short s ) throws IOException
+    public BlockLogBuffer putShort( short s ) throws IOException
     {
         byteBuffer.putShort( s );
         return checkFlush();
     }
 
-    @Override
-    public WritableLogChannel putInt( int i ) throws IOException
+    public BlockLogBuffer putInt( int i ) throws IOException
     {
         byteBuffer.putInt( i );
         return checkFlush();
     }
 
-    @Override
-    public WritableLogChannel putLong( long l ) throws IOException
+    public BlockLogBuffer putLong( long l ) throws IOException
     {
         byteBuffer.putLong( l );
         return checkFlush();
     }
 
-    @Override
-    public WritableLogChannel putFloat( float f ) throws IOException
+    public BlockLogBuffer putFloat( float f ) throws IOException
     {
         byteBuffer.putFloat( f );
         return checkFlush();
     }
 
-    @Override
-    public WritableLogChannel putDouble( double d ) throws IOException
+    public BlockLogBuffer putDouble( double d ) throws IOException
     {
         byteBuffer.putDouble( d );
         return checkFlush();
     }
 
-    @Override
-    public WritableLogChannel put( byte[] bytes, int length ) throws IOException
+    public BlockLogBuffer put( byte[] bytes, int length ) throws IOException
     {
         for ( int pos = 0; pos < length; )
         {
@@ -140,18 +144,6 @@ public class BlockLogBuffer implements WritableLogChannel
             pos += toWrite;
         }
         return this;
-    }
-
-    @Override
-    public void force() throws IOException
-    {
-        // Do nothing
-    }
-
-    @Override
-    public void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
-    {
-        positionMarker.unspecified();
     }
 
     /**

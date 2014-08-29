@@ -29,15 +29,12 @@ object expandStar extends Rewriter {
 
   private val instance: Rewriter = Rewriter.lift {
     case x: ReturnAll if x.seenIdentifiers.nonEmpty =>
-
       val identifiers = x.seenIdentifiers.get.filter(UnNamedNameGenerator.isNamed).toSeq.sorted
-
-      val returnItems: Seq[ReturnItem] = identifiers.map {
-        id =>
-          val ident = Identifier(id)(x.position)
-          AliasedReturnItem(ident, ident)(x.position)
-      }.toSeq
-
+      val returnItems: Seq[ReturnItem] = identifiers.map { id =>
+        val expr = Identifier(id)(x.position)
+        val alias = Identifier(id)(x.position)
+        AliasedReturnItem(expr, alias)(x.position)
+      }
       ListedReturnItems(returnItems)(x.position)
   }
 }

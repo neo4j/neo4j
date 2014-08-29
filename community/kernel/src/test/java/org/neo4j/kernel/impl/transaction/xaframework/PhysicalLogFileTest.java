@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,7 +33,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.Monitor;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
@@ -41,7 +42,14 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.writeLogHeader;
 
 public class PhysicalLogFileTest
 {
@@ -53,7 +61,7 @@ public class PhysicalLogFileTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        LogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 1000, LogPruneStrategyFactory.NO_PRUNING,
+        life.add( new PhysicalLogFile( fs, logFiles, 1000, LogPruneStrategyFactory.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
                 new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ));
 
@@ -63,9 +71,9 @@ public class PhysicalLogFileTest
 
         // THEN
         File file = new PhysicalLogFiles( directory.directory(), name, fs ).getLogFileForVersion( 1L );
-        long[] header = VersionAwareLogEntryReader.readLogHeader( fs, file );
-        assertEquals( 1L, header[0] );
-        assertEquals( 5L, header[1] );
+        LogHeader header = readLogHeader( fs, file );
+        assertEquals( 1L, header.logVersion );
+        assertEquals( 5L, header.lastCommittedTxId );
     }
 
     @Test
@@ -76,15 +84,17 @@ public class PhysicalLogFileTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
+        Monitor monitor = mock( Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
                 LogPruneStrategyFactory.NO_PRUNING,
-                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
+                transactionIdStore, logVersionRepository, monitor, logRotationControl,
                 new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
 
         // WHEN
         try
         {
             life.start();
+            verify( monitor ).recoveryCompleted();
 
             WritableLogChannel writer = logFile.getWriter();
             LogPositionMarker positionMarker = new LogPositionMarker();
@@ -93,6 +103,7 @@ public class PhysicalLogFileTest
             long longValue = 4854587;
             writer.putInt( intValue );
             writer.putLong( longValue );
+            writer.emptyBufferIntoChannelAndClearIt();
             writer.force();
 
             // THEN
@@ -134,12 +145,14 @@ public class PhysicalLogFileTest
             writer.putInt( intValue );
             writer.putLong( longValue );
             writer.put( someBytes, someBytes.length );
+            writer.emptyBufferIntoChannelAndClearIt();
             writer.force();
             writer.getCurrentPosition( positionMarker );
             LogPosition position2 = positionMarker.newPosition();
             long longValue2 = 123456789L;
             writer.putLong( longValue2 );
             writer.put( someBytes, someBytes.length );
+            writer.emptyBufferIntoChannelAndClearIt();
             writer.force();
 
             // THEN
@@ -166,14 +179,15 @@ public class PhysicalLogFileTest
     {
         String name = "log";
         File file = new File( directory.directory(), name + ".1" );
+        final int logVersion = 1;
         writeSomeData( file, new Visitor<ByteBuffer, IOException>()
         {
             @Override
             public boolean visit( ByteBuffer buffer ) throws IOException
             {
-                VersionAwareLogEntryReader.writeLogHeader( buffer, 1, 3 );
+                writeLogHeader( buffer, logVersion, 3 );
                 buffer.clear();
-                buffer.position( VersionAwareLogEntryReader.LOG_HEADER_SIZE );
+                buffer.position( LOG_HEADER_SIZE );
                 buffer.put( (byte) 2 );
                 buffer.putInt( 23324 );
                 return true;
@@ -183,8 +197,9 @@ public class PhysicalLogFileTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategyFactory.NO_PRUNING,
-                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
+        Monitor monitor = mock( Monitor.class );
+        life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategyFactory.NO_PRUNING,
+                transactionIdStore, logVersionRepository, monitor, logRotationControl,
                 new TransactionMetadataCache( 10, 100 ), new Visitor<ReadableLogChannel, IOException>()
                         {
                             @Override
@@ -206,6 +221,9 @@ public class PhysicalLogFileTest
         try
         {
             life.start();
+            InOrder order = inOrder( monitor );
+            order.verify( monitor, times( 1 ) ).recoveryRequired( logVersion );
+            order.verify( monitor, times( 1 ) ).recoveryCompleted();
         }
         finally
         {

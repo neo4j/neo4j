@@ -40,7 +40,7 @@ public class StoreVersionCheckTest
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck(new EphemeralFileSystemAbstraction());
 
         // then
-        assertFalse( storeVersionCheck.hasVersion( missingFile, "version" ).first().isSuccessful() );
+        assertFalse( storeVersionCheck.hasVersion( missingFile, "version" ).outcome.isSuccessful() );
     }
 
     @Test
@@ -53,7 +53,7 @@ public class StoreVersionCheckTest
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck( fs );
 
         // then
-        assertFalse( storeVersionCheck.hasVersion( shortFile, "version" ).first().isSuccessful() );
+        assertFalse( storeVersionCheck.hasVersion( shortFile, "version" ).outcome.isSuccessful() );
     }
 
     @Test
@@ -66,7 +66,7 @@ public class StoreVersionCheckTest
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck( fs );
 
         // then
-        assertFalse( storeVersionCheck.hasVersion( shortFile, "correctVersion 1" ).first().isSuccessful() );
+        assertFalse( storeVersionCheck.hasVersion( shortFile, "correctVersion 1" ).outcome.isSuccessful() );
     }
 
     @Test
@@ -79,7 +79,7 @@ public class StoreVersionCheckTest
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck( fs );
 
         // then
-        assertTrue( storeVersionCheck.hasVersion( shortFile, "correctVersion 1" ).first().isSuccessful() );
+        assertTrue( storeVersionCheck.hasVersion( shortFile, "correctVersion 1" ).outcome.isSuccessful() );
     }
 
     private File fileContaining( EphemeralFileSystemAbstraction fs, String content ) throws IOException

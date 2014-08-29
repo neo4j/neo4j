@@ -43,8 +43,10 @@ public class PhysicalWritableLogChannelTest
         // GIVEN
         final File firstFile = new File( directory.directory(), "file1" );
         final File secondFile = new File( directory.directory(), "file2" );
-        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel(
-                new PhysicalLogVersionedStoreChannel( fs.open( firstFile, "rw" ), 1 ) );
+        StoreChannel storeChannel = fs.open( firstFile, "rw" );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
 
         // WHEN writing a transaction, of sorts
         byte byteValue = (byte) 4;
@@ -59,10 +61,12 @@ public class PhysicalWritableLogChannelTest
         channel.putShort( shortValue );
         channel.putInt( intValue );
         channel.putLong( longValue );
+        channel.emptyBufferIntoChannelAndClearIt();
         channel.force();
 
         // "Rotate" and continue
-        channel.setChannel( new PhysicalLogVersionedStoreChannel( fs.open( secondFile, "rw" ), 2 ) );
+        storeChannel = fs.open( secondFile, "rw" );
+        channel.setChannel( new PhysicalLogVersionedStoreChannel( storeChannel, 2, (byte) -1 /* ignored */ ) );
         channel.putFloat( floatValue );
         channel.putDouble( doubleValue );
         channel.put( byteArrayValue, byteArrayValue.length );

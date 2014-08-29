@@ -227,7 +227,6 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     {
         long id = record.getId();
         cursor.setOffset( offsetForId( id ) );
-        registerIdFromUpdateRecord( id );
         if ( record.inUse() || force )
         {
             long firstNode = record.getFirstNode();
@@ -375,16 +374,4 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
 
         return getRecord( id, new RelationshipRecord( id ), RecordLoad.NORMAL );
     }
-
-    public void flushAll()
-    {
-        try
-        {
-            storeFile.flush();
-        } catch(IOException e)
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
 }

@@ -30,26 +30,28 @@ import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.TreeSet;
 
-import javax.transaction.xa.Xid;
-
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
 
 import static java.util.TimeZone.getTimeZone;
+import static javax.transaction.xa.Xid.MAXBQUALSIZE;
+import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
 
 import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles.getLogVersion;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.readLogHeader;
 
 public class DumpLogicalLog
 {
@@ -60,22 +62,21 @@ public class DumpLogicalLog
         this.fileSystem = fileSystem;
     }
 
-    public int dump( String filenameOrDirectory, PrintStream out, TimeZone timeZone ) throws IOException
+    public int dump( String filenameOrDirectory, String logPrefix, PrintStream out,
+                     TimeZone timeZone ) throws IOException
     {
         int logsFound = 0;
-        for ( String fileName : filenamesOf( filenameOrDirectory, getLogPrefix() ) )
+        for ( String fileName : filenamesOf( filenameOrDirectory, logPrefix ) )
         {
             logsFound++;
             out.println( "=== " + fileName + " ===" );
             StoreChannel fileChannel = fileSystem.open( new File( fileName ), "r" );
-            ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
-                    + Xid.MAXBQUALSIZE * 10 );
-            long logVersion, prevLastCommittedTx;
+            ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + MAXGTRIDSIZE + MAXBQUALSIZE * 10 );
+
+            LogHeader logHeader;
             try
             {
-                long[] header = VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, false );
-                logVersion = header[0];
-                prevLastCommittedTx = header[1];
+                logHeader = readLogHeader( buffer, fileChannel, false );
             }
             catch ( IOException ex )
             {
@@ -84,14 +85,18 @@ public class DumpLogicalLog
                 fileChannel.close();
                 throw ex;
             }
-            out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
-                prevLastCommittedTx + "]" );
+            out.println( "Logical log version: " + logHeader.logVersion +
+                    " with prev committed tx[" + logHeader.lastCommittedTxId + "]" );
 
-            LogDeserializer deserializer = new LogDeserializer( instantiateCommandReaderFactory() );
+            LogDeserializer deserializer = new LogDeserializer();
 
-            ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel, logVersion), LogVersionBridge.NO_MORE_CHANNELS, 4096);
+            PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
+                    fileChannel, logHeader.logVersion, logHeader.logFormatVersion
+            );
+            ReadableLogChannel logChannel =
+                    new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
 
-            try (IOCursor<LogEntry> cursor = deserializer.logEntries( logChannel ))
+            try ( IOCursor<LogEntry> cursor = deserializer.logEntries( logChannel ) )
             {
                 while (cursor.next())
                 {
@@ -108,16 +113,6 @@ public class DumpLogicalLog
         return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
     }
 
-    protected CommandReaderFactory instantiateCommandReaderFactory()
-    {
-        return new CommandReaderFactory.Default();
-    }
-
-    protected String getLogPrefix()
-    {
-        return "nioneo_logical.log";
-    }
-
     public static void main( String args[] ) throws IOException
     {
         Args arguments = new Args( args );
@@ -126,8 +121,8 @@ public class DumpLogicalLog
         {
             for ( String fileAsString : arguments.orphans() )
             {
-                new DumpLogicalLog( new DefaultFileSystemAbstraction() ).dump(
-                        fileAsString, printer.getFor( fileAsString ), timeZone );
+                new DumpLogicalLog( new DefaultFileSystemAbstraction() )
+                        .dump( fileAsString, PhysicalLogFile.DEFAULT_NAME, printer.getFor( fileAsString ), timeZone );
             }
         }
     }
@@ -238,15 +233,16 @@ public class DumpLogicalLog
                 return versionOf( o1 ).compareTo( versionOf( o2 ) );
             }
 
-            private Integer versionOf( String string )
+            private Long versionOf( String string )
             {
-                String toFind = ".v";
-                int index = string.indexOf( toFind );
-                if ( index == -1 )
+                try
                 {
-                    return Integer.MAX_VALUE;
+                    return getLogVersion( string );
                 }
-                return Integer.valueOf( string.substring( index + toFind.length() ) );
+                catch ( RuntimeException ignored )
+                {
+                    return Long.MAX_VALUE;
+                }
             }
         };
     }

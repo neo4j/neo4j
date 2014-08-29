@@ -21,9 +21,13 @@ package upgrade;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.DependencyResolver;
@@ -32,6 +36,9 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
@@ -40,21 +47,39 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.runners.Parameterized.Parameters;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.LEGACY_VERSION;
 
+@RunWith(Parameterized.class)
 public class StoreUpgraderInterruptionTestIT
 {
+    private String version;
+
+    public StoreUpgraderInterruptionTestIT( String version )
+    {
+        this.version = version;
+    }
+
+    @Parameters(name = "{0}")
+    public static Collection<Object[]> versions()
+    {
+        return Arrays.asList(
+                new Object[]{Legacy19Store.LEGACY_VERSION},
+                new Object[]{Legacy20Store.LEGACY_VERSION},
+                new Object[]{Legacy21Store.LEGACY_VERSION}
+        );
+    }
+
     @Test
     public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMigration()
             throws IOException, ConsistencyCheckIncompleteException
     {
         File workingDirectory = directory.directory();
-        MigrationTestUtils.prepareSampleLegacyDatabase( fileSystem, workingDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, workingDirectory );
 
         StoreMigrator failingStoreMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DevNullLoggingService.DEV_NULL )
         {
@@ -67,7 +92,7 @@ public class StoreUpgraderInterruptionTestIT
             }
         };
 
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
 
         try
         {
@@ -79,7 +104,7 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
 
         newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DevNullLoggingService.DEV_NULL ) )
                 .migrateIfNeeded( workingDirectory );

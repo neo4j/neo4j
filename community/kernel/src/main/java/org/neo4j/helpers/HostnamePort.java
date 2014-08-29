@@ -22,6 +22,7 @@ package org.neo4j.helpers;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.util.Objects;
 
 import static java.lang.String.format;
 
@@ -36,15 +37,17 @@ public class HostnamePort
 
     public HostnamePort( String hostnamePort ) throws IllegalArgumentException
     {
-        String[] parts = hostnamePort.split( ":" );
+        Objects.requireNonNull( hostnamePort );
+
+        String[] parts = splitHostAndPort( hostnamePort );
         if ( parts.length == 1 )
         {
-            host = zeroLengthMeansNull( parts[0] );
+            host = Strings.defaultIfBlank( parts[0], null );
             ports = new int[]{0, 0};
         }
         else if ( parts.length == 2 )
         {
-            host = zeroLengthMeansNull( parts[0] );
+            host = Strings.defaultIfBlank( parts[0], null );
 
             String[] portStrings = parts[1].split( "-" );
             ports = new int[2];
@@ -63,19 +66,11 @@ public class HostnamePort
                 throw new IllegalArgumentException( format( "Cannot have more than two port ranges: %s",
                         hostnamePort ) );
             }
-
         }
         else
         {
             throw new IllegalArgumentException( hostnamePort );
         }
-    }
-
-    private String zeroLengthMeansNull( String string )
-    {
-        if ( string == null || string.length() == 0 )
-            return null;
-        return string;
     }
 
     public HostnamePort( String host, int port )
@@ -99,14 +94,18 @@ public class HostnamePort
 
     public static String getHostAddress( String host, String defaultHost )
     {
-        if (host == null)
+        if ( host == null )
+        {
             return defaultHost;
+        }
 
         try
         {
             InetAddress ip = InetAddress.getByName( host );
-            if (ip == null)
+            if ( ip == null )
+            {
                 return defaultHost;
+            }
 
             return ip.getHostAddress();
         }
@@ -148,7 +147,7 @@ public class HostnamePort
     {
         return toString( null /*no default host*/ );
     }
-    
+
     public String toString( String defaultHost )
     {
         StringBuilder builder = new StringBuilder();
@@ -197,5 +196,32 @@ public class HostnamePort
         
         // this tries to match hostnames as they are at first, then tries to extract and match ip addresses of both
         return result && ( host.equalsIgnoreCase( toMatchHost ) || getHost(null).equalsIgnoreCase( getHostAddress( toMatchHost, toMatchHost ) ) );
+    }
+
+    private static String[] splitHostAndPort( String hostnamePort )
+    {
+        hostnamePort = hostnamePort.trim();
+
+        int indexOfSchemaSeparator = hostnamePort.indexOf( "://" );
+        if ( indexOfSchemaSeparator != -1 )
+        {
+            hostnamePort = hostnamePort.substring( indexOfSchemaSeparator + 3 );
+        }
+
+        boolean isIPv6HostPort = hostnamePort.startsWith( "[" ) && hostnamePort.contains( "]" );
+        if ( isIPv6HostPort )
+        {
+            int splitIndex = hostnamePort.indexOf( "]" ) + 1;
+
+            String host = hostnamePort.substring( 0, splitIndex );
+            String port = hostnamePort.substring( splitIndex );
+            if ( !Strings.isBlank( port ) )
+            {
+                port = port.substring( 1 ); // remove ':'
+                return new String[]{host, port};
+            }
+            return new String[]{host};
+        }
+        return hostnamePort.split( ":" );
     }
 }

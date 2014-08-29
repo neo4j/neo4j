@@ -20,79 +20,23 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 
-import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
 
-public class PhysicalTransactionAppender implements TransactionAppender
+public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppender
 {
-    private final WritableLogChannel channel;
-    private final TxIdGenerator txIdGenerator;
-    private final TransactionMetadataCache transactionMetadataCache;
-    private final LogFile logFile;
-    private final TransactionIdStore transactionIdStore;
-    private final TransactionLogWriter transactionLogWriter;
-    private final LogPositionMarker positionMarker = new LogPositionMarker();
-
     public PhysicalTransactionAppender( LogFile logFile, TxIdGenerator txIdGenerator,
             TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore )
     {
-        this.logFile = logFile;
-        this.transactionIdStore = transactionIdStore;
-        this.channel = logFile.getWriter();
-        this.txIdGenerator = txIdGenerator;
-        this.transactionMetadataCache = transactionMetadataCache;
-
-        LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
-        this.transactionLogWriter = new TransactionLogWriter( logEntryWriter );
-    }
-
-    private void append( TransactionRepresentation transaction, long transactionId ) throws IOException
-    {
-        channel.getCurrentPosition( positionMarker );
-        LogPosition logPosition = positionMarker.newPosition();
-
-        transactionLogWriter.append( transaction, transactionId );
-
-        transactionMetadataCache.cacheTransactionMetadata( transactionId, logPosition, transaction.getMasterId(),
-                transaction.getAuthorId(), LogEntryStart.checksum( transaction.additionalHeader(),
-                        transaction.getMasterId(), transaction.getAuthorId() ) );
-
-        channel.force();
+        super( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore );
     }
 
     @Override
-    public synchronized Future<Long> append( TransactionRepresentation transaction ) throws IOException
+    protected void force( long ticket ) throws IOException
     {
-        // We put log rotation check outside the private append method since it must happen before
-        // we generate the next transaction id
-        logFile.checkRotation();
-        long transactionId = txIdGenerator.generate( transaction );
-        append( transaction, transactionId );
-        return FutureAdapter.present( transactionId );
-    }
-
-    @Override
-    public synchronized boolean append( CommittedTransactionRepresentation transaction )
-            throws IOException
-    {
-        logFile.checkRotation();
-        long txId = transaction.getCommitEntry().getTxId();
-        long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
-        if ( lastCommittedTxId + 1 == txId )
+        synchronized ( channel )
         {
-            txIdGenerator.generate( transaction.getTransactionRepresentation() );
-            append( transaction.getTransactionRepresentation(), txId );
-            return true;
+            channel.force();
         }
-        else if ( lastCommittedTxId + 1 < txId )
-        {
-            throw new IOException( "Tried to apply transaction with txId=" + txId +
-                    " but last committed txId=" + lastCommittedTxId );
-        }
-        return false;
     }
 }

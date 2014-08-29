@@ -142,6 +142,12 @@ public class ManagementBeansTest
     }
 
     @Test
+    public void canGetPageCacheBean() throws Exception
+    {
+        assertNotNull( getManager().getPageCacheBean() );
+    }
+
+    @Test
     public void canAccessMemoryMappingCompositData() throws Exception
     {
         assertNotNull( "MemoryPools is null", getManager().getMemoryMappingBean().getMemoryPools() );

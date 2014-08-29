@@ -21,21 +21,28 @@ package upgrade;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.hamcrest.Matchers;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertThat;
@@ -48,24 +55,44 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFi
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateAllFiles;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.LEGACY_VERSION;
 
+@RunWith(Parameterized.class)
 public class StoreUpgradeOnStartupTest
 {
+    private final String version;
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    private final File workingDirectory = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+
+    public StoreUpgradeOnStartupTest( String version )
+    {
+        this.version = version;
+    }
+
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> versions()
+    {
+        return Arrays.asList(
+                new Object[]{Legacy19Store.LEGACY_VERSION},
+                new Object[]{Legacy20Store.LEGACY_VERSION},
+                new Object[]{Legacy21Store.LEGACY_VERSION}
+        );
+    }
+
+    @Before
+    public void setup() throws IOException
+    {
+        prepareSampleLegacyDatabase( version, fileSystem, workingDirectory );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
+    }
+
     @Test
     public void shouldUpgradeAutomaticallyOnDatabaseStartup() throws IOException, ConsistencyCheckIncompleteException
     {
-        prepareSampleLegacyDatabase( fileSystem, workingDirectory );
-
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
-
-        HashMap<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
-
-        GraphDatabaseService database = new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( workingDirectory.getPath() ).setConfig( params ).newGraphDatabase();
+        // when
+        GraphDatabaseService database = createGraphDatabaseService();
         database.shutdown();
 
+        // then
         assertTrue( "Some store files did not have the correct version",
                 allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
         assertConsistentStore( workingDirectory );
@@ -74,24 +101,20 @@ public class StoreUpgradeOnStartupTest
     @Test
     public void shouldAbortOnNonCleanlyShutdown() throws Throwable
     {
-        // Given
-        prepareSampleLegacyDatabase( fileSystem, workingDirectory );
-
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
-        truncateAllFiles( fileSystem, workingDirectory );
+        // given
+        truncateAllFiles( fileSystem, workingDirectory, version );
         // Now everything has lost the version info
 
         try
         {
-            // When
-            new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
-                    workingDirectory.getPath()).setConfig( upgradeConfig() ).newGraphDatabase();
-
-            // Then
+            // when
+            GraphDatabaseService database = createGraphDatabaseService();
+            database.shutdown();// shutdown db in case test fails
             fail( "Should have been unable to start upgrade on old version" );
         }
         catch ( RuntimeException e )
         {
+            // then
             assertThat( Exceptions.rootCause( e ), Matchers.instanceOf(
                     StoreUpgrader.UpgradingStoreVersionNotFoundException.class ) );
         }
@@ -100,37 +123,29 @@ public class StoreUpgradeOnStartupTest
     @Test
     public void shouldAbortOnCorruptStore() throws IOException
     {
-        // Given
-        prepareSampleLegacyDatabase( fileSystem, workingDirectory );
-
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
-        truncateFile(fileSystem, new File( workingDirectory,
-                "neostore.propertystore.db.index.keys" ),
-                "StringPropertyStore " + LEGACY_VERSION );
+        // given
+        File file = new File( workingDirectory, "neostore.propertystore.db.index.keys" );
+        truncateFile( fileSystem, file, "StringPropertyStore " + version );
 
         try
         {
-            // When
-            GraphDatabaseService database = new GraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( workingDirectory.getPath() ).setConfig( upgradeConfig() ).newGraphDatabase();
-
-            // Then
+            // when
+            GraphDatabaseService database = createGraphDatabaseService();
+            database.shutdown();// shutdown db in case test fails
             fail( "Should have been unable to start upgrade on old version" );
         }
         catch ( RuntimeException e )
         {
+            // then
             assertThat( Exceptions.rootCause( e ), Matchers.instanceOf( UnableToUpgradeException.class ) );
         }
     }
 
-    private Map<String, String> upgradeConfig()
+    private GraphDatabaseService createGraphDatabaseService()
     {
-        Map<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
-        return params;
+        return new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( workingDirectory.getPath() )
+                .setConfig( Collections.singletonMap( GraphDatabaseSettings.allow_store_upgrade.name(), "true" ) )
+                .newGraphDatabase();
     }
-    
-    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-    private final File workingDirectory = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
-
 }

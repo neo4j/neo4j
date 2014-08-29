@@ -27,25 +27,17 @@ import java.nio.channels.FileLock;
 
 import org.neo4j.io.fs.StoreChannel;
 
-public class PhysicalLogVersionedStoreChannel implements VersionedStoreChannel
+public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChannel
 {
     private final StoreChannel delegateChannel;
     private long version;
+    private final byte formatVersion;
 
-    public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel, long version )
+    public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel, long version, byte formatVersion )
     {
         this.delegateChannel = delegateChannel;
         this.version = version;
-    }
-
-    public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel )
-    {
-        this( delegateChannel, -1 );
-    }
-
-    public void setVersion( long version )
-    {
-        this.version = version;
+        this.formatVersion = formatVersion;
     }
 
     @Override
@@ -166,6 +158,12 @@ public class PhysicalLogVersionedStoreChannel implements VersionedStoreChannel
     public long getVersion()
     {
         return version;
+    }
+
+    @Override
+    public byte getLogFormatVersion()
+    {
+        return formatVersion;
     }
 
     @Override

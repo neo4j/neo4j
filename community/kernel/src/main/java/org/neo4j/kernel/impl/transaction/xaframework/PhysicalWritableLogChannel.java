@@ -26,27 +26,33 @@ import static java.lang.Math.min;
 
 public class PhysicalWritableLogChannel implements WritableLogChannel
 {
-    private VersionedStoreChannel channel;
+    private LogVersionedStoreChannel channel;
     private final ByteBuffer buffer = ByteBuffer.allocate( 4*1024 );
 
-    public PhysicalWritableLogChannel( VersionedStoreChannel channel )
+    public PhysicalWritableLogChannel( LogVersionedStoreChannel channel )
     {
         this.channel = channel;
     }
 
     @Override
+    public byte getLogFormatVersion()
+    {
+        return channel.getLogFormatVersion();
+    }
+
+    @Override
     public void force() throws IOException
     {
-        emptyBufferIntoChannelAndClearIt();
         channel.force( false );
     }
 
-    void setChannel( VersionedStoreChannel channel )
+    void setChannel( LogVersionedStoreChannel channel )
     {
         this.channel = channel;
     }
 
-    private void emptyBufferIntoChannelAndClearIt() throws IOException
+    @Override
+    public void emptyBufferIntoChannelAndClearIt() throws IOException
     {
         buffer.flip();
         channel.write( buffer );

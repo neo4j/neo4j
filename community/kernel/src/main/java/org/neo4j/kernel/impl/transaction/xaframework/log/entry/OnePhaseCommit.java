@@ -23,6 +23,9 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
+
 public class OnePhaseCommit extends LogEntryCommit
 {
     public OnePhaseCommit( long txId, long timeWritten )

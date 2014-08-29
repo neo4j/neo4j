@@ -274,11 +274,12 @@ public class TestCommunication
         life.add( client );
         life.start();
 
-        int failAtSize = FRAME_LENGTH*2;
+        int failAtSize = FRAME_LENGTH/2;
         ClientCrashingWriter writer = new ClientCrashingWriter( client, failAtSize );
         try
         {
             client.fetchDataStream( writer, FRAME_LENGTH*10 );
+            assertTrue( writer.getSizeRead() >= failAtSize );
             fail( "Should fail in the middle" );
         }
         catch ( ComException e )

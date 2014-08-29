@@ -31,7 +31,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEn
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.nioneo.store.TransactionIdStore.BASE_TX_ID;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryByteCodes.TX_START;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
 
 public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
 {
@@ -40,22 +42,31 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     private final TxIdGenerator txIdGenerator;
     private TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
+    private final boolean batchedWrites;
 
     public PhysicalLogicalTransactionStore( LogFile logFile, TxIdGenerator txIdGenerator,
             TransactionMetadataCache transactionMetadataCache,
-            TransactionIdStore transactionIdStore )
+            TransactionIdStore transactionIdStore, boolean batchedWrites )
     {
         this.logFile = logFile;
         this.txIdGenerator = txIdGenerator;
         this.transactionMetadataCache = transactionMetadataCache;
         this.transactionIdStore = transactionIdStore;
+        this.batchedWrites = batchedWrites;
     }
 
     @Override
     public void init() throws Throwable
     {
-        this.appender = new PhysicalTransactionAppender( logFile, txIdGenerator, transactionMetadataCache,
-                transactionIdStore );
+        this.appender = batchedWrites ?
+                new BatchingPhysicalTransactionAppender( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore ) :
+                new PhysicalTransactionAppender( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore );
+    }
+    
+    @Override
+    public void shutdown() throws Throwable
+    {
+        this.appender.close();
     }
 
     @Override
@@ -77,8 +88,8 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
             if ( transactionMetadata != null )
             {
                 // we're good
-                return new PhysicalTransactionCursor( logFile.getReader( transactionMetadata.getStartPosition() ),
-                        logEntryReader );
+                ReadableLogChannel channel = logFile.getReader( transactionMetadata.getStartPosition() );
+                return new PhysicalTransactionCursor( channel, logEntryReader );
             }
 
             // ask LogFile about the version it may be in
@@ -151,10 +162,10 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
             {
                 switch ( logEntry.getType() )
                 {
-                    case LogEntry.TX_START:
+                    case TX_START:
                         startEntry = (LogEntryStart) logEntry;
                         break;
-                    case LogEntry.TX_1P_COMMIT:
+                    case TX_1P_COMMIT:
                         LogEntryCommit commit = (LogEntryCommit) logEntry;
                         if ( commit.getTxId() == startTransactionId )
                         {
@@ -212,8 +223,8 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         {
             if ( foundPosition == null )
             {
-                throw new NoSuchTransactionException( transactionId, "Couldn't find any log containing " +
-                        transactionId );
+                throw new NoSuchTransactionException( transactionId,
+                        "Couldn't find any log containing " + transactionId );
             }
             return foundPosition;
         }

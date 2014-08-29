@@ -30,8 +30,10 @@ import org.neo4j.server.preflight.PreFlightTasks;
 import static org.neo4j.server.database.WrappedDatabase.wrappedDatabase;
 
 /**
- * Use this to wrap an existing graph database instance with a Neo4j server.
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
  */
+@Deprecated
 public class WrappingNeoServer extends CommunityNeoServer
 {
     private final GraphDatabaseAPI db;

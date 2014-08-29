@@ -33,6 +33,8 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_VERSION_SUFFIX;
+
 public class PhysicalLogFilesTest
 {
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
@@ -50,7 +52,7 @@ public class PhysicalLogFilesTest
         final File versionFileName = files.getLogFileForVersion( version );
 
         // then
-        final File expected = new File( tmpDirectory, filename + ".v" + version );
+        final File expected = new File( tmpDirectory, filename + DEFAULT_VERSION_SUFFIX + version );
         assertEquals( expected, versionFileName );
     }
 
@@ -61,9 +63,9 @@ public class PhysicalLogFilesTest
         PhysicalLogFiles files = new PhysicalLogFiles( tmpDirectory, filename, fs );
 
         final File[] filesOnDisk = new File[]{
-                new File( tmpDirectory, filename + ".v1" ),
-                new File( tmpDirectory, "crap.v2" ),
-                new File( tmpDirectory, filename + ".v3" ),
+                new File( tmpDirectory, filename + DEFAULT_VERSION_SUFFIX + "1" ),
+                new File( tmpDirectory, "crap" + DEFAULT_VERSION_SUFFIX + "2" ),
+                new File( tmpDirectory, filename + DEFAULT_VERSION_SUFFIX + "3" ),
                 new File( tmpDirectory, filename )
         };
 
@@ -85,8 +87,8 @@ public class PhysicalLogFilesTest
 
         // then
         assertEquals( Arrays.asList(
-                new File( tmpDirectory, filename + ".v1" ),
-                new File( tmpDirectory, filename + ".v3" )
+                new File( tmpDirectory, filename + DEFAULT_VERSION_SUFFIX + "1" ),
+                new File( tmpDirectory, filename + DEFAULT_VERSION_SUFFIX + "3" )
         ), seenFiles );
         assertEquals( Arrays.asList(
                 1l,
@@ -101,9 +103,9 @@ public class PhysicalLogFilesTest
         PhysicalLogFiles files = new PhysicalLogFiles( tmpDirectory, filename, fs );
 
         final File[] filesOnDisk = new File[]{
-                new File( tmpDirectory, filename + ".v1" ),
-                new File( tmpDirectory, "crap.v4" ),
-                new File( tmpDirectory, filename + ".v3" ),
+                new File( tmpDirectory, filename + DEFAULT_VERSION_SUFFIX + "1" ),
+                new File( tmpDirectory, "crap" + DEFAULT_VERSION_SUFFIX + "4" ),
+                new File( tmpDirectory, filename + DEFAULT_VERSION_SUFFIX + "3" ),
                 new File( tmpDirectory, filename )
         };
 
@@ -123,7 +125,7 @@ public class PhysicalLogFilesTest
         PhysicalLogFiles files = new PhysicalLogFiles( tmpDirectory, filename, fs );
 
         final File[] filesOnDisk = new File[]{
-                new File( tmpDirectory, "crap.v4" ),
+                new File( tmpDirectory, "crap" + DEFAULT_VERSION_SUFFIX + "4" ),
                 new File( tmpDirectory, filename )
         };
 
@@ -140,7 +142,8 @@ public class PhysicalLogFilesTest
     public void shouldFindTheVersionBasedOnTheFilename()
     {
         // given
-        final File file = new File( "v.v.v.v2" );
+        final File file =
+                new File( "v" + DEFAULT_VERSION_SUFFIX + DEFAULT_VERSION_SUFFIX + DEFAULT_VERSION_SUFFIX + "2" );
 
         // when
         long logVersion = PhysicalLogFiles.getLogVersion( file );
@@ -171,7 +174,7 @@ public class PhysicalLogFilesTest
     public void shouldThrowIfVersionIsNotANumber()
     {
         // given
-        final File file = new File( "aa.vA" );
+        final File file = new File( "aa" + DEFAULT_VERSION_SUFFIX + "A" );
 
         // when
         PhysicalLogFiles.getLogVersion( file );

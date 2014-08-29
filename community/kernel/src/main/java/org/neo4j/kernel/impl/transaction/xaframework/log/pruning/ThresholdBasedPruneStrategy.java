@@ -25,7 +25,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
 
 public class ThresholdBasedPruneStrategy implements LogPruneStrategy
 {
@@ -66,7 +67,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
                 return;
             }
 
-            if ( fileSystem.getFileSize( file ) > VersionAwareLogEntryReader.LOG_HEADER_SIZE &&
+            if ( fileSystem.getFileSize( file ) > LOG_HEADER_SIZE &&
                     threshold.reached( file, upper, logFileInformation ) )
             {
                 exceeded = true;

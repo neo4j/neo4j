@@ -30,7 +30,6 @@ object inlineProjections extends Rewriter {
   val instance = Rewriter.lift { case input: Statement =>
     val context = inliningContextCreator(input)
 
-    val removePatternPartNames = TypedRewriter[Pattern](bottomUp(namedPatternPartRemover))
     val inlineIdentifiers = TypedRewriter[ASTNode](context.identifierRewriter)
     val inlinePatterns = TypedRewriter[Pattern](context.patternRewriter)
     val withInlineReturnItems = inlineReturnItemsFactory(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, inlineInAliases = true))
@@ -76,7 +75,7 @@ object inlineProjections extends Rewriter {
         val newHints = mHints.map(inlineIdentifiers.narrowed)
         // no need to inline expressions in patterns since all expressions have been moved to WHERE prior to
         // calling inlineProjections
-        val newPattern = inlinePatterns(removePatternPartNames(mPattern))
+        val newPattern = inlinePatterns(mPattern)
         m.copy(pattern = newPattern, hints = newHints, where = newOptWhere)(m.position)
 
       case _: UpdateClause  =>

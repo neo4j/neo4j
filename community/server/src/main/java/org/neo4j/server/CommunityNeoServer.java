@@ -52,6 +52,11 @@ import org.neo4j.server.webadmin.rest.console.ConsoleService;
 import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
+/**
+ * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
+ * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
+ */
+@Deprecated
 public class CommunityNeoServer extends AbstractNeoServer
 {
     public CommunityNeoServer( Configurator configurator, InternalAbstractGraphDatabase.Dependencies dependencies )
@@ -65,39 +70,37 @@ public class CommunityNeoServer extends AbstractNeoServer
     }
 
     @Override
-	protected PreFlightTasks createPreflightTasks()
+    protected PreFlightTasks createPreflightTasks()
     {
-        Logging logging = dependencies.logging();
-		return new PreFlightTasks( logging,
-				// TODO: Move the config check into bootstrapper
-				//new EnsureNeo4jPropertiesExist(configurator.configuration()),
-				new EnsurePreparedForHttpLogging(configurator.configuration()),
-				new PerformUpgradeIfNecessary(getConfiguration(),
-						configurator.getDatabaseTuningProperties(), logging, StoreUpgrader.NO_MONITOR),
-				new PerformRecoveryIfNecessary(getConfiguration(),
-						configurator.getDatabaseTuningProperties(), System.out, logging));
-	}
+        return new PreFlightTasks( logging,
+                // TODO: Move the config check into bootstrapper
+                //new EnsureNeo4jPropertiesExist(configurator.configuration()),
+                new EnsurePreparedForHttpLogging(configurator.configuration()),
+                new PerformUpgradeIfNecessary(getConfiguration(),
+                        configurator.getDatabaseTuningProperties(), logging, StoreUpgrader.NO_MONITOR),
+                new PerformRecoveryIfNecessary(getConfiguration(),
+                        configurator.getDatabaseTuningProperties(), System.out, logging));
+    }
 
-	@Override
-	protected Iterable<ServerModule> createServerModules()
-	{
-        Logging logging = dependencies.logging();
+    @Override
+    protected Iterable<ServerModule> createServerModules()
+    {
         return Arrays.asList(
-        		new DiscoveryModule(webServer, logging),
-        		new RESTApiModule(webServer, database, configurator.configuration(), logging),
-        		new ManagementApiModule(webServer, configurator.configuration(), logging),
+                new DiscoveryModule(webServer, logging),
+                new RESTApiModule(webServer, database, configurator.configuration(), logging),
+                new ManagementApiModule(webServer, configurator.configuration(), logging),
                 new ThirdPartyJAXRSModule(webServer, configurator, logging, this),
                 new WebAdminModule(webServer, logging),
                 new Neo4jBrowserModule(webServer, configurator.configuration(), logging, database),
                 new StatisticModule(webServer, statisticsCollector, configurator.configuration()),
                 new SecurityRulesModule(webServer, configurator.configuration(), logging));
-	}
+    }
 
-	@Override
-	protected WebServer createWebServer()
+    @Override
+    protected WebServer createWebServer()
     {
-		return new Jetty9WebServer( dependencies.logging());
-	}
+        return new Jetty9WebServer( logging );
+    }
 
     @Override
     public Iterable<AdvertisableService> getServices()

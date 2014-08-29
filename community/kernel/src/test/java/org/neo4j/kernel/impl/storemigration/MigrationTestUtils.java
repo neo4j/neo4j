@@ -28,16 +28,16 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.test.Unzip;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
@@ -93,12 +93,13 @@ public class MigrationTestUtils
         fileChannel.close();
     }
 
-    public static void truncateAllFiles( FileSystemAbstraction fileSystem, File workingDirectory ) throws IOException
+    public static void truncateAllFiles( FileSystemAbstraction fileSystem, File workingDirectory,
+                                         String version ) throws IOException
     {
-        for ( StoreFile20 storeFile : StoreFile20.legacyStoreFiles() )
+        for ( StoreFile storeFile : StoreFile.legacyStoreFilesForVersion( version ) )
         {
-            truncateFile( fileSystem, new File( workingDirectory, storeFile.storeFileName() ),
-                    storeFile.legacyVersion() );
+            File file = new File( workingDirectory, storeFile.storeFileName() );
+            truncateFile( fileSystem, file, storeFile.forVersion( version ) );
         }
     }
 
@@ -110,22 +111,45 @@ public class MigrationTestUtils
         fileChannel.close();
     }
 
-    public static void prepareSampleLegacyDatabase( EphemeralFileSystemAbstraction workingFs,
-            File workingDirectory ) throws IOException
+    public static void prepareSampleLegacyDatabase( String version, EphemeralFileSystemAbstraction workingFs,
+                                                    File workingDirectory ) throws IOException
     {
-        File resourceDirectory = find20FormatStoreDirectory();
+        File resourceDirectory = findFormatStoreDirectoryForVersion( version );
         workingFs.copyRecursivelyFromOtherFs( resourceDirectory, new DefaultFileSystemAbstraction(), workingDirectory );
     }
 
-    public static void prepareSampleLegacyDatabase( FileSystemAbstraction workingFs, File workingDirectory ) throws IOException
+    public static void prepareSampleLegacyDatabase( String version, FileSystemAbstraction workingFs,
+                                                    File workingDirectory ) throws IOException
     {
-        File resourceDirectory = find20FormatStoreDirectory();
-
+        File resourceDirectory = findFormatStoreDirectoryForVersion( version );
         workingFs.deleteRecursively( workingDirectory );
         workingFs.mkdirs( workingDirectory );
+        workingFs.copyRecursively( resourceDirectory, workingDirectory );
+    }
 
-        // TODO only works with DefaultFileSystemAbstraction
-        FileUtils.copyRecursively( resourceDirectory, workingDirectory );
+    public static File findFormatStoreDirectoryForVersion( String version ) throws IOException
+    {
+        switch ( version )
+        {
+            case Legacy21Store.LEGACY_VERSION:
+                return find21FormatStoreDirectory();
+            case Legacy20Store.LEGACY_VERSION:
+                return find20FormatStoreDirectory();
+            case Legacy19Store.LEGACY_VERSION:
+                return find19FormatStoreDirectory();
+            default:
+                throw new IllegalArgumentException( "Unknown version" );
+        }
+    }
+
+    public static File find21FormatStoreDirectory() throws IOException
+    {
+        return Unzip.unzip( Legacy21Store.class, "upgradeTest21Db.zip" );
+    }
+
+    public static File find21FormatStoreDirectory( File unzipTarget ) throws IOException
+    {
+        return Unzip.unzip( Legacy21Store.class, "upgradeTest21Db.zip", unzipTarget );
     }
 
     public static File find20FormatStoreDirectory() throws IOException
@@ -133,20 +157,35 @@ public class MigrationTestUtils
         return Unzip.unzip( Legacy20Store.class, "exampledb.zip" );
     }
 
-    public static File find19FormatStoreDirectory( File unzipTarget ) throws IOException
-    {
-        return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip", unzipTarget );
-    }
-
     public static File find20FormatStoreDirectory( File unzipTarget ) throws IOException
     {
         return Unzip.unzip( Legacy20Store.class, "exampledb.zip", unzipTarget );
     }
 
+    public static File find19FormatStoreDirectory() throws IOException
+    {
+        return Unzip.unzip( Legacy19Store.class, "propkeydupdb.zip" );
+    }
+
+    public static File find19FormatStoreDirectory( File unzipTarget ) throws IOException
+    {
+        return Unzip.unzip( Legacy19Store.class, "propkeydupdb.zip", unzipTarget );
+    }
+
+    public static File find19FormatHugeStoreDirectory() throws IOException
+    {
+        return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip" );
+    }
+
+    public static File find19FormatHugeStoreDirectory( File unzipTarget ) throws IOException
+    {
+        return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip", unzipTarget );
+    }
+
     public static boolean allStoreFilesHaveVersion( FileSystemAbstraction fileSystem, File workingDirectory,
             String version ) throws IOException
     {
-        for ( StoreFile20 storeFile : StoreFile20.legacyStoreFiles() )
+        for ( StoreFile storeFile : StoreFile.legacyStoreFilesForVersion( version ) )
         {
             StoreChannel channel = fileSystem.open( new File( workingDirectory, storeFile.storeFileName() ), "r" );
             int length = UTF8.encode( version ).length;
@@ -167,7 +206,7 @@ public class MigrationTestUtils
 
     public static boolean containsAnyStoreFiles( FileSystemAbstraction fileSystem, File directory )
     {
-        for ( StoreFile20 file : StoreFile20.values() )
+        for ( StoreFile file : StoreFile.values() )
         {
             if ( fileSystem.fileExists( new File( directory, file.storeFileName() ) ) )
             {
@@ -177,38 +216,39 @@ public class MigrationTestUtils
         return false;
     }
 
-    public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original,
-            File other ) throws IOException
+    public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original, File other )
+            throws IOException
     {
-        for ( File originalFile : fileSystem.listFiles( original ) )
+        final int bufferBatchSize = 32 * 1024;
+        File[] files = fileSystem.listFiles( original );
+        for ( File originalFile : files )
         {
             File otherFile = new File( other, originalFile.getName() );
             if ( !fileSystem.isDirectory( originalFile ) )
             {
-                StoreChannel originalChannel = fileSystem.open( originalFile, "r" );
-                StoreChannel otherChannel = fileSystem.open( otherFile, "r" );
-                try
+                try ( StoreChannel originalChannel = fileSystem.open( originalFile, "r" );
+                      StoreChannel otherChannel = fileSystem.open( otherFile, "r" ) )
                 {
-                    ByteBuffer buffer = ByteBuffer.allocate( 1 );
-                    while( true )
+                    ByteBuffer buffer = ByteBuffer.allocate( bufferBatchSize );
+                    while ( true )
                     {
-                        if ( !readAndFlip( originalChannel, buffer, 1 ) )
+                        if ( !readAndFlip( originalChannel, buffer, bufferBatchSize ) )
                         {
                             break;
                         }
-                        int originalByte = buffer.get();
+                        byte[] originalBytes = new byte[buffer.limit()];
+                        buffer.get( originalBytes );
 
-                        if ( !readAndFlip( otherChannel, buffer, 1 ) )
+                        if ( !readAndFlip( otherChannel, buffer, bufferBatchSize ) )
                         {
                             fail( "Files have different sizes" );
                         }
-                        assertEquals( "Different content in " + originalFile.getName(), originalByte, buffer.get() );
+
+                        byte[] otherBytes = new byte[buffer.limit()];
+                        buffer.get( otherBytes );
+
+                        assertArrayEquals( "Different content in " + originalFile, originalBytes, otherBytes );
                     }
-                }
-                finally
-                {
-                    originalChannel.close();
-                    otherChannel.close();
                 }
             }
         }

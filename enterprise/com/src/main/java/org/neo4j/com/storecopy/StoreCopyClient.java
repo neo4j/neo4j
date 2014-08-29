@@ -55,9 +55,10 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Format.bytes;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
 
 /**
@@ -118,14 +119,14 @@ public class StoreCopyClient
         {
             requester.done();
         }
-        
+
         // This is a good place to check if the switch has been cancelled
         checkCancellation( cancellationRequest, tempStore );
 
         // Run recovery, so that the transactions we just wrote into the active log will be applied.
         GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
         graphDatabaseService.shutdown();
-        
+
         // This is a good place to check if the switch has been cancelled
         checkCancellation( cancellationRequest, tempStore );
 
@@ -147,7 +148,8 @@ public class StoreCopyClient
             ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( fs, storeDir );
             LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
                     NO_PRUNING, new ReadOnlyTransactionIdStore( fs, storeDir ), logVersionRepository,
-                    PhysicalLogFile.NO_MONITOR, LogRotationControl.NO_ROTATION_CONTROL,
+                    new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
+                    LogRotationControl.NO_ROTATION_CONTROL,
                     transactionMetadataCache, new NoRecoveryAssertingVisitor() ) );
             life.start();
 
@@ -186,8 +188,8 @@ public class StoreCopyClient
                         "use this backup as a seed for a cluster, you need to start a stand-alone database on " +
                         "it, and commit one write transaction, to create the transaction log needed to seed the " +
                         "cluster. To avoid this happening, make sure you never manually delete transaction log " +
-                        "files (nioneo_logical.log.vXXX), and that you configure the database to keep at least a " +
-                        "few days worth of transaction logs." );
+                        "files (" + PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX +"XXX), " +
+                        "and that you configure the database to keep at least a few days worth of transaction logs." );
             }
         }
         finally
@@ -207,7 +209,7 @@ public class StoreCopyClient
                 .setConfig( InternalAbstractGraphDatabase.Configuration.log_configuration_file, logConfigFileName() )
                 .newGraphDatabase();
     }
-    
+
     String logConfigFileName()
     {
         return "neo4j-backup-logback.xml";
@@ -247,7 +249,7 @@ public class StoreCopyClient
             directory.mkdir();
         }
     }
-    
+
     private void checkCancellation( CancellationRequest cancellationRequest, File tempStore ) throws IOException
     {
         if ( cancellationRequest.cancellationRequested() )
@@ -263,8 +265,7 @@ public class StoreCopyClient
         {
             // Skip log files and tx files from temporary database
             return !file.getName().startsWith( "metrics" )
-                    && !file.getName().startsWith("messages." )
-                    && !("active_tx_log tm_tx_log.1 tm_tx_log.2").contains( file.getName() );
+                    && !file.getName().startsWith("messages." );
         }
     };
 

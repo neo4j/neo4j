@@ -20,7 +20,6 @@
 package org.neo4j.kernel;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 
 @Deprecated
@@ -34,11 +33,6 @@ public class CommonFactories
     public static FileSystemAbstraction defaultFileSystemAbstraction()
     {
         return new DefaultFileSystemAbstraction();
-    }
-
-    public static RemoteTxHook defaultTxHook()
-    {
-        return new DefaultTxHook();
     }
 
     public static RecoveryVerifier defaultRecoveryVerifier()

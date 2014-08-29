@@ -30,11 +30,14 @@ import org.mockito.ArgumentCaptor;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -55,7 +58,7 @@ public class BackupToolTest
     @Test
     public void shouldUseIncrementalOrFallbackToFull() throws Exception
     {
-        String[] args = new String[]{"-from", "localhost", "-to", "my_backup"};
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
@@ -65,14 +68,15 @@ public class BackupToolTest
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ),
                 eq( BackupServer.DEFAULT_PORT ), eq( "my_backup" ), eq( true ), any( Config.class ) );
-        verify( systemOut ).println( "Performing backup from 'localhost'" );
+        verify( systemOut ).println(
+                "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
     }
 
     @Test
     public void shouldIgnoreIncrementalFlag() throws Exception
     {
-        String[] args = new String[]{"-incremental", "-from", "localhost", "-to", "my_backup"};
+        String[] args = new String[]{"-incremental", "-host", "localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
@@ -82,16 +86,17 @@ public class BackupToolTest
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
                 eq( "my_backup" ), eq( true ), any( Config.class ) );
-        verify( systemOut ).println( "Performing backup from 'localhost'" );
+        verify( systemOut ).println(
+                "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
     }
 
     @Test
     public void shouldIgnoreFullFlag() throws Exception
     {
-        String[] args = new String[]{"-full", "-from", "localhost", "-to", "my_backup"};
+        String[] args = new String[]{"-full", "-host", "localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
-        when(service.directoryContainsDb( anyString() )).thenReturn( true );
+        when( service.directoryContainsDb( anyString() ) ).thenReturn( true );
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
@@ -99,8 +104,9 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any(Config.class) );
-        verify( systemOut ).println( "Performing backup from 'localhost'" );
+                eq( "my_backup" ), eq( true ), any( Config.class ) );
+        verify( systemOut ).println(
+                "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
     }
 
@@ -108,8 +114,7 @@ public class BackupToolTest
     public void appliesDefaultTuningConfigurationForConsistencyChecker() throws Exception
     {
         // given
-        String[] args = new String[]{"-from", "localhost",
-                "-to", "my_backup"};
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
@@ -134,8 +139,7 @@ public class BackupToolTest
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( propertyFile ), null );
 
-        String[] args = new String[]{"-from", "localhost",
-                "-to", "my_backup", "-config", propertyFile.getPath()};
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-config", propertyFile.getPath()};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
@@ -154,8 +158,7 @@ public class BackupToolTest
     {
         // given
         File propertyFile = TargetDirectory.forTest( getClass() ).file( "nonexistent_file" );
-        String[] args = new String[]{"-from", "localhost",
-                "-to", "my_backup", "-config", propertyFile.getPath()};
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-config", propertyFile.getPath()};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
         BackupTool backupTool = new BackupTool( service, systemOut );
@@ -194,11 +197,7 @@ public class BackupToolTest
         catch ( BackupTool.ToolFailureException e )
         {
             // then
-            assertEquals( "Please specify -from, examples:\n" +
-                    "  -from 192.168.1.34\n" +
-                    "  -from 192.168.1.34:1234\n" +
-                    "  -from 192.168.1.15:2181,192.168.1.16:2181",
-                    e.getMessage() );
+            assertEquals( BackupTool.NO_SOURCE_SPECIFIED, e.getMessage() );
         }
 
         verifyZeroInteractions( service );
@@ -208,7 +207,7 @@ public class BackupToolTest
     public void exitWithFailureIfInvalidSourceSpecified() throws Exception
     {
         // given
-        String[] args = new String[]{"-from", "foo:localhost:123", "-to", "my_backup"};
+        String[] args = new String[]{"-host", "foo:localhost", "-port", "123", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
         BackupTool backupTool = new BackupTool( service, systemOut );
@@ -222,9 +221,7 @@ public class BackupToolTest
         catch ( BackupTool.ToolFailureException e )
         {
             // then
-            assertEquals( "foo was specified as a backup module but it was not found. " +
-                    "Please make sure that the implementing service is on the classpath.",
-                    e.getMessage() );
+            assertEquals( BackupTool.WRONG_FROM_ADDRESS_SYNTAX, e.getMessage() );
         }
 
         verifyZeroInteractions( service );
@@ -234,7 +231,7 @@ public class BackupToolTest
     public void exitWithFailureIfNoDestinationSpecified() throws Exception
     {
         // given
-        String[] args = new String[]{"-from", "localhost"};
+        String[] args = new String[]{"-host", "localhost"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
         BackupTool backupTool = new BackupTool( service, systemOut );
@@ -248,11 +245,33 @@ public class BackupToolTest
         catch ( BackupTool.ToolFailureException e )
         {
             // then
-            assertEquals( "Specify target location with -to <target-directory>",
-                    e.getMessage() );
+            assertEquals( "Specify target location with -to <target-directory>", e.getMessage() );
         }
 
         verifyZeroInteractions( service );
     }
 
+    @Test
+    public void helpMessageForWrongUriShouldNotContainSchema() throws BackupTool.ToolFailureException
+    {
+        // given
+        String[] args = new String[]{"-host", ":VeryWrongURI:", "-to", "/var/backup/graph"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        try
+        {
+            // when
+            new BackupTool( service, systemOut ).run( args );
+            fail( "should exit abnormally" );
+        }
+        catch ( BackupTool.ToolFailureException e )
+        {
+            // then
+            assertThat( e.getMessage(), equalTo( BackupTool.WRONG_FROM_ADDRESS_SYNTAX ) );
+            assertThat( e.getMessage(), not( containsString( "<schema>" ) ) );
+        }
+
+        verifyZeroInteractions( service, systemOut );
+    }
 }
