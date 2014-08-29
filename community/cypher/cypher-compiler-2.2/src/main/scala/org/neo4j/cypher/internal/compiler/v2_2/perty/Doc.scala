@@ -114,12 +114,22 @@ object Doc {
   }
 
   def block(name: Doc, open: Doc = "(", close: Doc = ")")(innerDoc: Doc): Doc =
-    group(
-      name ::
-      open ::
-      nest(group(breakSilentBefore(innerDoc))) ::
-      breakSilentBefore(close)
-    )
+    group( name :: surrounded(open, close, breakSilent)(innerDoc) )
+
+  def brackets(innerDoc: Doc, break: BreakingDoc = breakSilent) =
+    surrounded(open = "[", close = "]", break)(innerDoc)
+
+  def braces(innerDoc: Doc, break: BreakingDoc = breakSilent) =
+    surrounded(open = "{", close = "}", break)(innerDoc)
+
+  def parens(innerDoc: Doc, break: BreakingDoc = breakSilent) =
+    surrounded(open = "(", close = ")", break)(innerDoc)
+
+  def comment(innerDoc: Doc, break: BreakingDoc = break) =
+    surrounded(open = "/*", close = "*/", break)(innerDoc)
+
+  def surrounded(open: Doc, close: Doc, break: BreakingDoc)(innerDoc: Doc): Doc =
+    group( open :: nest(group(breakBefore(innerDoc, break))) :: breakBefore(close, break) )
 
   def section(start: Doc, inner: Doc, break: BreakingDoc = break): Doc =
     if (inner.isNil) inner else group(start :: nest(breakBefore(inner, break = break)))
