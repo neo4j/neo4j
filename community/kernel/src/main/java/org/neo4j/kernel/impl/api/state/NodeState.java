@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -33,6 +36,7 @@ public final class NodeState extends PropertyContainerState
     private DiffSets<Integer> labelDiffSets;
     private RelationshipChangesForNode relationshipsAdded;
     private RelationshipChangesForNode relationshipsRemoved;
+    private Set<DiffSets<Long>> indexDiffs;
 
     public interface Visitor extends PropertyContainerState.Visitor
     {
@@ -96,6 +100,10 @@ public final class NodeState extends PropertyContainerState
         if(labelDiffSets != null)
         {
             labelDiffSets.clear();
+        }
+        if ( indexDiffs != null )
+        {
+            indexDiffs.clear();
         }
     }
 
@@ -175,5 +183,40 @@ public final class NodeState extends PropertyContainerState
     public boolean hasLabelChanges()
     {
         return labelDiffSets != null;
+    }
+
+    public void addIndexDiff( DiffSets<Long> diff )
+    {
+        if ( indexDiffs == null )
+        {
+            indexDiffs = Collections.newSetFromMap( new IdentityHashMap<DiffSets<Long>, Boolean>() );
+        }
+        indexDiffs.add( diff );
+    }
+
+    public void removeIndexDiff( DiffSets<Long> diff )
+    {
+        if ( indexDiffs != null )
+        {
+            indexDiffs.remove( diff );
+        }
+    }
+
+    public void clearIndexDiffs( long nodeId )
+    {
+        if ( indexDiffs != null )
+        {
+            for ( DiffSets<Long> diff : indexDiffs )
+            {
+                if ( diff.getAdded().contains( nodeId ) )
+                {
+                    diff.remove( nodeId );
+                }
+                else if ( diff.getRemoved().contains( nodeId ) )
+                {
+                    diff.add( nodeId );
+                }
+            }
+        }
     }
 }
