@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, LogicalLeafPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{simpleDocBuilder, DocBuilderTestSuite}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{defaultDocBuilder, DocBuilderTestSuite}
 
 class LogicalPlanDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  val docBuilder = plannerDocBuilder orElse simpleDocBuilder
+  val docBuilder = plannerDocBuilder orElse defaultDocBuilder
 
   override def docFormatter = DocFormatters.pageFormatter(80)
 

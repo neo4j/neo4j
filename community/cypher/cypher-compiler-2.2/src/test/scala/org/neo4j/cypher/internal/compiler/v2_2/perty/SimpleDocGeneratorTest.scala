@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import scala.collection.mutable
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.simpleDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.defaultDocBuilder
 
 class SimpleDocGeneratorTest extends CypherFunSuite {
 
-  val docGen = simpleDocBuilder.docGenerator
+  val docGen = defaultDocBuilder.docGenerator
 
   import Doc._
 
@@ -121,7 +121,7 @@ class SimpleDocGeneratorTest extends CypherFunSuite {
   }
 
   test("DocGenerator uses toDoc as a fallback") {
-    object Rick extends Pretty[Any] {
+    object Rick extends Pretty {
       def toDoc = "NEVER GONNA" :/: "GIVE YOU UP"
       override def toString = fail("Called toString when expected to be rendered using toDoc")
     }

@@ -17,15 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{catchErrors, defaultDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.StringPrintingConverter
 
-case object internalDocBuilder extends CustomDocBuilderChain[Any] {
-
-  val builders = Seq(
-    plannerDocBuilder,
-    defaultDocBuilder
-  )
+object printToString extends (Seq[PrintCommand] => String) {
+  def apply(commands: Seq[PrintCommand]) =
+    (new StringPrintingConverter() ++= commands).result()
 }

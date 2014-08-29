@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import scala.collection.immutable
 import scala.collection.mutable
-import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.{quoteString, quoteChar}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.{CachingDocBuilder, quoteString, quoteChar}
 
-case object scalaDocBuilder extends CachingDocBuilder[Any] {
+case object scalaDocBuilder extends CustomDocBuilder[Any] {
 
   import Doc._
 
-  override protected def newNestedDocGenerator = {
+  override def newDocGenerator = DocGenerator {
     case v: String => (inner) =>
       quoteString(v)
 
