@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppendException;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
@@ -49,16 +46,17 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     }
 
     @Override
-    public long commit( TransactionRepresentation representation ) throws TransactionFailureException
+    public long commit( TransactionRepresentation transaction ) throws TransactionFailureException
     {
-        long transactionId = persistTransaction( representation );
+        long transactionId = commitTransaction( transaction );
+        
         // apply changes to the store
         try
         {
-            storeApplier.apply( representation, transactionId, recovery );
+            storeApplier.apply( transaction, transactionId, recovery );
         }
         // TODO catch different types of exceptions here, some which are OK
-        catch ( IOException e )
+        catch ( Throwable e )
         {
             throw exception( Status.Transaction.CouldNotCommit, e,
                     "Could not apply the transaction to the store after written to log" );
@@ -70,30 +68,22 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         return transactionId;
     }
 
-    private TransactionFailureException exception( Status status, IOException e, String message )
+    private TransactionFailureException exception( Status status, Throwable cause, String message )
     {
-        kernelHealth.panic( e );
-        return new TransactionFailureException( status, e, message );
+        kernelHealth.panic( cause );
+        return new TransactionFailureException( status, cause, message );
     }
 
-    private long persistTransaction( TransactionRepresentation tx ) throws TransactionFailureException
+    private long commitTransaction( TransactionRepresentation tx ) throws TransactionFailureException
     {
         try
         {
             return logicalTransactionStore.getAppender().append( tx );
         }
-        catch ( TransactionAppendException e )
+        catch ( Throwable e )
         {
-            // Special case where a new transaction id was generated, but the transaction failed to be appended
-            // and so there's a transaction that would otherwise never be notified as closed. The appender
-            // throws a specific exception for this scenario where it contains the generated transaction id if
-            // the append method got that far.
-            if ( e.hasNewTransactionIdGenerated() )
-            {
-                transactionIdStore.transactionClosed( e.newTransactionIdGenerated() );
-            }
             throw exception( Status.Transaction.CouldNotWriteToLog, e,
-                    "Could not write transaction representation to log" );
+                    "Could not append transaction representation to log" );
         }
     }
 }

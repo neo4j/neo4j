@@ -41,6 +41,9 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.Exceptions.contains;
@@ -56,6 +59,8 @@ public class PhysicalTransactionAppenderTest
         InMemoryLogChannel channel = new InMemoryLogChannel();
         when( logFile.getWriter() ).thenReturn( channel );
         TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
+        long txId = 15;
+        when( txIdGenerator.generate( any( TransactionRepresentation.class ) ) ).thenReturn( txId );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender(
@@ -73,6 +78,7 @@ public class PhysicalTransactionAppenderTest
         appender.append( transaction );
 
         // THEN
+        verify( transactionIdStore, times( 1 ) ).transactionCommitted( txId );
         try(PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader()))
         {
             reader.next();
@@ -94,6 +100,8 @@ public class PhysicalTransactionAppenderTest
         InMemoryLogChannel channel = new InMemoryLogChannel();
         when( logFile.getWriter() ).thenReturn( channel );
         TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
+        long txId = 15;
+        when( txIdGenerator.generate( any( TransactionRepresentation.class ) ) ).thenReturn( txId );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender(
@@ -120,6 +128,7 @@ public class PhysicalTransactionAppenderTest
         appender.append( transaction );
 
         // THEN
+        verify( transactionIdStore, times( 1 ) ).transactionCommitted( txId );
         PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader() );
         reader.next();
         TransactionRepresentation result = reader.get().getTransactionRepresentation();
@@ -175,7 +184,7 @@ public class PhysicalTransactionAppenderTest
     }
     
     @Test
-    public void shouldExposeGeneratedTransactionIdToThrownExceptionInFailedLogAppend() throws Exception
+    public void shouldNotCallTransactionCommittedOnFailedAppendedTransaction() throws Exception
     {
         // GIVEN
         long txId = 3;
@@ -199,12 +208,11 @@ public class PhysicalTransactionAppenderTest
             appender.append( transaction );
             fail( "Expected append to fail. Something is wrong with the test itself" );
         }
-        catch ( TransactionAppendException e )
+        catch ( IOException e )
         {
             // THEN
-            assertTrue( e.hasNewTransactionIdGenerated() );
-            assertEquals( txId, e.newTransactionIdGenerated() );
             assertTrue( contains( e, failureMessage, IOException.class ) );
+            verifyNoMoreInteractions( transactionIdStore );
         }
     }
 
