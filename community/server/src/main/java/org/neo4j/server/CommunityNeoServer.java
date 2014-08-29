@@ -26,7 +26,6 @@ import java.util.List;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.modules.DiscoveryModule;
@@ -72,6 +71,7 @@ public class CommunityNeoServer extends AbstractNeoServer
     @Override
     protected PreFlightTasks createPreflightTasks()
     {
+        Logging logging = dependencies.logging();
         return new PreFlightTasks( logging,
                 // TODO: Move the config check into bootstrapper
                 //new EnsureNeo4jPropertiesExist(configurator.configuration()),
@@ -79,27 +79,28 @@ public class CommunityNeoServer extends AbstractNeoServer
                 new PerformUpgradeIfNecessary(getConfiguration(),
                         configurator.getDatabaseTuningProperties(), logging, StoreUpgrader.NO_MONITOR),
                 new PerformRecoveryIfNecessary(getConfiguration(),
-                        configurator.getDatabaseTuningProperties(), System.out, logging));
+                        configurator.getDatabaseTuningProperties(), System.out, logging ));
     }
 
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
+        Logging logging = dependencies.logging();
         return Arrays.asList(
-                new DiscoveryModule(webServer, logging),
-                new RESTApiModule(webServer, database, configurator.configuration(), logging),
-                new ManagementApiModule(webServer, configurator.configuration(), logging),
+                new DiscoveryModule(webServer, logging ),
+                new RESTApiModule(webServer, database, configurator.configuration(), logging ),
+                new ManagementApiModule(webServer, configurator.configuration(), logging ),
                 new ThirdPartyJAXRSModule(webServer, configurator, logging, this),
-                new WebAdminModule(webServer, logging),
+                new WebAdminModule(webServer, logging ),
                 new Neo4jBrowserModule(webServer, configurator.configuration(), logging, database),
                 new StatisticModule(webServer, statisticsCollector, configurator.configuration()),
-                new SecurityRulesModule(webServer, configurator.configuration(), logging));
+                new SecurityRulesModule(webServer, configurator.configuration(), logging ));
     }
 
     @Override
     protected WebServer createWebServer()
     {
-        return new Jetty9WebServer( logging );
+        return new Jetty9WebServer( dependencies.logging() );
     }
 
     @Override
