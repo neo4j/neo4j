@@ -1468,6 +1468,20 @@ RETURN a.name""")
     intercept[SyntaxException](executeWithNewPlanner("MATCH n WITH n.prop AS n2 RETURN n2.prop"))
   }
 
+  test("MATCH foo RETURN foo.bar AS x ORDER BY x DESC LIMIT 4") {
+    createNode("bar" -> 1)
+    createNode("bar" -> 3)
+    createNode("bar" -> 2)
+
+    // when
+    val result = executeWithNewPlanner("MATCH foo RETURN foo.bar AS x ORDER BY x DESC LIMIT 4")
+    result.toList should equal(List(
+      Map("x" -> 3),
+      Map("x" -> 2),
+      Map("x" -> 1)
+    ))
+  }
+
   private def relsById(in: Seq[Relationship]): Seq[Relationship] = in.sortBy(_.getId)
 
 }

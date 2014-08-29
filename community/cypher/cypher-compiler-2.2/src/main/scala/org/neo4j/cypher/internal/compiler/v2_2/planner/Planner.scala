@@ -91,6 +91,7 @@ object Planner {
     nameVarLengthRelationships,
     namePatternPredicates,
     projectNamedPaths,
+    projectFreshSortExpressions,
     inlineProjections
   )
 
