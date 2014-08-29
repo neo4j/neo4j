@@ -67,7 +67,8 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     {
         long transactionId = -1;
         long ticket;
-        synchronized ( this )
+        // Synchronized with logFile to get absolute control over concurrent rotations happening
+        synchronized ( logFile )
         {
             // We put log rotation check outside the private append method since it must happen before
             // we generate the next transaction id
@@ -76,7 +77,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             append( transaction, transactionId );
             ticket = getCurrentTicket();
         }
-        
+
         force( ticket );
         transactionIdStore.transactionCommitted( transactionId );
         return transactionId;
@@ -95,7 +96,8 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         long transactionId;
         boolean result = false;
         long ticket;
-        synchronized ( this )
+        // Synchronized with logFile to get absolute control over concurrent rotations happening
+        synchronized ( logFile )
         {
             logFile.checkRotation();
             long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
@@ -119,12 +121,11 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                 return false;
             }
         }
-        
         force( ticket );
         transactionIdStore.transactionCommitted( transactionId );
         return result;
     }
-    
+
     @Override
     public void close()
     {   // do nothing

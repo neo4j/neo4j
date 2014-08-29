@@ -161,10 +161,9 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         {
             synchronized ( this )
             {
-                // Good old double-checked locking
                 if ( channel.position() >= rotateAtSize )
                 {
-                    forceRotate();
+                    doRotate();
                 }
             }
         }
@@ -172,21 +171,25 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
 
     // Do not expose this through the interface; only used in robustness testing.
     public synchronized void forceRotate() throws IOException
-    {   // The above synchronization is for managing concurrent access to f.ex. stop()
+    {
+        doRotate();
+    }
 
-        /*
-         * First we flush the store. If we fail now or during the flush, on recovery we'll discover
-         * the current log file and replay it. Everything will be ok.
-         */
-        logRotationControl.awaitAllTransactionsClosed();
-        logRotationControl.forceEverything();
-
+    private void doRotate() throws IOException
+    {
         /* We synchronize on the writer because we want to have a monitor that another thread
          * doing force (think batching of writes), such that it can't see a bad state of the writer
          * even when rotating underlying channels.
          */
         synchronized ( writer )
         {
+            /*
+             * First we flush the store. If we fail now or during the flush, on recovery we'll discover
+             * the current log file and replay it. Everything will be ok.
+             */
+            logRotationControl.awaitAllTransactionsClosed();
+            logRotationControl.forceEverything();
+            
             channel = rotate( channel );
             writer.setChannel( channel );
         }
