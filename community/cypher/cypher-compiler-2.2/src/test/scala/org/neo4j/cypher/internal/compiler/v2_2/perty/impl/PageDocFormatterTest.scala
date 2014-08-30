@@ -34,6 +34,10 @@ class PageDocFormatterTest extends CypherFunSuite {
     PageDocFormatter(10)(nil) should equal(Seq.empty)
   }
 
+  test("format NoBreak") {
+    PageDocFormatter(10)(noBreak) should equal(Seq.empty)
+  }
+
   test("format TextDoc") {
     PageDocFormatter(10)("text") should equal(Seq(PrintText("text")))
   }

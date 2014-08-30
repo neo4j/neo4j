@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.DocBuilder._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.catchErrors
 import org.neo4j.cypher.internal.compiler.v2_2.perty.impl.{CachingDocBuilder, SimpleDocBuilder, SimpleDocBuilderChain}
 
 import scala.reflect.ClassTag
@@ -68,10 +67,7 @@ abstract class DocBuilderChain[T: ClassTag] extends CachingDocBuilder[T] {
 abstract class CustomDocBuilder[T: ClassTag] extends CachingDocBuilder[T] with ToStringDocBuilder[T]
 
 // Public super class of custom doc builder chain
-abstract class CustomDocBuilderChain[T: ClassTag] extends DocBuilderChain[T] with ToStringDocBuilder[T] {
-  override def newDocGenerator = super.newDocGenerator.map(docGen => catchErrors(docGen))
-}
-
+abstract class CustomDocBuilderChain[T: ClassTag] extends DocBuilderChain[T] with ToStringDocBuilder[T]
 
 
 

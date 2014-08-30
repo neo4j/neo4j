@@ -59,7 +59,7 @@ case object plannerDocBuilder extends DocBuilderChain[Any] {
     case Predicate(dependencies, expr) => (inner) =>
       val pred = sepList(dependencies.map(inner), break = breakSilent)
       val predBlock = block("Predicate", open = "[", close = "]")(pred)
-      block(predBlock)(inner(expr))
+      group("Predicate" :: brackets(pred, break = noBreak) :: parens(inner(expr)))
   }
 
   val forNestedSelections: DocBuilder[Any] = DocGenerator[Any] {

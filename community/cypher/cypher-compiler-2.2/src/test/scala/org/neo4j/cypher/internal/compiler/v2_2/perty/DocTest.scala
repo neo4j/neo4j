@@ -33,6 +33,10 @@ class DocTest extends CypherFunSuite {
     Doc.nil should equal(NilDoc)
   }
 
+  test("noBreak == NoBreakDoc") {
+    Doc.noBreak should equal(NoBreak)
+  }
+
   test("text(v) = TextDoc(v)") {
     text("text") should equal(TextDoc("text"))
   }
