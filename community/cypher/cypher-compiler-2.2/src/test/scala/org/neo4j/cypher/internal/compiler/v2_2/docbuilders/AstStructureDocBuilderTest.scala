@@ -28,6 +28,6 @@ class AstStructureDocBuilderTest extends DocBuilderTestSuite[Any] {
   test("Renders ast node together with its structure but only on the outer level") {
     val expr: Expression = And(ident("a"), ident("b"))_
 
-    format(expr) should equal("/* ast */ a AND b /* And(Identifier(\"a\"), Identifier(\"b\")) */")
+    format(expr) should equal("/* ast */ a AND b /* val */ And(Identifier(\"a\"), Identifier(\"b\"))")
   }
 }

@@ -42,6 +42,7 @@ case class astExpressionConverter(pretty: FixedDocGenerator[Any]) extends (Expre
       case literal: Literal => literal.asDoc
       case hasLabels: HasLabels => hasLabels.asDoc
       case property: Property => property.asDoc
+      case param: Parameter => param.asDoc
       case binOp: BinaryOperatorExpression => binOp.asDoc
       case leftOp: LeftUnaryOperatorExpression => leftOp.asDoc
       case rightOp: RightUnaryOperatorExpression => rightOp.asDoc
@@ -69,6 +70,10 @@ case class astExpressionConverter(pretty: FixedDocGenerator[Any]) extends (Expre
 
   implicit class PropertyConverter(property: Property) {
     def asDoc = group(pretty(property.map) :: "." :: pretty(property.propertyKey))
+  }
+
+  implicit class ParameterConverter(param: Parameter) {
+    def asDoc = braces(param.name)
   }
 
   implicit class BinOpConverter(binOp: BinaryOperatorExpression) {

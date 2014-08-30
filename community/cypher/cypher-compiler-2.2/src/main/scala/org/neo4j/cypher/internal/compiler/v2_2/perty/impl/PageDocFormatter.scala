@@ -40,6 +40,9 @@ final case class PageDocFormatter(width: Int,
     case DocIndent(indent, mode, NilDoc) :: rest =>
       build(consumed, rest, builder)
 
+    case DocIndent(indent, mode, NoBreak) :: rest =>
+      build(consumed, rest, builder)
+
     case DocIndent(indent, mode, ConsDoc(hd, tl)) :: rest =>
       build(consumed, DocIndent(indent, mode, hd) :: DocIndent(indent, mode, tl) :: rest, builder)
 

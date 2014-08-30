@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.bling._
 import org.neo4j.cypher.internal.helpers.PartialFunctionSupport._
 
 import scala.collection.mutable
@@ -39,10 +41,21 @@ package object perty {
 
   type Representable[-T] = HasDocFormatter with HasDocGenerator[T]
 
+  // type DocGen[-T] = Chain[T, Any, Doc]
+
   // Combines nested doc generator together with it's fixed doc generator
   final case class DocGenerator[T: ClassTag](nested: NestedDocGenerator[T])
     extends fixedPartialFunction(nested)
     with FixedDocGenerator[T] {
+
+    override def apply(v: T) =
+      try {
+        super.apply(v)
+      }
+      catch {
+        case _: NotImplementedError => "???"
+        case e: Exception           => group("Error:" :/: e.getMessage)
+      }
 
     def map[S: ClassTag](f: NestedDocGenerator[T] => NestedDocGenerator[S]) = DocGenerator[S](f(nested))
     def uplifted[S >: T: ClassTag]: DocGenerator[S] = DocGenerator(uplift[T, FixedDocGenerator[T] => Doc, S](nested))
