@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.docbuilders.internalDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 
 sealed trait QueryHorizon {
   def exposedSymbols: Set[IdName]
 }
 
-sealed abstract class QueryProjection extends QueryHorizon with internalDocBuilder.GeneratorToString[Any]{
+sealed abstract class QueryProjection extends QueryHorizon { // with internalDocBuilder.GeneratorToString[Any]{
   def projections: Map[String, Expression]
   def shuffle: QueryShuffle
   def keySet: Set[String]
@@ -55,7 +54,7 @@ object QueryProjection {
 
 final case class QueryShuffle(sortItems: Seq[SortItem] = Seq.empty,
                               skip: Option[Expression] = None,
-                              limit: Option[Expression] = None) extends internalDocBuilder.GeneratorToString[Any] {
+                              limit: Option[Expression] = None) { // extends internalDocBuilder.GeneratorToString[Any] {
 
   def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
   def withSkip(skip: Option[Skip]) = copy(skip = skip.map(_.expression))

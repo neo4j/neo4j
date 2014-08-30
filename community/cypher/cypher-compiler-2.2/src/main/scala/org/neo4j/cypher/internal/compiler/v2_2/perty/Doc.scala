@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.docStructureDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.docStructureDocGen
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.Pretty
 
 /**
  * Class of pretty-printable documents.
@@ -28,9 +29,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.docStructureDoc
  * (cf. http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.34.2200&rep=rep1&type=pdf)
  *
  */
-sealed abstract class Doc extends docStructureDocBuilder.GeneratorToString[Doc] with HasLineDocFormatter {
+sealed abstract class Doc extends docStructureDocGen.ToString[Doc] with LineDocFormatting {
 
-  import Doc._
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
   def ::(hd: Doc): Doc = cons(hd, this)
   def :/:(hd: Doc): Doc = cons(hd, cons(break, this))
@@ -185,9 +186,8 @@ final case class NestWith(indent: Int, content: Doc) extends NestingDoc {
   def optIndent = Some(indent)
 }
 
-final case class DocLiteral(doc: Doc) extends Pretty[Doc] {
-  override def toDoc(pretty: FixedDocGenerator[Doc]) =
-    Doc.block("DocLiteral")(docStructureDocBuilder.docGenerator.applyWithFallback(pretty)(doc))
+final case class DocLiteral(doc: Doc) extends Pretty {
+  override def toDoc = inner => docStructureDocGen(inner)(doc)
 }
 
 

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.pprintToString
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_2.perty.pformat
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 case class PlanningResult(queryPlan: QueryPlan, subPlansLookupTable: Map[PatternExpression, QueryPlan])
@@ -29,7 +29,7 @@ case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) {
 
   def availableSymbols: Set[IdName] = plan.availableSymbols
 
-  override def toString = pformat(this)
+  override def toString = pprintToString(this)
 
   def updateSolved(f: PlannerQuery => PlannerQuery) = copy(solved = f(solved))
 }

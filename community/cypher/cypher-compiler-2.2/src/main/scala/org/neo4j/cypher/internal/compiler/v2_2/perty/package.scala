@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.bling._
-import org.neo4j.cypher.internal.helpers.PartialFunctionSupport._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.PrintCommand
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -30,53 +29,20 @@ import scala.reflect.ClassTag
  * See pp.Doc
  */
 package object perty {
-  // Knows how to layout a doc as series if print commands
+  // convert a value into a doc (digger)
+  type DocGen[-T] = FunDigger.type#AbstractFunDigger[T, Any, Doc]
+
+  // convert a value into a doc (total function)
+  type DocConverter[-T] = T => Doc
+
+  // layout a doc as a series of print commands
   type DocFormatter = Doc => Seq[PrintCommand]
 
-  // Given a doc generator for the layout of child components, knows how to represent a value of type T as a Doc
-  type NestedDocGenerator[T] = PartialFunction[T, FixedDocGenerator[T] => Doc]
-
-  // Knows how to represent a value of type T as a Doc
-  type FixedDocGenerator[-T] = PartialFunction[T, Doc]
-
-  type Representable[-T] = HasDocFormatter with HasDocGenerator[T]
-
-  // type DocGen[-T] = Chain[T, Any, Doc]
-
-  // Combines nested doc generator together with it's fixed doc generator
-  final case class DocGenerator[T: ClassTag](nested: NestedDocGenerator[T])
-    extends fixedPartialFunction(nested)
-    with FixedDocGenerator[T] {
-
-    override def apply(v: T) =
-      try {
-        super.apply(v)
-      }
-      catch {
-        case _: NotImplementedError => "???"
-        case e: Exception           => group("Error:" :/: e.getMessage)
-      }
-
-    def map[S: ClassTag](f: NestedDocGenerator[T] => NestedDocGenerator[S]) = DocGenerator[S](f(nested))
-    def uplifted[S >: T: ClassTag]: DocGenerator[S] = DocGenerator(uplift[T, FixedDocGenerator[T] => Doc, S](nested))
-
-    def orElse(other: DocGenerator[T]) = DocGenerator(nested orElse other.nested)
-
-    def applyWithInner(inner: FixedDocGenerator[T])(v: T): Doc = nested(v)(inner)
-
-    def applyWithFallback[S <: T](inner: FixedDocGenerator[S])(v: T)(implicit tag: ClassTag[S]): Doc = {
-      val fallback: NestedDocGenerator[T] = { case v: S => _ => inner(v) }
-      DocGenerator[T](nested orElse fallback)(implicitly[ClassTag[T]])(v)
-    }
-  }
-
-  object DocGenerator {
-    implicit def fromNestedDocGenerator[T: ClassTag](nestedDocGenerator: NestedDocGenerator[T]) =
-      DocGenerator(nestedDocGenerator)
-  }
-
-  // Builder for turning a sequence of print commands into a result of type T
+  // turns a sequence of print commands into a result of type T
   type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
+
+  // drills used by DocGens
+  type DocDrill[-T] = Drill[T, Any, Doc]
 }
 
 

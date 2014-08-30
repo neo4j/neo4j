@@ -21,20 +21,20 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_2.docbuilders.internalDocBuilder
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class Predicate(dependencies: Set[IdName], exp: Expression)
-  extends internalDocBuilder.GeneratorToString[Any] {
+//  extends internalDocBuilder.GeneratorToString[Any] {
+{
 
   def hasDependenciesMet(symbols: Set[IdName]): Boolean =
     (dependencies -- symbols).isEmpty
 }
 
 case class Selections(predicates: Set[Predicate] = Set.empty)
-  extends internalDocBuilder.GeneratorToString[Any] {
-
+//  extends internalDocBuilder.GeneratorToString[Any] {
+{
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
   }.toSeq

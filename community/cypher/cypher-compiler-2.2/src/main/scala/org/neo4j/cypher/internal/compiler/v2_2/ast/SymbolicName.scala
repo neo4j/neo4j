@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{Doc, FixedDocGenerator}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, PropertyKeyId}
 

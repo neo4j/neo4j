@@ -20,18 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.docbuilders.internalDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{defaultDocBuilder, simpleDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.SimpleDocHandler
 
 trait ASTNode
   extends Product
   with Foldable
   with Rewritable
-  with HasPageDocFormatter /* multi line */
-  // with HasLineDocFormatter  /* single line */
-  // with simpleDocBuilder.GeneratorToString[ASTNode] /* like scala.toString() */ {
-  with internalDocBuilder.GeneratorToString[ASTNode] /* see internalDocBuilder for more choices */ {
+  with PageDocFormatting /* multi line */
+  // with LineDocFormatting  /* single line */
+  // with SimpleDocHandler.ToString[ASTNode] /* like default toString() */ {
+  with InternalDocHandler.ToString[ASTNode] /* see InternalDocHandler for more choices */
+{
 
   import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
   import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
@@ -62,4 +63,4 @@ sealed trait ASTNodeType { self: ASTNode => }
 
 trait ASTExpression extends ASTNodeType { self: ASTNode => }
 trait ASTParticle extends ASTNodeType { self: ASTNode => }
-trait ASTTerm extends ASTNodeType { self: ASTNode => }
+trait ASTPhrase extends ASTNodeType { self: ASTNode => }

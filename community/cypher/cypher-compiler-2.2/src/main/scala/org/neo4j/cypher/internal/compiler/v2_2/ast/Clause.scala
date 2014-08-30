@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
-sealed trait Clause extends ASTNode with ASTTerm with SemanticCheckable {
+sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
   def name: String
 }
 
@@ -298,7 +298,7 @@ case class Return(
     }
 }
 
-case class PeriodicCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with ASTTerm with SemanticCheckable {
+case class PeriodicCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable {
   def name = s"USING PERIODIC COMMIT $size"
 
   override def semanticCheck: SemanticCheck = size match {
