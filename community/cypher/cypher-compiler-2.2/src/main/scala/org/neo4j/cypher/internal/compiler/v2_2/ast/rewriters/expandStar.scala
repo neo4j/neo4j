@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_2.{Foldable, bottomUp, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator
+import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp}
 
 case object expandStar extends Rewriter {
 

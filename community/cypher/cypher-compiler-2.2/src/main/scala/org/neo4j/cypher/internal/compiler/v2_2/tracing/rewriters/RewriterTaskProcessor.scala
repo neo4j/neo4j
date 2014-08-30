@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
+import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.printCommandsToString
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{Doc, DocFormatters}
 
 trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
   def sequenceName: String
@@ -58,16 +61,22 @@ trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
 case class DefaultRewriterTaskProcessor(sequenceName: String) extends RewriterTaskProcessor
 
 case class TracingRewriterTaskProcessor(sequenceName: String, onlyWhenChanged: Boolean) extends RewriterTaskProcessor {
+
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+
   override def apply(task: RewriterTask) = task match {
     case RunRewriter(name, rewriter) =>
       val innerRewriter = super.apply(task)
       (in: AnyRef) =>
         val result = innerRewriter(in)
         val always = !onlyWhenChanged
-        if (always || in != result) // TODO: This test does not work. Investigate.
-          print(s"$name ($sequenceName):\n\t$result\n")
-        else
-          print(s"$name ($sequenceName):\n\t--\n")
+        if (always || in != result) {  // TODO: This test does not work. Investigate.
+          val prettyDoc = page(nest(indent = 2, group(nil :/: group(InternalDocHandler.docGen.asConverter(result)))))
+          val prettyResult = printCommandsToString(DocFormatters.defaultFormatter(prettyDoc))
+          print(s"*** $name ($sequenceName):$prettyResult\n")
+        } else {
+          print(s"*** $name ($sequenceName):\n--\n")
+        }
         result
 
     case _ =>

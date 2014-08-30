@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import symbols._
 
-sealed trait Hint extends ASTNode with ASTTerm with SemanticCheckable {
+sealed trait Hint extends ASTNode with ASTPhrase with SemanticCheckable {
   def identifier: Identifier
 }
 
