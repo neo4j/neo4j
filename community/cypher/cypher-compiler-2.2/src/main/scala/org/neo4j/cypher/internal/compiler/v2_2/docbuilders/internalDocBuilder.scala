@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.{catchErrors, defaultDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.defaultDocBuilder
 
 // Doc builder for printing any internal class
 case object internalDocBuilder extends CustomDocBuilderChain[Any] {
-  val builders = Seq(
-    // astDocBuilder /* ast only */
-    astStructureDocBuilder /* ast + structure */,
-    plannerDocBuilder,
-    defaultDocBuilder
-  )
+  val builders =
+    Seq(
+      astDocBuilder, /* ast only */
+      plannerDocBuilder,
+//      astStructureDocBuilder, /* ast + structure */
+      defaultDocBuilder
+    )
 }

@@ -47,6 +47,7 @@ object Doc {
 
   def cons(head: Doc, tail: Doc = nil): Doc = if (head == nil) tail else ConsDoc(head, tail)
   def nil: Doc = NilDoc
+  def noBreak: BreakingDoc = NoBreak
 
   // replace nil tail with default document
 
@@ -114,22 +115,25 @@ object Doc {
   }
 
   def block(name: Doc, open: Doc = "(", close: Doc = ")")(innerDoc: Doc): Doc =
-    group( name :: surrounded(open, close, breakSilent)(innerDoc) )
+    group( name :: surrounded(open, close, breakSilent, breakSilent )(innerDoc) )
 
   def brackets(innerDoc: Doc, break: BreakingDoc = breakSilent) =
-    surrounded(open = "[", close = "]", break)(innerDoc)
+    surrounded(open = "[", close = "]", break, break)(innerDoc)
 
   def braces(innerDoc: Doc, break: BreakingDoc = breakSilent) =
-    surrounded(open = "{", close = "}", break)(innerDoc)
+    surrounded(open = "{", close = "}", break, break)(innerDoc)
 
   def parens(innerDoc: Doc, break: BreakingDoc = breakSilent) =
-    surrounded(open = "(", close = ")", break)(innerDoc)
+    surrounded(open = "(", close = ")", break, break)(innerDoc)
 
   def comment(innerDoc: Doc, break: BreakingDoc = break) =
-    surrounded(open = "/*", close = "*/", break)(innerDoc)
+    surrounded(open = "/*", close = "*/", break, break)(innerDoc)
 
-  def surrounded(open: Doc, close: Doc, break: BreakingDoc)(innerDoc: Doc): Doc =
-    group( open :: nest(group(breakBefore(innerDoc, break))) :: breakBefore(close, break) )
+  def surrounded(open: Doc, close: Doc, openBreak: BreakingDoc, closeBreak: BreakingDoc)(innerDoc: Doc): Doc =
+    surrounded(open, breakBefore(close, openBreak))(breakBefore(innerDoc, closeBreak))
+
+  def surrounded(open: Doc, close: Doc)(innerDoc: Doc): Doc =
+    group(open :: nest(group(innerDoc)) :: close)
 
   def section(start: Doc, inner: Doc, break: BreakingDoc = break): Doc =
     if (inner.isNil) inner else group(start :: nest(breakBefore(inner, break = break)))
@@ -153,6 +157,10 @@ sealed abstract class BreakingDoc extends ValueDoc
 
 case object BreakDoc extends BreakingDoc {
   def value = " "
+}
+
+case object NoBreak extends BreakingDoc {
+  def value =""
 }
 
 final case class BreakWith(value: String) extends BreakingDoc

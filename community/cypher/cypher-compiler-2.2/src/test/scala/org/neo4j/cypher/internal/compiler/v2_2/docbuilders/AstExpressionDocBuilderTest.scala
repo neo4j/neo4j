@@ -199,6 +199,10 @@ class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
     format(expr) should equal("[]")
   }
 
+  test("Parameter(x) => {x}") {
+    format(Parameter("x")(pos)) should equal("{x}")
+  }
+
   test("count(*)") {
     format(CountStar()(pos)) should equal("count(*)")
   }

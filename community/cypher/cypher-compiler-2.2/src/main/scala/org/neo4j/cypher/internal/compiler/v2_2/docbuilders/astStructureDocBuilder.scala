@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTParticle, ASTNode}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.simpleDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.perty.{Doc, CustomDocBuilder, DocGenerator}
 
@@ -28,20 +28,17 @@ case object astStructureDocBuilder extends CustomDocBuilder[Any] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
-  val builders = Seq(
-    astTermDocBuilder,
-    astParticleDocBuilder,
-    astExpressionDocBuilder
-  )
-
   def newDocGenerator: DocGenerator[Any] = DocGenerator[Any] {
+    case astNode: ASTNode with ASTParticle => (inner) =>
+      astParticleDocBuilder.docGenerator.applyWithInner(inner)(astNode)
+
     case astNode: ASTNode => (inner) =>
       astDocBuilder
         .docGenerator
         .andThen { (astDoc: Doc) =>
           val simpleDoc: Doc = simpleDocBuilder.docGenerator(astNode)
-          group(group(group(comment("ast") :/: astDoc) :/: group(comment(simpleDoc))))
+          nest(group(group(comment("ast") :/: astDoc) :/: group(comment("val") :/: simpleDoc)))
         }
-        .applyOrElse[ASTNode, Doc](astNode, simpleDocBuilder.docGenerator)
+        .applyOrElse[ASTNode, Doc](astNode, simpleDocBuilder.docGenerator.applyWithInner(inner))
   }
 }
