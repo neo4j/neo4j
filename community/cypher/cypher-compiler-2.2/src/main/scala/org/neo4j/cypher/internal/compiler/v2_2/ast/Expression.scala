@@ -20,10 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Pretty
-import org.neo4j.cypher.internal.compiler.v2_2.perty.PrettyToString
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.defaultDocBuilder
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 object Expression {
   sealed trait SemanticContext
@@ -59,8 +56,8 @@ object Expression {
   }
 }
 
-import Expression._
-import Foldable._
+import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression._
 
 abstract class Expression extends ASTNode with ASTExpression with SemanticChecking {
 

@@ -19,11 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
-import Expression.SemanticContext
-import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.SemanticError
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{FixedDocGenerator, Doc}
-import Doc._
+import org.neo4j.cypher.internal.compiler.v2_2.{SemanticError, _}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression.SemanticContext
 
 object FunctionInvocation {
   def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =

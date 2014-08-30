@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class DocTest extends CypherFunSuite {
 
-  import Doc._
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
   test("cons(hd, tl) = ConsDocs(hd, tl)") {
     cons(BreakDoc, NilDoc) should equal(ConsDoc(BreakDoc, NilDoc))
