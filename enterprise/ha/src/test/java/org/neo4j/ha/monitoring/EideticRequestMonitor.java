@@ -19,27 +19,39 @@
  */
 package org.neo4j.ha.monitoring;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.com.monitor.RequestMonitor;
 
+/**
+ * Write operations are guarded by synchronization, read operations are not, since they are expected to take place
+ * after the object is no longer alive.
+ */
 public class EideticRequestMonitor implements RequestMonitor
 {
-    private final List<Map<String, String>> requests = new LinkedList<Map<String, String>>();
+    /** Guarded by 'requests'. */
+    private final List<Map<String, String>> requests = new ArrayList<>();
+    /** Guarded by 'this'. */
     private int requestsEnded;
 
     @Override
     public void beginRequest( Map<String, String> requestContext )
     {
-        requests.add( requestContext );
+        synchronized ( requests )
+        {
+            requests.add( requestContext );
+        }
     }
 
     @Override
     public void endRequest( Throwable t )
     {
-        requestsEnded++;
+        synchronized ( this )
+        {
+            requestsEnded++;
+        }
     }
 
     public List<Map<String, String>> getRequests()
