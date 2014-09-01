@@ -21,20 +21,20 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 
 interface DataWrite
 {
     long nodeCreate();
 
-    void nodeDelete( long nodeId );
+    void nodeDelete( long nodeId ) throws EntityNotFoundException;
 
     long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
             throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
 
-    void relationshipDelete( long relationshipId );
+    void relationshipDelete( long relationshipId ) throws EntityNotFoundException;
 
     /**
      * Labels a node with the label corresponding to the given label id.

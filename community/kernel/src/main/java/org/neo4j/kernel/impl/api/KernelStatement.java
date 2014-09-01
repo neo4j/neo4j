@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 public class KernelStatement implements TxState.Holder, Statement
 {
@@ -44,7 +43,6 @@ public class KernelStatement implements TxState.Holder, Statement
     protected final TxState.Holder txStateHolder;
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
-    private final TransactionRecordState recordState;
     private final LegacyIndexTransactionState legacyIndexTransactionState;
 
     private LabelScanReader labelScanReader;
@@ -55,14 +53,13 @@ public class KernelStatement implements TxState.Holder, Statement
     public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
                             LabelScanStore labelScanStore,
                             TxState.Holder txStateHolder, Locks.Client locks, StatementOperationParts operations,
-                            TransactionRecordState recordState, LegacyIndexTransactionState legacyIndexTransactionState )
+                            LegacyIndexTransactionState legacyIndexTransactionState )
     {
         this.transaction = transaction;
         this.locks = locks;
         this.indexReaderFactory = indexReaderFactory;
         this.txStateHolder = txStateHolder;
         this.labelScanStore = labelScanStore;
-        this.recordState = recordState;
         this.legacyIndexTransactionState = legacyIndexTransactionState;
         this.facade = new OperationsFacade( this, operations );
     }
@@ -112,11 +109,6 @@ public class KernelStatement implements TxState.Holder, Statement
     public boolean hasTxStateWithChanges()
     {
         return txStateHolder.hasTxStateWithChanges();
-    }
-
-    protected TransactionRecordState recordState()
-    {
-        return recordState;
     }
 
     protected LegacyIndexTransactionState legacyIndexTransactionState()

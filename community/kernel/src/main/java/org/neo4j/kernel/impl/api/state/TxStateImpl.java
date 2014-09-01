@@ -126,23 +126,62 @@ public final class TxStateImpl implements TxState
     @Override
     public void accept( final Visitor visitor )
     {
+        // Created nodes
         if ( nodes != null )
         {
-            nodes.accept( new DiffSets.Visitor<Long>()
+            nodes.accept( new DiffSets.VisitorAdapter<Long>()
             {
                 @Override
                 public void visitAdded( Long element )
                 {
                     visitor.visitCreatedNode( element.longValue() );
                 }
+            } );
+        }
 
+        // Created relationships
+        if ( relationships != null )
+        {
+            relationships.accept( new DiffSets.VisitorAdapter<Long>()
+            {
                 @Override
-                public void visitRemoved( Long element )
-                {   // Ignore
+                public void visitAdded( Long element )
+                {
+                    // It's fine to call "getOrCreate" here since we only get callbacks for relationships
+                    // that have been added to this state map.
+                    RelationshipState relationshipState = getOrCreateRelationshipState( element.longValue() );
+                    visitor.visitCreatedRelationship( element.longValue(), relationshipState.type(),
+                            relationshipState.startNode(), relationshipState.endNode() );
                 }
             } );
         }
-        
+
+        // Deleted relationships
+        if ( relationships != null )
+        {
+            relationships.accept( new DiffSets.VisitorAdapter<Long>()
+            {
+                @Override
+                public void visitRemoved( Long element )
+                {
+                    visitor.visitDeletedRelationship( element.longValue() );
+                }
+            } );
+        }
+
+        // Deleted nodes
+        if ( nodes != null )
+        {
+            nodes.accept( new DiffSets.VisitorAdapter<Long>()
+            {
+                @Override
+                public void visitRemoved( Long element )
+                {
+                    visitor.visitDeletedNode( element.longValue() );
+                }
+            } );
+        }
+
         if ( hasNodeStatesMap() && !nodeStatesMap().isEmpty() )
         {
             for ( NodeState node : modifiedNodes() )
@@ -419,7 +458,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void relationshipDoDelete( long id, long startNodeId, long endNodeId, int type )
+    public void relationshipDoDelete( long id, int type, long startNodeId, long endNodeId )
     {
         if ( addedAndRemovedRels().remove( id ) )
         {
@@ -452,7 +491,7 @@ public final class TxStateImpl implements TxState
     public void relationshipDoDeleteAddedInThisTx( long relationshipId )
     {
         RelationshipState state = getOrCreateRelationshipState( relationshipId );
-        relationshipDoDelete( relationshipId, state.startNode(), state.endNode(), state.type() );
+        relationshipDoDelete( relationshipId, state.type(), state.startNode(), state.endNode() );
     }
 
     @Override
@@ -1060,7 +1099,7 @@ public final class TxStateImpl implements TxState
         if ( relationshipIsAddedInThisTx( relId ) )
         {
             RelationshipState relationship = relationshipStatesMap.get( relId );
-            visitor.visit( relId, relationship.startNode(), relationship.endNode(), relationship.type() );
+            visitor.visit( relId, relationship.type(), relationship.startNode(), relationship.endNode() );
             return true;
         }
         return false;

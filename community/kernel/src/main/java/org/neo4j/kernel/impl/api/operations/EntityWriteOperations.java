@@ -19,23 +19,23 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.impl.api.KernelStatement;
 
 public interface EntityWriteOperations
 {
     // Currently, of course, most relevant operations here are still in the old core API implementation.
 
-    long relationshipCreate( KernelStatement statement, int relationshipTypeId, long startNodeId, long endNodeId );
+    long relationshipCreate( KernelStatement statement, int relationshipTypeId, long startNodeId, long endNodeId ) throws EntityNotFoundException;
 
     long nodeCreate( KernelStatement statement );
 
-    void nodeDelete( KernelStatement state, long nodeId );
+    void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException;
 
-    void relationshipDelete( KernelStatement state, long relationshipId );
+    void relationshipDelete( KernelStatement state, long relationshipId ) throws EntityNotFoundException;
 
     /**
      * Labels a node with the label corresponding to the given label id.

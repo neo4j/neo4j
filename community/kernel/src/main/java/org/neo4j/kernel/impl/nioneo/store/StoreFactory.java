@@ -29,7 +29,6 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -85,10 +84,11 @@ public class StoreFactory
     private final Monitors monitors;
     private final PageCache pageCache;
 
-    public StoreFactory( File storeDir, PageCache pageCache, StringLogger logger, Monitors monitors )
+    public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, StringLogger logger,
+            Monitors monitors )
     {
         this( configForStoreDir( new Config(), storeDir ),
-                new DefaultIdGeneratorFactory(), pageCache, new DefaultFileSystemAbstraction(),
+                new DefaultIdGeneratorFactory(), pageCache, fileSystem,
                 logger, monitors, StoreVersionMismatchHandler.THROW_EXCEPTION );
     }
 

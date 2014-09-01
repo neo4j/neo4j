@@ -49,7 +49,7 @@ public class StoreExpandCursor implements Cursor
     private final RelationshipVisitor<RuntimeException> neighborFetcher = new RelationshipVisitor<RuntimeException>()
     {
         @Override
-        public void visit( long relId, long startNode, long endNode, int type ) throws RuntimeException
+        public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
         {
             long origin = nodeId.read();
             if( startNode == endNode)

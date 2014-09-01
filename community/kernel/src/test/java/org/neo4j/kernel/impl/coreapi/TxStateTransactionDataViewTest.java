@@ -115,8 +115,8 @@ public class TxStateTransactionDataViewTest
     public void showsRemovedRelationships() throws Exception
     {
         // Given
-        state.relationshipDoDelete( 1l, 1l, 2l, 1 );
-        state.relationshipDoDelete( 2l, 1l, 1l, 1 );
+        state.relationshipDoDelete( 1l, 1, 1l, 2l );
+        state.relationshipDoDelete( 2l, 1, 1l, 1l );
 
         when(ops.relationshipGetAllProperties( 1l )).thenReturn( IteratorUtil.<DefinedProperty>emptyIterator() );
         when(ops.relationshipGetAllProperties( 2l )).thenReturn( asList( Property.stringProperty( 1, "p" ) ).iterator() );
@@ -146,7 +146,7 @@ public class TxStateTransactionDataViewTest
     public void correctlySaysRelIsDeleted() throws Exception
     {
         // Given
-        state.relationshipDoDelete( 1l, 1l, 2l, 1 );
+        state.relationshipDoDelete( 1l, 1, 1l, 2l );
 
         Relationship rel = mock( Relationship.class );
         when(rel.getId()).thenReturn( 1l );

@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -50,7 +51,7 @@ public class LockingStatementOperationsTest
     private final SchemaWriteOperations schemaWriteOps;
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
-    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null, null, null );
+    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null, null );
 
     public LockingStatementOperationsTest()
     {
@@ -125,7 +126,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeDeletingNode()
+    public void shouldAcquireEntityWriteLockBeforeDeletingNode() throws EntityNotFoundException
     {
         // WHEN
         lockingOps.nodeDelete( state, 123 );

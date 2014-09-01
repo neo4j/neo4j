@@ -123,6 +123,11 @@ public class NodeProxy implements Node
         {
             throw new ReadOnlyDbException();
         }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( "Unable to delete Node[" + nodeId +
+                    "] since it has already been deleted." );
+        }
     }
 
     @Override
@@ -453,7 +458,8 @@ public class NodeProxy implements Node
         }
         catch ( EntityNotFoundException e )
         {
-            throw new NotFoundException( e );
+            throw new IllegalStateException( "Node[" + e.entityId() +
+                    "] is deleted and cannot be used to create a relationship" );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {

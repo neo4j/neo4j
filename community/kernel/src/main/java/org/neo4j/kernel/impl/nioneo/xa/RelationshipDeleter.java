@@ -56,11 +56,6 @@ public class RelationshipDeleter
     public ArrayMap<Integer, DefinedProperty> relDelete( long id, RecordAccessSet recordChanges )
     {
         RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null ).forChangingLinkage();
-        if ( !record.inUse() )
-        {
-            throw new IllegalStateException( "Unable to delete relationship[" +
-                    id + "] since it is already deleted." );
-        }
         ArrayMap<Integer, DefinedProperty> propertyMap =
                 propertyChainDeleter.getAndDeletePropertyChain( record, recordChanges.getPropertyRecords() );
         disconnectRelationship( record, recordChanges );

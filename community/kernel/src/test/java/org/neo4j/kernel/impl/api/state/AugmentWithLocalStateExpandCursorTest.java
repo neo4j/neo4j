@@ -153,11 +153,11 @@ public class AugmentWithLocalStateExpandCursorTest
                 {
                     if(r.direction == INCOMING)
                     {
-                        ((RelationshipVisitor) invocation.getArguments()[1]).visit( r.relId, r.neighborId, r.startId, r.type );
+                        ((RelationshipVisitor) invocation.getArguments()[1]).visit( r.relId, r.type, r.neighborId, r.startId );
                     }
                     else
                     {
-                        ((RelationshipVisitor) invocation.getArguments()[1]).visit( r.relId, r.startId, r.neighborId, r.type );
+                        ((RelationshipVisitor) invocation.getArguments()[1]).visit( r.relId, r.type, r.startId, r.neighborId );
                     }
                     return true;
                 }

@@ -207,9 +207,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations,
-                    // Just use forReading since read/write has been decided prior to this
-                    recordState, legacyIndexTransactionState );
+                    labelScanStore, this, locks, operations, legacyIndexTransactionState );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -333,6 +331,30 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             final AtomicBoolean clearState = new AtomicBoolean( false );
             txState().accept( new TxState.VisitorAdapter()
             {
+                @Override
+                public void visitCreatedNode( long id )
+                {
+                    recordState.nodeCreate( id );
+                }
+
+                @Override
+                public void visitDeletedNode( long id )
+                {
+                    recordState.nodeDelete( id );
+                }
+
+                @Override
+                public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+                {
+                    recordState.relCreate( id, type, startNode, endNode );
+                }
+
+                @Override
+                public void visitDeletedRelationship( long id )
+                {
+                    recordState.relDelete( id );
+                }
+
                 @Override
                 public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
                 {

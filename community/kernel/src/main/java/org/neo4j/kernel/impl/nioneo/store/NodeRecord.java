@@ -32,7 +32,7 @@ import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLab
 
 public class NodeRecord extends PrimitiveRecord
 {
-    private long nextRel;
+    private long nextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
     private long labels;
     private Collection<DynamicRecord> dynamicLabelRecords = emptyList();
     private boolean isLight = true;

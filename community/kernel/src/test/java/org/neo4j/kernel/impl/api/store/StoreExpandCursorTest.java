@@ -57,7 +57,7 @@ public class StoreExpandCursorTest
             public Object answer( InvocationOnMock invocation ) throws Throwable
             {
                 RelationshipVisitor visitor = (RelationshipVisitor) invocation.getArguments()[1];
-                visitor.visit( (Long)invocation.getArguments()[0], 1337, 2, 0 );
+                visitor.visit( (Long)invocation.getArguments()[0], 0, 1337, 2 );
                 return null;
             }
         }  ).when(cache).relationshipVisit( anyLong(), any(RelationshipVisitor.class) );

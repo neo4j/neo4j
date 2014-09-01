@@ -172,6 +172,11 @@ public interface StoreReadLayer
      */
     long reserveNode();
 
+    /**
+     * Reserves a relationship id for future use.
+     */
+    long reserveRelationship();
+
     Cursor expand( Cursor inputCursor, NeoRegister.Node.In nodeId, Register.Object.In<int[]> types,
                    Register.Object.In<Direction> expandDirection, NeoRegister.Relationship.Out relId,
                    NeoRegister.RelType.Out relType, Register.Object.Out<Direction> direction,

@@ -108,7 +108,13 @@ public interface TxState
     public interface Visitor
     {
         void visitCreatedNode( long id );
-        
+
+        void visitDeletedNode( long id );
+
+        void visitCreatedRelationship( long id, int type, long startNode, long endNode );
+
+        void visitDeletedRelationship( long id );
+
         void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
                                        Iterator<Integer> removed );
 
@@ -138,7 +144,22 @@ public interface TxState
         public void visitCreatedNode( long id )
         {   // Ignore
         }
-        
+
+        @Override
+        public void visitDeletedNode( long id )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitDeletedRelationship( long id )
+        {   // Ignore
+        }
+
         @Override
         public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
                 Iterator<DefinedProperty> changed, Iterator<Integer> removed )
@@ -246,7 +267,7 @@ public interface TxState
 
     UpdateTriState labelState( long nodeId, int labelId );
 
-    void relationshipDoDelete( long relationshipId, long startNode, long endNode, int type );
+    void relationshipDoDelete( long relationshipId, int type, long startNode, long endNode );
 
     void relationshipDoDeleteAddedInThisTx( long relationshipId );
 

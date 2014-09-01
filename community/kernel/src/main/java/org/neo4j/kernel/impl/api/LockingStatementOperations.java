@@ -200,7 +200,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void nodeDelete( KernelStatement state, long nodeId )
+    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
         entityWriteDelegate.nodeDelete( state, nodeId );
@@ -214,6 +214,7 @@ public class LockingStatementOperations implements
 
     @Override
     public long relationshipCreate( KernelStatement state, int relationshipTypeId, long startNodeId, long endNodeId )
+            throws EntityNotFoundException
     {   // TODO 2.2-future Don't lock it, it's a new relationship so it isn't seen by anyone else anyway
         state.locks().acquireExclusive( ResourceTypes.NODE, startNodeId );
         state.locks().acquireExclusive( ResourceTypes.NODE, endNodeId );
@@ -221,14 +222,14 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void relationshipDelete( final KernelStatement state, long relationshipId )
+    public void relationshipDelete( final KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
         try
         {
             entityReadDelegate.relationshipVisit( state, relationshipId, new RelationshipVisitor<RuntimeException>()
             {
                 @Override
-                public void visit( long relId, long startNode, long endNode, int type )
+                public void visit( long relId, int type, long startNode, long endNode )
                 {
                     state.locks().acquireExclusive( ResourceTypes.NODE, startNode );
                     state.locks().acquireExclusive( ResourceTypes.NODE, endNode );

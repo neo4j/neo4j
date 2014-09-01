@@ -730,7 +730,7 @@ public abstract class InternalAbstractGraphDatabase
                     new RelationshipVisitor<RuntimeException>()
             {
                 @Override
-                public void visit( long relId, long startNode, long endNode, int type )
+                public void visit( long relId, int type, long startNode, long endNode )
                 {
                     relationshipData.get().set( startNode, endNode, type );
                 }

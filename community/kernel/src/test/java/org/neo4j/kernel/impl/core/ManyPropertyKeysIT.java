@@ -106,8 +106,9 @@ public class ManyPropertyKeysIT
 
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount ) throws IOException
     {
-        PageCache pageCache = new StandardPageCache( new DefaultFileSystemAbstraction(), 1000, 1024*4 );
-        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
+        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        PageCache pageCache = new StandardPageCache( fs, 1000, 1024*4 );
+        StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
         NeoStore neoStore = storeFactory.newNeoStore( true );
         PropertyKeyTokenStore store = neoStore.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )
