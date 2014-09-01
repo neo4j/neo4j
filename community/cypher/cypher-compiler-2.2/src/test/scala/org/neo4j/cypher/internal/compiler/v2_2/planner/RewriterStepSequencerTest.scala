@@ -17,7 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v2_2.planner
 
-case object normalizeMatchPredicates
-  extends MatchPredicateNormalization(MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer))
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
+
+class RewriterStepSequencerTest extends CypherFunSuite {
+
+  test("if no conditions are used, what goes in is what comes out") {
+    val dummyRewriter1 = Rewriter.noop
+    val dummyRewriter2 = Rewriter.lift { case x: AnyRef => x }
+
+    RewriterStepSequencer("test")(List.empty) should equal(Seq())
+    RewriterStepSequencer("test")(List(NamedRewriter("1", dummyRewriter1), NamedRewriter("2", dummyRewriter2))) should equal(Seq(dummyRewriter1, dummyRewriter2))
+  }
+}

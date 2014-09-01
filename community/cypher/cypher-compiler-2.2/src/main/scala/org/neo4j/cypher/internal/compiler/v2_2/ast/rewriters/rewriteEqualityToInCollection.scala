@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 
-object rewriteEqualityToInCollection extends Rewriter {
+case object rewriteEqualityToInCollection extends Rewriter {
   override def apply(that: AnyRef) = bottomUp(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
