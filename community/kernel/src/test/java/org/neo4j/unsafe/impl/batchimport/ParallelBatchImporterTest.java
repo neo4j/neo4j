@@ -49,6 +49,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.DetailedExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.Writer;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.WriterFactory;
+import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 import org.neo4j.unsafe.impl.batchimport.store.io.SimplePool;
 
@@ -80,10 +81,7 @@ public class ParallelBatchImporterTest
         };
         BatchImporter inserter = new ParallelBatchImporter( directory.getAbsolutePath(),
                 new DefaultFileSystemAbstraction(), config, new DevNullLoggingService(),
-                new DetailedExecutionMonitor(),
-//                new IoQueue( config.numberOfIoThreads(), delegateWriterFactory )
-                delegateWriterFactory
-        );
+                new DetailedExecutionMonitor(), new IoQueue( config.numberOfIoThreads(), delegateWriterFactory ) );
 
         // WHEN
         int nodeCount = 100_000;
