@@ -44,7 +44,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
-import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -84,7 +83,11 @@ public class ParallelBatchImporter implements BatchImporter
                                   Configuration config, Logging logging, ExecutionMonitor executionMonitor )
     {
         this( storeDir, fileSystem, config, logging, executionMonitor,
-                new IoQueue( config.numberOfIoThreads(), BatchingWindowPoolFactory.SYNCHRONOUS ) );
+                // Temporarily disabled I/O parallellization since there's an issue with it that sometimes
+                // gets exposed. It's purely an optimization anyway.
+//                new IoQueue( config.numberOfIoThreads(), BatchingWindowPoolFactory.SYNCHRONOUS )
+                BatchingWindowPoolFactory.SYNCHRONOUS
+        );
     }
 
     @Override

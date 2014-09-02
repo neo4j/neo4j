@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 public interface LegacyLogIoUtil
