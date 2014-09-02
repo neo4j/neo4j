@@ -27,10 +27,8 @@ import javax.ws.rs.core.Response.Status;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.WrappingNeoServer;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
@@ -84,23 +82,6 @@ public class TestJetty9WebServer
 			}
 		}
 	}
-
-    private DependencyResolver noLoggingDependencyResolver()
-    {
-        return new DependencyResolver.Adapter()
-        {
-            @Override
-            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
-                    throws IllegalArgumentException
-            {
-                if ( Logging.class.isAssignableFrom( type ) )
-                {
-                    return type.cast( DevNullLoggingService.DEV_NULL );
-                }
-                return null;
-            }
-        };
-    }
 
     @Test
     public void shouldBeAbleToSetExecutionLimit() throws Throwable

@@ -29,7 +29,6 @@ import org.jboss.netty.logging.InternalLoggerFactory;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.logging.NettyLoggerFactory;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
@@ -41,12 +40,14 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Factory;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.DatabaseAvailability;
@@ -73,8 +74,11 @@ import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.master.MasterImpl;
+import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.com.master.Slaves;
+import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
 import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
@@ -101,9 +105,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static org.neo4j.helpers.collection.Iterables.iterable;
-import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
@@ -135,6 +139,15 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private TransactionCommittingResponseUnpacker unpacker;
     private Provider<KernelAPI> kernelProvider;
 
+    private final org.neo4j.kernel.impl.util.Dependencies dependencies = new org.neo4j.kernel.impl.util.Dependencies( new Provider<DependencyResolver>()
+    {
+        @Override
+        public DependencyResolver instance()
+        {
+            return HighlyAvailableGraphDatabase.this.dependencyResolver;
+        }
+    } );
+
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                          Iterable<CacheProvider> cacheProviders )
@@ -158,9 +171,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
                 masterDelegateInvocationHandler );
         final int serverId = config.get( ClusterSettings.server_id ).toIntegerIndex();
-        requestContextFactory = new RequestContextFactory( serverId, getDependencyResolver() );
+        requestContextFactory = dependencies.satisfyDependency(new RequestContextFactory( serverId, getDependencyResolver() ));
 
-        this.unpacker = new TransactionCommittingResponseUnpacker( dependencyResolver, serverId );
+        this.unpacker = dependencies.satisfyDependency(new TransactionCommittingResponseUnpacker( dependencyResolver, serverId ));
 
         kernelProvider = new Provider<KernelAPI>()
         {
@@ -179,8 +192,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( availabilityGuard, logging,
                 masterDelegateInvocationHandler ) );
-        life.add( updatePuller = new UpdatePuller( memberStateMachine, master, requestContextFactory,
-                availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog, unpacker ) );
+        dependencies.satisfyDependency( life.add( updatePuller = new UpdatePuller( memberStateMachine, master,
+                requestContextFactory,
+                availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog, unpacker ) ) );
 
         stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
 
@@ -243,14 +257,15 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterMemberAvailabilityDelegateInvocationHandler = new DelegateInvocationHandler( ClusterMemberAvailability
                 .class );
 
-        clusterEvents = (ClusterMemberEvents) Proxy.newProxyInstance( ClusterMemberEvents.class.getClassLoader(),
-                new Class[]{ClusterMemberEvents.class, Lifecycle.class}, clusterEventsDelegateInvocationHandler );
+        clusterEvents = dependencies.satisfyDependency( (ClusterMemberEvents) Proxy.newProxyInstance(
+                ClusterMemberEvents.class.getClassLoader(),
+                new Class[]{ClusterMemberEvents.class, Lifecycle.class}, clusterEventsDelegateInvocationHandler ) );
         memberContext = (HighAvailabilityMemberContext) Proxy.newProxyInstance(
                 HighAvailabilityMemberContext.class.getClassLoader(),
                 new Class[]{HighAvailabilityMemberContext.class}, memberContextDelegateInvocationHandler );
-        clusterMemberAvailability = (ClusterMemberAvailability) Proxy.newProxyInstance(
+        clusterMemberAvailability = dependencies.satisfyDependency((ClusterMemberAvailability) Proxy.newProxyInstance(
                 ClusterMemberAvailability.class.getClassLoader(),
-                new Class[]{ClusterMemberAvailability.class}, clusterMemberAvailabilityDelegateInvocationHandler );
+                new Class[]{ClusterMemberAvailability.class}, clusterMemberAvailabilityDelegateInvocationHandler ));
 
         ElectionCredentialsProvider electionCredentialsProvider = config.get( HaSettings.slave_only ) ?
                 new NotElectableElectionCredentialsProvider() :
@@ -270,9 +285,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
 
 
-        clusterClient = new ClusterClient( monitors, ClusterClient.adapt( config ), logging,
+        clusterClient = dependencies.satisfyDependency( new ClusterClient( monitors, ClusterClient.adapt( config ), logging,
                 electionCredentialsProvider,
-                objectStreamFactory, objectStreamFactory );
+                objectStreamFactory, objectStreamFactory ));
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging, new Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
         {
@@ -296,7 +311,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 }
                 return true;
             }
-        }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory, monitors
+        }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory,
+                monitors.newMonitor(NamedThreadFactory.Monitor.class )
         );
 
         // Force a reelection after we enter the cluster
@@ -332,8 +348,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterEventsDelegateInvocationHandler.setDelegate( localClusterEvents );
         clusterMemberAvailabilityDelegateInvocationHandler.setDelegate( localClusterMemberAvailability );
 
-        members = new ClusterMembers( clusterClient, clusterClient, clusterEvents,
-                config.get( ClusterSettings.server_id ) );
+        members = dependencies.satisfyDependency(new ClusterMembers( clusterClient, clusterClient, clusterEvents,
+                config.get( ClusterSettings.server_id ) ));
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members,
                 clusterEvents,
                 clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
@@ -384,8 +400,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class );
 
-        slaves = life.add( new HighAvailabilitySlaves( members, clusterClient,
-                this.slaveFactory = new DefaultSlaveFactory( logging, monitors, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
+        slaves = dependencies.satisfyDependency( life.add( new HighAvailabilitySlaves( members, clusterClient,
+                this.slaveFactory = dependencies.satisfyDependency( new DefaultSlaveFactory( logging, monitors,
+                        config.get( HaSettings.com_chunk_size ).intValue() ) ) ) ) );
 
         final TransactionPropagator pusher = life.add (new TransactionPropagator( TransactionPropagator.from( config ),
                 msgLog, slaves, new CommitPusher( jobScheduler ) ) );
@@ -418,12 +435,15 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
                 (HaIdGeneratorFactory) idGeneratorFactory,
                 logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
-                monitors, kernelExtensions.listFactories()
+                kernelExtensions.listFactories(), monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
+                monitors.newMonitor( RequestMonitor.class, SlaveServer.class )
         );
 
         SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, msgLog, this,
-                (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
-                masterDelegateInvocationHandler, clusterMemberAvailability, dataSourceManager );
+                (HaIdGeneratorFactory) idGeneratorFactory, config, dependencies.provideDependency( SlaveFactory.class ),
+                masterDelegateInvocationHandler, clusterMemberAvailability, dataSourceManager,
+                monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ), monitors.newMonitor( RequestMonitor.class, MasterServer.class ),
+                monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ));
 
         highAvailabilityModeSwitcher =
                 new HighAvailabilityModeSwitcher( switchToSlaveInstance, switchToMasterInstance,
@@ -614,66 +634,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     public DependencyResolver getDependencyResolver()
     {
-        return new DependencyResolver.Adapter()
-        {
-            @Override
-            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
-            {
-                T result;
-                try
-                {
-                    result = dependencyResolver.resolveDependency( type, selector );
-                }
-                catch ( IllegalArgumentException e )
-                {
-                    if ( ClusterMemberEvents.class.isAssignableFrom( type ) )
-                    {
-                        result = type.cast( clusterEvents );
-                    }
-                    else if ( ClusterMemberAvailability.class.isAssignableFrom( type ) )
-                    {
-                        result = type.cast( clusterMemberAvailability );
-                    }
-                    else if ( UpdatePuller.class.isAssignableFrom( type ) )
-                    {
-                        result = type.cast( updatePuller );
-                    }
-                    else if ( Slaves.class.isAssignableFrom( type ) )
-                    {
-                        result = type.cast( slaves );
-                    }
-                    else if ( ClusterClient.class.isAssignableFrom( type ) )
-                    {
-                        result = type.cast( clusterClient );
-                    }
-                    else if ( BindingNotifier.class.isAssignableFrom( type ) )
-                    {
-                        result = type.cast( clusterClient );
-                    }
-                    else if ( ClusterMembers.class.isAssignableFrom( type ) )
-                    {
-                        result = type.cast( members );
-                    }
-                    else if ( RequestContextFactory.class.isAssignableFrom( type ) )
-                    {
-                        result = type.cast( requestContextFactory );
-                    }
-                    else if ( SlaveFactory.class.isAssignableFrom( type ) )
-                    {
-                        result = type.cast( slaveFactory );
-                    }
-                    else if ( TransactionCommittingResponseUnpacker.class.isAssignableFrom( type ) )
-                    {
-                        result = type.cast( unpacker );
-                    }
-                    else
-                    {
-                        throw e;
-                    }
-                }
-                return selector.select( type, option( result ) );
-            }
-        };
+        return dependencies;
     }
 
     /**

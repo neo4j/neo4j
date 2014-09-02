@@ -55,7 +55,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Predicates.in;
 import static org.neo4j.helpers.Predicates.not;
@@ -74,7 +73,6 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     protected Iterable<ClusterMemberListener> listeners = Listeners.newListeners();
     private ClusterMembersSnapshot clusterMembersSnapshot;
     private ClusterListener.Adapter clusterListener;
-    private final Monitors monitors;
     private Snapshot snapshot;
     private AtomicBroadcastListener atomicBroadcastListener;
     private ExecutorService executor;
@@ -83,6 +81,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     private HeartbeatListenerImpl heartbeatListener;
     private ObjectInputStreamFactory lenientObjectInputStream;
     private ObjectOutputStreamFactory lenientObjectOutputStream;
+    private final NamedThreadFactory.Monitor namedThreadFactoryMonitor;
 
     public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, Heartbeat heartbeat,
                                     AtomicBroadcast atomicBroadcast, Logging logging,
@@ -91,15 +90,15 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
                                     Iterable<MemberIsAvailable>> snapshotFilter,
                                     ObjectInputStreamFactory lenientObjectInputStream,
                                     ObjectOutputStreamFactory lenientObjectOutputStream,
-                                    Monitors monitors )
+                                    NamedThreadFactory.Monitor namedThreadFactoryMonitor )
     {
-        this.monitors = monitors;
         this.snapshot = snapshot;
         this.cluster = cluster;
         this.heartbeat = heartbeat;
         this.atomicBroadcast = atomicBroadcast;
         this.lenientObjectInputStream = lenientObjectInputStream;
         this.lenientObjectOutputStream = lenientObjectOutputStream;
+        this.namedThreadFactoryMonitor = namedThreadFactoryMonitor;
         this.logger = logging.getMessagesLog( getClass() );
 
         clusterListener = new ClusterListenerImpl();
@@ -137,7 +136,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
         heartbeat.addHeartbeatListener( heartbeatListener = new HeartbeatListenerImpl() );
 
-        executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("Paxos event notification", monitors.newMonitor(NamedThreadFactory.Monitor.class)));
+        executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("Paxos event notification", namedThreadFactoryMonitor));
     }
 
     @Override

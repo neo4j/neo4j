@@ -40,6 +40,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.configuration.Config;
@@ -109,13 +110,14 @@ public final class HaBackupProvider //extends BackupExtensionService
 //                ClusterSettings.class, OnlineBackupSettings.class );
         final Config config = null;
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-        final ClusterClient clusterClient = life.add( new ClusterClient( new Monitors(),
+        Monitors monitors = new Monitors();
+        final ClusterClient clusterClient = life.add( new ClusterClient( monitors,
                 ClusterClient.adapt( config ), logging,
                 new NotElectableElectionCredentialsProvider(), objectStreamFactory, objectStreamFactory ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, new SystemOutLogging(),
                 Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE(), new HANewSnapshotFunction(),
-                objectStreamFactory, objectStreamFactory, new Monitors() ) );
+                objectStreamFactory, objectStreamFactory, monitors.newMonitor( NamedThreadFactory.Monitor.class ) ) );
 
         // Refresh the snapshot once we join
         clusterClient.addClusterListener( new ClusterListener.Adapter()

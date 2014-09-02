@@ -28,6 +28,7 @@ import org.neo4j.cluster.DelayedDirectExecutor;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageSender;
@@ -84,7 +85,7 @@ class ClusterInstance
     public static ClusterInstance newClusterInstance( InstanceId id, URI uri, Monitors monitors,
                                                       ClusterConfiguration configuration, Logging logging )
     {
-        MultiPaxosServerFactory factory = new MultiPaxosServerFactory( monitors, configuration, logging );
+        MultiPaxosServerFactory factory = new MultiPaxosServerFactory( configuration, logging, monitors.newMonitor( StateMachines.Monitor.class ) );
 
         ClusterInstanceInput input = new ClusterInstanceInput();
         ClusterInstanceOutput output = new ClusterInstanceOutput( uri );

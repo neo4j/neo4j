@@ -19,6 +19,11 @@
  */
 package org.neo4j.function;
 
+/**
+ * A generic factory interface for creating instances that do not need any additional dependencies or parameters.
+ *
+ * @param <T> a new instance
+ */
 public interface Factory<T>
 {
     T newInstance();

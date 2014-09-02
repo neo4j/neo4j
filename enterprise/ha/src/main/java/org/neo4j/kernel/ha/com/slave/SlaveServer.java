@@ -19,28 +19,30 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import static org.neo4j.com.Protocol.DEFAULT_FRAME_LENGTH;
-import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-
 import org.jboss.netty.channel.Channel;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveClient.SlaveRequestType;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+
+import static org.neo4j.com.Protocol.DEFAULT_FRAME_LENGTH;
+import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 
 public class SlaveServer extends Server<Slave, Void>
 {
     public static final byte APPLICATION_PROTOCOL_VERSION = 1;
 
-    public SlaveServer( Slave requestTarget, Configuration config, Logging logging, Monitors monitors )
+    public SlaveServer( Slave requestTarget, Configuration config, Logging logging, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         super( requestTarget, config, logging, DEFAULT_FRAME_LENGTH, APPLICATION_PROTOCOL_VERSION, ALWAYS_MATCH,
-                SYSTEM_CLOCK, monitors );
+                SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
     }
 
     @Override

@@ -38,6 +38,9 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
 import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.StateMachines;
+import org.neo4j.cluster.com.NetworkReceiver;
+import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastMap;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
@@ -51,6 +54,7 @@ import org.neo4j.cluster.protocol.snapshot.Snapshot;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -85,15 +89,18 @@ public class MultiPaxosNetworkTest
                 .timeout( HeartbeatMessage.sendHeartbeat, 10000 )
                 .relativeTimeout( HeartbeatMessage.timed_out, HeartbeatMessage.sendHeartbeat, 10000 );
 
+        Monitors monitors = new Monitors();
         NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
-                new MultiPaxosServerFactory( new Monitors(),
-                        new ClusterConfiguration( "default", logging.getMessagesLog( ClusterConfiguration.class ),
+                new MultiPaxosServerFactory( new ClusterConfiguration( "default", logging.getMessagesLog( ClusterConfiguration.class ),
                                 "cluster://localhost:5001",
                                 "cluster://localhost:5002",
                                 "cluster://localhost:5003" ),
-                        logging
+                        logging,
+                        monitors.newMonitor( StateMachines.Monitor.class )
                 ),
-                timeoutStrategy, new Monitors(), logging, new ObjectStreamFactory(), new ObjectStreamFactory()
+                timeoutStrategy, logging, new ObjectStreamFactory(), new ObjectStreamFactory(),
+                monitors.newMonitor( NetworkReceiver.Monitor.class ), monitors.newMonitor( NetworkSender.Monitor.class ),
+                monitors.newMonitor( NamedThreadFactory.Monitor.class )
         );
 
         ServerIdElectionCredentialsProvider serverIdElectionCredentialsProvider = new

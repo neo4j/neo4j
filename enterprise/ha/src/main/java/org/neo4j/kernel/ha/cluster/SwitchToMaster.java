@@ -26,9 +26,10 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
@@ -41,10 +42,11 @@ import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 public class SwitchToMaster
 {
@@ -53,25 +55,31 @@ public class SwitchToMaster
     private final GraphDatabaseAPI graphDb;
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final Config config;
-    private final DependencyResolver resolver;
+    private Provider<SlaveFactory> slaveFactorySupplier;
+    private final MasterImpl.Monitor masterImplMonitor;
     private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final DataSourceManager dataSourceManager;
+    private final ByteCounterMonitor masterByteCounterMonitor;
+    private final RequestMonitor masterRequestMonitor;
 
     public SwitchToMaster( Logging logging, StringLogger msgLog, GraphDatabaseAPI graphDb,
-            HaIdGeneratorFactory idGeneratorFactory, Config config, DependencyResolver resolver,
+            HaIdGeneratorFactory idGeneratorFactory, Config config, Provider<SlaveFactory> slaveFactorySupplier,
             DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
-            DataSourceManager dataSourceManager )
+            DataSourceManager dataSourceManager, ByteCounterMonitor masterByteCounterMonitor, RequestMonitor masterRequestMonitor, MasterImpl.Monitor masterImplMonitor)
     {
         this.logging = logging;
         this.msgLog = msgLog;
         this.graphDb = graphDb;
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
-        this.resolver = resolver;
+        this.slaveFactorySupplier = slaveFactorySupplier;
+        this.masterImplMonitor = masterImplMonitor;
         this.masterDelegateHandler = masterDelegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.dataSourceManager = dataSourceManager;
+        this.masterByteCounterMonitor = masterByteCounterMonitor;
+        this.masterRequestMonitor = masterRequestMonitor;
     }
 
     /**
@@ -99,15 +107,15 @@ public class SwitchToMaster
             NeoStoreXaDataSource neoStoreXaDataSource = dataSourceManager.getDataSource();
             neoStoreXaDataSource.afterModeSwitch();
 
-            Monitors monitors = resolver.resolveDependency( Monitors.class );
+            MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb );
 
-            MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, monitors );
-
-            MasterImpl masterImpl = new MasterImpl( spi, monitors.newMonitor( MasterImpl.Monitor.class ),
+            MasterImpl masterImpl = new MasterImpl( spi, masterImplMonitor,
                     logging, config );
 
             MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
-                    new BranchDetectingTxVerifier( resolver ), monitors );
+                    new BranchDetectingTxVerifier( logging.getMessagesLog( BranchDetectingTxVerifier.class ),
+                            neoStoreXaDataSource.getDependencyResolver().resolveDependency( LogicalTransactionStore
+                                    .class ) ), masterByteCounterMonitor, masterRequestMonitor );
             haCommunicationLife.add( masterImpl );
             haCommunicationLife.add( masterServer );
             masterDelegateHandler.setDelegate( masterImpl );
@@ -119,8 +127,7 @@ public class SwitchToMaster
             msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
                     ", successfully moved to master" );
 
-            resolver.resolveDependency( SlaveFactory.class ).setStoreId( resolver.resolveDependency(
-                    NeoStoreXaDataSource.class ).getStoreId() );
+            slaveFactorySupplier.instance().setStoreId( neoStoreXaDataSource.getStoreId() );
 
             return masterHaURI;
         }

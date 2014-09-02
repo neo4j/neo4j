@@ -97,7 +97,6 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
@@ -151,7 +150,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
     }
 
-    private final Dependencies dependencies = new Dependencies();
+    private Dependencies dependencies;
     private final StringLogger msgLog;
     private final Logging logging;
     private final DependencyResolver dependencyResolver;
@@ -367,6 +366,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     @Override
     public void start() throws IOException
     {
+        dependencies = new Dependencies(  );
         life = new LifeSupport();
         readOnly = config.get( Configuration.read_only );
         storeDir = config.get( Configuration.store_dir );
@@ -382,7 +382,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         final DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
         storeMigrationProcess.migrateIfNeeded( store.getParentFile() );
         neoStore = dependencies.satisfyDependency( storeFactory.newNeoStore( false ) );
-        dependencies.satisfyDependency( TransactionIdStore.class, neoStore );
+        dependencies.satisfyDependency( neoStore );
 
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
@@ -440,7 +440,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
             PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, PhysicalLogFile.DEFAULT_NAME, fs );
 
-            LogFileInformation logFileInformation = dependencies.satisfyDependency( LogFileInformation.class,
+            LogFileInformation logFileInformation = dependencies.satisfyDependency(
                     new PhysicalLogFileInformation( logFiles, transactionMetadataCache, neoStore,
                             new PhysicalLogFileInformation.SPI()
                             {
@@ -483,10 +483,10 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     neoStore, logMonitor, this, transactionMetadataCache, logFileRecoverer ) );
 
             final LogicalTransactionStore logicalTransactionStore = dependencies.satisfyDependency(
-                    LogicalTransactionStore.class, new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
+                    new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
                             transactionMetadataCache, neoStore, config.get( GraphDatabaseSettings.batched_writes ) ) );
 
-            TransactionCommitProcess transactionCommitProcess = dependencies.satisfyDependency( TransactionCommitProcess.class,
+            TransactionCommitProcess transactionCommitProcess = dependencies.satisfyDependency(
                                         commitProcessFactory.create( logicalTransactionStore, kernelHealth,
                                                 neoStore, storeApplier,
                                                 new NeoStoreInjectedTransactionValidator( integrityValidator ), false ));

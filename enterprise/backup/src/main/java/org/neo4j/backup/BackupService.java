@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
@@ -59,6 +60,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.com.RequestContext.anonymous;
@@ -134,8 +136,8 @@ class BackupService
                 @Override
                 public Response<?> copyStore( StoreWriter writer )
                 {
-                    client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
-                            new Monitors(), null );
+                    Monitors monitors = new Monitors();
+                    client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(), null, monitors.newMonitor( ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ) );
                     client.start();
                     return client.fullBackup( writer );
                 }
@@ -290,9 +292,10 @@ class BackupService
             GraphDatabaseAPI targetDb, RequestContext context ) throws IncrementalBackupNotPossibleException
     {
         DependencyResolver resolver = targetDb.getDependencyResolver();
+        Monitors monitors = resolver.resolveDependency( Monitors.class );
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort,
-                resolver.resolveDependency( Logging.class ),
-                resolver.resolveDependency( Monitors.class ), targetDb.storeId() );
+                resolver.resolveDependency( Logging.class ), targetDb.storeId(),
+                monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ), monitors.newMonitor( RequestMonitor.class, BackupClient.class ) );
         client.start();
         boolean consistent = false;
         ProgressTxHandler handler = new ProgressTxHandler();

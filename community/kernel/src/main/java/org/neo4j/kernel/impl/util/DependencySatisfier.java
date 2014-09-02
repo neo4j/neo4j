@@ -27,16 +27,4 @@ import org.neo4j.graphdb.DependencyResolver;
 public interface DependencySatisfier
 {
     <T> T satisfyDependency( T dependency );
-
-    <T> T satisfyDependency( Class<T> type, T dependency );
-
-    public static abstract class Adapter implements DependencySatisfier
-    {
-        @SuppressWarnings( "unchecked" )
-        @Override
-        public <T> T satisfyDependency( T dependency )
-        {
-            return satisfyDependency( (Class<T>) dependency.getClass(), dependency );
-        }
-    }
 }

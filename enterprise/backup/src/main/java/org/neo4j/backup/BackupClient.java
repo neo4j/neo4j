@@ -28,10 +28,12 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.backup.BackupServer.FRAME_LENGTH;
@@ -39,10 +41,11 @@ import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
 
 class BackupClient extends Client<TheBackupInterface> implements TheBackupInterface
 {
-    public BackupClient( String hostNameOrIp, int port, Logging logging, Monitors monitors, StoreId storeId )
+    public BackupClient( String hostNameOrIp, int port, Logging logging, StoreId storeId,
+                         ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( hostNameOrIp, port, logging, monitors, storeId, FRAME_LENGTH, PROTOCOL_VERSION, 40 * 1000,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH );
+        super( hostNameOrIp, port, logging, storeId, FRAME_LENGTH, PROTOCOL_VERSION, 40 * 1000,
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH, byteCounterMonitor, requestMonitor );
     }
 
     @Override

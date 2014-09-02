@@ -19,13 +19,10 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import static org.neo4j.com.Protocol.VOID_SERIALIZER;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.com.Protocol.writeString;
-
 import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.Client;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;
@@ -34,25 +31,31 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.TargetCaller;
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+
+import static org.neo4j.com.Protocol.VOID_SERIALIZER;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.com.Protocol.writeString;
 
 public class SlaveClient extends Client<Slave> implements Slave
 {
     private final int machineId;
 
-    public SlaveClient( int machineId, String hostNameOrIp, int port, Logging logging, Monitors monitors,
-                        StoreId storeId, int maxConcurrentChannels, int chunkSize )
+    public SlaveClient( int machineId, String hostNameOrIp, int port, Logging logging, StoreId storeId,
+                        int maxConcurrentChannels, int chunkSize,
+                        ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( hostNameOrIp, port, logging, monitors, storeId, Protocol.DEFAULT_FRAME_LENGTH,
+        super( hostNameOrIp, port, logging, storeId, Protocol.DEFAULT_FRAME_LENGTH,
                 SlaveServer.APPLICATION_PROTOCOL_VERSION,
                 HaSettings.read_timeout.apply( Functions.<String, String>nullFunction() ),
-                maxConcurrentChannels, chunkSize );
+                maxConcurrentChannels, chunkSize, byteCounterMonitor, requestMonitor );
         this.machineId = machineId;
     }
 

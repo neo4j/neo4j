@@ -22,12 +22,9 @@ package org.neo4j.kernel.ha;
 import java.io.IOException;
 
 import org.neo4j.com.TxChecksumVerifier;
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
 
 /**
  * Used on the master to verify that slaves are using the same logical database as the master is running. This is done
@@ -36,15 +33,12 @@ import org.neo4j.kernel.logging.Logging;
 public class BranchDetectingTxVerifier implements TxChecksumVerifier
 {
     private final StringLogger logger;
-    private DependencyResolver resolver;
-    private LogicalTransactionStore txStore;
+    private final LogicalTransactionStore txStore;
 
-    public BranchDetectingTxVerifier( DependencyResolver resolver )
+    public BranchDetectingTxVerifier( StringLogger logger, LogicalTransactionStore logicalTransactionStore)
     {
-        this.resolver = resolver;
-        this.logger = resolver.resolveDependency( Logging.class ).getMessagesLog( getClass() );
-        this.txStore = resolver.resolveDependency( NeoStoreXaDataSource.class ).getDependencyResolver().
-                resolveDependency( LogicalTransactionStore.class );
+        this.logger = logger;
+        this.txStore = logicalTransactionStore;
     }
 
     @Override

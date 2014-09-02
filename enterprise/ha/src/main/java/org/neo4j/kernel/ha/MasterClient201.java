@@ -31,6 +31,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
@@ -47,7 +48,6 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
@@ -71,15 +71,14 @@ public class MasterClient201 extends Client<Master> implements MasterClient
     public static final byte PROTOCOL_VERSION = 6;
 
     private final long lockReadTimeout;
-    private final ByteCounterMonitor monitor;
 
-    public MasterClient201( String hostNameOrIp, int port, Logging logging, Monitors monitors, StoreId storeId,
-                           long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize )
+    public MasterClient201( String hostNameOrIp, int port, Logging logging, StoreId storeId,
+                           long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize,
+                           ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor)
     {
-        super( hostNameOrIp, port, logging, monitors, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
-                readTimeoutSeconds, maxConcurrentChannels, chunkSize );
+        super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
+                readTimeoutSeconds, maxConcurrentChannels, chunkSize, byteCounterMonitor, requestMonitor );
         this.lockReadTimeout = lockReadTimeout;
-        this.monitor = monitors.newMonitor( ByteCounterMonitor.class, getClass() );
     }
 
     @Override

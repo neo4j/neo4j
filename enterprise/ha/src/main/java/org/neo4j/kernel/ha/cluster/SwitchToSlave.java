@@ -33,6 +33,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
@@ -74,6 +75,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
@@ -99,15 +101,16 @@ public class SwitchToSlave
     private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final RequestContextFactory requestContextFactory;
-    // TODO 2.2-future add something to monitor
-    private final Monitors monitors;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final MasterClientResolver masterClientResolver;
+    private final ByteCounterMonitor byteCounterMonitor;
+    private final RequestMonitor requestMonitor;
 
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver, HaIdGeneratorFactory
             idGeneratorFactory, Logging logging, DelegateInvocationHandler<Master> masterDelegateHandler,
                           ClusterMemberAvailability clusterMemberAvailability, RequestContextFactory
-            requestContextFactory, Monitors monitors, Iterable<KernelExtensionFactory<?>> kernelExtensions )
+            requestContextFactory, Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                          ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         this.console = console;
         this.config = config;
@@ -116,8 +119,9 @@ public class SwitchToSlave
         this.logging = logging;
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.requestContextFactory = requestContextFactory;
-        this.monitors = monitors;
         this.kernelExtensions = kernelExtensions;
+        this.byteCounterMonitor = byteCounterMonitor;
+        this.requestMonitor = requestMonitor;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
 
@@ -266,8 +270,7 @@ public class SwitchToSlave
 
         Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), resolver.resolveDependency( UpdatePuller.class ) );
 
-        SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging,
-                resolver.resolveDependency( Monitors.class ) );
+        SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging, byteCounterMonitor, requestMonitor);
 
         masterDelegateHandler.setDelegate( master );
 

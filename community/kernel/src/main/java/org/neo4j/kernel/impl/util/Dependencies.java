@@ -19,96 +19,122 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Provider;
 
 @SuppressWarnings( "rawtypes" )
 public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier
 {
-    private final Map<Class, Object> dependencies = new HashMap<>();
+    private final Provider<DependencyResolver> parent;
+    private final Map<Class<?>, List<?>> typeDependencies = new HashMap<>();
+
+    public Dependencies()
+    {
+        parent = null;
+    }
+
+    public Dependencies( final DependencyResolver parent )
+    {
+        this.parent = new Provider<DependencyResolver>()
+        {
+            @Override
+            public DependencyResolver instance()
+            {
+                return parent;
+            }
+        };
+    }
+
+    public Dependencies( Provider<DependencyResolver> parent )
+    {
+        this.parent = parent;
+    }
 
     @Override
     public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
     {
-        // Try super classes
-        Object dependency = dependencies.get( type );
-        if ( dependency == null )
-        {
-            dependency = getDependencyForType( type, SUPER_CLASS );
-        }
+        List<?> options = typeDependencies.get( type );
 
-        // Try interfaces
-        if ( dependency == null )
-        {
-            dependency = getDependencyForType( type, INTERFACES );
-        }
+        if (options != null)
+            return selector.select( type, (Iterable<T>) options);
+
+        // Try parent
+        if (parent != null)
+            return parent.instance().resolveDependency( type, selector );
 
         // Out of options
-        if ( dependency == null )
-        {
-            throw new IllegalArgumentException(
-                    "Weird exception nesting here, but anyways, I couldn't find any dependency for " + type );
-        }
-
-        // We found it
-        return type.cast( dependency );
+        throw new IllegalArgumentException(
+                "Weird exception nesting here, but anyways, I couldn't find any dependency for " + type );
     }
 
-    @SuppressWarnings( "unchecked" )
+    public <T> Provider<T> provideDependency( final Class<T> type, final SelectionStrategy selector)
+    {
+        return new Provider<T>()
+        {
+            @Override
+            public T instance()
+            {
+                return resolveDependency( type, selector );
+            }
+        };
+    }
+
+    public <T> Provider<T> provideDependency( final Class<T> type )
+    {
+        return new Provider<T>()
+        {
+            @Override
+            public T instance()
+            {
+                return resolveDependency( type );
+            }
+        };
+    }
+
     @Override
     public <T> T satisfyDependency( T dependency )
     {
-        return satisfyDependency( (Class<T>) dependency.getClass(), dependency );
-    }
+        // File this object under all its possible types
+        Class type = dependency.getClass();
+        do
+        {
+            List<Object> deps = (List<Object>) typeDependencies.get( type );
+            if (deps == null)
+            {
+                deps = new ArrayList<>(  );
+                typeDependencies.put(type, deps);
+            }
+            deps.add(dependency);
 
-    @Override
-    public <T> T satisfyDependency( Class<T> type, T dependency )
-    {
-        this.dependencies.put( type, dependency );
+            // Add as all interfaces
+            Class[] interfaces = type.getInterfaces();
+            addInterfaces(interfaces, dependency);
+
+            type = type.getSuperclass();
+        } while (type != null);
+
         return dependency;
     }
 
-    private Object getDependencyForType( Class type, Function<Class,Class[]> traverser )
+    private <T> void addInterfaces( Class[] interfaces, T dependency )
     {
-        for ( Class candidate : traverser.apply( type ) )
+        for ( Class type : interfaces )
         {
-            Object dependency = dependencies.get( candidate );
-            if ( dependency != null )
+            List<Object> deps = (List<Object>) typeDependencies.get( type );
+            if (deps == null)
             {
-                return dependency;
+                deps = new ArrayList<>(  );
+                typeDependencies.put(type, deps);
             }
+            deps.add(dependency);
 
-            // Recursive call here
-            return getDependencyForType( candidate, traverser );
+            // Add as all sub-interfaces
+            addInterfaces(type.getInterfaces(), dependency);
         }
-        return null;
     }
-
-    private static final Function<Class,Class[]> SUPER_CLASS = new Function<Class,Class[]>()
-    {
-        @Override
-        public Class[] apply( Class from )
-        {
-            Class superClass = from.getSuperclass();
-            if ( superClass == null )
-            {
-                return NO_CLASSES;
-            }
-            return new Class[] { superClass };
-        }
-    };
-
-    private static final Function<Class,Class[]> INTERFACES = new Function<Class,Class[]>()
-    {
-        @Override
-        public Class[] apply( Class from )
-        {
-            return from.getInterfaces();
-        }
-    };
-
-    private static final Class[] NO_CLASSES = new Class[0];
 }

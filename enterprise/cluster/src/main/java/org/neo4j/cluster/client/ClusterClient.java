@@ -279,9 +279,8 @@ public class ClusterClient extends LifecycleAdapter
                 .timeout( ClusterMessage.leaveTimedout, config.leaveTimeout() )
                 .timeout( ElectionMessage.electionTimeout, config.electionTimeout() );
 
-        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( monitors,
-                new ClusterConfiguration( config
-                        .getClusterName(), logging.getMessagesLog( ClusterConfiguration.class ) ), logging
+        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( config
+                        .getClusterName(), logging.getMessagesLog( ClusterConfiguration.class ) ), logging, monitors.newMonitor( StateMachines.Monitor.class )
         );
 
         InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
