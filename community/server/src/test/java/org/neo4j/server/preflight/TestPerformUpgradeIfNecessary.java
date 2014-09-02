@@ -129,7 +129,7 @@ public class TestPerformUpgradeIfNecessary
         boolean exit = upgrader.run();
 
         // Then
-        assertEquals( true, exit );
+        assertEquals( "dump logs", true, exit );
 
         InOrder order = inOrder( monitor );
         order.verify( monitor, times( 1 ) ).migrationNeeded();

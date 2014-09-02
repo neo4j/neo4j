@@ -27,15 +27,17 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 public class TestStoreAccess
 {
@@ -49,8 +51,10 @@ public class TestStoreAccess
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
         File messages = new File( storeDir, "messages.log" );
         snapshot.deleteFile( messages );
+        LifeSupport life = new LifeSupport();
+        life.start();;
 
-        PageCache pageCache = new StandardPageCache( snapshot, 1000, 1024*4 );
+        PageCache pageCache = createPageCache( snapshot, getClass().getName(), life );
         try
         {
             new StoreAccess( snapshot, pageCache, storeDir.getPath() ).close();
@@ -59,6 +63,7 @@ public class TestStoreAccess
         finally
         {
             pageCache.close();
+            life.shutdown();
         }
     }
 

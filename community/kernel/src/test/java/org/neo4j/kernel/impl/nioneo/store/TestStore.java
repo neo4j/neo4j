@@ -29,41 +29,45 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+
 public class TestStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
             new DefaultIdGeneratorFactory();
-    private static Monitors monitors = new Monitors();
     public static FileSystemAbstraction FILE_SYSTEM =
             new DefaultFileSystemAbstraction();
 
+    private final LifeSupport life = new LifeSupport();
     private PageCache pageCache;
 
     @Before
     public void setUp()
     {
-        pageCache = new StandardPageCache( FILE_SYSTEM, 1024, 4096 );
+        pageCache = createPageCache( FILE_SYSTEM, getClass().getName(), life );
+        life.start();
     }
 
     @After
     public void tearDown() throws IOException
     {
         pageCache.close();
+        life.shutdown();
     }
 
     private File path()

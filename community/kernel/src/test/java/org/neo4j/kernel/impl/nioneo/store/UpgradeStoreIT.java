@@ -41,13 +41,13 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -58,6 +58,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 @Ignore
 public class UpgradeStoreIT
@@ -316,7 +317,9 @@ public class UpgradeStoreIT
         Monitors monitors = new Monitors();
         Config config = new Config();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        StandardPageCache pageCache = new StandardPageCache( fs, 1024, 4096 );
+        LifeSupport life = new LifeSupport();
+        life.start();
+        PageCache pageCache = createPageCache( fs, getClass().getName(), life );
         DynamicStringStore stringStore = new DynamicStringStore(
                 new File( fileName.getPath() + ".names"),
                 config,
@@ -342,6 +345,7 @@ public class UpgradeStoreIT
             store.updateRecord( record );
         }
         store.close();
+        life.shutdown();
     }
 
     private static class RelationshipTypeTokenStoreWithOneOlderVersion extends RelationshipTypeTokenStore
