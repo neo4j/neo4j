@@ -19,36 +19,46 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters
 
+import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
+
 import scala.annotation.tailrec
 
 case object RewriterTaskBuilder {
 
-  def apply(steps: Seq[RewriterStep]) = buildTasks(Set.empty, None, steps, Seq.empty)
+  def apply(steps: Seq[RewriterStep]) = State()(steps)
 
-  @tailrec
-  private def buildTasks(conditions: Set[RewriterCondition], previousName: Option[String], steps: Seq[RewriterStep],
-                         tasks: Seq[RewriterTask]): Seq[RewriterTask] = steps match {
-    case Seq(hd, tl@_*) =>
-      hd match {
-        case ApplyRewriter(name, rewriter) =>
-          val newTasks = withEnabledConditions(tasks, previousName, conditions) :+ RunRewriter(name, rewriter)
-          buildTasks(conditions, Some(name), tl, newTasks)
-        case EnableRewriterCondition(cond) =>
-          buildTasks(conditions + cond, previousName, tl, tasks)
-        case DisableRewriterCondition(cond) =>
-          buildTasks(conditions - cond, previousName, tl, tasks)
-        case EmptyRewriterStep =>
-          buildTasks(conditions, previousName, tl, tasks)
-      }
+  final private case class State(
+    conditions: Set[RewriterCondition] = Set.empty,
+    previousName: Option[String] = None,
+    tasks: Seq[RewriterTask] = Seq.empty
+  ) {
 
-    case _ =>
-      withEnabledConditions(tasks, previousName, conditions)
-  }
+    self =>
+    @tailrec
+    def apply(steps: Seq[RewriterStep]): Seq[RewriterTask] = steps match {
+      case Seq(hd, tl @_*) =>
+        hd match {
+          case ApplyRewriter(name, rewriter) =>
+            withConditionsAppended.withRewriterAppended(name, rewriter).apply(tl)
 
-  private def withEnabledConditions(tasks: Seq[RewriterTask], previousName: Option[String], conditions: Set[RewriterCondition]) =
-    if (conditions.isEmpty) {
-      tasks
-    } else {
-      tasks :+ RunConditions(previousName, conditions)
+          case EnableRewriterCondition(cond) =>
+            copy(conditions + cond)(tl)
+
+          case DisableRewriterCondition(cond) =>
+            copy(conditions - cond)(tl)
+
+          case EmptyRewriterStep =>
+            self(tl)
+        }
+
+      case _ =>
+        withConditionsAppended.tasks
     }
+
+    private def withRewriterAppended(name: String, rewriter: Rewriter) =
+      copy(previousName = Some(name), tasks = tasks :+ RunRewriter(name, rewriter))
+
+    private def withConditionsAppended =
+      if (conditions.isEmpty) self else copy(tasks = tasks :+ RunConditions(previousName, conditions))
+  }
 }
