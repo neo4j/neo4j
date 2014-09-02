@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.lang.Thread.sleep;
-import static java.lang.Thread.yield;
-import static org.junit.Assert.assertEquals;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
+
+import static java.lang.Thread.sleep;
+import static java.lang.Thread.yield;
+
+import static org.junit.Assert.assertEquals;
 
 public class ArrayQueueOutOfOrderSequenceTest
 {
