@@ -121,6 +121,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try
         {
             createTransactionCommands();
+            txState = null;
         }
         finally
         {

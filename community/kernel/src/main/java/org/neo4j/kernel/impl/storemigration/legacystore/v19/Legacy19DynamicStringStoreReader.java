@@ -33,14 +33,14 @@ import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
-public class LegacyDynamicStringStoreReader
+public class Legacy19DynamicStringStoreReader
 {
     private final int blockSize;
     private final StoreChannel fileChannel;
     private final ByteBuffer blockBuffer;
     private ByteBuffer chainBuffer;
 
-    public LegacyDynamicStringStoreReader( FileSystemAbstraction fs, File fileName, String fromVersion )
+    public Legacy19DynamicStringStoreReader( FileSystemAbstraction fs, File fileName, String fromVersion )
             throws IOException
     {
         // Read version and block size (stored in the first record in the store)
@@ -55,7 +55,7 @@ public class LegacyDynamicStringStoreReader
         fileChannel.read( buffer );
         buffer.flip();
         blockSize = buffer.getInt();
-        
+
         blockBuffer = ByteBuffer.allocate( blockSize );
         chainBuffer = ByteBuffer.wrap( new byte[blockSize*3] ); // just a default, will grow on demand
     }
@@ -68,7 +68,7 @@ public class LegacyDynamicStringStoreReader
         {
             fileChannel.position( blockId*blockSize );
             readIntoBuffer( fileChannel, blockBuffer, blockSize );
-            
+
             ensureChainBufferBigEnough();
             blockId = readRecord( blockId, blockBuffer );
         }
@@ -108,7 +108,7 @@ public class LegacyDynamicStringStoreReader
         long nextBlock = getUnsignedInt( recordData );
         long nextModifier = ( firstInteger & 0xF000000L ) << 8;
         long longNextBlock = longFromIntAndMod( nextBlock, nextModifier );
-        
+
         // Read the data into the chainBuffer
         recordData.limit( recordData.position()+nrOfBytes );
         chainBuffer.put( recordData );

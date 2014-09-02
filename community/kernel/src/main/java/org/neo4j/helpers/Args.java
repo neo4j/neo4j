@@ -49,10 +49,8 @@ import java.util.Map;
 public class Args
 {
     private final String[] args;
-    private final Map<String, String> map = new HashMap<String, String>();
-    private final List<String> orphans = new ArrayList<String>();
-//    private final Set<String> touchedParameters = new HashSet<String>();
-//    private final BitSet touchedOrphans = new BitSet();
+    private final Map<String, String> map = new HashMap<>();
+    private final List<String> orphans = new ArrayList<>();
 
     /**
      * Suitable for main( String[] args )
@@ -77,12 +75,22 @@ public class Args
 
     public Map<String, String> asMap()
     {
-        return new HashMap<String, String>( this.map );
+        return new HashMap<>( this.map );
     }
 
     public boolean has( String  key )
     {
         return this.map.containsKey( key );
+    }
+
+    public boolean hasNonNull( String key )
+    {
+        return this.map.get( key ) != null;
+    }
+
+    public String get( String key )
+    {
+        return this.map.get( key );
     }
 
     public String get( String key, String defaultValue )
@@ -148,12 +156,12 @@ public class Args
 
     public List<String> orphans()
     {
-        return new ArrayList<String>( this.orphans );
+        return new ArrayList<>( this.orphans );
     }
     
     public String[] asArgs()
     {
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         for ( String orphan : orphans )
         {
             String quote = orphan.contains( " " ) ? " " : "";
@@ -161,10 +169,13 @@ public class Args
         }
         for ( Map.Entry<String, String> entry : map.entrySet() )
         {
-            String quote = entry.getKey().contains( " " ) || entry.getValue().contains( " " ) ? " " : "";
-            list.add( quote + (entry.getKey().length() > 1 ? "--" : "-") + entry.getKey() + "=" + entry.getValue() + quote );
+            String key = entry.getKey();
+            String value = entry.getValue();
+
+            String quote = key.contains( " " ) || (value != null && value.contains( " " )) ? " " : "";
+            list.add( quote + (key.length() > 1 ? "--" : "-") + key + (value != null ? "=" + value + quote : "") );
         }
-        return list.toArray( new String[0] );
+        return list.toArray( new String[list.size()] );
     }
     
     @Override
@@ -183,7 +194,7 @@ public class Args
 
     private static String stripOption( String arg )
     {
-        while ( arg.length() > 0 && arg.charAt( 0 ) == '-' )
+        while ( !arg.isEmpty() && arg.charAt( 0 ) == '-' )
         {
             arg = arg.substring( 1 );
         }
@@ -203,14 +214,13 @@ public class Args
                 {
                     String key = arg.substring( 0, equalIndex );
                     String value = arg.substring( equalIndex + 1 );
-                    if ( value.length() > 0 )
+                    if ( !value.isEmpty() )
                     {
                         map.put( key, value );
                     }
                 }
                 else
                 {
-                    String key = arg;
                     int nextIndex = i+1;
                     String value = nextIndex < args.length ?
                         args[ nextIndex ] : null;
@@ -219,7 +229,7 @@ public class Args
                     {
                         i = nextIndex;
                     }
-                    map.put( key, value );
+                    map.put( arg, value );
                 }
             }
             else
@@ -229,43 +239,6 @@ public class Args
         }
     }
 
-/*    public void printUntouched( PrintStream out )
-    {
-        boolean first = true;
-        for ( Map.Entry<String, String> parameter : map.entrySet() )
-        {
-            if ( touchedParameters.contains( parameter ) ) continue;
-            if ( first )
-            {
-                first = false;
-                out.println( "Untouched parameters:" );
-            }
-            out.println( "  " + parameter.getKey() + ":" + parameter.getValue() );
-        }
-
-        first = true;
-        for ( int i = 0; i < orphans.size(); i++ )
-        {
-            if ( touchedOrphans.get( i ) ) continue;
-            if ( first )
-            {
-                first = false;
-                out.println( "Untouched orphans:" );
-            }
-            out.println( "(" + i + "):" + orphans.get( i ) );
-        }
-    }
-
-    public Map<String, String> getUntouchedParameters()
-    {
-        return null;
-    }
-
-    public Iterable<String> getUntouchedOrphans()
-    {
-        return null;
-    }*/
-
     public static String jarUsage( Class<?> main, String... params )
     {
         StringBuilder usage = new StringBuilder( "USAGE: java [-cp ...] " );
@@ -274,9 +247,8 @@ public class Args
             String jar = main.getProtectionDomain().getCodeSource().getLocation().getPath();
             usage.append( "-jar " ).append( jar );
         }
-        catch ( Exception ex )
+        catch ( Exception ignored )
         {
-            // ignore
         }
         usage.append( ' ' ).append( main.getCanonicalName() );
         for ( String param : params )

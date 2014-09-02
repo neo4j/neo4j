@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v19;
 
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.NeoStoreCommand;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyKeyTokenCommand;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipCommand;
-import static org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -41,12 +34,18 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogIoUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
-/**
- * Reads log files from legacy (1.9) stores, and produces current (2.0) command objects from them.
- */
-class LegacyCommandReader implements LegacyLogIoUtil.CommandReader
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.NeoStoreCommand;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyKeyTokenCommand;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipCommand;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand;
+
+// most of the code has been copied from  org.neo4j.kernel.impl.nioneo.xa.Command
+public class Legacy19CommandReader implements LegacyLogIoUtil.CommandReader
 {
     private static PropertyBlock readPropertyBlock( ReadableByteChannel byteChannel,
                                                     ByteBuffer buffer ) throws IOException

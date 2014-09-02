@@ -24,6 +24,7 @@ import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
@@ -301,9 +302,11 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator( 1l ) );
+        when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty( propertyKeyId, value ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( true );
-        state.txState().nodeDoRemoveProperty( 1l, stringProperty( propertyKeyId, value ) );
+        when( store.nodeGetLabels( 1l ) ).thenReturn( PrimitiveIntCollections.iterator( labelId ) );
+        txContext.nodeRemoveProperty( state, 1l, propertyKeyId );
 
         // When
         long result = txContext.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value );
@@ -342,6 +345,8 @@ public class IndexQueryTransactionStateTest
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
         when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.<UniquenessConstraint>emptyIterator() );
+        when( store.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) )
+                .thenReturn( new IndexDescriptor( labelId, propertyKeyId ) );
 
         StateHandlingStatementOperations stateHandlingOperations = new StateHandlingStatementOperations(
                 store,

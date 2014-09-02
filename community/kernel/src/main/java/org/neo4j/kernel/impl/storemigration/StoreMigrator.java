@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -50,11 +49,22 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFiles;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogIoUtil;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyLuceneCommandReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19CommandReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19LogIoUtil;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20CommandReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20LogIoUtil;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.StoreFile20;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
@@ -95,6 +105,8 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     private final Config config;
     private final Logging logging;
     private String versionToUpgradeFrom;
+    private LegacyStore legacyStore;
+    private LegacyLogFiles legacyLogFiles;
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
@@ -134,14 +146,25 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
 
         progressMonitor.started();
 
-        LegacyStore legacyStore;
+        final LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
+        logEntryWriter.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
+        final LogEntryWriterv1 luceneLogEntryWriter = new LogEntryWriterv1();
+        luceneLogEntryWriter.setCommandWriter( LegacyLuceneCommandReader.newWriter() );
         if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
         {
             legacyStore = new Legacy19Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+            final LegacyLogIoUtil logIoUtil = new Legacy19LogIoUtil( new Legacy19CommandReader() );
+            final LegacyLogIoUtil luceneLogIoUtil = new Legacy19LogIoUtil( LegacyLuceneCommandReader.newReader() );
+            legacyLogFiles = new LegacyLogFiles( fileSystem, logEntryWriter, luceneLogEntryWriter,
+                    logIoUtil, luceneLogIoUtil );
         }
         else
         {
             legacyStore = new Legacy20Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+            final LegacyLogIoUtil logIoUtil = new Legacy20LogIoUtil( new Legacy20CommandReader() );
+            final LegacyLogIoUtil luceneLogIoUtil = new Legacy20LogIoUtil( LegacyLuceneCommandReader.newReader() );
+            legacyLogFiles = new LegacyLogFiles( fileSystem, logEntryWriter, luceneLogEntryWriter,
+                    logIoUtil, luceneLogIoUtil );
         }
 
         ExecutionMonitor executionMonitor = new CoarseBoundedProgressExecutionMonitor(
@@ -180,9 +203,10 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
                 propertyStore.close();
             }
 
-            legacy19Store.migrateTransactionLogs( fileSystem, migrationDir, storeDir );
-            legacy19Store.migrateLuceneLogs( fileSystem, migrationDir, storeDir );
         }
+
+        legacyLogFiles.migrateNeoLogs( fileSystem, migrationDir, storeDir );
+        legacyLogFiles.migrateLuceneLogs( fileSystem, migrationDir, storeDir );
         // Close
         legacyStore.close();
     }
@@ -272,7 +296,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
 
     private Iterable<InputRelationship> legacyRelationshipsAsInput( LegacyStore legacyStore )
     {
-        final org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader reader = legacyStore.getRelStoreReader();
+        final LegacyRelationshipStoreReader reader = legacyStore.getRelStoreReader();
         return new Iterable<InputRelationship>()
         {
             @Override
@@ -341,66 +365,53 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
         StoreFile20.deleteIdFile( fileSystem, migrationDir, allExcept( StoreFile20.RELATIONSHIP_GROUP_STORE ) );
 
-        StoreFile20[] filesToDelete;
-        StoreFile20[] leftoverFiles;
+        Iterable<StoreFile20> filesToMove;
         if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
         {
-            filesToDelete = allExcept(
+            filesToMove = Arrays.asList(
                     StoreFile20.NODE_STORE,
                     StoreFile20.RELATIONSHIP_STORE,
                     StoreFile20.RELATIONSHIP_GROUP_STORE,
                     StoreFile20.LABEL_TOKEN_STORE,
                     StoreFile20.NODE_LABEL_STORE,
+                    StoreFile20.LABEL_TOKEN_NAMES_STORE,
                     StoreFile20.PROPERTY_STORE,
                     StoreFile20.PROPERTY_KEY_TOKEN_STORE,
                     StoreFile20.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                    StoreFile20.LABEL_TOKEN_NAMES_STORE,
-                    StoreFile20.SCHEMA_STORE );
-            leftoverFiles = new StoreFile20[]{StoreFile20.NODE_STORE,
-                                              StoreFile20.RELATIONSHIP_STORE,
-                                              StoreFile20.PROPERTY_STORE,
-                                              StoreFile20.PROPERTY_KEY_TOKEN_STORE,
-                                              StoreFile20.PROPERTY_KEY_TOKEN_NAMES_STORE,};
+                    StoreFile20.SCHEMA_STORE
+            );
         }
         else
         {
             // Note: We don't overwrite the label stores in 2.0
-            filesToDelete = allExcept(
+            filesToMove = Arrays.asList(
                     StoreFile20.NODE_STORE,
                     StoreFile20.RELATIONSHIP_STORE,
-                    StoreFile20.RELATIONSHIP_GROUP_STORE,
-                    StoreFile20.SCHEMA_STORE );
-            leftoverFiles = new StoreFile20[]{StoreFile20.NODE_STORE, StoreFile20.RELATIONSHIP_STORE};
+                    StoreFile20.RELATIONSHIP_GROUP_STORE);
         }
-        StoreFile20.deleteStoreFile( fileSystem, migrationDir, filesToDelete );
 
         // Move the current ones into the leftovers directory
-        StoreFile20.move( fileSystem, storeDir, leftOversDir,
-                          IteratorUtil.asIterable( leftoverFiles ),
-                          false, false, StoreFileType.STORE );
+        StoreFile20.move( fileSystem, storeDir, leftOversDir, filesToMove,
+                true,  // allow to skip non existent source files
+                false, // not allow to overwrite target files
+                StoreFileType.STORE );
 
         // Move the migrated ones into the store directory
-        StoreFile20.move( fileSystem, migrationDir, storeDir, StoreFile20.currentStoreFiles(),
-                true,   // allow skip non existent source files
-                true,   // allow overwrite target files
+        StoreFile20.move( fileSystem, migrationDir, storeDir, filesToMove,
+                true, // allow to skip non existent source files
+                true, // allow to overwrite target files
                 StoreFileType.values() );
+
         StoreFile20.ensureStoreVersion( fileSystem, storeDir, StoreFile20.currentStoreFiles() );
 
-        if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
-        {
-            Legacy19Store.moveRewrittenTransactionLogs( migrationDir, storeDir );
-            Legacy19Store.moveRewrittenLuceneLogs( migrationDir, storeDir );
-        }
+        legacyLogFiles.moveRewrittenNeoLogs( migrationDir, storeDir );
+        legacyLogFiles.moveRewrittenLuceneLogs( migrationDir, storeDir );
     }
 
     @Override
     public void cleanup( FileSystemAbstraction fileSystem, File migrationDir ) throws IOException
     {
-        for ( StoreFile20 storeFile : StoreFile20.values() )
-        {
-            fileSystem.deleteFile( new File( migrationDir, storeFile.storeFileName() ) );
-            fileSystem.deleteFile( new File( migrationDir, storeFile.idFileName() ) );
-        }
+        fileSystem.deleteRecursively( migrationDir );
     }
 
     @Override

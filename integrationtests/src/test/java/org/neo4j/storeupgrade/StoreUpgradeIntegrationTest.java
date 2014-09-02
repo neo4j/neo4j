@@ -49,7 +49,6 @@ import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
@@ -58,13 +57,13 @@ import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 @RunWith( Theories.class )
-public class StoreUpgradeTest
+public class StoreUpgradeIntegrationTest
 {
     @DataPoints
     public static final Store[] stores = new Store[] {
-            new Store( "/upgrade/0.A.1-db.zip", 1071, 18 ),
-            new Store( "0.A.1-db2.zip", 8, 11 ),
-            new Store( "0.A.0-db.zip", 4, 4)
+            new Store( "/upgrade/0.A.1-db.zip", 1071, 0, 18 ),
+            new Store( "0.A.1-db2.zip", 8, 1, 11 ),
+            new Store( "0.A.0-db.zip", 4, 0, 4 ),
     };
 
     @Test
@@ -185,17 +184,20 @@ public class StoreUpgradeTest
         private final String resourceName;
         final long expectedNodeCount;
         final long lastTxId;
+        final long expectedIndexCount;
 
-        private Store( String resourceName, long expectedNodeCount, long lastTxId )
+
+        private Store( String resourceName, long expectedNodeCount, long expectedIndexCount, long lastTxId )
         {
             this.resourceName = resourceName;
             this.expectedNodeCount = expectedNodeCount;
+            this.expectedIndexCount = expectedIndexCount;
             this.lastTxId = lastTxId;
         }
 
         public File prepareDirectory() throws IOException
         {
-            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeTest.class, resourceName );
+            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeIntegrationTest.class, resourceName );
             new File( dir, "messages.log" ).delete(); // clear the log
             return dir;
         }
@@ -205,13 +207,20 @@ public class StoreUpgradeTest
     {
         try ( Transaction ignored = db.beginTx() )
         {
-            long count = count( GlobalGraphOperations.at( db ).getAllNodes() );
-            assertThat( count, is( store.expectedNodeCount ) );
+            // count nodes
+            long nodeCount = count( GlobalGraphOperations.at( db ).getAllNodes() );
+            assertThat( nodeCount, is( store.expectedNodeCount ) );
 
+            // count indexes
+            long indexCount = count( db.schema().getIndexes() );
+            assertThat( indexCount, is( store.expectedIndexCount ) );
+
+            // check last committed tx
             long lastCommittedTxId = db.getDependencyResolver()
                     .resolveDependency( NeoStoreXaDataSource.class )
                     .getLastCommittedTxId();
-            assertEquals( store.lastTxId, lastCommittedTxId );
+
+            assertThat( lastCommittedTxId, is( store.lastTxId ) );
         }
     }
 }
