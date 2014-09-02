@@ -17,7 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters
 
-case object normalizeMatchPredicates
-  extends MatchPredicateNormalization(MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer))
+import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
+
+sealed trait RewriterTask
+final case class RunConditions(previousName: Option[String], conditions: Set[RewriterCondition]) extends RewriterTask
+final case class RunRewriter(name: String, rewriter: Rewriter) extends RewriterTask

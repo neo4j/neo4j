@@ -20,9 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
+import org.neo4j.cypher.internal.compiler.v2_2.ast.conditions.containsNoReturnStar
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterStep, RewriterStepSequencer}
 
 class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters: Boolean = true) {
+
+  import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
   def rewrite(queryText: String, statement: Statement): (Statement, Map[String, Any]) = {
     rewritingMonitor.startRewriting(queryText, statement)
@@ -32,19 +36,20 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
     else
       (Rewriter.lift(PartialFunction.empty), Map.empty[String, Any])
 
-    val rewriters = Seq(
+    val rewriter = RewriterStepSequencer.newDefault("ASTRewriter")(
       foldConstants,
-      extractParameters,
+      ApplyRewriter("extractParameters", extractParameters),
       nameMatchPatternElements,
       normalizeMatchPredicates,
       normalizeNotEquals,
       normalizeEqualsArgumentOrder,
       addUniquenessPredicates,
       expandStar,
+      enableCondition(containsNoReturnStar),
       isolateAggregation,
-      aliasReturnItems)
+      aliasReturnItems
+    )
 
-    val rewriter = inSequence(rewriters: _*)
     val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
 
     rewritingMonitor.finishRewriting(queryText, rewrittenStatement)

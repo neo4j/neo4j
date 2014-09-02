@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
+import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeBuilder
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeBuilder, PipeInfo}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{RewriterStep, RewriterStepSequencer}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors,
@@ -83,7 +83,9 @@ case class Planner(monitors: Monitors,
 }
 
 object Planner {
-  val rewriter = inSequence(
+  import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
+
+  val rewriter = RewriterStepSequencer.newDefault("Planner")(
     rewriteEqualityToInCollection,
     splitInCollectionsToIsolateConstants,
     CNFNormalizer,
@@ -103,3 +105,4 @@ trait PlanningMonitor {
   def foundPlan(q: String, p: LogicalPlan)
   def successfulPlanning(q: String, p: PipeInfo)
 }
+
