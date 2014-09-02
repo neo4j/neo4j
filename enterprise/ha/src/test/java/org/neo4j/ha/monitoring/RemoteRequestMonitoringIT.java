@@ -19,6 +19,11 @@
  */
 package org.neo4j.ha.monitoring;
 
+import java.util.Collection;
+
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
@@ -35,6 +40,7 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.fromXml;
@@ -48,7 +54,7 @@ public class RemoteRequestMonitoringIT
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
                 TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
                 MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005",
-                        HaSettings.tx_push_factor.name(), "2" ) );
+                                   HaSettings.tx_push_factor.name(), "2" ) );
 
         EideticRequestMonitor masterMonitor = new EideticRequestMonitor();
         EideticRequestMonitor firstSlaveMonitor = new EideticRequestMonitor();
@@ -97,9 +103,9 @@ public class RemoteRequestMonitoringIT
         }
 
         // THEN
-        assertEquals( masterMonitor.getRequests().size(), masterMonitor.getRequestsEnded() );
-        assertEquals( firstSlaveMonitor.getRequests().size(), firstSlaveMonitor.getRequestsEnded() );
-        assertEquals( secondSlaveMonitor.getRequests().size(), secondSlaveMonitor.getRequestsEnded() );
+        assertThat( masterMonitor.getRequests(), hasSize( masterMonitor.getRequestsEnded() ) );
+        assertThat( firstSlaveMonitor.getRequests(), hasSize( firstSlaveMonitor.getRequestsEnded() ) );
+        assertThat( secondSlaveMonitor.getRequests(), hasSize( secondSlaveMonitor.getRequestsEnded() ) );
     }
 
     @Test
@@ -150,5 +156,27 @@ public class RemoteRequestMonitoringIT
         assertEquals( 0, firstSlaveMonitor.getCommitCount() );
         assertEquals( 10, firstSlaveMonitor.getInjectOnePhaseCommitCount() );
         assertEquals( 0, firstSlaveMonitor.getInjectTwoPhaseCommitCount() );
+    }
+
+    /**
+     * We can't use {@link org.hamcrest.collection.IsCollectionWithSize} because we want any error message to contain
+     * a string representation of the collection, not just its size.
+     */
+    private static <E> Matcher<Collection<? extends E>> hasSize( final int size )
+    {
+        return new TypeSafeMatcher<Collection<? extends E>>()
+        {
+            @Override
+            protected boolean matchesSafely( Collection<? extends E> item )
+            {
+                return item.size() == size;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendValue( size ).appendText( " requests" );
+            }
+        };
     }
 }

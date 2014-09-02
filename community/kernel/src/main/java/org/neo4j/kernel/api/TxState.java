@@ -261,4 +261,8 @@ public interface TxState
     boolean constraintIndexDoUnRemove( IndexDescriptor index );
 
     Long indexCreatedForConstraint( UniquenessConstraint constraint );
+
+    DiffSets<Long> indexUpdates( IndexDescriptor index, Object value );
+
+    void indexUpdateProperty( IndexDescriptor descriptor, long nodeId, Object valueBefore, Object valueAfter );
 }

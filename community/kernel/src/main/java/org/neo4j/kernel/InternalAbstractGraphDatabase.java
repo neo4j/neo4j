@@ -1605,36 +1605,6 @@ public abstract class InternalAbstractGraphDatabase
 
     private IndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
     {
-        IndexDescriptor descriptor = findUniqueIndexByLabelAndProperty( readOps, labelId, propertyId );
-
-        if ( null == descriptor )
-        {
-            descriptor = findRegularIndexByLabelAndProperty( readOps, labelId, propertyId );
-        }
-        return descriptor;
-    }
-
-    private IndexDescriptor findUniqueIndexByLabelAndProperty( ReadOperations readOps, int labelId, int propertyId )
-    {
-        try
-        {
-            IndexDescriptor descriptor = readOps.indexesGetForLabelAndPropertyKey( labelId, propertyId );
-
-            if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
-            {
-                // Ha! We found an index - let's use it to find matching nodes
-                return descriptor;
-            }
-        }
-        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
-        {
-            // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
-        }
-        return null;
-    }
-
-    private IndexDescriptor findRegularIndexByLabelAndProperty( ReadOperations readOps, int labelId, int propertyId )
-    {
         try
         {
             IndexDescriptor descriptor = readOps.indexesGetForLabelAndPropertyKey( labelId, propertyId );
