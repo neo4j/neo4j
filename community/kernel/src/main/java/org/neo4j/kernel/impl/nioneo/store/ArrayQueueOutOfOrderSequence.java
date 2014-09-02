@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import static java.lang.Math.max;
+import static java.lang.String.format;
 
 /**
  * A crude, synchronized implementation of OutOfOrderSequence. Please implement a faster one if need be.
@@ -59,6 +60,12 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     {
         highestGapFreeNumber = number;
         outOfOrderQueue.clear();
+    }
+
+    @Override
+    public synchronized String toString()
+    {
+        return format( "out-of-order-sequence:%d [%s]", highestGapFreeNumber, outOfOrderQueue );
     }
 
     private static class SortedArray
@@ -134,6 +141,21 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
                 array = newArray;
                 cursor = 0;
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder builder = new StringBuilder();
+            for ( int i = 0; i < length; i++ )
+            {
+                long value = array[(cursor+i)%array.length];
+                if ( value != UNSET )
+                {
+                    builder.append( builder.length() > 0 ? "," : "" ).append( value );
+                }
+            }
+            return builder.toString();
         }
     }
 }

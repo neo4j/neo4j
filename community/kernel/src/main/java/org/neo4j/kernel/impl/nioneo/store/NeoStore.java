@@ -35,13 +35,16 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.kernel.impl.util.CappedOperation.time;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -109,12 +112,14 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200 );
 
     private final int relGrabSize;
+    private final CappedOperation<Void> transactionCloseWaitLogger;
 
     public NeoStore( File fileName, Config conf, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+            FileSystemAbstraction fileSystemAbstraction, final StringLogger stringLogger,
             RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore, PropertyStore propStore,
             RelationshipStore relStore, NodeStore nodeStore, SchemaStore schemaStore,
-            RelationshipGroupStore relGroupStore, StoreVersionMismatchHandler versionMismatchHandler, Monitors monitors )
+            RelationshipGroupStore relGroupStore, StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 stringLogger, versionMismatchHandler, monitors );
@@ -125,7 +130,16 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         this.nodeStore = nodeStore;
         this.schemaStore = schemaStore;
         this.relGroupStore = relGroupStore;
-        relGrabSize = conf.get( Configuration.relationship_grab_size );
+        this.relGrabSize = conf.get( Configuration.relationship_grab_size );
+        this.transactionCloseWaitLogger = new CappedOperation<Void>( time( 30, SECONDS ) )
+        {
+            @Override
+            protected void triggered( Void event )
+            {
+                stringLogger.info( format( "Waiting for all transactions to close...%n  committed: %s%n  closed:    %s",
+                        lastCommittedTx, lastClosedTx ) );
+            }
+        };
     }
 
     @Override
@@ -542,14 +556,14 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private void setRecord( long id, long value )
     {
         long pageId = pageIdForRecord( id );
-        
+
         // We need to do a little special handling of high id in neostore since it's not updated in the same
         // way as other stores. Other stores always gets updates via commands where records are updated and
         // the one making the update can also track the high id in the event of recovery.
         // Here methods can be called directly, for example setLatestConstraintIntroducingTx where it's
         // unclear from the outside which record id that refers to, so here we need to manage high id ourselves.
         setHighestPossibleIdInUse( id );
-        
+
         try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
         {
             if ( cursor.next() )
@@ -786,7 +800,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         checkInitialized( lastCommittingTxField.get() );
         return lastCommittingTxField.incrementAndGet();
     }
-    
+
     @Override
     public void transactionCommitted( long transactionId )
     {
@@ -827,6 +841,11 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public boolean closedTransactionIdIsOnParWithCommittedTransactionId()
     {
-        return lastClosedTx.get() == lastCommittedTx.get();
+        boolean onPar = lastClosedTx.get() == lastCommittedTx.get();
+        if ( !onPar )
+        {   // Trigger some logging here, max logged every 30 secs or so
+            transactionCloseWaitLogger.event( null );
+        }
+        return onPar;
     }
 }

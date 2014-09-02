@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
@@ -463,7 +464,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                     return -1;
                                 }
                             }) );
-            
+
             LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
                     logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
 
@@ -723,14 +724,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         // TODO 2.2-future what if this will never happen?
         while ( !neoStore.closedTransactionIdIsOnParWithCommittedTransactionId() )
         {
-            try
-            {
-                Thread.sleep( 1 );
-            }
-            catch ( InterruptedException e )
-            {
-                break;
-            }
+            LockSupport.parkNanos( 1_000_000 ); // 1 ms
         }
     }
 
