@@ -5,17 +5,17 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.unsafe.impl.batchimport;
 
@@ -28,34 +28,41 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.locks.LockSupport;
 
+import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.ConsistencyCheckService.Result;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.impl.batchimport.cache.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.staging.DetailedExecutionMonitor;
+import org.neo4j.unsafe.impl.batchimport.staging.SilentExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.Writer;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 import org.neo4j.unsafe.impl.batchimport.store.io.SimplePool;
 
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.SYNCHRONOUS;
@@ -63,10 +70,8 @@ import static org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.
 public class ParallelBatchImporterTest
 {
     private static final long SEED = 12345L;
-
     protected static final String[] LABELS = new String[]{"Person", "Guy"};
-
-    private final File directory = TargetDirectory.forTest( getClass() ).cleanDirectory( "import" );
+    public final @Rule TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
     private void shouldImportCsvData0( WriterFactory delegateWriterFactory ) throws Exception
     {
@@ -79,9 +84,9 @@ public class ParallelBatchImporterTest
                 return 30;
             }
         };
-        BatchImporter inserter = new ParallelBatchImporter( directory.getAbsolutePath(),
+        BatchImporter inserter = new ParallelBatchImporter( directory.absolutePath(),
                 new DefaultFileSystemAbstraction(), config, new DevNullLoggingService(),
-                new DetailedExecutionMonitor(), new IoQueue( config.numberOfIoThreads(), delegateWriterFactory ) );
+                new SilentExecutionMonitor(), new IoQueue( config.numberOfIoThreads(), delegateWriterFactory ) );
 
         // WHEN
         int nodeCount = 100_000;
@@ -90,17 +95,26 @@ public class ParallelBatchImporterTest
         inserter.shutdown();
 
         // THEN
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.getAbsolutePath() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
             verifyData( nodeCount, db );
-
             tx.success();
         }
         finally
         {
             db.shutdown();
         }
+        assertConsistent( directory.absolutePath() );
+    }
+
+    private void assertConsistent( String storeDir ) throws ConsistencyCheckIncompleteException
+    {
+        ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
+        Result result = consistencyChecker.runFullConsistencyCheck( storeDir,
+                new Config(), ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        assertTrue( "Database contains inconsistencies, there should be a report in " + storeDir,
+                result.isSuccessful() );
     }
 
     @Test
@@ -153,7 +167,7 @@ public class ParallelBatchImporterTest
         }
         GlobalGraphOperations globalOps = GlobalGraphOperations.at( db );
         Set<Label> allLabels = Iterables.toSet( globalOps.getAllLabels() );
-        assertThat( allLabels, is( expectedLabels ) );
+        assertEquals( allLabels, expectedLabels );
 
         // Sample some nodes for deeper inspection of their contents
         Random random = new Random();
@@ -166,9 +180,20 @@ public class ParallelBatchImporterTest
             {
                 node.getProperty( key );
                 Set<Label> actualLabels = Iterables.toSet( node.getLabels() );
-                assertThat( actualLabels, is( expectedLabels ) );
+                assertEquals( actualLabels, expectedLabels );
             }
         }
+
+        // The label scan store should find all nodes since they all have the same labels
+        Label firstLabel = DynamicLabel.label( LABELS[0] );
+        ResourceIterable<Node> allNodesWithLabel =
+                globalOps.getAllNodesWithLabel( firstLabel );
+        assertEquals( count( allNodesWithLabel ), nodeCount );
+
+        // All nodes also have the same age=10 property, so we should again find them all
+        ResourceIterable<Node> foundNodes =
+                db.findNodesByLabelAndProperty( firstLabel, "age", 10 );
+        assertEquals( count( foundNodes ), nodeCount );
     }
 
     private static Iterable<InputRelationship> relationships( final long count, final long maxNodeId )

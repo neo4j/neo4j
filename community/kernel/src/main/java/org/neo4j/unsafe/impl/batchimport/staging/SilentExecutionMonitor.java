@@ -17,23 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-
-public interface LegacyLogIoUtil
+public class SilentExecutionMonitor extends PollingExecutionMonitor
 {
-    public static interface CommandReader
+    public SilentExecutionMonitor()
     {
-        XaCommand readCommand( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException;
+        super( 100 );
     }
 
-    long[] readLogHeader( ByteBuffer buffer, ReadableByteChannel channel, boolean strict ) throws IOException;
+    @Override
+    public void done( long totalTimeMillis )
+    {   // We're done
+    }
 
-    LogEntry readEntry( ByteBuffer buffer, ReadableByteChannel channel ) throws IOException;
+    @Override
+    protected void poll( StageExecution[] executions )
+    {   // We're still going...
+    }
 }

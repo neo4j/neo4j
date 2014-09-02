@@ -179,7 +179,7 @@ public class ParallelBatchImporter implements BatchImporter
             super( logging, "Calculate dense nodes", config );
             input( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );
 
-            add( new CalculateDenseNodesStep( control(), config.workAheadSize(), nodeRelationshipLink ) );
+            add( new CalculateDenseNodesStep( control(), config.workAheadSize(), nodeRelationshipLink, logger ) );
         }
     }
 

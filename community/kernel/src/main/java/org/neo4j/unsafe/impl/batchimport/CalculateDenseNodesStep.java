@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.List;
 
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
@@ -36,12 +37,14 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
 {
     private final NodeRelationshipLink nodeRelationshipLink;
     private long highestSeenNodeId;
+    private StringLogger logger;
 
     public CalculateDenseNodesStep( StageControl control, int workAheadSize,
-            NodeRelationshipLink nodeRelationshipLink )
+            NodeRelationshipLink nodeRelationshipLink, StringLogger logger )
     {
         super( control, "CALCULATOR", workAheadSize, 1 );
         this.nodeRelationshipLink = nodeRelationshipLink;
+        this.logger = logger;
     }
 
     @Override
@@ -88,7 +91,7 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
                 numberOfDenseNodes++;
             }
         }
-        System.out.println( "# dense nodes: " + numberOfDenseNodes + ", which is " +
+        logger.info( "# dense nodes: " + numberOfDenseNodes + ", which is " +
                 round( 100D*numberOfDenseNodes/highestSeenNodeId ) + " %" );
         super.done();
     }
