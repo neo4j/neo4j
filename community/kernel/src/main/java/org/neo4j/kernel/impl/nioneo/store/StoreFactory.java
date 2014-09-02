@@ -242,8 +242,8 @@ public class StoreFactory
         neoStore.setRandomNumber( storeId.getRandomId() );
         // If neoStore.creationTime == neoStore.upgradeTime && neoStore.randomNumber == neoStore.upgradeId
         // then store has never been upgraded
-        neoStore.setUpgradeId( storeId.getRandomId() );
         neoStore.setUpgradeTime( storeId.getCreationTime() );
+        neoStore.setUpgradeId( storeId.getRandomId() );
         neoStore.setVersion( 0 );
         neoStore.setLastCommittedTx( 1 );
         neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );

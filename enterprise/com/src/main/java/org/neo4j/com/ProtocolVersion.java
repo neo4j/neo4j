@@ -64,4 +64,13 @@ public final class ProtocolVersion implements Comparable<ProtocolVersion>
         return (this.applicationProtocol < that.applicationProtocol ? -1
                 : (this.applicationProtocol == that.applicationProtocol ? 0 : 1));
     }
+
+    @Override
+    public String toString()
+    {
+        return "ProtocolVersion{" +
+                "applicationProtocol=" + applicationProtocol +
+                ", internalProtocol=" + internalProtocol +
+                '}';
+    }
 }

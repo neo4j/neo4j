@@ -24,12 +24,16 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Writer;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * A migration process to migrate {@link StoreMigrationParticipant migration participants}, if there's
@@ -170,6 +174,9 @@ public class StoreUpgrader implements DependencySatisfier
             closeParticipants();
             moveMigratedFilesToWorkingDirectory( participantsNeedingMigration, migrationDirectory, storeDirectory,
                     leftOversDirectory );
+
+            updateUpgradeTimeAndUpgradeId( storeDirectory );
+
             setMigrationStatus( migrationStateFile, MigrationStatus.completed );
             cleanup( participantsNeedingMigration, migrationDirectory );
             monitor.migrationCompleted();
@@ -293,6 +300,17 @@ public class StoreUpgrader implements DependencySatisfier
             }
         }
         fileSystem.mkdir( migrationDirectory );
+    }
+
+    private void updateUpgradeTimeAndUpgradeId( File storeDirectory )
+    {
+        StoreFactory storeFactory = new StoreFactory( storeDirectory, StringLogger.DEV_NULL );
+        File neoStoreFile = new File( storeDirectory, NeoStore.DEFAULT_NAME );
+        try ( NeoStore neoStore = storeFactory.newNeoStore( neoStoreFile ) )
+        {
+            neoStore.setUpgradeTime( System.currentTimeMillis() );
+            neoStore.setUpgradeId( new SecureRandom().nextLong() );
+        }
     }
 
     private void writeToFile( File file, String string )

@@ -44,6 +44,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
@@ -68,7 +69,6 @@ import static org.neo4j.ha.upgrade.Utils.assembleClassPathFromPackage;
 import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
 import static org.neo4j.kernel.ha.HaSettings.ha_server;
 
-//@Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
 public class RollingUpgradeIT
 {
     private static final String OLD_VERSION = "2.0.4";
@@ -286,7 +286,7 @@ public class RollingUpgradeIT
         case -1:
             break;
         case -2:
-            debug( "At last master starting, deleteing store so that it fetches from the new master" );
+            debug( "At last master starting, deleting store so that it fetches from the new master" );
             FileUtils.deleteRecursively( storeDirFile );
             break;
         default:
@@ -296,6 +296,8 @@ public class RollingUpgradeIT
             backup( authorativeSlaveId, storeDirFile );
             break;
         }
+
+        startStandaloneDbToRunUpgrade( storeDir, i );
 
         // start that db up in this JVM
         newDbs[i] = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory()
@@ -332,6 +334,26 @@ public class RollingUpgradeIT
                         newDbs[i].isAvailable( MINUTES.toMillis( 1 ) ) );
                 verifyComplexLoad( newDbs[j], centralNode );
                 debug( "Verified on new db " + j );
+            }
+        }
+    }
+
+    private void startStandaloneDbToRunUpgrade( String storeDir, int dbIndex )
+    {
+        GraphDatabaseService tempDbForUpgrade = null;
+        try
+        {
+            debug( "Starting standalone db " + dbIndex + " to run upgrade" );
+            tempDbForUpgrade = new GraphDatabaseFactory()
+                    .newEmbeddedDatabaseBuilder( storeDir )
+                    .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
+                    .newGraphDatabase();
+        }
+        finally
+        {
+            if ( tempDbForUpgrade != null )
+            {
+                tempDbForUpgrade.shutdown();
             }
         }
     }

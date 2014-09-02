@@ -29,17 +29,23 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Functions;
+import org.neo4j.kernel.impl.nioneo.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.nioneo.store.UnableToCopyStoreFromOldMasterException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.store.UnavailableMembersException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.cluster.ClusterSettings.INSTANCE_ID;
 import static org.neo4j.helpers.Functions.withDefaults;
@@ -79,7 +85,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private final Election election;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final DependencyResolver dependencyResolver;
+
     private final StringLogger msgLog;
+    private final ConsoleLogger consoleLog;
 
     private LifeSupport haCommunicationLife;
 
@@ -93,13 +101,14 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                                          Election election,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          DependencyResolver dependencyResolver,
-                                         StringLogger msgLog )
+                                         Logging logging )
     {
         this.switchToSlave = switchToSlave;
         this.switchToMaster = switchToMaster;
         this.election = election;
         this.clusterMemberAvailability = clusterMemberAvailability;
-        this.msgLog = msgLog;
+        this.msgLog = logging.getMessagesLog( getClass() );
+        this.consoleLog = logging.getConsoleLog( getClass() );
         this.haCommunicationLife = new LifeSupport();
         this.dependencyResolver = dependencyResolver;
     }
@@ -343,6 +352,28 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         slaveHaURI = resultingSlaveHaURI;
                     }
                 }
+                catch ( UnableToCopyStoreFromOldMasterException | InconsistentlyUpgradedClusterException |
+                        UnavailableMembersException e )
+                {
+                    consoleLog.error( "UNABLE TO START UP AS SLAVE: " + e.getMessage() );
+                    msgLog.error( "Unable to start up as slave", e );
+
+                    clusterMemberAvailability.memberIsUnavailable( SLAVE );
+                    ClusterClient clusterClient = dependencyResolver.resolveDependency( ClusterClient.class );
+                    try
+                    {
+                        clusterClient.leave();
+                        clusterClient.stop();
+                        haCommunicationLife.shutdown();
+                    }
+                    catch ( Throwable t )
+                    {
+                        msgLog.error( "Unable to stop cluster client", t );
+                    }
+
+                    modeSwitcherExecutor.schedule( this, 5, TimeUnit.SECONDS );
+                    throw e;
+                }
                 catch ( MismatchingStoreIdException | NoSuchLogVersionException e )
                 {
                     // Try again immediately
@@ -375,6 +406,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             try
             {
                 modeSwitcherFuture.get();
+            }
+            catch ( UnableToCopyStoreFromOldMasterException | InconsistentlyUpgradedClusterException |
+                    UnavailableMembersException e )
+            {
+                throw e;
             }
             catch ( Exception e )
             {

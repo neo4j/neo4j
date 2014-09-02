@@ -28,13 +28,7 @@ import java.util.Random;
 
 public final class StoreId implements Externalizable
 {
-    /*
-     * This field represents the store version of the last Neo4j version which had the store version as part of
-     * the StoreId (2.0.1). This field is now deprecated but is not removed. Fixing it to this value ensures
-     * rolling upgrades can happen.
-     * // TODO use NeoStore.versionStringToLong() to do the translation - currently does not work as expected
-     */
-    public static final long storeVersionAsLong = 13843131341501958l;
+    public static final long CURRENT_STORE_VERSION = NeoStore.versionStringToLong( NeoStore.ALL_STORES_VERSION );
 
     public static final StoreId DEFAULT = new StoreId( -1, -1, -1, -1 );
 
@@ -42,6 +36,7 @@ public final class StoreId implements Externalizable
 
     private long creationTime;
     private long randomId;
+    private long storeVersion;
     private long upgradeTime;
     private long upgradeId;
 
@@ -53,16 +48,30 @@ public final class StoreId implements Externalizable
 
         this.creationTime = currentTimeMillis;
         this.randomId = randomLong;
+        this.storeVersion = CURRENT_STORE_VERSION;
         this.upgradeTime = currentTimeMillis;
         this.upgradeId = randomLong;
     }
 
     public StoreId( long creationTime, long randomId, long upgradeTime, long upgradeId )
     {
+        this( creationTime, randomId, CURRENT_STORE_VERSION, upgradeTime, upgradeId );
+    }
+
+    public StoreId( long creationTime, long randomId, long storeVersion, long upgradeTime, long upgradeId )
+    {
         this.creationTime = creationTime;
         this.randomId = randomId;
+        this.storeVersion = storeVersion;
         this.upgradeTime = upgradeTime;
         this.upgradeId = upgradeId;
+    }
+
+    public static StoreId from( ObjectInput in ) throws IOException, ClassNotFoundException
+    {
+        StoreId storeId = new StoreId();
+        storeId.readExternal( in );
+        return storeId;
     }
 
     public long getCreationTime()
@@ -85,11 +94,17 @@ public final class StoreId implements Externalizable
         return upgradeId;
     }
 
+    public long getStoreVersion()
+    {
+        return storeVersion;
+    }
+
     @Override
     public void writeExternal( ObjectOutput out ) throws IOException
     {
         out.writeLong( creationTime );
         out.writeLong( randomId );
+        out.writeLong( storeVersion );
         out.writeLong( upgradeTime );
         out.writeLong( upgradeId );
     }
@@ -99,8 +114,14 @@ public final class StoreId implements Externalizable
     {
         creationTime = in.readLong();
         randomId = in.readLong();
+        storeVersion = in.readLong();
         upgradeTime = in.readLong();
         upgradeId = in.readLong();
+    }
+
+    public boolean equalsByUpgradeId( StoreId other )
+    {
+        return equal( upgradeTime, other.upgradeTime ) && equal( upgradeId, other.upgradeId );
     }
 
     @Override
@@ -114,30 +135,30 @@ public final class StoreId implements Externalizable
         {
             return false;
         }
-        StoreId storeId = (StoreId) o;
-        return (creationTime == storeId.creationTime) && (randomId == storeId.randomId) &&
-                (upgradeId == storeId.upgradeId) && (upgradeTime == storeId.upgradeTime);
-
+        StoreId other = (StoreId) o;
+        return equal( creationTime, other.creationTime ) && equal( randomId, other.randomId );
     }
 
     @Override
     public int hashCode()
     {
-        int result = (int) (creationTime ^ (creationTime >>> 32));
-        result = 31 * result + (int) (randomId ^ (randomId >>> 32));
-        result = 31 * result + (int) (upgradeTime ^ (upgradeTime >>> 32));
-        result = 31 * result + (int) (upgradeId ^ (upgradeId >>> 32));
-        return result;
+        return 31 * (int) (creationTime ^ (creationTime >>> 32)) + (int) (randomId ^ (randomId >>> 32));
     }
 
     @Override
     public String toString()
     {
         return "StoreId{" +
-                "creationTime=" + creationTime +
-                ", randomId=" + randomId +
-                ", upgradeTime=" + upgradeTime +
-                ", upgradeId=" + upgradeId +
-                '}';
+               "creationTime=" + creationTime +
+               ", randomId=" + randomId +
+               ", storeVersion=" + storeVersion +
+               ", upgradeTime=" + upgradeTime +
+               ", upgradeId=" + upgradeId +
+               '}';
+    }
+
+    private static boolean equal( long first, long second )
+    {
+        return first == second || first == -1 || second == -1;
     }
 }

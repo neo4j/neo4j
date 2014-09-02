@@ -624,7 +624,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     {
         targetBuffer.writeLong( storeId.getCreationTime() );
         targetBuffer.writeLong( storeId.getRandomId() );
-        targetBuffer.writeLong( StoreId.storeVersionAsLong );
+        targetBuffer.writeLong( storeId.getStoreVersion() );
         targetBuffer.writeLong( storeId.getUpgradeTime() );
         targetBuffer.writeLong( storeId.getUpgradeId() );
     }

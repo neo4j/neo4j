@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha.cluster.member;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -42,13 +41,18 @@ import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
+import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck.Outcome;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singleton;
+import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -78,18 +82,19 @@ public class ClusterMemberVersionCheckTest
     {
         // Given
         ClusterMembers members = clusterMembersWith(
-                member( ID_1, MASTER, true, EXPECTED_STORE_ID ),
-                member( ID_3, SLAVE, true, EXPECTED_STORE_ID ),
-                member( ID_4, SLAVE, true, EXPECTED_STORE_ID ),
-                member( ID_5, SLAVE, true, EXPECTED_STORE_ID )
+                member( ID_1, MASTER, true, EXPECTED_STORE_ID, true ),
+                member( ID_3, SLAVE, true, EXPECTED_STORE_ID, true ),
+                member( ID_4, SLAVE, true, EXPECTED_STORE_ID, true ),
+                member( ID_5, SLAVE, true, EXPECTED_STORE_ID, true )
         );
 
         // When
-        boolean versionCheckPassed = new ClusterMemberVersionCheck( members, ID_2, new FakeClock() )
+        Outcome outcome = new ClusterMemberVersionCheck( members, ID_2, new FakeClock() )
                 .doVersionCheck( EXPECTED_STORE_ID, 1, SECONDS );
 
         // Then
-        assertTrue( versionCheckPassed );
+        assertFalse( outcome.hasMismatched() );
+        assertFalse( outcome.hasUnavailable() );
         verify( members, times( 0 ) ).waitForEvent( anyLong() );
     }
 
@@ -98,18 +103,19 @@ public class ClusterMemberVersionCheckTest
     {
         // Given
         ClusterMembers members = clusterMembersWith(
-                member( ID_1, MASTER, true, StoreId.DEFAULT ),
-                member( ID_3, SLAVE, true, EXPECTED_STORE_ID ),
-                member( ID_4, SLAVE, true, StoreId.DEFAULT ),
-                member( ID_5, SLAVE, true, EXPECTED_STORE_ID )
+                member( ID_1, MASTER, true, StoreId.DEFAULT, true ),
+                member( ID_3, SLAVE, true, EXPECTED_STORE_ID, true ),
+                member( ID_4, SLAVE, true, StoreId.DEFAULT, true ),
+                member( ID_5, SLAVE, true, EXPECTED_STORE_ID, true )
         );
 
         // When
-        boolean versionCheckPassed = new ClusterMemberVersionCheck( members, ID_2, new FakeClock() )
+        Outcome outcome = new ClusterMemberVersionCheck( members, ID_2, new FakeClock() )
                 .doVersionCheck( EXPECTED_STORE_ID, 1, SECONDS );
 
         // Then
-        assertTrue( versionCheckPassed );
+        assertFalse( outcome.hasMismatched() );
+        assertFalse( outcome.hasUnavailable() );
         verify( members, times( 0 ) ).waitForEvent( anyLong() );
     }
 
@@ -118,18 +124,19 @@ public class ClusterMemberVersionCheckTest
     {
         // Given
         ClusterMembers members = clusterMembersWith(
-                member( ID_1, MASTER, true, StoreId.DEFAULT ),
-                member( ID_2, SLAVE, true, StoreId.DEFAULT ),
-                member( ID_3, SLAVE, true, StoreId.DEFAULT ),
-                member( ID_4, SLAVE, true, StoreId.DEFAULT )
+                member( ID_1, MASTER, true, StoreId.DEFAULT, true ),
+                member( ID_2, SLAVE, true, StoreId.DEFAULT, true ),
+                member( ID_3, SLAVE, true, StoreId.DEFAULT, true ),
+                member( ID_4, SLAVE, true, StoreId.DEFAULT, true )
         );
 
         // When
-        boolean versionCheckPassed = new ClusterMemberVersionCheck( members, ID_5, new FakeClock() )
+        Outcome outcome = new ClusterMemberVersionCheck( members, ID_5, new FakeClock() )
                 .doVersionCheck( EXPECTED_STORE_ID, 1, SECONDS );
 
         // Then
-        assertTrue( versionCheckPassed );
+        assertFalse( outcome.hasMismatched() );
+        assertFalse( outcome.hasUnavailable() );
         verify( members, times( 0 ) ).waitForEvent( anyLong() );
     }
 
@@ -138,18 +145,20 @@ public class ClusterMemberVersionCheckTest
     {
         // Given
         ClusterMembers members = clusterMembersWith(
-                member( ID_1, MASTER, true, EXPECTED_STORE_ID ),
-                member( ID_3, SLAVE, true, EXPECTED_STORE_ID ),
-                member( ID_4, SLAVE, true, UNEXPECTED_STORE_ID ),
-                member( ID_5, SLAVE, true, EXPECTED_STORE_ID )
+                member( ID_1, MASTER, true, EXPECTED_STORE_ID, true ),
+                member( ID_3, SLAVE, true, EXPECTED_STORE_ID, true ),
+                member( ID_4, SLAVE, true, UNEXPECTED_STORE_ID, true ),
+                member( ID_5, SLAVE, true, EXPECTED_STORE_ID, true )
         );
 
         // When
-        boolean versionCheckPassed = new ClusterMemberVersionCheck( members, ID_2, new FakeClock() )
+        Outcome outcome = new ClusterMemberVersionCheck( members, ID_2, new FakeClock() )
                 .doVersionCheck( EXPECTED_STORE_ID, 1, SECONDS );
 
         // Then
-        assertFalse( versionCheckPassed );
+        assertTrue( outcome.hasMismatched() );
+        assertThat( outcome.getMismatched(), equalTo( singletonMap( ID_4.toIntegerIndex(), UNEXPECTED_STORE_ID ) ) );
+        assertFalse( outcome.hasUnavailable() );
         verify( members, times( 0 ) ).waitForEvent( anyLong() );
     }
 
@@ -158,19 +167,21 @@ public class ClusterMemberVersionCheckTest
     {
         // Given
         ClusterMembers members = clusterMembersWith(
-                member( ID_1, MASTER, true, EXPECTED_STORE_ID ),
-                member( ID_3, SLAVE, true, EXPECTED_STORE_ID ),
-                member( ID_4, SLAVE, true, EXPECTED_STORE_ID ),
-                member( ID_5, UNKNOWN, true, EXPECTED_STORE_ID )
+                member( ID_1, MASTER, true, EXPECTED_STORE_ID, true ),
+                member( ID_3, SLAVE, true, EXPECTED_STORE_ID, true ),
+                member( ID_4, SLAVE, true, EXPECTED_STORE_ID, true ),
+                member( ID_5, UNKNOWN, true, EXPECTED_STORE_ID, true )
         );
 
         // When
         int timeoutMillis = 1;
-        boolean versionCheckPassed = new ClusterMemberVersionCheck( members, ID_2, twoTickClock( timeoutMillis ) )
+        Outcome outcome = new ClusterMemberVersionCheck( members, ID_2, twoTickClock( timeoutMillis ) )
                 .doVersionCheck( EXPECTED_STORE_ID, timeoutMillis, MILLISECONDS );
 
         // Then
-        assertFalse( versionCheckPassed );
+        assertFalse( outcome.hasMismatched() );
+        assertTrue( outcome.hasUnavailable() );
+        assertThat( outcome.getUnavailable(), equalTo( singleton( ID_5.toIntegerIndex() ) ) );
         verify( members, times( 1 ) ).waitForEvent( timeoutMillis );
     }
 
@@ -179,19 +190,20 @@ public class ClusterMemberVersionCheckTest
     {
         // Given
         ClusterMembers members = changingClusterMembers(
-                asList( member( ID_1, MASTER, true, EXPECTED_STORE_ID ),
-                        member( ID_3, SLAVE, true, EXPECTED_STORE_ID ),
-                        member( ID_4, SLAVE, true, EXPECTED_STORE_ID ),
-                        member( ID_5, UNKNOWN, true, EXPECTED_STORE_ID ) ),
-                member( ID_5, SLAVE, true, EXPECTED_STORE_ID ) );
+                asList( member( ID_1, MASTER, true, EXPECTED_STORE_ID, true ),
+                        member( ID_3, SLAVE, true, EXPECTED_STORE_ID, true ),
+                        member( ID_4, SLAVE, true, EXPECTED_STORE_ID, true ),
+                        member( ID_5, UNKNOWN, true, EXPECTED_STORE_ID, true ) ),
+                member( ID_5, SLAVE, true, EXPECTED_STORE_ID, true ) );
 
         // When
         int timeoutMillis = 1;
-        boolean versionCheckPassed = new ClusterMemberVersionCheck( members, ID_2, twoTickClock( timeoutMillis ) )
+        Outcome outcome = new ClusterMemberVersionCheck( members, ID_2, twoTickClock( timeoutMillis ) )
                 .doVersionCheck( EXPECTED_STORE_ID, timeoutMillis, MILLISECONDS );
 
         // Then
-        assertTrue( versionCheckPassed );
+        assertFalse( outcome.hasMismatched() );
+        assertFalse( outcome.hasUnavailable() );
         verify( members, times( 1 ) ).waitForEvent( timeoutMillis );
     }
 
@@ -200,19 +212,22 @@ public class ClusterMemberVersionCheckTest
     {
         // Given
         ClusterMembers members = clusterMembersWith(
-                member( ID_1, MASTER, true, EXPECTED_STORE_ID ),
-                member( ID_3, SLAVE, true, EXPECTED_STORE_ID ),
-                member( ID_4, SLAVE, true, UNEXPECTED_STORE_ID ),
-                member( ID_5, UNKNOWN, true, EXPECTED_STORE_ID )
+                member( ID_1, MASTER, true, EXPECTED_STORE_ID, true ),
+                member( ID_3, SLAVE, true, EXPECTED_STORE_ID, true ),
+                member( ID_4, SLAVE, true, UNEXPECTED_STORE_ID, true ),
+                member( ID_5, UNKNOWN, true, EXPECTED_STORE_ID, true )
         );
 
         // When
         int timeoutMillis = 1;
-        boolean versionCheckPassed = new ClusterMemberVersionCheck( members, ID_2, twoTickClock( timeoutMillis ) )
+        Outcome outcome = new ClusterMemberVersionCheck( members, ID_2, twoTickClock( timeoutMillis ) )
                 .doVersionCheck( EXPECTED_STORE_ID, timeoutMillis, MILLISECONDS );
 
         // Then
-        assertFalse( versionCheckPassed );
+        assertTrue( outcome.hasMismatched() );
+        assertThat( outcome.getMismatched(), equalTo( singletonMap( ID_4.toIntegerIndex(), UNEXPECTED_STORE_ID ) ) );
+        assertTrue( outcome.hasUnavailable() );
+        assertThat( outcome.getUnavailable(), equalTo( singleton( ID_5.toIntegerIndex() ) ) );
         verify( members, times( 1 ) ).waitForEvent( timeoutMillis );
     }
 
@@ -252,13 +267,13 @@ public class ClusterMemberVersionCheckTest
 
         // When
         final int timeoutMillis = 30_000;
-        Future<Boolean> versionCheckResult = Executors.newSingleThreadExecutor().submit( new Callable<Boolean>()
+        Future<Outcome> outcomeFuture = Executors.newSingleThreadExecutor().submit( new Callable<Outcome>()
         {
             @Override
-            public Boolean call() throws Exception
+            public Outcome call() throws Exception
             {
-                return new ClusterMemberVersionCheck( members, ID_2, Clock.SYSTEM_CLOCK ).doVersionCheck(
-                        EXPECTED_STORE_ID, timeoutMillis, MILLISECONDS );
+                return new ClusterMemberVersionCheck( members, ID_2, Clock.SYSTEM_CLOCK )
+                        .doVersionCheck( EXPECTED_STORE_ID, timeoutMillis, MILLISECONDS );
             }
         } );
 
@@ -267,13 +282,19 @@ public class ClusterMemberVersionCheckTest
         memberListener.memberIsAvailable( SLAVE, ID_5, URI.create( "cluster://slave5" ), storeId );
 
         // Then
+        Outcome outcome = outcomeFuture.get();
+        assertFalse( outcome.hasUnavailable() );
+
         if ( storeId == EXPECTED_STORE_ID )
         {
-            assertTrue( versionCheckResult.get() );
+            assertFalse( outcome.hasMismatched() );
         }
         else
         {
-            assertFalse( versionCheckResult.get() );
+            assertTrue( outcome.hasMismatched() );
+            assertThat(
+                    outcome.getMismatched(),
+                    equalTo( singletonMap( ID_5.toIntegerIndex(), UNEXPECTED_STORE_ID ) ) );
         }
     }
 
@@ -293,10 +314,10 @@ public class ClusterMemberVersionCheckTest
         return clusterMembers;
     }
 
-    private static ClusterMember member( InstanceId id, String role, boolean alive, StoreId storeId )
+    private static ClusterMember member( InstanceId id, String role, boolean alive, StoreId storeId, boolean isInitial )
     {
-        Map<String, URI> haRoles = Collections.singletonMap( role, URI.create( "cluster://test" + id ) );
-        return new ClusterMember( id, haRoles, storeId, alive );
+        Map<String, URI> haRoles = singletonMap( role, URI.create( "cluster://test" + id ) );
+        return new ClusterMember( id, haRoles, storeId, alive, isInitial );
     }
 
     private static Clock twoTickClock( long timeout )

@@ -52,7 +52,9 @@ import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
+import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck;
+import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck.Outcome;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
@@ -74,10 +76,13 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.store.UnableToCopyStoreFromOldMasterException;
+import org.neo4j.kernel.impl.nioneo.store.UnavailableMembersException;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -100,12 +105,15 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 public class SwitchToSlave
 {
-    // TODO solve this with lifecycle instance grouping or something
     @SuppressWarnings("unchecked")
     private static final Class<? extends Lifecycle>[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[]{
             StoreLockerLifecycleAdapter.class,
@@ -114,6 +122,8 @@ public class SwitchToSlave
             NodeManager.class,
             IndexStore.class
     };
+
+    private static final int VERSION_CHECK_TIMEOUT = 10;
 
     private final Logging logging;
     private final StringLogger msgLog;
@@ -239,7 +249,8 @@ public class SwitchToSlave
                 boolean masterIsOld = MasterClient.CURRENT.compareTo( masterClient.getProtocolVersion() ) > 0;
                 if ( masterIsOld )
                 {
-                    throw new RuntimeException(); // todo
+                    throw new UnableToCopyStoreFromOldMasterException( MasterClient.CURRENT.getApplicationProtocol(),
+                            masterClient.getProtocolVersion().getApplicationProtocol() );
                 }
                 else
                 {
@@ -272,10 +283,16 @@ public class SwitchToSlave
                 ClusterMembers members = resolver.resolveDependency( ClusterMembers.class );
                 ClusterMemberVersionCheck checker = new ClusterMemberVersionCheck( members, myId, SYSTEM_CLOCK );
 
-                boolean storeIdMismatchesExists = !checker.doVersionCheck( myStoreId, 5, SECONDS );
-                if ( storeIdMismatchesExists )
+                Outcome outcome = checker.doVersionCheck( myStoreId, VERSION_CHECK_TIMEOUT, SECONDS );
+                msgLog.info( "Cluster members version  checked: " + outcome );
+
+                if ( outcome.hasUnavailable() )
                 {
-                    throw new RuntimeException(); // todo
+                    throw new UnavailableMembersException( outcome.getUnavailable() );
+                }
+                if ( outcome.hasMismatched() )
+                {
+                    throw new InconsistentlyUpgradedClusterException( myStoreId, outcome.getMismatched() );
                 }
             }
 
@@ -285,7 +302,8 @@ public class SwitchToSlave
             }
 
             checkDataConsistency( xaDataSourceManager, masterClient,
-                    resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri );
+                                  resolver.resolveDependency( RequestContextFactory.class ),
+                                  nioneoDataSource, masterUri, masterIsOld );
         }
         finally
         {
@@ -296,12 +314,16 @@ public class SwitchToSlave
 
     private void checkDataConsistency( HaXaDataSourceManager xaDataSourceManager, MasterClient masterClient,
                                        RequestContextFactory requestContextFactory,
-                                       NeoStoreXaDataSource nioneoDataSource, URI masterUri ) throws Throwable
+                                       NeoStoreXaDataSource nioneoDataSource, URI masterUri,
+                                       boolean masterIsOld ) throws Throwable
     {
         // Must be called under lock on XaDataSourceManager
         try
         {
             console.log( "Checking store consistency with master" );
+
+            checkMyStoreIdAndMastersStoreId( nioneoDataSource, masterIsOld );
+
             checkDataConsistencyWithMaster( masterUri, masterClient, nioneoDataSource );
             console.log( "Store is consistent" );
 
@@ -362,6 +384,28 @@ public class SwitchToSlave
                 msgLog.error( "Store cannot participate in cluster due to mismatching store IDs" );
             }
             throw e;
+        }
+    }
+
+    private void checkMyStoreIdAndMastersStoreId( NeoStoreXaDataSource nioneoDataSource, boolean masterIsOld )
+    {
+        if ( !masterIsOld )
+        {
+            StoreId myStoreId = nioneoDataSource.getStoreId();
+
+            ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
+            ClusterMember master = first( filter( inRole( MASTER ), clusterMembers.getMembers() ) );
+            StoreId masterStoreId = master.getStoreId();
+
+            if ( !myStoreId.equals( masterStoreId ) )
+            {
+                throw new MismatchingStoreIdException( myStoreId, master.getStoreId() );
+            }
+            else if ( !myStoreId.equalsByUpgradeId( master.getStoreId() ) )
+            {
+                throw new BranchedDataException( "My store with " + myStoreId + " was updated independently from " +
+                                                 "master's store " + masterStoreId );
+            }
         }
     }
 

@@ -99,8 +99,7 @@ public class MemberIsAvailable
         // if MemberIsAvailable message comes from old instance than we can't read storeId
         try
         {
-            storeId = new StoreId();
-            storeId.readExternal( in );
+            storeId = StoreId.from( in );
         }
         catch ( IOException e )
         {

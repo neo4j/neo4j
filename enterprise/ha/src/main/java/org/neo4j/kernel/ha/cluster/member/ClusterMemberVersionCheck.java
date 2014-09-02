@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.InstanceId;
@@ -39,21 +43,26 @@ public class ClusterMemberVersionCheck
         this.clock = clock;
     }
 
-    public boolean doVersionCheck( StoreId storeId, long timeout, TimeUnit timeUnit ) throws InterruptedException
+    public Outcome doVersionCheck( StoreId storeId, long timeout, TimeUnit timeUnit ) throws InterruptedException
     {
-        return waitForAllAliveToBeAvailable( timeout, timeUnit ) && noMismatches( storeId );
+        Outcome outcome = new Outcome();
+        waitForAllAliveToBeAvailable( timeout, timeUnit, outcome );
+        noMismatches( storeId, outcome );
+        return outcome;
     }
 
-    private boolean waitForAllAliveToBeAvailable( long timeout, TimeUnit timeUnit ) throws InterruptedException
+    private void waitForAllAliveToBeAvailable( long timeout, TimeUnit timeUnit,
+                                               Outcome outcome ) throws InterruptedException
     {
         long start = clock.currentTimeMillis();
         long timeoutMillis = timeUnit.toMillis( timeout );
 
         while ( timeoutMillis > 0 )
         {
-            if ( allAliveAreAvailable() )
+            allAliveAreAvailable( outcome );
+            if ( !outcome.hasUnavailable() )
             {
-                return true;
+                return;
             }
             else
             {
@@ -62,32 +71,83 @@ public class ClusterMemberVersionCheck
             }
         }
 
-        return allAliveAreAvailable();
+        allAliveAreAvailable( outcome );
     }
 
-    private boolean allAliveAreAvailable()
+    private void allAliveAreAvailable( Outcome outcome )
+    {
+        outcome.clearUnavailable();
+
+        for ( ClusterMember member : clusterMembers.getMembers() )
+        {
+            if ( !myId.equals( member.getInstanceId() ) && member.isInitiallyKnown() && member.isAlive() &&
+                 HighAvailabilityModeSwitcher.UNKNOWN.equals( member.getHARole() ) )
+            {
+                outcome.addUnavailable( member.getInstanceId() );
+            }
+        }
+    }
+
+    private void noMismatches( StoreId expectedStoreId, Outcome outcome )
     {
         for ( ClusterMember member : clusterMembers.getMembers() )
         {
-            if ( !myId.equals( member.getInstanceId() ) && member.isAlive() &&
-                    HighAvailabilityModeSwitcher.UNKNOWN.equals( member.getHARole() ) )
+            if ( member.isAlive() && member.isInitiallyKnown() && !equal( expectedStoreId, member.getStoreId() ) )
             {
-                return false;
+                outcome.addMismatched( member.getInstanceId(), member.getStoreId() );
             }
         }
-        return true;
     }
 
-    private boolean noMismatches( StoreId expectedStoreId )
+    private static boolean equal( StoreId first, StoreId second )
     {
-        for ( ClusterMember member : clusterMembers.getMembers() )
+        return first.getStoreVersion() != second.getStoreVersion() || first.equalsByUpgradeId( second );
+    }
+
+    public static class Outcome
+    {
+        private final Set<Integer> unavailable = new HashSet<>();
+        private final Map<Integer, StoreId> mismatched = new HashMap<>();
+
+        public Set<Integer> getUnavailable()
         {
-            if ( member.isAlive() &&
-                    !member.getStoreId().equals( StoreId.DEFAULT ) && !member.getStoreId().equals( expectedStoreId ) )
-            {
-                return false;
-            }
+            return unavailable;
         }
-        return true;
+
+        private void addUnavailable( InstanceId instanceId )
+        {
+            unavailable.add( instanceId.toIntegerIndex() );
+        }
+
+        private void clearUnavailable()
+        {
+            unavailable.clear();
+        }
+
+        public boolean hasUnavailable()
+        {
+            return !unavailable.isEmpty();
+        }
+
+        public Map<Integer, StoreId> getMismatched()
+        {
+            return mismatched;
+        }
+
+        private void addMismatched( InstanceId instanceId, StoreId storeId )
+        {
+            mismatched.put( instanceId.toIntegerIndex(), storeId );
+        }
+
+        public boolean hasMismatched()
+        {
+            return !mismatched.isEmpty();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Outcome{" + "unavailable=" + unavailable + ", mismatched=" + mismatched + '}';
+        }
     }
 }

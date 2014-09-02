@@ -76,9 +76,9 @@ public class NeoStore extends AbstractStore
     public static final int STORE_VERSION_POSITION = 4;
     public static final int NEXT_GRAPH_PROP_POSITION = 5;
     public static final int LATEST_CONSTRAINT_TX_POSITION = 6;
-    public static final int UPGRADE_ID_POSITION = 7;
-    public static final int UPGRADE_TIME_POSITION = 8;
-    static final int META_DATA_RECORD_COUNT = UPGRADE_TIME_POSITION + 1;
+    public static final int UPGRADE_TIME_POSITION = 7;
+    public static final int UPGRADE_ID_POSITION = 8;
+    static final int META_DATA_RECORD_COUNT = UPGRADE_ID_POSITION + 1;
 
     public static final int META_DATA_EXPECTED_SIZE = META_DATA_RECORD_COUNT * RECORD_SIZE;
 
@@ -219,9 +219,9 @@ public class NeoStore extends AbstractStore
          */
         if ( getFileChannel().size() == RECORD_SIZE * 7 )
         {
-            insertRecord( UPGRADE_ID_POSITION, -1 );
             insertRecord( UPGRADE_TIME_POSITION, -1 );
-            registerIdFromUpdateRecord( UPGRADE_TIME_POSITION );
+            insertRecord( UPGRADE_ID_POSITION, -1 );
+            registerIdFromUpdateRecord( UPGRADE_ID_POSITION );
         }
     }
 
@@ -416,7 +416,7 @@ public class NeoStore extends AbstractStore
 
     public StoreId getStoreId()
     {
-        return new StoreId( getCreationTime(), getRandomNumber(), getUpgradeTime(), getUpgradeId() );
+        return new StoreId( getCreationTime(), getRandomNumber(), getStoreVersion(), getUpgradeTime(), getUpgradeId() );
     }
 
     public long getCreationTime()
@@ -528,16 +528,6 @@ public class NeoStore extends AbstractStore
         return current;
     }
 
-    public long getUpgradeId()
-    {
-        return getRecord( UPGRADE_ID_POSITION );
-    }
-
-    public void setUpgradeId( long upgradeId )
-    {
-        setRecord( UPGRADE_ID_POSITION, upgradeId );
-    }
-
     public long getUpgradeTime()
     {
         return getRecord( UPGRADE_TIME_POSITION );
@@ -546,6 +536,16 @@ public class NeoStore extends AbstractStore
     public void setUpgradeTime( long upgradeTime )
     {
         setRecord( UPGRADE_TIME_POSITION, upgradeTime );
+    }
+
+    public long getUpgradeId()
+    {
+        return getRecord( UPGRADE_ID_POSITION );
+    }
+
+    public void setUpgradeId( long upgradeId )
+    {
+        setRecord( UPGRADE_ID_POSITION, upgradeId );
     }
 
     private long getRecord( long id )

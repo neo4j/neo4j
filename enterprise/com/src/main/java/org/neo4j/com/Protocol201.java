@@ -36,13 +36,13 @@ public class Protocol201 extends Protocol
     protected StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
     {
         byteBuffer.clear();
-        byteBuffer.limit( 8 + 8 + 8 ); // creation time, random id, not in use long
+        byteBuffer.limit( 8 + 8 + 8 ); // creation time, random id, store version
         source.readBytes( byteBuffer );
         byteBuffer.flip();
         // read order matters - see Server.writeStoreId() for version 2.1.3
         long creationTime = byteBuffer.getLong();
         long randomId = byteBuffer.getLong();
-        byteBuffer.getLong(); // unused to legacy StoreId.storeVersionAsLong
-        return new StoreId( creationTime, randomId, -1, -1 );
+        long storeVersion = byteBuffer.getLong();
+        return new StoreId( creationTime, randomId, storeVersion, -1, -1 );
     }
 }

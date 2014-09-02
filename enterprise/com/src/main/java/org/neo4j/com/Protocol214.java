@@ -36,15 +36,15 @@ public class Protocol214 extends Protocol
     protected StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
     {
         byteBuffer.clear();
-        byteBuffer.limit( 8 + 8 + 8 + 8 + 8 ); // creation time, random id, not in use long, upgrade time, upgrade id
+        byteBuffer.limit( 8 + 8 + 8 + 8 + 8 ); // creation time, random id, store version, upgrade time, upgrade id
         source.readBytes( byteBuffer );
         byteBuffer.flip();
         // read order matters - see Server.writeStoreId() for version 2.1.4
         long creationTime = byteBuffer.getLong();
         long randomId = byteBuffer.getLong();
-        byteBuffer.getLong(); // unused to legacy StoreId.storeVersionAsLong
+        long storeVersion = byteBuffer.getLong();
         long upgradeTime = byteBuffer.getLong();
         long upgradeId = byteBuffer.getLong();
-        return new StoreId( creationTime, randomId, upgradeTime, upgradeId );
+        return new StoreId( creationTime, randomId, storeVersion, upgradeTime, upgradeId );
     }
 }

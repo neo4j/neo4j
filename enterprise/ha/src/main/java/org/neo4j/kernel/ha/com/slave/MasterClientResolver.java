@@ -34,7 +34,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 public class MasterClientResolver implements MasterClientFactory, MismatchingVersionHandler
 {
     private volatile MasterClientFactory currentFactory;
-    private volatile ProtocolVersion currentVersion;
 
     private final Map<ProtocolVersion, MasterClientFactory> protocolToFactoryMapping;
 
@@ -72,17 +71,9 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
     private MasterClientFactory getFor( ProtocolVersion protocolVersion )
     {
         MasterClientFactory candidate = protocolToFactoryMapping.get( protocolVersion );
-        /*
-         * Things that can happen here regarding replacing the current factory, in order:
-         * 1. We do not know the protocol - candidate is null: We don't change the current factory
-         * 2. The current factory is null: We always set it to the latest requested
-         * 3. We receive a version newer than the current one: Always replace the current factory
-         * 4. We receive a version older than the current: Replace if downgrades are allowed, else leave as is.
-         */
-        if ( (candidate != null) && (currentVersion == null || currentVersion.compareTo( protocolVersion ) <= 0) )
+        if ( candidate != null )
         {
             currentFactory = candidate;
-            currentVersion = protocolVersion;
         }
         return candidate;
     }

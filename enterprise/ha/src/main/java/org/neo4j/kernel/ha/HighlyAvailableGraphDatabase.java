@@ -460,8 +460,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
                         masterDelegateInvocationHandler, clusterMemberAvailability, monitors ),
                 clusterClient, clusterMemberAvailability,
-                dependencyResolver,
-                logging.getMessagesLog( HighAvailabilityModeSwitcher.class )
+                getDependencyResolver(),
+                logging
         );
 
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );

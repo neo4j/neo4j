@@ -127,7 +127,7 @@ public class NeoStoreUtil
                 txId,
                 storeVersion,
                 firstGraphProp,
-                new StoreId( creationTime, randomId, -1, -1 ) );
+                new StoreId( creationTime, randomId, storeVersion, -1, -1 ) );
     }
 
     public static boolean storeExists( File storeDir )

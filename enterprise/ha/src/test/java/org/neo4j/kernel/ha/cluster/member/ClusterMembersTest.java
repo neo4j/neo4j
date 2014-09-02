@@ -19,27 +19,14 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
-import static java.net.URI.create;
-import static java.util.Arrays.asList;
-
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
-import static org.neo4j.kernel.ha.cluster.member.ClusterMemberMatcher.sameMemberAs;
-
 import java.net.URI;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
@@ -52,6 +39,29 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.net.URI.create;
+import static java.util.Arrays.asList;
+
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.member.ClusterMemberMatcher.sameMemberAs;
 
 public class ClusterMembersTest
 {
@@ -79,7 +89,7 @@ public class ClusterMembersTest
         verify( heartbeat ).addHeartbeatListener( Mockito.<HeartbeatListener>any() );
         verify( clusterMemberEvents ).addClusterMemberListener( Mockito.<ClusterMemberListener>any() );
     }
-    
+
     @Test
     public void shouldContainMemberListAfterEnteringCluster() throws Exception
     {
@@ -173,7 +183,7 @@ public class ClusterMembersTest
                 members.getMembers(),
                 not( hasItems( sameMemberAs( new ClusterMember( clusterId3 ) ) ) ));
     }
-    
+
     @Test
     public void availableMasterShowsProperInformation() throws Exception
     {
@@ -227,7 +237,7 @@ public class ClusterMembersTest
                 hasItem( sameMemberAs( new ClusterMember(
                         clusterId1 ).availableAs( SLAVE, haUri1, StoreId.DEFAULT ) ) ) );
     }
-    
+
     @Test
     public void membersShowsAsUnavailableWhenNewMasterElectedBeforeTheyBecomeAvailable() throws Exception
     {
@@ -254,7 +264,7 @@ public class ClusterMembersTest
                 members.getMembers(),
                 hasItem( sameMemberAs( new ClusterMember( clusterId1 ) ) ) );
     }
-    
+
     @Test
     public void failedMemberShowsAsSuch() throws Exception
     {
@@ -281,7 +291,7 @@ public class ClusterMembersTest
                 hasItem( sameMemberAs( new ClusterMember(
                         clusterId1 ).failed() ) ) );
     }
-    
+
     @Test
     public void failedThenAliveMemberShowsAsAlive() throws Exception
     {
@@ -393,7 +403,7 @@ public class ClusterMembersTest
         {
             if ( clusterMember.getInstanceId().equals( clusterId2 ) )
             {
-                assertThat( Iterables.count( clusterMember.getRoles() ), equalTo( 1l ) );
+                assertThat( count( clusterMember.getRoles() ), equalTo( 1l ) );
                 assertThat( Iterables.single( clusterMember.getRoles() ), equalTo( SLAVE ) );
                 break; // that's the only member we care about
             }
@@ -430,8 +440,52 @@ public class ClusterMembersTest
         {
             if ( clusterMember.getInstanceId().equals( clusterId2 ) )
             {
-                assertThat( Iterables.count( clusterMember.getRoles() ), equalTo( 0l ) );
+                assertThat( count( clusterMember.getRoles() ), equalTo( 0l ) );
                 break; // that's the only member we care about
+            }
+        }
+    }
+
+    @Test
+    public void membersPresentAtJoinTimeShouldHaveInitiallyKnownFlagSetToTrue()
+    {
+        // Given
+        Cluster cluster = mock( Cluster.class );
+        final ClusterListener[] listenerSlot = new ClusterListener[1];
+        doAnswer( new Answer<Void>()
+        {
+            @Override
+            public Void answer( InvocationOnMock invocation ) throws Throwable
+            {
+                listenerSlot[0] = ((ClusterListener) invocation.getArguments()[0]);
+                return null;
+            }
+        } ).when( cluster ).addClusterListener( any( ClusterListener.class ) );
+        Heartbeat heartbeat = mock( Heartbeat.class );
+        ClusterMemberEvents clusterMemberEvents = mock( ClusterMemberEvents.class );
+
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1 );
+        ClusterListener clusterListener = listenerSlot[0];
+
+        // When
+        clusterListener.enteredCluster( clusterConfiguration( clusterUri1, clusterUri2 ) );
+        clusterListener.joinedCluster( clusterId3, clusterUri3 );
+
+        // Then
+        assertThat( count( members.getMembers() ), equalTo( 3L ) );
+        for ( ClusterMember member : members.getMembers() )
+        {
+            if ( member.getInstanceId().equals( clusterId1 ) || member.getInstanceId().equals( clusterId2 ) )
+            {
+                assertTrue( member.isInitiallyKnown() );
+            }
+            else if ( member.getInstanceId().equals( clusterId3 ) )
+            {
+                assertFalse( member.isInitiallyKnown() );
+            }
+            else
+            {
+                fail( "Unexpected member with id: " + member.getInstanceId() );
             }
         }
     }

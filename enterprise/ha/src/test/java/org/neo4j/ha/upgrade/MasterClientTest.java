@@ -56,7 +56,7 @@ public class MasterClientTest
     public final CleanupRule cleanupRule = new CleanupRule();
 
     @Test(expected = MismatchingStoreIdException.class)
-    public void newClientsShouldNotIgnoreUpgradeDifferences() throws Throwable
+    public void newClientsShouldNotIgnoreStoreIdDifferences() throws Throwable
     {
         // Given
         MasterImpl.SPI masterImplSPI = mock( MasterImpl.SPI.class );
@@ -67,7 +67,7 @@ public class MasterClientTest
         masterServer.init();
         masterServer.start();
 
-        StoreId storeId = new StoreId( 1, 2, 5, 6 );
+        StoreId storeId = new StoreId( 5, 6, 7, 8 );
         MasterClient214 masterClient214 = cleanupRule.add( newMasterClient214( storeId ) );
         masterClient214.init();
         masterClient214.start();
