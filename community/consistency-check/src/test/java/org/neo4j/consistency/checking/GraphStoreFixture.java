@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -199,7 +200,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             writer.createSchema( beforeRecords, afterRecords, rule );
         }
-        
+
         // In the following three methods there's an assumption that all tokens use one dynamic record
         // and since the first record in a dynamic store the id starts at 1 instead of 0... hence the +1
 
@@ -327,7 +328,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                             database.getDependencyResolver().resolveDependency( KernelHealth.class ),
                             database.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate(),
                             database.getDependencyResolver().resolveDependency( TransactionRepresentationStoreApplier.class ),
-                            true /*recovery*/ );
+                            TransactionApplicationMode.EXTERNAL );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
             commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),

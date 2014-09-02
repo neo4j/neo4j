@@ -329,16 +329,7 @@ public class TransactionWriter
 
         private <RECORD extends AbstractBaseRecord,STORE extends AbstractRecordStore<RECORD>> void update( STORE store, RECORD record )
         {
-            boolean prev = neoStore.isInRecoveryMode();
-            neoStore.setRecoveredStatus( true );
-            try
-            {
-                store.updateRecord( record );
-            }
-            finally
-            {
-                neoStore.setRecoveredStatus( prev );
-            }
+            store.updateRecord( record );
         }
 
         @Override
@@ -386,34 +377,16 @@ public class TransactionWriter
         @Override
         public void visitNeoStore( NeoStoreRecord record )
         {
-            boolean prev = neoStore.isInRecoveryMode();
-            neoStore.setRecoveredStatus( true );
-            try
-            {
-                neoStore.setGraphNextProp( record.getNextProp() );
-            }
-            finally
-            {
-                neoStore.setRecoveredStatus( prev );
-            }
+            neoStore.setGraphNextProp( record.getNextProp() );
         }
 
         @Override
         public void visitSchemaRule( Collection<DynamicRecord> records )
         {
-            boolean prev = neoStore.isInRecoveryMode();
-            neoStore.setRecoveredStatus( true );
-            try
+            SchemaStore schemaStore = neoStore.getSchemaStore();
+            for ( DynamicRecord record : records )
             {
-                SchemaStore schemaStore = neoStore.getSchemaStore();
-                for ( DynamicRecord record : records )
-                {
-                    schemaStore.updateRecord( record );
-                }
-            }
-            finally
-            {
-                neoStore.setRecoveredStatus( prev );
+                schemaStore.updateRecord( record );
             }
         }
     }

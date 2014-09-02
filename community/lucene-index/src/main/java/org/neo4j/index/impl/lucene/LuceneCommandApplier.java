@@ -114,7 +114,7 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         dataSource.getWriteLock();
         return true;
     }
-    
+
     @Override
     public void apply()
     {

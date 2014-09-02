@@ -83,20 +83,6 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     }
 
     @Override
-    public void setRecovered()
-    {
-        super.setRecovered();
-        nameStore.setRecovered();
-    }
-
-    @Override
-    public void unsetRecovered()
-    {
-        super.unsetRecovered();
-        nameStore.unsetRecovered();
-    }
-
-    @Override
     public void makeStoreOk()
     {
         nameStore.makeStoreOk();
@@ -311,10 +297,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         else
         {
             cursor.putByte( Record.NOT_IN_USE.byteValue() );
-            if ( !isInRecoveryMode() )
-            {
-                freeId( id );
-            }
+            freeId( id );
         }
     }
 

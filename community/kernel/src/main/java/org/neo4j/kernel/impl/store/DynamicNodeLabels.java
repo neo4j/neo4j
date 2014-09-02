@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Iterator;
 
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -91,13 +90,19 @@ public class DynamicNodeLabels implements NodeLabels
 
         if ( !new InlineNodeLabels( labelField, node ).tryInlineInNodeRecord( labelIds, changedDynamicRecords ) )
         {
-            Set<DynamicRecord> allRecords = new HashSet<>( changedDynamicRecords );
+            Iterator<DynamicRecord> recycledRecords = changedDynamicRecords.iterator();
             Collection<DynamicRecord> allocatedRecords =
                     NodeStore.allocateRecordsForDynamicLabels( node.getId(), labelIds,
-                            changedDynamicRecords.iterator(), allocator );
-            allRecords.addAll( allocatedRecords );
+                            recycledRecords, allocator );
+            // Set the rest of the previously set dynamic records as !inUse
+            while ( recycledRecords.hasNext() )
+            {
+                DynamicRecord removedRecord = recycledRecords.next();
+                removedRecord.setInUse( false );
+                allocatedRecords.add( removedRecord );
+            }
             node.setLabelField( dynamicPointer( allocatedRecords ), allocatedRecords );
-            changedDynamicRecords = allRecords;
+            changedDynamicRecords = allocatedRecords;
         }
 
         return changedDynamicRecords;

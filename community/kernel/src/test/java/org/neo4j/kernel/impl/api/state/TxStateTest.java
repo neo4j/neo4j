@@ -410,7 +410,7 @@ public class TxStateTest
             }
 
             @Override
-            public void visitDeletedRelationship( long id )
+            public void visitDeletedRelationship( long id, int type, long startNode, long endNode )
             {
                 fail( "Should not delete any relationship" );
             }

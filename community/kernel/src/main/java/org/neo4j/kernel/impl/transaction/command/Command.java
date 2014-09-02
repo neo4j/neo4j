@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -35,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 
 import static java.util.Collections.unmodifiableCollection;
@@ -122,10 +122,6 @@ public abstract class Command
 
     public abstract boolean handle( NeoCommandHandler handler ) throws IOException;
 
-    public void invalidateCache( CacheAccessBackDoor cacheAccess )
-    {   // no-op by default
-    }
-
     public static class NodeCommand extends Command
     {
         private NodeRecord before;
@@ -157,12 +153,6 @@ public abstract class Command
             return after.toString();
         }
 
-        @Override
-        public void invalidateCache( CacheAccessBackDoor cacheAccess )
-        {
-            cacheAccess.removeNodeFromCache( getKey() );
-        }
-
         public NodeRecord getBefore()
         {
             return before;
@@ -177,16 +167,11 @@ public abstract class Command
     public static class RelationshipCommand extends Command
     {
         private RelationshipRecord record;
-        // before update stores the record as it looked before the command is executed
-        private RelationshipRecord beforeUpdate;
-        private RelationshipRecord before;
 
         public RelationshipCommand init( RelationshipRecord record )
         {
             setup( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
-            // the default (common) case is that the record to be written is complete and not from recovery or HA
-            this.beforeUpdate = record;
             return this;
         }
 
@@ -211,44 +196,6 @@ public abstract class Command
         public RelationshipRecord getRecord()
         {
             return record;
-        }
-
-        @Override
-        public void invalidateCache( CacheAccessBackDoor cacheAccess )
-        {
-            cacheAccess.removeRelationshipFromCache( getKey() );
-            /*
-             * If isRecovered() then beforeUpdate is the correct one UNLESS this is the second time this command
-             * is executed, where it might have been actually written out to disk so the fields are already -1. So
-             * we still need to check.
-             * If !isRecovered() then beforeUpdate is the same as record, so we are still ok.
-             * We don't check for !inUse() though because that is implicit in the call of this method.
-             * The above is a hand waiving proof that the conditions that lead to the patchDeletedRelationshipNodes()
-             * in the if below are the same as in RelationshipCommand.execute() so it should be safe.
-             */
-            if ( beforeUpdate.getFirstNode() != -1 || beforeUpdate.getSecondNode() != -1 )
-            {
-                cacheAccess.patchDeletedRelationshipNodes( getKey(), beforeUpdate.getFirstNode(),
-                        beforeUpdate.getFirstNextRel(), beforeUpdate.getSecondNode(), beforeUpdate.getSecondNextRel() );
-            }
-            if ( !record.inUse() )
-            { // the relationship was deleted - invalidate the cached versions of the related nodes
-                if ( before != null )
-                { // reading from the log
-                    cacheAccess.removeNodeFromCache( before.getFirstNode() );
-                    cacheAccess.removeNodeFromCache( before.getSecondNode() );
-                }
-                else
-                { // applying from in-memory transaction state
-                    cacheAccess.removeNodeFromCache( record.getFirstNode() );
-                    cacheAccess.removeNodeFromCache( record.getSecondNode() );
-                }
-            }
-        }
-
-        public void setBefore( RelationshipRecord before )
-        {
-            this.before = before;
         }
     }
 
@@ -325,17 +272,8 @@ public abstract class Command
         }
     }
 
-    public static class PropertyKeyTokenCommand extends Command
+    public static class PropertyKeyTokenCommand extends TokenCommand<PropertyKeyTokenRecord>
     {
-        private PropertyKeyTokenRecord record;
-
-        public PropertyKeyTokenCommand init( PropertyKeyTokenRecord record )
-        {
-            setup( record.getId(), Mode.fromRecordState( record ) );
-            this.record = record;
-            return this;
-        }
-
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
@@ -343,20 +281,9 @@ public abstract class Command
         }
 
         @Override
-        public String toString()
-        {
-            return record.toString();
-        }
-
-        @Override
         public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitPropertyKeyTokenCommand( this );
-        }
-
-        public PropertyKeyTokenRecord getRecord()
-        {
-            return record;
         }
     }
 
@@ -394,21 +321,6 @@ public abstract class Command
         }
 
         @Override
-        public void invalidateCache( CacheAccessBackDoor cacheAccess )
-        {
-            long nodeId = this.getNodeId();
-            long relId = this.getRelId();
-            if ( nodeId != -1 )
-            {
-                cacheAccess.removeNodeFromCache( nodeId );
-            }
-            else if ( relId != -1 )
-            {
-                cacheAccess.removeRelationshipFromCache( relId );
-            }
-        }
-
-        @Override
         public PropertyRecord getBefore()
         {
             return before;
@@ -431,17 +343,31 @@ public abstract class Command
         }
     }
 
-    public static class RelationshipTypeTokenCommand extends Command
+    public static abstract class TokenCommand<RECORD extends TokenRecord> extends Command
     {
-        private RelationshipTypeTokenRecord record;
+        protected RECORD record;
 
-        public RelationshipTypeTokenCommand init( RelationshipTypeTokenRecord record )
+        public TokenCommand<RECORD> init( RECORD record )
         {
             setup( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
             return this;
         }
 
+        public RECORD getRecord()
+        {
+            return record;
+        }
+
+        @Override
+        public String toString()
+        {
+            return record.toString();
+        }
+    }
+
+    public static class RelationshipTypeTokenCommand extends TokenCommand<RelationshipTypeTokenRecord>
+    {
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
@@ -449,34 +375,14 @@ public abstract class Command
         }
 
         @Override
-        public String toString()
-        {
-            return record.toString();
-        }
-
-        @Override
         public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitRelationshipTypeTokenCommand( this );
         }
-
-        public RelationshipTypeTokenRecord getRecord()
-        {
-            return record;
-        }
     }
 
-    public static class LabelTokenCommand extends Command
+    public static class LabelTokenCommand extends TokenCommand<LabelTokenRecord>
     {
-        private LabelTokenRecord record;
-
-        public LabelTokenCommand init( LabelTokenRecord record )
-        {
-            setup( record.getId(), Mode.fromRecordState( record ) );
-            this.record = record;
-            return this;
-        }
-
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
@@ -484,20 +390,9 @@ public abstract class Command
         }
 
         @Override
-        public String toString()
-        {
-            return record.toString();
-        }
-
-        @Override
         public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitLabelTokenCommand( this );
-        }
-
-        public LabelTokenRecord getRecord()
-        {
-            return record;
         }
     }
 
@@ -537,12 +432,6 @@ public abstract class Command
         public boolean handle( NeoCommandHandler handler ) throws IOException
         {
             return handler.visitSchemaRuleCommand( this );
-        }
-
-        @Override
-        public void invalidateCache( CacheAccessBackDoor cacheAccess )
-        {
-            cacheAccess.removeSchemaRuleFromCache( getKey() );
         }
 
         public Collection<DynamicRecord> getRecordsAfter()

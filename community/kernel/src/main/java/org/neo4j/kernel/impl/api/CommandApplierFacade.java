@@ -48,7 +48,7 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     {
         this.handlers = handlers;
     }
-    
+
     @Override
     public void apply()
     {

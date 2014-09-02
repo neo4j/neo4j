@@ -32,18 +32,18 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     private final LogicalTransactionStore logicalTransactionStore;
     private final KernelHealth kernelHealth;
     private final TransactionIdStore transactionIdStore;
-    private final boolean recovery;
     private final TransactionRepresentationStoreApplier storeApplier;
+    private final TransactionApplicationMode mode;
 
     public TransactionRepresentationCommitProcess( LogicalTransactionStore logicalTransactionStore,
             KernelHealth kernelHealth, TransactionIdStore transactionIdStore,
-            TransactionRepresentationStoreApplier storeApplier, boolean recovery )
+            TransactionRepresentationStoreApplier storeApplier, TransactionApplicationMode mode )
     {
         this.logicalTransactionStore = logicalTransactionStore;
         this.transactionIdStore = transactionIdStore;
-        this.recovery = recovery;
         this.kernelHealth = kernelHealth;
         this.storeApplier = storeApplier;
+        this.mode = mode;
     }
 
     @Override
@@ -55,7 +55,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         try
         {
             transactionIdStore.transactionCommitted( transactionId );
-            storeApplier.apply( transaction, locks, transactionId, recovery );
+            storeApplier.apply( transaction, locks, transactionId, mode );
         }
         // TODO catch different types of exceptions here, some which are OK
         catch ( Throwable e )
