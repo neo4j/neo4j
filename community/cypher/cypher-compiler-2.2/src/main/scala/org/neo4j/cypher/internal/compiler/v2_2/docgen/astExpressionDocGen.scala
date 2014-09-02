@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import scala.util.Try
 
 case object astExpressionDocGen extends CustomDocGen[ASTNode] {
-  def newDocDrill = mkDocDrill[ASTNode]() {
+  def newDocDrill = mkDocDrill[ASTNode]() { // (throwExtractionFailures) {
     case expr: Expression =>
       inner =>
         astExpressionConverter(inner)(expr)
@@ -35,22 +35,25 @@ case object astExpressionDocGen extends CustomDocGen[ASTNode] {
 
 case class astExpressionConverter(pretty: DocConverter[Any]) extends (Expression => Option[Doc]) {
 
-  def apply(expr: Expression) = Try[Doc] {
-    expr match {
-      case identifier: Identifier => identifier.asDoc
-      case literal: Literal => literal.asDoc
-      case hasLabels: HasLabels => hasLabels.asDoc
-      case property: Property => property.asDoc
-      case param: Parameter => param.asDoc
-      case binOp: BinaryOperatorExpression => binOp.asDoc
-      case leftOp: LeftUnaryOperatorExpression => leftOp.asDoc
-      case rightOp: RightUnaryOperatorExpression => rightOp.asDoc
-      case multiOp: MultiOperatorExpression => multiOp.asDoc
-      case fun: FunctionInvocation => fun.asDoc
-      case coll: Collection => coll.asDoc
-      case countStar: CountStar => countStar.asDoc
-    }
-  }.toOption
+  def apply(expr: Expression) =
+    Try[Doc] {
+//    Some(
+      expr match {
+        case identifier: Identifier => identifier.asDoc
+        case literal: Literal => literal.asDoc
+        case hasLabels: HasLabels => hasLabels.asDoc
+        case property: Property => property.asDoc
+        case param: Parameter => param.asDoc
+        case binOp: BinaryOperatorExpression => binOp.asDoc
+        case leftOp: LeftUnaryOperatorExpression => leftOp.asDoc
+        case rightOp: RightUnaryOperatorExpression => rightOp.asDoc
+        case multiOp: MultiOperatorExpression => multiOp.asDoc
+        case fun: FunctionInvocation => fun.asDoc
+        case coll: Collection => coll.asDoc
+        case countStar: CountStar => countStar.asDoc
+      }
+//    )
+    }.toOption
 
   implicit def expressionAsDoc(expression: ASTNode with ASTExpression): Doc = pretty(expression)
   implicit def particleAsDoc(particle: ASTNode with ASTParticle): Doc = pretty(particle)

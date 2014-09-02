@@ -25,14 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
 // Doc builder for printing any internal class
 case object InternalDocHandler extends CustomDocHandler[Any] {
   val docGen: DocGen[Any] =
-//    logicalPlanDocGen.lift[Any] ++
     astDocHandler.docGen.lift[Any] ++
+    logicalPlanDocGen.lift[Any] ++
+    plannerParticleDocGen.lift[Any] ++
     DefaultDocHandler.docGen
-
-//    Seq(
-//      astDocBuilder, /* ast only */
-//      plannerDocBuilder,
-////      astStructureDocBuilder, /* ast + structure */
-//      defaultDocBuilder
-//    )
 }

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 
 class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
 
-  val docGen = logicalPlanDocGen.lift[Any] ++ astDocHandler.docGen.lift[Any] ++ DefaultDocHandler.docGen
+  val docGen = logicalPlanDocGen.lift[Any] ++ plannerParticleDocGen ++ astDocHandler.docGen.lift[Any] ++ DefaultDocHandler.docGen
 
   override def docFormatter = DocFormatters.pageFormatter(80)
 
@@ -38,7 +38,8 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
 
   test("Prints pipe plans") {
     val doc = convert(TestPipePlan(TestLeafPlan(1)))
-    val result = condense(format(doc))
+    val result = condense(docFormatter(doc))
+
     result should equal(Seq(
       PrintText("TestPipePlan[b]()"),
       PrintNewLine(0),
@@ -48,7 +49,7 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
 
   test("Prints long pipe plans") {
     val doc = convert(TestPipePlan(TestPipePlan(TestLeafPlan(1))))
-    val result = condense(format(doc))
+    val result = condense(docFormatter(doc))
     result should equal(Seq(
       PrintText("TestPipePlan[b]()"),
       PrintNewLine(0),
@@ -60,7 +61,7 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
 
   test("Prints combo plans") {
     val doc = convert(TestComboPlan(TestLeafPlan(1), TestLeafPlan(2)))
-    val result = condense(format(doc))
+    val result = condense(docFormatter(doc))
     result should equal(Seq(
       PrintText("TestComboPlan[c,d]()"),
       PrintNewLine(2),

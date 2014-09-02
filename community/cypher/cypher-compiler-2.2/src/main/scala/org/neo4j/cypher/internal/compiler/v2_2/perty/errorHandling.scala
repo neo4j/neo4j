@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.MapExtractionFailureH
 
 case object catchExtractionFailures extends MapExtractionFailureHandler[Throwable, Any, Doc](formatErrors)
 
+case object throwExtractionFailures extends MapExtractionFailureHandler[Throwable, Any, Doc](throwErrors)
+
 case object formatErrors extends (Throwable => Option[Doc]) {
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
@@ -36,4 +38,8 @@ case object formatErrors extends (Throwable => Option[Doc]) {
     case other =>
       throw other
   }
+}
+
+case object throwErrors extends (Throwable => Option[Doc]) {
+  def apply(throwable: Throwable) = throw throwable
 }

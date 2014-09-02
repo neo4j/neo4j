@@ -49,10 +49,6 @@
 //  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 //  import org.neo4j.cypher.internal.compiler.v2_2.perty.DocBuilder._
 //
-//  val forNestedIdName = DocGenerator[Any] {
-//    case idName: IdName => (inner) =>
-//      text(idName.name)
-//  }
 //
 //  val forNestedPatternLength: DocBuilder[Any] = DocGenerator[Any] {
 //    case VarPatternLength(min, None)      => (inner) => text(s"*${min.toString}..")
@@ -74,17 +70,7 @@
 //      )
 //  }
 //
-//  val forNestedPredicate: DocBuilder[Any] = DocGenerator[Any] {
-//    case Predicate(dependencies, expr) => (inner) =>
-//      val pred = sepList(dependencies.map(inner), break = breakSilent)
-//      val predBlock = block("Predicate", open = "[", close = "]")(pred)
-//      group("Predicate" :: brackets(pred, break = noBreak) :: parens(inner(expr)))
-//  }
 //
-//  val forNestedSelections: DocBuilder[Any] = DocGenerator[Any] {
-//    case Selections(predicates) => (inner) =>
-//      sepList(predicates.map(inner).toList)
-//  }
 //
 //  val forNestedShortestPathPattern: DocBuilder[Any] = DocGenerator[Any] {
 //    case ShortestPathPattern(optName, rel, single) => (inner) =>

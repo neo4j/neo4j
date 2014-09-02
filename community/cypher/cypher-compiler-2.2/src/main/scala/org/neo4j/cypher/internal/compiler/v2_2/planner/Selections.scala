@@ -21,20 +21,21 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.PageDocFormatting
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class Predicate(dependencies: Set[IdName], exp: Expression)
-//  extends internalDocBuilder.GeneratorToString[Any] {
-{
+case class Predicate(dependencies: Set[IdName], expr: Expression)
+  extends InternalDocHandler.ToString[Any] with PageDocFormatting {
 
   def hasDependenciesMet(symbols: Set[IdName]): Boolean =
     (dependencies -- symbols).isEmpty
 }
 
 case class Selections(predicates: Set[Predicate] = Set.empty)
-//  extends internalDocBuilder.GeneratorToString[Any] {
-{
+  extends InternalDocHandler.ToString[Any] with PageDocFormatting {
+
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
   }.toSeq
@@ -51,7 +52,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty)
   }
 
   def flatPredicates: Seq[Expression] =
-    predicates.map(_.exp).toSeq
+    predicates.map(_.expr).toSeq
 
   def labelPredicates: Map[IdName, Set[HasLabels]] =
     predicates.foldLeft(Map.empty[IdName, Set[HasLabels]]) {
@@ -68,7 +69,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty)
   def coveredBy(solvedPredicates: Seq[Expression]): Boolean =
     flatPredicates.forall( solvedPredicates.contains )
 
-  def contains(e: Expression): Boolean = predicates.exists { _.exp == e }
+  def contains(e: Expression): Boolean = predicates.exists { _.expr == e }
 
   def ++(other: Selections): Selections = Selections(predicates ++ other.predicates)
 
