@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 object optionalExpand extends CandidateGenerator[PlanTable] {
 
   def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
 
-    val outerJoinPlans: Seq[QueryPlan] = for {
+    val outerJoinPlans: Seq[LogicalPlan] = for {
       optionalQG <- queryGraph.optionalMatches
       lhs <- planTable.plans
       patternRel <- findSinglePatternRelationship(lhs, optionalQG)
@@ -46,8 +46,8 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
 
   private def canSolveAllPredicates(selections:Selections, ids:Set[IdName]) = selections.predicatesGiven(ids) == selections.flatPredicates
 
-  private def findSinglePatternRelationship(outerPlan: QueryPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
-    val singleArgumentAvailable = optionalQG.argumentIds.size == 1 && outerPlan.plan.availableSymbols(optionalQG.argumentIds.head) && optionalQG.patternNodes(optionalQG.argumentIds.head)
+  private def findSinglePatternRelationship(outerPlan: LogicalPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
+    val singleArgumentAvailable = optionalQG.argumentIds.size == 1 && outerPlan.availableSymbols(optionalQG.argumentIds.head) && optionalQG.patternNodes(optionalQG.argumentIds.head)
     val isSolved = outerPlan.solved.graph.optionalMatches.contains(optionalQG)
     val hasOnlyOnePatternRelationship = optionalQG.patternRelationships.size == 1
 

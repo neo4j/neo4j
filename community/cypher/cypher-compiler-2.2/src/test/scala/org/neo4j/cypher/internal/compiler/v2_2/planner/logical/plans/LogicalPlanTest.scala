@@ -19,17 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_2.perty.pformat
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
-case class PlanningResult(queryPlan: QueryPlan, subPlansLookupTable: Map[PatternExpression, QueryPlan])
+class LogicalPlanTest extends CypherFunSuite {
+  case class TestPlan()(val solved: PlannerQuery) extends LogicalPlan {
+    def lhs: Option[LogicalPlan] = ???
+    def availableSymbols: Set[IdName] = ???
+    def rhs: Option[LogicalPlan] = ???
+  }
 
-case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) {
+  test("updating the planner query works well, thank you very much") {
+    val initialPlan = TestPlan()(PlannerQuery.empty)
 
-  def availableSymbols: Set[IdName] = plan.availableSymbols
+    val updatedPlannerQuery = PlannerQuery.empty.updateGraph(_.addPatternNodes(IdName("a")))
 
-  override def toString = pformat(this)
+    val newPlan = initialPlan.updateSolved(updatedPlannerQuery)
 
-  def updateSolved(f: PlannerQuery => PlannerQuery) = copy(solved = f(solved))
+    newPlan.solved should equal(updatedPlannerQuery)
+  }
 }

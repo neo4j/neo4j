@@ -77,7 +77,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedMetricsFactory = spy(new SpyableMetricsFactory)
 
-  def newMockedStrategy(plan: QueryPlan) = {
+  def newMockedStrategy(plan: LogicalPlan) = {
     val strategy = mock[QueryGraphSolver]
     doReturn(plan).when(strategy).plan(any())(any(), any())
     strategy
@@ -89,7 +89,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                         strategy: QueryGraphSolver = new GreedyQueryGraphSolver()): LogicalPlanningContext =
     LogicalPlanningContext(planContext, metrics, semanticTable, strategy)
 
-  implicit class RichLogicalPlan(plan: QueryPlan) {
+  implicit class RichLogicalPlan(plan: LogicalPlan) {
     def asTableEntry = plan.availableSymbols -> plan
   }
 
@@ -102,41 +102,32 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     context
   }
 
-  def newMockedQueryPlanWithProjections(ids: String*)(implicit context: LogicalPlanningContext) = {
-    val projections = RegularQueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
-    QueryPlan(
-      newMockedLogicalPlan(ids: _*),
-      PlannerQuery(
+  def newMockedLogicalPlanWithProjections(ids: String*)(implicit context: LogicalPlanningContext) = {
+    val projections =
+      RegularQueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
+
+    FakePlan(ids.map(IdName).toSet)(PlannerQuery(
         horizon = projections,
         graph = QueryGraph.empty.addPatternNodes(ids.map(IdName).toSeq: _*)
       )
     )
   }
 
-  def newMockedQueryPlan(idNames: Set[IdName]): QueryPlan = {
-    val plan = newMockedLogicalPlan(idNames)
+  def newMockedLogicalPlan(idNames: Set[IdName]): LogicalPlan = {
     val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*)
-    QueryPlan(plan, PlannerQuery(qg))
+    FakePlan(idNames)(PlannerQuery(qg))
   }
 
-  def newMockedQueryPlan(ids: String*): QueryPlan = {
-    newMockedQueryPlan( ids.map(IdName).toSet )
-  }
+  def newMockedLogicalPlan(ids: String*): LogicalPlan =
+    newMockedLogicalPlan(ids.map(IdName).toSet)
 
-  def newMockedLogicalPlan(ids: String*): LogicalPlan = FakePlan(ids.map(IdName).toSet)
+  def newMockedLogicalPlan2(ids: Set[IdName], solved: PlannerQuery): LogicalPlan =
+    FakePlan(ids)(solved)
 
-  def newMockedLogicalPlan(ids: Set[IdName]): LogicalPlan = FakePlan(ids)
-
-  def newMockedQueryPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanningContext): QueryPlan = {
-    val plan = newMockedLogicalPlan(ids)
+  def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)
+                                      (implicit context: LogicalPlanningContext): LogicalPlan = {
     val qg = QueryGraph.empty.addPatternNodes(ids.toSeq: _*).addPatternRels(patterns)
-    QueryPlan(plan, PlannerQuery(qg))
-  }
-
-  def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val plan = mock[LogicalPlan]
-    doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
-    plan
+    FakePlan(ids)(PlannerQuery(qg))
   }
 
   def newPlanner(metricsFactory: MetricsFactory): Planner =
@@ -150,8 +141,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       case ast: Query =>
         val semanticTable = semanticChecker.check(queryText, ast)
         tokenResolver.resolve(ast)(semanticTable, planContext)
-        val (queryPlan, _) = planner.produceQueryPlan(ast, semanticTable)(planContext)
-        queryPlan
+        val (logicalPlan, _) = planner.produceLogicalPlan(ast, semanticTable)(planContext)
+        logicalPlan
+
       case _ =>
         throw new IllegalArgumentException("produceLogicalPlan only supports ast.Query input")
     }
@@ -160,7 +152,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   implicit def idName(name: String): IdName = IdName(name)
 }
 
-case class FakePlan(availableSymbols: Set[IdName]) extends LogicalPlan {
+case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery) extends LogicalPlan {
   def rhs = None
   def lhs = None
 }

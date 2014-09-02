@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.Projection
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{SortDescription, Ascending}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.AscSortItem
 
@@ -46,7 +46,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, intermediate = true)
 
     // then
-    result.plan should equal(Projection(startPlan.plan, projections))
+    result should equal(Projection(startPlan, projections)(PlannerQuery.empty))
     result.solved.horizon should equal(RegularQueryProjection(projections))
   }
 
@@ -59,7 +59,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, intermediate = true)
 
     // then
-    result.plan should equal(startPlan.plan)
+    result should equal(startPlan)
     result.solved.horizon should equal(RegularQueryProjection(projections))
   }
 
@@ -72,7 +72,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, intermediate = false)
 
     // then
-    result.plan should equal(Projection(startPlan.plan, projections))
+    result should equal(Projection(startPlan, projections)(PlannerQuery.empty))
     result.solved.horizon should equal(RegularQueryProjection(projections))
   }
 
@@ -85,22 +85,22 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, intermediate = false)
 
     // then
-    result.plan should equal(startPlan.plan)
+    result should equal(startPlan)
     result.solved.horizon should equal(RegularQueryProjection(projections))
   }
 
   private def queryGraphWith(skip: Option[ast.Expression] = None,
                              limit: Option[ast.Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")(pos))): (LogicalPlanningContext, QueryPlan) = {
+                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")(pos))): (LogicalPlanningContext, LogicalPlan) = {
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
-    val plan = QueryPlan(
-      newMockedLogicalPlan("n", "m"),
-      PlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n"), IdName("m")))
-    )
+    val ids = Set(IdName("n"), IdName("m"))
+
+    val plan =
+      newMockedLogicalPlan2(ids, PlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n"), IdName("m"))))
 
     (context, plan)
   }

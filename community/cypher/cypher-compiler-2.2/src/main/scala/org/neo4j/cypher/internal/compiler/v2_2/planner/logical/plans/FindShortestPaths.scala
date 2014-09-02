@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPattern) extends LogicalPlan {
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+
+case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPattern)
+                            (val solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
 

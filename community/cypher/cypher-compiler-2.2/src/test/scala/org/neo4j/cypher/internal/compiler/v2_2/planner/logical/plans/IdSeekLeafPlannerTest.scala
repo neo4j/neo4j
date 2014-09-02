@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_2.RelTypeId
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Candidates}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._

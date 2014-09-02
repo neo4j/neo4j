@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.cartesianProduct
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.cartesianProduct
+import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
   extends QueryGraphSolver {
 
-  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None) = {
-  import CandidateGenerator._
+  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CandidateGenerator._
 
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
@@ -37,7 +36,7 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
     def generateLeafPlanTable(): PlanTable = {
       val leafPlanCandidateLists = config.leafPlanners.candidateLists(queryGraph)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select(_, queryGraph)))
-      val bestLeafPlans: Iterable[QueryPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
+      val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
       val startTable: PlanTable = leafPlan.foldLeft(PlanTable.empty)(_ + _)
       bestLeafPlans.foldLeft(startTable)(_ + _)
     }

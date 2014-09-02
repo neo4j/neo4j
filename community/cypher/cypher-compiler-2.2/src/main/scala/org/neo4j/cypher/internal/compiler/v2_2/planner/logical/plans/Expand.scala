@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.ast.RelTypeName
 
@@ -28,7 +29,8 @@ case class Expand(left: LogicalPlan,
                   types: Seq[RelTypeName],
                   to: IdName,
                   relName: IdName,
-                  length: PatternLength) extends LogicalPlan {
+                  length: PatternLength)
+                 (val solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
 

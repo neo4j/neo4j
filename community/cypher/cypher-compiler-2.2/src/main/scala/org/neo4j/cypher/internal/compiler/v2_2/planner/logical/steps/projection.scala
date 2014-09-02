@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 object projection {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
-  def apply(plan: QueryPlan, projectionsMap: Map[String, Expression], intermediate: Boolean)(implicit context: LogicalPlanningContext): QueryPlan = {
+  def apply(plan: LogicalPlan, projectionsMap: Map[String, Expression], intermediate: Boolean)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val ids = plan.availableSymbols
     val projectAllCoveredIds: Set[(String, Expression)] = ids.map {
       case IdName(id) => id -> ast.Identifier(id)(null)

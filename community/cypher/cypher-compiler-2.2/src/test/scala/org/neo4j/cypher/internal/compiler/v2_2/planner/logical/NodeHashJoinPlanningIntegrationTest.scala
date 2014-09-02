@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.NotEquals
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
 
 class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  import QueryPlanProducer._
+  import LogicalPlanProducer._
 
   test("should build plans containing joins") {
     val r1 = PatternRelationship("r1", ("a", "b"), Direction.INCOMING, Seq(), SimplePatternLength)

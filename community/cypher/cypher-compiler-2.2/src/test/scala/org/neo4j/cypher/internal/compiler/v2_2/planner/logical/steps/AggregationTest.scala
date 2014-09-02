@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.Projection
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aggregatingMap: Map[String, Expression] = Map("count(*)" -> CountStar()(pos))
@@ -44,7 +44,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       planContext = newMockedPlanContext
     )
 
-    val startPlan = newMockedQueryPlan()
+    val startPlan = newMockedLogicalPlan()
 
     aggregation(startPlan, projection)(context) should equal(
       planAggregation(startPlan, Map(), aggregatingMap)
@@ -64,14 +64,11 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       planContext = newMockedPlanContext
     )
 
-    val startPlan = newMockedQueryPlan()
+    val startPlan = newMockedLogicalPlan()
 
     val solvedQuery = PlannerQuery(horizon = RegularQueryProjection(groupingMap))
 
-    val projectionPlan = QueryPlan(
-      plan = Projection(startPlan.plan, groupingMap),
-      solved = solvedQuery
-    )
+    val projectionPlan: LogicalPlan = Projection(startPlan, groupingMap)(solvedQuery)
 
     // When
     val result = aggregation(projectionPlan, projection)(context)

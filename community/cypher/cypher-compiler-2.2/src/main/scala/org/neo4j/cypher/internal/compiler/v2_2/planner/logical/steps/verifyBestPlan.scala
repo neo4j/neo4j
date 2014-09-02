@@ -19,21 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, PlannerQuery, CantHandleQueryException}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{PlanTransformer, LogicalPlanningContext}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, PlanTransformer}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{CantHandleQueryException, PlannerQuery}
 
 object verifyBestPlan extends PlanTransformer[PlannerQuery] {
-  def apply(plan: QueryPlan, expected: PlannerQuery)(implicit context: LogicalPlanningContext): QueryPlan = {
+  def apply(plan: LogicalPlan, expected: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val constructed = plan.solved
     if (expected != constructed)
       throw new CantHandleQueryException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed")
     plan
   }
 }
-
-// MATCH n OPTIONAL MATCH m-[r]->(n)
-
-
-

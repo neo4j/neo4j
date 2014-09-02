@@ -26,9 +26,9 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.PatternRelationship
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.ShortestPathPattern
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
-import QueryPlanProducer._
+import LogicalPlanProducer._
 
 class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

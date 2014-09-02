@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
   val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
   val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
@@ -48,7 +48,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result.plan should equal(Skip(startPlan.plan, x))
+    result should equal(Skip(startPlan, x)(PlannerQuery.empty))
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(skip = Some(x))))
   }
 
@@ -62,7 +62,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result.plan should equal(Limit(startPlan.plan, x))
+    result should equal(Limit(startPlan, x)(PlannerQuery.empty))
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x))))
   }
 
@@ -77,7 +77,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result.plan should equal(Limit(Skip(startPlan.plan, y), x))
+    result should equal(Limit(Skip(startPlan, y)(PlannerQuery.empty), x)(PlannerQuery.empty))
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x), skip = Some(y))))
   }
 
@@ -91,7 +91,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result.plan should equal(Sort(startPlan.plan, Seq(sortDescription)))
+    result should equal(Sort(startPlan, Seq(sortDescription))(PlannerQuery.empty))
 
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(identifierSortItem))))
   }
@@ -147,7 +147,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private def queryGraphWith(skip: Option[ast.Expression] = None,
                              limit: Option[ast.Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")(pos))): (PlannerQuery, LogicalPlanningContext, QueryPlan) = {
+                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")(pos))): (PlannerQuery, LogicalPlanningContext, LogicalPlan) = {
     val projection = RegularQueryProjection(
       projections = projectionsMap,
       shuffle = QueryShuffle(sortItems, skip, limit)
@@ -160,8 +160,8 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       planContext = newMockedPlanContext
     )
 
-    val plan = QueryPlan(
-      newMockedLogicalPlan("n"),
+    val plan =
+      newMockedLogicalPlan2(Set(IdName("n")),
       PlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n")))
     )
 

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Can
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -49,7 +49,7 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val left = newMockedQueryPlan(Set(aNode, bNode))
+    val left = newMockedLogicalPlan(Set(aNode, bNode))
     val planTable = PlanTable(Map(Set(aNode, bNode) -> left))
 
     val qg = QueryGraph(
@@ -72,7 +72,7 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       case _                         => Cardinality(1000)
     })
 
-    val innerPlan = newMockedQueryPlan("b")
+    val innerPlan = newMockedLogicalPlan("b")
 
     val qg = QueryGraph(patternNodes = Set(aNode)).withAddedOptionalMatch(optionalQg)
 
@@ -81,7 +81,7 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       strategy = newMockedStrategy(innerPlan),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
-    val left = newMockedQueryPlanWithPatterns(Set(aNode))
+    val left = newMockedLogicalPlanWithPatterns(Set(aNode))
     val planTable = PlanTable(Map(Set(aNode) -> left))
 
     val expectedPlan = planOuterHashJoin(aNode, left, innerPlan)

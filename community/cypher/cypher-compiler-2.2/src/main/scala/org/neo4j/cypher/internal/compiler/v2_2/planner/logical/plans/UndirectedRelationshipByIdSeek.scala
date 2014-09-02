@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
 case class UndirectedRelationshipByIdSeek(idName: IdName,
                                           relIds: EntityByIdRhs,
                                           leftNode: IdName,
                                           rightNode: IdName,
-                                          argumentIds: Set[IdName])
-  extends LogicalLeafPlan {
+                                          argumentIds: Set[IdName])(val solved: PlannerQuery)
+extends LogicalLeafPlan {
 
   def availableSymbols = argumentIds ++ Set(idName, leftNode, rightNode)
 }

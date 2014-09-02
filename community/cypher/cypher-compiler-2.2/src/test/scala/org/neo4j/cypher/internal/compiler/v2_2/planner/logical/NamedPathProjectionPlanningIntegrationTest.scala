@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
@@ -28,30 +28,30 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans containing outgoing path projections") {
-    planFor("MATCH p = (a:X)-[r]->(b) RETURN p").plan.plan should equal(
+    planFor("MATCH p = (a:X)-[r]->(b) RETURN p").plan should equal(
       Projection(
-        Expand( NodeByLabelScan("a",  Left("X"), Set.empty), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength ),
+        Expand( NodeByLabelScan("a",  Left("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength )(PlannerQuery.empty),
         expressions = Map(
           "p" -> PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
         )
-      )
+      )(PlannerQuery.empty)
     )
   }
 
   test("should build plans containing path projections and path selections") {
     val pathExpr = PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
 
-    planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b").plan.plan should equal(
+    planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b").plan should equal(
       Projection(
         Selection(
           Seq(Equals(
             FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, pathExpr)_)_,
             Identifier("a")_
           )_),
-          Expand( NodeByLabelScan("a",  Left("X"), Set.empty), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength )
-        ),
+          Expand( NodeByLabelScan("a",  Left("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength )(PlannerQuery.empty)
+        )(PlannerQuery.empty),
         expressions = Map("b" -> Identifier("b") _)
-      )
+      )(PlannerQuery.empty)
     )
   }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, RelTypeName}
 
@@ -29,7 +30,8 @@ case class OptionalExpand(left: LogicalPlan,
                   to: IdName,
                   relName: IdName,
                   length: PatternLength,
-                  predicates: Seq[Expression]) extends LogicalPlan {
+                  predicates: Seq[Expression])
+             (val solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
   val availableSymbols = left.availableSymbols + to + relName

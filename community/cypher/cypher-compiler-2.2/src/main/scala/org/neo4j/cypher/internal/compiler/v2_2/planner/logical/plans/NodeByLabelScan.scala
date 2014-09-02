@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.LabelId
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
-case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId], argumentIds: Set[IdName]) extends LogicalLeafPlan {
+case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId], argumentIds: Set[IdName])(val solved: PlannerQuery)
+  extends LogicalLeafPlan {
   def availableSymbols: Set[IdName] = argumentIds + idName
 }

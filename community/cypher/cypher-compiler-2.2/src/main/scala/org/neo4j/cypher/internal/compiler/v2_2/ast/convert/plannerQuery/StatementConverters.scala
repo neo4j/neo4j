@@ -29,7 +29,7 @@ object StatementConverters {
   implicit class SingleQueryPartConverter(val q: SingleQuery) {
     def asPlannerQueryBuilder: PlannerQueryBuilder =
       q.clauses.foldLeft(PlannerQueryBuilder.empty) {
-        case (acc, clause) => clause.addToQueryPlanInput(acc)
+        case (acc, clause) => clause.addToLogicalPlanInput(acc)
       }
   }
 

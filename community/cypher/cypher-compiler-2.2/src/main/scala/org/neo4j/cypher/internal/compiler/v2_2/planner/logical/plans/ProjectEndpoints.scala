@@ -19,7 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-case class ProjectEndpoints(left: LogicalPlan, rel: IdName, start: IdName, end: IdName, directed: Boolean, length: PatternLength) extends LogicalPlan {
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+
+case class ProjectEndpoints(left: LogicalPlan,
+                            rel: IdName,
+                            start: IdName,
+                            end: IdName,
+                            directed: Boolean,
+                            length: PatternLength)
+                           (val solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
 

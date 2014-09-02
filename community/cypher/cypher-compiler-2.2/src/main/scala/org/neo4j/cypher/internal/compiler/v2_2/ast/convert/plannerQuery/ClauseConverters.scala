@@ -67,17 +67,17 @@ object ClauseConverters {
   }
 
   implicit class ClauseConverter(val clause: Clause) extends AnyVal {
-    def addToQueryPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
-      case c: Return => c.addReturnToQueryPlanInput(acc)
-      case c: Match => c.addMatchToQueryPlanInput(acc)
-      case c: With => c.addWithToQueryPlanInput(acc)
-      case c: Unwind => c.addUnwindToQueryPlanInput(acc)
+    def addToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
+      case c: Return => c.addReturnToLogicalPlanInput(acc)
+      case c: Match => c.addMatchToLogicalPlanInput(acc)
+      case c: With => c.addWithToLogicalPlanInput(acc)
+      case c: Unwind => c.addUnwindToLogicalPlanInput(acc)
       case x         => throw new CantHandleQueryException(x.toString)
     }
   }
 
   implicit class ReturnConverter(val clause: Return) extends AnyVal {
-    def addReturnToQueryPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
+    def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
       case Return(distinct, returnItems@ListedReturnItems(items), optOrderBy, skip, limit) =>
 
         val shuffle = optOrderBy.asQueryShuffle.
@@ -109,7 +109,7 @@ object ClauseConverters {
   }
 
   implicit class MatchConverter(val clause: Match) extends AnyVal {
-    def addMatchToQueryPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
+    def addMatchToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
       val patternContent = clause.pattern.destructed
 
       val selections = clause.where.asSelections
@@ -146,7 +146,7 @@ object ClauseConverters {
     private implicit def returnItemsToIdName(s: Seq[ReturnItem]):Set[IdName] =
       s.map(item => IdName(item.name)).toSet
 
-    def addWithToQueryPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
+    def addWithToLogicalPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
 
       /*
       When encountering a WITH that is not an event horizon, and we have no optional matches in the current QueryGraph,
@@ -200,7 +200,7 @@ object ClauseConverters {
 
   implicit class UnwindConverter(val clause: Unwind) extends AnyVal {
 
-    def addUnwindToQueryPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder =
+    def addUnwindToLogicalPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder =
       builder.
         withHorizon(
           UnwindProjection(

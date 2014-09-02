@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Candidates, CandidateList, PlanTable}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{PatternExpression, Identifier, Equals}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
 class ExpandTest
   extends CypherFunSuite
@@ -56,7 +56,7 @@ class ExpandTest
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val planA = newMockedQueryPlan("a")
+    val planA = newMockedLogicalPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
     val qg = createQuery(rRel)
@@ -70,8 +70,8 @@ class ExpandTest
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val planA = newMockedQueryPlan("a")
-    val planB = newMockedQueryPlan("b")
+    val planA = newMockedLogicalPlan("a")
+    val planB = newMockedLogicalPlan("b")
     val plan = PlanTable(Map(Set(aNode) -> planA, Set(bNode) -> planB))
 
     val qg = createQuery(rRel)
@@ -86,7 +86,7 @@ class ExpandTest
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val aAndB = newMockedQueryPlanWithPatterns(Set("a", "b"), Seq(rRel))
+    val aAndB = newMockedLogicalPlanWithPatterns(Set("a", "b"), Seq(rRel))
     val plan = PlanTable(Map(Set(aNode, bNode) -> aAndB))
 
     val qg = createQuery()
@@ -98,7 +98,7 @@ class ExpandTest
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val planA = newMockedQueryPlan("a")
+    val planA = newMockedLogicalPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
     val qg = createQuery(rSelfRel)
@@ -114,7 +114,7 @@ class ExpandTest
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val aAndB = newMockedQueryPlan("a", "b")
+    val aAndB = newMockedLogicalPlan("a", "b")
     val plan = PlanTable(Map(Set(aNode) -> aAndB))
 
     val qg = createQuery(rRel)
@@ -135,7 +135,7 @@ class ExpandTest
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val planA = newMockedQueryPlan("a")
+    val planA = newMockedLogicalPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
     val qg = createQuery(rVarRel)

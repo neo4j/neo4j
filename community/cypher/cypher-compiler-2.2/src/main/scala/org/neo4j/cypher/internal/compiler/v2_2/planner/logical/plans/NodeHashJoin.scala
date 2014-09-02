@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-case class NodeHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+
+case class NodeHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 

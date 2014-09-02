@@ -49,7 +49,7 @@ trait BeLikeMatcher {
 
 object BeLikeMatcher extends BeLikeMatcher
 
-case class SemanticPlan(plan: QueryPlan, semanticTable: SemanticTable)
+case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
 
 trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
   self: CypherFunSuite =>
@@ -63,7 +63,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   var tokenResolver = new SimpleTokenResolver()
   var monitor = mock[PlanningMonitor]
   var strategy = new QueryPlanningStrategy() {
-    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): QueryPlan =
+    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
      planSingleQuery(query)
   }
   var queryGraphSolver = new GreedyQueryGraphSolver()
@@ -252,7 +252,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       semanticChecker.check(queryString, parsedStatement)
       val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement)
       val semanticTable = semanticChecker.check(queryString, rewrittenStatement)
-      val plannerQuery: QueryPlan = Planner.rewriteStatement(rewrittenStatement) match {
+      val plannerQuery: LogicalPlan = Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
           val unionQuery = ast.asUnionQuery
@@ -292,7 +292,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
   }
 
-  def fakeQueryPlanFor(id: String*): QueryPlan = QueryPlan(FakePlan(id.map(IdName).toSet), PlannerQuery.empty)
+  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.map(IdName).toSet)(PlannerQuery.empty)
 
   def planFor(queryString: String): SemanticPlan = new given().planFor(queryString)
 

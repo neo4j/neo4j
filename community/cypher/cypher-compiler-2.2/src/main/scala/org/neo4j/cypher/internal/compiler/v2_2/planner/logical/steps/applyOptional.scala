@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 object applyOptional extends CandidateGenerator[PlanTable] {
@@ -38,8 +38,8 @@ object applyOptional extends CandidateGenerator[PlanTable] {
     CandidateList(applyCandidates)
   }
 
-  private def applicable(outerPlan: QueryPlan, optionalQG: QueryGraph) = {
-    val argumentsAvailable = optionalQG.argumentIds.subsetOf(outerPlan.plan.availableSymbols)
+  private def applicable(outerPlan: LogicalPlan, optionalQG: QueryGraph) = {
+    val argumentsAvailable = optionalQG.argumentIds.subsetOf(outerPlan.availableSymbols)
     val isSolved = outerPlan.solved.graph.optionalMatches.contains(optionalQG)
     argumentsAvailable && !isSolved
   }

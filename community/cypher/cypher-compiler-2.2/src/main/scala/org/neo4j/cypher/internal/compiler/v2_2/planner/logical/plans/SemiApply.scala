@@ -19,10 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-case class SemiApply(left: LogicalPlan, right: LogicalPlan) extends AbstractSemiApply(left, right)
-case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan) extends AbstractSemiApply(left, right)
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
-abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
+case class SemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery)
+  extends AbstractSemiApply(left, right, solved)
+
+case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery)
+  extends AbstractSemiApply(left, right, solved)
+
+abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan, solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 

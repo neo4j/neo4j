@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatability.ExecutionResultWrapperFor2_2
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{InternalExecutionResult, NewQueryPlanSuccessRateMonitor}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{NewLogicalPlanSuccessRateMonitor, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.commons.CypherTestSupport
 import org.neo4j.cypher.NewPlannerMonitor.{NewQuerySeen, UnableToHandleQuery, NewPlannerMonitorCall}
@@ -38,7 +38,7 @@ object NewPlannerMonitor {
   final case class NewQuerySeen(stackTrace: String) extends NewPlannerMonitorCall
 }
 
-class NewPlannerMonitor extends NewQueryPlanSuccessRateMonitor {
+class NewPlannerMonitor extends NewLogicalPlanSuccessRateMonitor {
   private var traceBuilder = List.newBuilder[NewPlannerMonitorCall]
 
   override def unableToHandleQuery(queryText: String, ast: Statement, e: CantHandleQueryException) {

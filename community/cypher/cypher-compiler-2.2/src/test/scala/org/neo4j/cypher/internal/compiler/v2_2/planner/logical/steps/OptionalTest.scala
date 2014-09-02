@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import scala.collection.mutable
 import org.mockito.Mockito._
@@ -50,7 +50,7 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
       case _            => Cardinality(1000.0)
     })
 
-    val fakePlan = newMockedQueryPlan(Set(IdName("a"), IdName("b")))
+    val fakePlan = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
@@ -86,8 +86,8 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
       case _            => Cardinality(1000.0)
     })
 
-    val fakePlan1 = newMockedQueryPlan(Set(IdName("a"), IdName("b")))
-    val fakePlan2 = newMockedQueryPlan(Set(IdName("a"), IdName("c")))
+    val fakePlan1 = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
+    val fakePlan2 = newMockedLogicalPlan(Set(IdName("a"), IdName("c")))
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
@@ -101,7 +101,7 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 }
 
-case class FakePlanningStrategy(plans: QueryPlan*) extends QueryGraphSolver {
-  val queue = mutable.Queue[QueryPlan](plans:_*)
-  override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None) = queue.dequeue()
+case class FakePlanningStrategy(plans: LogicalPlan*) extends QueryGraphSolver {
+  val queue = mutable.Queue[LogicalPlan](plans:_*)
+  override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = queue.dequeue()
 }

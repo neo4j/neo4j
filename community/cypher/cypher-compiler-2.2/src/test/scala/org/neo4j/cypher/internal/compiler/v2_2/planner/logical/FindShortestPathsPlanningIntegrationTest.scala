@@ -27,15 +27,15 @@ import org.neo4j.graphdb.Direction
 
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
   test("finds shortest paths") {
     planFor("MATCH a, b, shortestPath(a-[r]->b) RETURN b").plan should equal(
       planRegularProjection(
         planShortestPaths(
           planCartesianProduct(
-            planAllNodesScan("a", Set.empty),
-            planAllNodesScan("b", Set.empty)
+            planAllNodesScan("b", Set.empty),
+            planAllNodesScan("a", Set.empty)
           ),
           ShortestPathPattern(
             None,
@@ -53,8 +53,8 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       planRegularProjection(
         planShortestPaths(
           planCartesianProduct(
-            planAllNodesScan("a", Set.empty),
-            planAllNodesScan("b", Set.empty)
+            planAllNodesScan("b", Set.empty),
+            planAllNodesScan("a", Set.empty)
           ),
           ShortestPathPattern(
             None,

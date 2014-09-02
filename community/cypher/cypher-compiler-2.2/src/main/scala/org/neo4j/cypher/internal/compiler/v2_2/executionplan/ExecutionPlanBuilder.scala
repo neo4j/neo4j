@@ -40,7 +40,7 @@ case class PeriodicCommitInfo(size: Option[Long]) {
   def batchRowCount = size.getOrElse(/* defaultSize */ 1000L)
 }
 
-trait NewQueryPlanSuccessRateMonitor {
+trait NewLogicalPlanSuccessRateMonitor {
   def newQuerySeen(queryText: String, ast:Statement)
   def unableToHandleQuery(queryText: String, ast:Statement, origin: CantHandleQueryException)
 }

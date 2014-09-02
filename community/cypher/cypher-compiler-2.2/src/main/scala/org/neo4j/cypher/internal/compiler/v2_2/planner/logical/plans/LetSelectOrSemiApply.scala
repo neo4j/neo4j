@@ -20,11 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
-case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression) extends AbstractLetSelectOrSemiApply(left, right, idName, expr)
-case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression) extends AbstractLetSelectOrSemiApply(left, right, idName, expr)
+case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
+                               (val solved: PlannerQuery)
+  extends AbstractLetSelectOrSemiApply(left, right, idName, expr, solved)
 
-abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression) extends LogicalPlan {
+case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
+                                   (val solved: PlannerQuery)
+  extends AbstractLetSelectOrSemiApply(left, right, idName, expr, solved)
+
+abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression, solved: PlannerQuery)
+  extends LogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
 
 case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph]) extends PlanTransformer[QueryGraph] {
@@ -59,8 +59,8 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
       CandidateList(applyCandidates)
     }
 
-    private def planPredicates(lhs: QueryPlan, patternExpressions: Set[Expression], expressions: Set[Expression], letExpression: Option[Expression])
-                              (implicit context: LogicalPlanningContext): (QueryPlan, Set[Expression]) = {
+    private def planPredicates(lhs: LogicalPlan, patternExpressions: Set[Expression], expressions: Set[Expression], letExpression: Option[Expression])
+                              (implicit context: LogicalPlanningContext): (LogicalPlan, Set[Expression]) = {
       patternExpressions.toList match {
         case (patternExpression: PatternExpression) :: Nil =>
           val rhs = rhsPlan(context, patternExpression)
@@ -89,7 +89,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
       }
     }
 
-    private def createLetSemiApply(lhs: QueryPlan, rhs: QueryPlan, patternExpression: PatternExpression, expressions: Set[Expression], letExpression: Option[Expression]) = {
+    private def createLetSemiApply(lhs: LogicalPlan, rhs: LogicalPlan, patternExpression: PatternExpression, expressions: Set[Expression], letExpression: Option[Expression]) = {
       val (idName, ident) = freshIdForLet(patternExpression)
       if (expressions.isEmpty && letExpression.isEmpty)
         (planLetSemiApply(lhs, rhs, idName), ident)
@@ -97,7 +97,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
         (planLetSelectOrSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet)), ident)
     }
 
-    private def createLetAntiSemiApply(lhs: QueryPlan, rhs: QueryPlan, patternExpression: PatternExpression, predicate: Expression, expressions: Set[Expression], letExpression: Option[Expression]) = {
+    private def createLetAntiSemiApply(lhs: LogicalPlan, rhs: LogicalPlan, patternExpression: PatternExpression, predicate: Expression, expressions: Set[Expression], letExpression: Option[Expression]) = {
       val (idName, ident) = freshIdForLet(patternExpression)
       if (expressions.isEmpty && letExpression.isEmpty)
         (planLetAntiSemiApply(lhs, rhs, idName), ident)
@@ -113,7 +113,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
     else
       Ors(expressions)(expressions.head.position)
 
-    private def applicable(outerPlan: QueryPlan, qg: QueryGraph, expression: Expression) = {
+    private def applicable(outerPlan: LogicalPlan, qg: QueryGraph, expression: Expression) = {
       val symbolsAvailable = qg.argumentIds.subsetOf(outerPlan.availableSymbols)
       val isSolved = outerPlan.solved.exists(_.graph.selections.contains(expression))
       symbolsAvailable && !isSolved
@@ -125,10 +125,10 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
     (IdName(name), Identifier(name)(patternExpression.position))
   }
 
-  def apply(input: QueryPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): QueryPlan = {
+  def apply(input: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val plan = simpleSelection(input, queryGraph)
 
-    def findBestPlanForPatternPredicates(plan: QueryPlan): QueryPlan = {
+    def findBestPlanForPatternPredicates(plan: LogicalPlan): LogicalPlan = {
       val secretPlanTable = PlanTable(Map(plan.availableSymbols -> plan))
       val result: CandidateList = candidateListProducer(secretPlanTable, queryGraph)
       result.bestPlan(context.cost).getOrElse(plan)

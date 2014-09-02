@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{QueryPlan, IdName}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, IdName}
 
 object expand extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
@@ -57,8 +57,8 @@ object expand extends CandidateGenerator[PlanTable] {
   is solved by something that looks like
   MATCH (a)-[r]->($TEMP) WHERE $TEMP = a
    */
-  private def expandIntoAlreadyExistingNode(f: IdName => QueryPlan, otherSide: IdName)
-                                           (implicit context: LogicalPlanningContext): QueryPlan = {
+  private def expandIntoAlreadyExistingNode(f: IdName => LogicalPlan, otherSide: IdName)
+                                           (implicit context: LogicalPlanningContext): LogicalPlan = {
     val temp = IdName(otherSide.name + "$$$")
     val expand = f(temp)
     val left = Identifier(otherSide.name)(null)
