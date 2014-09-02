@@ -36,6 +36,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
@@ -526,12 +527,12 @@ public class XaLogicalLog implements LogLoader
             throw new IOException( "Unknown xid for identifier " + identifier );
         }
         Xid xid = startEntry.getXid();
-        try
+        try ( LockGroup lockGroup = new LockGroup() )
         {
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             positionCache.cacheStartPosition( txId, startEntry, logVersion );
-            xaRm.injectOnePhaseCommit( xid );
+            xaRm.injectOnePhaseCommit( xid, lockGroup );
             registerRecoveredTransaction( txId );
         }
         catch ( XAException e )
@@ -585,12 +586,12 @@ public class XaLogicalLog implements LogLoader
         {
             throw new IOException( "Xid null for identifier " + identifier );
         }
-        try
+        try ( LockGroup lockGroup = new LockGroup() )
         {
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             positionCache.cacheStartPosition( txId, startEntry, logVersion );
-            xaRm.injectTwoPhaseCommit( xid );
+            xaRm.injectTwoPhaseCommit( xid, lockGroup );
             registerRecoveredTransaction( txId );
         }
         catch ( XAException e )

@@ -27,7 +27,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -56,7 +55,6 @@ import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
-@Ignore("Needs to be resolved")
 public class CacheRaceTest
 {
     private final NodeCache nodeCache = new NodeCache();

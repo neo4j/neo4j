@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -79,11 +80,17 @@ public class WriteTransactionCommandOrderingTest
         // When
         currentRecording.set( nonRecoveredRecording );
         nonRecoveredTx.doPrepare();
-        nonRecoveredTx.doCommit();
+        try ( LockGroup lockGroup = new LockGroup() )
+        {
+            nonRecoveredTx.doCommit( lockGroup );
+        }
 
         currentRecording.set( recoveredRecording );
         recoveredTx.doPrepare();
-        recoveredTx.doCommit();
+        try ( LockGroup lockGroup = new LockGroup() )
+        {
+            recoveredTx.doCommit( lockGroup );
+        }
 
         // Then
         assertThat(nonRecoveredRecording, equalTo(recoveredRecording)); // ordering is the same in both cases

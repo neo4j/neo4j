@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -141,7 +142,10 @@ public class WriteTransactionTest
         IndexRule schemaRule = indexRule( ruleId, 10, 8, PROVIDER_DESCRIPTOR );
         writeTransaction.createSchemaRule( schemaRule );
         writeTransaction.prepare();
-        writeTransaction.commit();
+        try ( LockGroup lockGroup = new LockGroup() )
+        {
+            writeTransaction.commit( lockGroup );
+        }
 
         // THEN
         verify( cacheAccessBackDoor ).addSchemaRule( schemaRule );
@@ -165,7 +169,10 @@ public class WriteTransactionTest
         // WHEN
         writeTransaction.dropSchemaRule( rule );
         writeTransaction.prepare();
-        writeTransaction.commit();
+        try ( LockGroup lockGroup = new LockGroup() )
+        {
+            writeTransaction.commit( lockGroup );
+        }
 
         // THEN
         verify( cacheAccessBackDoor ).removeSchemaRuleFromCache( ruleId );
@@ -190,7 +197,10 @@ public class WriteTransactionTest
         writeTransaction.addLabelToNode( 50, nodeId );
 
         writeTransaction.prepare();
-        writeTransaction.commit();
+        try ( LockGroup lockGroup = new LockGroup() )
+        {
+            writeTransaction.commit( lockGroup );
+        }
 
         // And given that I now start recording the commands in the log
         CommandCapturingVisitor commandCapture = new CommandCapturingVisitor();
@@ -203,7 +213,10 @@ public class WriteTransactionTest
         writeTransaction.removeLabelFromNode( 23, nodeId );
 
         writeTransaction.prepare();
-        writeTransaction.commit();
+        try ( LockGroup lockGroup = new LockGroup() )
+        {
+            writeTransaction.commit( lockGroup );
+        }
 
         // THEN
         // The dynamic label record should be part of what is logged, and it should be set to not in use anymore.
@@ -245,7 +258,10 @@ public class WriteTransactionTest
         writeTransaction.addLabelToNode( 52, nodeId );
 
         writeTransaction.prepare();
-        writeTransaction.commit();
+        try ( LockGroup lockGroup = new LockGroup() )
+        {
+            writeTransaction.commit( lockGroup );
+        }
 
         // And given that I now start recording the commands in the log
         CommandCapturingVisitor commandCapture = new CommandCapturingVisitor();
@@ -262,7 +278,10 @@ public class WriteTransactionTest
         writeTransaction.addLabelToNode( 62, nodeId );
 
         writeTransaction.prepare();
-        writeTransaction.commit();
+        try ( LockGroup lockGroup = new LockGroup() )
+        {
+            writeTransaction.commit( lockGroup );
+        }
 
         // THEN
         // The dynamic label record in before should be the same id as in after, and should be in use
@@ -962,7 +981,10 @@ public class WriteTransactionTest
     private void prepareAndCommit( NeoStoreTransaction tx ) throws Exception
     {
         tx.doPrepare();
-        tx.doCommit();
+        try ( LockGroup lockGroup = new LockGroup() )
+        {
+            tx.doCommit( lockGroup );
+        }
     }
 
     public static final LabelScanStore NO_LABEL_SCAN_STORE = new LabelScanStore()

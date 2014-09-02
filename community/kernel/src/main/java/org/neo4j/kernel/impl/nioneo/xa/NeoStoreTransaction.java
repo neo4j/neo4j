@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -96,6 +97,7 @@ import static java.util.Arrays.copyOf;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.locking.LockService.LockType.READ_LOCK;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.CREATE;
@@ -716,7 +718,7 @@ public class NeoStoreTransaction extends XaTransaction
     }
 
     @Override
-    public void doCommit() throws XAException
+    public void doCommit( LockGroup lockGroup ) throws XAException
     {
         if ( !isRecovered() && !prepared )
         {
@@ -728,7 +730,7 @@ public class NeoStoreTransaction extends XaTransaction
             neoStore.setRecoveredStatus( true );
             try
             {
-                applyCommit( true );
+                applyCommit( lockGroup, true );
                 return;
             }
             finally
@@ -742,124 +744,117 @@ public class NeoStoreTransaction extends XaTransaction
                                         " not next transaction (" + neoStore.getLastCommittedTx() + ")" );
         }
 
-        applyCommit( false );
+        applyCommit( lockGroup, false );
     }
 
-    private void applyCommit( boolean isRecovered )
+    private void applyCommit( LockGroup lockGroup, boolean isRecovered )
     {
-        try ( LockGroup lockGroup = new LockGroup() )
+        committed = true;
+        CommandSorter sorter = new CommandSorter();
+        // reltypes
+        if ( relationshipTypeTokenCommands != null )
         {
-            committed = true;
-            CommandSorter sorter = new CommandSorter();
-            // reltypes
-            if ( relationshipTypeTokenCommands != null )
+            java.util.Collections.sort( relationshipTypeTokenCommands, sorter );
+            for ( Command.RelationshipTypeTokenCommand command : relationshipTypeTokenCommands )
             {
-                java.util.Collections.sort( relationshipTypeTokenCommands, sorter );
-                for ( Command.RelationshipTypeTokenCommand command : relationshipTypeTokenCommands )
-                {
-                    command.execute();
-                    if ( isRecovered )
-                    {
-                        addRelationshipType( (int) command.getKey() );
-                    }
-                }
-            }
-            // label keys
-            if ( labelTokenCommands != null )
-            {
-                java.util.Collections.sort( labelTokenCommands, sorter );
-                for ( Command.LabelTokenCommand command : labelTokenCommands )
-                {
-                    command.execute();
-                    if ( isRecovered )
-                    {
-                        addLabel( (int) command.getKey() );
-                    }
-                }
-            }
-            // property keys
-            if ( propertyKeyTokenCommands != null )
-            {
-                java.util.Collections.sort( propertyKeyTokenCommands, sorter );
-                for ( Command.PropertyKeyTokenCommand command : propertyKeyTokenCommands )
-                {
-                    command.execute();
-                    if ( isRecovered )
-                    {
-                        addPropertyKey( (int) command.getKey() );
-                    }
-                }
-            }
-
-            // primitives
-            java.util.Collections.sort( relCommands, sorter );
-            java.util.Collections.sort( propCommands, sorter );
-            executeCreated( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values() );
-            executeModified( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values() );
-            executeDeleted( lockGroup, propCommands, relCommands, nodeCommands.values() );
-
-            // property change set for index updates
-            Collection<NodeLabelUpdate> labelUpdates = gatherLabelUpdatesSortedByNodeId();
-            if ( !labelUpdates.isEmpty() )
-            {
-                updateLabelScanStore( labelUpdates );
-                cacheAccess.applyLabelUpdates( labelUpdates );
-            }
-
-            if ( !nodeCommands.isEmpty() || !propCommands.isEmpty() )
-            {
-                indexes.updateIndexes( new LazyIndexUpdates(
-                        getNodeStore(), getPropertyStore(),
-                        groupedNodePropertyCommands( propCommands ), new HashMap<>( nodeCommands ) ) );
-            }
-
-            // schema rules. Execute these after generating the property updates so. If executed
-            // before and we've got a transaction that sets properties/labels as well as creating an index
-            // we might end up with this corner-case:
-            // 1) index rule created and index population job started
-            // 2) index population job processes some nodes, but doesn't complete
-            // 3) we gather up property updates and send those to the indexes. The newly created population
-            //    job might get those as updates
-            // 4) the population job will apply those updates as added properties, and might end up with duplicate
-            //    entries for the same property
-            for ( SchemaRuleCommand command : schemaRuleCommands )
-            {
-                command.setTxId( getCommitTxId() );
                 command.execute();
-                switch ( command.getMode() )
-                {
-                case DELETE:
-                    cacheAccess.removeSchemaRuleFromCache( command.getKey() );
-                    break;
-                default:
-                    cacheAccess.addSchemaRule( command.getSchemaRule() );
-                }
-            }
-
-            if ( neoStoreCommand != null )
-            {
-                neoStoreCommand.execute();
                 if ( isRecovered )
                 {
-                    removeGraphPropertiesFromCache();
+                    addRelationshipType( (int) command.getKey() );
                 }
             }
-            if ( !isRecovered )
+        }
+        // label keys
+        if ( labelTokenCommands != null )
+        {
+            java.util.Collections.sort( labelTokenCommands, sorter );
+            for ( Command.LabelTokenCommand command : labelTokenCommands )
             {
-                updateFirstRelationships();
-                // Update of the cached primitives will happen when calling commitChangesToCache,
-                // which should be done after applyCommit and after the XaResourceManager monitor
-                // has been released.
-            }
-            neoStore.setLastCommittedTx( getCommitTxId() );
-            if ( isRecovered )
-            {
-                neoStore.updateIdGenerators();
+                command.execute();
+                if ( isRecovered )
+                {
+                    addLabel( (int) command.getKey() );
+                }
             }
         }
-        finally
+        // property keys
+        if ( propertyKeyTokenCommands != null )
         {
-            // clear() will be called in commitChangesToCache outside of the XaResourceManager monitor
+            java.util.Collections.sort( propertyKeyTokenCommands, sorter );
+            for ( Command.PropertyKeyTokenCommand command : propertyKeyTokenCommands )
+            {
+                command.execute();
+                if ( isRecovered )
+                {
+                    addPropertyKey( (int) command.getKey() );
+                }
+            }
+        }
+
+        // primitives
+        java.util.Collections.sort( relCommands, sorter );
+        java.util.Collections.sort( propCommands, sorter );
+        executeCreated( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values() );
+        executeModified( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values() );
+        executeDeleted( lockGroup, propCommands, relCommands, nodeCommands.values() );
+
+        // property change set for index updates
+        Collection<NodeLabelUpdate> labelUpdates = gatherLabelUpdatesSortedByNodeId();
+        if ( !labelUpdates.isEmpty() )
+        {
+            updateLabelScanStore( labelUpdates );
+            cacheAccess.applyLabelUpdates( labelUpdates );
+        }
+
+        if ( !nodeCommands.isEmpty() || !propCommands.isEmpty() )
+        {
+            indexes.updateIndexes( new LazyIndexUpdates(
+                    getNodeStore(), getPropertyStore(),
+                    groupedNodePropertyCommands( propCommands ), new HashMap<>( nodeCommands ) ) );
+        }
+
+        // schema rules. Execute these after generating the property updates so. If executed
+        // before and we've got a transaction that sets properties/labels as well as creating an index
+        // we might end up with this corner-case:
+        // 1) index rule created and index population job started
+        // 2) index population job processes some nodes, but doesn't complete
+        // 3) we gather up property updates and send those to the indexes. The newly created population
+        //    job might get those as updates
+        // 4) the population job will apply those updates as added properties, and might end up with duplicate
+        //    entries for the same property
+        for ( SchemaRuleCommand command : schemaRuleCommands )
+        {
+            command.setTxId( getCommitTxId() );
+            command.execute();
+            switch ( command.getMode() )
+            {
+            case DELETE:
+                cacheAccess.removeSchemaRuleFromCache( command.getKey() );
+                break;
+            default:
+                cacheAccess.addSchemaRule( command.getSchemaRule() );
+            }
+        }
+
+        if ( neoStoreCommand != null )
+        {
+            neoStoreCommand.execute();
+            if ( isRecovered )
+            {
+                removeGraphPropertiesFromCache();
+            }
+        }
+        if ( !isRecovered )
+        {
+            updateFirstRelationships();
+            // Update of the cached primitives will happen when calling commitChangesToCache,
+            // which should be done after applyCommit and after the XaResourceManager monitor
+            // has been released.
+        }
+        neoStore.setLastCommittedTx( getCommitTxId() );
+        if ( isRecovered )
+        {
+            neoStore.updateIdGenerators();
         }
     }
 

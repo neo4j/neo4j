@@ -28,6 +28,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.CommitNotificationFailedException;
@@ -426,7 +427,7 @@ public class XaResourceManager
 
     // called during recovery
     // if not read only transaction will be commited.
-    synchronized void injectOnePhaseCommit( Xid xid ) throws XAException
+    synchronized void injectOnePhaseCommit( Xid xid, LockGroup lockGroup ) throws XAException
     {
         XidStatus status = xidMap.get( xid );
         if ( status == null )
@@ -438,11 +439,11 @@ public class XaResourceManager
         txStatus.markAsPrepared();
         txStatus.markCommitStarted();
         XaTransaction xaTransaction = txStatus.getTransaction();
-        xaTransaction.commit();
+        xaTransaction.commit( lockGroup );
         transactionMonitor.injectOnePhaseCommit( xid );
     }
 
-    synchronized void injectTwoPhaseCommit( Xid xid ) throws XAException
+    synchronized void injectTwoPhaseCommit( Xid xid, LockGroup lockGroup ) throws XAException
     {
         XidStatus status = xidMap.get( xid );
         if ( status == null )
@@ -454,7 +455,7 @@ public class XaResourceManager
         txStatus.markAsPrepared();
         txStatus.markCommitStarted();
         XaTransaction xaTransaction = txStatus.getTransaction();
-        xaTransaction.commit();
+        xaTransaction.commit( lockGroup );
         transactionMonitor.injectTwoPhaseCommit( xid );
     }
 
@@ -476,31 +477,33 @@ public class XaResourceManager
         XaTransaction xaTransaction;
         boolean isReadOnly;
 
-        synchronized ( this )
+        try ( LockGroup lockGroup = new LockGroup() )
         {
-            XidStatus status = xidMap.get( xid );
-            if ( status == null )
+            synchronized ( this )
             {
-                throw new XAException( "Unknown xid[" + xid + "]" );
-            }
-            TransactionStatus txStatus = status.getTransactionStatus();
-            xaTransaction = txStatus.getTransaction();
-            TxIdGenerator txIdGenerator = xaTransaction.getTxIdGenerator();
-            isReadOnly = xaTransaction.isReadOnly();
+                XidStatus status = xidMap.get( xid );
+                if ( status == null )
+                {
+                    throw new XAException( "Unknown xid[" + xid + "]" );
+                }
+                TransactionStatus txStatus = status.getTransactionStatus();
+                xaTransaction = txStatus.getTransaction();
+                TxIdGenerator txIdGenerator = xaTransaction.getTxIdGenerator();
+                isReadOnly = xaTransaction.isReadOnly();
 
-            if(isReadOnly)
-            {
-                // called for one-phase read-only transactions since they skip prepare
-                // cf. TransactionImpl.doCommit() and prepare()
-                commitReadTx( xid, onePhase, xaTransaction, txStatus );
+                if ( isReadOnly )
+                {
+                    // called for one-phase read-only transactions since they skip prepare
+                    // cf. TransactionImpl.doCommit() and prepare()
+                    commitReadTx( xid, onePhase, xaTransaction, txStatus );
+                }
+                else
+                {
+                    commitWriteTx( lockGroup, xid, onePhase, xaTransaction, txStatus, txIdGenerator );
+                }
             }
-            else
-            {
-                commitWriteTx( xid, onePhase, xaTransaction, txStatus, txIdGenerator );
-            }
+            commitKernelTx( xaTransaction );
         }
-
-        commitKernelTx( xaTransaction );
 
         if ( !xaTransaction.isRecovered() && !isReadOnly )
         {
@@ -541,7 +544,7 @@ public class XaResourceManager
         }
     }
 
-    private void commitWriteTx( Xid xid, boolean onePhase, XaTransaction xaTransaction,
+    private void commitWriteTx( LockGroup lockGroup, Xid xid, boolean onePhase, XaTransaction xaTransaction,
                                 TransactionStatus txStatus, TxIdGenerator txIdGenerator ) throws XAException
     {
         checkStartWritten( txStatus, xaTransaction );
@@ -595,7 +598,7 @@ public class XaResourceManager
             }
         }
 
-        xaTransaction.commit();
+        xaTransaction.commit( lockGroup );
 
         if ( !xaTransaction.isRecovered() )
         {
