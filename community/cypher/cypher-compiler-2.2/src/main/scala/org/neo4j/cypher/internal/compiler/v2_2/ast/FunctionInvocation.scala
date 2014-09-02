@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
-import Expression.SemanticContext
-import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.SemanticError
+import org.neo4j.cypher.internal.compiler.v2_2.{SemanticError, _}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression.SemanticContext
 
 object FunctionInvocation {
   def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
@@ -43,7 +42,7 @@ case class FunctionInvocation(functionName: FunctionName, distinct: Boolean, arg
   }
 }
 
-case class FunctionName(name: String)(val position: InputPosition) extends ASTNode {
+case class FunctionName(name: String)(val position: InputPosition) extends SymbolicName {
   override def equals(x: Any): Boolean = x match {
     case FunctionName(other) => other.toLowerCase == name.toLowerCase
     case _ => false

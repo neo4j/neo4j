@@ -110,7 +110,7 @@ case class CypherCompiler(parser: CypherParser,
 
   def prepareQuery(queryText: String, planType: PlanType): PreparedQuery = {
     val parsedStatement = parser.parse(queryText)
-    val cleanedStatement = parsedStatement.endoRewrite(hoistExpressionsInClosingClauses)
+    val cleanedStatement: Statement = parsedStatement.endoRewrite(hoistExpressionsInClosingClauses)
     semanticChecker.check(queryText, cleanedStatement)
     val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, cleanedStatement)
     val table = semanticChecker.check(queryText, rewrittenStatement)

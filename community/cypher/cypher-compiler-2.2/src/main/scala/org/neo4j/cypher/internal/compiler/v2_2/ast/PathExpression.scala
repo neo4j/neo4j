@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2.InputPosition
-import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CypherType, TypeSpec, CTPath, CTNode, CTRelationship}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CTPath, TypeSpec}
 import org.neo4j.graphdb.Direction
 
 

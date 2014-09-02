@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import symbols._
-import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 object Expression {
   sealed trait SemanticContext
@@ -57,10 +56,11 @@ object Expression {
   }
 }
 
-import Expression._
-import Foldable._
+import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression._
 
-abstract class Expression extends ASTNode with SemanticChecking {
+abstract class Expression extends ASTNode with ASTExpression with SemanticChecking {
+
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
   def types: TypeGenerator = s => s.expressionType(this).actual

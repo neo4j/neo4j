@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.docStructureDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.docStructureDocGen
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.Pretty
 
 /**
  * Class of pretty-printable documents.
@@ -28,9 +29,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.docbuilders.docStructureDoc
  * (cf. http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.34.2200&rep=rep1&type=pdf)
  *
  */
-sealed abstract class Doc extends docStructureDocBuilder.AsPrettyToString with HasLineDocFormatter {
+sealed abstract class Doc extends docStructureDocGen.ToString[Doc] with LineDocFormatting {
 
-  import Doc._
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
   def ::(hd: Doc): Doc = cons(hd, this)
   def :/:(hd: Doc): Doc = cons(hd, cons(break, this))
@@ -40,8 +41,6 @@ sealed abstract class Doc extends docStructureDocBuilder.AsPrettyToString with H
   def isNil = false
 
   def toOption: Option[Doc] = Some(this)
-
-  override def docGenerator: DocGenerator[Doc] = docStructureDocBuilder.docGenerator
 }
 
 object Doc {
@@ -49,6 +48,7 @@ object Doc {
 
   def cons(head: Doc, tail: Doc = nil): Doc = if (head == nil) tail else ConsDoc(head, tail)
   def nil: Doc = NilDoc
+  def noBreak: BreakingDoc = NoBreak
 
   // replace nil tail with default document
 
@@ -110,13 +110,31 @@ object Doc {
     case (hd, tail)   => hd :: sep :: break :: tail
   }
 
+  def groupedSepList(docs: TraversableOnce[Doc], sep: Doc = ",", break: BreakingDoc = break): Doc = docs.foldRight(nil) {
+    case (hd, NilDoc) => hd :: nil
+    case (hd, tail)   => group(hd :: sep) :: break :: tail
+  }
+
   def block(name: Doc, open: Doc = "(", close: Doc = ")")(innerDoc: Doc): Doc =
-    group(
-      name ::
-      open ::
-      nest(group(breakSilentBefore(innerDoc))) ::
-      breakSilentBefore(close)
-    )
+    group( name :: surrounded(open, close, breakSilent, breakSilent )(innerDoc) )
+
+  def brackets(innerDoc: Doc, break: BreakingDoc = breakSilent) =
+    surrounded(open = "[", close = "]", break, break)(innerDoc)
+
+  def braces(innerDoc: Doc, break: BreakingDoc = breakSilent) =
+    surrounded(open = "{", close = "}", break, break)(innerDoc)
+
+  def parens(innerDoc: Doc, break: BreakingDoc = breakSilent) =
+    surrounded(open = "(", close = ")", break, break)(innerDoc)
+
+  def comment(innerDoc: Doc, break: BreakingDoc = break) =
+    surrounded(open = "/*", close = "*/", break, break)(innerDoc)
+
+  def surrounded(open: Doc, close: Doc, openBreak: BreakingDoc, closeBreak: BreakingDoc)(innerDoc: Doc): Doc =
+    surrounded(open, breakBefore(close, openBreak))(breakBefore(innerDoc, closeBreak))
+
+  def surrounded(open: Doc, close: Doc)(innerDoc: Doc): Doc =
+    group(open :: nest(group(innerDoc)) :: close)
 
   def section(start: Doc, inner: Doc, break: BreakingDoc = break): Doc =
     if (inner.isNil) inner else group(start :: nest(breakBefore(inner, break = break)))
@@ -142,6 +160,10 @@ case object BreakDoc extends BreakingDoc {
   def value = " "
 }
 
+case object NoBreak extends BreakingDoc {
+  def value =""
+}
+
 final case class BreakWith(value: String) extends BreakingDoc
 
 sealed abstract class ContentDoc extends Doc {
@@ -164,9 +186,8 @@ final case class NestWith(indent: Int, content: Doc) extends NestingDoc {
   def optIndent = Some(indent)
 }
 
-final case class DocLiteral(doc: Doc) extends Pretty[DocLiteral] {
-  override def toDoc =
-    Doc.block("DocLiteral")(docStructureDocBuilder.docGenerator(doc))
+final case class DocLiteral(doc: Doc) extends Pretty {
+  override def toDoc = inner => docStructureDocGen(inner)(doc)
 }
 
 

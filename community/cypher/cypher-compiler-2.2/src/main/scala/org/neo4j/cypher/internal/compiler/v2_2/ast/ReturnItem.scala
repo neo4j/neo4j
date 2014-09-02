@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 
-sealed trait ReturnItems extends ASTNode with SemanticCheckable {
+sealed trait ReturnItems extends ASTNode with ASTPhrase with SemanticCheckable {
   def declareIdentifiers(currentState: SemanticState): SemanticCheck
   def containsAggregate: Boolean
 }
@@ -66,7 +66,7 @@ case class ReturnAll()(val position: InputPosition) extends ReturnItems {
   def containsAggregate = false
 }
 
-sealed trait ReturnItem extends ASTNode with SemanticCheckable {
+sealed trait ReturnItem extends ASTNode with ASTPhrase with SemanticCheckable {
   def expression: Expression
   def alias: Option[Identifier]
   def name: String

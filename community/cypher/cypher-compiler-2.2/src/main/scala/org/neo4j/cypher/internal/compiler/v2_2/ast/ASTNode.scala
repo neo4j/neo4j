@@ -20,10 +20,24 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.SimpleDocHandler
 
-trait ASTNode extends Product with Foldable with Rewritable {
-  import Foldable._
-  import Rewritable._
+trait ASTNode
+  extends Product
+  with Foldable
+  with Rewritable
+  with PageDocFormatting /* multi line */
+  // with LineDocFormatting  /* single line */
+  // with SimpleDocHandler.ToString[ASTNode] /* like default toString() */ {
+  with InternalDocHandler.ToString[ASTNode] /* see InternalDocHandler for more choices */
+{
+
+  import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+  import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
+
+//  val toStringVal = toString()
 
   def position: InputPosition
 
@@ -40,3 +54,15 @@ trait ASTNode extends Product with Foldable with Rewritable {
         constructor.invoke(this, args: _*).asInstanceOf[this.type]
     }
 }
+
+// This is used by pretty printing to distinguish between
+//
+// - expressions
+// - particles (non-expression ast nodes contained in expressions)
+// - terms (neither expressions nor particles, like Clause)
+//
+sealed trait ASTNodeType { self: ASTNode => }
+
+trait ASTExpression extends ASTNodeType { self: ASTNode => }
+trait ASTParticle extends ASTNodeType { self: ASTNode => }
+trait ASTPhrase extends ASTNodeType { self: ASTNode => }
