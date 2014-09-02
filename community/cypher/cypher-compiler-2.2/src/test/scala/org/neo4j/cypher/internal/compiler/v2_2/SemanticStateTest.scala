@@ -47,7 +47,7 @@ class SemanticStateTest extends CypherFunSuite {
     ((_: SemanticState).implicitIdentifier(identifier3, CTNode)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
-        val positions = state.scope.localSymbol("foo").map(_.positions).get
+        val positions = state.currentScope.localSymbol("foo").map(_.positions).get
         positions should equal(Seq(identifier1.position, identifier2.position, identifier3.position))
     }
   }
