@@ -22,7 +22,9 @@ package org.neo4j.server.advanced.helpers;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.helpers.CommunityServerBuilder;
@@ -56,19 +58,20 @@ public class AdvancedServerBuilder extends CommunityServerBuilder
         return (AdvancedNeoServer) super.build();
     }
 
+
     @Override
-    public AdvancedNeoServer build( File configFile, Configurator configurator, Logging logging )
+    protected CommunityNeoServer build(File configFile, Configurator configurator, InternalAbstractGraphDatabase.Dependencies dependencies)
     {
-        return new TestAdvancedNeoServer( configurator, configFile, logging );
+        return new TestAdvancedNeoServer( configurator, configFile, dependencies );
     }
 
     private class TestAdvancedNeoServer extends AdvancedNeoServer
     {
         private final File configFile;
 
-        public TestAdvancedNeoServer( Configurator propertyFileConfigurator, File configFile, Logging logging )
+        public TestAdvancedNeoServer( Configurator propertyFileConfigurator, File configFile, InternalAbstractGraphDatabase.Dependencies dependencies )
         {
-            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ), logging );
+            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ), dependencies );
             this.configFile = configFile;
         }
 

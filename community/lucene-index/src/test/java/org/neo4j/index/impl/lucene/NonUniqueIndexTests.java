@@ -30,8 +30,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -53,7 +53,6 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 
 public class NonUniqueIndexTests
 {
@@ -87,8 +86,7 @@ public class NonUniqueIndexTests
 
     private GraphDatabaseService newEmbeddedGraphDatabaseWithSlowJobScheduler()
     {
-        Dependencies dependencies = new DefaultGraphDatabaseDependencies( DevNullLoggingService.DEV_NULL );
-        return new EmbeddedGraphDatabase( directory.absolutePath(), stringMap(), dependencies )
+        return new EmbeddedGraphDatabase( directory.absolutePath(), stringMap(), GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL))
         {
             @Override
             protected Neo4jJobScheduler createJobScheduler()

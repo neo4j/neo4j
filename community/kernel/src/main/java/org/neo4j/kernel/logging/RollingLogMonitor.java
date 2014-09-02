@@ -17,30 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.database;
+package org.neo4j.kernel.logging;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
-
-public interface Database extends Lifecycle
+/**
+ * TODO
+ */
+public interface RollingLogMonitor
 {
-    interface Factory
-    {
-        Database newDatabase(Config config, InternalAbstractGraphDatabase.Dependencies dependencies);
-    }
-
-    public String getLocation();
-
-    public GraphDatabaseAPI getGraph();
-
-    ExecutionEngine executionEngine();
-
-    public abstract boolean isRunning();
-
-    public Logging getLogging();
+    void rolledOver();
 }

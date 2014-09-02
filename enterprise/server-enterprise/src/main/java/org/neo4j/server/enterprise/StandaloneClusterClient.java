@@ -174,7 +174,7 @@ public class StandaloneClusterClient
                 new File( new File( new File( home, "data" ), "log" ), "arbiter" ).getPath() );
         Config config = new Config( stringMap( InternalAbstractGraphDatabase.Configuration.store_dir.name(), logDir ) );
 
-        return LogbackWeakDependency.tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
+        return LogbackWeakDependency.tryLoadLogbackService( config, DEFAULT_TO_CLASSIC, new Monitors() );
     }
 
     private static File extractDbTuningProperties( String propertiesFile )

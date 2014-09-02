@@ -22,18 +22,19 @@ package org.neo4j.server.helpers;
 import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.configuration.Configurator;
 
 public abstract class LoggingFactory
 {
-    public abstract Logging create( Configurator configurator );
+    public abstract Logging create( Configurator configurator, Monitors monitors );
 
     public static LoggingFactory given( final Logging logging )
     {
         return new LoggingFactory()
         {
             @Override
-            public Logging create( Configurator configurator )
+            public Logging create( Configurator configurator, Monitors monitors )
             {
                 return logging;
             }
@@ -43,16 +44,16 @@ public abstract class LoggingFactory
     public static final LoggingFactory DEFAULT_LOGGING = new LoggingFactory()
     {
         @Override
-        public Logging create( Configurator configurator )
+        public Logging create( Configurator configurator, Monitors monitors )
         {
-            return DefaultLogging.createDefaultLogging( configurator.getDatabaseTuningProperties() );
+            return DefaultLogging.createDefaultLogging( configurator.getDatabaseTuningProperties(), monitors );
         }
     };
 
     public static final LoggingFactory IMPERMANENT_LOGGING = new LoggingFactory()
     {
         @Override
-        public Logging create( Configurator configurator )
+        public Logging create( Configurator configurator, Monitors monitors )
         {
             // Enough until the opposite is proven. This is only used by ServerBuilder,
             // which in turn is only used by tests.

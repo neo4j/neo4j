@@ -28,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.WrappingNeoServer;
@@ -107,7 +107,7 @@ public class TestJetty9WebServer
     {
         @SuppressWarnings("deprecation")
         ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( "path", stringMap(),
-                new DefaultGraphDatabaseDependencies())
+                GraphDatabaseDependencies.newDependencies())
         {
         };
 

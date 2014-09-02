@@ -178,6 +178,7 @@ import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.RollingLogMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -200,9 +201,15 @@ import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PRO
 public abstract class InternalAbstractGraphDatabase
         implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
-
     public interface Dependencies
     {
+        /**
+         * Allowed to be null. Null means that no external {@link Monitors} was created, let the
+         * database create its own monitors instance.
+         * @return
+         */
+        Monitors monitors();
+
         /**
          * Allowed to be null. Null means that no external {@link Logging} was created, let the
          * database create its own logging.
@@ -300,6 +307,7 @@ public abstract class InternalAbstractGraphDatabase
         config = new Config( params, getSettingsClasses(
                 dependencies.settingsClasses(), dependencies.kernelExtensions(), dependencies.cacheProviders() ) );
         this.logging = dependencies.logging();
+        this.monitors = dependencies.monitors();
 
         this.kernelExtensions = new KernelExtensions(
                 dependencies.kernelExtensions(),
@@ -411,7 +419,8 @@ public abstract class InternalAbstractGraphDatabase
         }
 
         // Component monitoring
-        this.monitors = createMonitors();
+        if (this.monitors == null)
+            this.monitors = createMonitors();
 
         storeMigrationProcess = new StoreUpgrader( new ConfigMapUpgradeConfiguration( config ), fileSystem,
                 monitors.newMonitor( StoreUpgrader.Monitor.class ) );
@@ -458,6 +467,15 @@ public abstract class InternalAbstractGraphDatabase
 
         caches = createCaches();
         diagnosticsManager = life.add( new DiagnosticsManager( logging.getMessagesLog( DiagnosticsManager.class ) ) );
+        monitors.addMonitorListener(new RollingLogMonitor()
+        {
+            @Override
+            public void rolledOver()
+            {
+                // Add diagnostics at the top of every log file
+                diagnosticsManager.dumpAll();
+            }
+        });
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
@@ -845,7 +863,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Logging createLogging()
     {
-        return life.add( DefaultLogging.createDefaultLogging( config ) );
+        return life.add( DefaultLogging.createDefaultLogging( config, monitors ) );
     }
 
     protected void createNeoDataSource()

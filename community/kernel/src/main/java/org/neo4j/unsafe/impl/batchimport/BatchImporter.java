@@ -32,6 +32,4 @@ public interface BatchImporter
 {
     void doImport( Iterable<InputNode> nodes, Iterable<InputRelationship> relationships, IdMapper idMapper )
             throws IOException;
-
-    void shutdown();
 }

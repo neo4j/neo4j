@@ -24,12 +24,19 @@
 
   <property resource="logback.properties" />
 
-  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-    <file>${neo_store}/messages.log</file>
-    <encoder>
-      <pattern>%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %-5level [%logger{15}]: %message%n</pattern>
-    </encoder>
-  </appender>
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${neo_store}/messages.log</file>
+        <rollingPolicy class="org.neo4j.kernel.logging.MonitoredRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>${neo_store}/messages.%d{yyyy-MM-dd}.log</fileNamePattern>
+
+            <maxHistory>${history}</maxHistory>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %-5level [%logger{15}]: %message%n</pattern>
+        </encoder>
+    </appender>
 
   <if condition='property("remote_logging_enabled").contains("true")'>
     <then>
