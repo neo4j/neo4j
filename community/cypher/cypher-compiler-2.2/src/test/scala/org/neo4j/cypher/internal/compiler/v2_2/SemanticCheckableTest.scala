@@ -182,30 +182,30 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticChecking {
 
   test("shouldNotEvaluateInnerCheckForFalseWhen") {
     val state1 = SemanticState.clean
-    val error1 = SemanticError("an error", DummyPosition(0))
-    val func1: SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
+    val error = SemanticError("an error", DummyPosition(0))
+    val func1: SemanticCheck = s => SemanticCheckResult(state1, Seq(error))
     val func2: SemanticCheck = s => fail("Second check was incorrectly run")
 
     val chain: SemanticCheck = func1 chain when(condition = false) { func2 }
     val result = chain(SemanticState.clean)
     result.state should equal(state1)
-    result.errors should equal(Seq(error1))
+    result.errors should equal(Seq(error))
   }
 
   test("shouldScopeState") {
     val func1: SemanticCheck = Identifier("name")(DummyPosition(0)).declare(CTNode)
 
-    val error2 = SemanticError("an error", DummyPosition(0))
+    val error = SemanticError("an error", DummyPosition(0))
     val func2: SemanticCheck = s => {
-      s.scope.localSymbol("name") shouldBe defined
-      s.scope.parent shouldBe defined
-      SemanticCheckResult.error(s, error2)
+      s.currentScope.localSymbol("name") shouldBe defined
+      s.currentScope.parent shouldBe defined
+      SemanticCheckResult.error(s, error)
     }
 
     val chain: SemanticCheck = withScopedState { func1 chain func2 }
     val state = SemanticState.clean
     val result = chain(state)
-    result.state.scope.symbolTable shouldBe empty
-    result.errors should equal(Seq(error2))
+    result.state.currentScope.symbolNames shouldBe empty
+    result.errors should equal(Seq(error))
   }
 }

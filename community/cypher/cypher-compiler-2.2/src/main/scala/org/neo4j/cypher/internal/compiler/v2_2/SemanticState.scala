@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{TreeZipper, TreeElem}
 import symbols._
 import scala.collection.immutable.HashMap
 
@@ -32,51 +33,75 @@ case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = 
   def expect(types: TypeSpec) = copy(expected = Some(types))
 }
 
-object SemanticState {
-  val clean = SemanticState(Scope.empty, IdentityMap.empty)
+
+object Scope {
+  val empty = Scope(symbolTable = HashMap.empty, children = Vector())
 }
 
-case class Scope(symbolTable: Map[String, Symbol], parent: Option[Scope]) {
-  def pushScope = copy(symbolTable = HashMap.empty, parent = Some(this))
-  def popScope = parent.get
+case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends TreeElem[Scope] {
+  override def updateChildren(newChildren: Seq[Scope]): Scope = copy(children = newChildren)
 
-  def importScope(scope: Scope) =
-    copy(symbolTable = symbolTable ++ scope.symbolTable)
+  def isEmpty: Boolean = symbolTable.isEmpty
 
-  def localSymbol(name: String): Option[Symbol] = symbolTable.get(name)
+  def symbol(name: String): Option[Symbol] = symbolTable.get(name)
 
-  def symbol(name: String): Option[Symbol] = localSymbol(name) orElse parent.flatMap(_.symbol(name))
+  def symbolNames: Set[String] = symbolTable.keySet
+
+  def importScope(other: Scope) =
+    copy(symbolTable = symbolTable ++ other.symbolTable)
 
   def updateIdentifier(identifier: String, types: TypeSpec, positions: Seq[InputPosition]) =
     copy(symbolTable = symbolTable.updated(identifier, Symbol(identifier, positions, types)))
-
-  def isEmpty: Boolean = symbolTable.isEmpty && parent.map(_.isEmpty).getOrElse(true)
 }
 
-object Scope {
-  val empty = Scope(symbolTable = HashMap.empty, parent = None)
+
+object SemanticState {
+  implicit object ScopeZipper extends TreeZipper[Scope]
+  val clean = SemanticState(Scope.empty.location, IdentityMap.empty)
+
+  implicit class ScopeLocation(val location: ScopeZipper.Location) extends AnyVal {
+    def scope: Scope = location.elem
+    def rootScope: Scope = location.root.elem
+    def parent: Option[ScopeLocation] = location.up.map(ScopeLocation)
+
+    def clear: ScopeLocation = location.replace(Scope.empty)
+    def newScope: ScopeLocation = location.insertChild(Scope.empty)
+
+    def isEmpty: Boolean = scope.isEmpty
+
+    def localSymbol(name: String): Option[Symbol] = scope.symbol(name)
+    def symbol(name: String): Option[Symbol] = localSymbol(name) orElse location.up.flatMap(_.symbol(name))
+
+    def symbolNames: Set[String] = scope.symbolNames
+
+    def importScope(other: ScopeLocation): ScopeLocation = importScope(other.scope)
+    def importScope(other: Scope): ScopeLocation = location.replace(scope.importScope(other))
+
+    def updateIdentifier(identifier: String, types: TypeSpec, positions: Seq[InputPosition]): ScopeLocation =
+      location.replace(scope.updateIdentifier(identifier, types, positions))
+  }
 }
+import SemanticState.ScopeLocation
 
-case class SemanticState(scope: Scope, typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo]) {
-  def newScope = copy(scope = scope.pushScope)
-  def popScope = copy(scope = scope.popScope)
+case class SemanticState(currentScope: ScopeLocation, typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo]) {
+  def scopeTree = currentScope.rootScope
+  def newScope = copy(currentScope = currentScope.newScope)
+  def popScope = copy(currentScope = currentScope.parent.get)
 
-  def clearSymbols = copy(scope = Scope.empty)
+  def clearSymbols = copy(currentScope = currentScope.clear)
 
-  def symbol(name: String): Option[Symbol] = scope.symbol(name)
+  def symbol(name: String): Option[Symbol] = currentScope.symbol(name)
   def symbolTypes(name: String) = symbol(name).map(_.types).getOrElse(TypeSpec.all)
 
-  def importScope(importedScope: Scope) = copy(scope = scope.importScope(importedScope))
+  def importScope(scope: ScopeLocation) = copy(currentScope = currentScope.importScope(scope))
 
   def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
-    scope.localSymbol(identifier.name) match {
-      case None         =>
+    currentScope.localSymbol(identifier.name) match {
+      case None =>
         Right(updateIdentifier(identifier, possibleTypes, Seq(identifier.position)))
       case Some(symbol) =>
         Left(SemanticError(s"${identifier.name} already declared", identifier.position, symbol.positions:_*))
     }
-
-
 
   def implicitIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(identifier.name) match {
@@ -121,7 +146,7 @@ case class SemanticState(scope: Scope, typeTable: IdentityMap[ast.Expression, Ex
 
   private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Seq[InputPosition]) =
     copy(
-      scope = scope.updateIdentifier(identifier.name, types, locations),
+      currentScope = currentScope.updateIdentifier(identifier.name, types, locations),
       typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types))
     )
 }

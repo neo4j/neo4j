@@ -291,7 +291,7 @@ case class Return(
   def name = "RETURN"
 
   protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state =>
-    if (returnItems == ReturnAll()(null) && state.scope.isEmpty) {
+    if (returnItems == ReturnAll()(null) && state.currentScope.isEmpty) {
       Seq(SemanticError("RETURN * is not allowed when there are no identifiers in scope", position))
     } else {
       Seq()

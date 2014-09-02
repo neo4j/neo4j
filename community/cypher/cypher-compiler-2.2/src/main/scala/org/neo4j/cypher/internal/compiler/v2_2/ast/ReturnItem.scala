@@ -56,12 +56,12 @@ case class ReturnAll()(val position: InputPosition) extends ReturnItems {
     updateSeenIdentifiers
 
   private def updateSeenIdentifiers = (s: SemanticState) => {
-    seenIdentifiers = Some(s.scope.symbolTable.keySet)
+    seenIdentifiers = Some(s.currentScope.symbolNames)
     SemanticCheckResult.success(s)
   }
 
   def declareIdentifiers(currentState: SemanticState) = s =>
-    SemanticCheckResult.success(s.importScope(currentState.scope))
+    SemanticCheckResult.success(s.importScope(currentState.currentScope))
 
   def containsAggregate = false
 }
