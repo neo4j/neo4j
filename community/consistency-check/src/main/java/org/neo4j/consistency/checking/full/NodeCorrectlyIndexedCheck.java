@@ -121,9 +121,17 @@ public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, Consis
             IndexRule indexRule,
             IndexReader reader )
     {
-        if ( !reader.hasIndexed( nodeId, propertyValue ) )
+        int count = reader.getIndexedCount( nodeId, propertyValue );
+        if ( count == 0 )
         {
             engine.report().notIndexed( indexRule, propertyValue );
+        }
+        else if ( count == 1 )
+        {   // Nothing to report, all good
+        }
+        else
+        {
+            engine.report().indexedMultipleTimes( indexRule, propertyValue, count );
         }
     }
 
