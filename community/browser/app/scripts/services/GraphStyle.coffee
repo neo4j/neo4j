@@ -169,7 +169,6 @@ angular.module('neo4jApp.services')
           @persist()
         if not rule.props.caption?
           default_caption = @getDefaultCaption(item)
-          return unless default_caption.caption?
           angular.extend(rule.props, default_caption)
           @rules.push(rule)
           @persist()
