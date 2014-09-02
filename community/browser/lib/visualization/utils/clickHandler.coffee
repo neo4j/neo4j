@@ -12,6 +12,7 @@ neo.utils.clickHandler = ->
       d3.event.target.__data__.fixed = yes
       down = d3.mouse(document.body)
       last = +new Date()
+      d3.event.stopPropagation()
 
     selection.on "mouseup", ->
       if dist(down, d3.mouse(document.body)) > tolerance
@@ -30,3 +31,4 @@ neo.utils.clickHandler = ->
 
   event = d3.dispatch("click", "dblclick")
   d3.rebind cc, event, "on"
+  

@@ -33,6 +33,11 @@ OSX users need to have http://brew.sh/[Homebrew] installed.
 
   sudo apt-get install graphviz maven nodejs make
 
+Due to a file naming collision, the http://packages.debian.org/nodejs[nodejs] package contained within Debian and Ubuntu repositories provides an executable named `nodejs` instead of the expected `node`. Once installed, you may therefore need to create an alias for this script as follows:
+
+  cd ~/bin
+  ln -s /usr/bin/nodejs node
+
 == Building Neo4j ==
 
 * A plain `mvn clean install` will only build the individual jar files. 

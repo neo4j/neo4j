@@ -34,6 +34,6 @@ public class DefaultTxIdGenerator implements TxIdGenerator
     @Override
     public long generate( TransactionRepresentation transaction )
     {
-        return transactionIdStore.instance().nextCommittedTransactionId();
+        return transactionIdStore.instance().nextCommittingTransactionId();
     }
 }

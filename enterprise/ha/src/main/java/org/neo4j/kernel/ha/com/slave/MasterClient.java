@@ -30,6 +30,7 @@ import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreWriter;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
@@ -58,7 +59,16 @@ public interface MasterClient extends Master
         @Override
         public LockResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
-            LockStatus status = LockStatus.values()[buffer.readByte()];
+            byte statusOrdinal = buffer.readByte();
+            LockStatus status;
+            try
+            {
+                status = LockStatus.values()[statusOrdinal];
+            }
+            catch ( ArrayIndexOutOfBoundsException e )
+            {
+                throw Exceptions.withMessage( e, e.getMessage() + " | read invalid ordinal " + statusOrdinal );
+            }
             return status.hasMessage() ? new LockResult( readString( buffer ) ) : new LockResult( status );
         }
     };

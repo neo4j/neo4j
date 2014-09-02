@@ -19,48 +19,70 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.neo4j.kernel.impl.nioneo.store.ArrayQueueOutOfOrderSequence;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.OutOfOrderSequence;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 
+/**
+ * Duplicates the {@link TransactionIdStore} parts of {@link NeoStore}, which is somewhat bad to have to keep
+ * in sync.
+ */
 public class DeadSimpleTransactionIdStore implements TransactionIdStore
 {
-    private long transactionId;
-    private long appliedTransactionId;
+    private final AtomicLong committingTransactionId = new AtomicLong();
+    private final OutOfOrderSequence committedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100 );
+    private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100 );
 
     public DeadSimpleTransactionIdStore( long initialTransactionId )
     {
-        this.transactionId = initialTransactionId;
-        this.appliedTransactionId = initialTransactionId;
+        setLastCommittedAndClosedTransactionId( initialTransactionId );
+    }
+    
+    // Only exposed in tests that needs it
+    public long getLastCommittingTransactionId()
+    {
+        return committingTransactionId.get();
     }
 
     @Override
-    public long nextCommittedTransactionId()
+    public long nextCommittingTransactionId()
     {
-        return ++transactionId;
+        return committingTransactionId.incrementAndGet();
+    }
+    
+    @Override
+    public void transactionCommitted( long transactionId )
+    {
+        committedTransactionId.offer( transactionId );
     }
 
     @Override
     public long getLastCommittedTransactionId()
     {
-        return transactionId;
+        return committedTransactionId.get();
     }
 
     @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId )
     {
-        this.transactionId = transactionId;
-        this.appliedTransactionId = transactionId;
+        committingTransactionId.set( transactionId );
+        committedTransactionId.set( transactionId );
+        closedTransactionId.set( transactionId );
     }
 
     @Override
     public void transactionClosed( long transactionId )
     {
-        appliedTransactionId = transactionId;
+        closedTransactionId.offer( transactionId );
     }
 
     @Override
     public boolean closedTransactionIdIsOnParWithCommittedTransactionId()
     {
-        return appliedTransactionId == transactionId;
+        return closedTransactionId.get() == committedTransactionId.get();
     }
 
     @Override
