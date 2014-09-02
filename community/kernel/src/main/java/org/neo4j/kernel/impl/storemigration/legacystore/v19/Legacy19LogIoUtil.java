@@ -19,27 +19,20 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v19;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import javax.transaction.xa.Xid;
 
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogIoUtil;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
-public class LegacyLogIoUtil
+public class Legacy19LogIoUtil implements LegacyLogIoUtil
 {
-    public static interface CommandReader
-    {
-        XaCommand readCommand( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException;
-    }
-
     // Reads the transaction log format from 1.9
     private static final short LEGACY_FORMAT_VERSION = ((byte) 2 ) & 0xFF;
 
@@ -47,21 +40,14 @@ public class LegacyLogIoUtil
 
     private final CommandReader commandReader;
 
-    public LegacyLogIoUtil( CommandReader commandReader )
+    public Legacy19LogIoUtil( CommandReader commandReader )
     {
         this.commandReader = commandReader;
     }
 
-    public static long[] readLogHeader( FileSystemAbstraction fileSystem, File file ) throws IOException
-    {
-        try ( StoreChannel channel = fileSystem.open( file, "r" ) )
-        {
-            return readLogHeader( ByteBuffer.allocateDirect( 100 * 1000 ), channel, true );
-        }
-    }
-
-    public static long[] readLogHeader( ByteBuffer buffer, ReadableByteChannel channel,
-                                        boolean strict ) throws IOException
+    @Override
+    public long[] readLogHeader( ByteBuffer buffer, ReadableByteChannel channel,
+                                 boolean strict ) throws IOException
     {
         buffer.clear();
         buffer.limit( LOG_HEADER_SIZE );
@@ -85,6 +71,7 @@ public class LegacyLogIoUtil
         return new long[] { version, previousCommittedTx };
     }
 
+    @Override
     public LogEntry readEntry( ByteBuffer buffer, ReadableByteChannel channel ) throws IOException
     {
         try
@@ -97,7 +84,7 @@ public class LegacyLogIoUtil
         }
     }
 
-    public LogEntry readLogEntry( ByteBuffer buffer, ReadableByteChannel channel )
+    private LogEntry readLogEntry( ByteBuffer buffer, ReadableByteChannel channel )
             throws IOException, ReadPastEndException
     {
         byte entry = readNextByte( buffer, channel );
@@ -122,8 +109,8 @@ public class LegacyLogIoUtil
         }
     }
 
-    private static LogEntry.Start readTxStartEntry( ByteBuffer buf,
-                                                    ReadableByteChannel channel ) throws IOException, ReadPastEndException
+    private LogEntry.Start readTxStartEntry( ByteBuffer buf, ReadableByteChannel channel )
+            throws IOException, ReadPastEndException
     {
         byte globalIdLength = readNextByte( buf, channel );
         byte branchIdLength = readNextByte( buf, channel );
@@ -142,34 +129,34 @@ public class LegacyLogIoUtil
         return new LogEntry.Start( xid, identifier, masterId, myId, -1, timeWritten, 0 );
     }
 
-    private static LogEntry.Prepare readTxPrepareEntry( ByteBuffer buf,
-                                                        ReadableByteChannel channel ) throws IOException, ReadPastEndException
+    private LogEntry.Prepare readTxPrepareEntry( ByteBuffer buf, ReadableByteChannel channel )
+            throws IOException, ReadPastEndException
     {
         return new LogEntry.Prepare( readNextInt( buf, channel ), readNextLong( buf, channel ) );
     }
 
-    private static LogEntry.OnePhaseCommit readTxOnePhaseCommitEntry( ByteBuffer buf,
-                                                                      ReadableByteChannel channel ) throws IOException, ReadPastEndException
+    private LogEntry.OnePhaseCommit readTxOnePhaseCommitEntry( ByteBuffer buf, ReadableByteChannel channel )
+            throws IOException, ReadPastEndException
     {
         return new LogEntry.OnePhaseCommit( readNextInt( buf, channel ),
                 readNextLong( buf, channel ), readNextLong( buf, channel ) );
     }
 
-    private static LogEntry.Done readTxDoneEntry( ByteBuffer buf,
-                                                  ReadableByteChannel channel ) throws IOException, ReadPastEndException
+    private LogEntry.Done readTxDoneEntry( ByteBuffer buf, ReadableByteChannel channel )
+            throws IOException, ReadPastEndException
     {
         return new LogEntry.Done( readNextInt( buf, channel ) );
     }
 
-    private static LogEntry.TwoPhaseCommit readTxTwoPhaseCommitEntry( ByteBuffer buf,
-                                                                      ReadableByteChannel channel ) throws IOException, ReadPastEndException
+    private LogEntry.TwoPhaseCommit readTxTwoPhaseCommitEntry( ByteBuffer buf, ReadableByteChannel channel )
+            throws IOException, ReadPastEndException
     {
         return new LogEntry.TwoPhaseCommit( readNextInt( buf, channel ),
                 readNextLong( buf, channel ), readNextLong( buf, channel ) );
     }
 
-    private LogEntry.Command readTxCommandEntry( ByteBuffer buf,
-                                                 ReadableByteChannel channel ) throws IOException, ReadPastEndException
+    private LogEntry.Command readTxCommandEntry( ByteBuffer buf, ReadableByteChannel channel )
+            throws IOException, ReadPastEndException
     {
         int identifier = readNextInt( buf, channel );
         XaCommand command = commandReader.readCommand( channel, buf );
@@ -180,25 +167,25 @@ public class LegacyLogIoUtil
         return new LogEntry.Command( identifier, command );
     }
 
-    private static int readNextInt( ByteBuffer buf, ReadableByteChannel channel )
+    private int readNextInt( ByteBuffer buf, ReadableByteChannel channel )
             throws IOException, ReadPastEndException
     {
         return readIntoBufferAndFlip( buf, channel, 4 ).getInt();
     }
 
-    private static long readNextLong( ByteBuffer buf, ReadableByteChannel channel )
+    private long readNextLong( ByteBuffer buf, ReadableByteChannel channel )
             throws IOException, ReadPastEndException
     {
         return readIntoBufferAndFlip( buf, channel, 8 ).getLong();
     }
 
-    public static byte readNextByte( ByteBuffer buf, ReadableByteChannel channel )
+    private byte readNextByte( ByteBuffer buf, ReadableByteChannel channel )
             throws IOException, ReadPastEndException
     {
         return readIntoBufferAndFlip( buf, channel, 1 ).get();
     }
 
-    private static ByteBuffer readIntoBufferAndFlip( ByteBuffer buf, ReadableByteChannel channel,
+    private ByteBuffer readIntoBufferAndFlip( ByteBuffer buf, ReadableByteChannel channel,
                                                      int numberOfBytes ) throws IOException, ReadPastEndException
     {
         buf.clear();

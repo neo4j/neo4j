@@ -28,14 +28,9 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
 
 public class StoreAssertions
 {
@@ -61,14 +56,5 @@ public class StoreAssertions
                 );
 
         assertTrue( result.isSuccessful() );
-    }
-
-    public static void verifyNeoStore( NeoStore neoStore )
-    {
-        assertEquals( 1317392957120L, neoStore.getCreationTime() );
-        assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
-        assertEquals( 4l, neoStore.getVersion() );
-        assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1010l, neoStore.getLastCommittedTx() );
     }
 }

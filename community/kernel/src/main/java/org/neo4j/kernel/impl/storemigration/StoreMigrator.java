@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -50,11 +49,22 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFiles;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogIoUtil;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyLuceneCommandReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19CommandReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19LogIoUtil;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20CommandReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20LogIoUtil;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.StoreFile20;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
@@ -95,6 +105,8 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     private final Config config;
     private final Logging logging;
     private String versionToUpgradeFrom;
+    private LegacyStore legacyStore;
+    private LegacyLogFiles legacyLogFiles;
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
@@ -134,14 +146,25 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
 
         progressMonitor.started();
 
-        LegacyStore legacyStore;
+        final LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
+        logEntryWriter.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
+        final LogEntryWriterv1 luceneLogEntryWriter = new LogEntryWriterv1();
+        luceneLogEntryWriter.setCommandWriter( LegacyLuceneCommandReader.newWriter() );
         if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
         {
             legacyStore = new Legacy19Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+            final LegacyLogIoUtil logIoUtil = new Legacy19LogIoUtil( new Legacy19CommandReader() );
+            final LegacyLogIoUtil luceneLogIoUtil = new Legacy19LogIoUtil( LegacyLuceneCommandReader.newReader() );
+            legacyLogFiles = new LegacyLogFiles( fileSystem, logEntryWriter, luceneLogEntryWriter,
+                    logIoUtil, luceneLogIoUtil );
         }
         else
         {
             legacyStore = new Legacy20Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+            final LegacyLogIoUtil logIoUtil = new Legacy20LogIoUtil( new Legacy20CommandReader() );
+            final LegacyLogIoUtil luceneLogIoUtil = new Legacy20LogIoUtil( LegacyLuceneCommandReader.newReader() );
+            legacyLogFiles = new LegacyLogFiles( fileSystem, logEntryWriter, luceneLogEntryWriter,
+                    logIoUtil, luceneLogIoUtil );
         }
 
         ExecutionMonitor executionMonitor = new CoarseBoundedProgressExecutionMonitor(
@@ -180,9 +203,10 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
                 propertyStore.close();
             }
 
-            legacy19Store.migrateTransactionLogs( fileSystem, migrationDir, storeDir );
-            legacy19Store.migrateLuceneLogs( fileSystem, migrationDir, storeDir );
         }
+
+        legacyLogFiles.migrateNeoLogs( fileSystem, migrationDir, storeDir );
+        legacyLogFiles.migrateLuceneLogs( fileSystem, migrationDir, storeDir );
         // Close
         legacyStore.close();
     }
@@ -272,7 +296,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
 
     private Iterable<InputRelationship> legacyRelationshipsAsInput( LegacyStore legacyStore )
     {
-        final org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader reader = legacyStore.getRelStoreReader();
+        final LegacyRelationshipStoreReader reader = legacyStore.getRelStoreReader();
         return new Iterable<InputRelationship>()
         {
             @Override
@@ -380,11 +404,8 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
 
         StoreFile20.ensureStoreVersion( fileSystem, storeDir, StoreFile20.currentStoreFiles() );
 
-        if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
-        {
-            Legacy19Store.moveRewrittenTransactionLogs( migrationDir, storeDir );
-            Legacy19Store.moveRewrittenLuceneLogs( migrationDir, storeDir );
-        }
+        legacyLogFiles.moveRewrittenNeoLogs( migrationDir, storeDir );
+        legacyLogFiles.moveRewrittenLuceneLogs( migrationDir, storeDir );
     }
 
     @Override

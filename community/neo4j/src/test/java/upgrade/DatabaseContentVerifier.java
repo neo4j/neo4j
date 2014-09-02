@@ -152,7 +152,7 @@ public class DatabaseContentVerifier
         {
             String[] nodeIndexes = database.index().nodeIndexNames();
             String[] relationshipIndexes = database.index().relationshipIndexNames();
-            assertArrayEquals( new String[]{"nodekey"}, nodeIndexes );
+            assertArrayEquals( new String[]{"testIndex", "nodekey"}, nodeIndexes );
             assertArrayEquals( new String[]{"relkey"}, relationshipIndexes );
             tx.success();
         }

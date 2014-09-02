@@ -50,7 +50,6 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -58,7 +57,7 @@ import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 @RunWith( Theories.class )
-public class StoreUpgradeTest
+public class StoreUpgradeIntegrationTest
 {
     @DataPoints
     public static final Store[] stores = new Store[] {
@@ -198,7 +197,7 @@ public class StoreUpgradeTest
 
         public File prepareDirectory() throws IOException
         {
-            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeTest.class, resourceName );
+            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeIntegrationTest.class, resourceName );
             new File( dir, "messages.log" ).delete(); // clear the log
             return dir;
         }

@@ -31,6 +31,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 
 public class ReadRecordsTestIT
 {
@@ -43,7 +44,7 @@ public class ReadRecordsTestIT
         assertEquals( 1003, nodeStoreReader.getMaxId() );
 
         final AtomicInteger nodeCount = new AtomicInteger( 0 );
-        nodeStoreReader.accept( new org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader.Visitor()
+        nodeStoreReader.accept( new LegacyNodeStoreReader.Visitor()
         {
             @Override
             public void visit( NodeRecord record )

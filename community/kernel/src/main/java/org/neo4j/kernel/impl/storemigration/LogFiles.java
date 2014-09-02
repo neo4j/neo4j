@@ -24,6 +24,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.storemigration.legacystore.v20.StoreFile20;
 
 public class LogFiles
 {

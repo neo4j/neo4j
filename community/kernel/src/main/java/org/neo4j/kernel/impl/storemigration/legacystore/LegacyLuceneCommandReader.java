@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore.v19;
+package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,13 +26,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogIoUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
-class LegacyLuceneCommandProcessor
+public class LegacyLuceneCommandReader
 {
-    static LegacyLogIoUtil.CommandReader newReader()
+
+    public static LegacyLogIoUtil.CommandReader newReader()
     {
         return new LegacyLogIoUtil.CommandReader()
         {
@@ -44,7 +46,7 @@ class LegacyLuceneCommandProcessor
         };
     }
 
-    static XaCommandWriter newWriter()
+    public static XaCommandWriter newWriter()
     {
         return new XaCommandWriter()
         {
@@ -65,7 +67,7 @@ class LegacyLuceneCommandProcessor
         final String indexName;
         final byte entityTypeByte;
 
-        IndexIdentifier( String indexName, byte entityTypeByte )
+        public IndexIdentifier( byte entityTypeByte, String indexName )
         {
             this.entityTypeByte = entityTypeByte;
             this.indexName = indexName;
@@ -94,22 +96,22 @@ class LegacyLuceneCommandProcessor
      * This class is partial copy-paste from org.neo4j.index.impl.lucene.LuceneCommand
      * to avoid dependency of 'kernel' module on 'lucene-index' module.
      */
-    private abstract static class LuceneCommand extends XaCommand
+    private static abstract class LuceneCommand extends XaCommand
     {
-        static final byte ADD_COMMAND = (byte) 1;
-        static final byte REMOVE_COMMAND = (byte) 2;
-        static final byte DELETE_COMMAND = (byte) 3;
-        static final byte CREATE_INDEX_COMMAND = (byte) 4;
+        private static final byte ADD_COMMAND = (byte) 1;
+        private static final byte REMOVE_COMMAND = (byte) 2;
+        private static final byte DELETE_COMMAND = (byte) 3;
+        private static final byte CREATE_INDEX_COMMAND = (byte) 4;
 
-        static final byte NODE = (byte) 1;
-        static final byte RELATIONSHIP = (byte) 2;
+        public static final byte NODE = (byte) 1;
+        public static final byte RELATIONSHIP = (byte) 2;
 
-        static final byte VALUE_TYPE_NULL = (byte) 0;
-        static final byte VALUE_TYPE_INT = (byte) 1;
-        static final byte VALUE_TYPE_LONG = (byte) 2;
-        static final byte VALUE_TYPE_FLOAT = (byte) 3;
-        static final byte VALUE_TYPE_DOUBLE = (byte) 4;
-        static final byte VALUE_TYPE_STRING = (byte) 5;
+        private static final byte VALUE_TYPE_NULL = (byte) 0;
+        private static final byte VALUE_TYPE_INT = (byte) 1;
+        private static final byte VALUE_TYPE_LONG = (byte) 2;
+        private static final byte VALUE_TYPE_FLOAT = (byte) 3;
+        private static final byte VALUE_TYPE_DOUBLE = (byte) 4;
+        private static final byte VALUE_TYPE_STRING = (byte) 5;
 
         final IndexIdentifier indexId;
         final Object entityId;
@@ -118,7 +120,7 @@ class LegacyLuceneCommandProcessor
         final byte type;
         final byte entityType;
 
-        LuceneCommand( IndexIdentifier indexId, byte entityType, Object entityId, String key, Object value, byte type )
+        private LuceneCommand( IndexIdentifier indexId, byte entityType, Object entityId, String key, Object value, byte type )
         {
             assert entityType == NODE || entityType == RELATIONSHIP;
             this.indexId = indexId;
@@ -129,7 +131,7 @@ class LegacyLuceneCommandProcessor
             this.type = type;
         }
 
-        void writeToFile( LogBuffer buffer ) throws IOException
+        protected void writeToFile( LogBuffer buffer ) throws IOException
         {
             buffer.put( type );
             buffer.put( entityType );
@@ -205,14 +207,7 @@ class LegacyLuceneCommandProcessor
             }
         }
 
-        static void writeLengthAndString( LogBuffer buffer, String string ) throws IOException
-        {
-            char[] chars = string.toCharArray();
-            buffer.putInt( chars.length );
-            buffer.put( chars );
-        }
-
-        static class AddCommand extends LuceneCommand
+        private static class AddCommand extends LuceneCommand
         {
             AddCommand( IndexIdentifier indexId, byte entityType, Object entityId, String key, Object value )
             {
@@ -220,7 +215,7 @@ class LegacyLuceneCommandProcessor
             }
         }
 
-        static class AddRelationshipCommand extends LuceneCommand
+        private static class AddRelationshipCommand extends LuceneCommand
         {
             AddRelationshipCommand( IndexIdentifier indexId, byte entityType, RelationshipId entityId, String key,
                                     Object value )
@@ -229,7 +224,7 @@ class LegacyLuceneCommandProcessor
             }
 
             @Override
-            void writeToFile( LogBuffer buffer ) throws IOException
+            protected void writeToFile( LogBuffer buffer ) throws IOException
             {
                 super.writeToFile( buffer );
                 buffer.putLong( ((RelationshipId) entityId).startNode );
@@ -237,7 +232,7 @@ class LegacyLuceneCommandProcessor
             }
         }
 
-        static class RemoveCommand extends LuceneCommand
+        private static class RemoveCommand extends LuceneCommand
         {
             RemoveCommand( IndexIdentifier indexId, byte entityType, Object entityId, String key, Object value )
             {
@@ -245,19 +240,20 @@ class LegacyLuceneCommandProcessor
             }
         }
 
-        static class DeleteCommand extends LuceneCommand
+        private static class DeleteCommand extends LuceneCommand
         {
             DeleteCommand( IndexIdentifier indexId )
             {
                 super( indexId, indexId.entityTypeByte, -1L, "", "", DELETE_COMMAND );
             }
+
         }
 
-        static class CreateIndexCommand extends LuceneCommand
+        private static class CreateIndexCommand extends LuceneCommand
         {
-            static final IndexIdentifier FAKE_IDENTIFIER = new IndexIdentifier( "create index", (byte) 9 );
-            final String name;
-            final Map<String, String> config;
+            static final IndexIdentifier FAKE_IDENTIFIER = new IndexIdentifier( (byte) 9, "create index" );
+            private final String name;
+            private final Map<String, String> config;
 
             CreateIndexCommand( byte entityType, String name, Map<String, String> config )
             {
@@ -266,8 +262,18 @@ class LegacyLuceneCommandProcessor
                 this.config = config;
             }
 
+            public String getName()
+            {
+                return name;
+            }
+
+            public Map<String, String> getConfig()
+            {
+                return config;
+            }
+
             @Override
-            void writeToFile( LogBuffer buffer ) throws IOException
+            protected void writeToFile( LogBuffer buffer ) throws IOException
             {
                 buffer.put( type );
                 buffer.put( entityType );
@@ -279,9 +285,17 @@ class LegacyLuceneCommandProcessor
                     writeLengthAndString( buffer, entry.getValue() );
                 }
             }
+
+            private static void writeLengthAndString( LogBuffer buffer, String string ) throws IOException
+            {
+                char[] chars = string.toCharArray();
+                buffer.putInt( chars.length );
+                buffer.put( chars );
+            }
         }
 
-        static XaCommand readCommand( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+        private static XaCommand readCommand( ReadableByteChannel channel,
+                                      ByteBuffer buffer/*, LuceneDataSource dataSource*/ ) throws IOException
         {
             // Read what type of command it is
             buffer.clear();
@@ -326,6 +340,7 @@ class LegacyLuceneCommandProcessor
                     return null;
                 }
                 buffer.flip();
+
 
                 int indexNameLength = buffer.getInt();
                 long entityId = buffer.getLong();
@@ -388,15 +403,20 @@ class LegacyLuceneCommandProcessor
                     }
                 }
 
-                IndexIdentifier identifier = new IndexIdentifier( indexName, entityTypeByte );
+                IndexIdentifier identifier = new IndexIdentifier( entityTypeByte, indexName );
 
                 switch ( commandType )
                 {
                     case ADD_COMMAND:
                         return entityTypeByte == NODE ?
                                 new AddCommand( identifier, entityTypeByte, entityId, key, value ) :
-                                new AddRelationshipCommand( identifier, entityTypeByte,
-                                        new RelationshipId( entityId, startNodeId, endNodeId ), key, value );
+                                new AddRelationshipCommand(
+                                        identifier,
+                                        entityTypeByte,
+                                        new RelationshipId( entityId, startNodeId, endNodeId ),
+                                        key,
+                                        value
+                                );
                     case REMOVE_COMMAND:
                         return new RemoveCommand( identifier, entityTypeByte, entityId, key, value );
                     case DELETE_COMMAND:

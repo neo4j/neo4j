@@ -35,7 +35,8 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.StoreFile20;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 
 /**
@@ -52,8 +53,8 @@ public class Legacy20Store implements LegacyStore
 
     private final File storageFileName;
     private final Collection<Closeable> allStoreReaders = new ArrayList<>();
-    private org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader nodeStoreReader;
-    private org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader relStoreReader;
+    private LegacyNodeStoreReader nodeStoreReader;
+    private LegacyRelationshipStoreReader relStoreReader;
 
     private final FileSystemAbstraction fs;
 
@@ -140,13 +141,13 @@ public class Legacy20Store implements LegacyStore
     }
 
     @Override
-    public org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader getNodeStoreReader()
+    public LegacyNodeStoreReader getNodeStoreReader()
     {
         return nodeStoreReader;
     }
 
     @Override
-    public org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader getRelStoreReader()
+    public LegacyRelationshipStoreReader getRelStoreReader()
     {
         return relStoreReader;
     }

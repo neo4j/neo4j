@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
-public class LegacyPropertyStoreReader implements Closeable
+public class Legacy19PropertyStoreReader implements Closeable
 {
     public static final String FROM_VERSION = "PropertyStore " + Legacy19Store.LEGACY_VERSION;
     public static final int RECORD_SIZE =
@@ -46,20 +46,20 @@ public class LegacyPropertyStoreReader implements Closeable
     private final StoreChannel fileChannel;
     private final long maxId;
 
-    public LegacyPropertyStoreReader( FileSystemAbstraction fs, File file ) throws IOException
+    public Legacy19PropertyStoreReader( FileSystemAbstraction fs, File file ) throws IOException
     {
         fileChannel = fs.open( file, "r" );
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
         maxId = (fileChannel.size() - endHeaderSize) / RECORD_SIZE;
     }
-    
+
     public Iterator<PropertyRecord> readPropertyStore() throws IOException
     {
         return new PrefetchingIterator<PropertyRecord>()
         {
             private long id = -1;
             ByteBuffer buffer = allocateDirect( RECORD_SIZE );
-            
+
             @Override
             protected PropertyRecord fetchNextOrNull()
             {
@@ -76,7 +76,7 @@ public class LegacyPropertyStoreReader implements Closeable
             }
         };
     }
-    
+
     protected PropertyRecord readPropertyRecord( long id, ByteBuffer buffer )
     {
         PropertyRecord record = new PropertyRecord( id );
@@ -129,7 +129,7 @@ public class LegacyPropertyStoreReader implements Closeable
         toReturn.setValueBlocks( blockData );
         return toReturn;
     }
-    
+
     @Override
     public void close() throws IOException
     {

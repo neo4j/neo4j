@@ -21,21 +21,12 @@ package org.neo4j.kernel.impl.storemigration.legacystore.v19;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.regex.Pattern;
 
-import org.neo4j.graphdb.Resource;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
@@ -47,23 +38,12 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.LegacyRelationship20StoreReader;
-import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-import static org.neo4j.helpers.collection.ResourceClosingIterator.newResourceIterator;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1.writeLogHeader;
 
 /**
  * Reader for a database in an older store format version.
@@ -81,7 +61,7 @@ public class Legacy19Store implements LegacyStore
     private final Collection<Closeable> allStoreReaders = new ArrayList<>();
     private Legacy19NodeStoreReader nodeStoreReader;
     private Legacy19PropertyIndexStoreReader propertyIndexReader;
-    private LegacyPropertyStoreReader propertyStoreReader;
+    private Legacy19PropertyStoreReader propertyStoreReader;
     private LegacyRelationshipStoreReader relStoreReader;
 
     private final FileSystemAbstraction fs;
@@ -113,7 +93,7 @@ public class Legacy19Store implements LegacyStore
                 fs, new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
         allStoreReaders.add( propertyIndexReader = new Legacy19PropertyIndexStoreReader(
                 fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ) ) );
-        allStoreReaders.add( propertyStoreReader = new LegacyPropertyStoreReader(
+        allStoreReaders.add( propertyStoreReader = new Legacy19PropertyStoreReader(
                 fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STORE_NAME ) ) );
         allStoreReaders.add( relStoreReader = new LegacyRelationship20StoreReader(
                 fs, new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME ) ) );
@@ -219,7 +199,7 @@ public class Legacy19Store implements LegacyStore
         return propertyIndexReader;
     }
 
-    public LegacyPropertyStoreReader getPropertyStoreReader()
+    public Legacy19PropertyStoreReader getPropertyStoreReader()
     {
         return propertyStoreReader;
     }
@@ -248,202 +228,6 @@ public class Legacy19Store implements LegacyStore
         {
             File toFile = new File( toDirectory, IndexStore.INDEX_DB_FILE_NAME );
             fs.copyFile( fromFile, toFile );
-        }
-    }
-
-    public void migrateTransactionLogs( FileSystemAbstraction fs, File migrationDir, File storeDir ) throws IOException
-    {
-        File[] logs = findAllTransactionLogs( storeDir );
-        if ( logs == null )
-        {
-            return;
-        }
-
-        LogEntryWriterv1 logWriter = new LogEntryWriterv1();
-        logWriter.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
-
-        migrateLogs( fs, migrationDir, logs, logWriter, true );
-    }
-
-    public static void moveRewrittenTransactionLogs( File migrationDir, File storeDir )
-    {
-        File[] transactionLogs = findAllTransactionLogs( migrationDir );
-        if ( transactionLogs != null )
-        {
-            for ( File rewrittenLog : transactionLogs )
-            {
-                moveRewrittenLogFile( rewrittenLog, storeDir );
-            }
-        }
-    }
-
-    public void migrateLuceneLogs( FileSystemAbstraction fs, File migrationDir, File storeDir ) throws IOException
-    {
-        File[] logs = findAllLuceneLogs( storeDir );
-        if ( logs == null )
-        {
-            return;
-        }
-
-        File migrationIndexDir = indexDirIn( migrationDir );
-        fs.mkdir( migrationIndexDir );
-
-        LogEntryWriterv1 logWriter = new LogEntryWriterv1();
-        logWriter.setCommandWriter( LegacyLuceneCommandProcessor.newWriter() );
-
-        migrateLogs( fs, migrationIndexDir, logs, logWriter, false );
-    }
-
-    public static void moveRewrittenLuceneLogs( File migrationDir, File storeDir )
-    {
-        File[] luceneLogs = findAllLuceneLogs( migrationDir );
-        if ( luceneLogs != null )
-        {
-            File indexDir = indexDirIn( storeDir );
-            for ( File rewrittenLog : luceneLogs )
-            {
-                moveRewrittenLogFile( rewrittenLog, indexDir );
-            }
-        }
-    }
-
-    private void migrateLogs( FileSystemAbstraction fs,
-                              File migrationDir,
-                              File[] logs,
-                              LogEntryWriterv1 logWriter,
-                              boolean transactionLogs ) throws IOException
-    {
-        for ( File legacyLogFile : logs )
-        {
-            File newLogFile = new File( migrationDir, legacyLogFile.getName() );
-            try ( StoreChannel channel = fs.open( newLogFile, "rw" ) )
-            {
-                LogBuffer logBuffer = new DirectMappedLogBuffer( channel, ByteCounterMonitor.NULL );
-
-                Iterator<LogEntry> legacyLogsIterator;
-                if ( transactionLogs )
-                {
-                    legacyLogsIterator = iterateTransactionLogEntries( legacyLogFile, logBuffer );
-                }
-                else
-                {
-                    legacyLogsIterator = iterateLuceneLogEntries( legacyLogFile, logBuffer );
-                }
-
-                for ( LogEntry entry : loop( legacyLogsIterator ) )
-                {
-                    logWriter.writeLogEntry( entry, logBuffer );
-                }
-
-                logBuffer.force();
-                channel.close();
-            }
-        }
-    }
-
-    private static File[] findAllTransactionLogs( File dir )
-    {
-        return findAllLogs( dir, "nioneo_logical\\.log\\.v.*" );
-    }
-
-    private static File[] findAllLuceneLogs( File dir )
-    {
-        return findAllLogs( indexDirIn( dir ), "lucene\\.log\\.v.*" );
-    }
-
-    private static File[] findAllLogs( File dir, String namePattern )
-    {
-        final Pattern logFileName = Pattern.compile( namePattern );
-        FilenameFilter logFiles = new FilenameFilter()
-        {
-            @Override
-            public boolean accept( File dir, String name )
-            {
-                return logFileName.matcher( name ).find();
-            }
-        };
-        File[] files = dir.listFiles( logFiles );
-        // 'files' will be 'null' if an IO error occurs.
-        if ( files != null && files.length > 0 )
-        {
-            Arrays.sort( files );
-        }
-        return files;
-    }
-
-    private Iterator<LogEntry> iterateTransactionLogEntries( File legacyLog, LogBuffer logBuffer ) throws IOException
-    {
-        return iterateLogEntries( legacyLog, logBuffer, new LegacyCommandReader() );
-    }
-
-    private Iterator<LogEntry> iterateLuceneLogEntries( File legacyLog, LogBuffer logBuffer ) throws IOException
-    {
-        return iterateLogEntries( legacyLog, logBuffer, LegacyLuceneCommandProcessor.newReader() );
-    }
-
-    private Iterator<LogEntry> iterateLogEntries( File legacyLogFile,
-                                                  LogBuffer logBuffer,
-                                                  LegacyLogIoUtil.CommandReader commandReader ) throws IOException
-    {
-        final StoreChannel channel = fs.open( legacyLogFile, "r" );
-        final ByteBuffer buffer = ByteBuffer.allocate( 100000 );
-        final LegacyLogIoUtil logIoUtil = new LegacyLogIoUtil( commandReader );
-
-        long[] header = LegacyLogIoUtil.readLogHeader( buffer, channel, false );
-        if ( header != null )
-        {
-            ByteBuffer headerBuf = ByteBuffer.allocate( 16 );
-            writeLogHeader( headerBuf, header[0], header[1] );
-            logBuffer.put( headerBuf.array() );
-        }
-
-        Resource resource = new Resource()
-        {
-            @Override
-            public void close()
-            {
-                try
-                {
-                    channel.close();
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( "Failed to close legacy log channel", e );
-                }
-            }
-        };
-        return newResourceIterator( resource, new PrefetchingIterator<LogEntry>()
-        {
-            @Override
-            protected LogEntry fetchNextOrNull()
-            {
-                try
-                {
-                    return logIoUtil.readEntry( buffer, channel );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( "Failed to read legacy log entry", e );
-                }
-            }
-        } );
-    }
-
-    private static File indexDirIn( File baseDir )
-    {
-        return new File( baseDir, "index" );
-    }
-
-    private static void moveRewrittenLogFile( File newLogFile, File storeDir )
-    {
-        Path oldLogFile = Paths.get( storeDir.getAbsolutePath(), newLogFile.getName() );
-        try
-        {
-            Files.move( newLogFile.toPath(), oldLogFile, REPLACE_EXISTING );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to move rewritten log to store dir", e );
         }
     }
 }
