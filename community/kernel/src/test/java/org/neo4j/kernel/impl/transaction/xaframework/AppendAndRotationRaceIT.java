@@ -270,11 +270,11 @@ public class AppendAndRotationRaceIT
         // Each Object[] {AppenderFactory, Boolean (true for forceRotate(), false for relying on natural rotation)}
         return Arrays.asList(
                 new Object[] { NON_BATCHING, false },
-                new Object[] { NON_BATCHING, true },
                 new Object[] { BATCHING, false }
 
-                // This combination isn't supported, but it's not really an official feature either,
-                // forceRotate() is not a public method, but only really a method exposed to some of our test suites
+                // forceRotate() isn't supported, but it's not really an official feature either,
+                // it's not a public method, but only really a method exposed to some of our test suites
+//                new Object[] { NON_BATCHING, true },
 //                new Object[] { BATCHING, true }
         );
     }
