@@ -36,6 +36,8 @@ import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
+import static java.lang.String.format;
+
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
 
@@ -67,9 +69,30 @@ public interface MasterClient extends Master
             }
             catch ( ArrayIndexOutOfBoundsException e )
             {
-                throw Exceptions.withMessage( e, e.getMessage() + " | read invalid ordinal " + statusOrdinal );
+                throw Exceptions.withMessage( e, e.getMessage() + " | read invalid ordinal " + statusOrdinal +
+                        ". The whole contents of this channel buffer is " + wholeBufferAsString( buffer ) );
             }
             return status.hasMessage() ? new LockResult( readString( buffer ) ) : new LockResult( status );
+        }
+
+        private String wholeBufferAsString( ChannelBuffer buffer )
+        {
+            int prevIndex = buffer.readerIndex();
+            try
+            {
+                buffer.readerIndex( 0 );
+                StringBuilder builder = new StringBuilder();
+                for ( int i = 0; buffer.readable(); i++ )
+                {
+                    byte value = buffer.readByte();
+                    builder.append( i > 0 ? "," : "" ).append( format( "%x", value ) );
+                }
+                return builder.toString();
+            }
+            finally
+            {
+                buffer.readerIndex( prevIndex );
+            }
         }
     };
 
