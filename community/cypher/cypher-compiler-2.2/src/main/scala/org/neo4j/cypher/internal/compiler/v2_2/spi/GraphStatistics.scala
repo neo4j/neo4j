@@ -19,15 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.spi
 
-import org.neo4j.cypher.internal.compiler.v2_2.{RelTypeId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_2.{PropertyKeyId, RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Multiplier, Cardinality}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Selectivity, Multiplier, Cardinality}
 
 trait GraphStatistics {
   def nodesCardinality: Cardinality
   def nodesWithLabelCardinality(labelId: LabelId): Cardinality
-  def nodesWithLabelSelectivity(labelId: LabelId): Multiplier
-  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Multiplier
+  def nodesWithLabelSelectivity(labelId: LabelId): Selectivity
+  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Selectivity
   def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Multiplier
   def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Multiplier
+  def degreeByLabelRelationshipTypeAndDirection(fromLabel: LabelId, relTypeId: RelTypeId, direction: Direction, toLabel: LabelId): Multiplier
+  def indexSelectivity(label: LabelId, property: PropertyKeyId): Selectivity
+}
+
+object GraphStatistics {
+  val DEFAULT_PREDICATE_SELECTIVITY = Selectivity(.2)
 }

@@ -37,7 +37,7 @@ object Metrics {
 
   // This metric estimates the selectivity of an expression
   // (e.g. by algebraic analysis or using statistics)
-  type SelectivityModel = Expression => Multiplier
+  type SelectivityModel = Expression => Selectivity
 }
 
 case class Metrics(cost: CostModel, cardinality: CardinalityModel, selectivity: SelectivityModel)
@@ -52,6 +52,7 @@ case class Cost(gummyBears: Double) extends Ordered[Cost] {
 case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def compare(that: Cardinality) = amount.compare(that.amount)
   def *(that: Multiplier) = Cardinality(amount * that.coefficient)
+  def *(that: Selectivity) = Cardinality(amount * that.coefficient)
   def +(that: Cardinality) = Cardinality(amount + that.amount)
   def *(that: Cardinality) = Cardinality(amount * that.amount)
   def *(that: CostPerRow) = Cost(amount * that.cost)
@@ -67,6 +68,14 @@ case class Multiplier(coefficient: Double) {
   def +(other: Multiplier): Multiplier = Multiplier(other.coefficient + coefficient)
   def -(other: Multiplier): Multiplier = Multiplier(other.coefficient - coefficient)
   def *(other: Multiplier): Multiplier = Multiplier(other.coefficient * coefficient)
+}
+
+case class Selectivity(coefficient: Double) {
+  require(coefficient <= 1, "Selectivity is has an upper limit of 1. Did you intend to use a m")
+
+  def *(other: Selectivity) = Selectivity(other.coefficient * coefficient)
+  def ^(a: Int):Selectivity = Selectivity(Math.pow(coefficient, a))
+  def inverse: Selectivity = Selectivity(1 - coefficient)
 }
 
 trait MetricsFactory {
