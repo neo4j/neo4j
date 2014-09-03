@@ -20,15 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.DocHandlerTestSuite
-import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.{toStringDocGen, DocHandlerTestSuite}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{PrintNewLine, PrintText, condense}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalLeafPlan, LogicalPlan}
 
 class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
 
-  val docGen = logicalPlanDocGen.lift[Any] ++ plannerDocGen ++ AstDocHandler.docGen.lift[Any] ++ DefaultDocHandler.docGen
+  val docGen =
+    logicalPlanDocGen.lift[Any] orElse
+    plannerDocGen orElse
+    toStringDocGen
 
   override def docFormatter = DocFormatters.pageFormatter(80)
 
@@ -69,6 +71,10 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
       PrintNewLine(2),
       PrintText("↳ right = TestLeafPlan[a](2)")
     ))
+  }
+
+  test("Prints on toString") {
+    TestLeafPlan(12).toString should equal("TestLeafPlan[a](12)")
   }
 
   case class TestLeafPlan(x: Int) extends LogicalLeafPlan {

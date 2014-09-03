@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty
 import org.neo4j.cypher.internal.compiler.v2_2.perty.format.{LineDocFormatter, PageDocFormatter}
 
 object DocFormatters {
-  val defaultLineWidth = 80
+  val defaultLineWidth = 120
 
   val defaultLineFormatter = LineDocFormatter
   val defaultPageFormatter = PageDocFormatter(defaultLineWidth)

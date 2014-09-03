@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.PageDocFormatting
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.ToPrettyString
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 import scala.collection.GenTraversableOnce
@@ -34,7 +35,10 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       optionalMatches: Seq[QueryGraph] = Seq.empty,
                       hints: Set[Hint] = Set.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty)
-  extends InternalDocHandler.ToString[QueryGraph] with PageDocFormatting {
+  extends PageDocFormatting with ToPrettyString[QueryGraph] {
+
+  def toDefaultPrettyString(formatter: DocFormatter) =
+    toPrettyString(formatter)(InternalDocHandler.docGen)
 
   def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
 
@@ -149,5 +153,16 @@ object QueryGraph {
   def coveredIdsForPatterns(patternNodeIds: Set[IdName], patternRels: Set[PatternRelationship]) = {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
     patternNodeIds ++ patternRelIds
+  }
+
+  implicit object byCoveredIds extends Ordering[QueryGraph] {
+
+    import scala.math.Ordering.Implicits
+
+    def compare(x: QueryGraph, y: QueryGraph): Int = {
+      val xs = x.coveredIds.toSeq.sorted(IdName.byName)
+      val ys = y.coveredIds.toSeq.sorted(IdName.byName)
+      Implicits.seqDerivedOrdering[Seq, IdName](IdName.byName).compare(xs, ys)
+    }
   }
 }

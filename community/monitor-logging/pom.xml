@@ -42,6 +42,11 @@
   </licenses>
 
   <dependencies>
+
+    <!-- shared versions are defined in the parent pom -->
+
+    <!-- neo4j -->
+
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>

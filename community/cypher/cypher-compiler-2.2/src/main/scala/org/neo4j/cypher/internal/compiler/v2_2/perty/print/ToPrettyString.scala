@@ -17,19 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty
+package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
-trait ToStringSupport[S] {
-  prettySelf: DocFormatting =>
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
-  private var _toString: String = null
+import scala.reflect.runtime.universe._
 
-  def toPrettyString(formatter: DocFormatter): String
+trait ToPrettyString[T] {
+  prettySelf: T with DocFormatting =>
 
-  override def toString = {
-    if (_toString == null) {
-      _toString = toPrettyString(docFormatter)
-    }
-    _toString
-  }
+  def toDefaultPrettyString(formatter: DocFormatter): String
+
+  def toPrettyString(formatter: DocFormatter)(docGen: DocGenStrategy[Any])(implicit valTag: TypeTag[T]) =
+    pprintToString[T, Any](prettySelf, formatter)(docGen)
+
+  override def toString = toDefaultPrettyString(docFormatter)
 }

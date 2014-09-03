@@ -64,6 +64,7 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
 
           //          println(s"best: ${best.map(_.availableSymbols)}")
           val result = best.foldLeft(planTable)(_ + _)
+          //          println(result.toString)
 
           //          println(s"result: ${result.plans.map(_.availableSymbols).toList}")
           //          println("*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+")

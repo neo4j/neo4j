@@ -17,14 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty.bling
+package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
-case object mkDrill {
-  def apply[A, M, O]
-    (implicit handler: ExtractionFailureHandler[M, O] = propagateExtractionFailure[M, O]())
-  : (PartialFunction[A, ((M) => O) => O]) => Drill[A, M, O] =
-    (f: PartialFunction[A, (M => O) => O]) =>
-      (v: A) =>
-        (extractor: Extractor[M, O]) =>
-          f.lift(v).map(handler).flatMap( layered => layered(extractor) )
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+
+object pprintDocToString {
+  // Convert doc to String
+  def apply(doc: Doc, formatter: DocFormatter = DocFormatters.defaultPageFormatter): String = {
+    val formatted = formatter(doc)
+    val condensed = condense(formatted)
+    val text = printCommandsToString(condensed)
+    text
+  }
 }

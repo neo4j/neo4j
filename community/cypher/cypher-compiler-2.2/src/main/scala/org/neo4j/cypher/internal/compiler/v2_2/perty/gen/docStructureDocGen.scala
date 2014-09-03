@@ -19,27 +19,30 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 
+import scala.reflect.runtime.universe._
+
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.format.quoteString
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.Pretty
 
-// Print the structure of a document using the same syntax
-// as the paper by C. Lindig
+// Print the structure of a document using syntax similar to
+// the paper by C. Lindig
 case object docStructureDocGen extends CustomDocGen[Doc] {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+  import Pretty._
 
-  protected def newDocDrill = mkDocDrill[Doc]() {
-    case ConsDoc(hd, tl)         => (inner) => inner(hd) :: "·" :: inner(tl)
-    case NilDoc                  => (inner) => "ø"
+  def apply[X <: Doc : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
+    case ConsDoc(hd, tl)       => Pretty(pretty(hd) :: " ⸬ " :: pretty(tl))
+    case NilDoc                => Pretty("ø")
 
-    case TextDoc(value)          => (inner) => quoteString(value)
-    case BreakDoc => (inner)     => breakWith("_")
-    case BreakWith(value)        => (inner) => breakWith(s"_${value}_")
+    case TextDoc(value)        => Pretty(quoteString(value))
+    case BreakDoc              => Pretty(breakWith("·"))
+    case BreakWith(value)      => Pretty(breakWith( if (value.size == 0) "⁃" else s"·$value·" ))
 
-    case GroupDoc(doc)           => (inner) => group("[" :: inner(doc) :: "]")
-    case NestDoc(doc)            => (inner) => group("<" :: inner(doc) :: ">")
-    case NestWith(indent, doc)   => (inner) => group(s"($indent)<" :: inner(doc) :: ">")
+    case GroupDoc(doc)         => Pretty(group("[" :: pretty(doc) :: "]"))
+    case NestDoc(doc)          => Pretty(nest("<" :: pretty(doc) :: ">"))
+    case NestWith(indent, doc) => Pretty(group(s"($indent)<" :: pretty(doc) :: ">"))
 
-    case PageDoc(doc) => (inner) => group("(|" :: inner(doc) :: "|)")
+    case PageDoc(doc)          => Pretty(group("(|" :: pretty(doc) :: "|)"))
   }
 }

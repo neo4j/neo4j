@@ -19,20 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.Pretty
 
 object AstNameConverter {
+  import Pretty._
+
+  def apply(name: String): AstNameConverter = name
+
   def isJavaIdentifier(name: String) =
     (name.length > 0) &&
       Character.isJavaIdentifierStart(name.charAt(0)) &&
       name.substring(1).forall(Character.isJavaIdentifierPart)
-}
 
-case class AstNameConverter(name: String) {
-  def asDoc: Doc =
-    if (AstNameConverter.isJavaIdentifier(name))
-      name
-    else
-      s"`$name`"
+  implicit class AstNameConverter(name: String) extends Pretty.Converter {
+    def unquote = if (isJavaIdentifier(name)) name else s"`$name`"
+  }
 }
 

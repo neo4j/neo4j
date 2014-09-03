@@ -57,6 +57,13 @@
 
     <!-- shared versions are defined in the parent pom -->
 
+    <!-- scala -->
+
+    <dependency>
+      <artifactId>scala-reflect</artifactId>
+      <groupId>org.scala-lang</groupId>
+    </dependency>
+
     <!-- neo4j -->
 
     <dependency>

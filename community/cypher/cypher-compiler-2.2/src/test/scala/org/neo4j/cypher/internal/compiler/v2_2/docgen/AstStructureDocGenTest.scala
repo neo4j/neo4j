@@ -20,17 +20,16 @@
 
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTNode, And, AstConstructionTestSupport, Expression}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{And, AstConstructionTestSupport, Expression}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.DocHandlerTestSuite
+import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.SimpleDocHandler
 
-class AstStructureDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstructionTestSupport {
-
-  val docGen = astPhraseDocGen ++ astExpressionDocGen ++ astParticleDocGen
-
+class AstStructureDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTestSupport {
+  val docGen = astStructureDocGen.lift[Any] orElse SimpleDocHandler.docGen
 
   test("Renders ast node together with its structure but only on the outer level") {
     val expr: Expression = And(ident("a"), ident("b"))_
 
-    pprintToString(expr) should equal("a AND b")
+    pprintToString(expr) should equal("/* ast */ a AND b /* val */ And(Identifier(\"a\"), Identifier(\"b\"))")
   }
 }

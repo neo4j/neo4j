@@ -19,10 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
-import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.LayerExtractor
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.{PrintableDocRecipe, DocRecipe}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.step.AddPretty
 
-trait Pretty {
-  def toDoc: LayerExtractor[Any, Doc]
+import scala.reflect.runtime.universe._
+
+object pprintToDoc {
+  def apply[T : TypeTag, S >: T : TypeTag](value: T)(docGen: DocGenStrategy[S] = DefaultDocHandler.docGen): Doc =
+    PrintableDocRecipe.evalUsingStrategy[T, S](docGen).apply(Seq(AddPretty(value)))
 }
-

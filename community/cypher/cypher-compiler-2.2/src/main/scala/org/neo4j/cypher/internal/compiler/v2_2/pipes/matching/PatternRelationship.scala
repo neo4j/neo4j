@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes.matching
 
-import scala.collection.JavaConverters._
-import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
-import org.neo4j.graphdb._
-import org.neo4j.kernel.{Uniqueness, Traversal}
-import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.graphdb._
+import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription}
+import org.neo4j.kernel.{Traversal, Uniqueness}
+
+import scala.collection.JavaConverters._
 
 class PatternRelationship(key: String,
                           val startNode: PatternNode,
