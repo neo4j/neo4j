@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{ShortestPathExpression, ShortestPaths, RelTypeName}
-import org.neo4j.graphdb.Direction
+import java.lang.reflect.Method
+
+import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 import org.neo4j.cypher.internal.compiler.v2_2.docbuilders.internalDocBuilder
-import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
@@ -33,8 +35,23 @@ to data in the database, to the root, which is the final operator producing the 
 abstract class LogicalPlan extends Product with internalDocBuilder.AsPrettyToString {
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
-
+  def solved: PlannerQuery
   def availableSymbols: Set[IdName]
+
+  def updateSolved(newSolved: PlannerQuery): LogicalPlan = {
+    val arguments = this.children.toList :+ newSolved
+    try {
+      copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+    } catch {
+      case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
+        throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor")
+    }
+  }
+
+  lazy val copyConstructor: Method = this.getClass.getMethods.find(_.getName == "copy").get
+
+  def updateSolved(f: PlannerQuery => PlannerQuery): LogicalPlan =
+    updateSolved(f(solved))
 }
 
 abstract class LogicalLeafPlan extends LogicalPlan {
@@ -42,47 +59,4 @@ abstract class LogicalLeafPlan extends LogicalPlan {
   final val rhs = None
 }
 
-final case class IdName(name: String) extends AnyVal
-
-// TODO: Remove ast representation
-final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)(val expr: ast.ShortestPaths) {
-  def isFindableFrom(symbols: Set[IdName]) = symbols.contains(rel.left) && symbols.contains(rel.right)
-  def availableSymbols: Set[IdName] = name.toSet ++ rel.coveredIds
-}
-
-final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName], length: PatternLength)
-  extends internalDocBuilder.AsPrettyToString {
-
-  def directionRelativeTo(node: IdName): Direction = if (node == left) dir else dir.reverse()
-
-  def otherSide(node: IdName) = if (node == left) right else left
-
-  def coveredIds: Set[IdName] = Set(name, left, right)
-
-  def left = nodes._1
-
-  def right = nodes._2
-
-  def inOrder = dir match {
-    case Direction.INCOMING => (right, left)
-    case _                  => (left, right)
-  }
-}
-
-trait PatternLength extends internalDocBuilder.AsPrettyToString {
-  def isSimple: Boolean
-}
-
-case object SimplePatternLength extends PatternLength {
-  def isSimple = true
-}
-
-final case class VarPatternLength(min: Int, max: Option[Int]) extends PatternLength {
-  def isSimple = false
-}
-
-object VarPatternLength {
-  def unlimited = VarPatternLength(1, None)
-  def fixed(length: Int) = VarPatternLength(length, Some(length))
-}
-
+final case class IdName(name: String)

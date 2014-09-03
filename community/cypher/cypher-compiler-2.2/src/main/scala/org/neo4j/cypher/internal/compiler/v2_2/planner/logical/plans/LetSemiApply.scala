@@ -19,10 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName) extends AbstractLetSemiApply(left, right, idName)
-case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName) extends AbstractLetSemiApply(left, right, idName)
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
-abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName) extends LogicalPlan {
+case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)(val solved: PlannerQuery)
+  extends AbstractLetSemiApply(left, right, idName, solved)
+
+case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)(val solved: PlannerQuery)
+  extends AbstractLetSemiApply(left, right, idName, solved)
+
+abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, solved: PlannerQuery)
+  extends LogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 

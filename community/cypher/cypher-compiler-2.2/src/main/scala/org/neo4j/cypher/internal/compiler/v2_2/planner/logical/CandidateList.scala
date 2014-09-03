@@ -19,25 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.CostModel
 
-case class CandidateList(plans: Seq[QueryPlan] = Seq.empty) {
+case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
 
   def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
 
-  def +(plan: QueryPlan) = copy(plans :+ plan)
+  def +(plan: LogicalPlan) = copy(plans :+ plan)
 
-  def bestPlan(costs: CostModel): Option[QueryPlan] = {
-    val sortedPlans = plans.sortBy[(Int, Cost, Int)](c => (-c.solved.numHints, costs(c.plan), -c.availableSymbols.size))
+  def bestPlan(costs: CostModel): Option[LogicalPlan] = {
+    val sortedPlans = plans.sortBy[(Int, Cost, Int)](c => (-c.solved.numHints, costs(c), -c.availableSymbols.size))
     sortedPlans.headOption
   }
 
-  def map(f: QueryPlan => QueryPlan): CandidateList = copy(plans = plans.map(f))
+  def map(f: LogicalPlan => LogicalPlan): CandidateList = copy(plans = plans.map(f))
 
   def isEmpty = plans.isEmpty
 }
 
 object Candidates {
-  def apply(plans: QueryPlan*): CandidateList = CandidateList(plans)
+  def apply(plans: LogicalPlan*): CandidateList = CandidateList(plans)
 }

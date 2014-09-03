@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cost, Candidates, PlanTable}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, LogicalPlanningTestSupport}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{QueryPlan, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
-import org.mockito.Mockito._
 import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.HardcodedGraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Candidates, Cost, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph}
 
 class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -35,25 +35,25 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private val qg = newMockedQueryGraph
 
   test("single plan does not produce cartesian product") {
-    val plan = newMockedQueryPlan("a")
+    val plan = newMockedLogicalPlan("a")
 
-    val cost = Map(plan.plan -> 1.0)
+    val cost = Map(plan -> 1.0)
     implicit val (table, context) = prepare(cost, plan)
 
     cartesianProduct(table, qg) should equal(Candidates())
   }
 
   test("cartesian product produces all possible combinations") {
-    val plan1 = newMockedQueryPlan("a")
-    val plan2 = newMockedQueryPlan("b")
-    val cost = Map(plan1.plan -> 1.0, plan2.plan -> 2.0)
+    val plan1 = newMockedLogicalPlan("a")
+    val plan2 = newMockedLogicalPlan("b")
+    val cost = Map(plan1 -> 1.0, plan2 -> 2.0)
 
     implicit val (table, context) = prepare(cost, plan1, plan2)
 
     cartesianProduct(table, qg).plans.toSet should equal(Set(planCartesianProduct(plan1, plan2), planCartesianProduct(plan2, plan1)))
   }
 
-  private def prepare(cost: LogicalPlan => Double, plans: QueryPlan*) = {
+  private def prepare(cost: LogicalPlan => Double, plans: LogicalPlan*) = {
     val factory = newMockedMetricsFactory
 
     when(factory.newCostModel(any())).thenReturn(cost.andThen(Cost.apply))
@@ -62,7 +62,7 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
       metrics = factory.newMetrics(HardcodedGraphStatistics, newMockedSemanticTable)
     )
 
-    val table = PlanTable(plans.map(p => p.plan.availableSymbols -> p).toMap)
+    val table = PlanTable(plans.map(p => p.availableSymbols -> p).toMap)
 
     (table, context)
   }

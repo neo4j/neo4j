@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, Candidates, LeafPlanner}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 object argumentLeafPlanner extends LeafPlanner {

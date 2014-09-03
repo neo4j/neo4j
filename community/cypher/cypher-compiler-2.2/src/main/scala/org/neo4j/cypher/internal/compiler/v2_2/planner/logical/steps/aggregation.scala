@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, QueryPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.AggregatingQueryProjection
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Expression}
 
 object aggregation {
-  def apply(plan: QueryPlan, aggregation: AggregatingQueryProjection)(implicit context: LogicalPlanningContext): QueryPlan = {
+  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection)(implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val aggregationProjections: Map[String, Expression] = aggregation.groupingKeys
-    val availableSymbolProjections: Map[String, Identifier] = plan.plan.availableSymbols.map {
+    val availableSymbolProjections: Map[String, Identifier] = plan.availableSymbols.map {
       case IdName(x) => x -> Identifier(x)(null)
     }.toMap
     // Writes down the grouping values

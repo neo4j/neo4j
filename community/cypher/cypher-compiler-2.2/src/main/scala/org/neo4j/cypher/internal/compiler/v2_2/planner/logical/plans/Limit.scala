@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
-case class Limit(left: LogicalPlan, count: Expression) extends LogicalPlan {
+case class Limit(left: LogicalPlan, count: Expression)(val solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier, Equals, RelTypeName}
 
@@ -37,25 +37,25 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         case _: SingleRow => 1
         case _ => Double.MaxValue
       }
-    } planFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b").plan.plan should equal(
+    } planFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b").plan should equal(
       Projection(
         OuterHashJoin("b",
-          Expand(NodeByLabelScan("a", Left("X"), Set.empty), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength),
-          Expand(NodeByLabelScan("c", Left("Y"), Set.empty), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)
-        ),
+          Expand(NodeByLabelScan("a", Left("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength)(PlannerQuery.empty),
+          Expand(NodeByLabelScan("c", Left("Y"), Set.empty)(PlannerQuery.empty), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)(PlannerQuery.empty)
+        )(PlannerQuery.empty),
         expressions = Map("b" -> ident("b"))
-      )
+      )(PlannerQuery.empty)
     )
   }
 
   test("should build simple optional match plans") {
-    planFor("OPTIONAL MATCH a RETURN a").plan.plan should equal(
-      Optional(AllNodesScan("a", Set.empty))
+    planFor("OPTIONAL MATCH a RETURN a").plan should equal(
+      Optional(AllNodesScan("a", Set.empty)(PlannerQuery.empty))(PlannerQuery.empty)
     )
   }
 
   test("should build simple optional expand") {
-    planFor("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n").plan.plan match {
+    planFor("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n").plan match {
       case Projection(OptionalExpand(
         AllNodesScan(IdName("n"), _),
         IdName("n"),
@@ -70,7 +70,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should build optional ProjectEndpoints") {
-    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2").plan.plan match {
+    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2").plan match {
       case Projection(Apply(
         Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
         Apply(SingleRow(_), Optional(
@@ -89,7 +89,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should build optional ProjectEndpoints with extra predicates") {
-    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2").plan.plan match {
+    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2").plan match {
       case Projection(Apply(
         Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
         Apply(SingleRow(_), Optional(
@@ -114,7 +114,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should build optional ProjectEndpoints with extra predicates 2") {
-    planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2").plan.plan  match {
+    planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2").plan  match {
       case Projection(Apply(
         Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
         Apply(SingleRow(_), Optional(
@@ -134,16 +134,15 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should solve multiple optional matches") {
-    planFor("MATCH a OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2").plan.plan should equal(
+    planFor("MATCH a OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2").plan should equal(
       Projection(
         OptionalExpand(
           OptionalExpand(
-            AllNodesScan(IdName("a"), Set.empty),
-            IdName("a"), Direction.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED26"), SimplePatternLength, Seq.empty),
-          IdName("a"), Direction.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED57"), SimplePatternLength, Seq.empty),
-        Map("a" -> ident("a"), "x1" -> ident("x1"), "x2" -> ident("x2")
-        )
-      )
+            AllNodesScan(IdName("a"), Set.empty)(PlannerQuery.empty),
+            IdName("a"), Direction.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED26"), SimplePatternLength, Seq.empty)(PlannerQuery.empty),
+          IdName("a"), Direction.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED57"), SimplePatternLength, Seq.empty)(PlannerQuery.empty),
+        Map("a" -> ident("a"), "x1" -> ident("x1"), "x2" -> ident("x2"))
+      )(PlannerQuery.empty)
     )
   }
 }

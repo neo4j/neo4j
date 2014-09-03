@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 object outerJoin extends CandidateGenerator[PlanTable] {
@@ -39,8 +39,8 @@ object outerJoin extends CandidateGenerator[PlanTable] {
     CandidateList(outerJoinPlans)
   }
 
-  private def applicable(outerPlan: QueryPlan, optionalQG: QueryGraph) = {
-    val singleArgumentAvailable = optionalQG.argumentIds.size == 1 && outerPlan.plan.availableSymbols(optionalQG.argumentIds.head)
+  private def applicable(outerPlan: LogicalPlan, optionalQG: QueryGraph) = {
+    val singleArgumentAvailable = optionalQG.argumentIds.size == 1 && outerPlan.availableSymbols(optionalQG.argumentIds.head)
     val isSolved = outerPlan.solved.graph.optionalMatches.contains(optionalQG)
     singleArgumentAvailable && !isSolved
   }

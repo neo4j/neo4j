@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.InputPosition.NONE
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer.planEndpointProjection
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer.planEndpointProjection
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateGenerator, CandidateList, LogicalPlanningContext, PlanTable}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
@@ -64,7 +64,7 @@ object projectEndpoints extends CandidateGenerator[PlanTable] with CollectionSup
 
   private def freshName(idName: IdName) = IdName(idName.name + "$$$_")
 
-  private def canProjectPatternRelationshipEndpoints(plan: QueryPlan, patternRel: PatternRelationship) = {
+  private def canProjectPatternRelationshipEndpoints(plan: LogicalPlan, patternRel: PatternRelationship) = {
     val inScope = plan.availableSymbols(patternRel.name)
     val solved = plan.solved.graph.patternRelationships(patternRel)
     inScope && !solved

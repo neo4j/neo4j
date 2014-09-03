@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, functions}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.graphdb.Direction.{BOTH, INCOMING, OUTGOING}
 
 object idSeekLeafPlanner extends LeafPlanner {
@@ -61,7 +61,7 @@ object idSeekLeafPlanner extends LeafPlanner {
     CandidateList(candidatePlans)
   }
 
-  private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: EntityByIdRhs, predicates: Seq[Expression], argumentIds: Set[IdName]): QueryPlan = {
+  private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: EntityByIdRhs, predicates: Seq[Expression], argumentIds: Set[IdName]): LogicalPlan = {
     val (left, right) = relationship.nodes
     val name = relationship.name
     relationship.dir match {
@@ -71,7 +71,7 @@ object idSeekLeafPlanner extends LeafPlanner {
     }
   }
 
-  private def planRelTypeFilter(plan: QueryPlan, idExpr: Identifier, relTypes: List[RelTypeName]): QueryPlan = {
+  private def planRelTypeFilter(plan: LogicalPlan, idExpr: Identifier, relTypes: List[RelTypeName]): LogicalPlan = {
     relTypes match {
       case Seq(tpe) =>
         val relTypeExpr = relTypeAsStringLiteral(tpe)

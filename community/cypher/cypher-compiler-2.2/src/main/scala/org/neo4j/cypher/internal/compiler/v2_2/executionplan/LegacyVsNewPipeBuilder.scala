@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 
 class LegacyVsNewPipeBuilder(oldBuilder: PipeBuilder,
                              newBuilder: PipeBuilder,
-                             monitor: NewQueryPlanSuccessRateMonitor) extends PipeBuilder {
+                             monitor: NewLogicalPlanSuccessRateMonitor) extends PipeBuilder {
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
     val queryText = inputQuery.queryText
     try {

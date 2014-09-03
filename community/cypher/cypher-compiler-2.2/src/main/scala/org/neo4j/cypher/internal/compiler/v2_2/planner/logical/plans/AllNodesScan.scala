@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-case class AllNodesScan(idName: IdName, argumentIds: Set[IdName]) extends LogicalLeafPlan {
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+
+case class AllNodesScan(idName: IdName, argumentIds: Set[IdName])(val solved: PlannerQuery) extends LogicalLeafPlan {
   def availableSymbols = argumentIds + idName
 }

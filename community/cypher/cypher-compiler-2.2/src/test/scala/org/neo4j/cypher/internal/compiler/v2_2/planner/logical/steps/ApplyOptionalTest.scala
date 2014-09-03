@@ -53,15 +53,16 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
-    val inputPlan = newMockedQueryPlan("a")
+    val inputPlan = newMockedLogicalPlan("a")
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
-    val innerPlan = Expand(SingleRow(Set("a"))(), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)
+    val innerPlan = Expand(SingleRow(Set("a"))(PlannerQuery.empty)(), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(PlannerQuery.empty)
 
     val candidates = applyOptional(planTable, qg)
+    val applyPlan = Apply(inputPlan, Optional(innerPlan)(PlannerQuery.empty))(PlannerQuery.empty)
 
     // Then
     candidates.plans should have size 1
-    candidates.plans.head.plan should equal(Apply(inputPlan.plan, Optional(innerPlan)))
+    candidates.plans.head should equal(applyPlan)
   }
 
   test("should not use apply when optional match is the at the start of the query") {

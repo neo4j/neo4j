@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, LogicalPlann
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Candidates, CandidateList, PlanTable}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -48,8 +48,8 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val left = newMockedQueryPlan(Set(aNode, bNode))
-    val right = newMockedQueryPlan(Set(bNode, cNode))
+    val left = newMockedLogicalPlan(Set(aNode, bNode))
+    val right = newMockedLogicalPlan(Set(bNode, cNode))
     val planTable = PlanTable(Map(
       Set(aNode, bNode) -> left,
       Set(bNode, cNode) -> right
@@ -67,9 +67,9 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val left = newMockedQueryPlanWithPatterns(Set(aNode, bNode))
-    val middle = newMockedQueryPlanWithPatterns(Set(bNode, cNode))
-    val right = newMockedQueryPlanWithPatterns(Set(cNode, dNode))
+    val left = newMockedLogicalPlanWithPatterns(Set(aNode, bNode))
+    val middle = newMockedLogicalPlanWithPatterns(Set(bNode, cNode))
+    val right = newMockedLogicalPlanWithPatterns(Set(cNode, dNode))
     val planTable = PlanTable(Map(
       Set(aNode, bNode) -> left,
       Set(bNode, cNode) -> middle,
@@ -90,8 +90,8 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val left = newMockedQueryPlanWithPatterns(Set(aNode, bNode))
-    val right = newMockedQueryPlanWithPatterns(Set(cNode))
+    val left = newMockedLogicalPlanWithPatterns(Set(aNode, bNode))
+    val right = newMockedLogicalPlanWithPatterns(Set(cNode))
     val planTable = PlanTable(Map(
       Set(aNode, bNode) -> left,
       Set(cNode) -> right
@@ -106,7 +106,7 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val left = newMockedQueryPlanWithPatterns(Set(aNode))
+    val left = newMockedLogicalPlanWithPatterns(Set(aNode))
     val planTable = PlanTable(Map(
       Set(aNode) -> left
     ))
@@ -120,8 +120,8 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val left = newMockedQueryPlanWithPatterns(Set(r1Name, aNode))
-    val right = newMockedQueryPlanWithPatterns(Set(r1Name, bNode))
+    val left = newMockedLogicalPlanWithPatterns(Set(r1Name, aNode))
+    val right = newMockedLogicalPlanWithPatterns(Set(r1Name, bNode))
     val planTable = PlanTable(Map(
       Set(r1Name, aNode) -> left,
       Set(r1Name, bNode) -> right

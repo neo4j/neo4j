@@ -19,48 +19,36 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_2.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
 
 class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
 
-  import QueryPlanProducer._
-
-  def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): LogicalPlan = unionQuery match {
+  def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan = unionQuery match {
     case UnionQuery(queries, distinct) =>
-      val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p).plan)
+      val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p))
       val unionPlan = logicalPlans.reduce[LogicalPlan] {
-        case (p1, p2) => Union(p1, p2)
+        case (p1, p2) => planUnion(p1, p2)
       }
 
       if (distinct)
-        distinctiy(unionPlan)
+        planDistinct(unionPlan)
       else
         unionPlan
 
     case _ => throw new CantHandleQueryException
   }
 
-  protected def planSingleQuery(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): QueryPlan = {
+  protected def planSingleQuery(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan = {
     val firstPart = planPart(query, leafPlan)
     val projectedFirstPart = planEventHorizon(query, firstPart)
     val finalPlan = planWithTail(projectedFirstPart, query.tail)
     verifyBestPlan(finalPlan, query)
   }
 
-  private def distinctiy(p: LogicalPlan): LogicalPlan = {
-    val returnAll = QueryProjection.forIds(p.availableSymbols) map {
-      case AliasedReturnItem(e, Identifier(key)) => key -> e // This smells awful.
-    }
-
-    Aggregation(p, returnAll.toMap, Map.empty)
-  }
-
-  private def planWithTail(pred: QueryPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): QueryPlan = remaining match {
+  private def planWithTail(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = remaining match {
     case Some(query) =>
       val lhs = pred
       val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))
@@ -71,11 +59,11 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
       pred
   }
 
-  private def planPart(query: PlannerQuery, leafPlan: Option[QueryPlan])(implicit context: LogicalPlanningContext): QueryPlan = {
+  private def planPart(query: PlannerQuery, leafPlan: Option[LogicalPlan])(implicit context: LogicalPlanningContext): LogicalPlan = {
     context.strategy.plan(query.graph)(context, leafPlan)
   }
 
-  private def planEventHorizon(query: PlannerQuery, plan: QueryPlan)(implicit context: LogicalPlanningContext): QueryPlan = {
+  private def planEventHorizon(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val selectedPlan = config.applySelections(plan, query.graph)
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>

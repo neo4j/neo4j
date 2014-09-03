@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeBuilder, PipeI
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{RewriterStep, RewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors,
@@ -50,7 +50,7 @@ case class Planner(monitors: Monitors,
     Planner.rewriteStatement(statement) match {
       case ast: Query =>
         monitor.startedPlanning(query)
-        val (logicalPlan, pipeBuildContext) = produceQueryPlan(ast, semanticTable)(planContext)
+        val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, semanticTable)(planContext)
         monitor.foundPlan(query, logicalPlan)
         val result = executionPlanBuilder.build(logicalPlan)(pipeBuildContext)
         monitor.successfulPlanning(query, result)
@@ -61,7 +61,7 @@ case class Planner(monitors: Monitors,
     }
   }
 
-  def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (LogicalPlan, PipeExecutionBuilderContext) = {
+  def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (LogicalPlan, PipeExecutionBuilderContext) = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val unionQuery = ast.asUnionQuery
 
@@ -73,8 +73,8 @@ case class Planner(monitors: Monitors,
     val pipeBuildContext = PipeExecutionBuilderContext((e: PatternExpression) => {
       val expressionQueryGraph = e.asQueryGraph
       val argLeafPlan = Some(planQueryArgumentRow(expressionQueryGraph))
-      val queryPlan = queryGraphSolver.plan(expressionQueryGraph)(context, argLeafPlan)
-      queryPlan.plan
+      val LogicalPlan = queryGraphSolver.plan(expressionQueryGraph)(context, argLeafPlan)
+      LogicalPlan
     })
 
 
@@ -105,4 +105,3 @@ trait PlanningMonitor {
   def foundPlan(q: String, p: LogicalPlan)
   def successfulPlanning(q: String, p: PipeInfo)
 }
-

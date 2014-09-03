@@ -24,7 +24,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{SingleQueryExpression, ManyQueryExpression, QueryExpression}
 
 
@@ -45,7 +45,7 @@ abstract class IndexLeafPlanner extends LeafPlanner {
         val hint = qg.hints.collectFirst {
           case hint @ UsingIndexHint(Identifier(`name`), `labelName`, Identifier(`propertyName`)) => hint
         }
-        val entryConstructor: (Seq[Expression]) => QueryPlan =
+        val entryConstructor: (Seq[Expression]) => LogicalPlan =
           constructPlan(idName, LabelToken(labelName, labelId), PropertyKeyToken(propertyKeyName, propertyKeyName.id.head),
                         queryExpression, hint, qg.argumentIds)
         entryConstructor(Seq(propertyPredicate, labelPredicate))
@@ -66,7 +66,7 @@ abstract class IndexLeafPlanner extends LeafPlanner {
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[IdName])
-                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => QueryPlan
+                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan
 
 
 
@@ -80,7 +80,7 @@ object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[IdName])
-                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => QueryPlan =
+                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) =>
       planNodeIndexUniqueSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
 
@@ -96,7 +96,7 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[IdName])
-                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => QueryPlan =
+                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) =>
       planNodeIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
 

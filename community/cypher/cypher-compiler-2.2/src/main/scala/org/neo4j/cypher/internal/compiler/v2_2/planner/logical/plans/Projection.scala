@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
-case class Projection(left: LogicalPlan, expressions: Map[String, Expression]) extends LogicalPlan {
+case class Projection(left: LogicalPlan, expressions: Map[String, Expression])(val solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
 

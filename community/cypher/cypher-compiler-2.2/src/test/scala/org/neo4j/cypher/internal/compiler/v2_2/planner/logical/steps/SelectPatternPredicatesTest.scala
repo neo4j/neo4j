@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, Cardinality, PlanTransformer}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 
@@ -49,7 +49,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   })
 
   val passThrough = new PlanTransformer[QueryGraph] {
-    def apply(input: QueryPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): QueryPlan = input
+    def apply(input: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = input
   }
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
@@ -74,7 +74,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
-    val aPlan = newMockedQueryPlan("a")
+    val aPlan = newMockedLogicalPlan("a")
     val inner = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
     // When
@@ -107,7 +107,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
-    val aPlan = newMockedQueryPlan("a")
+    val aPlan = newMockedLogicalPlan("a")
     val inner = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
     // When
@@ -140,7 +140,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
-    val bPlan = newMockedQueryPlan("b")
+    val bPlan = newMockedLogicalPlan("b")
     // When
     val result = selectPatternPredicates(passThrough)(bPlan, qg)
 
@@ -175,7 +175,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
-    val aPlan = newMockedQueryPlan("a")
+    val aPlan = newMockedLogicalPlan("a")
     val singleRow = planArgumentRow(Set(IdName("a")))
     val inner = planExpand(singleRow, IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
@@ -213,7 +213,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
-    val aPlan = newMockedQueryPlan("a")
+    val aPlan = newMockedLogicalPlan("a")
     val inner = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
     // When
@@ -260,7 +260,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
-    val aPlan = newMockedQueryPlan("a")
+    val aPlan = newMockedLogicalPlan("a")
     val inner = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
     val inner2 = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName("  UNNAMED4"), IdName("  UNNAMED3"), SimplePatternLength, patternRel2)
 
@@ -307,7 +307,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
-    val aPlan = newMockedQueryPlan("a")
+    val aPlan = newMockedLogicalPlan("a")
     val inner = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
     val inner2 = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName("  UNNAMED4"), IdName("  UNNAMED3"), SimplePatternLength, patternRel2)
 
@@ -354,7 +354,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
-    val aPlan = newMockedQueryPlan("a")
+    val aPlan = newMockedLogicalPlan("a")
     val inner = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
     val inner2 = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName("  UNNAMED4"), IdName("  UNNAMED3"), SimplePatternLength, patternRel2)
 
@@ -406,7 +406,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
-    val aPlan = newMockedQueryPlan("a")
+    val aPlan = newMockedLogicalPlan("a")
     val inner = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
     val inner2 = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName("  UNNAMED4"), IdName("  UNNAMED3"), SimplePatternLength, patternRel2)
 
@@ -458,7 +458,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
-    val aPlan = newMockedQueryPlan("a")
+    val aPlan = newMockedLogicalPlan("a")
     val inner = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
     val inner2 = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName("  UNNAMED4"), IdName("  UNNAMED3"), SimplePatternLength, patternRel2)
 

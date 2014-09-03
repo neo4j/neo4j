@@ -21,15 +21,16 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 class PlanTableTest extends CypherFunSuite with LogicalPlanningTestSupport {
   implicit val planContext = newMockedPlanContext
   implicit val context = newMockedLogicalPlanningContext(planContext)
 
-  val x = newMockedQueryPlan("x")
-  val x2 = newMockedQueryPlan("x")
-  val y = newMockedQueryPlan("y")
-  val xAndY = newMockedQueryPlan("x", "y")
+  val x: LogicalPlan = newMockedLogicalPlan("x")
+  val x2 = newMockedLogicalPlan("x")
+  val y = newMockedLogicalPlan("y")
+  val xAndY = newMockedLogicalPlan("x", "y")
 
   test("adding a new plan to an empty PlanTable returns a PlanTable with that plan in it") {
     val plans = PlanTable()

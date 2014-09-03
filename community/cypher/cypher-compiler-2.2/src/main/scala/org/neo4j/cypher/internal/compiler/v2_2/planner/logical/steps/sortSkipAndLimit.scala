@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, QueryProje
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
-  def apply(plan: QueryPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext): QueryPlan = query.horizon match {
+  def apply(plan: LogicalPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = query.horizon match {
     case p: QueryProjection =>
       val shuffle = p.shuffle
       val producedPlan = (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
@@ -61,9 +61,9 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
     case _ => ???
   }
 
-  private def addSkip(s: Option[ast.Expression], plan: QueryPlan): QueryPlan =
+  private def addSkip(s: Option[ast.Expression], plan: LogicalPlan): LogicalPlan =
     s.fold(plan)(x => planSkip(plan, x))
 
-  private def addLimit(s: Option[ast.Expression], plan: QueryPlan): QueryPlan =
+  private def addLimit(s: Option[ast.Expression], plan: LogicalPlan): LogicalPlan =
     s.fold(plan)(x => planLimit(plan, x))
 }

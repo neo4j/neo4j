@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-case class Union(left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+
+case class Union(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery) extends LogicalPlan {
   def availableSymbols: Set[IdName] = left.availableSymbols
 
   def lhs: Option[LogicalPlan] = Some(left)

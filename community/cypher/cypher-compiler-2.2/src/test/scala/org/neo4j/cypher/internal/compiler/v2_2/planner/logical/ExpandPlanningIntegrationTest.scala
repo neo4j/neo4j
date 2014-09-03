@@ -19,26 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.{PropertyKeyId, LabelId}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{ManyQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.ManyQueryExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId}
+import org.neo4j.graphdb.Direction
 
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("Should build plans containing expand for single relationship pattern") {
-    planFor("MATCH (a)-[r]->(b) RETURN r").plan.plan should equal(
+    planFor("MATCH (a)-[r]->(b) RETURN r").plan should equal(
       Projection(
         Expand(
-          AllNodesScan("a", Set.empty),
-          "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength
-        ),
+          AllNodesScan("b", Set.empty)(PlannerQuery.empty),
+          "b", Direction.INCOMING, Seq.empty, "a", "r", SimplePatternLength
+        )(PlannerQuery.empty),
         Map("r" -> Identifier("r") _)
-      )
+      )(PlannerQuery.empty)
     )
   }
 
@@ -53,7 +53,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         case _: Expand => 100.0
         case _ => Double.MaxValue
       }
-    } planFor "MATCH (a)-[r1]->(b), (c)-[r2]->(d) RETURN r1, r2").plan.plan should beLike {
+    } planFor "MATCH (a)-[r1]->(b), (c)-[r2]->(d) RETURN r1, r2").plan should beLike {
       case Projection(
             Selection(_,
               CartesianProduct(
@@ -67,36 +67,36 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("Should build plans containing expand for self-referencing relationship patterns") {
-    planFor("MATCH (a)-[r]->(a) RETURN r").plan.plan should equal(
+    planFor("MATCH (a)-[r]->(a) RETURN r").plan should equal(
       Projection(
         Selection(
           predicates = Seq(Equals(Identifier("a") _, Identifier("a$$$") _) _),
           left = Expand(
-            AllNodesScan("a", Set.empty),
-            "a", Direction.OUTGOING, Seq.empty, "a$$$", "r", SimplePatternLength)
-        ),
+            AllNodesScan("a", Set.empty)(PlannerQuery.empty),
+            "a", Direction.OUTGOING, Seq.empty, "a$$$", "r", SimplePatternLength)(PlannerQuery.empty)
+        )(PlannerQuery.empty),
         Map("r" -> Identifier("r") _)
-      )
+      )(PlannerQuery.empty)
     )
   }
 
   test("Should build plans containing expand for looping relationship patterns") {
-    planFor("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan.plan should equal(
+    planFor("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan should equal(
       Projection(
         Selection(
           predicates = Seq(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
           left = Selection(
-            Seq(Equals(Identifier("b") _, Identifier("b$$$") _) _),
+            Seq(Equals(Identifier("a") _, Identifier("a$$$") _) _),
             Expand(
-              Expand(AllNodesScan("a", Set.empty), "a", Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength),
-              "a", Direction.OUTGOING, Seq.empty, "b$$$", "r2", SimplePatternLength)
-          )
-        ),
+              Expand(AllNodesScan("b", Set.empty)(PlannerQuery.empty), "b", Direction.INCOMING, Seq.empty, "a", "r1", SimplePatternLength)(PlannerQuery.empty),
+              "b", Direction.INCOMING, Seq.empty, "a$$$", "r2", SimplePatternLength)(PlannerQuery.empty)
+          )(PlannerQuery.empty)
+        )(PlannerQuery.empty),
         Map(
           "r1" -> Identifier("r1") _,
           "r2" -> Identifier("r2") _
         )
-      )
+      )(PlannerQuery.empty)
     )
   }
 
@@ -107,17 +107,17 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         case _: AllNodesScan  => 100.04
         case _                => Double.MaxValue
       }
-    } planFor "MATCH (start)-[rel:x]-(a) WHERE a.name = 'Andres' return a").plan.plan should equal(
+    } planFor "MATCH (start)-[rel:x]-(a) WHERE a.name = 'Andres' return a").plan should equal(
       Projection(
         Expand(
           Selection(
             Seq(In(Property(Identifier("a")_, PropertyKeyName("name")_)_, Collection(Seq(StringLiteral("Andres")_))_)_),
-            AllNodesScan("a", Set.empty)
-          ),
+            AllNodesScan("a", Set.empty)(PlannerQuery.empty)
+          )(PlannerQuery.empty),
           "a", Direction.BOTH, Seq(RelTypeName("x")_), "start", "rel", SimplePatternLength
-        ),
+        )(PlannerQuery.empty),
         Map("a" -> Identifier("a") _)
-      )
+      )(PlannerQuery.empty)
     )
   }
 
@@ -129,14 +129,14 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       }
 
       indexOn("Person", "name")
-    } planFor "MATCH (a)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r").plan.plan should equal(
+    } planFor "MATCH (a)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r").plan should equal(
       Projection(
         Expand(
-          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres")_))_), Set.empty),
+          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres") _)) _), Set.empty)(PlannerQuery.empty),
           "b", Direction.INCOMING, Seq.empty, "a", "r", SimplePatternLength
-        ),
+        )(PlannerQuery.empty),
         Map("r" -> ident("r"))
-      )
+      )(PlannerQuery.empty)
     )
   }
 
@@ -149,21 +149,21 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         case _                                  => 10.0
       }
       indexOn("Person", "name")
-    } planFor "MATCH (a)-[r]->(b) USING INDEX a:Person(name) USING INDEX b:Person(name) WHERE a:Person AND b:Person AND a.name = 'Jakub' AND b.name = 'Andres' return r").plan.plan should equal(
+    } planFor "MATCH (a)-[r]->(b) USING INDEX a:Person(name) USING INDEX b:Person(name) WHERE a:Person AND b:Person AND a.name = 'Jakub' AND b.name = 'Andres' return r").plan should equal(
       Projection(
         NodeHashJoin(
           "b",
           Selection(
             Seq(In(Property(ident("b"), PropertyKeyName("name")_)_, Collection(Seq(StringLiteral("Andres")_))_)_, HasLabels(ident("b"), Seq(LabelName("Person")_))_),
             Expand(
-              NodeIndexSeek("a", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Jakub")_))_), Set.empty),
+              NodeIndexSeek("a", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Jakub") _)) _), Set.empty)(PlannerQuery.empty),
               "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength
-            )
-          ),
-          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres")_))_), Set.empty)
-        ),
+            )(PlannerQuery.empty)
+          )(PlannerQuery.empty),
+          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres") _)) _), Set.empty)(PlannerQuery.empty)
+        )(PlannerQuery.empty),
         Map("r" -> ident("r"))
-      )
+      )(PlannerQuery.empty)
     )
   }
 }

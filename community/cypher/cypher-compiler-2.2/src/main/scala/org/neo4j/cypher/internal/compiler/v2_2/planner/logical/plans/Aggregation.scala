@@ -20,10 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
 case class Aggregation(left: LogicalPlan,
                        groupingExpressions: Map[String, Expression],
-                       aggregationExpression: Map[String, Expression]) extends LogicalPlan {
+                       aggregationExpression: Map[String, Expression])(val solved: PlannerQuery) extends LogicalPlan {
+
+  def ap(newSolve: PlannerQuery) = copy()(newSolve)
 
   val lhs = Some(left)
 

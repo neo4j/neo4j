@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
-case class PlanTable(m: Map[Set[IdName], QueryPlan] = Map.empty) {
+case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
   def size = m.size
 
   def isEmpty = m.isEmpty
@@ -32,7 +31,7 @@ case class PlanTable(m: Map[Set[IdName], QueryPlan] = Map.empty) {
 
   def -(ids: Set[IdName]) = copy(m = m - ids)
 
-  def +(newPlan: QueryPlan): PlanTable = {
+  def +(newPlan: LogicalPlan): PlanTable = {
     val newSolved = newPlan.solved
     val newPlanCoveredByOldPlan = m.values.exists { p =>
       val solved = p.solved
@@ -53,9 +52,9 @@ case class PlanTable(m: Map[Set[IdName], QueryPlan] = Map.empty) {
     }
   }
 
-  def plans: Seq[QueryPlan] = m.values.toSeq
+  def plans: Seq[LogicalPlan] = m.values.toSeq
 
-  def uniquePlan: QueryPlan = {
+  def uniquePlan: LogicalPlan = {
     val allPlans = plans.toList
 
     if (allPlans.size > 1)

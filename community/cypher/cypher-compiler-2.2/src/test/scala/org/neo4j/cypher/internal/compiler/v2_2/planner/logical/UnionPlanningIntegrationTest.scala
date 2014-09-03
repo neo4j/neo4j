@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -33,8 +33,9 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
     logicalPlan should equal(
       Union(
-        NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("A")), Set.empty),
-        NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("B")), Set.empty))
+        NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("A")), Set.empty)(PlannerQuery.empty),
+        NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("B")), Set.empty)(PlannerQuery.empty)
+      )(PlannerQuery.empty)
     )
   }
   test("MATCH (a:A) RETURN a UNION MATCH (a:B) RETURN a") {
@@ -46,11 +47,12 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     logicalPlan should equal(
       Aggregation(
         left = Union(
-          NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("A")), Set.empty),
-          NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("B")), Set.empty)),
+          NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("A")), Set.empty)(PlannerQuery.empty),
+          NodeByLabelScan("a", Right(semanticTable.resolvedLabelIds("B")), Set.empty)(PlannerQuery.empty)
+        )(PlannerQuery.empty),
         groupingExpressions = Map("a" -> ident("a")),
         aggregationExpression = Map.empty
-      )
+      )(PlannerQuery.empty)
     )
   }
 }

@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.QueryPlanProducer
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.graphdb.Direction
-import QueryPlanProducer._
+import LogicalPlanProducer._
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should build plans for simple WITH that adds a constant to the rows") {
@@ -129,7 +129,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that project endpoints of re-matched directed relationship arguments") {
-    val plan = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r").plan.plan
+    val plan = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r").plan
 
     plan match {
       case Projection(Apply(_, Selection(_, ProjectEndpoints(
@@ -140,7 +140,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that project endpoints of re-matched reversed directed relationship arguments") {
-    val plan = planFor("MATCH (a)-[r]->(b) WITH r AS r, a AS a LIMIT 1 MATCH (b2)<-[r]-(a) RETURN r").plan.plan
+    val plan = planFor("MATCH (a)-[r]->(b) WITH r AS r, a AS a LIMIT 1 MATCH (b2)<-[r]-(a) RETURN r").plan
 
     plan match {
       case Projection(Apply(_,
@@ -154,7 +154,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that verify endpoints of re-matched directed relationship arguments") {
-    val plan = planFor("MATCH (a)-[r]->(b) WITH * LIMIT 1 MATCH (a)-[r]->(b) RETURN r").plan.plan
+    val plan = planFor("MATCH (a)-[r]->(b) WITH * LIMIT 1 MATCH (a)-[r]->(b) RETURN r").plan
 
     plan match {
       case Projection(Apply(_,
@@ -168,7 +168,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that project and verify endpoints of re-matched directed relationship arguments") {
-    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]->(b2) RETURN r").plan.plan
+    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]->(b2) RETURN r").plan
 
     plan match {
       case Projection(Apply(_,
@@ -182,7 +182,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that project and verify endpoints of re-matched undirected relationship arguments") {
-    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r").plan.plan
+    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r").plan
 
     plan match {
       case Projection(Apply(_,
@@ -196,7 +196,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
-    val plan = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r").plan.plan
+    val plan = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r").plan
 
     plan match {
       case Projection(Apply(_,
