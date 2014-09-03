@@ -17,18 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{optionalExpand, outerJoin, optional, applyOptional}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 
-object optionalMatches extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
-    val optionalApplies = applyOptional(planTable, queryGraph)
-    val optionals = optional(planTable, queryGraph)       // TODO: These other plans are optimisations. We should rewrite to them instead of plan here
-    val outerJoins = outerJoin(planTable, queryGraph)
-    val optionalExpands = optionalExpand(planTable, queryGraph)
-    optionalApplies ++ optionals ++ outerJoins ++ optionalExpands
-  }
+object producePredicates extends (QueryGraph => Set[Predicate]) {
+  def apply(qg: QueryGraph): Set[Predicate] =
+    qg.selections.flatPredicates.map(ExpressionPredicate.apply).toSet ++
+    qg.patternRelationships.map(PatternPredicate.apply).toSet
 }

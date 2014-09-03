@@ -17,17 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v2_2
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, RelTypeId}
-import org.neo4j.kernel.api.heuristics.StatisticsData
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Selectivity
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.groupPredicates._
 
-class TransactionBoundGraphStatistics(statistics: StatisticsData) extends GraphStatistics {
-  def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = ???
-
-  def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = ???
-
-  def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = ???
+object combinePredicates extends (Set[EstimatedPredicateCombination] => (Set[Predicate], Selectivity)) {
+  def apply(combinations: Set[EstimatedPredicateCombination]): (Set[Predicate], Selectivity) =
+    combinations.toSeq.sortBy(_._2).headOption.map {
+      case (combination, selectivity) => combination.containedPredicates -> selectivity
+    }.getOrElse(Set.empty[Predicate] -> Selectivity(1))
 }

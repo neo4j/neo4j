@@ -30,8 +30,10 @@ case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean)
 case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
                         horizon: QueryHorizon = QueryProjection.empty,
                         tail: Option[PlannerQuery] = None)
-  extends InternalDocHandler.ToString[PlannerQuery] with PageDocFormatting
-{
+  extends InternalDocHandler.ToString[PlannerQuery] with PageDocFormatting {
+
+  def lastQueryGraph: QueryGraph = tail.map(_.lastQueryGraph).getOrElse(graph)
+
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
     case None => copy(tail = Some(newTail))
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
