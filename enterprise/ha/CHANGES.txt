@@ -1,3 +1,20 @@
+2.1.4
+-----
+o Master switches now properly cancel slaves that are transitioning
+  to an obsolete master.
+o Fixes an issue where an instance would report, through JMX, invalid roles
+  for a cluster member
+o Transactions that perform no logical changes will now be properly identified as
+  read only
+o Instances in HA mode will now refuse to start on a store that needs to
+  be upgraded
+o Instances will now check, as part of the cluster join process, if another
+  instance has a store of the same version but upgraded from a store copy
+  that had different transaction count, preventing the possibility of
+  binary incompatible stores participating in the same cluster
+o Starting a HA cluster on an upgraded store will now work as expected, due
+  to logs being upgraded as part of the store upgrade process
+
 2.1.3
 -----
 o Fixes a bug where instances could not join a cluster if their transaction log

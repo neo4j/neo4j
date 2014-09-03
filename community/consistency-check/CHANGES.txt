@@ -1,3 +1,8 @@
+2.1.4
+-----
+o Consistency checker package is now part of the community bundle
+o Fixes incorrect reports for deleted properties
+
 2.1.2
 -----
 o Consistency checks on non-constraint indexes is significantly
