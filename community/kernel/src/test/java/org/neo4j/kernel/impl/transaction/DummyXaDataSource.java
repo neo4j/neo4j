@@ -36,6 +36,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -252,7 +253,7 @@ public class DummyXaDataSource extends XaDataSource
         }
 
         @Override
-        public void doCommit()
+        public void doCommit( LockGroup lockGroup )
         {
         }
 

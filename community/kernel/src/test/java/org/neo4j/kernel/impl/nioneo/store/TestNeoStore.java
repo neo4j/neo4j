@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.PropertyReceiver;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -192,7 +193,7 @@ public class TestNeoStore
                 (Cache) mock( AutoLoadingCache.class ) );
         when( nodeManager.caches() ).thenReturn( caches );
 
-        ds = new NeoStoreXaDataSource(config, sf, StringLogger.DEV_NULL,
+        ds = new NeoStoreXaDataSource(config, new ReentrantLockService(), sf, StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
                         fs.get(), new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING, kernelHealth ), noStateFactory( new DevNullLoggingService() ),

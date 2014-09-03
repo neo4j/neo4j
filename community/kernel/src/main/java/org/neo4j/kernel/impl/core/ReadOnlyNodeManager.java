@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -34,15 +35,17 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ReadOnlyNodeManager extends NodeManager
 {
-    public ReadOnlyNodeManager( StringLogger logger, GraphDatabaseService graphDb,
+    public ReadOnlyNodeManager( StringLogger logger, GraphDatabaseService graphDb, LockService locks,
                                 AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
                                 EntityIdGenerator idGenerator, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
-                                CacheProvider cacheType, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-                                NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
+                                CacheProvider cacheType, PropertyKeyTokenHolder propertyKeyTokenHolder,
+                                LabelTokenHolder labelTokenHolder,
+                                NodeProxy.NodeLookup nodeLookup,
+                                RelationshipProxy.RelationshipLookups relationshipLookups,
                                 Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm,
                                 ThreadToStatementContextBridge statementCtxProvider )
     {
-        super( logger, graphDb, transactionManager, persistenceManager, idGenerator,
+        super( logger, graphDb, locks, transactionManager, persistenceManager, idGenerator,
                 relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, nodeLookup, relationshipLookups,
                 nodeCache, relCache, xaDsm, statementCtxProvider );
     }

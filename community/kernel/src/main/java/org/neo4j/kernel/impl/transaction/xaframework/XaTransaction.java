@@ -25,6 +25,7 @@ import javax.transaction.xa.XAException;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.locking.LockGroup;
 
 /**
  * <CODE>XaTransaction</CODE> holds all the commands that participate in the
@@ -161,8 +162,9 @@ public abstract class XaTransaction
      * 
      * @throws XAException
      *             If unable to commit
+     * @param lockGroup
      */
-    protected abstract void doCommit() throws XAException;
+    protected abstract void doCommit( LockGroup lockGroup ) throws XAException;
 
     private int identifier = -1;
     private final XaLogicalLog log;
@@ -314,7 +316,7 @@ public abstract class XaTransaction
      * @throws XAException
      *             If unable to commit
      */
-    public final void commit() throws XAException
+    public final void commit( LockGroup lockGroup ) throws XAException
     {
         if ( !prepared && !isRecovered() )
         {
@@ -324,7 +326,7 @@ public abstract class XaTransaction
         try
         {
             committed = true;
-            doCommit();
+            doCommit(  lockGroup );
         }
         finally
         {
