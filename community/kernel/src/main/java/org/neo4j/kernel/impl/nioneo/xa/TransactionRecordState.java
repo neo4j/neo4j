@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
@@ -224,7 +223,7 @@ public class TransactionRecordState
         target.addAll( commands );
     }
 
-    public void relationshipCreate( long id, int typeId, long startNodeId, long endNodeId )
+    public void relCreate( long id, int typeId, long startNodeId, long endNodeId )
     {
         context.relationshipCreate( id, typeId, startNodeId, endNodeId );
     }
@@ -257,11 +256,6 @@ public class TransactionRecordState
     private SchemaStore getSchemaStore()
     {
         return neoStore.getSchemaStore();
-    }
-
-    private RelationshipStore getRelationshipStore()
-    {
-        return neoStore.getRelationshipStore();
     }
 
     /**
@@ -299,12 +293,6 @@ public class TransactionRecordState
     public void relRemoveProperty( long relId, int propertyKey )
     {
         RecordProxy<Long, RelationshipRecord, Void> rel = context.getRelRecords().getOrLoad( relId, null );
-        RelationshipRecord relRecord = rel.forReadingLinkage();
-        if ( !relRecord.inUse() )
-        {
-            throw new IllegalStateException( "Property remove on relationship[" +
-                                             relId + "] illegal since it has been deleted." );
-        }
         context.removeProperty( rel, propertyKey );
     }
 
@@ -318,12 +306,6 @@ public class TransactionRecordState
     public void nodeRemoveProperty( long nodeId, int propertyKey )
     {
         RecordProxy<Long, NodeRecord, Void> node = context.getNodeRecords().getOrLoad( nodeId, null );
-        NodeRecord nodeRecord = node.forReadingLinkage();
-        if ( !nodeRecord.inUse() )
-        {
-            throw new IllegalStateException( "Property remove on node[" +
-                    nodeId + "] illegal since it has been deleted." );
-        }
         context.removeProperty( node, propertyKey );
     }
 
@@ -340,11 +322,6 @@ public class TransactionRecordState
     public DefinedProperty relChangeProperty( long relId, int propertyKey, Object value )
     {
         RecordProxy<Long, RelationshipRecord, Void> rel = context.getRelRecords().getOrLoad( relId, null );
-        if ( !rel.forReadingLinkage().inUse() )
-        {
-            throw new IllegalStateException( "Property change on relationship[" +
-                                             relId + "] illegal since it has been deleted." );
-        }
         context.primitiveChangeProperty( rel, propertyKey, value );
         return Property.property( propertyKey, value );
     }
@@ -361,11 +338,6 @@ public class TransactionRecordState
     public DefinedProperty nodeChangeProperty( long nodeId, int propertyKey, Object value )
     {
         RecordProxy<Long, NodeRecord, Void> node = context.getNodeRecords().getOrLoad( nodeId, null ); //getNodeRecord( nodeId );
-        if ( !node.forReadingLinkage().inUse() )
-        {
-            throw new IllegalStateException( "Property change on node[" +
-                                             nodeId + "] illegal since it has been deleted." );
-        }
         context.primitiveChangeProperty( node, propertyKey, value );
         return Property.property( propertyKey, value );
     }
@@ -382,12 +354,6 @@ public class TransactionRecordState
     public DefinedProperty relAddProperty( long relId, int propertyKey, Object value )
     {
         RecordProxy<Long, RelationshipRecord, Void> rel = context.getRelRecords().getOrLoad( relId, null );
-        RelationshipRecord relRecord = rel.forReadingLinkage();
-        if ( !relRecord.inUse() )
-        {
-            throw new IllegalStateException( "Property add on relationship[" +
-                                             relId + "] illegal since it has been deleted." );
-        }
         context.primitiveAddProperty( rel, propertyKey, value );
         return Property.property( propertyKey, value );
     }
@@ -403,12 +369,6 @@ public class TransactionRecordState
     public DefinedProperty nodeAddProperty( long nodeId, int propertyKey, Object value )
     {
         RecordProxy<Long, NodeRecord, Void> node = context.getNodeRecords().getOrLoad( nodeId, null );
-        NodeRecord nodeRecord = node.forReadingLinkage();
-        if ( !nodeRecord.inUse() )
-        {
-            throw new IllegalStateException( "Property add on node[" +
-                                             nodeId + "] illegal since it has been deleted." );
-        }
         context.primitiveAddProperty( node, propertyKey, value );
         return Property.property( propertyKey, value );
     }
@@ -615,15 +575,5 @@ public class TransactionRecordState
     public interface PropertyReceiver
     {
         void receive( DefinedProperty property, long propertyRecordId );
-    }
-
-    public long nextNodeId()
-    {
-        return getNodeStore().nextId();
-    }
-
-    public long nextRelationshipId()
-    {
-        return getRelationshipStore().nextId();
     }
 }

@@ -58,6 +58,7 @@ public class GuardingStatementOperations implements
 
     @Override
     public long relationshipCreate( KernelStatement statement, int relationshipTypeId, long startNodeId, long endNodeId )
+            throws EntityNotFoundException
     {
         guard.check();
         return entityWriteDelegate.relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
@@ -71,14 +72,14 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public void nodeDelete( KernelStatement state, long nodeId )
+    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         guard.check();
         entityWriteDelegate.nodeDelete( state, nodeId );
     }
 
     @Override
-    public void relationshipDelete( KernelStatement state, long relationshipId )
+    public void relationshipDelete( KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
         guard.check();
         entityWriteDelegate.relationshipDelete( state, relationshipId );

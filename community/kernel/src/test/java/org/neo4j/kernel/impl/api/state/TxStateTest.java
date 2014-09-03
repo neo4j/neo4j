@@ -37,6 +37,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
@@ -312,7 +313,7 @@ public class TxStateTest
         state.relationshipDoCreate( relId, relType, startNode, endNode );
 
         // When
-        state.relationshipDoDelete( relId, startNode, endNode, relType );
+        state.relationshipDoDelete( relId, relType, startNode, endNode );
 
         // Then
         long otherRel = relId + 1;
@@ -338,8 +339,8 @@ public class TxStateTest
         state.relationshipDoCreate( 12, relType + 1, startNode, endNode );
         state.relationshipDoCreate( 13, relType + 1, endNode, startNode );
 
-        state.relationshipDoDelete( 1337, startNode, endNode, relType );
-        state.relationshipDoDelete( 1338, startNode, startNode, relType + 1 );
+        state.relationshipDoDelete( 1337, relType, startNode, endNode );
+        state.relationshipDoDelete( 1338, relType + 1, startNode, startNode );
 
         // Then
         assertEquals( 12, state.augmentNodeDegree( startNode, 10, Direction.BOTH ) );
@@ -359,11 +360,61 @@ public class TxStateTest
         state.relationshipDoCreate( relB, relType, startNode, endNode );
         state.relationshipDoCreate( relC, relType + 1, startNode, endNode );
 
-        state.relationshipDoDelete( relB, startNode, endNode, relType );
-        state.relationshipDoDelete( relC, startNode, endNode, relType + 1 );
+        state.relationshipDoDelete( relB, relType, startNode, endNode );
+        state.relationshipDoDelete( relC, relType + 1, startNode, endNode );
 
         // Then
         assertThat( IteratorUtil.asList( state.nodeRelationshipTypes( startNode ) ), equalTo( Arrays.asList(relType)));
+    }
+
+    @Test
+    public void shouldNotChangeRecordForCreatedAndDeletedNode() throws Exception
+    {
+        // GIVEN
+        state.nodeDoCreate( 0 );
+        state.nodeDoDelete( 0 );
+        state.nodeDoCreate( 1 );
+
+        // WHEN
+        state.accept( new TxState.VisitorAdapter()
+        {
+            @Override
+            public void visitCreatedNode( long id )
+            {
+                assertEquals( "Should not create any other node than 1", 1, id );
+            }
+
+            @Override
+            public void visitDeletedNode( long id )
+            {
+                fail( "Should not delete any node" );
+            }
+        } );
+    }
+
+    @Test
+    public void shouldNotChangeRecordForCreatedAndDeletedRelationship() throws Exception
+    {
+        // GIVEN
+        state.relationshipDoCreate( 0, 0, 1, 2 );
+        state.relationshipDoDelete( 0, 0, 1, 2 );
+        state.relationshipDoCreate( 1, 0, 2, 3 );
+
+        // WHEN
+        state.accept( new TxState.VisitorAdapter()
+        {
+            @Override
+            public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+            {
+                assertEquals( "Should not create any other relationship than 1", 1, id );
+            }
+
+            @Override
+            public void visitDeletedRelationship( long id )
+            {
+                fail( "Should not delete any relationship" );
+            }
+        } );
     }
 
     private TxState state;

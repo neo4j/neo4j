@@ -51,6 +51,19 @@ public class DiffSets<T>
         void visitRemoved( T element );
     }
 
+    public static class VisitorAdapter<T> implements Visitor<T>
+    {
+        @Override
+        public void visitAdded( T element )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitRemoved( T element )
+        {   // Ignore
+        }
+    }
+
     @SuppressWarnings(
             {"rawtypes", "unchecked"})
     private static final DiffSets EMPTY = new DiffSets( Collections.emptySet(), Collections.emptySet() )
@@ -276,8 +289,14 @@ public class DiffSets<T>
 
     public void clear()
     {
-        if(addedElements != null) addedElements.clear();
-        if(removedElements != null) removedElements.clear();
+        if(addedElements != null)
+        {
+            addedElements.clear();
+        }
+        if(removedElements != null)
+        {
+            removedElements.clear();
+        }
     }
 
     @Override

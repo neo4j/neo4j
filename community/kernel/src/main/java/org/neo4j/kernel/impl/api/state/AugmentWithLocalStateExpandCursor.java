@@ -89,7 +89,7 @@ public class AugmentWithLocalStateExpandCursor implements Cursor
     private final RelationshipVisitor<RuntimeException> neighborFetcher = new RelationshipVisitor<RuntimeException>()
     {
         @Override
-        public void visit( long id, long startNode, long endNode, int type ) throws RuntimeException
+        public void visit( long id, int type, long startNode, long endNode ) throws RuntimeException
         {
             relId.write( id );
             long origin = nodeId.read();

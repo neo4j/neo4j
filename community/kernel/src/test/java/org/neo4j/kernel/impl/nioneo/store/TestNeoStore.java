@@ -380,9 +380,9 @@ public class TestNeoStore
         String typeName2 = "relationshiptype2";
         transaction.createRelationshipTypeToken( relType2, typeName2 );
         long rel1 = nextId( Relationship.class );
-        transaction.relationshipCreate( rel1, relType1, node1, node2 );
+        transaction.relCreate( rel1, relType1, node1, node2 );
         long rel2 = nextId( Relationship.class );
-        transaction.relationshipCreate( rel2, relType2, node2, node1 );
+        transaction.relCreate( rel2, relType2, node2, node1 );
 
         DefinedProperty r1prop1 = transaction.relAddProperty(
                 rel1, index( "prop1" ), "string1" );
@@ -447,7 +447,7 @@ public class TestNeoStore
         for ( int i = 0; i < 2; i++ )
         {
             long id = nextId( Relationship.class );
-            transaction.relationshipCreate( id, relType1, nodeIds[i], nodeIds[i + 1] );
+            transaction.relCreate( id, relType1, nodeIds[i], nodeIds[i + 1] );
             transaction.relDelete( id );
         }
         for ( int i = 0; i < 3; i++ )
@@ -746,7 +746,7 @@ public class TestNeoStore
             storeLayer.relationshipVisit( rel, new RelationshipVisitor<RuntimeException>()
             {
                 @Override
-                public void visit( long relId, long startNode, long endNode, int type )
+                public void visit( long relId, int type, long startNode, long endNode )
                 {
                     assertEquals( firstNode, startNode );
                     assertEquals( secondNode, endNode );
@@ -1072,7 +1072,7 @@ public class TestNeoStore
         }
         for ( int i = 0; i < 2; i++ )
         {
-            transaction.relationshipCreate( nextId( Relationship.class ),
+            transaction.relCreate( nextId( Relationship.class ),
                     relType1, nodeIds[i], nodeIds[i + 1] );
         }
         commitTx();
@@ -1109,10 +1109,10 @@ public class TestNeoStore
         }
         for ( int i = 0; i < 2; i++ )
         {
-            transaction.relationshipCreate( nextId( Relationship.class ),
+            transaction.relCreate( nextId( Relationship.class ),
                     relType1, nodeIds[i], nodeIds[i + 1] );
         }
-        transaction.relationshipCreate( nextId( Relationship.class ),
+        transaction.relCreate( nextId( Relationship.class ),
                 relType1, nodeIds[0], nodeIds[2] );
         commitTx();
         startTx();
@@ -1145,23 +1145,23 @@ public class TestNeoStore
         }
         for ( int i = 0; i < nodeIds.length / 2; i++ )
         {
-            transaction.relationshipCreate( nextId( Relationship.class ),
+            transaction.relCreate( nextId( Relationship.class ),
                     relType1, nodeIds[i], nodeIds[i * 2] );
         }
         long rel5 = nextId( Relationship.class );
-        transaction.relationshipCreate( rel5, relType1, nodeIds[0], nodeIds[5] );
+        transaction.relCreate( rel5, relType1, nodeIds[0], nodeIds[5] );
         long rel2 = nextId( Relationship.class );
-        transaction.relationshipCreate( rel2, relType1, nodeIds[1], nodeIds[2] );
+        transaction.relCreate( rel2, relType1, nodeIds[1], nodeIds[2] );
         long rel3 = nextId( Relationship.class );
-        transaction.relationshipCreate( rel3, relType1, nodeIds[1], nodeIds[3] );
+        transaction.relCreate( rel3, relType1, nodeIds[1], nodeIds[3] );
         long rel6 = nextId( Relationship.class );
-        transaction.relationshipCreate( rel6, relType1, nodeIds[1], nodeIds[6] );
+        transaction.relCreate( rel6, relType1, nodeIds[1], nodeIds[6] );
         long rel1 = nextId( Relationship.class );
-        transaction.relationshipCreate( rel1, relType1, nodeIds[0], nodeIds[1] );
+        transaction.relCreate( rel1, relType1, nodeIds[0], nodeIds[1] );
         long rel4 = nextId( Relationship.class );
-        transaction.relationshipCreate( rel4, relType1, nodeIds[0], nodeIds[4] );
+        transaction.relCreate( rel4, relType1, nodeIds[0], nodeIds[4] );
         long rel7 = nextId( Relationship.class );
-        transaction.relationshipCreate( rel7, relType1, nodeIds[0], nodeIds[7] );
+        transaction.relCreate( rel7, relType1, nodeIds[0], nodeIds[7] );
         commitTx();
         startTx();
         transaction.relDelete( rel7 );

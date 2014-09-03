@@ -62,7 +62,6 @@ import org.neo4j.kernel.impl.nioneo.xa.RecordAccessSet;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipCreator;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipLocker;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -91,14 +90,14 @@ public class NodeCommitAndReadRaceTest
          * Fix is to put a node reservation in cache when the user transaction creates the node, with the
          * sole purpose to communicate this fact to readers. The committer will then switch the reservation
          * for a normal node on commit. */
-        
+
         // GIVEN
         // ... a created, but not yet fully committed, node
         KernelStatement creationStatement = mockedStatement();
         long nodeId = operations.nodeCreate( creationStatement );
         // ... and we pretend that this is during commit and so the node exists in the store
         createNodeWithSomeRelationships( nodeId );
-        
+
         // WHEN a reader comes in and tries to read that node, it should not be able to see it
         KernelStatement readerStatement = mockedStatement();
         try
@@ -111,14 +110,14 @@ public class NodeCommitAndReadRaceTest
             // THEN we're all good
         }
     }
-    
+
     private void createNodeWithSomeRelationships( long nodeId )
     {
         RecordAccessSet recordAccess = new DirectRecordAccessSet( neoStore );
         NodeRecord node = recordAccess.getNodeRecords().create( nodeId, null ).forChangingData();
         node.setInUse( true );
         node.setCreated();
-        
+
         int type = relationshipTokenHolder.getOrCreateId( "TYPE" );
         RelationshipCreator relationshipCreator = new RelationshipCreator( RelationshipLocker.NO_LOCKING, null, 100 );
         for ( int i = 0; i < 2; i++ )
@@ -132,9 +131,7 @@ public class NodeCommitAndReadRaceTest
     private KernelStatement mockedStatement()
     {
         KernelStatement statement = mock( KernelStatement.class );
-        TransactionRecordState recordState = mock( TransactionRecordState.class );
         TxState txState = new TxStateImpl( mock( LegacyIndexTransactionState.class ) );
-        when( statement.recordState() ).thenReturn( recordState );
         when( statement.txState() ).thenReturn( txState );
         return statement;
     }
@@ -144,7 +141,7 @@ public class NodeCommitAndReadRaceTest
     private StateHandlingStatementOperations operations;
     private NeoStore neoStore;
     private RelationshipTypeTokenHolder relationshipTokenHolder;
-    
+
     @Before
     @SuppressWarnings( { "unchecked", "deprecation" } )
     public void before()

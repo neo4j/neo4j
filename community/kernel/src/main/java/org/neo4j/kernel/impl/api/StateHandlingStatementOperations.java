@@ -34,6 +34,7 @@ import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.Statement;
@@ -115,31 +116,45 @@ public class StateHandlingStatementOperations implements
     public long nodeCreate( KernelStatement state )
     {
         long nodeId = storeLayer.reserveNode();
-        state.recordState().nodeCreate( nodeId );
         state.txState().nodeDoCreate( nodeId );
         return nodeId;
     }
 
     @Override
-    public void nodeDelete( KernelStatement state, long nodeId )
+    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
+        assertNodeExists( state, nodeId );
         legacyPropertyTrackers.nodeDelete( nodeId );
-        state.recordState().nodeDelete( nodeId );
         state.txState().nodeDoDelete( nodeId );
+    }
+
+    private void assertNodeExists( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    {
+        if ( !nodeExists( state, nodeId ) )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, nodeId );
+        }
     }
 
     @Override
     public long relationshipCreate( KernelStatement state, int relationshipTypeId, long startNodeId, long endNodeId )
+            throws EntityNotFoundException
     {
-        long id = state.recordState().nextRelationshipId();
-        state.recordState().relationshipCreate( id, relationshipTypeId, startNodeId, endNodeId );
+        assertNodeExists( state, startNodeId );
+        assertNodeExists( state, endNodeId );
+        long id = storeLayer.reserveRelationship();
         state.txState().relationshipDoCreate( id, relationshipTypeId, startNodeId, endNodeId );
         return id;
     }
 
     @Override
-    public void relationshipDelete( final KernelStatement state, long relationshipId )
+    public void relationshipDelete( final KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
+        if ( !relationshipExists( state, relationshipId ) )
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
+        }
+
         // NOTE: We implicitly delegate to neoStoreTransaction via txState.legacyState here. This is because that
         // call returns modified properties, which node manager uses to update legacy tx state. This will be cleaned up
         // once we've removed legacy tx state.
@@ -147,14 +162,6 @@ public class StateHandlingStatementOperations implements
         final TxState txState = state.txState();
         if ( txState.relationshipIsAddedInThisTx( relationshipId ) )
         {
-            txState.relationshipVisit( relationshipId, new RelationshipVisitor<RuntimeException>()
-            {
-                @Override
-                public void visit( long relId, long startNode, long endNode, int type )
-                {
-                    state.recordState().relDelete( relId );
-                }
-            } );
             txState.relationshipDoDeleteAddedInThisTx( relationshipId );
         }
         else
@@ -164,10 +171,9 @@ public class StateHandlingStatementOperations implements
                 storeLayer.relationshipVisit( relationshipId, new RelationshipVisitor<RuntimeException>()
                 {
                     @Override
-                    public void visit( long relId, long startNode, long endNode, int type )
+                    public void visit( long relId, int type, long startNode, long endNode )
                     {
-                        state.recordState().relDelete( relId );
-                        txState.relationshipDoDelete( relId, startNode, endNode, type );
+                        txState.relationshipDoDelete( relId, type, startNode, endNode );
                     }
                 });
             }
@@ -1364,7 +1370,7 @@ public class StateHandlingStatementOperations implements
         relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
         {
             @Override
-            public void visit( long relId, long startNode, long endNode, int type )
+            public void visit( long relId, int type, long startNode, long endNode )
                     throws LegacyIndexNotFoundKernelException
             {
                 statement.txState().getRelationshipLegacyIndexChanges( indexName ).addRelationship(

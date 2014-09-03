@@ -474,8 +474,8 @@ public class CacheLayer implements StoreReadLayer
             RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
     {
         RelationshipImpl relationship = persistenceCache.getRelationship( relationshipId );
-        relationshipVisitor.visit( relationshipId, relationship.getStartNodeId(), relationship.getEndNodeId(),
-                relationship.getTypeId());
+        relationshipVisitor.visit( relationshipId, relationship.getTypeId(), relationship.getStartNodeId(),
+                relationship.getEndNodeId());
     }
 
     @Override
@@ -510,12 +510,18 @@ public class CacheLayer implements StoreReadLayer
     {
         return diskLayer.relationshipExists( relationshipId );
     }
-    
+
     @Override
     public long reserveNode()
     {
         long nodeId = diskLayer.reserveNode();
         persistenceCache.reserveNode( nodeId );
         return nodeId;
+    }
+
+    @Override
+    public long reserveRelationship()
+    {
+        return diskLayer.reserveRelationship();
     }
 }

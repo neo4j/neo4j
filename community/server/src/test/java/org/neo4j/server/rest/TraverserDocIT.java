@@ -20,6 +20,7 @@
 package org.neo4j.server.rest;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -231,8 +232,13 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
         assertThat( nodes.size(), is( 5 ) );
         assertThat( getName( nodes.get( 0 ) ), is( "Root" ) );
         assertThat( getName( nodes.get( 1 ) ), is( "Cork" ) );
-        assertThat( getName( nodes.get( 2 ) ), is( "Johan" ) );
-        assertThat( getName( nodes.get( 3 ) ), is( "Mattias" ) );
+
+        // We don't really care about the ordering between Johan and Mattias, we just assert that they
+        // both are there, in between Root/Cork and Banana
+        Set<String> knowsNodes = new HashSet<>( Arrays.asList( "Johan", "Mattias" ) );
+        assertTrue( knowsNodes.remove( getName( nodes.get( 2 ) ) ) );
+        assertTrue( knowsNodes.remove( getName( nodes.get( 3 ) ) ) );
+
         assertThat( getName( nodes.get( 4 ) ), is( "Banana" ) );
     }
 

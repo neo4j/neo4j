@@ -56,17 +56,7 @@ public class RelationshipCreator
     {
         // TODO could be unnecessary to mark as changed here already, dense nodes may not need to change
         NodeRecord firstNode = recordChangeSet.getNodeRecords().getOrLoad( firstNodeId, null ).forChangingLinkage();
-        if ( !firstNode.inUse() )
-        {
-            throw new IllegalStateException( "First node[" + firstNodeId +
-                    "] is deleted and cannot be used to create a relationship" );
-        }
         NodeRecord secondNode = recordChangeSet.getNodeRecords().getOrLoad( secondNodeId, null ).forChangingLinkage();
-        if ( !secondNode.inUse() )
-        {
-            throw new IllegalStateException( "Second node[" + secondNodeId +
-                    "] is deleted and cannot be used to create a relationship" );
-        }
         convertNodeToDenseIfNecessary( firstNode, recordChangeSet.getRelRecords(),
                 recordChangeSet.getRelGroupRecords() );
         convertNodeToDenseIfNecessary( secondNode, recordChangeSet.getRelRecords(),

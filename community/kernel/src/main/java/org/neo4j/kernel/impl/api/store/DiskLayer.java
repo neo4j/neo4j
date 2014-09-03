@@ -767,9 +767,16 @@ public class DiskLayer implements StoreReadLayer
         };
     }
 
+    @Override
     public long reserveNode()
     {
         return nodeStore.nextId();
+    }
+
+    @Override
+    public long reserveRelationship()
+    {
+        return relationshipStore.nextId();
     }
 
     @Override

@@ -629,7 +629,7 @@ public class NeoStoreTransactionTest
         // WHEN
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( relationshipType, "type" );
-        tx.relationshipCreate( relId, 0, nodeId, nodeId );
+        tx.relCreate( relId, 0, nodeId, nodeId );
         tx.relAddProperty( relId, propertyKeyId,
                 new long[] {1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60} );
         tx.createPropertyKeyToken( "key", propertyKeyId );
@@ -1115,9 +1115,9 @@ public class NeoStoreTransactionTest
             tx.nodeCreate( nodeId );
             tx.nodeCreate( otherNode1Id );
             tx.nodeCreate( otherNode2Id );
-            tx.relationshipCreate( neoStore.getRelationshipStore().nextId(), type10, nodeId, otherNode1Id );
+            tx.relCreate( neoStore.getRelationshipStore().nextId(), type10, nodeId, otherNode1Id );
             // This relationship will cause the switch to dense
-            tx.relationshipCreate( neoStore.getRelationshipStore().nextId(), type10, nodeId, otherNode2Id );
+            tx.relCreate( neoStore.getRelationshipStore().nextId(), type10, nodeId, otherNode2Id );
             commitProcess().commit(transactionRepresentationOf( tx ));
             // Just a little validation of assumptions
             assertRelationshipGroupsInOrder( nodeId, type10 );
@@ -1128,7 +1128,7 @@ public class NeoStoreTransactionTest
             TransactionRecordState tx = newWriteTransaction().first();
             long otherNodeId = neoStore.getNodeStore().nextId();
             tx.nodeCreate( otherNodeId );
-            tx.relationshipCreate( neoStore.getRelationshipStore().nextId(), type5, nodeId, otherNodeId );
+            tx.relCreate( neoStore.getRelationshipStore().nextId(), type5, nodeId, otherNodeId );
             commitProcess().commit(transactionRepresentationOf( tx ));
         }
 
@@ -1140,7 +1140,7 @@ public class NeoStoreTransactionTest
             TransactionRecordState tx = newWriteTransaction().first();
             long otherNodeId = neoStore.getNodeStore().nextId();
             tx.nodeCreate( otherNodeId );
-            tx.relationshipCreate( neoStore.getRelationshipStore().nextId(), type15, nodeId, otherNodeId );
+            tx.relCreate( neoStore.getRelationshipStore().nextId(), type15, nodeId, otherNodeId );
             commitProcess().commit(transactionRepresentationOf( tx ));
         }
 
@@ -1228,7 +1228,7 @@ public class NeoStoreTransactionTest
             long other = direction == INCOMING ? nodeId : otherNodeId;
             long relId = nextId( RELATIONSHIP );
             result[i] = relId;
-            tx.relationshipCreate( relId, type, first, other );
+            tx.relCreate( relId, type, first, other );
         }
         return result;
     }
