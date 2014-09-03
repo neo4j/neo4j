@@ -60,7 +60,7 @@ class LuceneIndexAccessorReader implements IndexReader
     }
 
     @Override
-    public boolean hasIndexed( long nodeId, Object propertyValue )
+    public int getIndexedCount( long nodeId, Object propertyValue )
     {
         Query nodeIdQuery = new TermQuery( documentLogic.newQueryForChangeOrRemove( nodeId ) );
         Query valueQuery = documentLogic.newQuery( propertyValue );
@@ -71,7 +71,7 @@ class LuceneIndexAccessorReader implements IndexReader
         {
             Hits hits = new Hits( searcher, nodeIdAndValueQuery, null );
             // A <label,propertyKeyId,nodeId> tuple should only match at most a single propertyValue
-            return hits.length() == 1;
+            return hits.length();
         }
         catch ( IOException e )
         {
