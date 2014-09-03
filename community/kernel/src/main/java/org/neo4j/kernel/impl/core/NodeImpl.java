@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.api.store.CacheLoader;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
@@ -269,26 +270,30 @@ public class NodeImpl extends ArrayBasedPrimitive
             int[] types )
     {
         Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition> rels = null;
-        synchronized ( this )
+        try ( Lock ignored = nodeManager.lowLevelNodeReadLock( id ) )
         {
-            if ( relationships == null || (relationships.length == 0 && relChainPosition.hasMore( direction, types ) ) )
+            synchronized ( this )
             {
-                try
+                if ( relationships == null ||
+                     (relationships.length == 0 && relChainPosition.hasMore( direction, types )) )
                 {
-                    relChainPosition = nodeManager.getRelationshipChainPosition( this );
-                }
-                catch ( InvalidRecordException e )
-                {
-                    throw new NotFoundException( asProxy( nodeManager ) +
-                            " concurrently deleted while loading its relationships?", e );
-                }
+                    try
+                    {
+                        relChainPosition = nodeManager.getRelationshipChainPosition( this );
+                    }
+                    catch ( InvalidRecordException e )
+                    {
+                        throw new NotFoundException( asProxy( nodeManager ) +
+                                                     " concurrently deleted while loading its relationships?", e );
+                    }
 
-                ArrayMap<Integer, RelIdArray> tmpRelMap = new ArrayMap<>();
-                rels = getMoreRelationships( nodeManager, tmpRelMap, direction, types );
-                this.relationships = toRelIdArray( tmpRelMap );
-                this.relChainPosition = rels == null ? RelationshipLoadingPosition.EMPTY : rels.third();
-                moreRelationshipsLoaded();
-                updateSize( nodeManager );
+                    ArrayMap<Integer, RelIdArray> tmpRelMap = new ArrayMap<>();
+                    rels = getMoreRelationships( nodeManager, tmpRelMap, direction, types );
+                    this.relationships = toRelIdArray( tmpRelMap );
+                    this.relChainPosition = rels == null ? RelationshipLoadingPosition.EMPTY : rels.third();
+                    moreRelationshipsLoaded();
+                    updateSize( nodeManager );
+                }
             }
         }
         if ( rels != null && rels.second().size() > 0 )
@@ -428,40 +433,43 @@ public class NodeImpl extends ArrayBasedPrimitive
             return LoadStatus.NOTHING;
         }
         boolean more;
-        synchronized ( this )
+        try ( Lock ignored = nodeManager.lowLevelNodeReadLock( id ) )
         {
-            if ( !hasMoreRelationshipsToLoad( direction, types ) )
+            synchronized ( this )
             {
-                return LoadStatus.NOTHING;
-            }
-            rels = loadMoreRelationshipsFromNodeManager( nodeManager, direction, types );
-            ArrayMap<Integer, RelIdArray> addMap = rels.first();
-            if ( addMap.size() == 0 )
-            {
-                return LoadStatus.NOTHING;
-            }
-            for ( int type : addMap.keySet() )
-            {
-                RelIdArray addRels = addMap.get( type );
-                RelIdArray srcRels = getRelIdArray( type );
-                if ( srcRels == null )
+                if ( !hasMoreRelationshipsToLoad( direction, types ) )
                 {
-                    putRelIdArray( addRels );
+                    return LoadStatus.NOTHING;
                 }
-                else
+                rels = loadMoreRelationshipsFromNodeManager( nodeManager, direction, types );
+                ArrayMap<Integer, RelIdArray> addMap = rels.first();
+                if ( addMap.size() == 0 )
                 {
-                    RelIdArray newSrcRels = srcRels.addAll( addRels );
-                    // This can happen if srcRels gets upgraded to a RelIdArrayWithLoops
-                    if ( newSrcRels != srcRels )
+                    return LoadStatus.NOTHING;
+                }
+                for ( int type : addMap.keySet() )
+                {
+                    RelIdArray addRels = addMap.get( type );
+                    RelIdArray srcRels = getRelIdArray( type );
+                    if ( srcRels == null )
                     {
-                        putRelIdArray( newSrcRels );
+                        putRelIdArray( addRels );
+                    }
+                    else
+                    {
+                        RelIdArray newSrcRels = srcRels.addAll( addRels );
+                        // This can happen if srcRels gets upgraded to a RelIdArrayWithLoops
+                        if ( newSrcRels != srcRels )
+                        {
+                            putRelIdArray( newSrcRels );
+                        }
                     }
                 }
+                relChainPosition = rels.third();
+                moreRelationshipsLoaded();
+                more = hasMoreRelationshipsToLoad( direction, types );
+                updateSize( nodeManager );
             }
-            relChainPosition = rels.third();
-            moreRelationshipsLoaded();
-            more = hasMoreRelationshipsToLoad( direction, types );
-            updateSize( nodeManager );
         }
         nodeManager.putAllInRelCache( rels.second() );
         return more ? LoadStatus.LOADED_MORE : LoadStatus.LOADED_END;

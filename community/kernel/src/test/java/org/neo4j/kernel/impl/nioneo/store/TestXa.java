@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.PropertyReceiver;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
@@ -378,8 +379,8 @@ public class TestXa
         when( nodeManager.caches() ).thenReturn( caches );
 
         KernelHealth kernelHealth = mock( KernelHealth.class );
-        NeoStoreXaDataSource neoStoreXaDataSource = new NeoStoreXaDataSource( config, sf,
-                                                                              StringLogger.DEV_NULL,
+        NeoStoreXaDataSource neoStoreXaDataSource = new NeoStoreXaDataSource(
+                config, new ReentrantLockService(), sf, StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
                         fileSystem, new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING, kernelHealth ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),

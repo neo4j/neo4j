@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.LockManagerImpl;
 import org.neo4j.kernel.impl.locking.community.RagManager;
+import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.PropertyReceiver;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -199,7 +200,7 @@ public class TestNeoStore
         Locks locks = mock( Locks.class );
         Locks.Client lockClient = mock(Locks.Client.class);
         when(locks.newClient()).thenReturn( lockClient );
-        ds = new NeoStoreXaDataSource(config, sf, StringLogger.DEV_NULL,
+        ds = new NeoStoreXaDataSource(config, new ReentrantLockService(), sf, StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
                         // Could be new TransactionStateFactory( new DevNullLoggingService() )
                         fs, new Monitors(), DevNullLoggingService.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,

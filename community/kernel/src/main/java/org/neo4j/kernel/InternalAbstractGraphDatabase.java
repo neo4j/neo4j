@@ -122,6 +122,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
+import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -212,6 +213,8 @@ public abstract class InternalAbstractGraphDatabase
 
         Iterable<TransactionInterceptorProvider> transactionInterceptorProviders();
     }
+
+    private LockService locks;
 
     public static class Configuration
     {
@@ -565,10 +568,11 @@ public abstract class InternalAbstractGraphDatabase
         Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
 
         statementContextProvider = life.add( new ThreadToStatementContextBridge( persistenceManager ) );
+        locks = new ReentrantLockService();
 
         nodeManager = guard != null ?
-                createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
-                createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
+                createGuardedNodeManager( readOnly, locks, cacheProvider, nodeCache, relCache ) :
+                createNodeManager( readOnly, locks, cacheProvider, nodeCache, relCache );
 
         transactionEventHandlers = new TransactionEventHandlers( createNodeLookup(), createRelationshipLookups(),
                 statementContextProvider  );
@@ -602,7 +606,7 @@ public abstract class InternalAbstractGraphDatabase
                 monitors, logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ), kernelHealth );
 
-        createNeoDataSource();
+        createNeoDataSource( locks );
 
         life.add( new MonitorGc( config, msgLog ) );
 
@@ -679,30 +683,31 @@ public abstract class InternalAbstractGraphDatabase
         return new DefaultLabelIdCreator( logging );
     }
 
-    private NodeManager createNodeManager( final boolean readOnly, final CacheProvider cacheType,
+    private NodeManager createNodeManager( final boolean readOnly, LockService locks, final CacheProvider cacheType,
                                            Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, locks, txManager, persistenceManager,
                     persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
                     createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
                     statementContextProvider );
         }
 
         return new NodeManager(
-                logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+                logging.getMessagesLog( NodeManager.class ), this, locks, txManager, persistenceManager,
                 persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
                 createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
                 statementContextProvider );
     }
 
-    private NodeManager createGuardedNodeManager( final boolean readOnly, final CacheProvider cacheType,
+    private NodeManager createGuardedNodeManager( final boolean readOnly, LockService locks,
+                                                  final CacheProvider cacheType,
                                                   Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, locks, txManager, persistenceManager,
                     persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
             {
@@ -751,7 +756,7 @@ public abstract class InternalAbstractGraphDatabase
             };
         }
 
-        return new NodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+        return new NodeManager( logging.getMessagesLog( NodeManager.class ), this, locks, txManager, persistenceManager,
                 persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
         {
@@ -974,11 +979,10 @@ public abstract class InternalAbstractGraphDatabase
         return life.add( DefaultLogging.createDefaultLogging( config ) );
     }
 
-    protected void createNeoDataSource()
+    protected void createNeoDataSource( LockService locks )
     {
         // Create DataSource
-
-        neoDataSource = new NeoStoreXaDataSource( config,
+        neoDataSource = new NeoStoreXaDataSource( config, locks,
                 storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
@@ -1326,11 +1330,10 @@ public abstract class InternalAbstractGraphDatabase
                 // Locks used to ensure pessimistic concurrency control between transactions
                 return type.cast( lockManager );
             }
-            else if ( LockService.class.isAssignableFrom( type )
-                    && type.isInstance( neoDataSource.getLockService() ) )
+            else if ( LockService.class.isAssignableFrom( type ) && type.isInstance( locks ) )
             {
                 // Locks used to control concurrent access to the store files
-                return type.cast( neoDataSource.getLockService() );
+                return type.cast( locks );
             }
             else if( StoreFactory.class.isAssignableFrom( type ) && type.isInstance( storeFactory ) )
             {

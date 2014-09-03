@@ -43,6 +43,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -175,11 +176,11 @@ public class TestIndexingServiceRecovery
                         state.databaseDependencies() )
                 {
                     @Override
-                    protected void createNeoDataSource()
+                    protected void createNeoDataSource( LockService locks )
                     {
                         // Register our little special recovery listener
                         neoDataSource = new NeoStoreXaDataSource( config,
-                                storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
+                                locks, storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
                                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,

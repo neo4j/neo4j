@@ -265,7 +265,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
      * core API are now slowly accumulating in the Kernel implementation. Over time, these components should be
      * refactored into bigger components that wrap the very granular things we depend on here.
      */
-    public NeoStoreXaDataSource( Config config, StoreFactory sf,
+    public NeoStoreXaDataSource( Config config, LockService locks, StoreFactory sf,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
                                  @SuppressWarnings("deprecation") TransactionInterceptorProviders providers,
                                  JobScheduler scheduler, Logging logging,
@@ -304,7 +304,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         this.storeFactory = sf;
         this.xaFactory = xaFactory;
         this.updateableSchemaState = updateableSchemaState;
-        this.locks = new ReentrantLockService();
+        this.locks = locks;
     }
 
     @Override

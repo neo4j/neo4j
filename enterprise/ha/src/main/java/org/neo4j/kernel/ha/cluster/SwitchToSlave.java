@@ -75,6 +75,8 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
@@ -617,6 +619,7 @@ public class SwitchToSlave
                     };
 
             nioneoDataSource = new NeoStoreXaDataSource( config,
+                    resolver.resolveDependency( LockService.class ),
                     resolver.resolveDependency( StoreFactory.class ),
                     resolver.resolveDependency( StringLogger.class ),
                     resolver.resolveDependency( XaFactory.class ),
