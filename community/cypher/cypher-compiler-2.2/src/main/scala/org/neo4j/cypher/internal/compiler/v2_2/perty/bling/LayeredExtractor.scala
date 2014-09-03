@@ -19,30 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.bling
 
-import scala.reflect.ClassTag
+import scala.language.higherKinds
+
+import scala.reflect.runtime.universe.TypeTag
 
 /**
- * A digger converts a value of type A into value of type O using
- * the given extractor function to convert values at each "layer"
- * of it's drill
+ * A layered extractor converts value of type A into value of type O.
+ * It can be specialized over how to convert inner (child) values by
+ * providing it with an inner extractor.
+ *
+ * When used as a regular extractor, layered extractors are
+ * specialized using their own fix point
  */
-trait Digger[-A, M, O] extends (Extractor[M, O] => Extractor[A, O]) {
-  def drill: Drill[A, M, O]
-  def fixPoint: Extractor[M, O]
+abstract class LayeredExtractor[-I : TypeTag, O : TypeTag] extends Extractor[I, O] {
+  self =>
 
-  val asExtractor = apply(fixPoint)
+  override type Self[-U, V] <: LayeredExtractor[U, V]
 
-  def lift[A0 : ClassTag]: Digger[A0, M, O]
+  def apply[ X <: I : TypeTag](x: X): Option[O] = fixPoint(x)
 
-  // mapping functions for all parts
-  def mapInput[A0 : ClassTag](f: PartialFunction[A0, A]): Digger[A0, M, O]
-  def mapMembers[M1](f: M => M1): Digger[A, M1, O]
-  def mapOutput[O1 <: O](f: O => O1): Digger[A, M, O1]
+  def fixPoint: Extractor[I, O]
 
-  // generic composition
-  def orElse[A1 <: A : ClassTag](other: Digger[A1, M, O]): Digger[A1, M, O]
-
-  // total converter
-  val asConverter: (A => O) = (v: A) =>
-    asExtractor(v).getOrElse(throw new IllegalArgumentException("Could not convert given value"))
+  def fix(inner: Extractor[Any, O]): Extractor[I, O]
 }
+

@@ -17,32 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2
+package org.neo4j.cypher.internal.compiler.v2_2.perty.bling
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.bling._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.PrintCommand
+import scala.reflect.runtime.universe._
 
-import scala.collection.mutable
-import scala.reflect.ClassTag
+object Drill {
+  def empty[O : TypeTag]: Drill[Any, O] = _ => Extractor.empty
 
-/**
- * See pp.Doc
- */
-package object perty {
-  // convert a value into a doc (digger)
-  type DocGen[-T] = FunDigger.type#LayeredFunSeqExtractor[T, Any, Doc]
+  implicit final class FixPoint[-I : TypeTag, O : TypeTag](drill: Drill[I, O]) extends SimpleExtractor[Any, O] {
+    self =>
 
-  // convert a value into a doc (total function)
-  type DocConverter[-T] = T => Doc
+    def fixPoint = drill(self)
 
-  // layout a doc as a series of print commands
-  type DocFormatter = Doc => Seq[PrintCommand]
-
-  // turns a sequence of print commands into a result of type T
-  type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
-
-  // drills used by DocGens
-  type DocDrill[-T] = Drill[T, Any, Doc]
+    def apply[X <: Any : TypeTag](x: X) =
+      if (typeOf[X] <:< typeOf[I]) fixPoint(x.asInstanceOf[I]) else None
+  }
 }
-
-

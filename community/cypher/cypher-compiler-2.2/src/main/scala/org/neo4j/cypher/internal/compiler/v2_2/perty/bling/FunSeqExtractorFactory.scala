@@ -19,12 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.bling
 
-case object mkDrill {
-  def apply[A, M, O]
-    (implicit handler: ExtractionFailureHandler[M, O] = propagateExtractionFailure[M, O]())
-  : (PartialFunction[A, ((M) => O) => O]) => Drill[A, M, O] =
-    (f: PartialFunction[A, (M => O) => O]) =>
-      (v: A) =>
-        (extractor: Extractor[M, O]) =>
-          f.lift(v).map(handler).flatMap( layered => layered(extractor) )
+import scala.reflect.runtime.universe.TypeTag
+
+object FunSeqExtractorFactory extends ExtractorFactory {
+  override type Impl[-I, O] = FunSeqExtractor[I, O]
+
+  protected def newEmpty[I : TypeTag, O : TypeTag] = new FunSeqExtractor.Empty[I, O]
+
+  protected def newFromSingle[I: TypeTag, O : TypeTag](newDrill: Drill[I, O]) =
+    new FunSeqExtractor.Single[I, O] {
+      override def drill: Drill[I, O] = newDrill
+    }
+
+  protected def newFromSeq[I: TypeTag, O : TypeTag](newDrills: Seq[Drill[I, O]]) =
+    new FunSeqExtractor.Multi[I, O] {
+      override def drills: Seq[Drill[I, O]] = newDrills
+    }
 }
+
+
+
+
+

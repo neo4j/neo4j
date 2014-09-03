@@ -19,9 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.bling
 
+import scala.language.higherKinds
+
 import scala.reflect.runtime.universe.TypeTag
 
-case object toStringExtractor extends SimpleExtractor[Any, String] {
-  def apply[X <: Any : TypeTag](x: X) = Some(x.toString)
+trait ExtractorFactory {
+  type Impl[-I, O] <: Extractor[I, O]
+
+  final def apply[I : TypeTag, O : TypeTag](newDrills: Drill[I, O]*): Impl[I, O] = fromSeq[I, O](newDrills)
+  final def empty[I : TypeTag, O : TypeTag]: Impl[I, O] = newEmpty[I, O]
+  final def fromSingle[I : TypeTag, O : TypeTag](drill: Drill[I, O]): Impl[I, O] = newFromSingle[I, O](drill)
+
+  def fromSeq[I : TypeTag, O : TypeTag](drills: Seq[Drill[I, O]]): Impl[I, O] =
+    if (drills.isEmpty)
+      newEmpty[I, O]
+    else
+      if (drills.tails.isEmpty) newFromSingle[I, O](drills.head) else newFromSeq[I, O](drills)
+
+  protected def newEmpty[I : TypeTag, O : TypeTag]: Impl[I, O]
+  protected def newFromSingle[I : TypeTag, O : TypeTag](drill: Drill[I, O]): Impl[I, O]
+  protected def newFromSeq[I : TypeTag, O : TypeTag](drills: Seq[Drill[I, O]]): Impl[I, O]
 }
+
 

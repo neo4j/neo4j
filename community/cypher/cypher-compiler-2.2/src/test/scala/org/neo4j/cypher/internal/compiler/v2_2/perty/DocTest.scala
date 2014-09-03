@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.scalatest.{FunSuite, Matchers}
 
-class DocTest extends CypherFunSuite {
+class DocTest extends FunSuite with Matchers  {
 
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
