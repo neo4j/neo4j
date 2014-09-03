@@ -17,22 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.nioneo.store;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import java.util.Set;
 
-public class UpgradeNotAllowedByConfigurationException extends UpgradeNotAllowedException
+public class UnavailableMembersException extends StoreFailureException
 {
-    public UpgradeNotAllowedByConfigurationException( String msg )
-    {
-        super( msg );
-    }
+    private static final String MESSAGE_FORMAT = "Can't check store ids of unavailable instances: %s";
 
-    public UpgradeNotAllowedByConfigurationException()
+    public UnavailableMembersException( Set<Integer> unavailableIds )
     {
-        super( String.format(
-                "Failed to start Neo4j with an older data store version. "
-                        + "To enable automatic upgrade, please set configuration parameter \"%s=true\"",
-                GraphDatabaseSettings.allow_store_upgrade.name() ) );
+        super( String.format( MESSAGE_FORMAT, unavailableIds ) );
     }
 }

@@ -19,20 +19,10 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-
-public class UpgradeNotAllowedByConfigurationException extends UpgradeNotAllowedException
+public class UpgradeNotAllowedByDatabaseModeException extends UpgradeNotAllowedException
 {
-    public UpgradeNotAllowedByConfigurationException( String msg )
+    public UpgradeNotAllowedByDatabaseModeException()
     {
-        super( msg );
-    }
-
-    public UpgradeNotAllowedByConfigurationException()
-    {
-        super( String.format(
-                "Failed to start Neo4j with an older data store version. "
-                        + "To enable automatic upgrade, please set configuration parameter \"%s=true\"",
-                GraphDatabaseSettings.allow_store_upgrade.name() ) );
+        super( "Failed to start Neo4j HA with an older data store version." );
     }
 }

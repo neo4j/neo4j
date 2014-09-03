@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
  * responses and deserializing requests, which is hard-coded in the server class. That should be moved over
  * eventually.
  */
-public class Protocol
+public abstract class Protocol
 {
     public static final int MEGA = 1024 * 1024;
     public static final int DEFAULT_FRAME_LENGTH = 16*MEGA;
@@ -76,8 +76,10 @@ public class Protocol
         PAYLOAD response = payloadDeserializer.read( dechunkingBuffer, input );
         StoreId storeId = readStoreId( dechunkingBuffer, input );
         TransactionStream txStreams = readTransactionStreams( dechunkingBuffer );
-        return new Response<PAYLOAD>( response, storeId, txStreams, channelReleaser );
+        return new Response<>( response, storeId, txStreams, channelReleaser );
     }
+
+    protected abstract StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer );
 
     private void writeContext( RequestContext context, ChannelBuffer targetBuffer )
     {
@@ -160,15 +162,6 @@ public class Protocol
         {
             buffer.resetReaderIndex();
         }
-    }
-
-    private StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
-    {
-        byteBuffer.clear();
-        byteBuffer.limit( StoreId.SIZE_IN_BYTES );
-        source.readBytes( byteBuffer );
-        byteBuffer.flip();
-        return StoreId.deserialize( byteBuffer );
     }
 
     /* ========================

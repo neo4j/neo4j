@@ -21,6 +21,8 @@ package org.neo4j.cluster.member;
 
 import java.net.URI;
 
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
+
 /**
  * This can be used to signal that a cluster member can now actively
  * participate with a given role, accompanied by a URI for accessing that role.
@@ -33,7 +35,7 @@ public interface ClusterMemberAvailability
      *
      * @param role
      */
-    void memberIsAvailable( String role, URI roleUri );
+    void memberIsAvailable( String role, URI roleUri, StoreId storeId );
 
     /**
      * When a member is no longer available in a particular role it should call this

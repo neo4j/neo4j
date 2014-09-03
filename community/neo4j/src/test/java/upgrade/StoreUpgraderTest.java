@@ -33,6 +33,8 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -47,8 +49,12 @@ import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -205,7 +211,7 @@ public class StoreUpgraderTest
         // GIVEN
         StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, StoreUpgrader.NO_MONITOR );
         String failureMessage = "Just failing";
-        upgrader.addParticipant( participant( "p1", "one", "two" ) );
+        upgrader.addParticipant( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) );
         upgrader.addParticipant( participantThatWillFailWhenMoving( failureMessage ) );
 
         // WHEN
@@ -222,7 +228,7 @@ public class StoreUpgraderTest
         // AND WHEN
         Monitor monitor = Mockito.mock( Monitor.class );
         upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, monitor );
-        upgrader.addParticipant( participant( "p1", "one", "two" ) );
+        upgrader.addParticipant( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) );
         StoreMigrationParticipant observingParticipant = Mockito.mock( StoreMigrationParticipant.class );
         Mockito.when( observingParticipant.needsMigration(
                 Matchers.any( FileSystemAbstraction.class ), Matchers.any( File.class ) ) ).thenReturn( true );
@@ -237,6 +243,27 @@ public class StoreUpgraderTest
         Mockito.verify( observingParticipant, Mockito.times( 1 ) ).cleanup( Matchers.eq( fileSystem ), Matchers.any(
                 File.class ) );
         Mockito.verify( monitor ).migrationCompleted();
+    }
+
+    @Test
+    public void upgradedNeoStoreShouldHaveNewUpgradeTimeAndUpgradeId() throws Exception
+    {
+        // Given
+        fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
+
+        // When
+        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
+                .migrateIfNeeded( dbDirectory );
+
+        // Then
+        File neoStoreFile = new File( dbDirectory, NeoStore.DEFAULT_NAME );
+        NeoStore neoStore = new StoreFactory( dbDirectory, StringLogger.DEV_NULL ).newNeoStore( neoStoreFile );
+
+        assertThat( neoStore.getUpgradeId(), not( equalTo( -1L ) ) );
+        assertThat( neoStore.getUpgradeTime(), not( equalTo( -1L ) ) );
+
+        long minuteAgo = System.currentTimeMillis() - 1000;
+        assertThat( neoStore.getUpgradeTime(), greaterThan( minuteAgo ) );
     }
 
     private StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )
@@ -265,55 +292,11 @@ public class StoreUpgraderTest
         };
     }
 
-    private StoreMigrationParticipant participant( final String directory, final String... files )
-    {
-        return new StoreMigrationParticipant.Adapter()
-        {
-            @Override
-            public boolean needsMigration( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
-            {
-                return true;
-            }
-
-            @Override
-            public void migrate( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
-                                 DependencyResolver dependencies ) throws IOException, UnsatisfiedDependencyException
-            {
-                File dir = new File( migrationDir, directory );
-                fileSystem.mkdirs( dir );
-                for ( String file : files )
-                {
-                    writeFile( fileSystem, new File( dir, file ), file );
-                }
-            }
-
-            @Override
-            public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir, File storeDir,
-                                           File leftOversDir ) throws IOException
-            {
-                for ( File file : fileSystem.listFiles( new File( migrationDir, directory ) ) )
-                {
-                    fileSystem.moveToDirectory( file, storeDir );
-                }
-            }
-        };
-    }
-
-    protected void writeFile( FileSystemAbstraction fileSystem, File file, String contents ) throws IOException
-    {
-        try ( Writer writer = fileSystem.openAsWriter( file, "UTF-8", false ) )
-        {
-            writer.write( contents );
-        }
-    }
-
     public final
     @Rule
     TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
     private File dbDirectory;
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-
-    @SuppressWarnings("deprecation")
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator )
     {

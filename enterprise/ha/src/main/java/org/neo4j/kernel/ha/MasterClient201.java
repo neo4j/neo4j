@@ -23,24 +23,27 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.Protocol;
+import org.neo4j.com.Protocol201;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
-import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -55,6 +58,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
 import static org.neo4j.com.Protocol.writeString;
+import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
@@ -71,7 +75,7 @@ public class MasterClient201 extends Client<Master> implements MasterClient
      * Version 5 since ?
      * Version 6 since 2014-01-07
      */
-    public static final byte PROTOCOL_VERSION = 6;
+    public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 6, INTERNAL_PROTOCOL_VERSION );
 
     private final long lockReadTimeout;
     private final ByteCounterMonitor monitor;
@@ -83,6 +87,12 @@ public class MasterClient201 extends Client<Master> implements MasterClient
                 readTimeoutSeconds, maxConcurrentChannels, chunkSize );
         this.lockReadTimeout = lockReadTimeout;
         this.monitor = monitors.newMonitor( ByteCounterMonitor.class, getClass() );
+    }
+
+    @Override
+    protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
+    {
+        return new Protocol201( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
 
     @Override
@@ -382,6 +392,12 @@ public class MasterClient201 extends Client<Master> implements MasterClient
                 buffer.writeLong( endTxId );
             }
         }, VOID_DESERIALIZER );
+    }
+
+    @Override
+    public ProtocolVersion getProtocolVersion()
+    {
+        return PROTOCOL_VERSION;
     }
 
     @Override

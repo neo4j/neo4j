@@ -102,8 +102,16 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         }
     }
 
-    public void doTheThing()
+    public void enableCompatibilityMode()
     {
+        /*
+         * When a slave is running in compatibility mode (i.e. with a master which is of the previous version), it may
+         * so be that it requires access to some id generator that the master is unaware of. Prominent example is
+         * Relationship Group id generator existing in 2.1 but not in 2.0. When this happens, the slave must rely
+         * on the local id generator and not expect delegations from the master. SwitchToSlave should detect when
+         * this is necessary and properly flip the appropriate generators to "local mode", i.e. master mode.
+         */
+
         generators.get( IdType.RELATIONSHIP_GROUP ).switchToMaster();
     }
     

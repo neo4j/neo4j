@@ -64,7 +64,4 @@ public class Response<T> implements AutoCloseable
             releaser.release();
         }
     }
-
-    public static final Response<Void> EMPTY = new Response<Void>( null, new StoreId( -1, -1 ),
-            TransactionStream.EMPTY, ResourceReleaser.NO_OP );
 }

@@ -26,10 +26,12 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.MismatchingVersionHandler;
 import org.neo4j.com.ObjectSerializer;
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
@@ -60,6 +62,8 @@ public interface MasterClient extends Master
         }
     };
 
+    public static final ProtocolVersion CURRENT = MasterClient214.PROTOCOL_VERSION;
+
     public Response<Integer> createRelationshipType( RequestContext context, final String name );
 
     public Response<Void> initializeTx( RequestContext context );
@@ -79,4 +83,6 @@ public interface MasterClient extends Master
             final long endTxId );
 
     public void addMismatchingVersionHandler( MismatchingVersionHandler toAdd );
+
+    public ProtocolVersion getProtocolVersion();
 }

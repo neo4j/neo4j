@@ -33,6 +33,7 @@ import java.util.List;
 import org.junit.Test;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 public class HANewSnapshotFunctionTest
 {
@@ -41,14 +42,14 @@ public class HANewSnapshotFunctionTest
     {
         // GIVEN
         // This is what the end result should look like
-        List<MemberIsAvailable> events = new LinkedList<MemberIsAvailable>();
+        List<MemberIsAvailable> events = new LinkedList<>();
         events.add( roleForId( MASTER, 1 ) );
         events.add( roleForId( BACKUP, 1 ) );
         events.add( roleForId( SLAVE, 2 ) );
         events.add( roleForId( SLAVE, 3 ) );
 
         // WHEN events start getting added
-        Iterable<MemberIsAvailable > result = new LinkedList<MemberIsAvailable>();
+        Iterable<MemberIsAvailable > result = new LinkedList<>();
         for ( MemberIsAvailable event : events )
         {
             result = new HANewSnapshotFunction().apply( result, event );
@@ -63,7 +64,7 @@ public class HANewSnapshotFunctionTest
     {
         // GIVEN
         // This is the list of events
-        List<MemberIsAvailable> events = new LinkedList<MemberIsAvailable>();
+        List<MemberIsAvailable> events = new LinkedList<>();
         events.add( roleForId( MASTER, 1 ) );
         events.add( roleForId( BACKUP, 1 ) );
         events.add( roleForId( SLAVE, 2 ) );
@@ -71,14 +72,14 @@ public class HANewSnapshotFunctionTest
         events.add( roleForId( SLAVE, 2 ) );
         events.add( roleForId( SLAVE, 3 ) );
         // This is what it should look like
-        List<MemberIsAvailable> expected = new LinkedList<MemberIsAvailable>();
+        List<MemberIsAvailable> expected = new LinkedList<>();
         expected.add( roleForId( MASTER, 1 ) );
         expected.add( roleForId( BACKUP, 1 ) );
         expected.add( roleForId( SLAVE, 2 ) );
         expected.add( roleForId( SLAVE, 3 ) );
 
         // WHEN events start getting added
-        Iterable<MemberIsAvailable > result = new LinkedList<MemberIsAvailable>();
+        Iterable<MemberIsAvailable > result = new LinkedList<>();
         for ( MemberIsAvailable event : events )
         {
             result = new HANewSnapshotFunction().apply( result, event );
@@ -92,20 +93,20 @@ public class HANewSnapshotFunctionTest
     public void instanceBeingMasterReappearsAsSlaveShouldBeTreatedAsSlave() throws Exception
     {
         // GIVEN these events
-        List<MemberIsAvailable> events = new LinkedList<MemberIsAvailable>();
+        List<MemberIsAvailable> events = new LinkedList<>();
         events.add( roleForId( MASTER, 1 ) );
         events.add( roleForId( BACKUP, 1 ) );
         events.add( roleForId( SLAVE, 2 ) );
         events.add( roleForId( SLAVE, 1 ) );
         events.add( roleForId( SLAVE, 3 ) );
         // and this expected outcome
-        List<MemberIsAvailable> expected = new LinkedList<MemberIsAvailable>();
+        List<MemberIsAvailable> expected = new LinkedList<>();
         expected.add( roleForId( SLAVE, 2 ) );
         expected.add( roleForId( SLAVE, 1 ) );
         expected.add( roleForId( SLAVE, 3 ) );
 
         // WHEN events start getting added
-        Iterable<MemberIsAvailable > result = new LinkedList<MemberIsAvailable>();
+        Iterable<MemberIsAvailable > result = new LinkedList<>();
         for ( MemberIsAvailable event : events )
         {
             result = new HANewSnapshotFunction().apply( result, event );
@@ -119,19 +120,19 @@ public class HANewSnapshotFunctionTest
     public void instanceBeingSlaveReappearsAsMasterShouldBeTreatedAsMaster() throws Exception
     {
         // GIVEN these events
-        List<MemberIsAvailable> events = new LinkedList<MemberIsAvailable>();
+        List<MemberIsAvailable> events = new LinkedList<>();
         events.add( roleForId( SLAVE, 2 ) );
         events.add( roleForId( SLAVE, 1 ) );
         events.add( roleForId( MASTER, 1 ) );
         events.add( roleForId( SLAVE, 3 ) );
         // and this expected outcome
-        List<MemberIsAvailable> expected = new LinkedList<MemberIsAvailable>();
+        List<MemberIsAvailable> expected = new LinkedList<>();
         expected.add( roleForId( SLAVE, 2 ) );
         expected.add( roleForId( MASTER, 1 ) );
         expected.add( roleForId( SLAVE, 3 ) );
 
         // WHEN events start getting added
-        Iterable<MemberIsAvailable > result = new LinkedList<MemberIsAvailable>();
+        Iterable<MemberIsAvailable > result = new LinkedList<>();
         for ( MemberIsAvailable event : events )
         {
             result = new HANewSnapshotFunction().apply( result, event );
@@ -145,18 +146,18 @@ public class HANewSnapshotFunctionTest
     public void instanceBeingMasterReplacedByAnotherInstanceShouldNotRemainMaster() throws Exception
     {
         // GIVEN these events
-        List<MemberIsAvailable> events = new LinkedList<MemberIsAvailable>();
+        List<MemberIsAvailable> events = new LinkedList<>();
         events.add( roleForId( MASTER, 1 ) );
         events.add( roleForId( BACKUP, 1 ) );
         events.add( roleForId( MASTER, 2 ) );
         events.add( roleForId( SLAVE, 3 ) );
         // and this expected outcome
-        List<MemberIsAvailable> expected = new LinkedList<MemberIsAvailable>();
+        List<MemberIsAvailable> expected = new LinkedList<>();
         expected.add( roleForId( MASTER, 2 ) );
         expected.add( roleForId( SLAVE, 3 ) );
 
         // WHEN events start getting added
-        Iterable<MemberIsAvailable > result = new LinkedList<MemberIsAvailable>();
+        Iterable<MemberIsAvailable > result = new LinkedList<>();
         for ( MemberIsAvailable event : events )
         {
             result = new HANewSnapshotFunction().apply( result, event );
@@ -169,15 +170,15 @@ public class HANewSnapshotFunctionTest
     private MemberIsAvailable roleForId( String role, int id )
     {
         return new MemberIsAvailable( role, new InstanceId( id ),
-                URI.create( "cluster://"+id ), URI.create( "ha://"+id ) );
+                URI.create( "cluster://"+id ), URI.create( "ha://"+id ), StoreId.DEFAULT );
     }
 
     private void eventsMatch( Iterable<MemberIsAvailable> result, List<MemberIsAvailable> expected )
     {
         Iterator<MemberIsAvailable> iter = result.iterator();
-        for ( int i = 0; i < expected.size(); i++ )
+        for ( MemberIsAvailable anExpected : expected )
         {
-            assertEquals( expected.get( i ), iter.next() );
+            assertEquals( anExpected, iter.next() );
         }
         assertFalse( iter.hasNext() );
     }

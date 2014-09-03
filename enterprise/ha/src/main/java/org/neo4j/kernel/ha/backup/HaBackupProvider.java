@@ -49,6 +49,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -104,7 +105,7 @@ public final class HaBackupProvider extends BackupExtensionService
     private String getMasterServerInCluster( String from, String clusterName, final Logging logging )
     {
         LifeSupport life = new LifeSupport();
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
         params.put( ClusterSettings.server_id.name(), "-1" );
         params.put( ClusterSettings.cluster_name.name(), clusterName );
         params.put( ClusterSettings.initial_hosts.name(), from );
@@ -133,14 +134,14 @@ public final class HaBackupProvider extends BackupExtensionService
             }
         } );
         final Semaphore infoReceivedLatch = new Semaphore( 0 );
-        final AtomicReference<URI> backupUri = new AtomicReference<URI>();
+        final AtomicReference<URI> backupUri = new AtomicReference<>();
         events.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {
-            Map<InstanceId, URI> backupUris = new HashMap<InstanceId, URI>();
+            Map<InstanceId, URI> backupUris = new HashMap<>();
             InstanceId master = null;
 
             @Override
-            public void memberIsAvailable( String role, InstanceId clusterUri, URI roleUri )
+            public void memberIsAvailable( String role, InstanceId clusterUri, URI roleUri, StoreId storeId )
             {
                 if ( OnlineBackupKernelExtension.BACKUP.equals( role ) )
                 {

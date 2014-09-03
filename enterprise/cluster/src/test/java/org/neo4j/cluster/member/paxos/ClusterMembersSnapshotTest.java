@@ -19,33 +19,43 @@
  */
 package org.neo4j.cluster.member.paxos;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
 import java.net.URI;
+import java.util.Objects;
 
 import org.hamcrest.BaseMatcher;
-import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents.ClusterMembersSnapshot;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
+
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 @Ignore("Ignored temporarily, pending review for extracting useful bits. The bulk of the test is now in HA, HaNewSnapshotFunctionTest")
 public class ClusterMembersSnapshotTest
 {
+    private static final String URI = "http://me";
+    private static final String ROLE_1 = "r1";
+    private static final String ROLE_2 = "r2";
+
     @Test
     public void snapshotListPrunesSameMemberOnIdenticalAvailabilityEvents() throws Exception
     {
         // GIVEN
         // -- a snapshot containing one member with a role
-        ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot( new PaxosClusterMemberEvents.UniqueRoleFilter(ROLE_1) );
+        ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot( new PaxosClusterMemberEvents.UniqueRoleFilter() );
         URI clusterUri = new URI( URI );
         InstanceId instanceId = new InstanceId( 1 );
-        MemberIsAvailable memberIsAvailable = new MemberIsAvailable( ROLE_1, instanceId, clusterUri, new URI( URI + "?something" ) );
+        MemberIsAvailable memberIsAvailable = new MemberIsAvailable(
+                ROLE_1, instanceId, clusterUri, new URI( URI + "?something" ), StoreId.DEFAULT );
         snapshot.availableMember( memberIsAvailable );
 
         // WHEN
@@ -55,13 +65,9 @@ public class ClusterMembersSnapshotTest
         // THEN
         // -- getting the snapshot list should only reveal the last one
         assertEquals( 1, count( snapshot.getCurrentAvailable( instanceId ) ) );
-        assertThat(
-                snapshot.getCurrentAvailable( instanceId ),
-                CoreMatchers.<MemberIsAvailable>hasItem( memberIsAvailable( memberIsAvailable ) ) );
+        assertThat( snapshot.getCurrentAvailable( instanceId ), hasItem( memberIsAvailable( memberIsAvailable ) ) );
         assertEquals( 1, count( snapshot.getCurrentAvailableMembers() ) );
-        assertThat(
-                snapshot.getCurrentAvailableMembers(),
-                CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( memberIsAvailable ) ) );
+        assertThat( snapshot.getCurrentAvailableMembers(), hasItems( memberIsAvailable( memberIsAvailable ) ) );
     }
     
     @Test
@@ -72,12 +78,14 @@ public class ClusterMembersSnapshotTest
         ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot(null);
         URI clusterUri = new URI( URI );
         InstanceId instanceId = new InstanceId( 1 );
-        MemberIsAvailable event1 = new MemberIsAvailable( ROLE_1, instanceId, clusterUri, new URI( URI + "?something" ) );
+        MemberIsAvailable event1 = new MemberIsAvailable(
+                ROLE_1, instanceId, clusterUri, new URI( URI + "?something" ), StoreId.DEFAULT );
         snapshot.availableMember( event1 );
 
         // WHEN
         // -- the same member, although different role, gets added to the snapshot
-        MemberIsAvailable event2 = new MemberIsAvailable( ROLE_2, instanceId, clusterUri, new URI( URI + "?something" ) );
+        MemberIsAvailable event2 = new MemberIsAvailable(
+                ROLE_2, instanceId, clusterUri, new URI( URI + "?something" ), StoreId.DEFAULT );
         snapshot.availableMember( event2 );
 
         // THEN
@@ -85,13 +93,11 @@ public class ClusterMembersSnapshotTest
         assertEquals( 2, count( snapshot.getCurrentAvailable( instanceId ) ) );
         assertThat(
                 snapshot.getCurrentAvailable( instanceId ),
-                CoreMatchers.<MemberIsAvailable>hasItems(
-                        memberIsAvailable( event1 ), memberIsAvailable( event2 ) ) );
+                hasItems( memberIsAvailable( event1 ), memberIsAvailable( event2 ) ) );
         assertEquals( 2, count( snapshot.getCurrentAvailableMembers() ) );
         assertThat(
                 snapshot.getCurrentAvailableMembers(),
-                CoreMatchers.<MemberIsAvailable>hasItems(
-                        memberIsAvailable( event1 ), memberIsAvailable( event2 ) ) );
+                hasItems( memberIsAvailable( event1 ), memberIsAvailable( event2 ) ) );
     }
     
     @Test
@@ -102,31 +108,25 @@ public class ClusterMembersSnapshotTest
         ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot(null);
         URI clusterUri = new URI( URI );
         InstanceId instanceId = new InstanceId( 1 );
-        MemberIsAvailable event = new MemberIsAvailable( ROLE_1, instanceId, clusterUri, new URI( URI + "?something1" ) );
+        MemberIsAvailable event = new MemberIsAvailable(
+                ROLE_1, instanceId, clusterUri, new URI( URI + "?something1" ), StoreId.DEFAULT );
         snapshot.availableMember( event );
 
         // WHEN
         // -- another member, but with same role, gets added to the snapshot
         URI otherClusterUri = new URI( URI );
         InstanceId otherInstanceId = new InstanceId( 2 );
-        MemberIsAvailable otherEvent = new MemberIsAvailable( ROLE_1, otherInstanceId, otherClusterUri, new URI( URI + "?something2" ) );
+        MemberIsAvailable otherEvent = new MemberIsAvailable(
+                ROLE_1, otherInstanceId, otherClusterUri, new URI( URI + "?something2" ), StoreId.DEFAULT );
         snapshot.availableMember( otherEvent );
 
         // THEN
         // -- getting the snapshot list should only reveal the last member added, as it had the same role
         assertEquals( 1, count( snapshot.getCurrentAvailable( otherInstanceId ) ) );
-        assertThat(
-                snapshot.getCurrentAvailable( otherInstanceId ),
-                CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( otherEvent ) ) );
+        assertThat( snapshot.getCurrentAvailable( otherInstanceId ), hasItems( memberIsAvailable( otherEvent ) ) );
         assertEquals( 1, count( snapshot.getCurrentAvailableMembers() ) );
-        assertThat(
-                snapshot.getCurrentAvailableMembers(),
-                CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( otherEvent ) ) );
+        assertThat( snapshot.getCurrentAvailableMembers(), hasItems( memberIsAvailable( otherEvent ) ) );
     }
-    
-    private static final String URI = "http://me";
-    private static final String ROLE_1 = "r1";
-    private static final String ROLE_2 = "r2";
     
     private static Matcher<MemberIsAvailable> memberIsAvailable( final MemberIsAvailable expected )
     {
@@ -136,9 +136,9 @@ public class ClusterMembersSnapshotTest
             public boolean matches( Object item )
             {
                 MemberIsAvailable input = (MemberIsAvailable) item;
-                return  nullSafeEquals( input.getClusterUri(), expected.getClusterUri() ) &&
-                        nullSafeEquals( input.getRole(), expected.getRole() ) &&
-                        nullSafeEquals( input.getRoleUri(), expected.getRoleUri() );
+                return Objects.equals( input.getClusterUri(), expected.getClusterUri() ) &&
+                        Objects.equals( input.getRole(), expected.getRole() ) &&
+                        Objects.equals( input.getRoleUri(), expected.getRoleUri() );
             }
 
             @Override
@@ -146,10 +146,5 @@ public class ClusterMembersSnapshotTest
             {
             }
         };
-    }
-
-    protected static <T> boolean nullSafeEquals( T o1, T o2 )
-    {
-        return o1 == null || o2 == null ? o1 == o2 : o1.equals( o2 );
     }
 }

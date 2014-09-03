@@ -19,38 +19,59 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.nio.ByteBuffer;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.security.SecureRandom;
 import java.util.Random;
 
-public final class StoreId
+public final class StoreId implements Externalizable
 {
-    public static final int SIZE_IN_BYTES = 8 + 8 + 8; // creation time + random + store version (fixed value)
+    public static final long CURRENT_STORE_VERSION = NeoStore.versionStringToLong( NeoStore.ALL_STORES_VERSION );
 
-    /*
-     * This field represents the store version of the last Neo4j version which had the store version as part of
-     * the StoreId (2.0.1). This field is now deprecated but is not removed. Fixing it to this value ensures
-     * rolling upgrades can happen.
-     * // TODO use NeoStore.versionStringToLong() to do the translation - currently does not work as expected
-     */
-    private static final long storeVersionAsLong = 13843131341501958l;
+    public static final StoreId DEFAULT = new StoreId( -1, -1, -1, -1 );
 
     private static final Random r = new SecureRandom();
 
-    private final long creationTime;
-    private final long randomId;
+    private long creationTime;
+    private long randomId;
+    private long storeVersion;
+    private long upgradeTime;
+    private long upgradeId;
 
     public StoreId()
     {
-        this(
-            System.currentTimeMillis(),
-            r.nextLong() );
+        // If creationTime == upgradeTime && randomNumber == upgradeId then store has never been upgraded
+        long currentTimeMillis = System.currentTimeMillis();
+        long randomLong = r.nextLong();
+
+        this.creationTime = currentTimeMillis;
+        this.randomId = randomLong;
+        this.storeVersion = CURRENT_STORE_VERSION;
+        this.upgradeTime = currentTimeMillis;
+        this.upgradeId = randomLong;
     }
 
-    public StoreId( long creationTime, long randomId )
+    public StoreId( long creationTime, long randomId, long upgradeTime, long upgradeId )
+    {
+        this( creationTime, randomId, CURRENT_STORE_VERSION, upgradeTime, upgradeId );
+    }
+
+    public StoreId( long creationTime, long randomId, long storeVersion, long upgradeTime, long upgradeId )
     {
         this.creationTime = creationTime;
         this.randomId = randomId;
+        this.storeVersion = storeVersion;
+        this.upgradeTime = upgradeTime;
+        this.upgradeId = upgradeId;
+    }
+
+    public static StoreId from( ObjectInput in ) throws IOException, ClassNotFoundException
+    {
+        StoreId storeId = new StoreId();
+        storeId.readExternal( in );
+        return storeId;
     }
 
     public long getCreationTime()
@@ -63,50 +84,81 @@ public final class StoreId
         return randomId;
     }
 
-    @Override
-    public boolean equals( Object obj )
+    public long getUpgradeTime()
     {
-        if ( obj instanceof StoreId )
+        return upgradeTime;
+    }
+
+    public long getUpgradeId()
+    {
+        return upgradeId;
+    }
+
+    public long getStoreVersion()
+    {
+        return storeVersion;
+    }
+
+    @Override
+    public void writeExternal( ObjectOutput out ) throws IOException
+    {
+        out.writeLong( creationTime );
+        out.writeLong( randomId );
+        out.writeLong( storeVersion );
+        out.writeLong( upgradeTime );
+        out.writeLong( upgradeId );
+    }
+
+    @Override
+    public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException
+    {
+        creationTime = in.readLong();
+        randomId = in.readLong();
+        storeVersion = in.readLong();
+        upgradeTime = in.readLong();
+        upgradeId = in.readLong();
+    }
+
+    public boolean equalsByUpgradeId( StoreId other )
+    {
+        return equal( upgradeTime, other.upgradeTime ) && equal( upgradeId, other.upgradeId );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
         {
-            StoreId that = (StoreId) obj;
-            return that.creationTime == this.creationTime && that.randomId == this.randomId;
+            return true;
         }
-        return false;
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        StoreId other = (StoreId) o;
+        return equal( creationTime, other.creationTime ) && equal( randomId, other.randomId );
     }
 
     @Override
     public int hashCode()
     {
-        return (int) (( creationTime ^ randomId ) );
-    }
-
-    public byte[] serialize()
-    {
-        return ByteBuffer.wrap( new byte[8+8+8] )
-                .putLong( creationTime )
-                .putLong( randomId )
-                .putLong( storeVersionAsLong )
-                .array();
+        return 31 * (int) (creationTime ^ (creationTime >>> 32)) + (int) (randomId ^ (randomId >>> 32));
     }
 
     @Override
     public String toString()
     {
-        return "StoreId[time:" + creationTime + ", id:" + randomId + ", store version: " + -2 + "]";
+        return "StoreId{" +
+               "creationTime=" + creationTime +
+               ", randomId=" + randomId +
+               ", storeVersion=" + storeVersion +
+               ", upgradeTime=" + upgradeTime +
+               ", upgradeId=" + upgradeId +
+               '}';
     }
 
-    public static StoreId deserialize( byte[] data )
+    private static boolean equal( long first, long second )
     {
-        assert data.length == 8+8+8 : "unexpected data";
-        ByteBuffer buffer = ByteBuffer.wrap( data );
-        return deserialize( buffer );
-    }
-
-    public static StoreId deserialize( ByteBuffer buffer )
-    {
-        long creationTime = buffer.getLong();
-        long randomId = buffer.getLong();
-        buffer.getLong(); // consume fixed 8 bytes
-        return new StoreId( creationTime, randomId );
+        return first == second || first == -1 || second == -1;
     }
 }

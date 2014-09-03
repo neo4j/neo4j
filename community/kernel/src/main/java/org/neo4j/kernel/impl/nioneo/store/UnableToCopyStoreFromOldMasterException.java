@@ -17,22 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.nioneo.store;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-
-public class UpgradeNotAllowedByConfigurationException extends UpgradeNotAllowedException
+public class UnableToCopyStoreFromOldMasterException extends StoreFailureException
 {
-    public UpgradeNotAllowedByConfigurationException( String msg )
-    {
-        super( msg );
-    }
+    private static final String MESSAGE_PATTERN = "Can't copy store from old master. " +
+            "My protocol version is %s, master's protocol version is %s";
 
-    public UpgradeNotAllowedByConfigurationException()
+    public UnableToCopyStoreFromOldMasterException( byte myProtocolVersion, byte masterProtocolVersion )
     {
-        super( String.format(
-                "Failed to start Neo4j with an older data store version. "
-                        + "To enable automatic upgrade, please set configuration parameter \"%s=true\"",
-                GraphDatabaseSettings.allow_store_upgrade.name() ) );
+        super( String.format( MESSAGE_PATTERN, myProtocolVersion, masterProtocolVersion ) );
     }
 }

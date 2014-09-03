@@ -27,6 +27,7 @@ import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.Protocol;
+import org.neo4j.com.Protocol201;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.ResourceReleaser;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -53,6 +55,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
 import static org.neo4j.com.Protocol.writeString;
+import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 
 /**
  * The {@link org.neo4j.kernel.ha.com.master.Master} a slave should use to communicate with its master. It
@@ -70,18 +73,32 @@ public class MasterClient210 extends Client<Master> implements MasterClient
      * Version 6 since 2014-01-07
      * Version 7 since 2014-03-18
      */
-    public static final byte PROTOCOL_VERSION = 7;
+    public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 7, INTERNAL_PROTOCOL_VERSION );
 
     private final long lockReadTimeout;
     private final ByteCounterMonitor monitor;
 
     public MasterClient210( String hostNameOrIp, int port, Logging logging, Monitors monitors, StoreId storeId,
-                            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize )
+                            long readTimeoutMillis, long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize )
     {
-        super( hostNameOrIp, port, logging, monitors, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
-                readTimeoutSeconds, maxConcurrentChannels, chunkSize );
-        this.lockReadTimeout = lockReadTimeout;
+        this( hostNameOrIp, port, logging, monitors, storeId, readTimeoutMillis, lockReadTimeoutMillis,
+                maxConcurrentChannels, chunkSize, PROTOCOL_VERSION );
+    }
+
+    MasterClient210( String hostNameOrIp, int port, Logging logging, Monitors monitors, StoreId storeId,
+                            long readTimeoutMillis, long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
+                            ProtocolVersion protocolVersion )
+    {
+        super( hostNameOrIp, port, logging, monitors, storeId, MasterServer.FRAME_LENGTH, protocolVersion,
+                readTimeoutMillis, maxConcurrentChannels, chunkSize );
+        this.lockReadTimeout = lockReadTimeoutMillis;
         this.monitor = monitors.newMonitor( ByteCounterMonitor.class, getClass() );
+    }
+
+    @Override
+    protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
+    {
+        return new Protocol201( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
 
     @Override
@@ -335,6 +352,12 @@ public class MasterClient210 extends Client<Master> implements MasterClient
                 buffer.writeLong( endTxId );
             }
         }, VOID_DESERIALIZER );
+    }
+
+    @Override
+    public ProtocolVersion getProtocolVersion()
+    {
+        return PROTOCOL_VERSION;
     }
 
     @Override

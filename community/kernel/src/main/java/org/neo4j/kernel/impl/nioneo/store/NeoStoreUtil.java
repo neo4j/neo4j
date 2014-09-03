@@ -35,7 +35,6 @@ public class NeoStoreUtil
     private final long logVersion;
     private final long storeVersion;
     private final long firstGraphProp;
-    private File file;
 
     public static void main( String[] args )
     {
@@ -54,15 +53,16 @@ public class NeoStoreUtil
 
     public NeoStoreUtil( File storeDir, FileSystemAbstraction fs )
     {
-        StoreChannel channel = null;
-        try
+        try ( StoreChannel channel = fs.open( neoStoreFile( storeDir ), "r" ) )
         {
-            channel = fs.open( neoStoreFile( storeDir ), "r" );
             int recordsToRead = 6;
-            ByteBuffer buf = ByteBuffer.allocate( recordsToRead*NeoStore.RECORD_SIZE );
-            if ( channel.read( buf ) != recordsToRead*NeoStore.RECORD_SIZE )
+            int bytesToRead = recordsToRead * NeoStore.RECORD_SIZE;
+            ByteBuffer buf = ByteBuffer.allocate( bytesToRead );
+            int bytesRead = channel.read( buf );
+            if ( bytesRead != bytesToRead )
             {
-                throw new RuntimeException( "Unable to read neo store header information" );
+                throw new RuntimeException( "Unable to read neo store header information, " +
+                        "read: " + bytesRead + "B, expected " + bytesToRead + "B");
             }
             buf.flip();
             creationTime = nextRecord( buf );
@@ -75,20 +75,6 @@ public class NeoStoreUtil
         catch ( IOException e )
         {
             throw new RuntimeException( e );
-        }
-        finally
-        {
-            if ( channel != null )
-            {
-                try
-                {
-                    channel.close();
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
         }
     }
 
@@ -126,7 +112,7 @@ public class NeoStoreUtil
     @Override
     public String toString()
     {
-        return format( "Neostore contents of " + this.file + ":%n" +
+        return format( "Neostore contents:%n" +
                 "0: creation time: %s%n" +
                 "1: random id: %s%n" +
                 "2: log version: %s%n" +
@@ -141,7 +127,7 @@ public class NeoStoreUtil
                 txId,
                 storeVersion,
                 firstGraphProp,
-                new StoreId( creationTime, randomId ) );
+                new StoreId( creationTime, randomId, storeVersion, -1, -1 ) );
     }
 
     public static boolean storeExists( File storeDir )

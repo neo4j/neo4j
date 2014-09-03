@@ -47,7 +47,7 @@ import static org.neo4j.kernel.impl.util.FileUtils.windowsSafeIOOperation;
  * Contains common implementation for {@link AbstractStore} and
  * {@link AbstractDynamicStore}.
  */
-public abstract class CommonAbstractStore implements IdSequence
+public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 {
     public static abstract class Configuration
     {
@@ -542,6 +542,7 @@ public abstract class CommonAbstractStore implements IdSequence
      * giving the implementing store way to do anything that it needs to do
      * before the fileChannel is closed.
      */
+    @Override
     public void close()
     {
         if ( fileChannel == null )

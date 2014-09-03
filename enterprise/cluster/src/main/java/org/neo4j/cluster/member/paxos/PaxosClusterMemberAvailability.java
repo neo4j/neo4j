@@ -30,6 +30,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
@@ -100,11 +101,12 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
     }
 
     @Override
-    public void memberIsAvailable( String role, URI roleUri )
+    public void memberIsAvailable( String role, URI roleUri, StoreId storeId )
     {
         try
         {
-            Payload payload = serializer.broadcast( new MemberIsAvailable( role, myId, serverClusterId, roleUri ) );
+            MemberIsAvailable message = new MemberIsAvailable( role, myId, serverClusterId, roleUri, storeId );
+            Payload payload = serializer.broadcast( message );
             serializer.receive( payload );
             atomicBroadcast.broadcast( payload );
         }
