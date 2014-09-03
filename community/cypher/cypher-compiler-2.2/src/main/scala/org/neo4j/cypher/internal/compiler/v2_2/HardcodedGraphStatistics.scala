@@ -19,37 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Multiplier}
 
 
 case object HardcodedGraphStatistics extends HardcodedGraphStatisticsValues
 
 class HardcodedGraphStatisticsValues extends GraphStatistics {
   val NODES_CARDINALITY = Cardinality(10000)
-  val NODES_WITH_LABEL_SELECTIVITY = Multiplier(0.2)
+  val NODES_WITH_LABEL_SELECTIVITY = Selectivity(0.2)
   val NODES_WITH_LABEL_CARDINALITY = NODES_CARDINALITY * NODES_WITH_LABEL_SELECTIVITY
-  val RELATIONSHIPS_WITH_TYPE_SELECTIVITY = Multiplier(0.2)
-  val DEGREE_BY_RELATIONSHIP_TYPE_AND_DIRECTION = Multiplier(5)
-  val DEGREE_BY_LABEL_RELATIONSHIP_TYPE_AND_DIRECTION = Multiplier(5)
+  val RELATIONSHIPS_CARDINALITY = Cardinality(50000)
+  val INDEX_SELECTIVITY = Selectivity(.2)
 
-  def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId,
-                                                direction: Direction): Multiplier =
-    DEGREE_BY_LABEL_RELATIONSHIP_TYPE_AND_DIRECTION
+  def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
+    Some(INDEX_SELECTIVITY)
 
-  def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Multiplier =
-    DEGREE_BY_RELATIONSHIP_TYPE_AND_DIRECTION
+  def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
+    labelId.map(_ => NODES_WITH_LABEL_CARDINALITY).getOrElse(NODES_CARDINALITY)
 
-  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Multiplier =
-    RELATIONSHIPS_WITH_TYPE_SELECTIVITY
-
-  def nodesWithLabelSelectivity(labelId: LabelId): Multiplier =
-    NODES_WITH_LABEL_SELECTIVITY
-
-  def nodesWithLabelCardinality(labelId: LabelId): Cardinality =
-    NODES_WITH_LABEL_CARDINALITY
-
-  def nodesCardinality: Cardinality =
-    NODES_CARDINALITY
+  def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+    RELATIONSHIPS_CARDINALITY
 }

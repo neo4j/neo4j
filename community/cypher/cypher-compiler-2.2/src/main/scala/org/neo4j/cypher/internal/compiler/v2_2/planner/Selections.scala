@@ -66,6 +66,11 @@ case class Selections(predicates: Set[Predicate] = Set.empty)
       case (acc, _) => acc
     }
 
+  def labelsOnNode(id: IdName) : Set[LabelName] = _labelsOnNode.getOrElse(id, Set.empty)
+
+  lazy val _labelsOnNode:Map[IdName, Set[LabelName]] =
+       labelPredicates.mapValues(_.map(_.labels.head))
+
   def coveredBy(solvedPredicates: Seq[Expression]): Boolean =
     flatPredicates.forall( solvedPredicates.contains )
 

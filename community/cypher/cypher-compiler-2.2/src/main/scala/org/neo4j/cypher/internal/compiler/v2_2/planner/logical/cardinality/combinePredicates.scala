@@ -17,22 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.spi
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
-import org.neo4j.kernel.api.exceptions.KernelException
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Selectivity
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.groupPredicates._
 
-trait TokenContext {
-  def getLabelName(id: Int): String
-  def getOptLabelId(labelName: String): Option[Int]
-  def getLabelId(labelName: String): Int
-  def getPropertyKeyName(id: Int): String
-  def getOptPropertyKeyId(propertyKeyName: String): Option[Int]
-  def getPropertyKeyId(propertyKeyName: String): Int
-  def getRelTypeName(id: Int): String
-  def getOptRelTypeId(relType: String): Option[Int]
-  def getRelTypeId(relType: String): Int
-}
-
-object TokenContext {
-  def tryGet[T <: KernelException : Manifest](result: => Int) = try { Some(result) } catch { case (_: T) => None }
+object combinePredicates extends (Set[EstimatedPredicateCombination] => (Set[Predicate], Selectivity)) {
+  def apply(combinations: Set[EstimatedPredicateCombination]): (Set[Predicate], Selectivity) =
+    combinations.toSeq.sortBy(_._2).headOption.map {
+      case (combination, selectivity) => combination.containedPredicates -> selectivity
+    }.getOrElse(Set.empty[Predicate] -> Selectivity(1))
 }

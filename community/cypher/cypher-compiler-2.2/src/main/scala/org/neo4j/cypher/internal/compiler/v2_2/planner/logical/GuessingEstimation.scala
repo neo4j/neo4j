@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.{RelTypeId, ast}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_2.RelTypeId
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 
 object GuessingEstimation {
-  val LABEL_NOT_FOUND_SELECTIVITY = Multiplier(0.0)
-  val PREDICATE_SELECTIVITY = Multiplier(0.2)
-  val INDEX_SEEK_SELECTIVITY = Multiplier(0.02)
+  val LABEL_NOT_FOUND_SELECTIVITY = Selectivity(0.0)
+  val PREDICATE_SELECTIVITY = Selectivity(0.2)
+  val INDEX_SEEK_SELECTIVITY = Selectivity(0.02)
   val DEFAULT_EXPAND_RELATIONSHIP_DEGREE = Multiplier(2.0)
   val DEFAULT_CONNECTIVITY_CHANCE = Multiplier(1.0)
 }
@@ -37,17 +36,17 @@ object GuessingEstimation {
 class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
                                        selectivity: Metrics.SelectivityModel)
                                       (implicit semanticTable: SemanticTable) extends Metrics.CardinalityModel {
-  import GuessingEstimation._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.GuessingEstimation._
 
   def apply(plan: LogicalPlan): Cardinality = plan match {
     case AllNodesScan(_, _) =>
-      statistics.nodesCardinality
+      statistics.nodesWithLabelCardinality(None)
 
     case NodeByLabelScan(_, Left(_), _) =>
-      statistics.nodesCardinality * LABEL_NOT_FOUND_SELECTIVITY
+      statistics.nodesWithLabelCardinality(None) * LABEL_NOT_FOUND_SELECTIVITY
 
     case NodeByLabelScan(_, Right(labelId), _) =>
-      statistics.nodesWithLabelCardinality(labelId)
+      statistics.nodesWithLabelCardinality(Some(labelId))
 
     case NodeByIdSeek(_, EntityByIdParameter(_), _) =>
       Cardinality(1)
@@ -56,7 +55,7 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       Cardinality(exprs.size)
 
     case NodeIndexSeek(_, _, _, _, _) =>
-      statistics.nodesCardinality * INDEX_SEEK_SELECTIVITY
+      statistics.nodesWithLabelCardinality(None) * INDEX_SEEK_SELECTIVITY
 
     case NodeIndexUniqueSeek(_, _, _, _, _) =>
       Cardinality(1)
@@ -188,14 +187,18 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     if (types.size <= 0)
       DEFAULT_EXPAND_RELATIONSHIP_DEGREE
     else
-      types.foldLeft(Multiplier(0))((sum, t) => sum + degreeByRelationshipTypeAndDirection(t.id, dir))
+      types.map(_.id).map(degreeByRelationshipTypeAndDirection(_, dir)).reduce(_ + _)
 
-  private def predicateSelectivity(predicates: Seq[ast.Expression]): Multiplier =
-    predicates.map(selectivity).foldLeft(Multiplier(1))(_ * _)
+  private def predicateSelectivity(predicates: Seq[ast.Expression]): Selectivity =
+    predicates.map(selectivity).foldLeft(Selectivity(1))(_ * _)
 
   private def degreeByRelationshipTypeAndDirection(optId: Option[RelTypeId], direction: Direction): Multiplier = optId match {
-    case Some(id) => statistics.degreeByRelationshipTypeAndDirection(id, direction)
-    case None     => DEFAULT_EXPAND_RELATIONSHIP_DEGREE
+    case Some(id) =>
+      // FIXME: Make Cardinality type safe with regards to the type of entity (Node/Relationship).
+      // FIXME: Make / produce a Multiplier for different units and a Selectivity for the same unit.
+      Multiplier(statistics.cardinalityByLabelsAndRelationshipType(None, Some(id), None).amount / statistics.nodesWithLabelCardinality(None).amount)
+    case None =>
+      DEFAULT_EXPAND_RELATIONSHIP_DEGREE
   }
 
   private def cardinality(plan: LogicalPlan) = apply(plan)
@@ -204,17 +207,17 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
 class StatisticsBasedSelectivityModel(statistics: GraphStatistics)
                                      (implicit semanticTable: SemanticTable) extends Metrics.SelectivityModel {
 
-  import GuessingEstimation._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.GuessingEstimation._
 
-  def apply(predicate: ast.Expression): Multiplier = predicate match {
+  def apply(predicate: ast.Expression): Selectivity = predicate match {
     case ast.HasLabels(_, Seq(label)) =>
       if (label.id.isDefined)
-        statistics.nodesWithLabelSelectivity(label.id.get)
+        statistics.nodesWithLabelCardinality(label.id) / statistics.nodesWithLabelCardinality(None)
       else
         LABEL_NOT_FOUND_SELECTIVITY
 
     case ast.Not(inner) =>
-      Multiplier(1) - apply(inner)
+      apply(inner).inverse
 
     case _  =>
       PREDICATE_SELECTIVITY
