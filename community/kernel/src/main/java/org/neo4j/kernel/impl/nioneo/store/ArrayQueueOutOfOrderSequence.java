@@ -56,7 +56,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     }
 
     @Override
-    public void set( long number )
+    public synchronized void set( long number )
     {
         highestGapFreeNumber = number;
         outOfOrderQueue.clear();
