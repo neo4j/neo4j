@@ -35,7 +35,7 @@ object expand extends CandidateGenerator[PlanTable] {
     } yield {
       val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)
-      val expandF = (otherSide: IdName) => planExpand(plan, nodeId, dir, patternRel.types,
+      val expandF = (otherSide: IdName) => planExpand(plan, nodeId, dir, patternRel.dir, patternRel.types,
                                                       otherSide, patternRel.name, patternRel.length, patternRel)
 
       if (plan.availableSymbols.contains(otherSide)) {

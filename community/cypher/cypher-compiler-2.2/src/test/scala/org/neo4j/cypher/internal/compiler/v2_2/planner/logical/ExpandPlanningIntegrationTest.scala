@@ -35,7 +35,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       Projection(
         Expand(
           AllNodesScan("b", Set.empty)(PlannerQuery.empty),
-          "b", Direction.INCOMING, Seq.empty, "a", "r", SimplePatternLength
+          "b", Direction.INCOMING, Direction.OUTGOING, Seq.empty, "a", "r", SimplePatternLength
         )(PlannerQuery.empty),
         Map("r" -> Identifier("r") _)
       )(PlannerQuery.empty)
@@ -58,9 +58,9 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             Selection(_,
               CartesianProduct(
                 Expand(
-                  AllNodesScan(IdName("a"), _), _, _, _, _, _, _),
+                  AllNodesScan(IdName("a"), _), _, _, _, _, _, _, _),
                 Expand(
-                  AllNodesScan(IdName("c"), _), _, _, _, _, _, _)
+                  AllNodesScan(IdName("c"), _), _, _, _, _, _, _, _)
               )
             ), _) => ()
     }
@@ -73,7 +73,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
           predicates = Seq(Equals(Identifier("a") _, Identifier("a$$$") _) _),
           left = Expand(
             AllNodesScan("a", Set.empty)(PlannerQuery.empty),
-            "a", Direction.OUTGOING, Seq.empty, "a$$$", "r", SimplePatternLength)(PlannerQuery.empty)
+            "a", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, "a$$$", "r", SimplePatternLength)(PlannerQuery.empty)
         )(PlannerQuery.empty),
         Map("r" -> Identifier("r") _)
       )(PlannerQuery.empty)
@@ -88,8 +88,8 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
           left = Selection(
             Seq(Equals(Identifier("a") _, Identifier("a$$$") _) _),
             Expand(
-              Expand(AllNodesScan("b", Set.empty)(PlannerQuery.empty), "b", Direction.INCOMING, Seq.empty, "a", "r1", SimplePatternLength)(PlannerQuery.empty),
-              "b", Direction.INCOMING, Seq.empty, "a$$$", "r2", SimplePatternLength)(PlannerQuery.empty)
+              Expand(AllNodesScan("b", Set.empty)(PlannerQuery.empty), "b", Direction.INCOMING, Direction.OUTGOING, Seq.empty, "a", "r1", SimplePatternLength)(PlannerQuery.empty),
+              "b", Direction.INCOMING, Direction.INCOMING, Seq.empty, "a$$$", "r2", SimplePatternLength)(PlannerQuery.empty)
           )(PlannerQuery.empty)
         )(PlannerQuery.empty),
         Map(
@@ -114,7 +114,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             Seq(In(Property(Identifier("a")_, PropertyKeyName("name")_)_, Collection(Seq(StringLiteral("Andres")_))_)_),
             AllNodesScan("a", Set.empty)(PlannerQuery.empty)
           )(PlannerQuery.empty),
-          "a", Direction.BOTH, Seq(RelTypeName("x")_), "start", "rel", SimplePatternLength
+          "a", Direction.BOTH, Direction.BOTH, Seq(RelTypeName("x")_), "start", "rel", SimplePatternLength
         )(PlannerQuery.empty),
         Map("a" -> Identifier("a") _)
       )(PlannerQuery.empty)
@@ -133,7 +133,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       Projection(
         Expand(
           NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres") _)) _), Set.empty)(PlannerQuery.empty),
-          "b", Direction.INCOMING, Seq.empty, "a", "r", SimplePatternLength
+          "b", Direction.INCOMING, Direction.OUTGOING, Seq.empty, "a", "r", SimplePatternLength
         )(PlannerQuery.empty),
         Map("r" -> ident("r"))
       )(PlannerQuery.empty)
@@ -157,7 +157,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             Seq(In(Property(ident("b"), PropertyKeyName("name")_)_, Collection(Seq(StringLiteral("Andres")_))_)_, HasLabels(ident("b"), Seq(LabelName("Person")_))_),
             Expand(
               NodeIndexSeek("a", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Jakub") _)) _), Set.empty)(PlannerQuery.empty),
-              "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength
+              "a", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength
             )(PlannerQuery.empty)
           )(PlannerQuery.empty),
           NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres") _)) _), Set.empty)(PlannerQuery.empty)

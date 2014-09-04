@@ -65,7 +65,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                   ),
                   Map[String, Expression]("a" -> ident("a"))
                 ),
-                planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
+                planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
               ),
               UnsignedDecimalIntegerLiteral("1") _
             ),
@@ -94,7 +94,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           ),
           planSelection(
             Seq(In(Property(Identifier("r1") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
-            planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
+            planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
           )
         ),
         Map[String, Expression]("r1" -> ident("r1"))
@@ -119,7 +119,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           ),
           planExpand(
             planArgumentRow(Set("a")),
-            "a", Direction.OUTGOING, Seq(), "b", "r", SimplePatternLength, rel
+            "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r", SimplePatternLength, rel
           )
         ),
         Map[String, Expression]("b" -> ident("b"))

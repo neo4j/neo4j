@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.RelTypeName
 case class Expand(left: LogicalPlan,
                   from: IdName,
                   dir: Direction,
+                  projectedDir: Direction,
                   types: Seq[RelTypeName],
                   to: IdName,
                   relName: IdName,

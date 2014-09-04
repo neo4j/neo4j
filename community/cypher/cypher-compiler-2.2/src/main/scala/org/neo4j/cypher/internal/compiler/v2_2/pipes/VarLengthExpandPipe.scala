@@ -29,7 +29,7 @@ import org.neo4j.graphdb.{Direction, Node, Relationship}
 import scala.collection.mutable
 
 case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction,
-                               types: Seq[String], min: Int, max: Option[Int])(implicit pipeMonitor: PipeMonitor)
+                               projectedDir: Direction, types: Seq[String], min: Int, max: Option[Int])(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) {
 
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int]): Iterator[(Node, Seq[Relationship])] = {
@@ -48,7 +48,12 @@ case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, 
             }
           }
         }
-        (node, rels)
+        val projectedRels = if (dir != projectedDir) {
+          rels.reverse
+        } else {
+          rels
+        }
+        (node, projectedRels)
       }
 
       def hasNext: Boolean = stack.nonEmpty

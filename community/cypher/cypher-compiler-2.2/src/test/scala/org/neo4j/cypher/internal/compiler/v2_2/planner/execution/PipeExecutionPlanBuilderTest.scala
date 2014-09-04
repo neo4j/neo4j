@@ -146,7 +146,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("simple expand") {
-    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength)_
+    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(ExpandPipe( AllNodesScanPipe("a"), "a", "r1", "b", Direction.INCOMING, Seq() ))
@@ -156,8 +156,8 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val logicalPlan =
       NodeHashJoin(
         "b",
-        Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength)(solved),
-        Expand(AllNodesScan("c", Set.empty)(solved), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)(solved)
+        Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength)(solved),
+        Expand(AllNodesScan("c", Set.empty)(solved), "c", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)(solved)
       )_
     val pipeInfo = build(logicalPlan)
 
