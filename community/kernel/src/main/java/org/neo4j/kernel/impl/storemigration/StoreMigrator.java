@@ -358,12 +358,11 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     }
 
     @Override
-    public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir,
-            File storeDir, File leftOversDir ) throws IOException
+    public void moveMigratedFiles( FileSystemAbstraction fs, File migrationDir, File storeDir ) throws IOException
     {
         // The batch importer will create a whole store. so
         // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
-        StoreFile20.deleteIdFile( fileSystem, migrationDir, allExcept( StoreFile20.RELATIONSHIP_GROUP_STORE ) );
+        StoreFile20.deleteIdFile( fs, migrationDir, allExcept( StoreFile20.RELATIONSHIP_GROUP_STORE ) );
 
         Iterable<StoreFile20> filesToMove;
         if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
@@ -390,19 +389,13 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
                     StoreFile20.RELATIONSHIP_GROUP_STORE);
         }
 
-        // Move the current ones into the leftovers directory
-        StoreFile20.move( fileSystem, storeDir, leftOversDir, filesToMove,
-                true,  // allow to skip non existent source files
-                false, // not allow to overwrite target files
-                StoreFileType.STORE );
-
         // Move the migrated ones into the store directory
-        StoreFile20.move( fileSystem, migrationDir, storeDir, filesToMove,
+        StoreFile20.move( fs, migrationDir, storeDir, filesToMove,
                 true, // allow to skip non existent source files
                 true, // allow to overwrite target files
                 StoreFileType.values() );
 
-        StoreFile20.ensureStoreVersion( fileSystem, storeDir, StoreFile20.currentStoreFiles() );
+        StoreFile20.ensureStoreVersion( fs, storeDir, StoreFile20.currentStoreFiles() );
 
         legacyLogFiles.moveRewrittenNeoLogs( migrationDir, storeDir );
         legacyLogFiles.moveRewrittenLuceneLogs( migrationDir, storeDir );

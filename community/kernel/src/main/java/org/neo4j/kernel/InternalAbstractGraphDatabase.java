@@ -446,7 +446,7 @@ public abstract class InternalAbstractGraphDatabase
         this.monitors = createMonitors();
 
         storeMigrationProcess = new StoreUpgrader( createUpgradeConfiguration(), fileSystem,
-                monitors.newMonitor( StoreUpgrader.Monitor.class ) );
+                monitors.newMonitor( StoreUpgrader.Monitor.class ), logging );
 
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
