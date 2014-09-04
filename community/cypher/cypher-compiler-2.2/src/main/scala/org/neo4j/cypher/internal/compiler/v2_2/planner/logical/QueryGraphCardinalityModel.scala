@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, TokenContext}
 
 case class QueryGraphCardinalityModel(statistics: GraphStatistics,
-                                      selectivity: Metrics.SelectivityModel,
+                                      selectivityModel: Metrics.SelectivityModel,
                                       tokenLookups: TokenContext) {
 
   def apply(queryGraph: QueryGraph): Cardinality = {
@@ -37,23 +37,28 @@ case class QueryGraphCardinalityModel(statistics: GraphStatistics,
       case (acc, l) => acc * l
     }
 
-    nodeCardinality
+    val predicateSelectivity = calculatePredicateSelectivity(queryGraph)
+
+    nodeCardinality * predicateSelectivity
+  }
+
+  private def calculatePredicateSelectivity(queryGraph: QueryGraph): Selectivity = {
+    val unaccountedPredicates = queryGraph.selections.flatPredicates.filter {
+      case _: HasLabels => false
+      case _ => true
+    }
+
+    unaccountedPredicates.map(selectivityModel)
   }
 
   private def cardinalityForNodeByLabel(in: QueryGraph)(nodeId: IdName): Cardinality = {
-    val labels: Set[LabelName] = labelsOnNode(in, nodeId)
+    val labels: Set[LabelName] = in.selections.labelsOnNode(nodeId)
 
     if (labels.isEmpty)
       statistics.nodesCardinality
     else
       cardinalityFor(labels)
   }
-
-  private def labelsOnNode(queryGraph: QueryGraph, nodeId: IdName): Set[LabelName] =
-    queryGraph.
-      selections.
-      labelPredicates.getOrElse(nodeId, Set.empty).
-      flatMap(_.labels)
 
   private def accumulatedCardinality(labelStats: Set[Option[Cardinality]]): Cardinality =
     labelStats.reduce[Option[Cardinality]] {
@@ -66,7 +71,6 @@ case class QueryGraphCardinalityModel(statistics: GraphStatistics,
     val maybeCardinalities = labels.
       map(label => tokenLookups.getOptLabelId(label.name).map(LabelId.apply)).
       map(labelId => labelId.map(statistics.nodesWithLabelCardinality))
-    maybeCardinalities
 
     accumulatedCardinality(maybeCardinalities)
   }

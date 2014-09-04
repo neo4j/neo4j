@@ -55,7 +55,7 @@ case class CardinalityTestHelper(query: String,
     )
 
   def shouldHaveCardinality(number: Double) {
-    shouldHaveCardinality(number.toInt)
+    shouldHaveCardinality(Math.round(number).toInt)
   }
 
   def shouldHaveCardinality(number: Int) {
@@ -120,11 +120,12 @@ case class CardinalityTestHelper(query: String,
       def getLabelId(labelName: String) = ???
     }
 
-    val cardinalityEstimator = QueryGraphCardinalityModel(statistics, mock[Metrics.SelectivityModel], tokenContext)
-
     val queryGraph = createQueryGraphAndSemanticStableTable()
+    val selectivityModel = new StatisticsBackedSelectivityModel(statistics, queryGraph, tokenContext)
+    val cardinalityModel = QueryGraphCardinalityModel(statistics, selectivityModel, tokenContext)
 
-    cardinalityEstimator(queryGraph).map(_.toInt) should equal(Cardinality(number))
+    val result = cardinalityModel(queryGraph)
+    result.map(n => Math.round(n)) should equal(Cardinality(number))
   }
 
   def createQueryGraphAndSemanticStableTable(): QueryGraph = {

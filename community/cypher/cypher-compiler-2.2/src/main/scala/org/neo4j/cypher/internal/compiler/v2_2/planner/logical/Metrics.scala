@@ -78,6 +78,13 @@ case class Selectivity(coefficient: Double) {
   def inverse: Selectivity = Selectivity(1 - coefficient)
 }
 
+object Selectivity {
+
+  implicit def turnSeqIntoSingleSelectivity(p: Seq[Selectivity]):Selectivity =
+    p.reduceOption(_ * _).getOrElse(Selectivity(1))
+
+}
+
 trait MetricsFactory {
   def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable): SelectivityModel
   def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable): CardinalityModel
