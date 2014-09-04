@@ -78,11 +78,11 @@ public class PhysicalTransactionCursor<T extends ReadableLogChannel>
             }
             if ( entry instanceof LogEntryCommit )
             {
-                commitEntry = (LogEntryCommit) entry;
+                commitEntry = entry.as();
                 break;
             }
 
-            entries.add( ((LogEntryCommand) entry).getXaCommand() );
+            entries.add( entry.<LogEntryCommand>as().getXaCommand() );
         }
 
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );

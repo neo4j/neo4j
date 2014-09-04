@@ -171,10 +171,10 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
                 switch ( logEntry.getType() )
                 {
                     case TX_START:
-                        startEntry = (LogEntryStart) logEntry;
+                        startEntry = logEntry.as();
                         break;
                     case TX_1P_COMMIT:
-                        LogEntryCommit commit = (LogEntryCommit) logEntry;
+                        LogEntryCommit commit = logEntry.as();
                         if ( commit.getTxId() == startTransactionId )
                         {
                             startEntryForFoundTransaction = startEntry;

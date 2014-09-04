@@ -463,7 +463,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                         {
                             if ( entry instanceof LogEntryStart )
                             {
-                                return ((LogEntryStart) entry).getTimeWritten();
+                                return entry.<LogEntryStart>as().getTimeWritten();
                             }
                         }
                     }
