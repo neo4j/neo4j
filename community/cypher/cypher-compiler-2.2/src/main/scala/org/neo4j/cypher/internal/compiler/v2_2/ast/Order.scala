@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import Doc._
 
-case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with SemanticCheckable {
+case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable {
   def semanticCheck = sortItems.semanticCheck
 }
 
-sealed trait SortItem extends ASTNode with SemanticCheckable {
+sealed trait SortItem extends ASTNode with ASTPhrase with SemanticCheckable {
   def expression: Expression
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
 }

@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import symbols._
 
-sealed trait Hint extends ASTNode with SemanticCheckable {
+sealed trait Hint extends ASTNode with ASTPhrase with SemanticCheckable {
   def identifier: Identifier
 }
 

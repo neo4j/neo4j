@@ -21,17 +21,22 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.format.quoteString
 import symbols._
 import java.net.URL
+import Doc._
+import Doc._
 
 sealed trait Literal extends Expression {
   def value: AnyRef
+  def asCanonicalStringVal: String
 }
 
 sealed trait NumberLiteral extends Literal {
   def stringVal: String
+  def asCanonicalStringVal: String = stringVal
 }
-
 
 sealed trait IntegerLiteral extends NumberLiteral {
   def value: java.lang.Long
@@ -130,10 +135,15 @@ case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) 
 
 case class StringLiteral(value: String)(val position: InputPosition) extends Literal with SimpleTyping {
   protected def possibleTypes = CTString
+
+  def asCanonicalStringVal = quoteString(value)
 }
 
 case class Null()(val position: InputPosition) extends Literal with SimpleTyping {
   val value = null
+
+  def asCanonicalStringVal = "NULL"
+
   protected def possibleTypes = CTAny.covariant
 }
 
@@ -141,10 +151,16 @@ sealed trait BooleanLiteral extends Literal
 
 case class True()(val position: InputPosition) extends BooleanLiteral with SimpleTyping {
   val value: java.lang.Boolean = true
+
+  def asCanonicalStringVal = "true"
+
   protected def possibleTypes = CTBoolean
 }
 
 case class False()(val position: InputPosition) extends BooleanLiteral with SimpleTyping {
   val value: java.lang.Boolean = false
+
+  def asCanonicalStringVal = "false"
+
   protected def possibleTypes = CTBoolean
 }

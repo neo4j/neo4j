@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class DocTest extends CypherFunSuite {
 
-  import Doc._
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
   test("cons(hd, tl) = ConsDocs(hd, tl)") {
     cons(BreakDoc, NilDoc) should equal(ConsDoc(BreakDoc, NilDoc))
@@ -31,6 +31,10 @@ class DocTest extends CypherFunSuite {
 
   test("empty == NilDoc") {
     Doc.nil should equal(NilDoc)
+  }
+
+  test("noBreak == NoBreakDoc") {
+    Doc.noBreak should equal(NoBreak)
   }
 
   test("text(v) = TextDoc(v)") {
@@ -63,6 +67,10 @@ class DocTest extends CypherFunSuite {
 
   test("sepList(a :: b) => cons(a, cons(',', breakCons(b)))") {
     sepList(List("a", "b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(TextDoc(","), ConsDoc(BreakDoc, ConsDoc(TextDoc("b"))))))
+  }
+
+  test("groupedSepList(a :: b) => cons(a, cons(',', breakCons(b)))") {
+    groupedSepList(List("a", "b")) should equal(ConsDoc(GroupDoc(ConsDoc(TextDoc("a"), TextDoc(","))), ConsDoc(BreakDoc, ConsDoc(TextDoc("b")))))
   }
 
   test("nil :?: a => a") {
