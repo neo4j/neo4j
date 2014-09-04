@@ -1050,4 +1050,19 @@ RETURN x0.name""")
     count should not equal(0)
     count should not equal(100)
   }
+
+  test("should return shortest paths when only one side is bound") {
+    val a = createLabeledNode("A")
+    val b = createLabeledNode("B")
+    val r1 = relate(a, b)
+
+    val result = execute("match (a:A) match p = shortestPath( a-[*]->(b:B) ) return p").toList.head("p").asInstanceOf[Path]
+
+    graph.inTx {
+      result.startNode() should equal(a)
+      result.endNode() should equal(b)
+      result.length() should equal(1)
+      result.lastRelationship() should equal (r1)
+    }
+  }
 }
