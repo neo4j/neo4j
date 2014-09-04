@@ -24,5 +24,20 @@ text
   .faded
     fill: #333
 
-.outline, .overlay
+.node
+  .ring
+    fill: none
+    opacity: 0
+    stroke: yellow
+  &.selected
+    .ring
+      stroke: #6AC6FF
+  &.selected:hover
+    .ring
+      stroke: yellow
+  &:hover, &.selected
+    .ring
+      opacity: .3
+
+.outline, .ring
   cursor: pointer

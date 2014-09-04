@@ -116,6 +116,9 @@ neo.viz = (el, measureSize, graph, layout, style) ->
     .call(clickHandler)
     .on('mouseover', onNodeMouseOver)
     .on('mouseout', onNodeMouseOut)
+
+    nodeGroups
+    .classed("selected", (node) -> node.selected)
   
     for renderer in neo.renderers.node
       nodeGroups.call(renderer.onGraphChange, viz);
