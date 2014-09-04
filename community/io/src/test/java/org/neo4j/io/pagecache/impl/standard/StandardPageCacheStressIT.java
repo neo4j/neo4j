@@ -39,7 +39,7 @@ public class StandardPageCacheStressIT
         int cachePageSize = 17 * filePageSize + 7; // records not aligned
         int cacheMaxPages = 100;
 
-        int desiredNumberOfEvictions = 10_000_000; // should take about a minute
+        int desiredNumberOfEvictions = 10_000_000; // should take a minute or two
 
         assertThat( "cache pages should be at least as big as a file page", filePageSize, is( lessThanOrEqualTo( cachePageSize ) ) );
         assertThat( "the cache should cover only a fraction of the mapped file", fileMaxPages * filePageSize, is( greaterThanOrEqualTo( cacheMaxPages * cachePageSize ) ) );
@@ -67,7 +67,5 @@ public class StandardPageCacheStressIT
             thread.interrupt();
             thread.join();
         }
-
-        System.out.println(stressMonitor);
     }
 }

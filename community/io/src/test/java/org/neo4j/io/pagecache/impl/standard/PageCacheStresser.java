@@ -23,8 +23,10 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.impl.standard.Updater.RecordSize;
 
 import java.io.File;
@@ -114,20 +116,18 @@ public class PageCacheStresser
 
     private void prepare( PagedFile pagedFile ) throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
             for ( int i = 0; i < maxPages; i++ )
             {
-                assertTrue( cursor.next() );
+                assertTrue( "I must be able to access pages", cursor.next() );
 
-                do
+                for ( int recordIndexInPage = 0; recordIndexInPage < recordsPerPage; recordIndexInPage++ )
                 {
-                    for ( int recordIndexInPage = 0; recordIndexInPage < recordsPerPage; recordIndexInPage++ )
-                    {
-                        cursor.putLong( 1 );
-                    }
+                    cursor.putLong( 1 );
                 }
-                while ( cursor.shouldRetry() );
+
+                assertFalse( "Exclusive lock, so never a need to retry", cursor.shouldRetry() );
             }
         }
     }
