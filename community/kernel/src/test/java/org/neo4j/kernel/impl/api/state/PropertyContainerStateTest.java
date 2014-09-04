@@ -32,7 +32,6 @@ import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class PropertyContainerStateTest
 {
-
     @Test
     public void shouldListAddedProperties() throws Exception
     {
@@ -40,7 +39,7 @@ public class PropertyContainerStateTest
         PropertyContainerState state = new PropertyContainerState( 1 );
         state.addProperty( stringProperty( 1, "Hello" ) );
         state.addProperty( stringProperty( 2, "Hello" ) );
-        state.removeProperty( 1 );
+        state.removeProperty( stringProperty( 1, "Hello" ) );
 
         // When
         Iterator<DefinedProperty> added  = state.addedProperties();
@@ -74,7 +73,7 @@ public class PropertyContainerStateTest
         PropertyContainerState state = new PropertyContainerState( 1 );
         state.addProperty( stringProperty( 1, "Hello" ) );
         state.addProperty( stringProperty( 2, "Hello" ) );
-        state.removeProperty( 3 );
+        state.removeProperty( stringProperty( 3, "ShouldBeRemoved" ) );
 
         // When
         Iterator<DefinedProperty> props = state.augmentProperties( IteratorUtil.iterator(
@@ -85,6 +84,23 @@ public class PropertyContainerStateTest
         assertThat( IteratorUtil.asList( props ),
                 equalTo(asList( stringProperty( 4, "ShouldShowUp" ), stringProperty( 1, "Hello" ),
                                 stringProperty( 2, "Hello" ))) );
+    }
+
+    @Test
+    public void shouldConvertAddRemoveToChange() throws Exception
+    {
+        // Given
+        PropertyContainerState state = new PropertyContainerState( 1 );
+
+        // When
+        state.removeProperty( stringProperty( 4, "a value" ) );
+        state.addProperty(    stringProperty( 4, "another value" ) );
+
+        // Then
+        assertThat( IteratorUtil.asList( state.changedProperties() ),
+                equalTo(asList( stringProperty( 4, "another value" ) )) );
+        assertFalse( state.addedProperties().hasNext() );
+        assertFalse( state.removedProperties().hasNext() );
     }
 
 }
