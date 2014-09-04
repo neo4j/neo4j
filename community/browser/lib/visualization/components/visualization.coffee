@@ -100,6 +100,9 @@ neo.viz = (el, measureSize, graph, layout, style) ->
     .on('mouseover', onRelMouseOver)
     .on('mouseout', onRelMouseOut)
 
+    relationshipGroups
+    .classed("selected", (relationship) -> relationship.selected)
+
     geometry.onGraphChange(graph)
 
     for renderer in neo.renderers.relationship

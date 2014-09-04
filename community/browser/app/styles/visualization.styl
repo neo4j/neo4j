@@ -39,5 +39,19 @@ text
     .ring
       opacity: .3
 
+.relationship
+  .overlay
+    opacity: 0
+    fill: yellow
+   &.selected
+    .overlay
+      fill: #6AC6FF
+  &.selected:hover
+    .overlay
+      fill: yellow
+  &:hover, &.selected
+    .overlay
+      opacity: .3
+
 .outline, .ring
   cursor: pointer

@@ -112,15 +112,11 @@ do ->
       rects.enter()
         .append('path')
         .classed('overlay', true)
-        .attr('fill', 'yellow')
-
-      rects
-        .attr('opacity', (rel) -> if rel.selected then 0.3 else 0)
 
       rects.exit().remove()
 
     onTick: (selection) ->
-      band = 20
+      band = 16
 
       selection.selectAll('path.overlay')
         .attr('d', (d) -> d.arrow.overlay(band))
