@@ -69,9 +69,11 @@ do ->
 
   arrowPath = new neo.Renderer(
     onGraphChange: (selection, viz) ->
-      paths = selection.selectAll('path').data((rel) -> [rel])
+      paths = selection.selectAll('path.outline').data((rel) -> [rel])
 
-      paths.enter().append('path')
+      paths.enter()
+      .append('path')
+      .classed('outline', true)
 
       paths
       .attr('fill', (rel) -> viz.style.forRelationship(rel).get('color'))
@@ -81,7 +83,7 @@ do ->
 
     onTick: (selection) ->
       selection.selectAll('path')
-      .attr('d', (d) -> d.arrow.outline())
+      .attr('d', (d) -> d.arrow.outline(d.shortCaptionLength))
   )
 
   relationshipType = new neo.Renderer(
@@ -111,16 +113,12 @@ do ->
 
   relationshipOverlay = new neo.Renderer(
     onGraphChange: (selection) ->
-      rects = selection.selectAll("rect").data((rel) -> [rel])
-
-      band = 20
+      rects = selection.selectAll('path.overlay').data((rel) -> [rel])
 
       rects.enter()
-        .append('rect')
+        .append('path')
         .classed('overlay', true)
         .attr('fill', 'yellow')
-        .attr('y', -band / 2)
-        .attr('height', band)
 
       rects
         .attr('opacity', (rel) -> if rel.selected then 0.3 else 0)
@@ -128,9 +126,10 @@ do ->
       rects.exit().remove()
 
     onTick: (selection) ->
-      selection.selectAll('rect')
-        .attr('x', (d) -> d.source.radius)
-        .attr('width', (d) -> if d.arrow.length > 0 then d.arrow.length else 0)
+      band = 20
+
+      selection.selectAll('path.overlay')
+        .attr('d', (d) -> d.arrow.overlay(band))
   )
 
   neo.renderers.node.push(nodeOutline)

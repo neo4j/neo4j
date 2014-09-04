@@ -13,10 +13,10 @@ class neo.utils.straightArrow
       x: startArrow + @shaftLength / 2
       y: 0
 
-    @outline = () ->
+    @outline = (shortCaptionLength) ->
       if captionLayout is "external"
-        startBreak = startArrow + (@shaftLength - @shortCaptionLength) / 2
-        endBreak = endShaft - (@shaftLength - @shortCaptionLength) / 2
+        startBreak = startArrow + (@shaftLength - shortCaptionLength) / 2
+        endBreak = endShaft - (@shaftLength - shortCaptionLength) / 2
 
         [
           'M', startArrow, shaftRadius,
@@ -45,4 +45,14 @@ class neo.utils.straightArrow
           'Z'
         ].join(' ')
 
+    @overlay = (minWidth) ->
+      radius = Math.max(minWidth / 2, shaftRadius)
+      [
+        'M', startArrow, radius,
+        'L', endArrow, radius,
+        'L', endArrow, -radius,
+        'L', startArrow, -radius,
+        'Z'
+      ].join(' ')      
+      
   deflection: 0

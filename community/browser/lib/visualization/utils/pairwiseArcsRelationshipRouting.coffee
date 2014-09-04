@@ -96,7 +96,7 @@ class neo.utils.pairwiseArcsRelationshipRouting
               relationship.captionLayout
           )
 
-        [relationship.shortCaption, relationship.arrow.shortCaptionLength] = if relationship.arrow.shaftLength > relationship.captionLength
+        [relationship.shortCaption, relationship.shortCaptionLength] = if relationship.arrow.shaftLength > relationship.captionLength
           [relationship.type, relationship.captionLength]
         else
           @shortenCaption(relationship, relationship.type, relationship.arrow.shaftLength)
