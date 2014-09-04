@@ -270,7 +270,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs("pB").toList should equal(List(d))
   }
 
-  ignore("should return relationships by fetching them from the path - starting from the end") {
+  test("should return relationships by fetching them from the path - starting from the end") {
     val a = createNode()
     val b = createNode()
     val c = createLabeledNode("End")
@@ -296,7 +296,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[Node]("RELATIONSHIPS(p)").toList.head should equal(List(r1, r2))
   }
 
-  ignore("should return relationships by collecting them as a list - wrong way") {
+  test("should return relationships by collecting them as a list - wrong way") {
     val a = createNode()
     val b = createNode()
     val c = createLabeledNode("End")
@@ -307,6 +307,20 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val result = executeWithNewPlanner("match a-[r:rel*2..2]->(b:End) return r")
 
     result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
+  }
+
+  test("should return relationships by collecting them as a list - undirected") {
+    val a = createLabeledNode("End")
+    val b = createNode()
+    val c = createLabeledNode("End")
+
+    val r1 = relate(a, b, "rel")
+    val r2 = relate(b, c, "rel")
+
+    val result = executeWithNewPlanner("match a-[r:rel*2..2]-(b:End) return r")
+
+    val relationships = result.columnAs[List[Relationship]]("r").toSet
+    relationships should equal(Set(List(r1, r2), List(r2, r1)))
   }
 
   test("should return relationships by collecting them as a list") {

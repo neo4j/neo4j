@@ -103,11 +103,11 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case CartesianProduct(left, right) =>
           CartesianProductPipe(buildPipe(left), buildPipe(right))
 
-        case Expand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength) =>
+        case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), SimplePatternLength) =>
           ExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name))
 
-        case Expand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), VarPatternLength(min, max)) =>
-          VarLengthExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name), min, max)
+        case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max)) =>
+          VarLengthExpandPipe(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max)
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, predicates) =>
           val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
