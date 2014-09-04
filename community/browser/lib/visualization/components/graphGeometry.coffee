@@ -65,8 +65,13 @@ class NeoD3Geometry
     lines
 
   formatNodeCaptions: (nodes) ->
-      for node in nodes
-        node.caption = fitCaptionIntoCircle(node, @style)
+    for node in nodes
+      node.caption = fitCaptionIntoCircle(node, @style)
+
+  formatRelationshipCaptions: (relationships) ->
+    for relationship in relationships
+      template = @style.forRelationship(relationship).get("caption")
+      relationship.caption = @style.interpolate(template, relationship.type, relationship.propertyMap)
 
   setNodeRadii: (nodes) ->
     for node in nodes
@@ -75,6 +80,7 @@ class NeoD3Geometry
   onGraphChange: (graph) ->
     @setNodeRadii(graph.nodes())
     @formatNodeCaptions(graph.nodes())
+    @formatRelationshipCaptions(graph.relationships())
     @relationshipRouting.measureRelationshipCaptions(graph.relationships())
 
   onTick: (graph) ->

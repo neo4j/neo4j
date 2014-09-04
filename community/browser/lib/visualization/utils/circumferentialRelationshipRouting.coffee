@@ -109,6 +109,6 @@ class neo.utils.circumferentialRelationshipRouting
             )
 
           [relationship.shortCaption, relationship.shortCaptionLength] = if relationship.arrow.shaftLength > relationship.captionLength
-            [relationship.type, relationship.captionLength]
+            [relationship.caption, relationship.captionLength]
           else
-            @shortenCaption(relationship, relationship.type, relationship.arrow.shaftLength)
+            @shortenCaption(relationship, relationship.caption, relationship.arrow.shaftLength)

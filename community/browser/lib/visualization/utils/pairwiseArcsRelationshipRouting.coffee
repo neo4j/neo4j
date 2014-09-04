@@ -13,7 +13,7 @@ class neo.utils.pairwiseArcsRelationshipRouting
 
   measureRelationshipCaptions: (relationships) ->
     for relationship in relationships
-      relationship.captionLength = @measureRelationshipCaption(relationship, relationship.type)
+      relationship.captionLength = @measureRelationshipCaption(relationship, relationship.caption)
       relationship.captionLayout =
         if @captionFitsInsideArrowShaftWidth(relationship)
           "internal"
@@ -97,6 +97,6 @@ class neo.utils.pairwiseArcsRelationshipRouting
           )
 
         [relationship.shortCaption, relationship.shortCaptionLength] = if relationship.arrow.shaftLength > relationship.captionLength
-          [relationship.type, relationship.captionLength]
+          [relationship.caption, relationship.captionLength]
         else
-          @shortenCaption(relationship, relationship.type, relationship.arrow.shaftLength)
+          @shortenCaption(relationship, relationship.caption, relationship.arrow.shaftLength)
