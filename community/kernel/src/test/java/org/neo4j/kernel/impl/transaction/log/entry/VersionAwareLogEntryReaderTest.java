@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_1;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_2;
@@ -185,7 +186,8 @@ public class VersionAwareLogEntryReaderTest
         final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_1 );
 
         // then
-        assertEquals( start, logEntry );
+        assertTrue( logEntry instanceof IdentifiableLogEntry );
+        assertEquals( start, ((IdentifiableLogEntry) logEntry).getEntry() );
     }
 
     @Test
@@ -207,7 +209,8 @@ public class VersionAwareLogEntryReaderTest
         final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_1 );
 
         // then
-        assertEquals( commit, logEntry );
+        assertTrue( logEntry instanceof IdentifiableLogEntry );
+        assertEquals( commit, ((IdentifiableLogEntry) logEntry).getEntry() );
     }
 
     @Test
@@ -229,7 +232,8 @@ public class VersionAwareLogEntryReaderTest
         final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_1 );
 
         // then
-        assertEquals( commit, logEntry );
+        assertTrue( logEntry instanceof IdentifiableLogEntry );
+        assertEquals( commit, ((IdentifiableLogEntry) logEntry).getEntry() );
     }
 
     @Test
@@ -258,7 +262,8 @@ public class VersionAwareLogEntryReaderTest
         final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_1 );
 
         // then
-        assertEquals( commit, logEntry );
+        assertTrue( logEntry instanceof IdentifiableLogEntry );
+        assertEquals( commit, ((IdentifiableLogEntry) logEntry).getEntry() );
     }
 
     @Test
@@ -286,7 +291,8 @@ public class VersionAwareLogEntryReaderTest
         final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_1 );
 
         // then
-        assertEquals( commit, logEntry );
+        assertTrue( logEntry instanceof IdentifiableLogEntry );
+        assertEquals( commit, ((IdentifiableLogEntry) logEntry).getEntry() );
     }
 
     @Test
@@ -308,7 +314,8 @@ public class VersionAwareLogEntryReaderTest
         final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_1 );
 
         // then
-        assertEquals( command, logEntry );
+        assertTrue( logEntry instanceof IdentifiableLogEntry );
+        assertEquals( command, ((IdentifiableLogEntry) logEntry).getEntry() );
     }
 
     @Test

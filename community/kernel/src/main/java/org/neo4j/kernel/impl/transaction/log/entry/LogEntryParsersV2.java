@@ -28,16 +28,18 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.EMPTY_ADDITIONAL_ARRAY;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_1_9;
 
+
 // 1.9
-public enum LogEntryParsersV2 implements LogEntryParser
+public enum LogEntryParsersV2 implements LogEntryParser<IdentifiableLogEntry>
 {
     EMPTY
             {
                 @Override
-                public LogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReaderFactory ) throws IOException
+                public IdentifiableLogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
+                                                   CommandReaderFactory commandReaderFactory ) throws IOException
                 {
                     return null;
                 }
@@ -58,8 +60,8 @@ public enum LogEntryParsersV2 implements LogEntryParser
     TX_PREPARE
             {
                 @Override
-                public LogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReaderFactory ) throws IOException
+                public IdentifiableLogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
+                                                   CommandReaderFactory commandReaderFactory ) throws IOException
                 {
                     // we ignore this we do not this in the new log format, just parse data to be skipped in the
                     // channel
@@ -85,8 +87,8 @@ public enum LogEntryParsersV2 implements LogEntryParser
     TX_START
             {
                 @Override
-                public LogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReaderFactory ) throws IOException
+                public IdentifiableLogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
+                                                   CommandReaderFactory commandReaderFactory ) throws IOException
                 {
                     LogPosition position = marker.newPosition();
                     byte globalIdLength = channel.get();
@@ -95,8 +97,7 @@ public enum LogEntryParsersV2 implements LogEntryParser
                     channel.get( new byte[globalIdLength], globalIdLength );
                     // ignored branchId
                     channel.get( new byte[branchIdLength], branchIdLength );
-                    // ignored identifier
-                    channel.getInt();
+                    int identifier = channel.getInt();
                     // ignored formatId
                     channel.getInt();
 
@@ -104,7 +105,9 @@ public enum LogEntryParsersV2 implements LogEntryParser
                     int authorId = channel.getInt();
                     long timeWritten = channel.getLong();
 
-                    return new LogEntryStart( masterId, authorId, timeWritten, -1, new byte[]{}, position );
+                    return new IdentifiableLogEntry(
+                            new LogEntryStart( masterId, authorId, timeWritten, -1, EMPTY_ADDITIONAL_ARRAY, position ),
+                            identifier );
                 }
 
                 @Override
@@ -122,14 +125,15 @@ public enum LogEntryParsersV2 implements LogEntryParser
     COMMAND
             {
                 @Override
-                public LogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReaderFactory ) throws IOException
+                public IdentifiableLogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
+                                                   CommandReaderFactory commandReaderFactory ) throws IOException
                 {
-                    // ignore identifier
-                    channel.getInt();
+                    int identifier = channel.getInt();
                     CommandReader commandReader = commandReaderFactory.newInstance( LOG_VERSION_1_9, version );
                     Command command = commandReader.read( channel );
-                    return command == null ? null : new LogEntryCommand( version, command );
+                    return command == null
+                            ? null
+                            : new IdentifiableLogEntry( new LogEntryCommand( version, command ), identifier );
                 }
 
                 @Override
@@ -147,8 +151,8 @@ public enum LogEntryParsersV2 implements LogEntryParser
     DONE
             {
                 @Override
-                public LogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReaderFactory ) throws IOException
+                public IdentifiableLogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
+                                                   CommandReaderFactory commandReaderFactory ) throws IOException
                 {
                     // we ignore this we do not this in the new log format, just parse data to be skipped in the
                     // channel
@@ -172,15 +176,14 @@ public enum LogEntryParsersV2 implements LogEntryParser
     TX_1P_COMMIT
             {
                 @Override
-                public LogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReaderFactory ) throws IOException
+                public IdentifiableLogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
+                                                   CommandReaderFactory commandReaderFactory ) throws IOException
                 {
-                    // ignore identifier
-                    channel.getInt();
+                    int identifier = channel.getInt();
                     long txId = channel.getLong();
                     long timeWritten = channel.getLong();
 
-                    return new OnePhaseCommit( txId, timeWritten );
+                    return new IdentifiableLogEntry( new OnePhaseCommit( txId, timeWritten ), identifier );
                 }
 
                 @Override
@@ -198,16 +201,15 @@ public enum LogEntryParsersV2 implements LogEntryParser
     TX_2P_COMMIT
             {
                 @Override
-                public LogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReaderFactory ) throws IOException
+                public IdentifiableLogEntry parse( byte version, ReadableLogChannel channel, LogPositionMarker marker,
+                                                   CommandReaderFactory commandReaderFactory ) throws IOException
                 {
-                    // ignore identifier
-                    channel.getInt();
+                    int identifier = channel.getInt();
                     long txId = channel.getLong();
                     long timeWritten = channel.getLong();
 
                     // let's map the 2 phase commit into 1 phase commit since the 2 phase commits are gone
-                    return new OnePhaseCommit( txId, timeWritten );
+                    return new IdentifiableLogEntry( new OnePhaseCommit( txId, timeWritten ), identifier );
                 }
 
                 @Override

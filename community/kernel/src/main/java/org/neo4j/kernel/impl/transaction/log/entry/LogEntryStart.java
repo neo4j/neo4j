@@ -30,8 +30,10 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
 
-public class LogEntryStart extends LogEntry
+public class LogEntryStart extends AbstractLogEntry
 {
+    public static final byte[] EMPTY_ADDITIONAL_ARRAY = new byte[]{};
+
     private final int masterId;
     private final int authorId;
     private final long timeWritten;
@@ -134,6 +136,12 @@ public class LogEntryStart extends LogEntry
                 "position=" + startPosition + "," +
                 "checksum=" + checksum( this ) +
                 "]";
+    }
+
+    @Override
+    public <T extends LogEntry> T as()
+    {
+        return (T) this;
     }
 
     @Override

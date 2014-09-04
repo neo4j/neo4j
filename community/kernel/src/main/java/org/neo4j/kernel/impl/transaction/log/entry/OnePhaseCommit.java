@@ -43,4 +43,10 @@ public class OnePhaseCommit extends LogEntryCommit
     {
         handler.onePhaseCommitEntry( this );
     }
+
+    @Override
+    public <T extends LogEntry> T as()
+    {
+        return (T) this;
+    }
 }

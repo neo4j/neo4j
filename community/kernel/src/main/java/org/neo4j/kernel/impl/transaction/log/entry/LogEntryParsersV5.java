@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_2;
 
 // 2.2
-public enum LogEntryParsersV5 implements LogEntryParser
+public enum LogEntryParsersV5 implements LogEntryParser<LogEntry>
 {
     EMPTY
             {

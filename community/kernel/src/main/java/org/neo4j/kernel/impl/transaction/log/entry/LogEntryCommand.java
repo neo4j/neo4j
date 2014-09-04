@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.transaction.command.LogHandler;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.COMMAND;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
 
-public class LogEntryCommand extends LogEntry
+public class LogEntryCommand extends AbstractLogEntry
 {
     private final org.neo4j.kernel.impl.transaction.command.Command command;
 
@@ -56,6 +56,12 @@ public class LogEntryCommand extends LogEntry
     public void accept( LogHandler handler ) throws IOException
     {
         handler.commandEntry( this );
+    }
+
+    @Override
+    public <T extends LogEntry> T as()
+    {
+        return (T) this;
     }
 
     @Override
