@@ -145,16 +145,6 @@ the relevant Commercial Agreement.
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <argLine>-server -Xmx2g -XX:+UseG1GC -Dfile.encoding=UTF-8</argLine>
-          <forkCount>1</forkCount>
-          <reuseForks>false</reuseForks>
-        </configuration>
-      </plugin>
-
-      <plugin>
         <artifactId>maven-resources-plugin</artifactId>
         <executions>
           <execution>

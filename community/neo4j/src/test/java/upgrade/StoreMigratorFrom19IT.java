@@ -159,9 +159,9 @@ public class StoreMigratorFrom19IT
 
         // Then
         File[] transactionLogs = findAllMatchingFiles( legacyStoreDir, "nioneo_logical\\.log\\.v.*" );
-        assertThat( transactionLogs, arrayWithSize( 2 ) );
+        assertThat( transactionLogs, arrayWithSize( 1 ) );
 
-        List<LogEntry> logEntries = readTransactionLogEntriesFrom( fs, transactionLogs[1] );
+        List<LogEntry> logEntries = readTransactionLogEntriesFrom( fs, transactionLogs[0] );
         assertThat( logEntries, not( emptyCollectionOf( LogEntry.class ) ) );
 
         assertThat( logEntries.get( 0 ), instanceOf( LogEntry.Start.class ) );
@@ -195,20 +195,21 @@ public class StoreMigratorFrom19IT
         assertThat( luceneLogs, arrayWithSize( 1 ) );
 
         List<LogEntry> logEntries = readLuceneLogEntriesFrom( fs, luceneLogs[0] );
-        assertThat( logEntries, hasSize( 23 ) );
+        assertThat( logEntries, hasSize( 12 ) );
 
         LogEntry log1 = logEntries.get( 0 );
         assertThat( log1, instanceOf( LogEntry.Start.class ) );
-        assertThat( ((LogEntry.Start) log1).getMasterId(), equalTo( 2 ) );
-        assertThat( ((LogEntry.Start) log1).getLocalId(), equalTo( 2 ) );
+        assertThat( ((LogEntry.Start) log1).getMasterId(), equalTo( -1 ) );
+        assertThat( ((LogEntry.Start) log1).getLocalId(), equalTo( -1 ) );
 
         LogEntry log2 = logEntries.get( 1 );
         assertThat( log2, instanceOf( LogEntry.Command.class ) );
-        assertThat( ((LogEntry.Command) log2).getXaCommand().getClass().getSimpleName(), containsString( "Remove" ) );
+        LogEntry.Command log2Cmd = (LogEntry.Command) log2;
+        assertThat( log2Cmd.getXaCommand().getClass().getSimpleName(), equalTo( "CreateIndexCommand" ) );
 
-        assertThat( logEntries.get( logEntries.size() - 3 ), instanceOf( LogEntry.Prepare.class ) );
+        assertThat( logEntries.get( logEntries.size() - 3 ), instanceOf( LogEntry.Command.class ) );
 
-        assertThat( logEntries.get( logEntries.size() - 2 ), instanceOf( LogEntry.TwoPhaseCommit.class ) );
+        assertThat( logEntries.get( logEntries.size() - 2 ), instanceOf( LogEntry.OnePhaseCommit.class ) );
 
         assertThat( logEntries.get( logEntries.size() - 1 ), instanceOf( LogEntry.Done.class ) );
     }
@@ -262,27 +263,29 @@ public class StoreMigratorFrom19IT
         verifyNumberOfNodesAndRelationships( verifier );
         verifier.verifyNodeIdsReused();
         verifier.verifyRelationshipIdsReused();
+        verifier.verifyLegacyIndex();
     }
 
     private static void verifySlaveContents( HighlyAvailableGraphDatabase haDb )
     {
         DatabaseContentVerifier verifier = new DatabaseContentVerifier( haDb );
         verifyNumberOfNodesAndRelationships( verifier );
+        verifier.verifyLegacyIndex();
     }
 
     private static void verifyNumberOfNodesAndRelationships( DatabaseContentVerifier verifier )
     {
-        verifier.verifyNodes( 110_000 );
-        verifier.verifyRelationships( 99_900 );
+        verifier.verifyNodes( 1_000 );
+        verifier.verifyRelationships( 500 );
     }
 
     private static void verifyNeoStore( NeoStore neoStore )
     {
-        assertEquals( 1405267948320l, neoStore.getCreationTime() );
-        assertEquals( -460827792522586619l, neoStore.getRandomNumber() );
-        assertEquals( 15l, neoStore.getVersion() );
+        assertEquals( 1409818980890L, neoStore.getCreationTime() );
+        assertEquals( 7528833218632030901L, neoStore.getRandomNumber() );
+        assertEquals( 2L, neoStore.getVersion() );
         assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1004L + 3, neoStore.getLastCommittedTx() ); // prior verifications add 3 transactions
+        assertEquals( 8L + 3, neoStore.getLastCommittedTx() ); // prior verifications add 3 transactions
     }
 
     private StoreUpgrader upgrader( StoreMigrator storeMigrator )
