@@ -20,8 +20,10 @@
 package upgrade;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.Writer;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -46,17 +48,23 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
+import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
@@ -75,11 +83,13 @@ public class StoreUpgraderTest
     @Test
     public void shouldUpgradeAnOldFormatStore() throws IOException, ConsistencyCheckIncompleteException
     {
+        // Given
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, Legacy20Store.LEGACY_VERSION ) );
 
-        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
-                .migrateIfNeeded( dbDirectory );
+        // When
+        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
 
+        // Then
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, ALL_STORES_VERSION ) );
 
         // We leave logical logs in place since the new version can read the old
@@ -95,8 +105,7 @@ public class StoreUpgraderTest
         fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
 
         // when
-        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
-                .migrateIfNeeded( dbDirectory );
+        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
 
         // then
         File backupDirectory = new File( dbDirectory, "upgrade_backup" );
@@ -119,9 +128,7 @@ public class StoreUpgraderTest
 
         try
         {
-            newUpgrader( vetoingUpgradeConfiguration, new StoreMigrator( new SilentMigrationProgressMonitor(),
-                    fileSystem ) )
-                    .migrateIfNeeded( dbDirectory );
+            newUpgrader( vetoingUpgradeConfiguration ).migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
         catch ( UpgradeNotAllowedByConfigurationException e )
@@ -143,8 +150,7 @@ public class StoreUpgraderTest
 
         try
         {
-            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
-                    .migrateIfNeeded( dbDirectory );
+            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
         catch ( StoreUpgrader.UnexpectedUpgradingStoreVersionException e )
@@ -168,8 +174,7 @@ public class StoreUpgraderTest
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
         try
         {
-            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
-                    .migrateIfNeeded( dbDirectory );
+            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
         catch ( StoreUpgrader.UpgradingStoreVersionNotFoundException e )
@@ -193,8 +198,7 @@ public class StoreUpgraderTest
 
         try
         {
-            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
-                    .migrateIfNeeded( dbDirectory );
+            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
         catch ( StoreUpgrader.UpgradingStoreVersionNotFoundException e )
@@ -209,9 +213,8 @@ public class StoreUpgraderTest
     public void shouldContinueMovingFilesIfUpgradeCancelledWhileMoving() throws Exception
     {
         // GIVEN
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, StoreUpgrader.NO_MONITOR );
+        StoreUpgrader upgrader = newUpgrader( ALLOW_UPGRADE );
         String failureMessage = "Just failing";
-        upgrader.addParticipant( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) );
         upgrader.addParticipant( participantThatWillFailWhenMoving( failureMessage ) );
 
         // WHEN
@@ -227,8 +230,7 @@ public class StoreUpgraderTest
 
         // AND WHEN
         Monitor monitor = Mockito.mock( Monitor.class );
-        upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, monitor );
-        upgrader.addParticipant( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) );
+        upgrader = newUpgrader( monitor );
         StoreMigrationParticipant observingParticipant = Mockito.mock( StoreMigrationParticipant.class );
         Mockito.when( observingParticipant.needsMigration(
                 Matchers.any( FileSystemAbstraction.class ), Matchers.any( File.class ) ) ).thenReturn( true );
@@ -239,7 +241,7 @@ public class StoreUpgraderTest
         Mockito.verify( observingParticipant, Mockito.times( 0 ) ).migrate( Matchers.any( FileSystemAbstraction.class ),
                 Matchers.any( File.class ), Matchers.any( File.class ), Matchers.any( DependencyResolver.class ) );
         Mockito.verify( observingParticipant, Mockito.times( 1 ) ).moveMigratedFiles( Matchers.eq( fileSystem ),
-                Matchers.any( File.class ), Matchers.any( File.class ), Matchers.any( File.class ) );
+                Matchers.any( File.class ), Matchers.any( File.class ) );
         Mockito.verify( observingParticipant, Mockito.times( 1 ) ).cleanup( Matchers.eq( fileSystem ), Matchers.any(
                 File.class ) );
         Mockito.verify( monitor ).migrationCompleted();
@@ -252,8 +254,7 @@ public class StoreUpgraderTest
         fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
 
         // When
-        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
-                .migrateIfNeeded( dbDirectory );
+        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
 
         // Then
         File neoStoreFile = new File( dbDirectory, NeoStore.DEFAULT_NAME );
@@ -264,6 +265,40 @@ public class StoreUpgraderTest
 
         long minuteAgo = System.currentTimeMillis() - 1000;
         assertThat( neoStore.getUpgradeTime(), greaterThan( minuteAgo ) );
+    }
+
+    @Test
+    public void upgradeShouldNotLeaveLeftoverAndMigrationDirs() throws Exception
+    {
+        // Given
+        fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
+
+        // When
+        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
+
+        // Then
+        assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
+    }
+
+    @Test
+    public void upgraderShouldCleanupLegacyLeftoverAndMigrationDirs() throws Exception
+    {
+        // Given
+        fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
+        fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_DIRECTORY ) );
+        fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY ) );
+        fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_1" ) );
+        fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_2" ) );
+        fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_42" ) );
+
+        // When
+        StoreMigrator migrator = spy( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) );
+        when( migrator.needsMigration( fileSystem, dbDirectory ) ).thenReturn( false );
+
+        newUpgrader( ALLOW_UPGRADE, migrator, StoreUpgrader.NO_MONITOR ).migrateIfNeeded( dbDirectory );
+
+        // Then
+        assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
     }
 
     private StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )
@@ -277,8 +312,7 @@ public class StoreUpgraderTest
             }
 
             @Override
-            public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir, File storeDir,
-                                           File leftOversDir )
+            public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir, File storeDir )
                     throws IOException
             {
                 throw new IOException( failureMessage );
@@ -292,15 +326,43 @@ public class StoreUpgraderTest
         };
     }
 
-    public final
+    private List<File> migrationHelperDirs()
+    {
+        File[] tmpDirs = dbDirectory.listFiles( new FilenameFilter()
+        {
+            @Override
+            public boolean accept( File file, String name )
+            {
+                return file.isDirectory() &&
+                       (name.equals( StoreUpgrader.MIGRATION_DIRECTORY ) ||
+                        name.startsWith( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY ));
+            }
+        } );
+        assertNotNull( "Some IO errors occurred", tmpDirs );
+        return Arrays.asList( tmpDirs );
+    }
+
     @Rule
-    TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
+    public final TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
     private File dbDirectory;
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
-    private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator )
+    private StoreUpgrader newUpgrader( UpgradeConfiguration upgradeConfig )
     {
-        StoreUpgrader upgrader = new StoreUpgrader( config, fileSystem, StoreUpgrader.NO_MONITOR );
+        StoreMigrator defaultMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem );
+        return newUpgrader( upgradeConfig, defaultMigrator, StoreUpgrader.NO_MONITOR );
+    }
+
+    private StoreUpgrader newUpgrader( Monitor monitor )
+    {
+        StoreMigrator defaultMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem );
+        return newUpgrader( ALLOW_UPGRADE, defaultMigrator, monitor );
+    }
+
+    private StoreUpgrader newUpgrader( UpgradeConfiguration upgradeConfig, StoreMigrator migrator, Monitor monitor )
+    {
+        DevNullLoggingService logging = new DevNullLoggingService();
+        StoreUpgrader upgrader = new StoreUpgrader( upgradeConfig, fileSystem, monitor, logging );
         upgrader.addParticipant( migrator );
         return upgrader;
     }

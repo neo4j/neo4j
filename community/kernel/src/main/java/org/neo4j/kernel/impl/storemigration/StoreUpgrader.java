@@ -22,11 +22,13 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.Writer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -34,6 +36,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * A migration process to migrate {@link StoreMigrationParticipant migration participants}, if there's
@@ -60,9 +63,10 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class StoreUpgrader implements DependencySatisfier
 {
-    private static final String MIGRATION_DIRECTORY = "upgrade";
+    public static final String MIGRATION_DIRECTORY = "upgrade";
+    public static final String MIGRATION_LEFT_OVERS_DIRECTORY = "upgrade_backup";
+
     private static final String MIGRATION_STATUS_FILE = "_status";
-    private static final String MIGRATION_LEFT_OVERS_DIRECTORY = "upgrade_backup";
 
     private enum MigrationStatus
     {
@@ -107,13 +111,15 @@ public class StoreUpgrader implements DependencySatisfier
     private final FileSystemAbstraction fileSystem;
     private final MigrationDependencyResolver dependencyResolver = new MigrationDependencyResolver();
     private final Monitor monitor;
+    private final StringLogger log;
 
     public StoreUpgrader( UpgradeConfiguration upgradeConfiguration, FileSystemAbstraction fileSystem,
-            Monitor monitor )
+            Monitor monitor, Logging logging )
     {
         this.fileSystem = fileSystem;
         this.upgradeConfiguration = upgradeConfiguration;
         this.monitor = monitor;
+        this.log = logging.getMessagesLog( getClass() );
     }
 
     public void addParticipant( StoreMigrationParticipant participant )
@@ -130,9 +136,14 @@ public class StoreUpgrader implements DependencySatisfier
 
     public void migrateIfNeeded( File storeDirectory )
     {
+        File migrationDirectory = new File( storeDirectory, MIGRATION_DIRECTORY );
+
+        cleanupLegacyLeftOverDirsIn( storeDirectory );
+
         List<StoreMigrationParticipant> participantsNeedingMigration = getParticipantsEagerToMigrate( storeDirectory );
         if ( participantsNeedingMigration.isEmpty() )
         {   // No migration needed
+            deleteSilently( migrationDirectory ); // delete stale dir if present
             return;
         }
 
@@ -148,18 +159,9 @@ public class StoreUpgrader implements DependencySatisfier
             throw e;
         }
 
-        File migrationDirectory = new File( storeDirectory, MIGRATION_DIRECTORY );
         try
         {
             File migrationStateFile = new File( migrationDirectory, MIGRATION_STATUS_FILE );
-            File leftOversDirectory = new File( storeDirectory, MIGRATION_LEFT_OVERS_DIRECTORY );
-            int backupDirCounter = 0;
-            while ( fileSystem.fileExists( leftOversDirectory ) )
-            {
-                backupDirCounter++;
-                String dirname = MIGRATION_LEFT_OVERS_DIRECTORY + "_" + backupDirCounter;
-                leftOversDirectory = new File( storeDirectory, dirname );
-            }
 
             // We don't need to migrate if we're at the phase where we have migrated successfully
             // and it's just a matter of moving over the files to the storeDir.
@@ -172,8 +174,7 @@ public class StoreUpgrader implements DependencySatisfier
             }
 
             closeParticipants();
-            moveMigratedFilesToWorkingDirectory( participantsNeedingMigration, migrationDirectory, storeDirectory,
-                    leftOversDirectory );
+            moveMigratedFilesToWorkingDirectory( participantsNeedingMigration, migrationDirectory, storeDirectory );
 
             updateUpgradeTimeAndUpgradeId( storeDirectory );
 
@@ -184,6 +185,26 @@ public class StoreUpgrader implements DependencySatisfier
         finally
         {   // Safety net
             closeParticipants();
+        }
+    }
+
+    private void cleanupLegacyLeftOverDirsIn( File storeDir )
+    {
+        final Pattern leftOverDirsPattern = Pattern.compile( MIGRATION_LEFT_OVERS_DIRECTORY + "(_\\d*)?" );
+        File[] leftOverDirs = storeDir.listFiles( new FilenameFilter()
+        {
+            @Override
+            public boolean accept( File file, String name )
+            {
+                return file.isDirectory() && leftOverDirsPattern.matcher( name ).matches();
+            }
+        } );
+        if ( leftOverDirs != null )
+        {
+            for ( File leftOverDir : leftOverDirs )
+            {
+                deleteSilently( leftOverDir );
+            }
         }
     }
 
@@ -222,14 +243,13 @@ public class StoreUpgrader implements DependencySatisfier
 
     private void moveMigratedFilesToWorkingDirectory(
             Iterable<StoreMigrationParticipant> participantsNeedingMigration,
-            File migrationDirectory, File workingDirectory, File leftOversDirectory )
+            File migrationDirectory, File workingDirectory )
     {
         try
         {
-            fileSystem.mkdirs( leftOversDirectory );
             for ( StoreMigrationParticipant participant : participantsNeedingMigration )
             {
-                participant.moveMigratedFiles( fileSystem, migrationDirectory, workingDirectory, leftOversDirectory );
+                participant.moveMigratedFiles( fileSystem, migrationDirectory, workingDirectory );
             }
         }
         catch ( IOException e )
@@ -344,6 +364,18 @@ public class StoreUpgrader implements DependencySatisfier
         catch ( IOException e )
         {
             throw new RuntimeException( e );
+        }
+    }
+
+    private void deleteSilently( File dir )
+    {
+        try
+        {
+            fileSystem.deleteRecursively( dir );
+        }
+        catch ( IOException e )
+        {
+            log.error( "Unable to delete directory: " + dir, e );
         }
     }
 

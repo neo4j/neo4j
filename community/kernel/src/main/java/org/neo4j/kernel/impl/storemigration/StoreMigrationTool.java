@@ -54,7 +54,8 @@ public class StoreMigrationTool
     public void run( String legacyStoreDirectory, Config config, Logging logging, StoreUpgrader.Monitor monitor )
     {
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        StoreUpgrader migrationProcess = new StoreUpgrader( new ConfigMapUpgradeConfiguration( config ), fs, monitor );
+        ConfigMapUpgradeConfiguration upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
+        StoreUpgrader migrationProcess = new StoreUpgrader( upgradeConfiguration, fs, monitor, logging );
 
         // Add the kernel store migrator
         config = StoreFactory.configForStoreDir( config, new File( legacyStoreDirectory ) );
