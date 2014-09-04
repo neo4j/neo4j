@@ -9,7 +9,7 @@ Instead, what is called arbiter instances can be deployed.
 They can be regarded as cluster participants in that their role is to take part in master elections with the single purpose of breaking ties in the election process.
 That makes possible a scenario where you have a cluster of 2 Neo4j database instances and an additional arbiter instance and still enjoy tolerance of a single failure of either of the 3 instances.
 
-Arbiter instances are configured in the same way as Neo4j HA members are -- through the 'neo4j.properties' file in the installation's 'conf/' directory. 
+Arbiter instances are configured in the same way as Neo4j HA members are -- through the _conf/neo4j.properties_ file.
 Settings that are not cluster specific are of course ignored, so you can easily start up an arbiter instance in place of a properly configured Neo4j instance.
 
 To start an arbiter instance, call
