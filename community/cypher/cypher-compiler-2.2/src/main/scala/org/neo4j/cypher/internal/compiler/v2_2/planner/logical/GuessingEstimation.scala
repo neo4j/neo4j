@@ -27,9 +27,9 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 
 object GuessingEstimation {
-  val LABEL_NOT_FOUND_SELECTIVITY = Multiplier(0.0)
-  val PREDICATE_SELECTIVITY = Multiplier(0.2)
-  val INDEX_SEEK_SELECTIVITY = Multiplier(0.02)
+  val LABEL_NOT_FOUND_SELECTIVITY = Selectivity(0.0)
+  val PREDICATE_SELECTIVITY = Selectivity(0.2)
+  val INDEX_SEEK_SELECTIVITY = Selectivity(0.02)
   val DEFAULT_EXPAND_RELATIONSHIP_DEGREE = Multiplier(2.0)
   val DEFAULT_CONNECTIVITY_CHANCE = Multiplier(1.0)
 }
@@ -190,8 +190,8 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     else
       types.foldLeft(Multiplier(0))((sum, t) => sum + degreeByRelationshipTypeAndDirection(t.id, dir))
 
-  private def predicateSelectivity(predicates: Seq[ast.Expression]): Multiplier =
-    predicates.map(selectivity).foldLeft(Multiplier(1))(_ * _)
+  private def predicateSelectivity(predicates: Seq[ast.Expression]): Selectivity =
+    predicates.map(selectivity).foldLeft(Selectivity(1))(_ * _)
 
   private def degreeByRelationshipTypeAndDirection(optId: Option[RelTypeId], direction: Direction): Multiplier = optId match {
     case Some(id) => statistics.degreeByRelationshipTypeAndDirection(id, direction)
@@ -206,7 +206,7 @@ class StatisticsBasedSelectivityModel(statistics: GraphStatistics)
 
   import GuessingEstimation._
 
-  def apply(predicate: ast.Expression): Multiplier = predicate match {
+  def apply(predicate: ast.Expression): Selectivity = predicate match {
     case ast.HasLabels(_, Seq(label)) =>
       if (label.id.isDefined)
         statistics.nodesWithLabelSelectivity(label.id.get)
@@ -214,7 +214,7 @@ class StatisticsBasedSelectivityModel(statistics: GraphStatistics)
         LABEL_NOT_FOUND_SELECTIVITY
 
     case ast.Not(inner) =>
-      Multiplier(1) - apply(inner)
+      apply(inner).inverse
 
     case _  =>
       PREDICATE_SELECTIVITY

@@ -19,20 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Selectivity, Cardinality, Multiplier}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Multiplier}
 
 
 case object HardcodedGraphStatistics extends HardcodedGraphStatisticsValues
 
 class HardcodedGraphStatisticsValues extends GraphStatistics {
   val NODES_CARDINALITY = Cardinality(10000)
-  val NODES_WITH_LABEL_SELECTIVITY = Multiplier(0.2)
+  val NODES_WITH_LABEL_SELECTIVITY = Selectivity(0.2)
   val NODES_WITH_LABEL_CARDINALITY = NODES_CARDINALITY * NODES_WITH_LABEL_SELECTIVITY
-  val RELATIONSHIPS_WITH_TYPE_SELECTIVITY = Multiplier(0.2)
+  val RELATIONSHIPS_WITH_TYPE_SELECTIVITY = Selectivity(0.2)
   val DEGREE_BY_RELATIONSHIP_TYPE_AND_DIRECTION = Multiplier(5)
   val DEGREE_BY_LABEL_RELATIONSHIP_TYPE_AND_DIRECTION = Multiplier(5)
+  val INDEX_SELECTIVITY = Selectivity(.2)
 
   def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId,
                                                 direction: Direction): Multiplier =
@@ -41,10 +42,10 @@ class HardcodedGraphStatisticsValues extends GraphStatistics {
   def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Multiplier =
     DEGREE_BY_RELATIONSHIP_TYPE_AND_DIRECTION
 
-  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Multiplier =
+  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Selectivity =
     RELATIONSHIPS_WITH_TYPE_SELECTIVITY
 
-  def nodesWithLabelSelectivity(labelId: LabelId): Multiplier =
+  def nodesWithLabelSelectivity(labelId: LabelId): Selectivity =
     NODES_WITH_LABEL_SELECTIVITY
 
   def nodesWithLabelCardinality(labelId: LabelId): Cardinality =
@@ -52,4 +53,10 @@ class HardcodedGraphStatisticsValues extends GraphStatistics {
 
   def nodesCardinality: Cardinality =
     NODES_CARDINALITY
+
+  def degreeByLabelRelationshipTypeAndDirection(fromLabel: LabelId, relTypeId: RelTypeId, direction: Direction, toLabel: LabelId): Multiplier =
+    DEGREE_BY_RELATIONSHIP_TYPE_AND_DIRECTION
+
+  def indexSelectivity(label: LabelId, property: PropertyKeyId): Selectivity =
+    INDEX_SELECTIVITY
 }

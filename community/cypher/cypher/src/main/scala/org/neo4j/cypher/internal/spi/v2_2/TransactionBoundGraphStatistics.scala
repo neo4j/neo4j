@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.spi.v2_2
 
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_2.{RelTypeId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_2.{PropertyKeyId, RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.heuristics.StatisticsData
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Multiplier, Cardinality}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Selectivity, Multiplier, Cardinality}
 
 class TransactionBoundGraphStatistics(statistics: StatisticsData) extends GraphStatistics {
 
@@ -34,7 +34,11 @@ class TransactionBoundGraphStatistics(statistics: StatisticsData) extends GraphS
     nodesCardinality * nodesWithLabelSelectivity(labelId)
 
   def nodesWithLabelSelectivity(labelId: LabelId) =
-    Multiplier(statistics.labelDistribution( labelId.id ))
+    Selectivity(statistics.labelDistribution( labelId.id ))
+
+  def degreeByLabelRelationshipTypeAndDirection(fromLabel: LabelId, relTypeId: RelTypeId, direction: Direction, toLabel: LabelId): Multiplier = ???
+
+  def indexSelectivity(label: LabelId, property: PropertyKeyId): Selectivity = ???
 
   def relationshipsWithTypeSelectivity(relTypeId: RelTypeId) = ???
 
