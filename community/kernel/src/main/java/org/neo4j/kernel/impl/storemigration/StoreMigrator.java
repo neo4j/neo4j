@@ -76,9 +76,9 @@ import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.allLegacyLogFilesFilter;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.getLegacyLogVersion;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.versionedLegacyLogFilesFilter;
+import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.allLegacyLogFilesFilter;
+import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogVersion;
+import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.versionedLegacyLogFilesFilter;
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
