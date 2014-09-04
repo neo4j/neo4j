@@ -210,7 +210,8 @@ The Neo4j Team""")
       new StartPointBuilder,
       new MatchBuilder,
       new UnwindBuilder,
-      new ShortestPathBuilder
+      new ShortestPathBuilder,
+      new DisconnectedShortestPathEndPointsBuilder
     )
   }
 
