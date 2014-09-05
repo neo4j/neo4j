@@ -62,7 +62,6 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static java.lang.Integer.MAX_VALUE;
 
 import static org.hamcrest.Matchers.arrayWithSize;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;

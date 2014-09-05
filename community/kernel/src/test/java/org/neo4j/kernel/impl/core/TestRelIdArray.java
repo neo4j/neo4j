@@ -52,7 +52,7 @@ public class TestRelIdArray
         array.add( 1, OUTGOING );
         array.add( 2, OUTGOING );
         array.add( 3, INCOMING );
-        
+
         // Iterate OUTGOING
         RelIdIterator itr = array.iterator( OUTGOING );
         assertTrue( itr.hasNext() );
@@ -62,13 +62,13 @@ public class TestRelIdArray
         assertEquals( 2L, itr.next() );
         assertFalse( itr.hasNext() );
         assertFalse( itr.hasNext() );
-        
+
         // Iterate INCOMING
         itr = array.iterator( INCOMING );
         assertTrue( itr.hasNext() );
         assertEquals( 3L, itr.next() );
         assertFalse( itr.hasNext() );
-        
+
         // Iterate BOTH
         itr = array.iterator( BOTH );
         assertTrue( itr.hasNext() );
@@ -81,7 +81,7 @@ public class TestRelIdArray
         assertFalse( itr.hasNext() );
         assertFalse( itr.hasNext() );
     }
-    
+
     @Test
     public void testWithAddRemove() throws Exception
     {
@@ -101,7 +101,7 @@ public class TestRelIdArray
         Collections.sort( allIds );
         assertEquals( Arrays.asList( 1L, 3L, 4L, 5L, 7L ), allIds );
     }
-    
+
     @Test
     public void testDifferentBlocks() throws Exception
     {
@@ -118,7 +118,7 @@ public class TestRelIdArray
         long verySmall = 1000;
         array.add( verySmall, OUTGOING );
         array.add( verySmall+1, OUTGOING );
-        
+
         Collection<Long> allIds = new HashSet<Long>( asList( array ) );
         assertEquals( new HashSet<>( Arrays.asList(
                 justUnderIntMax, justUnderIntMax+1,
@@ -126,27 +126,27 @@ public class TestRelIdArray
                 aBitOverIntMax, aBitOverIntMax+1,
                 verySmall, verySmall+1 ) ), allIds );
     }
-    
+
     @Test
     public void testAddDifferentBlocks() throws Exception
     {
         RelIdArray array1 = new RelIdArray( 0 );
         array1.add( 0, OUTGOING );
         array1.add( 1, OUTGOING );
-        
+
         RelIdArray array2 = new RelIdArray( 0 );
         long justOverIntMax = (long) Math.pow( 2, 32 )+3;
         array2.add( justOverIntMax, OUTGOING );
         array2.add( justOverIntMax+1, OUTGOING );
-        
+
         RelIdArray all = new RelIdArray( 0 );
         all.addAll( array1 );
         all.addAll( array2 );
-        
+
         assertEquals( new HashSet<>( Arrays.asList(
                 0L, 1L, justOverIntMax, justOverIntMax+1 ) ), new HashSet<>( asList( all ) ) );
     }
-    
+
     @Test
     public void iterateThroughMultipleHighBitsSignaturesWhereIdsAreAdded() throws Exception
     {
@@ -177,6 +177,22 @@ public class TestRelIdArray
         arrayTo.add( 2, DirectionWrapper.INCOMING );
     }
 
+    @Test
+    public void shouldBeAbleToEvictLastIdInBlock() throws Exception
+    {
+        // GIVEN
+        RelIdArray ids = new RelIdArray( 0 );
+        ids.add( 0, OUTGOING );
+        ids.add( 1, OUTGOING );
+        ids.add( 2, OUTGOING );
+
+        // WHEN
+        RelIdArray idsWithoutLast = RelIdArray.from( ids, null, Arrays.asList( 1L ) );
+
+        // THEN
+        assertEquals( Arrays.asList( 0L, 2L ), asList( idsWithoutLast ) );
+    }
+
     private Set<Long> deplete( RelIdIterator iterator )
     {
         HashSet<Long> set = new HashSet<>();
@@ -186,7 +202,7 @@ public class TestRelIdArray
         }
         return set;
     }
-    
+
     private List<Long> asList( RelIdArray ids )
     {
         List<Long> result = new ArrayList<>();
