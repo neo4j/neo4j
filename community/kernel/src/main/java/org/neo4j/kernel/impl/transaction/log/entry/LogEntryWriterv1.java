@@ -67,22 +67,16 @@ public class LogEntryWriterv1 implements LogEntryWriter
     @Override
     public void serialize( TransactionRepresentation tx ) throws IOException
     {
-        tx.accept( new CommandSerializer() );
-    }
-
-    public void writeCommandEntry( Command command ) throws IOException
-    {
-        writeLogEntryHeader( COMMAND );
-        command.handle( commandWriter );
-    }
-
-    private class CommandSerializer implements Visitor<Command, IOException>
-    {
-        @Override
-        public boolean visit( Command command ) throws IOException
+        tx.accept( new Visitor<Command, IOException>()
         {
-            writeCommandEntry( command );
-            return true;
-        }
+            @Override
+            public boolean visit( Command command ) throws IOException
+            {
+                writeLogEntryHeader( COMMAND );
+                command.handle( commandWriter );
+                return true;
+            }
+        } );
     }
+
 }
