@@ -147,7 +147,10 @@ angular.module('neo4jApp.services')
         @calculateStyle(selector, node)
 
       forRelationship: (rel) ->
-        @calculateStyle(@relationshipSelector(rel))
+        style_element = @calculateStyle(@relationshipSelector(rel))
+        if not style_element.props.caption
+          style_element.props.caption = '{type}'
+        style_element
 
       findAvailableDefaultColor: () ->
         usedColors = {}
@@ -302,13 +305,15 @@ angular.module('neo4jApp.services')
       defaultSizes: -> provider.defaultSizes
       defaultArrayWidths: -> provider.defaultArrayWidths
       defaultColors: -> angular.copy(provider.defaultColors)
-      interpolate: (str, id, properties) ->
+      interpolate: (str, fallback, properties) ->
         # Supplant
         # http://javascript.crockford.com/remedial.html
         str.replace(
           /\{([^{}]*)\}/g,
           (a, b) ->
-            r = properties[b] or id
+            r = properties[b] or fallback
+            if typeof r is 'object'
+              r = r.join(', ')
             return if (typeof r is 'string' or typeof r is 'number') then r else a
         )
 
