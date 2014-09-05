@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 angular.module('neo4jApp.directives')
   .directive('neoTable', [
-    ->
+    'Settings'
+    (Settings) ->
       replace: yes
       restrict: 'E'
       link: (scope, elm, attr) ->
@@ -69,10 +70,10 @@ angular.module('neo4jApp.directives')
             html += "<th>#{col}</th>"
           html += "</tr></thead>"
           html += "<tbody>"
-          if rows.length
-            for row in rows
+          if result.displayedSize
+            for i in [0...result.displayedSize]
               html += "<tr>"
-              for cell in row
+              for cell in rows[i]
                 html += '<td>' + cell2html(cell) + '</td>'
               html += "</tr>"
           else # empty results

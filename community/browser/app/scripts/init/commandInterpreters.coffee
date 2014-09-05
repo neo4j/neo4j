@@ -270,14 +270,13 @@ angular.module('neo4jApp')
           r = current_transaction.begin().then(
             (begin_response) ->
               current_transaction.commit(input).then(
-                    (response) ->
-                      if response.size > Settings.maxRows
-                        q.reject(error("Resultset too large (over #{Settings.maxRows} rows)"))
-                      else
-                        q.resolve(
-                          table: response
-                          graph: extractGraphModel(response, CypherGraphModel)
-                        )
+                (response) ->
+                  if response.size > Settings.maxRows
+                    response.displayedSize = Settings.maxRows
+                  q.resolve(
+                    table: response
+                    graph: extractGraphModel(response, CypherGraphModel)
+                  )
                 ,
                 q.reject
               )
