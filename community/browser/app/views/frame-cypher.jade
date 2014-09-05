@@ -20,7 +20,6 @@ div(ng-controller="CypherResultCtrl", fullscreen)
 
         .view-result-table.result(ng-show='isActive("table")')
           neo-table(table-data='frame.response.table')
-          a.fa.fa-download(exportable 'ng-click'='exportCSV(frame.response.table)', tooltip-placement='left', tooltip='Download CSV')
         .status-bar(ng-show='isActive("table")')
           .status
             include partials/result-status
