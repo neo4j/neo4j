@@ -23,11 +23,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 import org.junit.Test;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
@@ -103,6 +106,41 @@ public class LogHeaderWriterTest
 
         // when
         writeLogHeader( fs, file, expectedLogVersion, expectedTxId );
+
+        // then
+        final byte[] array = new byte[LOG_HEADER_SIZE];
+        try ( InputStream stream = fs.openAsInputStream( file ) )
+        {
+            int read = stream.read( array );
+            assertEquals( LOG_HEADER_SIZE, read );
+        }
+        final ByteBuffer result = ByteBuffer.wrap( array );
+
+        long encodedLogVersions = result.getLong();
+        assertEquals( encodeLogVersion( expectedLogVersion ), encodedLogVersions );
+
+        byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
+        assertEquals( CURRENT_LOG_VERSION, logFormatVersion );
+
+        long logVersion = decodeLogVersion( logFormatVersion, encodedLogVersions, true );
+        assertEquals( expectedLogVersion, logVersion );
+
+        long txId = result.getLong();
+        assertEquals( expectedTxId, txId );
+    }
+
+    @Test
+    public void shouldWriteALogHeaderInAStoreChannel() throws IOException
+    {
+        // given
+        final File file = File.createTempFile( "WriteLogHeader", getClass().getSimpleName() );
+        final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        final StoreChannel channel = fs.open( file, "rw" );
+
+        // when
+        writeLogHeader( channel, expectedLogVersion, expectedTxId );
+
+        channel.close();
 
         // then
         final byte[] array = new byte[LOG_HEADER_SIZE];

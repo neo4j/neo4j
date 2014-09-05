@@ -24,11 +24,12 @@ import java.io.FilenameFilter;
 
 public class LegacyLogFilenames
 {
+    private static final String legacyLogFilesPrefix = "nioneo_logical.log.v";
     private static final String versionedLegacyLogFilesPattern = "nioneo_logical\\.log\\.v\\d+";
     private static final String[] allLegacyLogFilesPatterns =
             {"active_tx_log", "tm_tx_log\\..*", "nioneo_logical\\.log\\..*"};
 
-    public static final FilenameFilter versionedLegacyLogFilesFilter = new FilenameFilter()
+    static final FilenameFilter versionedLegacyLogFilesFilter = new FilenameFilter()
     {
         @Override
         public boolean accept( File dir, String name )
@@ -37,7 +38,7 @@ public class LegacyLogFilenames
         }
     };
 
-    public static final FilenameFilter allLegacyLogFilesFilter = new FilenameFilter()
+    static final FilenameFilter allLegacyLogFilesFilter = new FilenameFilter()
     {
         @Override
         public boolean accept( File dir, String name )
@@ -53,7 +54,7 @@ public class LegacyLogFilenames
         }
     };
 
-    public static long getLegacyLogVersion( String filename )
+    static long getLegacyLogVersion( String filename )
     {
         int index = filename.lastIndexOf( ".v" );
         if ( index == -1 )
@@ -61,6 +62,10 @@ public class LegacyLogFilenames
             throw new RuntimeException( "Invalid log file '" + filename + "'" );
         }
         return Long.parseLong( filename.substring( index + ".v".length() ) );
+    }
 
+    static String getLegacyLogFilename( int version )
+    {
+        return legacyLogFilesPrefix + version;
     }
 }

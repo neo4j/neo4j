@@ -53,10 +53,16 @@ public class LogHeaderWriter
     {
         try ( StoreChannel channel = fileSystem.open( file, "rw" ) )
         {
-            ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
-            writeLogHeader( buffer, logVersion, previousLastCommittedTxId );
-            channel.write( buffer );
+            writeLogHeader( channel, logVersion, previousLastCommittedTxId );
         }
+    }
+
+    public static void writeLogHeader( StoreChannel channel, long logVersion, long previousLastCommittedTxId )
+            throws IOException
+    {
+        ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
+        writeLogHeader( buffer, logVersion, previousLastCommittedTxId );
+        channel.write( buffer );
     }
 
     public static long encodeLogVersion( long logVersion )

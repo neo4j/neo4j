@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
@@ -56,7 +57,6 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
@@ -74,9 +74,6 @@ import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.allLegacyLogFilesFilter;
-import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogVersion;
-import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.versionedLegacyLogFilesFilter;
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
@@ -101,8 +98,8 @@ public class StoreMigrator implements StoreMigrationParticipant
     private final UpgradableDatabase upgradableDatabase;
     private final Config config;
     private final Logging logging;
+    private final LegacyLogs legacyLogs;
     private String versionToUpgradeFrom;
-    private LegacyStore legacyStore;
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
@@ -120,6 +117,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         this.upgradableDatabase = upgradableDatabase;
         this.config = config;
         this.logging = logging;
+        this.legacyLogs = new LegacyLogs( fileSystem );
     }
 
     @Override
@@ -147,8 +145,13 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
         else
         {
+            // migrate stores
             migrateWithBatchImporter( storeDir, migrationDir );
         }
+
+        // migrate logs
+        legacyLogs.migrateLogs( storeDir, migrationDir );
+
         progressMonitor.finished();
     }
 
@@ -411,7 +414,9 @@ public class StoreMigrator implements StoreMigrationParticipant
         // update or add upgrade id and time
         updateOrAddUpgradeIdAndUpgradeTime( storeDir );
 
-        renameLogFiles( storeDir );
+        // move logs
+        legacyLogs.moveLogs( migrationDir, storeDir );
+        legacyLogs.renameLogFiles( storeDir );
     }
 
 
@@ -420,25 +425,6 @@ public class StoreMigrator implements StoreMigrationParticipant
         final File neostore = new File( storeDirectory, NeoStore.DEFAULT_NAME );
         NeoStore.setOrAddUpgradeIdOnMigration( fileSystem, neostore, new SecureRandom().nextLong() );
         NeoStore.setOrAddUpgradeTimeOnMigration( fileSystem, neostore, System.currentTimeMillis() );
-    }
-
-    private void renameLogFiles( File storeDir ) throws IOException
-    {
-        // rename files
-        for ( File file : fileSystem.listFiles( storeDir, versionedLegacyLogFilesFilter ) )
-        {
-            final String oldName = file.getName();
-            final long version = getLegacyLogVersion( oldName );
-            final String newName = PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + version;
-            fileSystem.renameFile( file, new File( file.getParent(), newName ) );
-        }
-        StoreFile.ensureStoreVersion( fileSystem, storeDir, StoreFile.currentStoreFiles() );
-
-        // delete old an unused log files
-        for ( File file : fileSystem.listFiles( storeDir, allLegacyLogFilesFilter ) )
-        {
-            fileSystem.deleteFile( file );
-        }
     }
 
     @Override
