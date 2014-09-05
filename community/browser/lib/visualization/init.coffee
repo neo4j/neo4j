@@ -3,9 +3,7 @@ do ->
 
   nodeOutline = new neo.Renderer(
     onGraphChange: (selection, viz) ->
-      circles = selection.selectAll('circle.outline').data(
-        (node) -> [node]
-      )
+      circles = selection.selectAll('circle.outline').data((node) -> [node])
 
       circles.enter()
       .append('circle')
@@ -43,27 +41,23 @@ do ->
     onTick: noop
   )
 
-  nodeOverlay = new neo.Renderer(
+  nodeRing = new neo.Renderer(
     onGraphChange: (selection) ->
-      circles = selection.selectAll('circle.overlay').data((node) ->
-        if node.selected then [node] else []
-      )
+      circles = selection.selectAll('circle.ring').data((node) ->[node])
       circles.enter()
       .insert('circle', '.outline')
       .classed('ring', true)
-      .classed('overlay', true)
       .attr
         cx: 0
         cy: 0
-        fill: '#f5F6F6'
-        stroke: 'rgba(151, 151, 151, 0.2)'
-        'stroke-width': '3px'
+        'stroke-width': '8px'
 
       circles
       .attr
-        r: (node) -> node.radius + 6
+        r: (node) -> node.radius + 4
 
       circles.exit().remove()
+
     onTick: noop
   )
 
@@ -118,15 +112,11 @@ do ->
       rects.enter()
         .append('path')
         .classed('overlay', true)
-        .attr('fill', 'yellow')
-
-      rects
-        .attr('opacity', (rel) -> if rel.selected then 0.3 else 0)
 
       rects.exit().remove()
 
     onTick: (selection) ->
-      band = 20
+      band = 16
 
       selection.selectAll('path.overlay')
         .attr('d', (d) -> d.arrow.overlay(band))
@@ -134,7 +124,7 @@ do ->
 
   neo.renderers.node.push(nodeOutline)
   neo.renderers.node.push(nodeCaption)
-  neo.renderers.node.push(nodeOverlay)
+  neo.renderers.node.push(nodeRing)
   neo.renderers.relationship.push(arrowPath)
   neo.renderers.relationship.push(relationshipType)
   neo.renderers.relationship.push(relationshipOverlay)
