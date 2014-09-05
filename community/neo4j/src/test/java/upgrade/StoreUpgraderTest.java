@@ -22,7 +22,6 @@ package upgrade;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.Writer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -32,11 +31,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -74,8 +71,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
@@ -270,19 +269,15 @@ public class StoreUpgraderTest
         Monitor monitor = Mockito.mock( Monitor.class );
         upgrader = newUpgrader( monitor );
         StoreMigrationParticipant observingParticipant = Mockito.mock( StoreMigrationParticipant.class );
-        Mockito.when( observingParticipant.needsMigration(
-                Matchers.any( FileSystemAbstraction.class ), Matchers.any( File.class ) ) ).thenReturn( true );
+        when( observingParticipant.needsMigration( any( File.class ) ) ).thenReturn( true );
         upgrader.addParticipant( observingParticipant );
         upgrader.migrateIfNeeded( dbDirectory );
 
         // THEN
-        Mockito.verify( observingParticipant, Mockito.times( 0 ) ).migrate( Matchers.any( FileSystemAbstraction.class ),
-                Matchers.any( File.class ), Matchers.any( File.class ), Matchers.any( DependencyResolver.class ) );
-        Mockito.verify( observingParticipant, Mockito.times( 1 ) ).moveMigratedFiles( Matchers.eq( fileSystem ),
-                Matchers.any( File.class ), Matchers.any( File.class ) );
-        Mockito.verify( observingParticipant, Mockito.times( 1 ) ).cleanup( Matchers.eq( fileSystem ), Matchers.any(
-                File.class ) );
-        Mockito.verify( monitor ).migrationCompleted();
+        verify( observingParticipant, Mockito.times( 0 ) ).migrate( any( File.class ), any( File.class ) );
+        verify( observingParticipant, Mockito.times( 1 ) ).moveMigratedFiles( any( File.class ), any( File.class ) );
+        verify( observingParticipant, Mockito.times( 1 ) ).cleanup( any( File.class ) );
+        verify( monitor ).migrationCompleted();
     }
 
     @Test
@@ -342,7 +337,7 @@ public class StoreUpgraderTest
 
         // When
         StoreMigrator migrator = spy( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) );
-        when( migrator.needsMigration( fileSystem, dbDirectory ) ).thenReturn( false );
+        when( migrator.needsMigration( dbDirectory ) ).thenReturn( false );
 
         newUpgrader( ALLOW_UPGRADE, migrator, StoreUpgrader.NO_MONITOR ).migrateIfNeeded( dbDirectory );
 
@@ -352,43 +347,35 @@ public class StoreUpgraderTest
 
     private StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )
     {
-        return new StoreMigrationParticipant.Adapter()
+        return new StoreMigrationParticipant()
         {
             @Override
-            public boolean needsMigration( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
+            public boolean needsMigration( File storeDir ) throws IOException
             {
                 return true;
             }
 
             @Override
-            public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir, File storeDir )
-                    throws IOException
+            public void migrate( File storeDir, File migrationDir ) throws IOException, UnsatisfiedDependencyException
+            {  // Do nothing in particular
+            }
+
+            @Override
+            public void moveMigratedFiles( File migrationDir, File storeDir ) throws IOException
             {
                 throw new IOException( failureMessage );
             }
 
             @Override
-            public void migrate( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
-                                 DependencyResolver dependencies ) throws IOException, UnsatisfiedDependencyException
-            {   // Do nothing in particular
+            public void close()
+            {  // Do nothing in particular
+            }
+
+            @Override
+            public void cleanup( File migrationDir ) throws IOException
+            {  // Do nothing in particular
             }
         };
-    }
-
-    private List<File> migrationHelperDirs()
-    {
-        File[] tmpDirs = dbDirectory.listFiles( new FilenameFilter()
-        {
-            @Override
-            public boolean accept( File file, String name )
-            {
-                return file.isDirectory() &&
-                       (name.equals( StoreUpgrader.MIGRATION_DIRECTORY ) ||
-                        name.startsWith( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY ));
-            }
-        } );
-        assertNotNull( "Some IO errors occurred", tmpDirs );
-        return Arrays.asList( tmpDirs );
     }
 
     @Rule
@@ -416,11 +403,19 @@ public class StoreUpgraderTest
         return upgrader;
     }
 
-    private void writeFile( FileSystemAbstraction fileSystem, File file, String contents ) throws IOException
+    private List<File> migrationHelperDirs()
     {
-        try ( Writer writer = fileSystem.openAsWriter( file, "UTF-8", false ) )
+        File[] tmpDirs = dbDirectory.listFiles( new FilenameFilter()
         {
-            writer.write( contents );
-        }
+            @Override
+            public boolean accept( File file, String name )
+            {
+                return file.isDirectory() &&
+                        (name.equals( StoreUpgrader.MIGRATION_DIRECTORY ) ||
+                                name.startsWith( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY ));
+            }
+        } );
+        assertNotNull( "Some IO errors occurred", tmpDirs );
+        return Arrays.asList( tmpDirs );
     }
 }

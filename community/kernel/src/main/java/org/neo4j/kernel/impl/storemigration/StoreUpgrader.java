@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
@@ -106,7 +105,6 @@ public class StoreUpgrader
     private final List<StoreMigrationParticipant> participants = new ArrayList<>();
     private final UpgradeConfiguration upgradeConfiguration;
     private final FileSystemAbstraction fileSystem;
-    private final Dependencies dependencyResolver = new Dependencies();
     private final Monitor monitor;
     private final StringLogger log;
 
@@ -203,7 +201,7 @@ public class StoreUpgrader
         {
             for ( StoreMigrationParticipant participant : participants )
             {
-                participant.cleanup( fileSystem, migrationDirectory );
+                participant.cleanup( migrationDirectory );
             }
         }
         catch ( IOException e )
@@ -238,7 +236,7 @@ public class StoreUpgrader
         {
             for ( StoreMigrationParticipant participant : participantsNeedingMigration )
             {
-                participant.moveMigratedFiles( fileSystem, migrationDirectory, workingDirectory );
+                participant.moveMigratedFiles( migrationDirectory, workingDirectory );
             }
         }
         catch ( IOException e )
@@ -254,7 +252,7 @@ public class StoreUpgrader
         {
             try
             {
-                if ( participant.needsMigration( fileSystem, storeDirectory ) )
+                if ( participant.needsMigration( storeDirectory ) )
                 {
                     participantsNeedingUpgrade.add( participant );
                 }
@@ -274,15 +272,10 @@ public class StoreUpgrader
         {
             for ( StoreMigrationParticipant participant : participants )
             {
-                boolean participated = false;
                 if ( participantsNeedingMigration.contains( participant ) )
                 {   // This participant needs migration, do it
-                    participant.migrate( fileSystem, storeDir, migrationDirectory, dependencyResolver );
-                    participated = true;
+                    participant.migrate( storeDir, migrationDirectory );
                 }
-                // Whether or not this participant needed migration, it may need to satisfy dependencies downstream
-                participant.satisfyDependenciesDownstream( fileSystem, storeDir, migrationDirectory,
-                        dependencyResolver, participated );
             }
         }
         catch ( IOException e )
