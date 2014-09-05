@@ -134,14 +134,13 @@ public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
         {
             long id = channel.getLong();
 
-
-            NodeRecord after = readNodeRecord( id );
-            if ( after == null )
+            NodeRecord record = readNodeRecord( id );
+            if ( record == null )
             {
                 return false;
             }
 
-            command.init( null, after );
+            command.init( record, record );
             return true;
         }
 
@@ -185,14 +184,13 @@ public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
             // ID
             long id = channel.getLong(); // 8
 
-            // AFTER
-            PropertyRecord after = readPropertyRecord( id );
-            if ( after == null )
+            PropertyRecord record = readPropertyRecord( id );
+            if ( record == null )
             {
                 return false;
             }
 
-            command.init( null, after );
+            command.init( record, record );
             return true;
         }
 

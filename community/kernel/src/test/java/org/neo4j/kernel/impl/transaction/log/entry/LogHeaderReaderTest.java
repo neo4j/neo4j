@@ -45,7 +45,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 
 public class LogHeaderReaderTest
 {
-    private final long expectedLogVersion = 1;
+    private final long expectedLogVersion = CURRENT_LOG_VERSION;
     private final long expectedTxId = 42;
 
     @Test
