@@ -212,8 +212,7 @@ case class ShortestPath(pathName: String,
   def cloneWithOtherName(newName: String) = copy(pathName = newName)
 
   def symbolTableDependencies =
-      left.symbolTableDependencies ++
-      right.symbolTableDependencies
+      Set(left.name, right.name)
 
   private def relInfo: String = {
     var info = "["
