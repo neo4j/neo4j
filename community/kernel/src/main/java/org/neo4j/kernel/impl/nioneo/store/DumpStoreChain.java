@@ -26,10 +26,13 @@ import java.util.Set;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
 {
@@ -91,7 +94,9 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        StandardPageCache pageCache = new StandardPageCache( fs, 10_000, 8192 );
+        LifeSupport life = new LifeSupport();
+        life.start();
+        PageCache pageCache = createPageCache( fs, "dump-store-chain-tool", life );
         StoreFactory storeFactory = new StoreFactory( new Config(), idGeneratorFactory, pageCache, fs, logger(), null );
         RecordStore<RECORD> store = store( storeFactory, storeFile );
         try
@@ -106,6 +111,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         finally
         {
             store.close();
+            life.shutdown();
         }
     }
 

@@ -22,6 +22,7 @@ package upgrade;
 import java.io.File;
 import java.io.IOException;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,7 +31,6 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
@@ -50,6 +51,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatHugeStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
@@ -122,14 +124,21 @@ public class StoreMigratorFrom19IT
     @Before
     public void setUp()
     {
+        life.start();
         Config config = MigrationTestUtils.defaultConfig();
         storeFactory = new StoreFactory(
                 StoreFactory.configForStoreDir( config, storeDir.directory() ),
                 idGeneratorFactory,
-                cleanup.add( new StandardPageCache( fs, 1000, 1000 ) ),
+                cleanup.add( createPageCache( fs, getClass().getName(), life ) ),
                 fs,
                 StringLogger.DEV_NULL,
                 new Monitors() );
+    }
+
+    @After
+    public void close()
+    {
+        life.shutdown();
     }
 
     @Rule
@@ -137,4 +146,5 @@ public class StoreMigratorFrom19IT
 
     @Rule
     public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
+    private final LifeSupport life = new LifeSupport();
 }

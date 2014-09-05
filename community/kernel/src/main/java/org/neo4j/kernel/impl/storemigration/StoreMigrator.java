@@ -19,15 +19,36 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.nioneo.store.*;
+import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
@@ -36,6 +57,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -49,14 +71,13 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-
 import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.*;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.allLegacyLogFilesFilter;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.getLegacyLogVersion;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.versionedLegacyLogFilesFilter;
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
@@ -155,25 +176,27 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter {
         if (legacyStore instanceof Legacy19Store) {
             // we may need to upgrade the property keys
             Legacy19Store legacy19Store = (Legacy19Store) legacyStore;
-
-            // TODO 2.2-future: fixme if we set the number of page to 1000 the store migration from 19 when
-            // we deduplicate property will loop forever in the page cache trying to free pages.
-            StandardPageCache pageCache = new StandardPageCache(fileSystem, 10_000, 8192);
-            PropertyStore propertyStore = storeFactory(fileSystem, pageCache, migrationDir, dependencyResolver)
-                    .newPropertyStore();
-            try {
-                migratePropertyKeys(legacy19Store, propertyStore);
-            } finally {
+            LifeSupport life = new LifeSupport();
+            life.start();
+            PageCache pageCache = createPageCache( fileSystem, "migrator-dedup-properties", life );
+            PropertyStore propertyStore = storeFactory( fileSystem, pageCache, migrationDir ).newPropertyStore();
+            try
+            {
+                migratePropertyKeys( legacy19Store, propertyStore );
+            }
+            finally
+            {
                 propertyStore.close();
                 pageCache.close();
+                life.shutdown();
             }
         }
         // Close
         legacyStore.close();
     }
 
-    private StoreFactory storeFactory(FileSystemAbstraction fileSystem, StandardPageCache pageCache,
-                                      File migrationDir, DependencyResolver resolver) {
+    private StoreFactory storeFactory( FileSystemAbstraction fileSystem, PageCache pageCache, File migrationDir )
+    {
         return new StoreFactory(
                 StoreFactory.configForStoreDir(config, migrationDir),
                 new DefaultIdGeneratorFactory(), pageCache,

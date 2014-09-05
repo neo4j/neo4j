@@ -47,10 +47,9 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionEventHandlers;
@@ -94,6 +93,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -109,6 +109,7 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 public class TestNeoStore
 {
@@ -1242,10 +1243,12 @@ public class TestNeoStore
         Monitors monitors = new Monitors();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+        LifeSupport life = new LifeSupport();
+        life.start();
         StoreFactory sf = new StoreFactory(
                 configForStoreDir( config, testDir.directory() ),
                 new DefaultIdGeneratorFactory(),
-                new StandardPageCache( fileSystemAbstraction, 1014, 4096 ),
+                createPageCache( fileSystemAbstraction, getClass().getName(), life ),
                 fileSystemAbstraction,
                 StringLogger.DEV_NULL,
                 monitors );
@@ -1270,5 +1273,6 @@ public class TestNeoStore
         // then the value should have been stored
         assertEquals( 10l, neoStore.getLatestConstraintIntroducingTx() );
         neoStore.close();
+        life.shutdown();
     }
 }

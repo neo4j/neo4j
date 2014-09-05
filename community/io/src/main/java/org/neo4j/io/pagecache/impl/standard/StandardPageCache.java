@@ -43,12 +43,7 @@ public class StandardPageCache implements RunnablePageCache
 
     private boolean closed; // Guarded by synchronised(this)
 
-    public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize )
-    {
-        this( fs, maxPages, pageSize, PageCacheMonitor.NULL );
-    }
-
-    public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize, PageCacheMonitor monitor )
+    StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize, PageCacheMonitor monitor )
     {
         this( new SingleFilePageSwapperFactory( fs ), maxPages, pageSize, monitor );
     }

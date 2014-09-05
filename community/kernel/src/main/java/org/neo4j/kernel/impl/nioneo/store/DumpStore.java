@@ -25,11 +25,13 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
-
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAbstractStore & RecordStore<RECORD>>
 {
@@ -42,7 +44,9 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         }
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        StandardPageCache pageCache = new StandardPageCache( fs, 10_000, 8192);
+        LifeSupport life = new LifeSupport();
+        life.start();
+        PageCache pageCache = createPageCache( fs, "dump-store-tool", life );
         StoreFactory storeFactory = new StoreFactory(new Config(), idGeneratorFactory, pageCache, fs, logger(), null );
         for ( String arg : args )
         {
@@ -81,6 +85,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                 throw new IllegalArgumentException( "Unknown store file: " + arg );
             }
         }
+        life.shutdown();
     }
 
     private static StringLogger logger()
