@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.CountsCommand;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
@@ -183,7 +185,7 @@ public class LogTruncationTest
     private void assertHandlesLogTruncation( Command cmd ) throws IOException
     {
         inMemoryChannel.reset();
-        writer.writeCommandEntry( cmd );
+        writer.serialize( new PhysicalTransactionRepresentation( Arrays.asList( cmd ) ) );
         int bytesSuccessfullyWritten = inMemoryChannel.writerPosition();
         try
         {
@@ -199,7 +201,7 @@ public class LogTruncationTest
         while ( bytesSuccessfullyWritten-- > 0 )
         {
             inMemoryChannel.reset();
-            writer.writeCommandEntry( cmd );
+            writer.serialize( new PhysicalTransactionRepresentation( Arrays.asList( cmd ) ) );
             inMemoryChannel.truncateTo( bytesSuccessfullyWritten );
             LogEntry deserialized = logEntryReader.readLogEntry( inMemoryChannel );
             assertNull( "Deserialization did not detect log truncation!" +
