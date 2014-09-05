@@ -143,7 +143,8 @@ The Neo4j Team""")
       new LoadCSVBuilder,
       new StartPointBuilder,
       new MatchBuilder,
-      new ShortestPathBuilder
+      new ShortestPathBuilder,
+      new DisconnectedShortestPathEndPointsBuilder
     )
   }
 
