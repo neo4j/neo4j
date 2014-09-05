@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.neo4j.com.RequestContext;
@@ -54,6 +55,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
@@ -88,6 +90,13 @@ class BackupService
             return consistent;
         }
     }
+
+    static final String TOO_OLD_BACKUP = "It's been too long since this backup was last " + "updated, and it has " +
+            "fallen too far behind the database transaction stream for incremental backup to be possible. You need to" +
+            " perform a full backup at this point. " + "You can modify this time interval by setting the '" +
+            GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a higher value.";
+
+    static final String DIFFERENT_STORE = "Target directory contains full backup of a logically different store.";
 
     private final FileSystemAbstraction fileSystem;
     private final StringLogger logger;
@@ -263,7 +272,7 @@ class BackupService
     private RequestContext slaveContextOf( GraphDatabaseAPI graphDb )
     {
         XaDataSourceManager dsManager = dsManager( graphDb );
-        List<Tx> txs = new ArrayList<Tx>();
+        List<Tx> txs = new ArrayList<>();
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
             txs.add( RequestContext.lastAppliedTx( ds.getName(), ds.getLastCommittedTxId() ) );
@@ -278,7 +287,7 @@ class BackupService
 
     static GraphDatabaseAPI startTemporaryDb( String targetDirectory, ConfigParam... params )
     {
-        Map<String, String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<>();
         config.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         config.put( InternalAbstractGraphDatabase.Configuration.log_configuration_file.name(),
                 "neo4j-backup-logback.xml" );
@@ -313,29 +322,30 @@ class BackupService
                 targetDb.getDependencyResolver().resolveDependency( Monitors.class ),
                 targetDb.storeId() );
         client.start();
+
         Map<String, Long> lastCommittedTxs;
-        boolean consistent = false;
+        boolean successfullyReadLastCommittedTxs = false;
         try
         {
             lastCommittedTxs = unpackResponse( client.incrementalBackup( context ),
                     targetDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ),
                     new ProgressTxHandler() );
             trimLogicalLogCount( targetDb );
-            consistent = true;
+            successfullyReadLastCommittedTxs = true;
         }
-        catch(RuntimeException e)
+        catch ( MismatchingStoreIdException e )
         {
-            if(e.getCause() != null && e.getCause() instanceof NoSuchLogVersionException )
+            throw new RuntimeException( DIFFERENT_STORE, e );
+        }
+        catch ( RuntimeException e )
+        {
+            if ( e.getCause() != null && e.getCause() instanceof NoSuchLogVersionException )
             {
-                throw new IncrementalBackupNotPossibleException("It's been too long since this backup was last updated, and it has " +
-                        "fallen too far behind the database transaction stream for incremental backup to be possible. " +
-                        "You need to perform a full backup at this point. You can modify this time interval by setting " +
-                        "the '" + GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a " +
-                        "higher value.", e.getCause());
+                throw new IncrementalBackupNotPossibleException( TOO_OLD_BACKUP, e.getCause() );
             }
             else
             {
-                throw new RuntimeException("Failed to perform incremental backup.", e);
+                throw new RuntimeException( "Failed to perform incremental backup.", e );
             }
         }
         finally
@@ -346,10 +356,17 @@ class BackupService
             }
             catch ( Throwable throwable )
             {
-                throw new RuntimeException( throwable );
+                if ( successfullyReadLastCommittedTxs )
+                {
+                    logger.warn( "Unable to stop backup client", throwable );
+                }
+                else
+                {
+                    throw new RuntimeException( "Unable to stop backup client", throwable );
+                }
             }
         }
-        return new BackupOutcome( lastCommittedTxs, consistent );
+        return new BackupOutcome( lastCommittedTxs, true );
     }
 
     private void trimLogicalLogCount( GraphDatabaseAPI targetDb )
@@ -414,7 +431,7 @@ class BackupService
 
     private Map<String, Long> extractLastCommittedTxs( XaDataSourceManager xaDsm )
     {
-        TreeMap<String, Long> lastCommittedTxs = new TreeMap<String, Long>();
+        SortedMap<String, Long> lastCommittedTxs = new TreeMap<>();
         for ( XaDataSource ds : xaDsm.getAllRegisteredDataSources() )
         {
             lastCommittedTxs.put( ds.getName(), ds.getLastCommittedTxId() );

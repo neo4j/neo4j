@@ -22,26 +22,31 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.StoreFile20;
 
+import static java.util.regex.Pattern.compile;
+
 public class LogFiles
 {
-    private static final class LogicalLogFilenameFilter implements
-            FilenameFilter
+    public static final FilenameFilter FILENAME_FILTER = new LogicalLogFilenameFilter();
+
+    private static final class LogicalLogFilenameFilter implements FilenameFilter
     {
-        private static final String[] logFilenamePatterns = { "active_tx_log",
-                "nioneo_logical\\.log.*", /* covers current log, active log marker
-                                            and backups */
-                "tm_tx_log\\..*" };
+        private static final Pattern[] LOG_FILENAME_PATTERNS = {
+                compile( "active_tx_log" ),
+                compile( "nioneo_logical\\.log.*" ), // covers current log, active log marker and backups
+                compile( "tm_tx_log\\..*" )
+        };
 
         @Override
         public boolean accept( File dir, String name )
         {
-            for ( String pattern : logFilenamePatterns )
+            for ( Pattern pattern : LOG_FILENAME_PATTERNS )
             {
-                if ( name.matches( pattern ) )
+                if ( pattern.matcher( name ).matches() )
                 {
                     return true;
                 }
@@ -54,26 +59,21 @@ public class LogFiles
      * Moves all logical logs of a database from one directory
      * to another. Since it just renames files (the standard way of moving with
      * JDK6) from and to must be on the same disk partition.
-     * @param fs
      *
-     * @param filename The base filename for the logical logs
+     * @param fs            The host file system
      * @param fromDirectory The directory that hosts the database and its logs
-     * @param toDirectory The directory to move the log files to
+     * @param toDirectory   The directory to move the log files to
      * @throws IOException If any of the move operations fail for any reason.
      */
-    public static void move( FileSystemAbstraction fs, File fromDirectory,
-            File toDirectory ) throws IOException
+    public static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory ) throws IOException
     {
         assert fs.isDirectory( fromDirectory );
         assert fs.isDirectory( toDirectory );
 
-        FilenameFilter filter = new LogicalLogFilenameFilter();
-        for ( File logFile : fs.listFiles( fromDirectory ) )
+        File[] logFiles = fs.listFiles( fromDirectory, FILENAME_FILTER );
+        for ( File logFile : logFiles )
         {
-            if ( filter.accept( fromDirectory, logFile.getName() ) )
-            {
-                StoreFile20.moveFile( fs, logFile.getName(), fromDirectory, toDirectory, false, false );
-            }
+            StoreFile20.moveFile( fs, logFile.getName(), fromDirectory, toDirectory, false, false );
         }
     }
 }
