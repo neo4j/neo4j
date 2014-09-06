@@ -89,12 +89,13 @@ object LogicalPlanProducer {
   def planExpand(left: LogicalPlan,
                  from: IdName,
                  dir: Direction,
+                 projectedDir: Direction,
                  types: Seq[ast.RelTypeName],
                  to: IdName,
                  relName: IdName,
                  length: PatternLength,
                  pattern: PatternRelationship) =
-    Expand(left, from, dir, types, to, relName, length)(
+    Expand(left, from, dir, projectedDir, types, to, relName, length)(
       left.solved.updateGraph(_.addPatternRel(pattern)))
 
   def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan) =

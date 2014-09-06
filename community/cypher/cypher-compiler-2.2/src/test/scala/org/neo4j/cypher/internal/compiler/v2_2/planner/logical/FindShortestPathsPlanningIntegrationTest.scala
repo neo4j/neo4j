@@ -74,7 +74,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     (new given {
       cardinality = mapCardinality {
         case _: AllNodesScan => 200
-        case Expand(_, IdName("b"), _, _, _, _, _) => 10000
+        case Expand(_, IdName("b"), _, _, _, _, _, _) => 10000
         case _: Expand => 10
         case _: NodeHashJoin => 20
         case _ => Double.MaxValue
@@ -85,8 +85,8 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
           planSelection(
             Vector(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
             planNodeHashJoin("b",
-              planExpand(planAllNodesScan("a", Set.empty), "a", Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength, r1),
-              planExpand(planAllNodesScan("c", Set.empty), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength, r2)
+              planExpand(planAllNodesScan("a", Set.empty), "a", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength, r1),
+              planExpand(planAllNodesScan("c", Set.empty), "c", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength, r2)
             )
           ),
           ShortestPathPattern(
