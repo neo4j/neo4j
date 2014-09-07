@@ -28,9 +28,10 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
 
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
-  def rewrite(queryText: String, statement: Statement): (Statement, Map[String, Any]) = {
-
+  def rewrite(queryText: String, statement: Statement, semanticState: SemanticState): (Statement, Map[String, Any]) = {
     rewritingMonitor.startRewriting(queryText, statement)
+
+    val namespaceIdentifiers = identifierNamespacing(semanticState.scopeTree)
 
     val (extractParameters, extractedParameters) = if (shouldExtractParameters)
       literalReplacement(statement)
@@ -41,6 +42,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),
 
       foldConstants,
+      ApplyRewriter("namespaceIdentifiers", namespaceIdentifiers),
       ApplyRewriter("extractParameters", extractParameters),
       nameMatchPatternElements,
       normalizeMatchPredicates,

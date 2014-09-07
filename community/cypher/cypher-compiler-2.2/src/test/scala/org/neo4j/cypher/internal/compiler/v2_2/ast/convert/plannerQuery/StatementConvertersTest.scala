@@ -51,9 +51,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         ast
 
     val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
-    semanticChecker.check(query, cleanedStatement)
-
-    val rewrittenAst: Statement = Planner.rewriteStatement(astRewriter.rewrite(query, cleanedStatement)._1)
+    val semanticState = semanticChecker.check(query, cleanedStatement)
+    val rewrittenAst: Statement = Planner.rewriteStatement(astRewriter.rewrite(query, cleanedStatement, semanticState)._1)
     rewrittenAst.asInstanceOf[Query].asUnionQuery
   }
 
