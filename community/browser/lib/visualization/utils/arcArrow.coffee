@@ -43,7 +43,7 @@ class neo.utils.arcArrow
       sweepAngle = 2 * Math.PI - sweepAngle
 
     @shaftLength = sweepAngle * arcRadius
-    if endAttach.x < 0
+    if startAngle > endAngle
       @shaftLength = 0
 
     midShaftAngle = (startAngle + endAngle) / 2
@@ -100,8 +100,13 @@ class neo.utils.arcArrow
     negativeSweep = if startAttach.y < 0 then 0 else 1
 
     @outline = (shortCaptionLength) ->
-      if endAttach.x < 0
-        return null
+      if startAngle > endAngle
+        return [
+          'M', coord(endTangent(-headRadius)),
+          'L', coord(endNormal(headLength)),
+          'L', coord(endTangent(headRadius)),
+          'Z'
+        ].join(' ')
 
       if captionLayout is 'external'
         captionSweep = shortCaptionLength / arcRadius
@@ -151,7 +156,7 @@ class neo.utils.arcArrow
         'L', coord(endTangent(radius)),
         'A', arcRadius + radius, arcRadius + radius, 0, 0, negativeSweep, coord(startTangent(radius))
       ].join(' ')
-      
+
     @apex =
       x: cx,
       y: if cy > 0 then cy - arcRadius else cy + arcRadius
