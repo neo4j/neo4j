@@ -29,6 +29,7 @@ import org.parboiled.support.IndexRange
 trait Base extends Parser {
 
   def OpChar = rule("an operator char") { anyOf("|^&<>=?!:+-*/%~") }
+  def OpCharTail = rule("an operator char") { anyOf("|^&<>=?!:*/%~") }
 
   def DecimalInteger = rule { (optional("-") ~ UnsignedDecimalInteger).memoMismatches }
   def UnsignedDecimalInteger = rule { (group(("1" - "9") ~ optional(DigitString)) | "0").memoMismatches }
@@ -93,7 +94,7 @@ trait Base extends Parser {
       (acc, s) => acc ~ WS ~ word(s)
     })
   }
-  def operator(string: String) = group(string ~ !OpChar)
+  def operator(string: String) = group(string ~ !OpCharTail)
 
   def push[R](f: InputPosition => R): Rule1[R] = pushFromContext(ctx => f(ContextPosition(ctx)))
 
