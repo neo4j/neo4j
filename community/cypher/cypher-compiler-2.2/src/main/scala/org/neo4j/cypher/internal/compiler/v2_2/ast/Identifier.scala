@@ -26,6 +26,8 @@ import symbols._
 
 case class Identifier(name: String)(val position: InputPosition) extends Expression {
 
+  assert(position != null)
+
   // check the identifier is defined and, if not, define it so that later errors are suppressed
   def semanticCheck(ctx: SemanticContext) = s => this.ensureDefined()(s) match {
     case Right(ss) => SemanticCheckResult.success(ss)

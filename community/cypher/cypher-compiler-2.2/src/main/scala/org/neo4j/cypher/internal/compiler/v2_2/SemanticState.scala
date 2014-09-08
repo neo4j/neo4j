@@ -64,8 +64,8 @@ object SemanticState {
     def rootScope: Scope = location.root.elem
     def parent: Option[ScopeLocation] = location.up.map(ScopeLocation)
 
-    def clear: ScopeLocation = location.replace(Scope.empty)
-    def newScope: ScopeLocation = location.insertChild(Scope.empty)
+    def newChildScope: ScopeLocation = location.insertChild(Scope.empty)
+    def newSiblingScope: ScopeLocation = location.insertRight(Scope.empty).get
 
     def isEmpty: Boolean = scope.isEmpty
 
@@ -74,7 +74,6 @@ object SemanticState {
 
     def symbolNames: Set[String] = scope.symbolNames
 
-    def importScope(other: ScopeLocation): ScopeLocation = importScope(other.scope)
     def importScope(other: Scope): ScopeLocation = location.replace(scope.importScope(other))
 
     def updateIdentifier(identifier: String, types: TypeSpec, positions: Seq[InputPosition]): ScopeLocation =
@@ -85,15 +84,15 @@ import SemanticState.ScopeLocation
 
 case class SemanticState(currentScope: ScopeLocation, typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo]) {
   def scopeTree = currentScope.rootScope
-  def newScope = copy(currentScope = currentScope.newScope)
-  def popScope = copy(currentScope = currentScope.parent.get)
 
-  def clearSymbols = copy(currentScope = currentScope.clear)
+  def newChildScope = copy(currentScope = currentScope.newChildScope)
+  def newSiblingScope = copy(currentScope = currentScope.newSiblingScope)
+  def popScope = copy(currentScope = currentScope.parent.get)
 
   def symbol(name: String): Option[Symbol] = currentScope.symbol(name)
   def symbolTypes(name: String) = symbol(name).map(_.types).getOrElse(TypeSpec.all)
 
-  def importScope(scope: ScopeLocation) = copy(currentScope = currentScope.importScope(scope))
+  def importScope(scope: Scope) = copy(currentScope = currentScope.importScope(scope))
 
   def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(identifier.name) match {

@@ -36,37 +36,19 @@ sealed trait ClosingClause extends Clause with SemanticChecking {
   def skip: Option[Skip]
   def limit: Option[Limit]
 
-  def semanticCheck =
-    returnItems.semanticCheck chain
-    createSpecialScopeForOrderBy {
-      orderBy.semanticCheck chain
-      checkIdentifiersInScope
-    } chain
-    skip.semanticCheck chain
-    limit.semanticCheck chain
-    clearOutOldSymbolsAndIntroduceNew
+  def semanticCheck = returnItems.semanticCheck
 
-  private def clearOutOldSymbolsAndIntroduceNew: SemanticCheck = stateNeededForTypes =>
-    returnItems.declareIdentifiers(stateNeededForTypes)(stateNeededForTypes.clearSymbols)
+  def semanticCheckContinuation(previousScope: Scope): SemanticCheck =
+    returnItems.declareIdentifiers(previousScope) chain
+    orderBy.semanticCheck chain
+    checkSkip chain
+    checkLimit
 
-  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError]
-
-  private def createSpecialScopeForOrderBy(check: => SemanticCheck): SemanticCheck = {
-    val mustHaveCleanScope = returnItems.containsAggregate || distinct
-
-    val startState: SemanticCheck = s => {
-      val start = if (mustHaveCleanScope) s.clearSymbols else s.newScope
-      val innerScopeWithAliases = returnItems.declareIdentifiers(s)(start)
-      SemanticCheckResult.success(innerScopeWithAliases.state)
-    }
-
-    val endState: SemanticCheck = s => if (mustHaveCleanScope)
-      SemanticCheckResult.success(s)
-    else
-      SemanticCheckResult.success(s.popScope)
-
-    startState chain check chain endState
-  }
+  // use an empty state when checking skip & limit, as these have entirely isolated context
+  private def checkSkip: SemanticState => Seq[SemanticError] =
+    s => skip.semanticCheck(SemanticState.clean).errors
+  private def checkLimit: SemanticState => Seq[SemanticError] =
+    s => limit.semanticCheck(SemanticState.clean).errors
 }
 
 case class LoadCSV(withHeaders: Boolean, urlString: Expression, identifier: Identifier, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
@@ -246,6 +228,17 @@ case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[
     }
 }
 
+case class Unwind(expression: Expression, identifier: Identifier)(val position: InputPosition) extends Clause {
+  def name = "UNWIND"
+
+  override def semanticCheck =
+    expression.semanticCheck(Expression.SemanticContext.Results) chain
+      expression.expectType(CTCollection(CTAny).covariant) ifOkChain {
+      val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
+      identifier.declare(possibleInnerTypes)
+    }
+}
+
 case class With(
     distinct: Boolean,
     returnItems: ReturnItems,
@@ -257,28 +250,16 @@ case class With(
 
   override def semanticCheck =
     super.semanticCheck chain
-    checkAliasedReturnItems chain
+    checkAliasedReturnItems
+
+  override def semanticCheckContinuation(previousScope: Scope) =
+    super.semanticCheckContinuation(previousScope) chain
     where.semanticCheck
 
   private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
     case li: ListedReturnItems => li.items.filter(!_.alias.isDefined).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
     case _                     => Seq()
   }
-
-  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state => Seq()
-}
-
-case class Unwind(expression: Expression, identifier: Identifier)(val position: InputPosition) extends Clause {
-  def name = "UNWIND"
-
-  override def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Results) chain
-      expression.expectType(CTCollection(CTAny).covariant) ifOkChain {
-      val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
-      identifier.declare(possibleInnerTypes)
-    }
-
-  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state => Seq()
 }
 
 case class Return(
@@ -289,13 +270,6 @@ case class Return(
     limit: Option[Limit])(val position: InputPosition) extends ClosingClause {
 
   def name = "RETURN"
-
-  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state =>
-    if (returnItems == ReturnAll()(null) && state.currentScope.isEmpty) {
-      Seq(SemanticError("RETURN * is not allowed when there are no identifiers in scope", position))
-    } else {
-      Seq()
-    }
 }
 
 case class PeriodicCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable {
