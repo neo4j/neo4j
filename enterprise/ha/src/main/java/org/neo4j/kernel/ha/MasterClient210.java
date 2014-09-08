@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
@@ -195,6 +196,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     public Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType type, long...
             resourceIds )
     {
+        msgLog.info( "@@@ acquireSharedLock: type: " + type + " resources: " + Arrays.toString( resourceIds ) );
         return sendRequest( HaRequestType210.ACQUIRE_SHARED_LOCK, context,
                 new AcquireLockSerializer( type, resourceIds ), LOCK_RESULT_DESERIALIZER );
     }
@@ -203,6 +205,8 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     public Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type, long...
             resourceIds )
     {
+        msgLog.info( "@@@ acquireExclusiveLock: type: " + type + " resources: " + Arrays.toString( resourceIds ) );
+
         return sendRequest( HaRequestType210.ACQUIRE_EXCLUSIVE_LOCK, context,
                 new AcquireLockSerializer( type, resourceIds ), LOCK_RESULT_DESERIALIZER );
     }
