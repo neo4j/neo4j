@@ -62,7 +62,7 @@ class ExpandTest
     val qg = createQuery(rRel)
 
     expand(plan, qg) should equal(Candidates(
-      planExpand(left = planA, from = aNode, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength, rRel))
+      planExpand(left = planA, from = aNode, Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength, rRel))
     )
   }
 
@@ -77,8 +77,8 @@ class ExpandTest
     val qg = createQuery(rRel)
 
     expand(plan, qg) should equal(CandidateList(Seq(
-      planExpand(left = planA, from = aNode, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength, rRel),
-      planExpand(left = planB, from = bNode, Direction.INCOMING, types = Seq.empty, to = aNode, rName, SimplePatternLength, rRel)
+      planExpand(left = planA, from = aNode, Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength, rRel),
+      planExpand(left = planB, from = bNode, Direction.INCOMING, Direction.OUTGOING, types = Seq.empty, to = aNode, rName, SimplePatternLength, rRel)
     )))
   }
 
@@ -105,7 +105,7 @@ class ExpandTest
 
     expand(plan, qg) should equal(CandidateList(Seq(
       planHiddenSelection(Seq(Equals(Identifier(aNode.name) _, Identifier(aNode.name + "$$$") _) _),
-        planExpand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty,
+        planExpand(left = planA, from = aNode, dir = Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty,
                    to = IdName(aNode.name + "$$$"), relName = rName, SimplePatternLength, rSelfRel)
       ))))
   }
@@ -121,12 +121,12 @@ class ExpandTest
 
     expand(plan, qg) should equal(Candidates(
       planHiddenSelection(Seq(Equals(Identifier(bNode.name)_, Identifier(bNode.name + "$$$")_)_),
-        planExpand(left = aAndB, from = aNode, dir = Direction.OUTGOING, types = Seq.empty,
+        planExpand(left = aAndB, from = aNode, dir = Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty,
           to = IdName(bNode.name + "$$$"), relName = rName, SimplePatternLength, mockRel)
       ),
       planHiddenSelection(
         predicates = Seq(Equals(Identifier(aNode.name) _, Identifier(aNode.name + "$$$") _) _),
-        left = planExpand(left = aAndB, from = bNode, dir = Direction.INCOMING, types = Seq.empty,
+        left = planExpand(left = aAndB, from = bNode, dir = Direction.INCOMING, Direction.OUTGOING, types = Seq.empty,
           to = IdName(aNode.name + "$$$"), relName = rName, SimplePatternLength, mockRel)
       )))
   }
@@ -141,7 +141,7 @@ class ExpandTest
     val qg = createQuery(rVarRel)
 
     expand(plan, qg) should equal(Candidates(
-      planExpand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName, rVarRel.length, rVarRel)
+      planExpand(left = planA, from = aNode, dir = Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName, rVarRel.length, rVarRel)
     ))
   }
 }
