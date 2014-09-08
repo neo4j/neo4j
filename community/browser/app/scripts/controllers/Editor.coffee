@@ -33,13 +33,8 @@ angular.module('neo4jApp.controllers')
       $scope.settings = Settings
       $scope.editorHasContent = no
 
-      # FIXME:
-      # This is a remedy for the "flashing" buttons bug.
-      # For some reason the editor content is reset for each keypress
-      # before the new content is set by Codemirror
-      $scope.$watch 'editor.content', Utils.debounce((val, val2) ->
+      $scope.$watch 'editor.content', (val, val2) ->
         $scope.editorHasContent = !!val
-      , 100)
       $scope.create = ->
         $scope.toggleDrawer("scripts", true)
         Editor.createDocument()
