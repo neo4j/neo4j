@@ -76,7 +76,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     private ClientBootstrap bootstrap;
     private final SocketAddress address;
-    private final StringLogger msgLog;
+    protected final StringLogger msgLog;
     private ExecutorService executor;
     private ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
     private final Protocol protocol;
