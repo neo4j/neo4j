@@ -25,6 +25,8 @@ In production, Neo4j should run on a multi core/CPU platform with the JVM in ser
  
 == Configuring heap size and GC ==
 
+NOTE: When using Neo4j Server, JVM configuration goes into the `conf/neo4j-wrapper.conf` file, see <<server-configuration>>.
+
 A large heap allows for larger node and relationship caches -- which is a good thing -- but large heaps can also lead to latency problems caused by full garbage collection. 
 The different high level cache implementations available in Neo4j together with a suitable JVM configuration of heap size and garbage collection (GC) should be able to handle most workloads.
 
