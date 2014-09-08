@@ -24,7 +24,7 @@ import commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.EntityNotFoundException
+import org.neo4j.cypher.{CypherTypeException, EntityNotFoundException}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.IsMap
@@ -33,14 +33,14 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
 {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = mapExpr(ctx) match {
-    case null           => null
+    case null => null
     case IsMap(mapFunc) => try {
       mapFunc(state.query).getOrElse(propertyKey.name, null)
     } catch {
       case _: EntityNotFoundException => null
-      case _: NotFoundException       => null
+      case _: NotFoundException => null
     }
-    case _              => throw new ThisShouldNotHappenError("Andres", "Need something with properties")
+    case other => throw new CypherTypeException(s"Type mismatch: expected a map but was $other")
   }
 
   def rewrite(f: (Expression) => Expression) = f(Property(mapExpr.rewrite(f), propertyKey.rewrite(f)))

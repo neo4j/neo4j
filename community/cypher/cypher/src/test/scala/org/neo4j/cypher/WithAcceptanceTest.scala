@@ -128,4 +128,13 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   test("nulls passing through WITH") {
     executeWithNewPlanner("optional match (a:Start) with a match a-->b return *") should be (empty)
   }
+
+  test("WITH {foo: {bar: 'baz'}} AS nestedMap RETURN nestedMap.foo.bar") {
+
+    val result = executeWithNewPlanner(
+      "WITH {foo: {bar: 'baz'}} AS nestedMap RETURN nestedMap.foo.bar"
+    )
+    result.toSet should equal(Set(Map("nestedMap.foo.bar" -> "baz")))
+  }
+
 }

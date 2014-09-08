@@ -403,6 +403,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "Type mismatch: accumulator is Integer but expression has type Float (line 1, column 39)"
     )
   }
+  test("should return custom type when accessing a property of a non-map") {
+    createNode("prop"->42)
+
+    executeAndEnsureError(
+      "MATCH n WITH n.prop AS n2 RETURN n2.prop",
+      "Type mismatch: expected a map but was 42"
+    )
+  }
 
   def executeAndEnsureError(query: String, message: String) {
     try {
