@@ -30,15 +30,78 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
 
   def newDocDrill = {
     val phraseDocDrill = mkDocDrill[ASTPhrase]() {
+      case clause: Return => clause.asDoc
+      case clause: With => clause.asDoc
+      case item: ReturnItem => item.asDoc
+      case items: ReturnItems => items.asDoc
+      case where: Where => where.asDoc
       case hint: Hint => hint.asDoc
       case orderBy: OrderBy => orderBy.asDoc
       case sortItem: SortItem => sortItem.asDoc
+      case slice: ASTSlicingPhrase => slice.asDoc
     }
 
     {
       case phrase: ASTPhrase => inner => phraseDocDrill(phrase)(inner)
       case _                 => inner => None
     }
+  }
+
+  abstract class ClosingClauseConverter(prefix: String) {
+    def clause: ClosingClause
+    def where: Option[Where]
+
+    def asDoc(pretty: DocConverter[Any]) = {
+      val distinct: Doc = if (clause.distinct) "DISTINCT" else nil
+      val items: Doc = pretty(clause.returnItems)
+      val orderBy: Doc = clause.orderBy.map(pretty)
+      val skip: Doc = clause.skip.map(pretty)
+      val limit: Doc = clause.limit.map(pretty)
+      val predicate: Doc = where.map(pretty)
+      section(prefix, distinct :+: items :+: predicate :+: orderBy :+: skip :+: limit)
+    }
+  }
+
+  implicit class ReturnConverter(val clause: Return) extends ClosingClauseConverter("RETURN") {
+    def where = None
+  }
+
+  implicit class WithConverter(val clause: With) extends ClosingClauseConverter("WITH") {
+    def where = clause.where
+  }
+
+  implicit class ReturnItemsConverter(items: ReturnItems) {
+    def asDoc(pretty: DocConverter[Any]): Doc = items match {
+      case allItems: ReturnAll => allItems.asDoc(pretty)
+      case listedItems: ListedReturnItems => listedItems.asDoc(pretty)
+    }
+  }
+
+  implicit class ReturnAllConverter(val items: ReturnAll) {
+    def asDoc(pretty: DocConverter[Any]) = text("*")
+  }
+
+  implicit class ListedReturnItemsConverter(val items: ListedReturnItems) {
+    def asDoc(pretty: DocConverter[Any]) = sepList(items.items.map(pretty))
+  }
+
+  implicit class ReturnItemConverter(item: ReturnItem) {
+    def asDoc(pretty: DocConverter[Any]): Doc = item match {
+      case aliasedItem: AliasedReturnItem => aliasedItem.asDoc(pretty)
+      case unAliasedItem: UnaliasedReturnItem => unAliasedItem.asDoc(pretty)
+    }
+  }
+
+  implicit class AliasedReturnItemConverter(item: AliasedReturnItem) {
+    def asDoc(pretty: DocConverter[Any]) = group(pretty(item.expression) :/: "AS" :/: pretty(item.identifier))
+  }
+
+  implicit class UnaliasedReturnItemConverter(item: UnaliasedReturnItem) {
+    def asDoc(pretty: DocConverter[Any]) = text(item.inputText)
+  }
+
+  implicit class WhereConverter(where: Where) {
+    def asDoc(pretty: DocConverter[Any]) = section("WHERE", pretty(where.expression))
   }
 
   implicit class expressionConverter(expression: Expression) {
@@ -68,6 +131,13 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
 
       case UsingScanHint(identifier, label) =>
         group("USING" :/: "SCAN" :/: group(pretty(identifier) :: pretty(label)))
+    }
+  }
+
+  implicit class SlicingPhraseConverter(slice: ASTSlicingPhrase) {
+    def asDoc(pretty: DocConverter[Any]) = slice match {
+      case Skip(expr) => section("SKIP", pretty(expr))
+      case Limit(expr) => section("LIMIT", pretty(expr))
     }
   }
 }
