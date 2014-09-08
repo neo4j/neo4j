@@ -40,10 +40,10 @@ case object astParticleDocGen extends CustomDocGen[ASTNode] {
   }
 
   implicit class SymbolicNameConverter(symbolicName: SymbolicName) {
-    def asDoc(pretty: DocConverter[Any]) = symbolicName.name
+    def asDoc(pretty: DocConverter[Any]) = AstNameConverter(symbolicName.name).asDoc
   }
 
   implicit class LabelNameConverter(labelName: LabelName) {
-    def asDoc(pretty: DocConverter[Any]) = group(":" :: labelName.name)
+    def asDoc(pretty: DocConverter[Any]) = group(":" :: AstNameConverter(labelName.name).asDoc)
   }
 }
