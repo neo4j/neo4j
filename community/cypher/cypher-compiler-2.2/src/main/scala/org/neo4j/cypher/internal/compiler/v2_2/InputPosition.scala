@@ -29,7 +29,7 @@ class InputPosition(val offset: Int, val line: Int, val column: Int) {
   }
   def canEqual(that: Any): Boolean = that.isInstanceOf[InputPosition]
 
-  override def toString = "line " + line + ", column " + column
+  override def toString = s"line $line, column $column (offset: $offset)"
 }
 
 object InputPosition {

@@ -23,6 +23,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.helpers.{TreeZipper, TreeElem}
 import symbols._
 import scala.collection.immutable.HashMap
 
+// A symbol collects all uses of a postion within the current scope and
+// up to the originally defining scope together with type information
+//
+// (s1 n1 (s2 ... (s3 n2 (s4 ... n3)) =>
+//
+// s1.localSymbol(n) = Symblol(n, Seq(1), type(n))
+// s3.localSymbol(n) = Symblol(n, Seq(1, 2), type(n))
+// s4.localSymbol(n) = Symblol(n, Seq(1, 2, 3), type(n))
+//
 case class Symbol(name: String, positions: Seq[InputPosition], types: TypeSpec)
 
 case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = None) {
