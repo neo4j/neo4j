@@ -27,7 +27,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -69,6 +68,8 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.test.ByteArrayMatcher.byteArray;
+import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
+import static org.neo4j.test.ThreadTestUtils.fork;
 
 public abstract class PageCacheTest<T extends RunnablePageCache>
 {
@@ -244,33 +245,6 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
                 }
             }
         };
-    }
-
-    private Thread fork( Runnable runnable )
-    {
-        String name = "Forked-from-" + Thread.currentThread().getName();
-        Thread thread = new Thread( runnable, name );
-        thread.start();
-        return thread;
-    }
-
-    private void awaitTheadState( Thread thread, long maxWaitMillis, Thread.State first, Thread.State... rest )
-    {
-        EnumSet<Thread.State> set = EnumSet.of( first, rest );
-        long deadline = maxWaitMillis + System.currentTimeMillis();
-        Thread.State currentState;
-        do
-        {
-            currentState = thread.getState();
-            if ( System.currentTimeMillis() > deadline )
-            {
-                throw new AssertionError(
-                        "Timed out waiting for thread state of <" +
-                                set + ">: " + thread + " (state = " +
-                                thread.getState() + ")" );
-            }
-        }
-        while ( !set.contains( currentState ) );
     }
 
     @Test
@@ -2229,7 +2203,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         assertTrue( cursor.next() );
 
         Thread unmapper = fork( $unmap( pageCache, file ) );
-        awaitTheadState( unmapper, 1000,
+        awaitThreadState( unmapper, 1000,
                 Thread.State.BLOCKED, Thread.State.WAITING, Thread.State.TIMED_WAITING );
 
         assertFalse( cursor.shouldRetry() );
@@ -2994,4 +2968,6 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
             assertThat( caughtException.get(), is( nullValue() ) );
         }
     }
+
+    // TODO if swapping a page in throws, the page must be put back into the freelist, it must not be bound to the file page, it must not be left locked, and it must not be put in the translation table
 }

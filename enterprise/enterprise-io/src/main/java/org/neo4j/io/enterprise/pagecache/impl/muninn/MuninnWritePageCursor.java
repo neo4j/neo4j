@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.io.enterprise.pagecache.impl.muninn.jsr166e.StampedLock;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.enterprise.pagecache.impl.muninn.jsr166e.StampedLock;
 
 class MuninnWritePageCursor extends MuninnPageCursor
 {

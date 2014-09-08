@@ -459,4 +459,17 @@ public class MuninnPageCache implements RunnablePageCache
         }
         return clockArm;
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append( "MuninnPageCache[ \n" );
+        for ( MuninnPage page : pages )
+        {
+            sb.append( ' ' ).append( page ).append( '\n' );
+        }
+        sb.append( ']' ).append( '\n' );
+        return sb.toString();
+    }
 }
