@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.DocHandlerTestSuite
+import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.SimpleDocHandler
 
 class AstPhraseDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstructionTestSupport {
 
@@ -89,5 +90,10 @@ class AstPhraseDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstruct
   test("USING SCAN n:Person") {
     val astNode: ASTNode = UsingScanHint(ident("n"), LabelName("Person")_)_
     pprintToString(astNode) should equal("USING SCAN n:Person")
+  }
+
+  test("UNWIND x AS y") {
+    val astNode: ASTNode = Unwind(ident("x"), ident("y"))_
+    pprintToString(astNode) should equal("UNWIND x AS y")
   }
 }

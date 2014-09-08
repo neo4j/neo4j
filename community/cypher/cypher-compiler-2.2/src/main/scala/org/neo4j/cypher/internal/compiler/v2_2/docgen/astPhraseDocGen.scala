@@ -30,8 +30,7 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
 
   def newDocDrill = {
     val phraseDocDrill = mkDocDrill[ASTPhrase]() {
-      case clause: Return => clause.asDoc
-      case clause: With => clause.asDoc
+      case clause: Clause => clause.asDoc
       case item: ReturnItem => item.asDoc
       case items: ReturnItems => items.asDoc
       case where: Where => where.asDoc
@@ -47,11 +46,18 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
     }
   }
 
+  implicit class ClauseConverter(clause: Clause) {
+    def asDoc(pretty: DocConverter[Any]): Doc = clause match {
+      case clause: Return => clause.asDoc(pretty)
+      case clause: With => clause.asDoc(pretty)
+      case clause: Unwind => clause.asDoc(pretty)
+    }
+  }
   abstract class ClosingClauseConverter(prefix: String) {
     def clause: ClosingClause
     def where: Option[Where]
 
-    def asDoc(pretty: DocConverter[Any]) = {
+    def asDoc(pretty: DocConverter[Any]): Doc = {
       val distinct: Doc = if (clause.distinct) "DISTINCT" else nil
       val items: Doc = pretty(clause.returnItems)
       val orderBy: Doc = clause.orderBy.map(pretty)
@@ -104,14 +110,6 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
     def asDoc(pretty: DocConverter[Any]) = section("WHERE", pretty(where.expression))
   }
 
-  implicit class expressionConverter(expression: Expression) {
-    def asDoc(pretty: DocConverter[Any]) = pretty(expression)
-  }
-
-  implicit class particleConverter(particle: ASTParticle) {
-    def asDoc(pretty: DocConverter[Any]) = pretty(particle)
-  }
-
   implicit class OrderByConverter(orderBy: OrderBy) {
     def asDoc(pretty: DocConverter[Any]) =
       group("ORDER BY" :/: groupedSepList(orderBy.sortItems.map(pretty)))
@@ -138,6 +136,14 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
     def asDoc(pretty: DocConverter[Any]) = slice match {
       case Skip(expr) => section("SKIP", pretty(expr))
       case Limit(expr) => section("LIMIT", pretty(expr))
+    }
+  }
+
+  implicit class UnwindConverter(unwind: Unwind) {
+    def asDoc(pretty: DocConverter[Any]) = {
+      val input: Doc = pretty(unwind.expression)
+      val output: Doc = pretty(unwind.identifier)
+      section("UNWIND", input :/: "AS" :/: output)
     }
   }
 }
