@@ -9,6 +9,7 @@ describe 'Directive: neoTable', () ->
     element = $compile(element)(scope)
     scope.val =
       rows: -> [['<script>']]
+      displayedSize: 1
       columns: -> ['col']
     scope.$apply()
     expect(element.html()).toContain('&lt;script&gt;')
