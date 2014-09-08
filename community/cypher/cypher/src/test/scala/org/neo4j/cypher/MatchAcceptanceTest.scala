@@ -1522,6 +1522,15 @@ RETURN a.name""")
     ))
   }
 
+  test("MATCH a RETURN count(a) > 0") {
+    val result = executeWithNewPlanner("MATCH a RETURN count(a) > 0")
+    result.toList should equal(List(
+      Map("count(a) > 0" -> false)
+    ))
+  }
+
+
+
   private def relsById(in: Seq[Relationship]): Seq[Relationship] = in.sortBy(_.getId)
 
 }
