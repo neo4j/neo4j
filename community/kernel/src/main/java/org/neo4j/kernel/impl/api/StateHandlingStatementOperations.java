@@ -37,6 +37,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -59,6 +60,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
+import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
@@ -93,6 +95,7 @@ public class StateHandlingStatementOperations implements
         EntityOperations,
         SchemaReadOperations,
         SchemaWriteOperations,
+        CountsOperations,
         LegacyIndexReadOperations,
         LegacyIndexWriteOperations
 {
@@ -917,6 +920,21 @@ public class StateHandlingStatementOperations implements
         }
 
         return storeLayer.graphGetAllProperties();
+    }
+
+    @Override
+    public long countsForNode( KernelStatement statement, int labelId )
+    {
+        long count = storeLayer.countsForNode( labelId );
+        if ( statement.hasTxState() )
+        {
+            if ( labelId != ReadOperations.ANY_LABEL )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+            count += statement.txState().addedAndRemovedNodes().delta();
+        }
+        return count;
     }
 
     @Override

@@ -488,6 +488,12 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
+    public long countsForNode( int labelId )
+    {
+        return diskLayer.countsForNode( labelId );
+    }
+
+    @Override
     public long highestNodeIdInUse()
     {
         return diskLayer.highestNodeIdInUse();

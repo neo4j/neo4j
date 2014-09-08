@@ -766,7 +766,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 legacyIndexStore );
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
-                new SchemaStateConcern( updateableSchemaState ), null, stateHandlingContext, stateHandlingContext );
+                new SchemaStateConcern( updateableSchemaState ), null, stateHandlingContext, stateHandlingContext,
+                stateHandlingContext );
         // + Constraints
         ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations = new ConstraintEnforcingEntityOperations(
                 parts.entityWriteOperations(), parts.entityReadOperations(), parts.schemaReadOperations() );
@@ -774,19 +775,20 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         DataIntegrityValidatingStatementOperations dataIntegrityContext = new DataIntegrityValidatingStatementOperations(
                 parts.keyWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations() );
         parts = parts.override( null, dataIntegrityContext, constraintEnforcingEntityOperations,
-                constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null, null, null );
+                constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null, null, null, null );
         // + Locking
         LockingStatementOperations lockingContext = new LockingStatementOperations( parts.entityReadOperations(),
                 parts.entityWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations(),
                 parts.schemaStateOperations() );
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
-                lockingContext, null, null );
+                lockingContext, null, null, null );
         // + Guard
         if ( guard != null )
         {
             GuardingStatementOperations guardingOperations = new GuardingStatementOperations(
                     parts.entityWriteOperations(), parts.entityReadOperations(), guard );
-            parts = parts.override( null, null, guardingOperations, guardingOperations, null, null, null, null, null, null );
+            parts = parts.override( null, null, guardingOperations, guardingOperations, null, null, null, null, null,
+                                    null, null );
         }
 
         return parts;

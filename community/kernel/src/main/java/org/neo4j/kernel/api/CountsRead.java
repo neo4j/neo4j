@@ -19,6 +19,21 @@
  */
 package org.neo4j.kernel.api;
 
-public interface ReadOperations extends TokenRead, DataRead, SchemaRead, SchemaState, Locking, LegacyIndexRead, CountsRead
+interface CountsRead
 {
+    int ANY_LABEL = -1;
+
+    /**
+     * The number of nodes in the graph.
+     *
+     * If the label parameter is {@link #ANY_LABEL}, this method returns the total number of nodes in the graph, i.e.
+     * {@code MATCH (n) RETURN count(n)}.
+     *
+     * If the label parameter is set to any other value, this method returns the number of nodes that has that label,
+     * i.e. {@code MATCH (n:LBL) RETURN count(n)}.
+     *
+     * @param labelId the label to get the count for, or {@link #ANY_LABEL} to get the total number of nodes.
+     * @return the number of matching nodes in the graph.
+     */
+    long countsForNode( int labelId );
 }

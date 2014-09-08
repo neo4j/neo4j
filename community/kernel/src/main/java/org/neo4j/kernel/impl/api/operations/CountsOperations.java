@@ -17,8 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api.operations;
 
-public interface ReadOperations extends TokenRead, DataRead, SchemaRead, SchemaState, Locking, LegacyIndexRead, CountsRead
+import org.neo4j.kernel.impl.api.KernelStatement;
+
+public interface CountsOperations
 {
+    /** @see org.neo4j.kernel.api.CountsRead#countsForNode(int) */
+    long countsForNode( KernelStatement statement, int labelId );
 }

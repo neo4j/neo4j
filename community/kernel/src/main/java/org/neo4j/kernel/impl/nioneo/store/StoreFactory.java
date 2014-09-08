@@ -79,6 +79,7 @@ public class StoreFactory
     public static final String LABEL_TOKEN_NAMES_STORE_NAME = LABEL_TOKEN_STORE_NAME + NAMES_PART;
     public static final String SCHEMA_STORE_NAME = ".schemastore.db";
     public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
+    public static final String COUNTS_STORE = ".counts.db";
     private final StoreVersionMismatchHandler versionMismatchHandler;
     private final File neoStoreFileName;
     private final Monitors monitors;
@@ -134,9 +135,9 @@ public class StoreFactory
                 newPropertyStore(),
                 newRelationshipStore(),
                 newNodeStore(),
-                // We don't need any particular upgrade when we add the schema store
                 newSchemaStore(),
                 newRelationshipGroupStore(),
+                newCountsStore(),
                 versionMismatchHandler, monitors );
     }
 
@@ -291,6 +292,11 @@ public class StoreFactory
                 fileSystemAbstraction, stringLogger, dynamicLabelStore, versionMismatchHandler, monitors );
     }
 
+    private CountsStore newCountsStore()
+    {
+        return new CountsStore();
+    }
+
     public NeoStore createNeoStore()
     {
         return createNeoStore( new StoreId() );
@@ -325,6 +331,7 @@ public class StoreFactory
         createLabelTokenStore();
         createSchemaStore();
         createRelationshipGroupStore( config.get( Configuration.dense_node_threshold ) );
+        createCountsStore();
 
         NeoStore neoStore = newNeoStore( false );
         /*
@@ -447,6 +454,12 @@ public class StoreFactory
     {
         createEmptyDynamicStore( storeFileName( SCHEMA_STORE_NAME ), SchemaStore.BLOCK_SIZE,
                 SchemaStore.VERSION, IdType.SCHEMA );
+    }
+
+    private void createCountsStore()
+    {
+        CountsStore.createEmptyCountsStore( fileSystemAbstraction, storeFileName( COUNTS_STORE ),
+                                            CommonAbstractStore.ALL_STORES_VERSION );
     }
 
     /**
