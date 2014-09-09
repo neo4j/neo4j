@@ -49,10 +49,6 @@ angular.module('neo4jApp.services')
         execCurrent: ->
           @execScript(@content)
 
-        # ABK: seems like something the Editor should not be doing
-        focusEditor: ->
-          $('#editor textarea').focus()
-
         hasChanged:->
           @document?.content and @document.content isnt @content
 
@@ -78,7 +74,6 @@ angular.module('neo4jApp.services')
           doc = Document.get(id)
           return unless doc
           @content = doc.content
-          @focusEditor()
           @document = doc
 
         maximize: (state = !@maximized) ->
@@ -107,7 +102,6 @@ angular.module('neo4jApp.services')
           $timeout(=>
             @content = content
           ,0)
-          @focusEditor()
           @document = null
 
         setMessage: (message, type = 'info') ->

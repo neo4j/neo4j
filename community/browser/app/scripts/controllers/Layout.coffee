@@ -59,6 +59,7 @@ angular.module('neo4jApp.controllers')
 
         _codeMirror.on "change", (cm) ->
           $scope.editorChanged(cm)
+          $scope.focusEditor()
 
         _codeMirror.on 'keyup', (cm, e) ->
           if e.keyCode is 27 #esc
