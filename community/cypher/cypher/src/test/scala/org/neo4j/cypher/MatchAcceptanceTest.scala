@@ -1232,12 +1232,14 @@ RETURN a.name""")
     result.toList should equal (List(Map("n" -> "42", "count" -> 1)))
   }
 
+  //This test is ignored since the fix for this needed to be reverted
+  //As is now this will be a runtime error
   test("MATCH n WITH n.prop AS n2 RETURN n2.prop") {
     // Given a single node
     val node = createNode("prop" -> "42")
 
     // then
-    intercept[SyntaxException](executeWithNewPlanner("MATCH n WITH n.prop AS n2 RETURN n2.prop"))
+    intercept[CypherTypeException](executeWithNewPlanner("MATCH n WITH n.prop AS n2 RETURN n2.prop"))
   }
 
   test("should return shortest paths when only one side is bound") {
