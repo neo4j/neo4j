@@ -90,6 +90,10 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
         SemanticCheckResult.success(ss)
     }
   }
+
+  def containsAggregate = this.exists {
+    case IsAggregate(_) => true
+  }
 }
 
 trait SimpleTyping { self: Expression =>

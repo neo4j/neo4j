@@ -44,9 +44,7 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition
     }
   }
 
-  def containsAggregate = this.exists {
-    case IsAggregate(_) => true
-  }
+  def containsAggregate = items.exists(_.expression.containsAggregate)
 }
 
 case class ReturnAll()(val position: InputPosition) extends ReturnItems {
