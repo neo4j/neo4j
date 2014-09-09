@@ -156,7 +156,7 @@ public class HardKillIT
     private Process run( String machineId ) throws IOException
     {
         List<String> allArgs = new ArrayList<String>( Arrays.asList( "java", "-cp",
-                System.getProperty( "java.class.path" ), HardKillIT.class.getName() ) );
+                System.getProperty( "java.class.path" ), "-Djava.awt.headless=true", HardKillIT.class.getName() ) );
         allArgs.add( machineId );
 
         Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ) );
