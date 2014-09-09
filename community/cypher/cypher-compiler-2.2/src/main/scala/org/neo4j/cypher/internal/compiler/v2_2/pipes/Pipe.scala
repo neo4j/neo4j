@@ -83,8 +83,18 @@ trait Pipe extends Effectful {
 
 case class NullPipe(symbols: SymbolTable = SymbolTable())
                    (implicit val monitor: PipeMonitor) extends Pipe {
-  def internalCreateResults(state: QueryState) =
-    Iterator(state.initialContext getOrElse ExecutionContext.empty)
+
+  val typeAssertions =
+    SymbolTypeAssertionCompiler.compile(
+      symbols.identifiers.toSeq.collect { case entry @ (_, typ) if typ == CTNode || typ == CTRelationship => entry }
+    )
+
+  def internalCreateResults(state: QueryState) = {
+    if (state.initialContext.isEmpty)
+      Iterator(ExecutionContext.empty)
+    else
+      Iterator(typeAssertions(state.initialContext.get))
+  }
 
   def exists(pred: Pipe => Boolean) = pred(this)
 
