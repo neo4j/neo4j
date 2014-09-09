@@ -543,4 +543,17 @@ public class CacheLayer implements StoreReadLayer
     {
         return diskLayer.reserveRelationship();
     }
+
+    @Override
+    public void releaseNode( long id )
+    {
+        diskLayer.releaseNode( id );
+        persistenceCache.releaseNode(id);
+    }
+
+    @Override
+    public void releaseRelationship( long id )
+    {
+        diskLayer.releaseRelationship( id );
+    }
 }

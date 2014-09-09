@@ -791,6 +791,18 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
+    public void releaseNode( long id )
+    {
+        nodeStore.freeId( id );
+    }
+
+    @Override
+    public void releaseRelationship( long id )
+    {
+        relationshipStore.freeId( id );
+    }
+
+    @Override
     public Cursor expand( Cursor inputCursor, NeoRegister.Node.In nodeId, Register.Object.In<int[]> types, Register
             .Object.In<Direction> expandDirection, NeoRegister.Relationship.Out relId, NeoRegister.RelType.Out
             relType, Register.Object.Out<Direction> direction, NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out

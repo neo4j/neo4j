@@ -780,6 +780,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         "Could not drop created constraint indexes" );
             }
 
+            // Free any acquired id's
+            if (txState != null)
+            {
+                txState.accept( new TxState.VisitorAdapter()
+                {
+                    @Override
+                    public void visitCreatedNode( long id )
+                    {
+                        storeLayer.releaseNode(id);
+                    }
+
+                    @Override
+                    public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+                    {
+                        storeLayer.releaseRelationship( id );
+                    }
+                } );
+            }
+
             if ( hasTxStateWithChanges() )
             {
                 persistenceCache.invalidate( txState );
