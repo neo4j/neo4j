@@ -45,7 +45,7 @@ public class TestRmiPublication
     {
         String dir = forTest( getClass() ).directory( "client", true ).getAbsolutePath();
         return waitForExit( getRuntime().exec( new String[] { "java", "-cp", getProperty( "java.class.path" ),
-                mainClass.getName(), dir } ), 20 );
+                "-Djava.awt.headless=true", mainClass.getName(), dir } ), 20 );
     }
 
     private int waitForExit( Process process, int maxSeconds ) throws InterruptedException
