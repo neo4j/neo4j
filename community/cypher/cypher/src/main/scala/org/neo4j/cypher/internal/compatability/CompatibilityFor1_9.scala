@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatability
 
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
@@ -46,12 +47,12 @@ case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int)
       new QueryContext_v1_9(graph)
 
     def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      LegacyExecutionResultWrapper(inner.profile(queryContext(graph), txInfo.tx, params), planDescriptionRequested = true)
+      LegacyExecutionResultWrapper(inner.profile(queryContext(graph), txInfo.tx, params), planDescriptionRequested = true, CypherVersion.v1_9)
 
     def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) = if (profile)
       profile(graph, txInfo, params)
     else
-      LegacyExecutionResultWrapper(inner.execute(queryContext(graph), txInfo.tx, params), planDescriptionRequested = false)
+      LegacyExecutionResultWrapper(inner.execute(queryContext(graph), txInfo.tx, params), planDescriptionRequested = false, CypherVersion.v1_9)
 
     def isPeriodicCommit = false
   }

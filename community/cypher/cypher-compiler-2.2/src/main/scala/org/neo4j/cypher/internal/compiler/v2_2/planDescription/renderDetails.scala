@@ -43,7 +43,7 @@ object renderDetails extends (PlanDescription => String) {
           case x
             if !x.isInstanceOf[Rows] &&
               !x.isInstanceOf[DbHits] &&
-              !x.isInstanceOf[IntroducedIdentifier] => PlandescriptionArgumentSerializer.serialize(x)
+              !x.isInstanceOf[IntroducedIdentifier] => PlanDescriptionArgumentSerializer.serialize(x)
         }.mkString("; ")
 
         Seq(name, rows, dbHits, ids, other)

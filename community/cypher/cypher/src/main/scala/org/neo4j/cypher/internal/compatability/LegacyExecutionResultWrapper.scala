@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compatability
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.{ExecutionResult, ExtendedExecutionResult}
+import org.neo4j.cypher.internal.AmendedRootPlanDescription
+import org.neo4j.cypher.{PlanDescription, CypherVersion, ExecutionResult, ExtendedExecutionResult}
 
-case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionRequested: Boolean) extends ExtendedExecutionResult {
+case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionRequested: Boolean, version: CypherVersion) extends ExtendedExecutionResult {
   def columns = inner.columns
 
   def javaIterator = inner.javaIterator
@@ -40,7 +41,8 @@ case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionR
 
   def javaColumnAs[T](column: String) = inner.javaColumnAs[T](column)
 
-  def executionPlanDescription() = inner.executionPlanDescription()
+  def executionPlanDescription(): PlanDescription =
+    new AmendedRootPlanDescription(inner.executionPlanDescription(), version)
 
   def close() = inner.close()
 

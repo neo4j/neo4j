@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments._
 
-object PlandescriptionArgumentSerializer {
+object PlanDescriptionArgumentSerializer {
   def serialize(arg: Argument): String = {
     val SEPARATOR = ", "
     arg match {
@@ -33,7 +33,13 @@ object PlandescriptionArgumentSerializer {
       case LabelName(label) => s":$label"
       case KeyNames(keys) => keys.mkString(SEPARATOR)
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)
-      case _ => arg.toString
+      case _: DbHits => arg.toString
+      case _: EntityByIdRhs => arg.toString
+      case _: IntroducedIdentifier => arg.toString
+      case _: Rows => arg.toString
+
+      // Do not add a fallthrough here - we rely on exhaustive checking to ensure
+      // that we don't forget to add new types of arguments here
     }
   }
 }
