@@ -21,13 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 
 angular.module('neo4jApp.directives')
-  .directive('keydown', [
+  .directive('keyup', [
     '$parse',
     ($parse) ->
       restrict: 'A',
       link: (scope, elem, attr, ctrl) ->
-        elem.bind('keydown', (e)->
-          exp = $parse(attr.keydown)
+        elem.bind('keyup', (e)->
+          exp = $parse(attr.keyup)
           scope.$apply(->exp(scope, {'$event': e}))
         )
   ])
