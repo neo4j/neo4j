@@ -2969,5 +2969,52 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         }
     }
 
-    // TODO if swapping a page in throws, the page must be put back into the freelist, it must not be bound to the file page, it must not be left locked, and it must not be put in the translation table
+    @Test(timeout = 1000)
+    public void pagesMustReturnToFreelistIfSwapInThrows() throws IOException
+    {
+        generateFileWithRecords( file, recordCount, recordSize );
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        int iterations = maxPages * 2;
+        accessPagesWhileInterrupted( pagedFile, PF_SHARED_LOCK, iterations );
+        accessPagesWhileInterrupted( pagedFile, PF_EXCLUSIVE_LOCK, iterations );
+
+        // Verify that after all those troubles, page faulting starts working again
+        // as soon as our thread is no longer interrupted and the PageSwapper no
+        // longer throws.
+        Thread.interrupted(); // make sure to clear our interruption status
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            verifyRecordsMatchExpected( cursor );
+        }
+        pageCache.unmap( file );
+    }
+
+    private void accessPagesWhileInterrupted(
+            PagedFile pagedFile,
+            int pf_flags,
+            int iterations ) throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( 0, pf_flags ) )
+        {
+            for ( int i = 0; i < iterations; i++ )
+            {
+                Thread.currentThread().interrupt();
+                try
+                {
+                    cursor.next( 0 );
+                    fail( "Page fault did not throw as expected" );
+                }
+                catch ( IOException ignored )
+                {
+                    // We don't care about the exception per se.
+                    // We just want lots of failed page faults.
+                }
+            }
+        }
+    }
 }
