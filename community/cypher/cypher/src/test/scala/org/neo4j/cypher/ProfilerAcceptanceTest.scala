@@ -165,7 +165,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test ("should support profiling union queries") {
     val result = profile("return 1 as A union return 2 as A")
-    result.toList should equal(List(Map("A" -> 1), Map("A" -> 2)))
+    result.toSet should equal(Set(Map("A" -> 1), Map("A" -> 2)))
   }
 
   test("should support profiling merge_queries") {
@@ -182,7 +182,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("should support profiling optional match and with") {
     createLabeledNode(Map("x" -> 1), "Label")
-    val result = profile("match (n) optional match (n)--(m) with n, m where m is null return n.x as A").toList.head
+    val executionResult: InternalExecutionResult = profile("match (n) optional match (n)--(m) with n, m where m is null return n.x as A")
+    val result = executionResult.toList.head
     result("A") should equal(1)
   }
 
@@ -250,7 +251,9 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val planDescription: v2_2.planDescription.PlanDescription = result.executionPlanDescription()
     planDescription.toSeq.foreach {
       p =>
-        if (!p.arguments.exists(_.isInstanceOf[DbHits])) fail("Found plan that was not profiled with DbHits: " + p.name)
+        if (!p.arguments.exists(_.isInstanceOf[DbHits])) {
+          fail("Found plan that was not profiled with DbHits: " + p.name)
+        }
         if (!p.arguments.exists(_.isInstanceOf[Rows])) fail("Found plan that was not profiled with Rows: " + p.name)
     }
     result

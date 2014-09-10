@@ -76,7 +76,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       assertions = {
         (p) =>
           assertEquals(1, p.size)
-          assertThat(p.executionPlanDescription().toString, containsString("SchemaIndex"))
+          assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
       }
     )
   }
@@ -90,7 +90,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       assertions = {
         (p) =>
           assertEquals(1, p.size)
-          assertThat(p.executionPlanDescription().toString, containsString("SchemaIndex"))
+          assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
       }
     )
   }
@@ -106,7 +106,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       assertions = {
         (p) =>
           assertEquals(2, p.size)
-          assertThat(p.executionPlanDescription().toString, containsString("SchemaIndex"))
+          assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
       }
     )
   }

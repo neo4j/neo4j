@@ -33,6 +33,8 @@ import collection.JavaConverters._
  * Abstract description of an execution plan
  */
 sealed trait PlanDescription extends cypher.PlanDescription {
+  self =>
+
   def arguments: Seq[Argument]
   def cd(name: String): PlanDescription = children.find(name).head
   def pipe: Pipe
@@ -42,6 +44,25 @@ sealed trait PlanDescription extends cypher.PlanDescription {
   def addArgument(arg: Argument): PlanDescription
   def andThen(pipe: Pipe, name: String, arguments: Argument*) = PlanDescriptionImpl(pipe, name, SingleChild(this), arguments)
   def toSeq: Seq[PlanDescription]
+
+  lazy val asJava: JPlanDescription = new JPlanDescription {
+
+    def getChildren: util.List[JPlanDescription] = children.toSeq.toList.map(_.asJava).asJava
+    def getArguments: util.Map[String, AnyRef] = arguments.map(arg =>
+      arg.name -> PlanDescriptionArgumentSerializer.serialize(arg).asInstanceOf[AnyRef]
+    ).toMap.asJava
+
+    def hasProfilerStatistics: Boolean = arguments.exists(_.isInstanceOf[DbHits])
+
+    def getName: String = name
+
+    def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
+      def getDbHits: Long = arguments.collectFirst { case DbHits(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
+      def getRows: Long = arguments.collectFirst { case Rows(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
+    }
+
+    override def toString = self.toString
+  }
 }
 
 sealed abstract class Argument extends Product {
@@ -114,23 +135,7 @@ final case class PlanDescriptionImpl(pipe: Pipe,
       None
     })
 
-  lazy val asJava: JPlanDescription = new JPlanDescription {
-    def getChildren: util.List[JPlanDescription] = children.toSeq.toList.map(_.asJava).asJava
-    def getArguments: util.Map[String, AnyRef] = arguments.map(arg =>
-      arg.name -> PlanDescriptionArgumentSerializer.serialize(arg).asInstanceOf[AnyRef]
-    ).toMap.asJava
 
-    def hasProfilerStatistics: Boolean = arguments.exists(_.isInstanceOf[DbHits])
-
-    def getName: String = name
-
-    def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
-      def getDbHits: Long = arguments.collectFirst { case DbHits(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
-      def getRows: Long = arguments.collectFirst { case Rows(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
-    }
-
-    override def toString = self.toString
-  }
 
   def addArgument(argument: Argument): PlanDescription = copy(arguments = arguments :+ argument)
 
@@ -150,30 +155,22 @@ final case class PlanDescriptionImpl(pipe: Pipe,
   override def render( builder: StringBuilder ): Unit = ???
 }
 
-final case class NullPlanDescription(pipe: Pipe) extends PlanDescription {
+final case class ArgumentPlanDescription(pipe: Pipe, arguments: Seq[Argument] = Seq.empty) extends PlanDescription {
   override def andThen(pipe: Pipe, name: String, arguments: Argument*) = new PlanDescriptionImpl(pipe, name, NoChildren, arguments)
-
-  def args = Seq.empty
-
-  def asJava = ???
 
   def children = NoChildren
 
   def find(searchedName: String) = if (searchedName == name) Seq(this) else Seq.empty
 
-  def name = "Null"
+  def name = "Argument"
 
   def render(builder: StringBuilder) {}
 
   def render(builder: StringBuilder, separator: String, levelSuffix: String) {}
 
-  def addArgument(arg: Argument): PlanDescription =
-    throw new UnsupportedOperationException("Cannot add arguments to NullPipe")
+  def addArgument(arg: Argument): PlanDescription = copy(arguments = arguments :+ arg)
 
-  // We do not map over this since we don't have profiler statistics for it
-  def map(f: (PlanDescription) => PlanDescription): PlanDescription = this
-
-  def arguments: Seq[Argument] = Seq.empty
+  def map(f: (PlanDescription) => PlanDescription): PlanDescription = f(this)
 
   def toSeq: Seq[PlanDescription] = Seq(this)
 }

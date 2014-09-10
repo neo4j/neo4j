@@ -57,7 +57,7 @@ class CypherCompiler(graph: GraphDatabaseService,
     version match {
       case CypherVersion.`v2_2_cost` => compatibilityFor2_2Cost.produceParsedQuery(statementAsText, planType)
       case CypherVersion.`v2_2_rule` => compatibilityFor2_2Rule.produceParsedQuery(statementAsText, planType)
-      case CypherVersion.v2_2 => compatibilityFor2_2Rule.produceParsedQuery(statementAsText, planType)
+      case CypherVersion.v2_2 => compatibilityFor2_2Cost.produceParsedQuery(statementAsText, planType)
       case CypherVersion.v2_1 => compatibilityFor2_1.parseQuery(statementAsText, planType == Profiled)
       case CypherVersion.v2_0 => compatibilityFor2_0.parseQuery(statementAsText, planType == Profiled)
       case CypherVersion.v1_9 => compatibilityFor1_9.parseQuery(statementAsText, planType == Profiled)

@@ -35,6 +35,7 @@ case object nameMatchPatternElements extends Rewriter {
     case pattern: RelationshipPattern if !pattern.identifier.isDefined && !pattern.length.isDefined =>
       val syntheticName = UnNamedNameGenerator.name(pattern.position.offset)
       pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
+
   }
 
   private val findingRewriter: Rewriter = Rewriter.lift {
@@ -79,5 +80,34 @@ case object namePatternPredicates extends Rewriter {
     case exp: PatternExpression =>
       val rewrittenPattern = exp.pattern.endoRewrite(bottomUp(namingRewriter))
       exp.copy(pattern = rewrittenPattern)
+  }
+}
+
+case object nameUpdatingClauses extends Rewriter {
+  def apply(that: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(that)
+
+  private val namingRewriter: Rewriter = Rewriter.lift {
+    case pattern: NodePattern if !pattern.identifier.isDefined => {
+      val syntheticName = UnNamedNameGenerator.name(pattern.position.offset + 1)
+      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
+    }
+    case pattern: RelationshipPattern if !pattern.identifier.isDefined =>
+      val syntheticName = UnNamedNameGenerator.name(pattern.position.offset)
+      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
+  }
+
+  private val findingRewriter: Rewriter = Rewriter.lift {
+    case createUnique@CreateUnique(pattern) => {
+      val rewrittenPattern = pattern.endoRewrite(bottomUp(namingRewriter))
+      createUnique.copy(pattern = rewrittenPattern)(createUnique.position)
+    }
+    case create@Create(pattern) => {
+      val rewrittenPattern = pattern.endoRewrite(bottomUp(namingRewriter))
+      create.copy(pattern = rewrittenPattern)(create.position)
+    }
+    case merge@Merge(pattern, _) => {
+      val rewrittenPattern = pattern.endoRewrite(bottomUp(namingRewriter))
+      merge.copy(pattern = rewrittenPattern)(merge.position)
+    }
   }
 }

@@ -92,6 +92,7 @@ object Planner {
     collapseInCollectionsContainingConstants,
     nameVarLengthRelationships,
     namePatternPredicates,
+    nameUpdatingClauses,
     projectNamedPaths,
     projectFreshSortExpressions,
     inlineProjections

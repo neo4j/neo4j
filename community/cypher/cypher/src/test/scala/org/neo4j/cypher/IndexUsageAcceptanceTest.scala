@@ -31,7 +31,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite {
     val result = execute("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
 
     // Then
-    result.executionPlanDescription.toString should include("SchemaIndex")
+    result.executionPlanDescription.toString should include("NodeIndexSeek")
   }
 
   test("should not forget predicates") {
@@ -45,7 +45,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite {
 
     // Then
     result shouldBe empty
-    result.executionPlanDescription.toString should include("SchemaIndex")
+    result.executionPlanDescription.toString should include("NodeIndexSeek")
   }
 
   test("should use index when there are multiple labels on the node") {
@@ -57,7 +57,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite {
     val result = execute("MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n")
 
     // Then
-    result.executionPlanDescription.toString should include("SchemaIndex")
+    result.executionPlanDescription.toString should include("NodeIndexSeek")
   }
 
   test("should be able to use value coming from UNWIND for index seek") {
@@ -69,6 +69,6 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite {
 
     // Then
     result shouldBe empty
-    result.executionPlanDescription.toString should include("SchemaIndex")
+    result.executionPlanDescription.toString should include("NodeByLabelScan")
   }
 }
