@@ -279,6 +279,12 @@
         <version>${scala.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-reflect</artifactId>
+        <version>${scala.version}</version>
+      </dependency>
+
       <!-- testing -->
 
       <dependency>
@@ -291,6 +297,10 @@
             <artifactId>scala-library</artifactId>
             <groupId>org.scala-lang</groupId>
           </exclusion>
+          <exclusion>
+            <artifactId>scala-reflect</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
@@ -301,6 +311,10 @@
         <exclusions>
           <exclusion>
             <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scala-reflect</artifactId>
             <groupId>org.scala-lang</groupId>
           </exclusion>
         </exclusions>
