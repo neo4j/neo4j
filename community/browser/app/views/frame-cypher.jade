@@ -4,7 +4,7 @@ div(ng-controller="CypherResultCtrl", fullscreen)
     .view-result(ng-class='{error: frame.hasErrors}')
       .view-result-graph.result(ng-show='isActive("graph")')
         svg(neo-graph, graph-data='frame.response.graph', ng-controller='D3GraphCtrl'
-          style="pointer-events:fill;", preserveAspectRatio="xMidyMid")
+          style="pointer-events:fill;", preserveAspectRatio="xMidYMid")
         include partials/legend
       .view-result-table.result(ng-show='isActive("table")', ng-animate = "'animate-box'")
         neo-table(table-data='frame.response.table')
