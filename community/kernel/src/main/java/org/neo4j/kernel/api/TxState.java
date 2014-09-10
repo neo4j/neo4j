@@ -357,4 +357,8 @@ public interface TxState
 
     LegacyIndex getRelationshipLegacyIndexChanges( String indexName ) throws LegacyIndexNotFoundKernelException;
     // </Legacy index>
+
+    DiffSets<Long> indexUpdates( IndexDescriptor index, Object value );
+
+    void indexUpdateProperty( IndexDescriptor descriptor, long nodeId, Object valueBefore, Object valueAfter );
 }

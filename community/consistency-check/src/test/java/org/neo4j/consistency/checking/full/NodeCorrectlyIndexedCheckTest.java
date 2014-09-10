@@ -5,17 +5,17 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.consistency.checking.full;
 
@@ -33,6 +33,7 @@ import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -130,7 +131,29 @@ public class NodeCorrectlyIndexedCheckTest
         verify( report ).uniqueIndexNotUnique( indexRule, "propertyValue", duplicateNodeId2 );
     }
 
-    private IndexAccessors indexContaining( IndexRule indexRule, Map<Object, long[]> entries ) throws IOException
+    @Test
+    public void shouldReportNodeIndexedMultipleTimes() throws Exception
+    {
+        // given
+        IndexRule indexRule = indexRule( indexId, labelId, propertyKeyId, new Descriptor( "provider1", "version1" ) );
+        NodeRecord nodeRecord = nodeWithLabels( labelId );
+
+        long nodeId = nodeRecord.getId();
+        NodeCorrectlyIndexedCheck check = new NodeCorrectlyIndexedCheck(
+                indexContaining( indexRule, MapUtil.<Object,long[]>genericMap(
+                        "propertyValue", new long[] {nodeId, nodeId, nodeId} ) ),
+                nodeHasProperty( nodeRecord, "propertyValue" ) );
+
+        ConsistencyReport.NodeConsistencyReport report = mock( ConsistencyReport.NodeConsistencyReport.class );
+
+        // when
+        check.check( nodeRecord, engineFor( report ), null );
+
+        // then
+        verify( report ).indexedMultipleTimes( indexRule, "propertyValue", 3 );
+    }
+
+    private IndexAccessors indexContaining( IndexRule indexRule, Map<Object, long[]> entries )
     {
         IndexAccessorStub reader = new IndexAccessorStub( entries );
         IndexAccessors indexes = mock( IndexAccessors.class );
@@ -196,21 +219,22 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
-                public boolean hasIndexed( long nodeId, Object propertyValue )
+                public int getIndexedCount( long nodeId, Object propertyValue )
                 {
-                    long[] canidates = entries.get( propertyValue );
-                    if ( canidates == null )
+                    long[] candidates = entries.get( propertyValue );
+                    if ( candidates == null )
                     {
-                        return false;
+                        return 0;
                     }
-                    for ( int i = 0; i < canidates.length; i++ )
+                    int count = 0;
+                    for ( int i = 0; i < candidates.length; i++ )
                     {
-                        if ( canidates[i] == nodeId )
+                        if ( candidates[i] == nodeId )
                         {
-                            return true;
+                            count++;
                         }
                     }
-                    return false;
+                    return count;
                 }
 
                 @Override

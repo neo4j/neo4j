@@ -27,9 +27,11 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -42,6 +44,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -65,6 +68,8 @@ public class StateHandlingStatementOperationsTest
     public void shouldNeverDelegateWrites() throws Exception
     {
         KernelStatement state = mockedState();
+        when( inner.nodeGetAllProperties( anyLong() ) )
+                .thenReturn( IteratorUtil.<DefinedProperty>emptyIterator() );
         StateHandlingStatementOperations ctx = newTxStateOps( inner );
 
         // When
@@ -80,6 +85,7 @@ public class StateHandlingStatementOperationsTest
         // ctx.getOrCreateLabelId("0");
         // ctx.getOrCreatePropertyKeyId("0");
 
+        verify( inner, times( 1 ) ).nodeGetAllProperties( 0 );
         verify( inner, times( 2 ) ).nodeHasLabel( 0, 0 );
         verifyNoMoreInteractions( inner );
     }

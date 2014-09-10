@@ -44,9 +44,10 @@ public class LogFiles
      * Moves all logical logs of a database from one directory
      * to another. Since it just renames files (the standard way of moving with
      * JDK6) from and to must be on the same disk partition.
+     *
      * @param fs
      * @param fromDirectory The directory that hosts the database and its logs
-     * @param toDirectory The directory to move the log files to
+     * @param toDirectory   The directory to move the log files to
      * @throws IOException If any of the move operations fail for any reason.
      */
     public static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory ) throws IOException

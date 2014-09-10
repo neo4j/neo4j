@@ -24,6 +24,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
@@ -44,8 +45,10 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
     public BackupClient( String hostNameOrIp, int port, Logging logging, StoreId storeId,
                          ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( hostNameOrIp, port, logging, storeId, FRAME_LENGTH, PROTOCOL_VERSION, 40 * 1000,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH, byteCounterMonitor, requestMonitor );
+        super( hostNameOrIp, port, logging, storeId, FRAME_LENGTH,
+                new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ), 40 * 1000,
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
+                FRAME_LENGTH, byteCounterMonitor, requestMonitor );
     }
 
     @Override

@@ -25,9 +25,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -205,8 +203,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
                         for ( MemberIsAvailable memberIsAvailable : clusterMembersSnapshot.getCurrentAvailableMembers
                                 () )
                         {
-                            listener.memberIsAvailable( memberIsAvailable.getRole(),
-                                    memberIsAvailable.getInstanceId(), memberIsAvailable.getRoleUri() );
+                            listener.memberIsAvailable( memberIsAvailable.getRole(), memberIsAvailable.getInstanceId(),
+                                    memberIsAvailable.getRoleUri(), memberIsAvailable.getStoreId() );
                         }
                     }
                 } );
@@ -217,16 +215,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     public static class UniqueRoleFilter
             implements Function2<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>>
     {
-        private final String role;
-        private final Set<String> roles = new HashSet<String>();
-
-        public UniqueRoleFilter( String role )
-        {
-            this.role = role;
-        }
-
         @Override
-        public Iterable<MemberIsAvailable> apply( Iterable<MemberIsAvailable> previousSnapshot,
+        public Iterable<MemberIsAvailable> apply( final Iterable<MemberIsAvailable> previousSnapshot,
                                                   final MemberIsAvailable newMessage )
         {
             return Iterables.append( newMessage, Iterables.filter( new Predicate<MemberIsAvailable>()
@@ -237,18 +227,6 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
                     return not( in( newMessage.getInstanceId() ) ).accept( item.getInstanceId() );
                 }
             }, previousSnapshot ) );
-
-        }
-    }
-
-    private static class UniqueInstanceFilter implements Predicate<MemberIsAvailable>
-    {
-        private final Set<InstanceId> roles = new HashSet<InstanceId>();
-
-        @Override
-        public boolean accept( MemberIsAvailable item )
-        {
-            return roles.add( item.getInstanceId() );
         }
     }
 
@@ -258,7 +236,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         private final
         Function2<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>> nextSnapshotFunction;
 
-        private Iterable<MemberIsAvailable> availableMembers = new ArrayList<MemberIsAvailable>();
+        private Iterable<MemberIsAvailable> availableMembers = new ArrayList<>();
 
         public ClusterMembersSnapshot( Function2<Iterable<MemberIsAvailable>, MemberIsAvailable,
                 Iterable<MemberIsAvailable>> nextSnapshotFunction )
@@ -390,8 +368,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
                         @Override
                         public void notify( ClusterMemberListener listener )
                         {
-                            listener.memberIsAvailable( memberIsAvailable.getRole(),
-                                    memberIsAvailable.getInstanceId(), memberIsAvailable.getRoleUri() );
+                            listener.memberIsAvailable( memberIsAvailable.getRole(), memberIsAvailable.getInstanceId(),
+                                    memberIsAvailable.getRoleUri(), memberIsAvailable.getStoreId() );
                         }
                     } );
                 }

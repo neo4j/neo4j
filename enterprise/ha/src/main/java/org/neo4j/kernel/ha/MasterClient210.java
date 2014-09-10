@@ -27,6 +27,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.Protocol;
+import org.neo4j.com.Protocol201;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -50,6 +52,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
 import static org.neo4j.com.Protocol.writeString;
+import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 
 /**
  * The {@link org.neo4j.kernel.ha.com.master.Master} a slave should use to communicate with its master. It
@@ -67,17 +70,33 @@ public class MasterClient210 extends Client<Master> implements MasterClient
      * Version 6 since 2014-01-07
      * Version 7 since 2014-03-18
      */
-    public static final byte PROTOCOL_VERSION = 7;
+    public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 7, INTERNAL_PROTOCOL_VERSION );
 
-    private final long lockReadTimeout;
+    private final long lockReadTimeoutMillis;
 
     public MasterClient210( String hostNameOrIp, int port, Logging logging, StoreId storeId,
-                            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize,
-                            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor)
+                            long readTimeoutMillis, long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
+                            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
-                readTimeoutSeconds, maxConcurrentChannels, chunkSize, byteCounterMonitor, requestMonitor);
-        this.lockReadTimeout = lockReadTimeout;
+                readTimeoutMillis, maxConcurrentChannels, chunkSize, byteCounterMonitor, requestMonitor );
+        this.lockReadTimeoutMillis = lockReadTimeoutMillis;
+    }
+
+    MasterClient210( String hostNameOrIp, int port, Logging logging, StoreId storeId,
+                            long readTimeoutMillis, long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
+                            ProtocolVersion protocolVersion,
+                            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+    {
+        super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, protocolVersion, readTimeoutMillis,
+                maxConcurrentChannels, chunkSize, byteCounterMonitor, requestMonitor );
+        this.lockReadTimeoutMillis = lockReadTimeoutMillis;
+    }
+
+    @Override
+    protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
+    {
+        return new Protocol201( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
 
     @Override
@@ -86,7 +105,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         HaRequestType210 specificType = (HaRequestType210) type;
         if ( specificType.isLock() )
         {
-            return lockReadTimeout;
+            return lockReadTimeoutMillis;
         }
         if ( specificType == HaRequestType210.COPY_STORE )
         {
@@ -282,6 +301,12 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     {
         return new RequestContext( context.getEpoch(), context.machineId(), context.getEventIdentifier(),
                 0, context.getMasterId(), context.getChecksum() );
+    }
+
+    @Override
+    public ProtocolVersion getProtocolVersion()
+    {
+        return PROTOCOL_VERSION;
     }
 
     protected static IdAllocation readIdAllocation( ChannelBuffer buffer )

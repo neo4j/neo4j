@@ -38,6 +38,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.ReflectionUtil;
@@ -59,6 +60,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
 
 public class HighAvailabilitySlavesTest
 {
@@ -108,7 +110,7 @@ public class HighAvailabilitySlavesTest
         Cluster cluster = mock( Cluster.class );
         ClusterMembers clusterMembers = mock( ClusterMembers.class );
         when( clusterMembers.getMembers() ).thenReturn( Iterables.option(
-                new ClusterMember( INSTANCE_ID ).availableAs( HighAvailabilityModeSwitcher.SLAVE, HA_URI ).failed() ) );
+                new ClusterMember( INSTANCE_ID ).availableAs( SLAVE, HA_URI, StoreId.DEFAULT ).failed() ) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
 
@@ -129,7 +131,7 @@ public class HighAvailabilitySlavesTest
         Cluster cluster = mock( Cluster.class );
         ClusterMembers clusterMembers = mock( ClusterMembers.class );
         when( clusterMembers.getMembers() ).thenReturn( Iterables.option(
-                new ClusterMember( INSTANCE_ID ).availableAs( HighAvailabilityModeSwitcher.SLAVE, HA_URI ) ) );
+                new ClusterMember( INSTANCE_ID ).availableAs( SLAVE, HA_URI, StoreId.DEFAULT ) ) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
         when( slaveFactory.newSlave( (ClusterMember) any() ) ).thenReturn( mock( Slave.class ) );
@@ -151,7 +153,7 @@ public class HighAvailabilitySlavesTest
         Cluster cluster = mock( Cluster.class );
         ClusterMembers clusterMembers = mock( ClusterMembers.class );
         when( clusterMembers.getMembers() ).thenReturn( Iterables.option(
-                new ClusterMember( INSTANCE_ID ).availableAs( HighAvailabilityModeSwitcher.SLAVE, HA_URI ) ) );
+                new ClusterMember( INSTANCE_ID ).availableAs( SLAVE, HA_URI, StoreId.DEFAULT ) ) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
         when( slaveFactory.newSlave( (ClusterMember) any() ) ).thenReturn( mock( Slave.class ), mock( Slave.class ) );
@@ -204,11 +206,11 @@ public class HighAvailabilitySlavesTest
 
     private static ClusterMembers clusterMembersOfSize( int size )
     {
-        List<ClusterMember> members = new ArrayList<ClusterMember>( size );
+        List<ClusterMember> members = new ArrayList<>( size );
         members.add( mockClusterMemberWithRole( HighAvailabilityModeSwitcher.MASTER ) );
         for ( int i = 0; i < size - 1; i++ )
         {
-            members.add( mockClusterMemberWithRole( HighAvailabilityModeSwitcher.SLAVE ) );
+            members.add( mockClusterMemberWithRole( SLAVE ) );
         }
 
         ClusterMembers clusterMembers = mock( ClusterMembers.class );

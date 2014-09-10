@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.cluster;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -40,10 +41,13 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 
 public class HighAvailabilityModeSwitcherTest
@@ -57,7 +61,8 @@ public class HighAvailabilityModeSwitcherTest
                 mock(SwitchToMaster.class),
                 mock( Election.class ),
                 availability,
-                StringLogger.DEV_NULL );
+                dependencyResolverMock(),
+                new DevNullLoggingService() );
 
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
@@ -68,7 +73,7 @@ public class HighAvailabilityModeSwitcherTest
            * The second argument to memberIsAvailable below is null because it has not been set yet. This would require
            * a switch to master which we don't do here.
            */
-        verify( availability, times( 1 ) ).memberIsAvailable( HighAvailabilityModeSwitcher.MASTER, null );
+        verify( availability ).memberIsAvailable( HighAvailabilityModeSwitcher.MASTER, null, StoreId.DEFAULT );
     }
 
     @Test
@@ -81,7 +86,8 @@ public class HighAvailabilityModeSwitcherTest
                 mock(SwitchToMaster.class),
                 mock( Election.class ),
                 availability,
-                StringLogger.DEV_NULL );
+                dependencyResolverMock(),
+                new DevNullLoggingService() );
 
         // When
         toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
@@ -92,7 +98,7 @@ public class HighAvailabilityModeSwitcherTest
            * The second argument to memberIsAvailable below is null because it has not been set yet. This would require
            * a switch to master which we don't do here.
            */
-        verify( availability, times( 1 ) ).memberIsAvailable( HighAvailabilityModeSwitcher.SLAVE, null );
+        verify( availability ).memberIsAvailable( HighAvailabilityModeSwitcher.SLAVE, null, StoreId.DEFAULT );
     }
 
     @Test
@@ -105,7 +111,8 @@ public class HighAvailabilityModeSwitcherTest
                 mock(SwitchToMaster.class),
                 mock( Election.class ),
                 availability,
-                StringLogger.DEV_NULL );
+                dependencyResolverMock(),
+                new DevNullLoggingService() );
 
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
@@ -129,7 +136,8 @@ public class HighAvailabilityModeSwitcherTest
                 mock(SwitchToMaster.class),
                 mock( Election.class ),
                 availability,
-                StringLogger.DEV_NULL );
+                dependencyResolverMock(),
+                new DevNullLoggingService() );
 
         // When
         toTest.slaveIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
@@ -154,12 +162,12 @@ public class HighAvailabilityModeSwitcherTest
         SwitchToSlave switchToSlave = mock( SwitchToSlave.class );
         SwitchToMaster switchToMaster = mock( SwitchToMaster.class );
 
-        when( switchToSlave.switchToSlave(any( LifeSupport.class ), any( URI.class ), any( URI.class ),
+        when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ),
                 any( CancellationRequest.class ) ) ).thenAnswer( new Answer<URI>()
-                {
-                    @Override
-                    public URI answer( InvocationOnMock invocationOnMock ) throws Throwable
-                    {
+        {
+            @Override
+            public URI answer( InvocationOnMock invocationOnMock ) throws Throwable
+            {
                         switching.countDown();
                         CancellationRequest cancel = (CancellationRequest) invocationOnMock.getArguments()[3];
                         if ( firstSwitch.get() )
@@ -182,7 +190,8 @@ public class HighAvailabilityModeSwitcherTest
                 switchToMaster,
                 mock( Election.class ),
                 availability,
-                StringLogger.DEV_NULL );
+                dependencyResolverMock(),
+                new DevNullLoggingService() );
         toTest.init();
         toTest.start();
         toTest.listeningAt( URI.create("ha://server3?serverId=3") );
@@ -211,9 +220,12 @@ public class HighAvailabilityModeSwitcherTest
         // Given
             // A HAMS
         SwitchToSlave switchToSlave = mock( SwitchToSlave.class );
+        Logging logging = mock( Logging.class );
         StringLogger msgLog = mock( StringLogger.class );
-        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( switchToSlave, mock( SwitchToMaster.class ),
-                mock( Election.class ), mock( ClusterMemberAvailability.class ), msgLog ) ;
+        when( logging.getMessagesLog( HighAvailabilityModeSwitcher.class ) ).thenReturn( msgLog );
+        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( switchToSlave,
+                mock( SwitchToMaster.class ), mock( Election.class ), mock( ClusterMemberAvailability.class ),
+                dependencyResolverMock(), logging );
             // That is properly started
         toTest.init();
         toTest.start();
@@ -230,5 +242,12 @@ public class HighAvailabilityModeSwitcherTest
         verifyZeroInteractions( switchToSlave );
             // And an error must be logged
         verify( msgLog, times( 1 ) ).error( anyString() );
+    }
+
+    private static DependencyResolver dependencyResolverMock()
+    {
+        DependencyResolver resolver = mock( DependencyResolver.class );
+        when( resolver.resolveDependency( eq( StoreId.class ) ) ).thenReturn( StoreId.DEFAULT );
+        return resolver;
     }
 }

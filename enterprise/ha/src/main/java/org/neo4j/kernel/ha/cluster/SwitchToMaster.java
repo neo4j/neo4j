@@ -27,7 +27,6 @@ import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -47,6 +46,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 
 public class SwitchToMaster
 {
@@ -87,10 +88,9 @@ public class SwitchToMaster
      * and broadcasts the appropriate Master Is Available event.
      * @param haCommunicationLife The LifeSupport instance to register communication endpoints.
      * @param me The URI that the communication endpoints should bind to
-     * @param cancellationRequest A handle for gracefully aborting the switch
      * @return The URI at which the master communication was bound.
      */
-    public URI switchToMaster( LifeSupport haCommunicationLife, URI me, CancellationRequest cancellationRequest )
+    public URI switchToMaster( LifeSupport haCommunicationLife, URI me )
     {
         msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to master" );
 
@@ -123,7 +123,7 @@ public class SwitchToMaster
             haCommunicationLife.start();
 
             URI masterHaURI = getMasterUri( me, masterServer );
-            clusterMemberAvailability.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER, masterHaURI );
+            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, neoStoreXaDataSource.getStoreId() );
             msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
                     ", successfully moved to master" );
 

@@ -9,6 +9,20 @@ o Extends the Transaction interface with a new method `terminate()` that makes i
   as well as all further operations carried out within that transaction will throw
   a `TransactionTerminatedException` exception.
 
+2.1.4
+-----
+o Fixes issue with label and property changes, triggered with multiple adds and removes
+  of the same label/property in the same transaction
+o Fixes issue with skipped relationships on transaction rollback
+o Batch importer now properly closes the store on shutdown
+o Upgrading a database no longer affects logging of normal operations
+o Corrects updating of Cache when all relationships of a certain
+  type are removed from a dense node
+o Improves performance of index lookups within a transaction
+o Corrects migration of transaction logs when performing store upgrades from 2.0 and 1.9
+o Fixes race condition between committing and reading threads that might lead to
+  duplicate relationships being returned
+
 2.1.3
 -----
 o Fixed a bug where the BatchInserter would generate inconsistent uniqueness

@@ -97,6 +97,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.CommitProcessFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
+import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
@@ -107,14 +109,11 @@ import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
-import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
-    private static final Iterable<Class<?>> SETTINGS_CLASSES
-            = iterable( GraphDatabaseSettings.class, HaSettings.class, ClusterSettings.class );
     private RequestContextFactory requestContextFactory;
     private Slaves slaves;
     private ClusterMembers members;
@@ -131,10 +130,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
     private final LifeSupport paxosLife = new LifeSupport();
 
-    private DelegateInvocationHandler clusterEventsDelegateInvocationHandler;
-    private DelegateInvocationHandler memberContextDelegateInvocationHandler;
-    private DelegateInvocationHandler clusterMemberAvailabilityDelegateInvocationHandler;
-    private HighAvailabilityModeSwitcher highAvailabilityModeSwitcher;
     private DefaultSlaveFactory slaveFactory;
     private TransactionCommittingResponseUnpacker unpacker;
     private Provider<KernelAPI> kernelProvider;
@@ -152,9 +147,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                          Iterable<CacheProvider> cacheProviders )
     {
-        this( storeDir, params, new GraphDatabaseDependencies( null,
-                Arrays.<Class<?>>asList( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ),
-                kernelExtensions, cacheProviders ) );
+        this( storeDir, params,
+                new GraphDatabaseDependencies( null,
+                        Arrays.asList( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ),
+                        kernelExtensions, cacheProviders ) );
     }
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
@@ -167,7 +163,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected void create()
     {
         life.add( new BranchedDataMigrator( storeDir ) );
-        masterDelegateInvocationHandler = new DelegateInvocationHandler( Master.class );
+        masterDelegateInvocationHandler = new DelegateInvocationHandler<>( Master.class );
         master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
                 masterDelegateInvocationHandler );
         final int serverId = config.get( ClusterSettings.server_id ).toIntegerIndex();
@@ -205,6 +201,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         life.add( new StartupWaiter() );
 
         diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine, clusterClient ) );
+    }
+
+    @Override
+    protected UpgradeConfiguration createUpgradeConfiguration()
+    {
+        return new HAUpgradeConfiguration();
     }
 
     @Override
@@ -252,10 +254,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected void createTxHook()
     {
-        clusterEventsDelegateInvocationHandler = new DelegateInvocationHandler( ClusterMemberEvents.class );
-        memberContextDelegateInvocationHandler = new DelegateInvocationHandler( HighAvailabilityMemberContext.class );
-        clusterMemberAvailabilityDelegateInvocationHandler = new DelegateInvocationHandler( ClusterMemberAvailability
-                .class );
+        DelegateInvocationHandler<ClusterMemberEvents> clusterEventsDelegateInvocationHandler =
+                new DelegateInvocationHandler<>( ClusterMemberEvents.class );
+        DelegateInvocationHandler<HighAvailabilityMemberContext> memberContextDelegateInvocationHandler =
+                new DelegateInvocationHandler<>( HighAvailabilityMemberContext.class );
+        DelegateInvocationHandler<ClusterMemberAvailability> clusterMemberAvailabilityDelegateInvocationHandler =
+                new DelegateInvocationHandler<>( ClusterMemberAvailability.class );
 
         clusterEvents = dependencies.satisfyDependency( (ClusterMemberEvents) Proxy.newProxyInstance(
                 ClusterMemberEvents.class.getClassLoader(),
@@ -303,7 +307,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         {
                             msgLog.error( String.format( "Instance %s has the same serverId as ours (%s) - will not " +
                                             "join this cluster",
-                                    member.getRoleUri(), config.get( ClusterSettings.server_id )
+                                    member.getRoleUri(), config.get( ClusterSettings.server_id ).toIntegerIndex()
                             ) );
                             return true;
                         }
@@ -445,10 +449,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ), monitors.newMonitor( RequestMonitor.class, MasterServer.class ),
                 monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ));
 
-        highAvailabilityModeSwitcher =
+        HighAvailabilityModeSwitcher highAvailabilityModeSwitcher =
                 new HighAvailabilityModeSwitcher( switchToSlaveInstance, switchToMasterInstance,
-                        clusterClient, clusterMemberAvailability,
-                        logging.getMessagesLog( HighAvailabilityModeSwitcher.class ) );
+                        clusterClient, clusterMemberAvailability, getDependencyResolver(), logging );
 
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );
         memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );
@@ -649,6 +652,15 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         public void start() throws Throwable
         {
             availabilityGuard.isAvailable( stateSwitchTimeoutMillis );
+        }
+    }
+
+    private static final class HAUpgradeConfiguration implements UpgradeConfiguration
+    {
+        @Override
+        public void checkConfigurationAllowsAutomaticUpgrade()
+        {
+            throw new UpgradeNotAllowedByDatabaseModeException();
         }
     }
 }

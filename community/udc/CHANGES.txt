@@ -1,3 +1,7 @@
+2.1.4
+-----
+o Disabling UDC through system properties now works as expected
+
 1.8.M07 (2012-08-08)
 ----------------
 o Added edition information (community, advanced, enterprise)

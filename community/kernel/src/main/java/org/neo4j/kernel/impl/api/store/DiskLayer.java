@@ -285,7 +285,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value
+    public PrimitiveLongResourceIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value
     ) throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException();
@@ -587,10 +587,11 @@ public class DiskLayer implements StoreReadLayer
         return resourceIterator( reader.lookup( value ), reader );
     }
 
-    public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, long index, Object value )
+    public PrimitiveLongResourceIterator nodesGetFromIndexLookup( KernelStatement state, long index, Object value )
             throws IndexNotFoundKernelException
     {
-        return state.getIndexReader( index ).lookup( value );
+        IndexReader reader = state.getIndexReader( index );
+        return resourceIterator( reader.lookup( value ), reader );
     }
 
     private Iterator<DefinedProperty> loadAllPropertiesOf( PrimitiveRecord primitiveRecord )

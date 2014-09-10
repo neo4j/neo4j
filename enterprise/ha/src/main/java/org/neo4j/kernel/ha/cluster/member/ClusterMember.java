@@ -28,43 +28,39 @@ import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 public class ClusterMember
 {
-    private final InstanceId memberId;
+    private final InstanceId instanceId;
     private final Map<String, URI> roles;
+    private final StoreId storeId;
     private final boolean alive;
+    private final boolean initiallyKnown;
 
-    public ClusterMember( InstanceId memberId )
+    public ClusterMember( InstanceId instanceId )
     {
-        this( memberId, Collections.<String, URI>emptyMap(), true );
+        this( instanceId, false );
     }
 
-    ClusterMember( InstanceId memberId, Map<String, URI> roles, boolean alive )
+    ClusterMember( InstanceId instanceId, boolean initiallyKnown )
     {
-        this.memberId = memberId;
+        this( instanceId, Collections.<String, URI>emptyMap(), StoreId.DEFAULT, true, initiallyKnown );
+    }
+
+    ClusterMember( InstanceId instanceId, Map<String, URI> roles, StoreId storeId,
+                   boolean alive, boolean initiallyKnown )
+    {
+        this.instanceId = instanceId;
         this.roles = roles;
+        this.storeId = storeId;
         this.alive = alive;
+        this.initiallyKnown = initiallyKnown;
     }
 
-    public InstanceId getMemberId()
+    public InstanceId getInstanceId()
     {
-        return memberId;
-    }
-
-    public int getInstanceId()
-    {
-//        URI haURI = getHAUri();
-//
-//        if ( haURI != null )
-//        {
-//            // Get serverId parameter, default to -1 if it is missing, and parse to integer
-//            return INTEGER.apply( withDefaults( Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haURI ));
-//        } else
-//        {
-//            return -1;
-//        }
-        return getMemberId().toIntegerIndex();
+        return instanceId;
     }
 
     public URI getHAUri()
@@ -87,17 +83,12 @@ public class ClusterMember
         {
             return HighAvailabilityModeSwitcher.SLAVE;
         }
-        return "UNKNOWN";
+        return HighAvailabilityModeSwitcher.UNKNOWN;
     }
 
     public boolean hasRole( String role )
     {
         return roles.containsKey( role );
-    }
-
-    public URI getRoleURI( String role )
-    {
-        return roles.get( role );
     }
 
     public Iterable<String> getRoles()
@@ -110,14 +101,24 @@ public class ClusterMember
         return roles.values();
     }
 
+    public StoreId getStoreId()
+    {
+        return storeId;
+    }
+
     public boolean isAlive()
     {
         return alive;
     }
 
-    ClusterMember availableAs( String role, URI roleUri )
+    public boolean isInitiallyKnown()
     {
-        Map<String, URI> copy = new HashMap<String, URI>( roles );
+        return initiallyKnown;
+    }
+
+    ClusterMember availableAs( String role, URI roleUri, StoreId storeId )
+    {
+        Map<String, URI> copy = new HashMap<>( roles );
         if ( role.equals( HighAvailabilityModeSwitcher.MASTER ) )
         {
             copy.remove( HighAvailabilityModeSwitcher.SLAVE );
@@ -128,28 +129,30 @@ public class ClusterMember
             copy.remove( OnlineBackupKernelExtension.BACKUP );
         }
         copy.put( role, roleUri );
-        return new ClusterMember( this.memberId, copy, this.alive );
+        return new ClusterMember( this.instanceId, copy, storeId, this.alive, this.initiallyKnown );
     }
 
     ClusterMember unavailableAs( String role )
     {
-        return new ClusterMember( this.memberId, MapUtil.copyAndRemove( roles, role ), this.alive );
+        return new ClusterMember( this.instanceId, MapUtil.copyAndRemove( roles, role ),
+                this.storeId, this.alive, this.initiallyKnown );
     }
 
     ClusterMember alive()
     {
-        return new ClusterMember( this.memberId, roles, true );
+        return new ClusterMember( this.instanceId, roles, storeId, true, this.initiallyKnown );
     }
 
     ClusterMember failed()
     {
-        return new ClusterMember( this.memberId, roles, false );
+        return new ClusterMember( this.instanceId, roles, storeId, false, this.initiallyKnown );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "cluster URI=%s, alive=%s, roles=%s", memberId.toString(), alive, roles.toString() );
+        return String.format( "cluster URI=%s, alive=%s, initial=%s, roles=%s, store=%s",
+                instanceId, alive, initiallyKnown, roles, storeId );
     }
 
     @Override
@@ -163,20 +166,13 @@ public class ClusterMember
         {
             return false;
         }
-
         ClusterMember that = (ClusterMember) o;
-
-        if ( !memberId.equals( that.memberId ) )
-        {
-            return false;
-        }
-
-        return true;
+        return instanceId.equals( that.instanceId );
     }
 
     @Override
     public int hashCode()
     {
-        return memberId.hashCode();
+        return instanceId.hashCode();
     }
 }

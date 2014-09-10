@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.com.slave;
 
 import org.jboss.netty.channel.Channel;
 
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
@@ -41,8 +42,9 @@ public class SlaveServer extends Server<Slave, Void>
 
     public SlaveServer( Slave requestTarget, Configuration config, Logging logging, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( requestTarget, config, logging, DEFAULT_FRAME_LENGTH, APPLICATION_PROTOCOL_VERSION, ALWAYS_MATCH,
-                SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
+        super( requestTarget, config, logging, DEFAULT_FRAME_LENGTH,
+                new ProtocolVersion( APPLICATION_PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
+                ALWAYS_MATCH, SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
     }
 
     @Override

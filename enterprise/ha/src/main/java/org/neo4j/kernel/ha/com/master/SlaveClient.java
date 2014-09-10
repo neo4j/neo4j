@@ -23,9 +23,11 @@ import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.Client;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
@@ -43,17 +45,18 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import static org.neo4j.com.Protocol.VOID_SERIALIZER;
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
+import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 
 public class SlaveClient extends Client<Slave> implements Slave
 {
-    private final int machineId;
+    private final InstanceId machineId;
 
-    public SlaveClient( int machineId, String hostNameOrIp, int port, Logging logging, StoreId storeId,
-                        int maxConcurrentChannels, int chunkSize,
+    public SlaveClient( InstanceId machineId, String hostNameOrIp, int port, Logging logging,
+                        StoreId storeId, int maxConcurrentChannels, int chunkSize,
                         ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         super( hostNameOrIp, port, logging, storeId, Protocol.DEFAULT_FRAME_LENGTH,
-                SlaveServer.APPLICATION_PROTOCOL_VERSION,
+                new ProtocolVersion( SlaveServer.APPLICATION_PROTOCOL_VERSION, INTERNAL_PROTOCOL_VERSION ),
                 HaSettings.read_timeout.apply( Functions.<String, String>nullFunction() ),
                 maxConcurrentChannels, chunkSize, byteCounterMonitor, requestMonitor );
         this.machineId = machineId;
@@ -117,6 +120,6 @@ public class SlaveClient extends Client<Slave> implements Slave
     @Override
     public int getServerId()
     {
-        return machineId;
+        return machineId.toIntegerIndex();
     }
 }

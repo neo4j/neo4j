@@ -27,43 +27,22 @@ package org.neo4j.com;
  */
 public class IllegalProtocolVersionException extends ComException
 {
-    private final int expected;
-    private final int received;
+    private final byte expected;
+    private final byte received;
 
-    public IllegalProtocolVersionException( int expected, int received )
-    {
-        super();
-        this.expected = expected;
-        this.received = received;
-    }
-
-    public IllegalProtocolVersionException( int expected, int received, String message, Throwable cause )
-    {
-        super( message, cause );
-        this.expected = expected;
-        this.received = received;
-    }
-
-    public IllegalProtocolVersionException( int expected, int received, String message )
+    public IllegalProtocolVersionException( byte expected, byte received, String message )
     {
         super( message );
         this.expected = expected;
         this.received = received;
     }
 
-    public IllegalProtocolVersionException( int expected, int received, Throwable cause )
-    {
-        super( cause );
-        this.expected = expected;
-        this.received = received;
-    }
-
-    public int getExpected()
+    public byte getExpected()
     {
         return expected;
     }
 
-    public int getReceived()
+    public byte getReceived()
     {
         return received;
     }

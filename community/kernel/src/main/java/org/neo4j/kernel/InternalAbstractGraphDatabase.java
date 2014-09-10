@@ -153,6 +153,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
+import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
@@ -419,7 +420,7 @@ public abstract class InternalAbstractGraphDatabase
         // Component monitoring
         this.monitors = createMonitors();
 
-        storeMigrationProcess = new StoreUpgrader( new ConfigMapUpgradeConfiguration( config ), fileSystem,
+        storeMigrationProcess = new StoreUpgrader( createUpgradeConfiguration(), fileSystem,
                 monitors.newMonitor( StoreUpgrader.Monitor.class ) );
 
         Map<String, String> configParams = config.getParams();
@@ -545,7 +546,13 @@ public abstract class InternalAbstractGraphDatabase
         life.add( new ConfigurationChangedRestarter() );
     }
 
+    protected UpgradeConfiguration createUpgradeConfiguration()
+    {
+        return new ConfigMapUpgradeConfiguration( config );
+    }
+
     protected Neo4jJobScheduler createJobScheduler()
+
     {
         return new Neo4jJobScheduler( this.toString() );
     }
@@ -1355,6 +1362,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( storeMigrationProcess );
             }
+            else if ( StoreId.class.isAssignableFrom( type ) )
+            {
+                return type.cast( storeId );
+            }
             else if ( AvailabilityGuard.class.isAssignableFrom( type ) )
             {
                 return type.cast( availabilityGuard );
@@ -1498,36 +1509,6 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     private IndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
-    {
-        IndexDescriptor descriptor = findUniqueIndexByLabelAndProperty( readOps, labelId, propertyId );
-
-        if ( null == descriptor )
-        {
-            descriptor = findRegularIndexByLabelAndProperty( readOps, labelId, propertyId );
-        }
-        return descriptor;
-    }
-
-    private IndexDescriptor findUniqueIndexByLabelAndProperty( ReadOperations readOps, int labelId, int propertyId )
-    {
-        try
-        {
-            IndexDescriptor descriptor = readOps.indexesGetForLabelAndPropertyKey( labelId, propertyId );
-
-            if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
-            {
-                // Ha! We found an index - let's use it to find matching nodes
-                return descriptor;
-            }
-        }
-        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
-        {
-            // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
-        }
-        return null;
-    }
-
-    private IndexDescriptor findRegularIndexByLabelAndProperty( ReadOperations readOps, int labelId, int propertyId )
     {
         try
         {

@@ -24,12 +24,21 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Writer;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 /**
  * A migration process to migrate {@link StoreMigrationParticipant migration participants}, if there's
@@ -132,7 +141,7 @@ public class StoreUpgrader
         {
             upgradeConfiguration.checkConfigurationAllowsAutomaticUpgrade();
         }
-        catch ( UpgradeNotAllowedByConfigurationException e )
+        catch ( UpgradeNotAllowedException e )
         {
             monitor.migrationNotAllowed();
             throw e;
@@ -164,6 +173,7 @@ public class StoreUpgrader
             closeParticipants();
             moveMigratedFilesToWorkingDirectory( participantsNeedingMigration, migrationDirectory, storeDirectory,
                     leftOversDirectory );
+
             setMigrationStatus( migrationStateFile, MigrationStatus.completed );
             cleanup( participantsNeedingMigration, migrationDirectory );
             monitor.migrationCompleted();

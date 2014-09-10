@@ -37,6 +37,9 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -50,16 +53,24 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.containsAnyStoreFiles;
@@ -75,7 +86,6 @@ public class StoreUpgraderTest
 {
     @Rule
     public final TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
-
     private final String version;
     private File dbDirectory;
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
@@ -239,9 +249,9 @@ public class StoreUpgraderTest
     public void shouldContinueMovingFilesIfUpgradeCancelledWhileMoving() throws Exception
     {
         // GIVEN
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, StoreUpgrader.NO_MONITOR );
         String failureMessage = "Just failing";
-        upgrader.addParticipant( participant( "p1", "one", "two" ) );
+        StoreUpgrader upgrader =
+                newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) );
         upgrader.addParticipant( participantThatWillFailWhenMoving( failureMessage ) );
 
         // WHEN
@@ -256,10 +266,10 @@ public class StoreUpgraderTest
         }
 
         // AND WHEN
-        Monitor monitor = Mockito.mock( Monitor.class );
+        Monitor monitor = mock( Monitor.class );
         upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, monitor );
-        upgrader.addParticipant( participant( "p1", "one", "two" ) );
-        StoreMigrationParticipant observingParticipant = Mockito.mock( StoreMigrationParticipant.class );
+        upgrader.addParticipant( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) );
+        StoreMigrationParticipant observingParticipant = mock( StoreMigrationParticipant.class );
         Mockito.when( observingParticipant.needsMigration(
                 Matchers.any( FileSystemAbstraction.class ), Matchers.any( File.class ) ) ).thenReturn( true );
         upgrader.addParticipant( observingParticipant );
@@ -273,6 +283,37 @@ public class StoreUpgraderTest
         Mockito.verify( observingParticipant, Mockito.times( 1 ) ).cleanup( Matchers.eq( fileSystem ), Matchers.any(
                 File.class ) );
         Mockito.verify( monitor ).migrationCompleted();
+    }
+
+    @Test
+    public void upgradedNeoStoreShouldHaveNewUpgradeTimeAndUpgradeId() throws Exception
+    {
+        // Given
+        fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
+
+        // When
+        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
+                .migrateIfNeeded( dbDirectory );
+
+        // Then
+        LifeSupport life = new LifeSupport();
+        life.start();
+        PageCache pageCache = createPageCache( fileSystem, getClass().getName(), life );
+        try
+        {
+            NeoStore neoStore = new StoreFactory( fileSystem, dbDirectory, pageCache,
+                    StringLogger.DEV_NULL, mock( Monitors.class ) ).newNeoStore( false );
+
+            assertThat( neoStore.getUpgradeId(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
+            assertThat( neoStore.getUpgradeTime(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
+
+            long minuteAgo = System.currentTimeMillis() - 1000;
+            assertThat( neoStore.getUpgradeTime(), greaterThan( minuteAgo ) );
+        }
+        finally
+        {
+            life.shutdown();
+        }
     }
 
     private StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )

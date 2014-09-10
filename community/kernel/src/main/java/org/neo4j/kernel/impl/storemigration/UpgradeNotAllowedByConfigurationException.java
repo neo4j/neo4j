@@ -20,15 +20,14 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.nioneo.store.StoreFailureException;
 
-public class UpgradeNotAllowedByConfigurationException extends StoreFailureException
+public class UpgradeNotAllowedByConfigurationException extends UpgradeNotAllowedException
 {
     public UpgradeNotAllowedByConfigurationException( String msg )
     {
         super( msg );
     }
-    
+
     public UpgradeNotAllowedByConfigurationException()
     {
         super( String.format(
