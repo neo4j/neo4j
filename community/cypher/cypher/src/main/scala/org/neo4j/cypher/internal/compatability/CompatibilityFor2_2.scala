@@ -102,14 +102,14 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version:
   def hasNext = inner.hasNext
 }
 
-case class CompatibilityFor2_2Experimental(graph: GraphDatabaseService,
+case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                            queryCacheSize: Int,
                                            kernelMonitors: KernelMonitors,
                                            kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.ronjaCompiler(graph, queryCacheSize, kernelMonitors)
 }
 
-case class CompatibilityFor2_2Legacy(graph: GraphDatabaseService,
+case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
                                            queryCacheSize: Int,
                                            kernelMonitors: KernelMonitors,
                                            kernelAPI: KernelAPI) extends CompatibilityFor2_2 {

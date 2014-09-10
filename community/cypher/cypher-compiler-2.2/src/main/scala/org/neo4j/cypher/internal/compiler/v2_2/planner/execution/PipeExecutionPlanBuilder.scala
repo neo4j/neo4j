@@ -186,6 +186,6 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
     val topLevelPipe = buildPipe(plan)
 
-    PipeInfo(topLevelPipe, updating, None, CypherVersion.experimental)
+    PipeInfo(topLevelPipe, updating, None, CypherVersion.v2_2_cost)
   }
 }

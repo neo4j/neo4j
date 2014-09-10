@@ -42,7 +42,7 @@ case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) ex
     }
 
   def VersionNumber =
-    rule("Version") { group(Digits ~ "." ~ Digits ~ optional("." ~ VersionName) ) ~> VersionOption }
+    rule("Version") { group(Digits ~ "." ~ Digits ~ optional(("." | "-") ~ VersionName) ) ~> VersionOption }
 
   def Digits =
     oneOrMore("0" - "9")

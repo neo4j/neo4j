@@ -35,7 +35,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result = profile("cypher 2.1.experimental match n where n-[:FOO]->() return *")
+    val result = profile("cypher 2.2-cost match n where n-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("SemiApply")
@@ -59,7 +59,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result = profile("cypher 2.1.experimental match n where not n-[:FOO]->() return *")
+    val result = profile("cypher 2.2-cost match n where not n-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("AntiSemiApply")
@@ -143,7 +143,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("allows optional match to start a query") {
     //GIVEN
-    val result = profile("cypher 2.1.experimental optional match (n) return n")
+    val result = profile("cypher 2.2-cost optional match (n) return n")
 
     //WHEN THEN
     assertRows(1)(result)("Optional")
@@ -214,22 +214,23 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("should not have a problem profiling empty results") {
-    val result = super.profile("CYPHER 2.1.experimental MATCH n WHERE (n)-->() RETURN n")
+    val result = super.profile("CYPHER 2.2-cost MATCH n WHERE (n)-->() RETURN n")
 
     result shouldBe empty
     result.executionPlanDescription().toString should include("AllNodes")
   }
 
   test("reports COST compiler when showing plan description") {
-    val executionPlanDescription = eengine.execute("cypher 2.1.experimental match n return n").executionPlanDescription()
+    val executionPlanDescription = eengine.execute("cypher 2.2-cost match n return n").executionPlanDescription()
 
-    executionPlanDescription.toString should include("2.1.experimental")
+    executionPlanDescription.toString should include("2.2-cost")
   }
 
   test("reports RULE compiler when showing plan description") {
-    val executionPlanDescription = eengine.execute("cypher 2.1.experimental create ()").executionPlanDescription()
+    val executionPlanDescription = eengine.execute("cypher 2.2-cost create ()").executionPlanDescription()
 
-    executionPlanDescription.toString should not include "2.1.experimental"
+    executionPlanDescription.toString should not include("2.2-cost")
+    executionPlanDescription.toString should include("2.2-rule")
   }
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
