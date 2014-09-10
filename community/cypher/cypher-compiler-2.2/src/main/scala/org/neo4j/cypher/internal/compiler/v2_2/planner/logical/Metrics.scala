@@ -57,6 +57,7 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def *(that: CostPerRow) = Cost(amount * that.cost)
   def *(that: Cost) = Cost(amount * that.gummyBears)
   def map(f: Double => Double) = Cardinality(f(amount))
+  def /(that:Cardinality) = Multiplier(amount.toDouble / that.amount)
 }
 
 case class CostPerRow(cost: Double) {

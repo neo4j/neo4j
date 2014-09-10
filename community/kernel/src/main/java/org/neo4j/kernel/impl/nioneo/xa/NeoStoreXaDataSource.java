@@ -67,8 +67,6 @@ import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.statistics.StatisticsService;
-import org.neo4j.kernel.impl.api.statistics.StatisticsServiceRepository;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.api.store.DiskLayer;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
@@ -434,8 +432,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
             LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
                     nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
-            StatisticsService statisticsService =
-                    new StatisticsServiceRepository( fs, config, storeLayer, scheduler ).loadStatistics();
             final NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier =
                     new NeoStoreTransactionContextSupplier( neoStore );
 
@@ -529,7 +525,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     transactionHeaderInformationFactory, persistenceCache, storeLayer, transactionCommitProcess, indexConfigStore,
                     legacyIndexProviderLookup, hooks, transactionMonitor, life, readOnly ));
 
-            kernel = new Kernel( statisticsService, kernelTransactions, hooks, kernelHealth, transactionMonitor );
+            kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
 
             life.add( logFile );
             life.add( logicalTransactionStore );
@@ -543,7 +539,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     loadSchemaCache();
                 }
             } );
-            life.add( statisticsService );
             life.add( new LifecycleAdapter()
             {
                 @Override

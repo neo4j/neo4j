@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.{HardcodedGraphStatistics, ast, RelTypeId}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_2.RelTypeId
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 
@@ -194,7 +193,7 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     predicates.map(selectivity).foldLeft(Multiplier(1))(_ * _)
 
   private def degreeByRelationshipTypeAndDirection(optId: Option[RelTypeId], direction: Direction): Multiplier = optId match {
-    case Some(id) => statistics.degreeByRelationshipTypeAndDirection(id, direction)
+    case Some(id) => HardcodedGraphStatistics.DEGREE_BY_RELATIONSHIP_TYPE_AND_DIRECTION
     case None     => DEFAULT_EXPAND_RELATIONSHIP_DEGREE
   }
 

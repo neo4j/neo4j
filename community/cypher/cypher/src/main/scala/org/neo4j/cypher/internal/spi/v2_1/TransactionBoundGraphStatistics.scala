@@ -28,19 +28,17 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Multiplier, Card
 class TransactionBoundGraphStatistics(statistics: StatisticsData) extends GraphStatistics {
 
   def nodesCardinality =
-    Cardinality(statistics.liveNodesRatio() * statistics.maxAddressableNodes())
+    Cardinality(statistics.totalNumberOfNodes())
 
   def nodesWithLabelCardinality(labelId: LabelId) =
-    nodesCardinality * nodesWithLabelSelectivity(labelId)
+    Cardinality(statistics.nodesWithLabel(labelId.id))
 
   def nodesWithLabelSelectivity(labelId: LabelId) =
-    Multiplier(statistics.labelDistribution( labelId.id ))
+    Multiplier(statistics.nodesWithLabel(labelId.id).toDouble/statistics.totalNumberOfNodes().toDouble)
 
   def relationshipsWithTypeSelectivity(relTypeId: RelTypeId) = ???
 
-  def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction) =
-    Multiplier(statistics.degree( StatisticsData.RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, relTypeId.id, direction ))
+  def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction) = ???
 
-  def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction) =
-    Multiplier(statistics.degree( labelId.id, relTypeId.id, direction ))
+  def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction) = ???
 }
