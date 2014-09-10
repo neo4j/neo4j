@@ -58,6 +58,8 @@ import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.COLLECTION_DY
 import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.util.Bits.bitFlag;
+import static org.neo4j.kernel.impl.util.Bits.notFlag;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
@@ -201,21 +203,21 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
         public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
         {
             long id = channel.getLong();
-            byte inUseFlag = channel.get();
+            byte flags = channel.get();
             boolean inUse = false;
-            if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
+            if ( notFlag( notFlag( flags, Record.IN_USE.byteValue() ), Record.CREATED_IN_TX ) != 0 )
+            {
+                throw new IOException( "Illegal in use flag: " + flags );
+            }
+            if ( bitFlag( flags, Record.IN_USE.byteValue() ) )
             {
                 inUse = true;
-            }
-            else if ( (inUseFlag & Record.IN_USE.byteValue()) != Record.NOT_IN_USE.byteValue() )
-            {
-                throw new IOException( "Illegal in use flag: " + inUseFlag );
             }
             RelationshipRecord record;
             if ( inUse )
             {
                 record = new RelationshipRecord( id, channel.getLong(), channel.getLong(), channel.getInt() );
-                record.setInUse( inUse );
+                record.setInUse( true );
                 record.setFirstPrevRel( channel.getLong() );
                 record.setFirstNextRel( channel.getLong() );
                 record.setSecondPrevRel( channel.getLong() );
@@ -229,6 +231,10 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             {
                 record = new RelationshipRecord( id, -1, -1, -1 );
                 record.setInUse( false );
+            }
+            if ( bitFlag( flags, Record.CREATED_IN_TX ) )
+            {
+                record.setCreated();
             }
             command.init( record );
             return true;

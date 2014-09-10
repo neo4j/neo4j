@@ -183,4 +183,6 @@ public interface StoreReadLayer
                    NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId );
 
     long countsForNode( int labelId );
+
+    long countsForRelationship( int startLabelId, int typeId, int endLabelId );
 }

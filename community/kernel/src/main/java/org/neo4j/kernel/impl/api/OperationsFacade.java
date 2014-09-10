@@ -899,5 +899,12 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         return counting().countsForNode( statement, labelId );
     }
 
+    @Override
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    {
+        statement.assertOpen();
+        return counting().countsForRelationship( statement, startLabelId, typeId, endLabelId );
+    }
+
     // </Counts
 }

@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write3bLengthAndString;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -47,6 +43,12 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandType;
+
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.util.Bits.bitFlag;
+import static org.neo4j.kernel.impl.util.Bits.bitFlags;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write3bLengthAndString;
 
 public class CommandWriter implements NeoCommandHandler
 {
@@ -73,10 +75,11 @@ public class CommandWriter implements NeoCommandHandler
     public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
     {
         RelationshipRecord record = command.getRecord();
-        byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
+        byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                               bitFlag( record.isCreated(), Record.CREATED_IN_TX ) );
         channel.put( NeoCommandType.REL_COMMAND );
         channel.putLong( record.getId() );
-        channel.put( inUse );
+        channel.put( flags );
         if ( record.inUse() )
         {
             channel.putLong( record.getFirstNode() ).putLong( record.getSecondNode() ).putInt( record.getType() )

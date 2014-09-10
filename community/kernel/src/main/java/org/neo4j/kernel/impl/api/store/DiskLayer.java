@@ -797,4 +797,10 @@ public class DiskLayer implements StoreReadLayer
     {
         return countsStore.countsForNode( labelId );
     }
+
+    @Override
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    {
+        return countsStore.countsForRelationship( startLabelId, typeId, endLabelId );
+    }
 }

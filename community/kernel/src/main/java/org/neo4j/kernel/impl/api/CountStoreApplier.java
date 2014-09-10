@@ -28,6 +28,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.impl.nioneo.store.CountsStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
@@ -35,15 +36,16 @@ import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import static org.neo4j.collection.primitive.Primitive.iterator;
 import static org.neo4j.collection.primitive.Primitive.longSet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
+import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 public class CountStoreApplier extends NeoCommandHandler.Adapter
 {
     private final CountsStore countsStore;
     private final NodeStore nodeStore;
     private int nodesDelta;
+    private int relsDelta;
     private final Map<Integer/*labelId*/, IntCounter> labelDelta = new HashMap<>();
 
     public CountStoreApplier( CountsStore countsStore, NodeStore nodeStore )
@@ -91,13 +93,31 @@ public class CountStoreApplier extends NeoCommandHandler.Adapter
     }
 
     @Override
+    public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
+    {
+        RelationshipRecord record = command.getRecord();
+        if ( record.isCreated() )
+        {
+            relsDelta++;
+        }
+        else if ( !record.inUse() )
+        {
+            relsDelta--;
+        }
+        return true;
+    }
+
+    @Override
     public void apply()
     {
+        // nodes
         countsStore.updateCountsForNode( ANY_LABEL, nodesDelta );
         for ( Map.Entry<Integer, IntCounter> label : labelDelta.entrySet() )
         {
             countsStore.updateCountsForNode( label.getKey(), label.getValue().value() );
         }
+        // relationships
+        countsStore.updateCountsForRelationship( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
     }
 
     private long[] labels( NodeRecord node )

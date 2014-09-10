@@ -39,7 +39,8 @@ public enum Record
 
     NODE_PROPERTY( (byte) 0, 0 ),
     REL_PROPERTY( (byte) 2, 2 );
-    
+    public static final byte CREATED_IN_TX = 2;
+
     private byte byteValue;
     private int intValue;
 

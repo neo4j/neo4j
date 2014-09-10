@@ -330,4 +330,32 @@ public final class Bits implements Cloneable
         readPosition += steps;
         return result;
     }
+
+    public static boolean bitFlag( byte flags, byte flag )
+    {
+        assert (flag & (-flag)) == flag : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
+        return (flags & flag) == flag;
+    }
+
+    public static byte bitFlag( boolean value, byte flag )
+    {
+        assert (flag & (-flag)) == flag : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
+        return value ? flag : 0;
+    }
+
+    public static byte notFlag( byte flags, byte flag )
+    {
+        assert (flag & (-flag)) == flag : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
+        return (byte) (flags & (~flag));
+    }
+
+    public static byte bitFlags( byte... flags )
+    {
+        byte result = 0;
+        for ( byte flag : flags )
+        {
+            result |= flag;
+        }
+        return result;
+    }
 }

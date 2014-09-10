@@ -938,6 +938,39 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public long countsForRelationship( KernelStatement statement, int startLabelId, int typeId, int endLabelId )
+    {
+        long count = storeLayer.countsForRelationship( startLabelId, typeId, endLabelId );
+        if ( statement.hasTxState() )
+        {
+            if ( startLabelId == ReadOperations.ANY_LABEL && endLabelId == ReadOperations.ANY_LABEL )
+            {
+                if ( typeId == ReadOperations.ANY_RELATIONSHIP_TYPE )
+                {
+                    count += statement.txState().addedAndRemovedRels().delta();
+                }
+                else
+                {
+                    throw new UnsupportedOperationException( "not implemented" );
+                }
+            }
+            else if ( startLabelId == ReadOperations.ANY_LABEL )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+            else if ( endLabelId == ReadOperations.ANY_LABEL )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+        }
+        return count;
+    }
+
+    @Override
     public PrimitiveLongIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction,
                                                        int[] relTypes ) throws EntityNotFoundException
     {

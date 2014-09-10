@@ -494,6 +494,12 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    {
+        return diskLayer.countsForRelationship( startLabelId, typeId, endLabelId );
+    }
+
+    @Override
     public long highestNodeIdInUse()
     {
         return diskLayer.highestNodeIdInUse();

@@ -26,6 +26,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
+import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
+import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+
 public class CountsStore
 {
     private final ConcurrentMap<Key, AtomicLong> counts = new ConcurrentHashMap<>();
@@ -48,6 +51,20 @@ public class CountsStore
     public void updateCountsForNode( int labelId, long delta )
     {
         update( new NodeKey( labelId ), delta );
+    }
+
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    {
+        if ( startLabelId != ANY_LABEL || typeId != ANY_RELATIONSHIP_TYPE || endLabelId != ANY_LABEL )
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+        return get( new RelationshipKey( startLabelId, typeId, endLabelId ) );
+    }
+
+    public void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
+    {
+        update( new RelationshipKey( startLabelId, typeId, endLabelId ), delta );
     }
 
     private long get( Key key )
@@ -99,6 +116,44 @@ public class CountsStore
         public int hashCode()
         {
             return labelId;
+        }
+    }
+
+    private static class RelationshipKey extends Key
+    {
+        private final int startLabelId;
+        private final int typeId;
+        private final int endLabelId;
+
+        public RelationshipKey( int startLabelId, int typeId, int endLabelId )
+        {
+            this.startLabelId = startLabelId;
+            this.typeId = typeId;
+            this.endLabelId = endLabelId;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( (o instanceof RelationshipKey) )
+            {
+                RelationshipKey that = (RelationshipKey) o;
+                return endLabelId == that.endLabelId && startLabelId == that.startLabelId && typeId == that.typeId;
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = startLabelId;
+            result = 31 * result + typeId;
+            result = 31 * result + endLabelId;
+            return result;
         }
     }
 }
