@@ -21,7 +21,7 @@ class neo.utils.pairwiseArcsRelationshipRouting
           "external"
 
   shortenCaption: (relationship, caption, targetWidth) ->
-    shortCaption = caption
+    shortCaption = caption || 'caption'
     while true
       if shortCaption.length <= 2
         return ['', 0]
