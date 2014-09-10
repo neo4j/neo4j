@@ -79,8 +79,10 @@ public class TestRecoveryNotHappening
 
     private void create2PCTransactionAndShutDownNonClean() throws Exception
     {
-        assertEquals( 0, getRuntime().exec( new String[] { "java", "-cp", getProperty( "java.class.path" ),
-                getClass().getName(), storeDirectory.getAbsolutePath() } ).waitFor() );
+        assertEquals( 0, getRuntime().exec( new String[] {
+                "java", "-cp", getProperty( "java.class.path" ), "-Djava.awt.headless=true",
+                getClass().getName(), storeDirectory.getAbsolutePath()
+        } ).waitFor() );
     }
     
     private void modifyTransactionMakingItLookPreparedAndUncompleted() throws Exception
