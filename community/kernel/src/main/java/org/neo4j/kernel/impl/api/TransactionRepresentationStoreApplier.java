@@ -81,7 +81,7 @@ public class TransactionRepresentationStoreApplier
         NeoCommandHandler storeApplier = new NeoTransactionStoreApplier(
                 neoStore, indexingService, cacheAccess, lockService, locks, transactionId,
                 highIdTrackerFactory, applyRecovered );
-        NeoCommandHandler countStoreApplier = new CountStoreApplier( neoStore.getCountsStore() );
+        NeoCommandHandler countStoreApplier = new CountStoreApplier( neoStore.getCountsStore(), neoStore.getNodeStore() );
         NeoCommandHandler indexApplier = new NeoTransactionIndexApplier( indexingService,
                 labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess, propertyLoader );
         NeoCommandHandler legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,

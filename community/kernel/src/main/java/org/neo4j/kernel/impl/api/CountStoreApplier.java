@@ -20,40 +20,122 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.impl.nioneo.store.CountsStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.util.statistics.IntCounter;
+
+import static org.neo4j.collection.primitive.Primitive.iterator;
+import static org.neo4j.collection.primitive.Primitive.longSet;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 
 public class CountStoreApplier extends NeoCommandHandler.Adapter
 {
     private final CountsStore countsStore;
+    private final NodeStore nodeStore;
     private int nodesDelta;
+    private final Map<Integer/*labelId*/, IntCounter> labelDelta = new HashMap<>();
 
-    public CountStoreApplier( CountsStore countsStore )
+    public CountStoreApplier( CountsStore countsStore, NodeStore nodeStore )
     {
         this.countsStore = countsStore;
+        this.nodeStore = nodeStore;
     }
 
     @Override
     public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
     {
-        if ( !command.getBefore().inUse() && command.getAfter().inUse() )
+        NodeRecord before = command.getBefore(), after = command.getAfter();
+        if ( !before.inUse() && after.inUse() )
         { // node added
             nodesDelta++;
         }
-        else if ( command.getBefore().inUse() && !command.getAfter().inUse() )
+        else if ( before.inUse() && !after.inUse() )
         { // node deleted
             nodesDelta--;
         }
+        if ( before.getLabelField() != after.getLabelField() )
+        {
+            long[] labelsBefore = labels( before );
+            long[] labelsAfter = labels( after );
+            for ( PrimitiveLongIterator added = diff( labelsBefore, labelsAfter ); added.hasNext(); )
+            {
+                label( (int) added.next() ).increment();
+            }
+            for ( PrimitiveLongIterator removed = diff( labelsAfter, labelsBefore ); removed.hasNext(); )
+            {
+                label( (int) removed.next() ).decrement();
+            }
+        }
         return true;
+    }
+
+    private IntCounter label( int label )
+    {
+        IntCounter counter = labelDelta.get( label );
+        if ( counter == null )
+        {
+            labelDelta.put( label, counter = new IntCounter() );
+        }
+        return counter;
     }
 
     @Override
     public void apply()
     {
         countsStore.updateCountsForNode( ANY_LABEL, nodesDelta );
+        for ( Map.Entry<Integer, IntCounter> label : labelDelta.entrySet() )
+        {
+            countsStore.updateCountsForNode( label.getKey(), label.getValue().value() );
+        }
+    }
+
+    private long[] labels( NodeRecord node )
+    {
+        return node.inUse() ? parseLabelsField( node ).get( nodeStore ) : null;
+    }
+
+    private static PrimitiveLongIterator diff( long[] remove, long[] add )
+    {
+        if ( add == null || add.length == 0 )
+        {
+            return emptyIterator();
+        }
+        else if ( remove == null || remove.length == 0 )
+        {
+            return iterator( add );
+        }
+        else
+        {
+            return removeAll( addAll( longSet( add.length ), add ), remove ).iterator();
+        }
+    }
+
+    private static PrimitiveLongSet addAll( PrimitiveLongSet target, long... all )
+    {
+        for ( long label : all )
+        {
+            target.add( label );
+        }
+        return target;
+    }
+
+    private static PrimitiveLongSet removeAll( PrimitiveLongSet target, long... all )
+    {
+        for ( long label : all )
+        {
+            target.remove( label );
+        }
+        return target;
     }
 }
