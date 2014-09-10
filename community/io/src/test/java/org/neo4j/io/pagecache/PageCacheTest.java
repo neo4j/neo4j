@@ -2925,7 +2925,6 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
     @Test
     public void evictionThreadMustGracefullyShutDown() throws Exception
     {
-        // TODO this test takes significantly longer to complete with Muninn, than it does with the StandardPageCache -- investigate why!
         int iterations = 1000;
         final AtomicReference<Throwable> caughtException = new AtomicReference<>();
         Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler()

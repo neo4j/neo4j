@@ -304,7 +304,6 @@ public class MuninnPageCache implements RunnablePageCache
         {
             pages[i] = null;
         }
-        System.gc();
     }
 
     private void assertHealthy() throws IOException
