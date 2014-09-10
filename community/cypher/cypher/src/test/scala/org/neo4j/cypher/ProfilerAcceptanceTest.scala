@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v2_2
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription
 import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
@@ -217,6 +218,18 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     result shouldBe empty
     result.executionPlanDescription().toString should include("AllNodes")
+  }
+
+  test("reports COST compiler when showing plan description") {
+    val executionPlanDescription = eengine.execute("cypher 2.1.experimental match n return n").executionPlanDescription()
+
+    executionPlanDescription.toString should include("2.1.experimental")
+  }
+
+  test("reports RULE compiler when showing plan description") {
+    val executionPlanDescription = eengine.execute("cypher 2.1.experimental create ()").executionPlanDescription()
+
+    executionPlanDescription.toString should not include "2.1.experimental"
   }
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
