@@ -304,7 +304,6 @@ public class MuninnPageCache implements RunnablePageCache
         {
             pages[i] = null;
         }
-        System.gc();
     }
 
     private void assertHealthy() throws IOException
@@ -458,5 +457,18 @@ public class MuninnPageCache implements RunnablePageCache
             clockArm++;
         }
         return clockArm;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append( "MuninnPageCache[ \n" );
+        for ( MuninnPage page : pages )
+        {
+            sb.append( ' ' ).append( page ).append( '\n' );
+        }
+        sb.append( ']' ).append( '\n' );
+        return sb.toString();
     }
 }

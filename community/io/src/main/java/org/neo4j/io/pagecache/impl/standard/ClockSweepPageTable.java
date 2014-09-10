@@ -90,8 +90,22 @@ public class ClockSweepPageTable implements PageTable, Runnable
         if ( page.pin( null, UNBOUND_PAGE_ID, pf_flags ) )
         {
             page.reset( io, pageId );
-            page.load();
-            monitor.pageFaulted(pageId, io);
+            try
+            {
+                page.load();
+                monitor.pageFaulted(pageId, io);
+            }
+            catch ( Throwable throwable )
+            {
+                page.reset( null, UNBOUND_PAGE_ID );
+                page.unpin( pf_flags );
+                do
+                {
+                    page.next = freeList.get();
+                }
+                while ( !freeList.compareAndSet( page.next, page ) );
+                throw throwable;
+            }
         }
         else
         {

@@ -230,10 +230,18 @@ class MuninnReadPageCursor extends MuninnPageCursor
         // it in their translation tables, and try to pin it.
         // However, they will all fail because when they try to pin, the page will
         // either be 1) free, 2) bound to our file, or 3) the page is write locked.
-        lockStamp = page.writeLock();
-        page.initBuffer();
-        page.fault( swapper, filePageId );
-        long stamp = page.tryConvertToReadLock( lockStamp );
+        long stamp = page.writeLock();
+        try
+        {
+            page.initBuffer();
+            page.fault( swapper, filePageId );
+        }
+        catch ( Throwable throwable )
+        {
+            page.unlockWrite( stamp );
+            throw throwable;
+        }
+        stamp = page.tryConvertToReadLock( stamp );
         assert stamp != 0: "Converting a write lock to a read lock should always succeed";
         lockStamp = stamp;
         optimisticLock = false; // We're using a pessimistic read lock
