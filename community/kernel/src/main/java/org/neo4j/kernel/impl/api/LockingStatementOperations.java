@@ -146,7 +146,6 @@ public class LockingStatementOperations implements
 
     @Override
     public IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey )
-            throws SchemaRuleNotFoundException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.indexesGetForLabelAndPropertyKey( state, labelId, propertyKey );

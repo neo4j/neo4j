@@ -34,10 +34,8 @@ public interface SchemaReadOperations
 {
     /**
      * Returns the descriptor for the given labelId and propertyKey.
-     * @throws SchemaRuleNotFoundException
      */
-    IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey )
-            throws SchemaRuleNotFoundException;
+    IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey );
 
     /**
      * Get all indexes for a label.
