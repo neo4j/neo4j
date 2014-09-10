@@ -23,20 +23,36 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp, topDown}
 
+/**
+ * This rewriter ensures that WITH clauses containing a ORDER BY or WHERE are split, such that the ORDER BY or WHERE does not
+ * refer to any newly introduced identifier.
+ *
+ * This is required due to constraints in the planner. Note that this structure is invalid for semantic checking, which requires
+ * that ORDER BY and WHERE _only refer to identifiers introduced in the associated WITH_.
+ *
+ * Additionally, it splits RETURN clauses containing ORDER BY. This would typically be done earlier during normalizeReturnClauses, however
+ * "RETURN * ORDER BY" is not handled at that stage, due to lacking identifier information. If expandStar has already been run, then this
+ * will now work as expected.
+ */
 case object projectFreshSortExpressions extends Rewriter {
 
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
-    case w @ With(distinct, lri @ ListedReturnItems(_), Some(orderBy), skip, limit, where) =>
-      val (firstProjection, secondProjection, identifierItems, newOrderBy) = splitupClosingClause(lri, orderBy)
-      Seq(
-        With(distinct = false, returnItems = ListedReturnItems(firstProjection)(lri.position), orderBy = None, skip = None, limit = None, where = None)(w.position),
-        With(distinct = false, returnItems = ListedReturnItems(secondProjection)(lri.position), orderBy = None, skip = None, limit = None, where = None)(w.position),
-        With(distinct, returnItems = ListedReturnItems(identifierItems)(lri.position), orderBy = Some(newOrderBy), skip = skip, limit = limit, where = where)(w.position)
+    case clause @ With(_, _, None, _, _, None) =>
+      Seq(clause)
+
+    case clause @ With(_, returnItemList: ListedReturnItems, _, _, _, _) =>
+      val duplicateProjection = returnItemList.items.map(item =>
+        item.alias.fold(item)(alias => AliasedReturnItem(alias, alias)(item.position))
       )
 
-    case r @ Return(distinct, lri @ ListedReturnItems(_), Some(orderBy), skip, limit) =>
+      Seq(
+        clause.copy(orderBy = None, skip = None, limit = None, where = None)(clause.position),
+        clause.copy(distinct = false, returnItems = ListedReturnItems(duplicateProjection)(returnItemList.position))(clause.position)
+      )
+
+    case r@Return(distinct, lri@ListedReturnItems(_), Some(orderBy), skip, limit) =>
       val (firstProjection, secondProjection, identifierItems, newOrderBy) = splitupClosingClause(lri, orderBy)
       Seq(
         With(distinct = false, returnItems = ListedReturnItems(firstProjection)(lri.position), orderBy = None, skip = None, limit = None, where = None)(r.position),
@@ -84,7 +100,4 @@ case object projectFreshSortExpressions extends Rewriter {
     case query @ SingleQuery(clauses) =>
       query.copy(clauses = clauses.flatMap(clauseRewriter))(query.position)
   }
-
-  private def containsNontrivialSortItems(closingClause: ClosingClause): Boolean =
-    closingClause.orderBy.exists(_.sortItems.exists(!_.expression.isInstanceOf[Identifier]))
 }

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.AstRewritingTestSupport
-import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, DummyPosition}
+import org.neo4j.cypher.internal.compiler.v2_2.{inSequence, bottomUp, DummyPosition}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.graphdb.Direction
 
@@ -31,7 +31,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   private def ast(queryText: String) = {
     val parsed = parser.parse(queryText)
-    parsed.endoRewrite(bottomUp(aliasReturnItems))
+    parsed.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
   }
 
   private def parseReturnedExpr(queryText: String) =

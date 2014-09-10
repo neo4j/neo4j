@@ -46,8 +46,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       addUniquenessPredicates,
       expandStar,
       enableCondition(containsNoReturnStar),
-      isolateAggregation,
-      aliasReturnItems
+      isolateAggregation
     )
 
     val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
