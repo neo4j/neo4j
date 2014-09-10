@@ -19,26 +19,16 @@
  */
 package org.neo4j.io.enterprise.pagecache.impl.muninn;
 
-import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.RunnablePageCache;
+import org.neo4j.io.pagecache.stress.SimplePageCacheFactory;
 
-import org.junit.Test;
-import org.neo4j.io.pagecache.stress.Condition;
-import org.neo4j.io.pagecache.stress.PageCacheStressTest;
-import org.neo4j.io.pagecache.stress.SimpleMonitor;
-
-public class MuninnPageCacheStressIT
+class SimpleMuninnPageCacheFactory implements SimplePageCacheFactory
 {
-    @Test
-    public void shouldHandleTheStressOfTenMillionEvictions() throws Exception
+    @Override
+    public RunnablePageCache createPageCache( int numberOfCachePages, int cachePageSize, PageCacheMonitor monitor )
     {
-        SimpleMonitor simpleMonitor = new SimpleMonitor();
-        Condition condition = numberOfEvictions( simpleMonitor, 10_000_000 );
-
-        PageCacheStressTest runner = new PageCacheStressTest.Builder()
-                .with( simpleMonitor )
-                .with( condition )
-                .build( new SimpleMuninnPageCacheFactory() );
-
-        runner.run();
+        return new MuninnPageCache( new DefaultFileSystemAbstraction(), numberOfCachePages, cachePageSize, monitor );
     }
 }

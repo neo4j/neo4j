@@ -19,16 +19,34 @@
  */
 package org.neo4j.io.pagecache.stress;
 
+import static java.lang.System.currentTimeMillis;
+
+import java.util.concurrent.TimeUnit;
+
 public class Conditions
 {
-    public static Condition numberOfEvictions( final StressMonitor stressMonitor, final int desiredNumberOfEvictions )
+    public static Condition numberOfEvictions( final SimpleMonitor simpleMonitor, final int desiredNumberOfEvictions )
     {
         return new Condition()
         {
             @Override
             public boolean fulfilled()
             {
-                return stressMonitor.getNumberOfEvictions() > desiredNumberOfEvictions;
+                return simpleMonitor.getNumberOfEvictions() > desiredNumberOfEvictions;
+            }
+        };
+    }
+
+    public static Condition timePeriod( final int duration, final TimeUnit timeUnit )
+    {
+        final long startTimeInMilliseconds = currentTimeMillis();
+
+        return new Condition()
+        {
+            @Override
+            public boolean fulfilled()
+            {
+                return currentTimeMillis() > startTimeInMilliseconds + timeUnit.toMillis( duration );
             }
         };
     }

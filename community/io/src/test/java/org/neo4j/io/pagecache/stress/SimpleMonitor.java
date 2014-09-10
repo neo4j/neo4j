@@ -24,7 +24,7 @@ import static java.lang.String.format;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapper;
 
-public class StressMonitor implements PageCacheMonitor
+public class SimpleMonitor implements PageCacheMonitor
 {
     private int faults;
     private int evictions;
