@@ -31,7 +31,7 @@ Thus, the examples are always in sync with how Neo4j actually works.
 
 There's other documentation resources besides the manual as well:
 
-* Neo4j Cypher Refcard, see http://docs.neo4j.org/refcard/{neo4j-version}.
+* Neo4j Cypher Refcard, see link:cypher-refcard/[Cypher Refcard].
 * Neo4j GraphGist, an online tool for creating interactive documents with executable Cypher statements: http://gist.neo4j.org/.
 * The main Neo4j site at http://neo4j.com/ is a good starting point to learn about Neo4j.
 * For use when writing Neo4j extensions and plugins, or for embedded usage, see link:javadocs/[Neo4j Javadocs].
