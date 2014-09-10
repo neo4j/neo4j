@@ -105,6 +105,8 @@ final case class PlanDescriptionImpl(pipe: Pipe,
                                      children: Children,
                                      arguments: Seq[Argument]) extends PlanDescription {
 
+  self =>
+
   def find(name: String): Seq[PlanDescription] =
     children.find(name) ++ (if (this.name == name)
       Some(this)
@@ -112,12 +114,10 @@ final case class PlanDescriptionImpl(pipe: Pipe,
       None
     })
 
-  val self = this
-
   lazy val asJava: JPlanDescription = new JPlanDescription {
     def getChildren: util.List[JPlanDescription] = children.toSeq.toList.map(_.asJava).asJava
     def getArguments: util.Map[String, AnyRef] = arguments.map(arg =>
-      arg.name -> PlandescriptionArgumentSerializer.serialize(arg).asInstanceOf[AnyRef]
+      arg.name -> PlanDescriptionArgumentSerializer.serialize(arg).asInstanceOf[AnyRef]
     ).toMap.asJava
 
     def hasProfilerStatistics: Boolean = arguments.exists(_.isInstanceOf[DbHits])

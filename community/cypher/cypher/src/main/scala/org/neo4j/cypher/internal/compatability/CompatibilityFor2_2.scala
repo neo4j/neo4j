@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatability
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.ExtendedExecutionResult
+import org.neo4j.cypher.{CypherVersion, ExtendedExecutionResult}
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => ExecutionPlan_v2_2, InternalExecutionResult}
@@ -64,16 +64,16 @@ trait CompatibilityFor2_2 {
     }
 
     def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      ExecutionResultWrapperFor2_2(inner.profile(queryContext(graph, txInfo), params))
+      ExecutionResultWrapperFor2_2(inner.profile(queryContext(graph, txInfo), params), inner.version)
 
     def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      ExecutionResultWrapperFor2_2(inner.execute(queryContext(graph, txInfo), params))
+      ExecutionResultWrapperFor2_2(inner.execute(queryContext(graph, txInfo), params), inner.version)
 
     def isPeriodicCommit = inner.isPeriodicCommit
   }
 }
 
-case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult) extends ExtendedExecutionResult {
+case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version: CypherVersion) extends ExtendedExecutionResult {
   def planDescriptionRequested = inner.planDescriptionRequested
 
   def javaIterator = inner.javaIterator
@@ -92,7 +92,8 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult) extends 
 
   def javaColumnAs[T](column: String) = inner.javaColumnAs[T](column)
 
-  def executionPlanDescription() = inner.executionPlanDescription()
+  def executionPlanDescription() =
+    new AmendedRootPlanDescription(inner.executionPlanDescription(), version)
 
   def close() = inner.close()
 
@@ -101,13 +102,14 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult) extends 
   def hasNext = inner.hasNext
 }
 
-case class CompatibilityFor2_2Experimental(graph: GraphDatabaseService,
+case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                            queryCacheSize: Int,
                                            kernelMonitors: KernelMonitors,
                                            kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.ronjaCompiler(graph, queryCacheSize, kernelMonitors)
 }
-case class CompatibilityFor2_2Legacy(graph: GraphDatabaseService,
+
+case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
                                            queryCacheSize: Int,
                                            kernelMonitors: KernelMonitors,
                                            kernelAPI: KernelAPI) extends CompatibilityFor2_2 {

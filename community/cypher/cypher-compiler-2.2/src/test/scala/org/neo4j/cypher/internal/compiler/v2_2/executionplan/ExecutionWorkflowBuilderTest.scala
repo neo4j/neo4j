@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
@@ -29,6 +30,7 @@ import org.neo4j.cypher.internal.{Explained, Normal}
 import org.neo4j.graphdb.GraphDatabaseService
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
+  val VERSION = CypherVersion.v2_2
 
   test("produces eager results for updating queries") {
     // GIVEN
@@ -36,7 +38,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val graph = mock[GraphDatabaseService]
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None), List.empty, Normal)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None, VERSION), List.empty, Normal)
 
     // WHEN
     val builder = builderFactory.create()
@@ -54,7 +56,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val graph = mock[GraphDatabaseService]
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None), List.empty, Normal)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, VERSION), List.empty, Normal)
 
     // WHEN
     val builder = builderFactory.create()
@@ -72,7 +74,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val graph = mock[GraphDatabaseService]
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None), List.empty, Explained)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, VERSION), List.empty, Explained)
 
     // WHEN
     val builder = builderFactory.create()
