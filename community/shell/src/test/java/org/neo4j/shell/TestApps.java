@@ -959,6 +959,12 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
+    public void shouldAllowProfileAsStartForACypherQuery() throws Exception
+    {
+        executeCommand( "PROFILE MATCH (n) RETURN n;", "DbHits" );
+    }
+
+    @Test
     public void canListAllConfiguration() throws Exception
     {
         executeCommand( "dbinfo -g Configuration", "\"ephemeral\": \"true\"" );

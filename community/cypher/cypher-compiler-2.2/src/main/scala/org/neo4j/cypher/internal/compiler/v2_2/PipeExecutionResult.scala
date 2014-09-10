@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.helpers.CollectionSupport
-import org.neo4j.cypher.internal.{Explained, PlanType}
+import org.neo4j.cypher.internal.{Profiled, Explained, PlanType}
 import org.neo4j.graphdb.ResourceIterator
 
 import scala.collection.JavaConverters._
@@ -75,7 +75,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def close() { result.close() }
 
-  def planDescriptionRequested = planType == Explained
+  def planDescriptionRequested = planType == Explained || planType == Profiled
 
   private def getAnyColumn[T](column: String, m: Map[String, Any]): Any = {
     m.getOrElse(column, {

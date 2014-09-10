@@ -50,8 +50,9 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("PROFILE for Cypher 2.0") {
     val result = eengine.profile("cypher 2.0 match n where n-[:FOO]->() return *")
-    result.toList
-    result.executionPlanDescription().toString
+
+    assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
+    result.executionPlanDescription().toString should include("_db_hits")
   }
 
   test("match n where not n-[:FOO]->() return *") {
@@ -247,6 +248,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   override def profile(q: String, params: (String, Any)*): InternalExecutionResult = {
     val result = super.execute("profile " + q, params: _*)
+    assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
     val planDescription: v2_2.planDescription.PlanDescription = result.executionPlanDescription()
     planDescription.toSeq.foreach {
       p =>
