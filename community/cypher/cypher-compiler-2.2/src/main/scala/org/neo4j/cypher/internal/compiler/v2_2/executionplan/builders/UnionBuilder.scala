@@ -48,7 +48,7 @@ class UnionBuilder(queryBuilder: GraphQueryBuilder) {
       unionPipe
     }
 
-    PipeInfo(pipe, updating, version = CypherVersion.v2_2)
+    PipeInfo(pipe, updating, version = CypherVersion.v2_2_rule)
   }
 
   private def checkQueriesHaveSameColumns(union: Union) {

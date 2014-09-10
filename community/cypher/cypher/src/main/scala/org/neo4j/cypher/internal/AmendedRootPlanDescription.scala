@@ -57,7 +57,7 @@ class AmendedRootPlanDescription(child: PlanDescription, version: CypherVersion)
     val innerToString = childAsJava.toString
     val arguments = asJava.getArguments
     val version = arguments.get("version")
-    s"// version: $version\n\n$innerToString"
+    s"Compiler $version\n\n$innerToString"
   }
 
   def render(builder: StringBuilder, separator: String, levelSuffix: String) = child.render(builder, separator, levelSuffix)

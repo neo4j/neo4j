@@ -38,7 +38,7 @@ trait ExecutionPlanInProgressRewriter {
 class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
   extends PatternGraphBuilder with PipeBuilder with GraphQueryBuilder {
 
-  val VERSION = CypherVersion.v2_2
+  val VERSION = CypherVersion.v2_2_rule
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 

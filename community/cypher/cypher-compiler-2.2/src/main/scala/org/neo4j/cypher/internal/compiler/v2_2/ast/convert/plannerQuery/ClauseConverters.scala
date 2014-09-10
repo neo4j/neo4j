@@ -72,7 +72,7 @@ object ClauseConverters {
       case c: Match => c.addMatchToLogicalPlanInput(acc)
       case c: With => c.addWithToLogicalPlanInput(acc)
       case c: Unwind => c.addUnwindToLogicalPlanInput(acc)
-      case x         => throw new CantHandleQueryException(x.toString)
+      case x         => throw new CantHandleQueryException//(x.toString)
     }
   }
 
