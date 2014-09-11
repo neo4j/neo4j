@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.bling._
 
-case object mkDocDrill {
-  def apply[A](implicit handler: DrillHandler[Doc] = formatErrors): DocDrill[A] => DocDrill[A] =
-    handler.recover(_)
-}
+//  def apply[A](implicit handler: DrillHandler[Doc] = formatErrors): DocDrill[A] => DocDrill[A] =
+//    handler.recover(_)
+//}
 
+case object mkDocDrill

@@ -27,16 +27,17 @@ import scala.util.Try
 
 case object astParticleDocGen extends CustomDocGen[ASTNode] {
 
-  def newDocDrill = {
-    val particleDocDrill = mkDocDrill[ASTParticle]() {
-      case labelName: LabelName => labelName.asDoc
-      case symbolicName: SymbolicName => symbolicName.asDoc
-    }
-
-    {
-      case particle: ASTParticle => inner => particleDocDrill(particle)(inner)
-      case _                     => inner => None
-    }
+  def drill = {
+    ???
+//    val particleDocDrill = mkDocDrill[ASTParticle]() {
+//      case labelName: LabelName => labelName.asDoc
+//      case symbolicName: SymbolicName => symbolicName.asDoc
+//    }
+//
+//    {
+//      case particle: ASTParticle => inner => particleDocDrill(particle)(inner)
+//      case _                     => inner => None
+//    }
   }
 
   implicit class SymbolicNameConverter(symbolicName: SymbolicName) {

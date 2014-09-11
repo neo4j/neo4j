@@ -28,15 +28,15 @@ class DefaultDocGenTest extends DocHandlerTestSuite[Any] {
 
   val docGen = DefaultDocHandler.docGen
 
-  test("DocGenerator uses toDoc as a fallback") {
-    object Rick extends Pretty {
-      def toDoc = inner => Some("NEVER GONNA" :/: "GIVE YOU UP")
-      override def toString = "Called toString when expected to be rendered using toDoc"
-    }
-
-    val result = pprintToString(Rick)
-
-    result should equal("NEVER GONNA GIVE YOU UP")
-  }
+//  test("DocGenerator uses toDoc as a fallback") {
+//    object Rick extends Pretty {
+//      def toDoc = inner => Some("NEVER GONNA" :/: "GIVE YOU UP")
+//      override def toString = "Called toString when expected to be rendered using toDoc"
+//    }
+//
+//    val result = pprintToString(Rick)
+//
+//    result should equal("NEVER GONNA GIVE YOU UP")
+//  }
 
 }

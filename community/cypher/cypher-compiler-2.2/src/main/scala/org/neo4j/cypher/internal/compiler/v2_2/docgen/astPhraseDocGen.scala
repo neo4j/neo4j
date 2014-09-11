@@ -28,22 +28,23 @@ import scala.util.Try
 
 case object astPhraseDocGen extends CustomDocGen[ASTNode] {
 
-  def newDocDrill = {
-    val phraseDocDrill = mkDocDrill[ASTPhrase]() {
-      case clause: Clause => clause.asDoc
-      case item: ReturnItem => item.asDoc
-      case items: ReturnItems => items.asDoc
-      case where: Where => where.asDoc
-      case hint: Hint => hint.asDoc
-      case orderBy: OrderBy => orderBy.asDoc
-      case sortItem: SortItem => sortItem.asDoc
-      case slice: ASTSlicingPhrase => slice.asDoc
-    }
-
-    {
-      case phrase: ASTPhrase => inner => phraseDocDrill(phrase)(inner)
-      case _                 => inner => None
-    }
+  def drill = {
+    ???
+//    val phraseDocDrill = mkDocDrill[ASTPhrase]() {
+//      case clause: Clause => clause.asDoc
+//      case item: ReturnItem => item.asDoc
+//      case items: ReturnItems => items.asDoc
+//      case where: Where => where.asDoc
+//      case hint: Hint => hint.asDoc
+//      case orderBy: OrderBy => orderBy.asDoc
+//      case sortItem: SortItem => sortItem.asDoc
+//      case slice: ASTSlicingPhrase => slice.asDoc
+//    }
+//
+//    {
+//      case phrase: ASTPhrase => inner => phraseDocDrill(phrase)(inner)
+//      case _                 => inner => None
+//    }
   }
 
   implicit class ClauseConverter(clause: Clause) {

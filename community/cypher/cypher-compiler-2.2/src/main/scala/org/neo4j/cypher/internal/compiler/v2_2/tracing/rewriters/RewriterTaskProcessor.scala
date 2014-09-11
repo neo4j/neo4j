@@ -71,7 +71,7 @@ case class TracingRewriterTaskProcessor(sequenceName: String, onlyWhenChanged: B
         val result = innerRewriter(in)
         val always = !onlyWhenChanged
         if (always || in != result) {  // TODO: This test does not work. Investigate.
-          val prettyDoc = page(nest(indent = 2, group(nil :/: group(InternalDocHandler.docGen.asConverter(result)))))
+          val prettyDoc: Doc = ??? // page(nest(indent = 2, group(nil :/: group(InternalDocHandler.docGen.asConverter(result)))))
           val prettyResult = printCommandsToString(DocFormatters.defaultFormatter(prettyDoc))
           print(s"*** $name ($sequenceName):$prettyResult\n")
         } else {

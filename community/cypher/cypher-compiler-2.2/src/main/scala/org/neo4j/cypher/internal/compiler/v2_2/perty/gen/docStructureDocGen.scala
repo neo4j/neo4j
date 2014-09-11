@@ -28,18 +28,19 @@ case object docStructureDocGen extends CustomDocGen[Doc] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
-  protected def newDocDrill = mkDocDrill[Doc]() {
-    case ConsDoc(hd, tl)         => (inner) => inner(hd) :: "·" :: inner(tl)
-    case NilDoc                  => (inner) => "ø"
-
-    case TextDoc(value)          => (inner) => quoteString(value)
-    case BreakDoc => (inner)     => breakWith("_")
-    case BreakWith(value)        => (inner) => breakWith(s"_${value}_")
-
-    case GroupDoc(doc)           => (inner) => group("[" :: inner(doc) :: "]")
-    case NestDoc(doc)            => (inner) => group("<" :: inner(doc) :: ">")
-    case NestWith(indent, doc)   => (inner) => group(s"($indent)<" :: inner(doc) :: ">")
-
-    case PageDoc(doc) => (inner) => group("(|" :: inner(doc) :: "|)")
-  }
+  def drill = ???
+//  mkDocDrill[Doc]() {
+//    case ConsDoc(hd, tl)         => (inner) => inner(hd) :: "·" :: inner(tl)
+//    case NilDoc                  => (inner) => "ø"
+//
+//    case TextDoc(value)          => (inner) => quoteString(value)
+//    case BreakDoc => (inner)     => breakWith("_")
+//    case BreakWith(value)        => (inner) => breakWith(s"_${value}_")
+//
+//    case GroupDoc(doc)           => (inner) => group("[" :: inner(doc) :: "]")
+//    case NestDoc(doc)            => (inner) => group("<" :: inner(doc) :: ">")
+//    case NestWith(indent, doc)   => (inner) => group(s"($indent)<" :: inner(doc) :: ">")
+//
+//    case PageDoc(doc) => (inner) => group("(|" :: inner(doc) :: "|)")
+//  }
 }

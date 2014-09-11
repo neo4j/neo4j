@@ -89,9 +89,9 @@ object Extractor {
 
   // Use fallbackExtractor as recovery strategy for inner extractor by wrapping
   // a given drill
-  implicit final class fallback[O : TypeTag](fallbackExtractor: Extractor[Any, O]) extends DrillHandler[O] {
-    def mapExtractor(extractor: Extractor[Any, O]): Extractor[Any, O] = extractor orElse fallbackExtractor
-  }
+//  implicit final class fallback[O : TypeTag](fallbackExtractor: Extractor[Any, O]) extends DrillHandler[O] {
+//    def mapExtractor(extractor: Extractor[Any, O]): Extractor[Any, O] = extractor orElse fallbackExtractor
+//  }
 }
 
 

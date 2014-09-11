@@ -28,17 +28,19 @@ case object AstStructureDocGen extends CustomDocGen[ASTNode] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
-  def newDocDrill = {
-    case particle: ASTParticle =>
-      inner => astParticleDocGen(inner)(particle)
-
-    case astNode: ASTNode =>
-      inner =>
-        val ast = AstDocHandlerWithFallback.docGen(inner)(astNode)
-        val simple = SimpleDocHandler.docGen(inner)(astNode)
-        Some(nest(group(group(comment("ast") :/: ast) :/: group(comment("val") :/: simple))))
-
-    case _ =>
-      inner => None
-  }
+  def drill =
+    ???
+//  {
+//    case particle: ASTParticle =>
+//      inner => astParticleDocGen(inner)(particle)
+//
+//    case astNode: ASTNode =>
+//      inner =>
+//        val ast = AstDocHandlerWithFallback.docGen(inner)(astNode)
+//        val simple = SimpleDocHandler.docGen(inner)(astNode)
+//        Some(nest(group(group(comment("ast") :/: ast) :/: group(comment("val") :/: simple))))
+//
+//    case _ =>
+//      inner => None
+//  }
 }

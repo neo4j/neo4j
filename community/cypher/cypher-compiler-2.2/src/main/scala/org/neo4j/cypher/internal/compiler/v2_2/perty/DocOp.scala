@@ -17,27 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty.bling
+package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import scala.reflect.runtime.universe.TypeTag
+sealed trait DocOp[-T]
+case class AddContent[T](value: T) extends DocOp[T]
+case class AddBreak[T](breakWith: Option[T] = None) extends DocOp[T]
+case object AddNoBreak extends DocOp[Any]
 
-object FunSeqExtractorFactory extends ExtractorFactory {
-  override type Impl[-I, O] = FunSeqExtractor[I, O]
+sealed trait PushFrame extends DocOp[Any]
+case object PushFrameGroup extends PushFrame
+case object PushFramePage extends PushFrame
+case class PushFrameNest(indent: Option[Int] = None) extends PushFrame
 
-  protected def newEmpty[I : TypeTag, O : TypeTag] = new FunSeqExtractor.Empty[I, O]
-
-  protected def newFromSingle[I: TypeTag, O : TypeTag](newDrill: Drill[I, O]) =
-    new FunSeqExtractor.Single[I, O] {
-      override def drill: Drill[I, O] = newDrill
-    }
-
-  protected def newFromSeq[I: TypeTag, O : TypeTag](newDrills: Seq[Drill[I, O]]) =
-    new FunSeqExtractor.Multi[I, O] {
-      override def drills: Seq[Drill[I, O]] = newDrills
-    }
-}
-
-
-
+case object PopFrame extends DocOp[Any]
 
 

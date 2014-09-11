@@ -28,53 +28,55 @@ case object scalaDocGen extends CustomDocGen[Any] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
-  def newDocDrill = mkDocDrill[Any]() {
-    case v: String => (inner) =>
-      quoteString(v)
+  def drill = ???
 
-    case ch: Char => (inner) =>
-      quoteChar(ch)
-
-    case a: Array[_] => (inner) =>
-      val innerDocs = a.map(inner)
-      block("Array")(sepList(innerDocs))
-
-    case m: mutable.Map[_, _] => (inner) =>
-      val mapType = m.getClass.getSimpleName
-      val innerDocs = m.map { case (k, v) => nest(group(inner(k) :/: "→ " :: inner(v)))}
-      block(mapType)(sepList(innerDocs))
-
-    case m: immutable.Map[_, _] => (inner) =>
-      val innerDocs = m.map { case (k, v) => nest(group(inner(k) :/: "→ " :: inner(v)))}
-      block("Map")(sepList(innerDocs))
-
-    case l: List[_] => (inner) =>
-      group(l.foldRight[Doc]("⬨") { case (v, doc) => inner(v) :/: "⸬ " :: doc})
-
-    case s: mutable.Set[_] => (inner) =>
-      val setType = s.getClass.getSimpleName
-      val innerDocs = s.map(inner)
-      block(setType)(sepList(innerDocs))
-
-    case s: immutable.Set[_] => (inner) =>
-      val innerDocs = s.map(inner)
-      block("Set")(sepList(innerDocs))
-
-    case s: Seq[_] => (inner) =>
-      val seqType = s.getClass.getSimpleName
-      val innerDocs = s.map(inner)
-      block(seqType)(sepList(innerDocs))
-
-    case p: Product => (inner) =>
-      if (isTuple(p)) {
-        block("")(sepList(p.productIterator.map(inner)))
-      } else {
-        if (p.productArity == 0)
-          text(p.productPrefix)
-        else
-          block(p.productPrefix)(sepList(p.productIterator.map(inner)))
-      }
-  }
+//  def newDocDrill = mkDocDrill[Any]() {
+//    case v: String => (inner) =>
+//      quoteString(v)
+//
+//    case ch: Char => (inner) =>
+//      quoteChar(ch)
+//
+//    case a: Array[_] => (inner) =>
+//      val innerDocs = a.map(inner)
+//      block("Array")(sepList(innerDocs))
+//
+//    case m: mutable.Map[_, _] => (inner) =>
+//      val mapType = m.getClass.getSimpleName
+//      val innerDocs = m.map { case (k, v) => nest(group(inner(k) :/: "→ " :: inner(v)))}
+//      block(mapType)(sepList(innerDocs))
+//
+//    case m: immutable.Map[_, _] => (inner) =>
+//      val innerDocs = m.map { case (k, v) => nest(group(inner(k) :/: "→ " :: inner(v)))}
+//      block("Map")(sepList(innerDocs))
+//
+//    case l: List[_] => (inner) =>
+//      group(l.foldRight[Doc]("⬨") { case (v, doc) => inner(v) :/: "⸬ " :: doc})
+//
+//    case s: mutable.Set[_] => (inner) =>
+//      val setType = s.getClass.getSimpleName
+//      val innerDocs = s.map(inner)
+//      block(setType)(sepList(innerDocs))
+//
+//    case s: immutable.Set[_] => (inner) =>
+//      val innerDocs = s.map(inner)
+//      block("Set")(sepList(innerDocs))
+//
+//    case s: Seq[_] => (inner) =>
+//      val seqType = s.getClass.getSimpleName
+//      val innerDocs = s.map(inner)
+//      block(seqType)(sepList(innerDocs))
+//
+//    case p: Product => (inner) =>
+//      if (isTuple(p)) {
+//        block("")(sepList(p.productIterator.map(inner)))
+//      } else {
+//        if (p.productArity == 0)
+//          text(p.productPrefix)
+//        else
+//          block(p.productPrefix)(sepList(p.productIterator.map(inner)))
+//      }
+//  }
 
   private def isTuple(p: Product) = p.productPrefix.startsWith("Tuple")
 }

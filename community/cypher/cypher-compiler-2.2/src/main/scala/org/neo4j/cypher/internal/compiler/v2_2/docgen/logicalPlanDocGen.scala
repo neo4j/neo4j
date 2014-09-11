@@ -45,39 +45,40 @@ case object logicalPlanDocGen extends CustomDocGen[LogicalPlan] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
-  def newDocDrill = mkDocDrill[LogicalPlan]() {
-      case plan: LogicalPlan => (inner) =>
-        val optLeft = plan.lhs
-        val optRight = plan.rhs
-        val childPlans: Set[Any] = optLeft.toSet ++ optRight.toSet
-
-        val arguments =
-          plan
-            .productIterator
-            .filter((v: Any) => !childPlans.contains(v))
-            .map(inner)
-
-        val deps = sepList(plan.availableSymbols.map(inner), break = breakSilent)
-        val depsBlock = block(plan.productPrefix, open = "[", close = "]")(deps)
-        val head = block(depsBlock)(sepList(arguments))
-
-        (optLeft, optRight) match {
-          case (None, None) =>
-            head
-
-          case (Some(left), None) =>
-            group(page(head :/: group("↳ " :: inner(left))))
-
-          case (Some(left), Some(right)) =>
-            group(page(
-              nest(head :/: group(page(
-                section("↳ left =", inner(left)) :/:
-                  section("↳ right =", inner(right))
-              )))
-            ))
-
-          case (None, Some(right)) =>
-            throw new IllegalArgumentException("Right-leaning plans are not supported")
-        }
+  def drill = { /// mkDocDrill[LogicalPlan]() {
+    ???
+//      case plan: LogicalPlan => (inner) =>
+//        val optLeft = plan.lhs
+//        val optRight = plan.rhs
+//        val childPlans: Set[Any] = optLeft.toSet ++ optRight.toSet
+//
+//        val arguments =
+//          plan
+//            .productIterator
+//            .filter((v: Any) => !childPlans.contains(v))
+//            .map(inner)
+//
+//        val deps = sepList(plan.availableSymbols.map(inner), break = breakSilent)
+//        val depsBlock = block(plan.productPrefix, open = "[", close = "]")(deps)
+//        val head = block(depsBlock)(sepList(arguments))
+//
+//        (optLeft, optRight) match {
+//          case (None, None) =>
+//            head
+//
+//          case (Some(left), None) =>
+//            group(page(head :/: group("↳ " :: inner(left))))
+//
+//          case (Some(left), Some(right)) =>
+//            group(page(
+//              nest(head :/: group(page(
+//                section("↳ left =", inner(left)) :/:
+//                  section("↳ right =", inner(right))
+//              )))
+//            ))
+//
+//          case (None, Some(right)) =>
+//            throw new IllegalArgumentException("Right-leaning plans are not supported")
+//        }
     }
 }

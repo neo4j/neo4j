@@ -24,14 +24,15 @@ import scala.language.higherKinds
 
 import scala.reflect.runtime.universe.TypeTag
 
-import Drill._
+sealed abstract class SeqDrill[-I : TypeTag, O : TypeTag]
+  extends DelegatingDrill[I, O] {
 
-sealed abstract class FunSeqExtractor[-I : TypeTag, O : TypeTag]
-  extends LayeredDrillExtractor[I, O] {
-
-  override type Self[-U, V] = FunSeqExtractor[U, V]
+  override type Self[-U, V] = SeqDrill[U, V]
 
   def drills: Seq[Drill[I, O]]
+
+  def recover(g: (Extractor[Any, O]) => Extractor[Any, O]) =
+    mapDrill { (drill: Drill[I, O]) => drill.recover(g) }
 
   def filterDrill(f: Drill[I, O] => Boolean): Self[I, O] =
     transform(_.filter(f))
@@ -43,25 +44,40 @@ sealed abstract class FunSeqExtractor[-I : TypeTag, O : TypeTag]
     transform(_.flatMap(f))
 
   def transform[A0 : TypeTag, O1 : TypeTag](f: Seq[Drill[I, O]] => Seq[Drill[A0, O1]]): Self[A0, O1] =
-    FunSeqExtractorFactory.fromSeq[A0, O1](f(drills))
+    SeqDrill.fromSeq[A0, O1](f(drills))
 
   override def ++[A1 <: I : TypeTag](other: Self[A1, O]): Self[A1, O] =
-    FunSeqExtractorFactory.fromSeq[A1, O](drills ++ other.drills)
+    SeqDrill.fromSeq[A1, O](drills ++ other.drills)
 }
 
-object FunSeqExtractor {
-  final class Empty[-I: TypeTag, O: TypeTag] extends FunSeqExtractor[I, O] {
+object SeqDrill extends ExtractorFactory {
+
+  override type Impl[-I, O] = SeqDrill[I, O]
+
+  protected def newEmpty[I : TypeTag, O : TypeTag] = new SeqDrill.Empty[I, O]
+
+  protected def newFromSingle[I: TypeTag, O : TypeTag](newDrill: Drill[I, O]) =
+    new SeqDrill.Single[I, O] {
+      override def drill: Drill[I, O] = newDrill
+    }
+
+  protected def newFromSeq[I: TypeTag, O : TypeTag](newDrills: Seq[Drill[I, O]]) =
+    new SeqDrill.Multi[I, O] {
+      override def drills: Seq[Drill[I, O]] = newDrills
+    }
+
+  final class Empty[-I: TypeTag, O: TypeTag] extends SeqDrill[I, O] {
     override def drills: Seq[Drill[I, O]] = Seq.empty
     override val fixPoint: Extractor[I, O] = Extractor.empty[O]
-    override val drill: Drill[I, O] = (inner: Extractor[Any, O]) => fixPoint
+    override val drill: Drill[I, O] = Drill.empty[O]
   }
 
-  abstract class Single[-I: TypeTag, O: TypeTag] extends FunSeqExtractor[I, O] {
+  abstract class Single[-I: TypeTag, O: TypeTag] extends SeqDrill[I, O] {
     final override def drills: Seq[Drill[I, O]] = Seq(drill)
     final override val fixPoint: Extractor[I, O] = drill.fixPoint
   }
 
-  abstract class Multi[-I: TypeTag, O: TypeTag] extends FunSeqExtractor[I, O] {
+  abstract class Multi[-I: TypeTag, O: TypeTag] extends SeqDrill[I, O] {
     final override val drill: Drill[I, O] =
       (layer: Extractor[Any, O]) =>
         new SimpleExtractor[I, O] {
@@ -69,7 +85,7 @@ object FunSeqExtractor {
             @tailrec
             def findResult(remaining: Seq[Drill[I, O]]): Option[O] = remaining match {
               case Seq(hd, tl @ _*) =>
-                val result = hd(layer)(x)
+                val result = hd.specialize(layer)(x)
                 if (result.isEmpty) findResult(tl) else result
               case _ =>
                 None
@@ -78,6 +94,7 @@ object FunSeqExtractor {
             findResult(drills)
           }
         }
+
     final override val fixPoint: Extractor[I, O] = drill.fixPoint
   }
 }

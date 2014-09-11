@@ -23,23 +23,29 @@ import scala.language.higherKinds
 
 import scala.reflect.runtime.universe.TypeTag
 
-abstract class LayeredDrillExtractor[-I : TypeTag, O : TypeTag] extends LayeredExtractor[I, O] {
+import Drill._
+
+abstract class DelegatingDrill[-I : TypeTag, O : TypeTag]
+  extends Extractor[I, O] with Drill[I, O] {
+
   self =>
 
-  type Self[-U, V] <: LayeredDrillExtractor[U, V]
+  type Self[-U, V] <: DelegatingDrill[U, V]
 
   def drill: Drill[I, O]
 
-  def fix(inner: Extractor[Any, O]): Extractor[I, O] = drill(inner)
+  def specialize(inner: Extractor[Any, O]): Extractor[I, O] = drill.specialize(inner)
 
   def mapInput[U : TypeTag, H <: I : TypeTag](f: Extractor[U, H]): Self[U, O] =
-    mapDrill[U, O] { (drill: Drill[I, O]) =>
-      (extractor: Extractor[Any, O]) => drill(extractor).mapInput(f)
+    mapDrill[U, O] {
+      (drill: Drill[I, O]) =>
+        mkDrill { drill.specialize(_).mapInput(f) }
     }
 
   def mapOutput[H <: I : TypeTag](f: Extractor[O, O]): Self[H, O] =
-    mapDrill[H, O] { (drill: Drill[I, O]) =>
-      (extractor: Extractor[Any, O]) => drill(extractor).mapOutput(f)
+    mapDrill[H, O] {
+      (drill: Drill[I, O]) =>
+        mkDrill { drill.specialize(_).mapOutput(f) }
     }
 
   def orElse[H <: I : TypeTag](first: Extractor[H, O]): Extractor[H, O] =

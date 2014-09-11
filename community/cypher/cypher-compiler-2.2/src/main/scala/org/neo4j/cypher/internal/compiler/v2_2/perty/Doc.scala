@@ -186,8 +186,8 @@ final case class NestWith(indent: Int, content: Doc) extends NestingDoc {
   def optIndent = Some(indent)
 }
 
-final case class DocLiteral(doc: Doc) extends Pretty {
-  override def toDoc = inner => docStructureDocGen(inner)(doc)
+final case class DocLiteral(doc: Doc) extends Pretty[Doc] {
+  override def toDoc = ??? // inner => docStructureDocGen(inner)(doc)
 }
 
 

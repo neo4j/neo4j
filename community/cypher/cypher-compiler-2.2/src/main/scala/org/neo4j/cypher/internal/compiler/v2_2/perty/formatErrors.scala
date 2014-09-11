@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.{DrillHandler, Extractor, SimpleExtractor}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.{Extractor, SimpleExtractor}
 
 import scala.reflect.runtime.universe.TypeTag
 
-case object formatErrors extends DrillHandler[Doc] {
+case object formatErrors { /// extends DrillHandler[Doc] {
   def mapExtractor(inner: Extractor[Any, Doc]) = new SimpleExtractor[Any, Doc] {
     def apply[X <: Any : TypeTag](x: X) =
       try {
@@ -39,7 +39,7 @@ case object formatErrors extends DrillHandler[Doc] {
         case e: Exception =>
           Some(group(s"${e.getClass.getSimpleName}:" :/: e.toString))
 
-        case other =>
+        case other: Throwable =>
           throw other
       }
   }

@@ -24,26 +24,27 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
 case object astExpressionDocGen extends CustomDocGen[ASTNode] {
-  def newDocDrill = {
-    val exprDocDrill = mkDocDrill[Expression]() {
-      case identifier: Identifier => identifier.asDoc
-      case literal: Literal => literal.asDoc
-      case hasLabels: HasLabels => hasLabels.asDoc
-      case property: Property => property.asDoc
-      case param: Parameter => param.asDoc
-      case binOp: BinaryOperatorExpression => binOp.asDoc
-      case leftOp: LeftUnaryOperatorExpression => leftOp.asDoc
-      case rightOp: RightUnaryOperatorExpression => rightOp.asDoc
-      case multiOp: MultiOperatorExpression => multiOp.asDoc
-      case fun: FunctionInvocation => fun.asDoc
-      case coll: Collection => coll.asDoc
-      case countStar: CountStar => countStar.asDoc
-    }
-
-    {
-      case expr: Expression => inner => exprDocDrill(expr)(inner)
-      case _                => inner => None
-    }
+  def drill = {
+    ???
+//    val exprDocDrill = mkDocDrill[Expression]() {
+//      case identifier: Identifier => identifier.asDoc
+//      case literal: Literal => literal.asDoc
+//      case hasLabels: HasLabels => hasLabels.asDoc
+//      case property: Property => property.asDoc
+//      case param: Parameter => param.asDoc
+//      case binOp: BinaryOperatorExpression => binOp.asDoc
+//      case leftOp: LeftUnaryOperatorExpression => leftOp.asDoc
+//      case rightOp: RightUnaryOperatorExpression => rightOp.asDoc
+//      case multiOp: MultiOperatorExpression => multiOp.asDoc
+//      case fun: FunctionInvocation => fun.asDoc
+//      case coll: Collection => coll.asDoc
+//      case countStar: CountStar => countStar.asDoc
+//    }
+//
+//    {
+//      case expr: Expression => inner => exprDocDrill(expr)(inner)
+//      case _                => inner => None
+//    }
   }
 
   implicit class IdentifierConverter(identifier: Identifier) {

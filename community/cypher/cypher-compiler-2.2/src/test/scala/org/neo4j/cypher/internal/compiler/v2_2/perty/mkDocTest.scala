@@ -17,29 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty.bling
+package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import scala.language.higherKinds
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-import scala.reflect.runtime.universe.TypeTag
+class mkDocTest extends CypherFunSuite {
 
-/**
- * A layered extractor converts value of type A into value of type O.
- * It can be specialized over how to convert inner (child) values by
- * providing it with an inner extractor.
- *
- * When used as a regular extractor, layered extractors are
- * specialized using their own fix point
- */
-abstract class LayeredExtractor[-I : TypeTag, O : TypeTag] extends Extractor[I, O] {
-  self =>
+  test("Builds groups of leaves") {
+    mkDoc(Seq(AddContent("x"))) equals TextDoc("x")
+  }
 
-  override type Self[-U, V] <: LayeredExtractor[U, V]
+  test("Returns remaining leaves as a single group") {
 
-  def apply[ X <: I : TypeTag](x: X): Option[O] = fixPoint(x)
-
-  def fixPoint: Extractor[I, O]
-
-  def fix(inner: Extractor[Any, O]): Extractor[I, O]
+  }
 }
-

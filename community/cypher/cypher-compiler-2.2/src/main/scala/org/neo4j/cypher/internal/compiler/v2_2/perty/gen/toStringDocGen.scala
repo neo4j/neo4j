@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
 case object toStringDocGen extends CustomDocGen[Any] {
-  def newDocDrill = mkDocDrill[Any]() {
-    case null   => inner => "null"
-    case v: Any => inner => v.toString
-  }
+  def drill = ???
+//  mkDocDrill[Any]() {
+//    case null   => inner => "null"
+//    case v: Any => inner => v.toString
+//  }
 }
 
 

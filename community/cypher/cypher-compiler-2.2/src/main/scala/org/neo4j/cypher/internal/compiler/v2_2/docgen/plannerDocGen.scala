@@ -31,23 +31,24 @@ case object plannerDocGen extends CustomDocGen[Any] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
-  def newDocDrill = mkDocDrill[Any]() {
-    // ast objects (temporary, shouldn't be here, only exist for tests)
-    case Identifier(name) => inner => AstNameConverter(name).asDoc
-    case _: CountStar => inner => "count(*)"
-
-    // planner objects
-    case idName: IdName => inner => idName.asDoc
-    case predicate: Predicate => inner => predicate.asDoc(inner)
-    case selections: Selections => inner => selections.asDoc(inner)
-    case patLength: PatternLength => inner => patLength.asDoc
-    case patRel: PatternRelationship => inner => patRel.asDoc(inner)
-    case sp: ShortestPathPattern => inner => sp.asDoc(inner)
-    case shuffle: QueryShuffle => inner => shuffle.asDoc(inner)
-    case qg: QueryGraph => inner => qg.asDoc(inner)
-    case pq: PlannerQuery => inner => pq.asDoc(inner)
-    case horizon: QueryHorizon => inner => horizon.asDoc(inner)
-  }
+  def drill = ???
+//  mkDocDrill[Any]() {
+//    // ast objects (temporary, shouldn't be here, only exist for tests)
+//    case Identifier(name) => inner => AstNameConverter(name).asDoc
+//    case _: CountStar => inner => "count(*)"
+//
+//    // planner objects
+//    case idName: IdName => inner => idName.asDoc
+//    case predicate: Predicate => inner => predicate.asDoc(inner)
+//    case selections: Selections => inner => selections.asDoc(inner)
+//    case patLength: PatternLength => inner => patLength.asDoc
+//    case patRel: PatternRelationship => inner => patRel.asDoc(inner)
+//    case sp: ShortestPathPattern => inner => sp.asDoc(inner)
+//    case shuffle: QueryShuffle => inner => shuffle.asDoc(inner)
+//    case qg: QueryGraph => inner => qg.asDoc(inner)
+//    case pq: PlannerQuery => inner => pq.asDoc(inner)
+//    case horizon: QueryHorizon => inner => horizon.asDoc(inner)
+//  }
 
   implicit class idNameConverter(idName: IdName) {
     def asDoc = AstNameConverter(idName.name).asDoc

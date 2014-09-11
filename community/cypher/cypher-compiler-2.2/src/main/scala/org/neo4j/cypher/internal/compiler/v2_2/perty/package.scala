@@ -29,8 +29,12 @@ import scala.reflect.ClassTag
  * See pp.Doc
  */
 package object perty {
+  // Imperative description of how to construct a document
+  // that contains leaf values of T
+  type DocOps[T] = Seq[DocOp[T]]
+
   // convert a value into a doc (digger)
-  type DocGen[-T] = FunSeqExtractor[T, Doc]
+  type DocGen[-T] = SeqDrill[T, Doc]
 
   // convert a value into a doc (total function)
   type DocConverter[-T] = T => Doc

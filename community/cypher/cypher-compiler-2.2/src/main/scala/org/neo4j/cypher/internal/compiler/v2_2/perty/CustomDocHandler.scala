@@ -26,6 +26,6 @@ abstract class CustomDocHandler[T] extends DocHandler[T] {
     prettySelf: S with DocFormatting =>
 
     override def toPrettyString(formatter: DocFormatter = docFormatter) =
-      pprintToString[T](prettySelf, formatter = formatter)(docGen.asConverter)
+      ??? // pprintToString[T](prettySelf, formatter = formatter)(???) // docGen.asConverter)
   }
 }

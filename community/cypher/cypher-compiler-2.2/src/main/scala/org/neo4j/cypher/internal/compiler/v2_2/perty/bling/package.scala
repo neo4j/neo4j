@@ -20,10 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
 package object bling {
-  /**
-   * A drill construct an extractor
-   * if given an extractor that is used for
-   * "un-applying" it's members (child nodes)
-   **/
-  type Drill[-I, O] = Extractor[Any, O] => Extractor[I, O]
+  // Has to live in inside Drill due to compilation dependencies
+  type SimpleDrill[-I, O] = Drill.Simple[I, O]
 }

@@ -28,13 +28,13 @@ abstract class DocHandlerTestSuite[T]
   with DocHandler[T]
   with LineDocFormatting {
 
-  def converter: (T) => Doc = docGen.asConverter
+  def converter: (T) => Doc = ??? // docGen.asConverter
 
   def pprint(value: T, formatter: DocFormatter = docFormatter): Unit =
-    print.pprint(value, formatter)(converter)
+    ??? // print.pprint(value, formatter)(converter)
 
   def pprintToString(value: T, formatter: DocFormatter = docFormatter): String =
-    print.pprintToString(value, formatter)(converter)
+    ??? // print.pprintToString(value, formatter)(converter)
 
   def convert(value: T): Doc = converter(value)
 

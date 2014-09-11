@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.FunSeqExtractor
+import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.SeqDrill
 import org.neo4j.cypher.internal.compiler.v2_2.perty.print.pprintToString
 
 import scala.reflect.runtime.universe._
 
-abstract class CustomDocGen[-T : TypeTag] extends FunSeqExtractor.Single[T, Doc] {
+abstract class CustomDocGen[-T : TypeTag] extends SeqDrill.Single[T, Doc] {
 
   self =>
 
