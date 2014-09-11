@@ -19,30 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.MapExtractionFailureHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.{DrillHandler, Extractor, SimpleExtractor}
 
-case object catchExtractionFailures extends MapExtractionFailureHandler[Throwable, Any, Doc](formatErrors)
+import scala.reflect.runtime.universe.TypeTag
 
-case object throwExtractionFailures extends MapExtractionFailureHandler[Throwable, Any, Doc](throwErrors)
+case object formatErrors extends DrillHandler[Doc] {
+  def mapExtractor(inner: Extractor[Any, Doc]) = new SimpleExtractor[Any, Doc] {
+    def apply[X <: Any : TypeTag](x: X) =
+      try {
+        inner(x)
+      } catch {
+        case _: NotImplementedError =>
+          Some("???")
 
-case object formatErrors extends (Throwable => Option[Doc]) {
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+        case _: MatchError =>
+          None
 
-  def apply(throwable: Throwable) = throwable match {
-    case _: NotImplementedError =>
-      Some("???")
+        case e: Exception =>
+          Some(group(s"${e.getClass.getSimpleName}:" :/: e.toString))
 
-    case _: MatchError =>
-      None
-
-    case e: Exception =>
-      Some(group(s"${e.getClass.getSimpleName}:" :/: e.toString))
-
-    case other =>
-      throw other
+        case other =>
+          throw other
+      }
   }
 }
 
-case object throwErrors extends (Throwable => Option[Doc]) {
-  def apply(throwable: Throwable) = throw throwable
-}

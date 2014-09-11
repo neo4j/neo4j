@@ -19,12 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
+import scala.reflect.runtime.universe._
+
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
 
 object pprintToString {
   // Convert value to String after converting to a doc using the given generator and formatter
-  def apply[T](value: T, formatter: DocFormatter = DocFormatters.defaultPageFormatter)
-              (implicit converter: DocConverter[T] = DefaultDocHandler.docGen.asConverter): String =
-    printCommandsToString(condense(formatter(converter(value))))
+  def apply[T : TypeTag](value: T,
+                         formatter: DocFormatter = DocFormatters.defaultPageFormatter)
+                        (docGen: DocGen[T] = DefaultDocHandler.docGen): String = {
+    val doc = docGen(value).getOrElse {
+      throw new IllegalArgumentException(s"Error converting value of type ${typeOf[T]} to a Doc")
+    }
+    printCommandsToString(condense(formatter(doc)))
+  }
 }

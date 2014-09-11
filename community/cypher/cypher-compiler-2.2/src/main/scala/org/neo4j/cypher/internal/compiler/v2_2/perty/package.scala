@@ -30,7 +30,7 @@ import scala.reflect.ClassTag
  */
 package object perty {
   // convert a value into a doc (digger)
-  type DocGen[-T] = FunDigger.type#LayeredFunSeqExtractor[T, Any, Doc]
+  type DocGen[-T] = FunSeqExtractor[T, Doc]
 
   // convert a value into a doc (total function)
   type DocConverter[-T] = T => Doc
@@ -42,7 +42,7 @@ package object perty {
   type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
 
   // drills used by DocGens
-  type DocDrill[-T] = Drill[T, Any, Doc]
+  type DocDrill[-T] = Drill[T, Doc]
 }
 
 

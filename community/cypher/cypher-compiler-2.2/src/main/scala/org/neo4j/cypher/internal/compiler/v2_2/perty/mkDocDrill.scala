@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty
 import org.neo4j.cypher.internal.compiler.v2_2.perty.bling._
 
 case object mkDocDrill {
-  def apply[A]
-    (implicit handler: ExtractionFailureHandler[Any, Doc] = catchExtractionFailures)
-  : (PartialFunction[A, ((Any) => Doc) => Doc]) => DocDrill[A] =
-    mkDrill[A, Any, Doc](handler)
+  def apply[A](implicit handler: DrillHandler[Doc] = formatErrors): DocDrill[A] => DocDrill[A] =
+    handler.recover(_)
 }
 

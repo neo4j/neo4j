@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocDrill, Doc}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.LayerExtractor
 
-trait Pretty {
-  def toDoc: LayerExtractor[Any, Doc]
+trait Pretty[-T] {
+  def toDoc: DocDrill[T]
 }
 
