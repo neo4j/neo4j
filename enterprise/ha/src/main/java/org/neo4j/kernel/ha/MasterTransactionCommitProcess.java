@@ -24,7 +24,6 @@ import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
 /**
@@ -35,47 +34,26 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
 {
     private final TransactionPropagator pusher;
     private final NeoStoreInjectedTransactionValidator validator;
-    private final TransactionMonitor transactionMonitor;
     private final TransactionRepresentationCommitProcess inner;
 
     public MasterTransactionCommitProcess( TransactionRepresentationCommitProcess commitProcess,
                                            TransactionPropagator pusher,
-                                           NeoStoreInjectedTransactionValidator validator,
-                                           TransactionMonitor transactionMonitor )
+                                           NeoStoreInjectedTransactionValidator validator)
     {
         this.inner = commitProcess;
         this.pusher = pusher;
         this.validator = validator;
-        this.transactionMonitor = transactionMonitor;
     }
 
     @Override
     public long commit( TransactionRepresentation representation ) throws TransactionFailureException
     {
-        final boolean authoredByMeTheMaster = representation.getAuthorId() == representation.getMasterId();
-        if ( !authoredByMeTheMaster )
-        {
-            transactionMonitor.transactionStarted();
-        }
-        boolean success = false;
-        try
-        {
-            validator.assertInjectionAllowed( representation.getLatestCommittedTxWhenStarted() );
+        validator.assertInjectionAllowed( representation.getLatestCommittedTxWhenStarted() );
 
-            long result = inner.commit( representation );
+        long result = inner.commit( representation );
 
-            pusher.committed( result, representation.getAuthorId() );
+        pusher.committed( result, representation.getAuthorId() );
 
-            success = true;
-
-            return result;
-        }
-        finally
-        {
-            if ( !authoredByMeTheMaster )
-            {
-                transactionMonitor.transactionFinished( success );
-            }
-        }
+        return result;
     }
 }
