@@ -19,11 +19,9 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-import static java.lang.String.format;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -31,7 +29,7 @@ import java.util.concurrent.Callable;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-public class Updater implements Callable<Updater>
+public class Updater implements Callable<Verifier>
 {
     private static final Random Random = new Random();
 
@@ -41,7 +39,6 @@ public class Updater implements Callable<Updater>
     private final int recordsPerPage;
     private final RecordVerifierUpdater recordVerifierUpdater;
     private final int counterNumber;
-    private long[] writesPerRecord;
 
     public Updater( PagedFile pagedFile, Condition condition, int maxPages, int recordsPerPage, RecordVerifierUpdater
             recordVerifierUpdater, int counterNumber )
@@ -55,9 +52,9 @@ public class Updater implements Callable<Updater>
     }
 
     @Override
-    public Updater call() throws Exception
+    public Verifier call() throws Exception
     {
-        writesPerRecord = new long[maxPages * recordsPerPage];
+        long[] writesPerRecord = new long[maxPages * recordsPerPage];
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
@@ -74,24 +71,6 @@ public class Updater implements Callable<Updater>
             }
         }
 
-        return this;
-    }
-
-    public void verifyCounts() throws Exception
-    {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
-        {
-            for ( int pageNumber = 0; pageNumber < maxPages; pageNumber++ )
-            {
-                assertTrue( format( "Unable to access page [%d]", pageNumber ), cursor.next( pageNumber ) );
-
-                for ( int recordIndex = 0; recordIndex < recordsPerPage; recordIndex++ )
-                {
-                    long expectedCount = writesPerRecord[pageNumber * recordsPerPage + recordIndex];
-
-                    recordVerifierUpdater.verifyCount( cursor, recordIndex, counterNumber, expectedCount );
-                }
-            }
-        }
+        return new Verifier( pagedFile, counterNumber, recordsPerPage, writesPerRecord, recordVerifierUpdater );
     }
 }

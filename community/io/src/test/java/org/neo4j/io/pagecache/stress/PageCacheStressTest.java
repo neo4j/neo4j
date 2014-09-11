@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.stress;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.number.OrderingComparison.greaterThanOrEqualTo;
 import static org.hamcrest.number.OrderingComparison.lessThan;
@@ -66,22 +67,39 @@ public class PageCacheStressTest
         }
     }
 
+    /**
+     * Default stress test config:
+     *
+     * Target page size is 8192 which is what the product uses by default
+     *
+     * 8 threads => 8*8 bytes for counters + 8 bytes for checksum = 72 bytes per record
+     * <p/>
+     * 8192 bytes per page / 72 bytes per record = 113 records per page
+     * <p/>
+     * 8192 bytes per page - 72 bytes per record * 113 records per page =
+     * 8192 bytes per page - 8136 bytes for the records in the page =
+     * 56 bytes padding
+     * <p/>
+     * 8136 bytes per page * 100,000 pages = 776 MB for the whole file
+     * <p/>
+     * 8192 bytes per page * 10,000 pages = 78 MB cache in memory
+     */
     public static class Builder
     {
-        private int numberOfPages = 10000;
-        private int recordsPerPage = 20;
-        private int numberOfThreads = 23;
-        private int cachePagePadding = 7;
+        int numberOfPages = 100000;
+        int recordsPerPage = 113;
+        int numberOfThreads = 8;
+        int cachePagePadding = 56;
+        int numberOfCachePages = 10000;
 
         SimplePageCacheFactory simplePageCacheFactory;
-        int numberOfCachePages = 1000;
         int cachePageSize;
         PageCacheMonitor monitor = NULL;
 
         PageCacheStresser pageCacheStresser;
         Condition condition;
 
-        public PageCacheStressTest build(SimplePageCacheFactory simplePageCacheFactory )
+        public PageCacheStressTest build( SimplePageCacheFactory simplePageCacheFactory )
         {
             this.simplePageCacheFactory = simplePageCacheFactory;
 
@@ -109,6 +127,18 @@ public class PageCacheStressTest
         {
             this.condition = condition;
             return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "Parameters:%n" +
+                            " - numberOfPages = %d%n" +
+                            " - recordsPerPage = %d%n" +
+                            " - numberOfThreads = %d%n" +
+                            " - numberOfCachePAges = %d%n" +
+                            " - cachePagePadding = %d%n",
+                    numberOfPages, recordsPerPage, numberOfThreads, numberOfCachePages, cachePagePadding );
         }
     }
 }

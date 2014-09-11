@@ -26,11 +26,11 @@ import org.neo4j.io.pagecache.PageSwapper;
 
 public class SimpleMonitor implements PageCacheMonitor
 {
-    private int faults;
-    private int evictions;
-    private int pins;
-    private int unpins;
-    private int flushes;
+    private long faults;
+    private long evictions;
+    private long pins;
+    private long unpins;
+    private long flushes;
 
     @Override
     public void pageFaulted( long filePageId, PageSwapper swapper )
@@ -62,14 +62,14 @@ public class SimpleMonitor implements PageCacheMonitor
         flushes++;
     }
 
+    public long getNumberOfEvictions()
+    {
+        return evictions;
+    }
+
     @Override
     public String toString()
     {
-        return format("%d %d %d %d %d", faults, evictions, pins, unpins, flushes);
-    }
-
-    public int getNumberOfEvictions()
-    {
-        return evictions;
+        return format("Monitoring:%n - page faults: %d%n - evictions: %d%n - pins: %d%n - unpins: %d%n - flushes: %d", faults, evictions, pins, unpins, flushes);
     }
 }

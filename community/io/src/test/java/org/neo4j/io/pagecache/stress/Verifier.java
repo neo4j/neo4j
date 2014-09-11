@@ -19,27 +19,46 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+
+import java.util.concurrent.Callable;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-public class Verifier
+public class Verifier implements Callable<Void>
 {
-    public void verify( PagedFile pagedFile, int maxPages, int recordsPerPage, RecordVerifierUpdater recordVerifierUpdater ) throws Exception
+    private final PagedFile pagedFile;
+    private final int counterNumber;
+    private final int recordsPerPage;
+    private final long[] writesPerRecord;
+    private final RecordVerifierUpdater recordVerifierUpdater;
+
+    public Verifier( PagedFile pagedFile, int counterNumber, int recordsPerPage, long[] writesPerRecord, RecordVerifierUpdater recordVerifierUpdater )
+    {
+        this.pagedFile = pagedFile;
+        this.counterNumber = counterNumber;
+        this.recordsPerPage = recordsPerPage;
+        this.writesPerRecord = writesPerRecord;
+        this.recordVerifierUpdater = recordVerifierUpdater;
+    }
+
+    @Override
+    public Void call() throws Exception
     {
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
         {
-            for ( int pageNumber = 0; pageNumber < maxPages; pageNumber++ )
+            for ( int pageNumber = 0; cursor.next(); pageNumber++ )
             {
-                assertTrue( cursor.next() );
-
-                for ( int recordNumber = 0; recordNumber < recordsPerPage; recordNumber++ )
+                for ( int recordIndex = 0; recordIndex < recordsPerPage; recordIndex++ )
                 {
-                    recordVerifierUpdater.verifyChecksum( cursor, recordNumber );
+                    long expectedCount = writesPerRecord[pageNumber * recordsPerPage + recordIndex];
+
+                    recordVerifierUpdater.verifyCount( cursor, recordIndex, counterNumber, expectedCount );
                 }
             }
         }
+
+        return null;
     }
 }

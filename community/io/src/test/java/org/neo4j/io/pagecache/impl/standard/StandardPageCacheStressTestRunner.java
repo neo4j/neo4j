@@ -19,26 +19,14 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
-import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
+import org.neo4j.io.pagecache.stress.PageCacheStressTestRunner;
 
-import org.junit.Test;
-import org.neo4j.io.pagecache.stress.Condition;
-import org.neo4j.io.pagecache.stress.PageCacheStressTest;
-import org.neo4j.io.pagecache.stress.SimpleMonitor;
-
-public class StandardPageCacheStressIT
+public class StandardPageCacheStressTestRunner
 {
-    @Test
-    public void shouldHandleTheStressOfOneMillionEvictions() throws Exception
+    public static void main( String[] args ) throws Exception
     {
-        SimpleMonitor simpleMonitor = new SimpleMonitor();
-        Condition condition = numberOfEvictions( simpleMonitor, 1_000_000 );
+        PageCacheStressTestRunner runner = new PageCacheStressTestRunner();
 
-        PageCacheStressTest runner = new PageCacheStressTest.Builder()
-                .with( simpleMonitor )
-                .with( condition )
-                .build( new SimpleStandardPageCacheFactory() );
-
-        runner.run();
+        runner.run( "Standard Page Cache stress test", args, new SimpleStandardPageCacheFactory() );
     }
 }

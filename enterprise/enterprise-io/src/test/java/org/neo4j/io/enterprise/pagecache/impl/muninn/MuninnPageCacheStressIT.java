@@ -29,10 +29,10 @@ import org.neo4j.io.pagecache.stress.SimpleMonitor;
 public class MuninnPageCacheStressIT
 {
     @Test
-    public void shouldHandleTheStressOfTenMillionEvictions() throws Exception
+    public void shouldHandleTheStressOfOneMillionEvictions() throws Exception
     {
         SimpleMonitor simpleMonitor = new SimpleMonitor();
-        Condition condition = numberOfEvictions( simpleMonitor, 10_000_000 );
+        Condition condition = numberOfEvictions( simpleMonitor, 1_000_000 );
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
                 .with( simpleMonitor )

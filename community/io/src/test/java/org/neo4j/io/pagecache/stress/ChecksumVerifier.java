@@ -19,35 +19,24 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-import static java.lang.System.currentTimeMillis;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
-import java.util.concurrent.TimeUnit;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 
-public class Conditions
+public class ChecksumVerifier
 {
-    public static Condition numberOfEvictions( final SimpleMonitor simpleMonitor, final long desiredNumberOfEvictions )
+    public void verify( PagedFile pagedFile, int recordsPerPage, RecordVerifierUpdater recordVerifierUpdater ) throws Exception
     {
-        return new Condition()
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
         {
-            @Override
-            public boolean fulfilled()
+            while ( cursor.next() )
             {
-                return simpleMonitor.getNumberOfEvictions() > desiredNumberOfEvictions;
+                for ( int recordNumber = 0; recordNumber < recordsPerPage; recordNumber++ )
+                {
+                    recordVerifierUpdater.verifyChecksum( cursor, recordNumber );
+                }
             }
-        };
-    }
-
-    public static Condition timePeriod( final int duration, final TimeUnit timeUnit )
-    {
-        final long endTimeInMilliseconds = currentTimeMillis() + timeUnit.toMillis( duration );
-
-        return new Condition()
-        {
-            @Override
-            public boolean fulfilled()
-            {
-                return currentTimeMillis() > endTimeInMilliseconds;
-            }
-        };
+        }
     }
 }

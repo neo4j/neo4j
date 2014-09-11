@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.stress;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -63,12 +64,27 @@ public class PageCacheStresser
         }
 
         ExecutorService executorService = Executors.newFixedThreadPool( numberOfThreads );
-        for ( Future<Updater> future : executorService.invokeAll( updaters ) )
+
+        try
         {
-            future.get().verifyCounts();
+            Collection<Verifier> verifiers = new LinkedList<>();
+
+            for ( Future<Verifier> future : executorService.invokeAll( updaters ) )
+            {
+                verifiers.add( future.get() );
+            }
+
+            for ( Future<Void> future : executorService.invokeAll( verifiers ) )
+            {
+                future.get();
+            }
+        }
+        finally
+        {
+            executorService.shutdown();
         }
 
-        new Verifier().verify( pagedFile, maxPages, recordsPerPage, recordVerifierUpdater );
+        new ChecksumVerifier().verify( pagedFile, recordsPerPage, recordVerifierUpdater );
 
         pageCache.unmap( file );
     }
