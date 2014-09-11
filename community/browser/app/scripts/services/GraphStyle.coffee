@@ -32,7 +32,6 @@ angular.module('neo4jApp.services')
         'border-color': '#9AA1AC'
         'border-width': '2px'
         'text-color-internal': '#FFFFFF'
-        'caption': '{id}'
         'font-size': '10px'
       'relationship':
         'color': '#A5ABB6'
@@ -143,8 +142,8 @@ angular.module('neo4jApp.services')
       forNode: (node = {}, idx = 0) ->
         selector = @nodeSelector(node, idx)
         if node.labels?.length > 0
-          @setDefaultStyling(selector)
-        @calculateStyle(selector, node)
+          @setDefaultStyling(selector, node)
+        @calculateStyle(selector)
 
       forRelationship: (rel) ->
         style_element = @calculateStyle(@relationshipSelector(rel))
@@ -164,13 +163,23 @@ angular.module('neo4jApp.services')
 
         return provider.defaultColors[0]
 
-      setDefaultStyling: (selector) ->
+      setDefaultStyling: (selector, item) ->
         rule = @findRule(selector)
 
         if not rule?
-          rule = new StyleRule(selector, @findAvailableDefaultColor())
+          rule = new StyleRule(selector, angular.extend(@findAvailableDefaultColor(), @getDefaultCaption(item)))
           @rules.push(rule)
           @persist()
+        if not rule.props.caption?
+          default_caption = @getDefaultCaption(item)
+          angular.extend(rule.props, default_caption)
+          @rules.push(rule)
+          @persist()
+
+      getDefaultCaption: (item) ->
+        return {caption: '{id}'} if not item or not item.propertyList?.length > 0
+        default_caption = {caption: "{#{item.propertyList?[0].key}}"}
+        default_caption
 
       #
       # Methods for getting and modifying rules
