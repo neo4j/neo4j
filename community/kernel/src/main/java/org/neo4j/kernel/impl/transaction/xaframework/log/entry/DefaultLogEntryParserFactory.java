@@ -43,6 +43,10 @@ public class DefaultLogEntryParserFactory implements LogEntryParserFactory
         switch ( logVersion )
         {
             // These are not thread safe, so if they are to be cached it has to be done in an object pool
+            case LogVersions.LOG_VERSION_1_9:
+                return new LogEntryParserDispatcher<>( LogEntryParsersV2.values() );
+            case LogVersions.LOG_VERSION_2_0:
+                return new LogEntryParserDispatcher<>( LogEntryParsersV3.values() );
             case LogVersions.LOG_VERSION_2_1:
                 return new LogEntryParserDispatcher<>( LogEntryParsersV4.values() );
             case LogVersions.LOG_VERSION_2_2:

@@ -19,12 +19,18 @@
  */
 package org.neo4j.storeupgrade;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Properties;
+
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
-import org.junit.experimental.theories.DataPoints;
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -43,13 +49,11 @@ import org.neo4j.server.database.Database;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Properties;
-
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
@@ -57,23 +61,31 @@ import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 @RunWith(Enclosed.class)
-public class StoreUpgradeIntegrationTest {
-    @RunWith(Theories.class)
-    public static class StoreUpgradeSingleInstanceTest {
+public class StoreUpgradeIntegrationTest
+{
+    @RunWith(Parameterized.class)
+    public static class StoreUpgradeTest
+    {
+        @Parameterized.Parameter(0)
+        public Store store;
+
         // NOTE: the zip files must contain the database files and NOT the graph.db folder itself!!!
-        @DataPoints
-        public static final Store[] stores = new Store[]{
-                new Store( "/upgrade/0.A.1-db.zip", 1071, 0, 18 ),
-                new Store( "0.A.1-db2.zip", 8, 1, 11 ),
-                new Store( "0.A.0-db.zip", 4, 0, 4 ),
-                new Store("0.A.3-empty.zip", 0, 0, 1), // 2.1.3
-                new Store("0.A.3-data.zip", 2, 0, 6), // 2.1.3
-        };
+        @Parameterized.Parameters(name = "{0}")
+        public static Collection<Store[]> stores()
+        {
+            return Arrays.<Store[]>asList(
+                    new Store[]{new Store( "/upgrade/0.A.1-db.zip", 1071, 0, 18 )}, // 2.0
+                    new Store[]{new Store( "0.A.1-db2.zip", 8, 1, 11 )}, // 2.00
+                    new Store[]{new Store( "0.A.0-db.zip", 4, 0, 4 )}, // 1.9
+                    new Store[]{new Store( "0.A.3-empty.zip", 0, 0, 1 )}, // 2.1.3
+                    new Store[]{new Store( "0.A.3-data.zip", 2, 0, 6 )} // 2.1.3
+            );
+        }
 
         @Test
-        @Theory
-        public void embeddedDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled(Store store)
-                throws IOException, ConsistencyCheckIncompleteException {
+        public void embeddedDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled()
+                throws IOException, ConsistencyCheckIncompleteException
+        {
             File dir = store.prepareDirectory();
 
             GraphDatabaseFactory factory = new GraphDatabaseFactory();
@@ -90,16 +102,15 @@ public class StoreUpgradeIntegrationTest {
         }
 
         @Test
-        @Theory
-        public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled(Store store)
-                throws IOException, ConsistencyCheckIncompleteException
+        public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled()
+        throws IOException, ConsistencyCheckIncompleteException
 
         {
             File dir = store.prepareDirectory();
 
             File configFile = new File(dir, "neo4j.properties");
             Properties props = new Properties();
-            props.setProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dir.getAbsolutePath());
+            props.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dir.getAbsolutePath() );
             props.setProperty(Configurator.DB_TUNING_PROPERTY_FILE_KEY, configFile.getAbsolutePath());
             props.setProperty(GraphDatabaseSettings.allow_store_upgrade.name(), "true");
             props.store(new FileWriter(configFile), "");
@@ -123,24 +134,13 @@ public class StoreUpgradeIntegrationTest {
 
             assertConsistentStore(dir);
         }
-    }
-
-    // TODO 2.2-future: fix this in order to check if it can upgrade from 1.9 and 2.0
-    @RunWith(Theories.class)
-    public static class StoreUpgradeHAInstanceTest
-    {
-        // NOTE: the zip files must contain the database files and NOT the graph.db folder itself!!!
-        @DataPoints
-        public static final Store[] stores = new Store[]{
-                new Store( "0.A.3-empty.zip", 0, 0, 1 ), // 2.1.3
-                new Store( "0.A.3-data.zip", 2, 0, 6 ), // 2.1.3
-        };
 
         @Test
-        @Theory
-        public void migratingOlderDataAndThanStartAClusterUsingTheNewerDataShouldWork(Store store) throws Throwable {
+        public void migratingOlderDataAndThanStartAClusterUsingTheNewerDataShouldWork() throws Throwable
+        {
             // migrate the store using a single instance
             File dir = store.prepareDirectory();
+            System.out.println( "Directory " + dir );
             GraphDatabaseFactory factory = new GraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder(dir.getAbsolutePath());
             builder.setConfig(GraphDatabaseSettings.allow_store_upgrade, "true");
@@ -181,17 +181,25 @@ public class StoreUpgradeIntegrationTest {
         }
     }
 
-    @RunWith(Theories.class)
-    public static class NotCleanlyShutdownStoreUpgradeTest {
+    @RunWith(Parameterized.class)
+    public static class StoreUpgradeNotCleanlyShutdownStoreTest
+    {
+        @Parameterized.Parameter(0)
+        public Store store;
+
         // NOTE: the zip files must contain the database files and NOT the graph.db folder itself!!!
-        @DataPoints
-        public static final Store[] stores = new Store[]{
-                new Store("0.A.3-to-be-recovered.zip", -1 /* ignored */, -1 /* ignored */, -1 /* ignored */),
-        };
+        @Parameterized.Parameters(name = "{0}")
+        public static Collection<Store[]> stores()
+        {
+            return Arrays.<Store[]>asList(
+                    new Store[]{new Store( "0.A.3-to-be-recovered.zip", -1 /* ignored */, -1 /* ignored */,
+                            -1 /* ignored */ )}
+            );
+        }
 
         @Test
-        @Theory
-        public void migratingFromANotCleanlyShutdownStoreShouldNotStartAndFail(Store store) throws Throwable {
+        public void migratingFromANotCleanlyShutdownStoreShouldNotStartAndFail() throws Throwable
+        {
             // migrate the store using a single instance
             File dir = store.prepareDirectory();
             GraphDatabaseFactory factory = new GraphDatabaseFactory();
@@ -228,6 +236,12 @@ public class StoreUpgradeIntegrationTest {
             File dir = AbstractNeo4jTestCase.unzip(StoreUpgradeIntegrationTest.class, resourceName);
             new File(dir, "messages.log").delete(); // clear the log
             return dir;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Store: " + resourceName;
         }
     }
 

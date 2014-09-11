@@ -30,25 +30,23 @@ import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
 
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
-public class LogEntryParserDispatcherV4Test
+public class LogEntryParsersV2Test
 {
-    private final LogEntryParserDispatcher<LogEntryParsersV4> dispatcher =
-            new LogEntryParserDispatcher<>( LogEntryParsersV4.values() );
+    private final LogEntryParserDispatcher<LogEntryParsersV2> dispatcher =
+            new LogEntryParserDispatcher<>( LogEntryParsersV2.values() );
     private final CommandReaderFactory.Default commandReaderFactory = new CommandReaderFactory.Default();
-    private final byte version = LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
+    private final byte version = LogEntryVersions.LEGACY_LOG_ENTRY_VERSION;
     private final LogPositionMarker marker = new LogPositionMarker();
-    private final LogPosition position = new LogPosition( 0, 37 );
+    private final LogPosition position = new LogPosition( 0, 29 );
 
     @Test
     public void shouldParserStartEntry() throws IOException
     {
         // given
-        final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, 4, new byte[]{}, position );
+        final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, -1, new byte[]{}, position );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 
         // ignored part
@@ -62,7 +60,6 @@ public class LogEntryParserDispatcherV4Test
         channel.putInt( start.getMasterId() );
         channel.putInt( start.getLocalId() );
         channel.putLong( start.getTimeWritten() );
-        channel.putLong( start.getLastCommittedTxWhenTransactionStarted() );
 
         channel.getCurrentPosition( marker );
 

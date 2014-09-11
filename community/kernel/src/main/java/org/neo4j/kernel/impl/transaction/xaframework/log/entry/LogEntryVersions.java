@@ -26,10 +26,11 @@ public class LogEntryVersions
         // no instances are allowed
     }
 
-    /*
-     * version 0 for Neo4j versions < 2.1
-     * version -1 for Neo4j 2.1
-     */
+    // version 0 for Neo4j versions < 2.1
     public static final byte LEGACY_LOG_ENTRY_VERSION = (byte) 0;
-    public static final byte CURRENT_LOG_ENTRY_VERSION = (byte) -1;
+    // version -1 for Neo4j 2.1
+    public static final byte LOG_ENTRY_VERSION_2_1 = (byte) -1;
+    // version -2 for Neo4j 2.2
+    public static final byte LOG_ENTRY_VERSION_2_2 = (byte) -2;
+    public static final byte CURRENT_LOG_ENTRY_VERSION = LOG_ENTRY_VERSION_2_2;
 }

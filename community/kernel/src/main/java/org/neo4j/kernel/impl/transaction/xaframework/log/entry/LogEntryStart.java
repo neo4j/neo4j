@@ -130,7 +130,7 @@ public class LogEntryStart extends LogEntry
                 "me=" + authorId + "," +
                 "time=" + timestamp( timeWritten, timeZone ) + "," +
                 "lastCommittedTxWhenTransactionStarted=" + lastCommittedTxWhenTransactionStarted + "," +
-                "additionalHeaderLength=" + (additionalHeader == null ? -1 : additionalHeader.length) +
+                "additionalHeaderLength=" + (additionalHeader == null ? -1 : additionalHeader.length) + "," +
                 "position=" + startPosition +
                 "]";
     }
