@@ -93,7 +93,7 @@ case class estimateSelectivity(stats: GraphStatistics, tokens: TokenContext) ext
         selectivityForPatternWithLabelsOnOneSide(pattern, pattern.dir.reverse(), rhs.labelId) *
           calculateSelectivityForLabel(rhs)
 
-      case RelationshipWithLabels(None, pattern, None, _) =>
+      case RelationshipWithLabels(None, pattern: PatternRelationship, None, _) =>
         val relationshipId: Option[Int] = tokens.getOptRelTypeId(pattern.types.head.name)
 
         val maxRelCount = stats.nodesWithLabelCardinality(None) ^ 2

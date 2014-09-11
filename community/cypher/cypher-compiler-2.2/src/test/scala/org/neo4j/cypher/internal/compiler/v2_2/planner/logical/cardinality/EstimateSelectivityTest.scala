@@ -50,97 +50,49 @@ class EstimateSelectivityTest extends CypherFunSuite with LogicalPlanningTestSup
   val reversePattern = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq(relType), SimplePatternLength)
 
   test("lonely hasLabel gets it selectivity from statistics") {
-    val tokens = mock[TokenContext]
-    val stats = mock[GraphStatistics]
-
-    val labelId = 1337
-    when(tokens.getOptLabelId("BAR")).thenReturn(Some(labelId))
-    when(stats.nodesWithLabelCardinality(None)).thenReturn(Cardinality(100))
-    when(stats.nodesWithLabelCardinality(Some(LabelId(labelId)))).thenReturn(Cardinality(10))
-
-    val estimator = estimateSelectivity(stats, tokens)
-
-    estimator(SingleExpression(labelPredicate)) should equal(Selectivity(.1))
-  }
-
-  /*test("lonely hasLabel gets it selectivity from statistics") {
     givenPredicate("a:BAR").
       withAllNodes(40).
       withLabel('BAR -> 20).
       shouldHaveSelectivity(.5)
-
-
-
-    val tokens = mock[TokenContext]
-    val stats = mock[GraphStatistics]
-
-    val labelId = 1337
-    when(tokens.getOptLabelId("BAR")).thenReturn(Some(labelId))
-    when(stats.nodesWithLabelCardinality(None)).thenReturn(Cardinality(100))
-    when(stats.nodesWithLabelCardinality(Some(LabelId(labelId)))).thenReturn(Cardinality(10))
-
-    val estimator = estimateSelectivity(stats, tokens)
-
-    estimator(SingleExpression(labelPredicate)) should equal(Selectivity(.1))
-  }*/
+  }
 
   test("hasLabel on unknown label gives selectivity 0") {
-    val tokens = mock[TokenContext]
-    val stats = mock[GraphStatistics]
-
-    when(tokens.getOptLabelId("BAR")).thenReturn(None)
-    when(stats.nodesWithLabelCardinality(None)).thenReturn(Cardinality(100))
-
-    val estimator = estimateSelectivity(stats, tokens)
-
-    estimator(SingleExpression(labelPredicate)) should equal(Selectivity(0))
+    givenPredicate("a:BAR").
+      withAllNodes(40).
+      shouldHaveSelectivity(0)
   }
 
   test("relationship given labels, type and direction") {
-    val tokens = mock[TokenContext]
-    val stats = mock[GraphStatistics]
-    val lhsId = LabelId(1)
-    val rhsId = LabelId(2)
-
-    when(stats.nodesWithLabelCardinality(None)).thenReturn(Cardinality(100))
-    when(stats.nodesWithLabelCardinality(Some(lhsId))).thenReturn(Cardinality(100))
-    when(stats.nodesWithLabelCardinality(Some(rhsId))).thenReturn(Cardinality(100))
-    when(tokens.getOptLabelId("BAR")).thenReturn(Some(1))
-    when(tokens.getOptLabelId("FOO")).thenReturn(Some(2))
-    when(tokens.getOptRelTypeId("TYPE")).thenReturn(Some(3))
-    when(stats.cardinalityByLabelsAndRelationshipType(Some(lhsId), Some(RelTypeId(3)), Some(rhsId))).thenReturn(Cardinality(25))
-    when(stats.cardinalityByLabelsAndRelationshipType(None, None, None)).thenReturn(Cardinality(100))
-
-    val estimator = estimateSelectivity(stats, tokens)
-
-    estimator(RelationshipWithLabels(Some(BAR), pattern, Some(FOO), Set.empty)) should equal(Selectivity(.0025))
+    givenPredicate("(a:BAR)-[r:TYPE]->(b:FOO)").
+      withAllNodes(200).
+      withLabel('BAR -> 50).
+      withLabel('FOO -> 100).
+      withRelationshipCardinality('BAR -> 'TYPE -> 'FOO -> 25).
+      shouldHaveSelectivity(25.0 / (200 * 200))
   }
 
   test("relationship given type and directions, no labels") {
-    val tokens = mock[TokenContext]
-    val stats = mock[GraphStatistics]
-
-    when(tokens.getOptRelTypeId("TYPE")).thenReturn(Some(3))
-    when(stats.nodesWithLabelCardinality(None)).thenReturn(Cardinality(100))
-    when(stats.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(3)), None)).thenReturn(Cardinality(50))
-    when(stats.cardinalityByLabelsAndRelationshipType(None, None, None)).thenReturn(Cardinality(100))
-
-    val estimator = estimateSelectivity(stats, tokens)
-
-    estimator(RelationshipWithLabels(None, pattern, None, Set.empty)) should equal(Selectivity(.005))
+    givenPredicate("(a)-[r:TYPE]->(b)").
+      withAllNodes(100).
+      withLabel('BAR -> 20).
+      withLabel('FOO -> 30).
+      withLabel('BAZ -> 1).
+      withRelationshipCardinality('BAR -> 'TYPE -> 'FOO -> 25).
+      withRelationshipCardinality('BAR -> 'TYPE -> 'BAZ -> 25).
+      withRelationshipCardinality('BAR -> 'TYPE2 -> 'FOO -> 50).
+      shouldHaveSelectivity((25.0 + 25) / (100 * 100))
   }
 
   test("relationship given unknown type and directions, no labels") {
-    val tokens = mock[TokenContext]
-    val stats = mock[GraphStatistics]
-
-    when(tokens.getOptRelTypeId("TYPE")).thenReturn(None)
-    when(stats.nodesWithLabelCardinality(None)).thenReturn(Cardinality(100))
-    when(stats.cardinalityByLabelsAndRelationshipType(None, None, None)).thenReturn(Cardinality(100))
-
-    val estimator = estimateSelectivity(stats, tokens)
-
-    estimator(RelationshipWithLabels(None, pattern, None, Set.empty)) should equal(Selectivity(0))
+    givenPredicate("(a)-[r]->(b)").
+      withAllNodes(100).
+      withLabel('BAR -> 20).
+      withLabel('FOO -> 30).
+      withLabel('BAZ -> 1).
+      withRelationshipCardinality('BAR -> 'TYPE -> 'FOO -> 25).
+      withRelationshipCardinality('BAR -> 'TYPE -> 'BAZ -> 25).
+      withRelationshipCardinality('BAR -> 'TYPE2 -> 'FOO -> 50).
+      shouldHaveSelectivity((25.0 + 25 + 50) / (100 * 100))
   }
 
   test("relationship given left label, type and direction") {

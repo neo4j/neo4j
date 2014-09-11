@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, Planner, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, TokenContext}
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, RelTypeId}
+import org.scalautils.Equality
 
 trait QueryGraphProducer {
   self: LogicalPlanningTestSupport =>
@@ -47,7 +48,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
   self: CypherFunSuite with LogicalPlanningTestSupport =>
 
   def givenPattern(pattern: String) = TestUnit(pattern)
-  def givenPredicate(pattern: String) = TestUnit("MATCH a, b WHERE " + pattern)
+  def givenPredicate(pattern: String) = TestUnit("MATCH " + pattern)
 
   case class TestUnit(query: String,
                       allNodes: Option[Int] = None,
@@ -83,12 +84,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
         knownProperties = knownProperties + propertyName.name
       )
 
-    def shouldHaveCardinality(number: Double) {
-      shouldHaveCardinality(Math.round(number).toInt)
-    }
-
-    def shouldHaveCardinality(number: Int) {
-
+    def foo = {
       val labelIds: Map[String, Int] = knownLabelCardinality.map(_._1).zipWithIndex.toMap
       val propertyIds: Map[String, Int] = knownProperties.zipWithIndex.toMap
       val relTypeIds: Map[String, Int] = knownRelationshipCardinality.map(_._1._2).toSeq.distinct.zipWithIndex.toMap
@@ -193,7 +189,18 @@ trait CardinalityTestHelper extends QueryGraphProducer {
         def getPropertyKeyName(id: Int) = ???
         def getLabelId(labelName: String) = ???
       }
+      (statistics, tokenContext)
+    }
 
+    implicit val cardinalityEq = new Equality[Cardinality] {
+      def areEqual(a: Cardinality, b: Any): Boolean = b match {
+        case b: Cardinality => a.amount === b.amount +- 0.01
+        case _ => false
+      }
+    }
+
+    def shouldHaveCardinality(number: Double) {
+      val (statistics, tokenContext) = foo
       val queryGraph = createQueryGraphAndSemanticStableTable()
       val cardinalityModel = QueryGraphCardinalityModel(
         statistics,
@@ -202,7 +209,14 @@ trait CardinalityTestHelper extends QueryGraphProducer {
         combinePredicates
       )
       val result = cardinalityModel(queryGraph)
-      result.map(n => Math.round(n)) should equal(Cardinality(number))
+      result should equal(Cardinality(number))
+    }
+
+    def shouldHaveSelectivity(number: Double): Unit = {
+      val (statistics, tokenContext) = foo
+      val queryGraph = createQueryGraphAndSemanticStableTable()
+      val (predicate, result: Selectivity) :: Nil = groupPredicates(estimateSelectivity(statistics, tokenContext))(producePredicates(queryGraph)).toList
+      result should equal(Selectivity(number))
     }
 
     def createQueryGraphAndSemanticStableTable(): QueryGraph = produceQueryGraphForPattern(query)
