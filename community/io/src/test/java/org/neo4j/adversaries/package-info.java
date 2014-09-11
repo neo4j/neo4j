@@ -22,7 +22,7 @@
  * testing.
  *
  * An adversarial implementation of an interface is one that is technically correct, but not well behaved. Their
- * purpose is to push dependeners into all kinds of failure modes. Failure modes that would otherwise be highly
+ * purpose is to push dependers into all kinds of failure modes. Failure modes that would otherwise be highly
  * unlikely to observe in practice, but which the depender must none the less be able to cope with.
  */
 package org.neo4j.adversaries;

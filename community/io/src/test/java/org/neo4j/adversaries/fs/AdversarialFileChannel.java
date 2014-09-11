@@ -26,16 +26,17 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 import org.neo4j.adversaries.Adversary;
-import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.io.fs.StoreChannel;
 
 @SuppressWarnings( "unchecked" )
-public class AdversarialFileChannel extends StoreFileChannel
+public class AdversarialFileChannel implements StoreChannel
 {
+    private final StoreChannel delegate;
     private final Adversary adversary;
 
-    public AdversarialFileChannel( StoreFileChannel channel, Adversary adversary )
+    public AdversarialFileChannel( StoreChannel channel, Adversary adversary )
     {
-        super( channel );
+        this.delegate = channel;
         this.adversary = adversary;
     }
 
@@ -43,56 +44,56 @@ public class AdversarialFileChannel extends StoreFileChannel
     public long write( ByteBuffer[] srcs ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return super.write( srcs );
+        return delegate.write( srcs );
     }
 
     @Override
     public int write( ByteBuffer src, long position ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return super.write( src, position );
+        return delegate.write( src, position );
     }
 
     @Override
     public void writeAll( ByteBuffer src, long position ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        super.writeAll( src, position );
+        delegate.writeAll( src, position );
     }
 
     @Override
     public void writeAll( ByteBuffer src ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        super.writeAll( src );
+        delegate.writeAll( src );
     }
 
     @Override
     public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return super.map( mode, position, size );
+        return delegate.map( mode, position, size );
     }
 
     @Override
     public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return super.write( srcs, offset, length );
+        return delegate.write( srcs, offset, length );
     }
 
     @Override
-    public StoreFileChannel truncate( long size ) throws IOException
+    public StoreChannel truncate( long size ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return super.truncate( size );
+        return delegate.truncate( size );
     }
 
     @Override
-    public StoreFileChannel position( long newPosition ) throws IOException
+    public StoreChannel position( long newPosition ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return super.position( newPosition );
+        return delegate.position( newPosition );
     }
 
     @Override
@@ -101,11 +102,11 @@ public class AdversarialFileChannel extends StoreFileChannel
         if ( adversary.injectFailureOrMischief( IOException.class ) )
         {
             int oldLimit = mischiefLimit( dst );
-            int read = super.read( dst, position );
+            int read = delegate.read( dst, position );
             dst.limit( oldLimit );
             return read;
         }
-        return super.read( dst, position );
+        return delegate.read( dst, position );
     }
 
     private int mischiefLimit( ByteBuffer buf )
@@ -120,7 +121,7 @@ public class AdversarialFileChannel extends StoreFileChannel
     public void force( boolean metaData ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        super.force( metaData );
+        delegate.force( metaData );
     }
 
     @Override
@@ -129,11 +130,11 @@ public class AdversarialFileChannel extends StoreFileChannel
         if ( adversary.injectFailureOrMischief( IOException.class ) )
         {
             int oldLimit = mischiefLimit( dst );
-            int read = super.read( dst );
+            int read = delegate.read( dst );
             dst.limit( oldLimit );
             return read;
         }
-        return super.read( dst );
+        return delegate.read( dst );
     }
 
     @Override
@@ -143,32 +144,32 @@ public class AdversarialFileChannel extends StoreFileChannel
         {
             ByteBuffer lastBuf = dsts[dsts.length - 1];
             int oldLimit = mischiefLimit( lastBuf );
-            long read = super.read( dsts, offset, length );
+            long read = delegate.read( dsts, offset, length );
             lastBuf.limit( oldLimit );
             return read;
         }
-        return super.read( dsts, offset, length );
+        return delegate.read( dsts, offset, length );
     }
 
     @Override
     public long position() throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return super.position();
+        return delegate.position();
     }
 
     @Override
     public FileLock tryLock() throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return super.tryLock();
+        return delegate.tryLock();
     }
 
     @Override
     public boolean isOpen()
     {
         adversary.injectFailure();
-        return super.isOpen();
+        return delegate.isOpen();
     }
 
     @Override
@@ -178,31 +179,31 @@ public class AdversarialFileChannel extends StoreFileChannel
         {
             ByteBuffer lastBuf = dsts[dsts.length - 1];
             int oldLimit = mischiefLimit( lastBuf );
-            long read = super.read( dsts );
+            long read = delegate.read( dsts );
             lastBuf.limit( oldLimit );
             return read;
         }
-        return super.read( dsts );
+        return delegate.read( dsts );
     }
 
     @Override
     public int write( ByteBuffer src ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return super.write( src );
+        return delegate.write( src );
     }
 
     @Override
     public void close() throws IOException
     {
         adversary.injectFailure( IOException.class );
-        super.close();
+        delegate.close();
     }
 
     @Override
     public long size() throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return super.size();
+        return delegate.size();
     }
 }
