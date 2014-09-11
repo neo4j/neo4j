@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.symbols
 
 import org.neo4j.cypher.{CypherException, CypherTypeException, SyntaxException}
-import collection.Map
+
+import scala.collection.Map
 
 case class SymbolTable(identifiers: Map[String, CypherType] = Map.empty) {
   def hasIdentifierNamed(name: String): Boolean = identifiers.contains(name)
@@ -53,3 +54,5 @@ case class SymbolTable(identifiers: Map[String, CypherType] = Map.empty) {
     case _:CypherException => false
   }
 }
+
+
