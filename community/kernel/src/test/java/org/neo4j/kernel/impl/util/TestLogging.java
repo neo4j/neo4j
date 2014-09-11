@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.util;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.helpers.collection.Visitor;
+
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.kernel.logging.Logging;
@@ -78,5 +80,23 @@ public class TestLogging implements Logging
     @Override
     public void shutdown() throws Throwable
     {
+    }
+
+    private void visitLog( TestLogger logger, Visitor<TestLogger.LogCall,RuntimeException> logVisitor )
+    {
+        if(logger != null)
+        {
+            logger.visitLogCalls( logVisitor );
+        }
+    }
+
+    public void visitMessagesLog( Class loggingClass, Visitor<TestLogger.LogCall,RuntimeException> logVisitor )
+    {
+        visitLog( messageLoggers.get( loggingClass ), logVisitor );
+    }
+
+    public void visitConsoleLog( Class loggingClass, Visitor<TestLogger.LogCall,RuntimeException> logVisitor )
+    {
+        visitLog( consoleLoggers.get( loggingClass ), logVisitor );
     }
 }
