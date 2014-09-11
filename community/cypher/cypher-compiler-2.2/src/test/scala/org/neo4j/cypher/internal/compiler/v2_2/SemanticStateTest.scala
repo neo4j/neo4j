@@ -136,20 +136,20 @@ class SemanticStateTest extends CypherFunSuite {
 
   test("should find symbol in parent") {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
-    val s2 = s1.newScope
+    val s2 = s1.newChildScope
     s2.symbolTypes("foo") should equal(CTNode: TypeSpec)
   }
 
   test("should override symbol in parent") {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
-    val s2 = s1.newScope.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTString).right.get
+    val s2 = s1.newChildScope.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTString).right.get
 
     s2.symbolTypes("foo") should equal(CTString: TypeSpec)
   }
 
   test("should extend symbol in parent") {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
-    val s2 = s1.newScope.implicitIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTAny.covariant).right.get
+    val s2 = s1.newChildScope.implicitIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTAny.covariant).right.get
     s2.symbolTypes("foo") should equal(CTNode: TypeSpec)
   }
 
@@ -165,34 +165,6 @@ class SemanticStateTest extends CypherFunSuite {
     val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
     val s2 = s1.implicitIdentifier(identifier2, CTNode).right.get
     s2.expressionType(identifier2).actual should equal(CTNode: TypeSpec)
-  }
-
-  test("should return types of identifier after clear") {
-    val identifier = ast.Identifier("foo")(DummyPosition(0))
-    val s1 = SemanticState.clean.declareIdentifier(identifier, CTNode).right.get
-    s1.clearSymbols.expressionType(identifier).actual should equal(CTNode: TypeSpec)
-  }
-
-  test("should return types of later implicit identifier after clear") {
-    val identifier1 = ast.Identifier("foo")(DummyPosition(0))
-    val identifier2 = ast.Identifier("foo")(DummyPosition(3))
-    val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
-    val s2 = s1.implicitIdentifier(identifier2, CTNode).right.get
-    s2.clearSymbols.expressionType(identifier2).actual should equal(CTNode: TypeSpec)
-  }
-
-  test("should return types of later ensured identifier after clear") {
-    val identifier1 = ast.Identifier("foo")(DummyPosition(0))
-    val identifier2 = ast.Identifier("foo")(DummyPosition(3))
-    val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
-    val s2 = s1.ensureIdentifierDefined(identifier2).right.get
-    s2.clearSymbols.expressionType(identifier2).actual should equal(CTNode: TypeSpec)
-  }
-
-  test("should not return symbol of identifier after clear") {
-    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
-    s1.clearSymbols.symbol("foo") should equal(None)
-    s1.clearSymbols.symbolTypes("foo") should equal(TypeSpec.all)
   }
 
   test("should maintain separate TypeInfo for equivalent expressions") {
@@ -211,7 +183,7 @@ class SemanticStateTest extends CypherFunSuite {
 
   test("should gracefully update an identifier") {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
-    val s2: SemanticState = s1.newScope.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTRelationship).right.get
+    val s2: SemanticState = s1.newChildScope.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTRelationship).right.get
     s1.symbolTypes("foo") should equal(CTNode.invariant)
     s2.symbolTypes("foo") should equal(CTRelationship.invariant)
   }

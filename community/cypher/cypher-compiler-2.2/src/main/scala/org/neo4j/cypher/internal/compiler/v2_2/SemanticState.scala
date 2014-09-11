@@ -23,6 +23,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.helpers.{TreeZipper, TreeElem}
 import symbols._
 import scala.collection.immutable.HashMap
 
+// A symbol collects all uses of a postion within the current scope and
+// up to the originally defining scope together with type information
+//
+// (s1 n1 (s2 ... (s3 n2 (s4 ... n3)) =>
+//
+// s1.localSymbol(n) = Symblol(n, Seq(1), type(n))
+// s3.localSymbol(n) = Symblol(n, Seq(1, 2), type(n))
+// s4.localSymbol(n) = Symblol(n, Seq(1, 2, 3), type(n))
+//
 case class Symbol(name: String, positions: Seq[InputPosition], types: TypeSpec)
 
 case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = None) {
@@ -64,8 +73,8 @@ object SemanticState {
     def rootScope: Scope = location.root.elem
     def parent: Option[ScopeLocation] = location.up.map(ScopeLocation)
 
-    def clear: ScopeLocation = location.replace(Scope.empty)
-    def newScope: ScopeLocation = location.insertChild(Scope.empty)
+    def newChildScope: ScopeLocation = location.insertChild(Scope.empty)
+    def newSiblingScope: ScopeLocation = location.insertRight(Scope.empty).get
 
     def isEmpty: Boolean = scope.isEmpty
 
@@ -74,7 +83,6 @@ object SemanticState {
 
     def symbolNames: Set[String] = scope.symbolNames
 
-    def importScope(other: ScopeLocation): ScopeLocation = importScope(other.scope)
     def importScope(other: Scope): ScopeLocation = location.replace(scope.importScope(other))
 
     def updateIdentifier(identifier: String, types: TypeSpec, positions: Seq[InputPosition]): ScopeLocation =
@@ -85,15 +93,15 @@ import SemanticState.ScopeLocation
 
 case class SemanticState(currentScope: ScopeLocation, typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo]) {
   def scopeTree = currentScope.rootScope
-  def newScope = copy(currentScope = currentScope.newScope)
-  def popScope = copy(currentScope = currentScope.parent.get)
 
-  def clearSymbols = copy(currentScope = currentScope.clear)
+  def newChildScope = copy(currentScope = currentScope.newChildScope)
+  def newSiblingScope = copy(currentScope = currentScope.newSiblingScope)
+  def popScope = copy(currentScope = currentScope.parent.get)
 
   def symbol(name: String): Option[Symbol] = currentScope.symbol(name)
   def symbolTypes(name: String) = symbol(name).map(_.types).getOrElse(TypeSpec.all)
 
-  def importScope(scope: ScopeLocation) = copy(currentScope = currentScope.importScope(scope))
+  def importScope(scope: Scope) = copy(currentScope = currentScope.importScope(scope))
 
   def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(identifier.name) match {
