@@ -84,55 +84,62 @@ public class StoreUpgradeIntegrationTest
 
         @Test
         public void embeddedDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled()
-                throws IOException, ConsistencyCheckIncompleteException
+        throws IOException, ConsistencyCheckIncompleteException
         {
             File dir = store.prepareDirectory();
 
             GraphDatabaseFactory factory = new GraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder(dir.getAbsolutePath());
-            builder.setConfig(GraphDatabaseSettings.allow_store_upgrade, "true");
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir.getAbsolutePath() );
+            builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             GraphDatabaseService db = builder.newGraphDatabase();
-
-            try {
-                checkInstance(store, (GraphDatabaseAPI) db);
-            } finally {
+            try
+            {
+                checkInstance( store, (GraphDatabaseAPI) db );
+            }
+            finally
+            {
                 db.shutdown();
             }
-            assertConsistentStore(dir);
+
+            assertConsistentStore( dir );
         }
 
         @Test
         public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled()
-        throws IOException, ConsistencyCheckIncompleteException
-
+                throws IOException, ConsistencyCheckIncompleteException
         {
             File dir = store.prepareDirectory();
 
-            File configFile = new File(dir, "neo4j.properties");
+            File configFile = new File( dir, "neo4j.properties" );
             Properties props = new Properties();
             props.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dir.getAbsolutePath() );
-            props.setProperty(Configurator.DB_TUNING_PROPERTY_FILE_KEY, configFile.getAbsolutePath());
-            props.setProperty(GraphDatabaseSettings.allow_store_upgrade.name(), "true");
-            props.store(new FileWriter(configFile), "");
+            props.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, configFile.getAbsolutePath() );
+            props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
+            props.store( new FileWriter( configFile ), "" );
 
-            try {
-                System.setProperty(Configurator.NEO_SERVER_CONFIG_FILE_KEY, configFile.getAbsolutePath());
+            try
+            {
+                System.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, configFile.getAbsolutePath() );
 
                 Bootstrapper bootstrapper = Bootstrapper.loadMostDerivedBootstrapper();
                 bootstrapper.start();
-
-                try {
+                try
+                {
                     NeoServer server = bootstrapper.getServer();
                     Database database = server.getDatabase();
-                    checkInstance(store, database.getGraph());
-                } finally {
+                    checkInstance( store, database.getGraph() );
+                }
+                finally
+                {
                     bootstrapper.stop();
                 }
-            } finally {
-                System.clearProperty(Configurator.NEO_SERVER_CONFIG_FILE_KEY);
+            }
+            finally
+            {
+                System.clearProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY );
             }
 
-            assertConsistentStore(dir);
+            assertConsistentStore( dir );
         }
 
         @Test
@@ -140,44 +147,48 @@ public class StoreUpgradeIntegrationTest
         {
             // migrate the store using a single instance
             File dir = store.prepareDirectory();
-            System.out.println( "Directory " + dir );
             GraphDatabaseFactory factory = new GraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder(dir.getAbsolutePath());
-            builder.setConfig(GraphDatabaseSettings.allow_store_upgrade, "true");
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir.getAbsolutePath() );
+            builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             GraphDatabaseService db = builder.newGraphDatabase();
-            try {
-                checkInstance(store, (GraphDatabaseAPI) db);
-            } finally {
+            try
+            {
+                checkInstance( store, (GraphDatabaseAPI) db );
+            }
+            finally
+            {
                 db.shutdown();
             }
 
-            assertConsistentStore(dir);
+            assertConsistentStore( dir );
 
             // start the cluster with the db migrated from the old instance
-            File haDir = new File(dir.getParentFile(), "ha-stuff");
-            FileUtils.deleteRecursively(haDir);
+            File haDir = new File( dir.getParentFile(), "ha-stuff" );
+            FileUtils.deleteRecursively( haDir );
             ClusterManager clusterManager = new ClusterManager(
-                    new ClusterManager.Builder(haDir).withSeedDir(dir).withProvider(clusterOfSize(2))
+                    new ClusterManager.Builder( haDir ).withSeedDir( dir ).withProvider( clusterOfSize( 2 ) )
             );
 
             clusterManager.start();
 
             ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
             HighlyAvailableGraphDatabase master, slave;
-            try {
-                cluster.await(allSeesAllAsAvailable());
+            try
+            {
+                cluster.await( allSeesAllAsAvailable() );
 
                 master = cluster.getMaster();
-                checkInstance(store, master);
+                checkInstance( store, master );
                 slave = cluster.getAnySlave();
-                checkInstance(store, slave);
-            } finally {
+                checkInstance( store, slave );
+            }
+            finally
+            {
                 clusterManager.shutdown();
             }
 
-
-            assertConsistentStore(new File(master.getStoreDir()));
-            assertConsistentStore(new File(slave.getStoreDir()));
+            assertConsistentStore( new File( master.getStoreDir() ) );
+            assertConsistentStore( new File( slave.getStoreDir() ) );
         }
     }
 
@@ -211,7 +222,7 @@ public class StoreUpgradeIntegrationTest
                 fail("It should have failed.");
             } catch (RuntimeException ex) {
                 final UpgradingStoreVersionNotFoundException expected =
-                        new UpgradingStoreVersionNotFoundException("neostore.nodestore.db");
+                        new UpgradingStoreVersionNotFoundException( "neostore.nodestore.db" );
                 final Throwable cause = ex.getCause().getCause().getCause();
                 assertEquals(expected.getClass(), cause.getClass());
                 assertEquals(expected.getMessage(), cause.getMessage());
@@ -219,22 +230,26 @@ public class StoreUpgradeIntegrationTest
         }
     }
 
-    private static class Store {
+    private static class Store
+    {
         private final String resourceName;
         final long expectedNodeCount;
         final long lastTxId;
         final long expectedIndexCount;
 
-        private Store(String resourceName, long expectedNodeCount, long expectedIndexCount, long lastTxId) {
+
+        private Store( String resourceName, long expectedNodeCount, long expectedIndexCount, long lastTxId )
+        {
             this.resourceName = resourceName;
             this.expectedNodeCount = expectedNodeCount;
             this.expectedIndexCount = expectedIndexCount;
             this.lastTxId = lastTxId;
         }
 
-        public File prepareDirectory() throws IOException {
-            File dir = AbstractNeo4jTestCase.unzip(StoreUpgradeIntegrationTest.class, resourceName);
-            new File(dir, "messages.log").delete(); // clear the log
+        public File prepareDirectory() throws IOException
+        {
+            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeIntegrationTest.class, resourceName );
+            new File( dir, "messages.log" ).delete(); // clear the log
             return dir;
         }
 
@@ -245,23 +260,25 @@ public class StoreUpgradeIntegrationTest
         }
     }
 
-    private static void checkInstance(Store store, GraphDatabaseAPI db) {
-        try (Transaction ignored = db.beginTx()) {
+    private static void checkInstance( Store store, GraphDatabaseAPI db )
+    {
+        try ( Transaction ignored = db.beginTx() )
+        {
             // count nodes
-            long count = count(GlobalGraphOperations.at(db).getAllNodes());
-            assertThat(count, is(store.expectedNodeCount));
-
+            long nodeCount = count( GlobalGraphOperations.at( db ).getAllNodes() );
+            assertThat( nodeCount, is( store.expectedNodeCount ) );
 
             // count indexes
-            long indexCount = count(db.schema().getIndexes());
-            assertThat(indexCount, is(store.expectedIndexCount));
+            long indexCount = count( db.schema().getIndexes() );
+            assertThat( indexCount, is( store.expectedIndexCount ) );
 
             // check last committed tx
             long lastCommittedTxId = db.getDependencyResolver()
-                    .resolveDependency(NeoStoreXaDataSource.class)
+                    .resolveDependency( NeoStoreXaDataSource.class )
                     .getNeoStore()
                     .getLastCommittedTransactionId();
-            assertThat(lastCommittedTxId, is(store.lastTxId));
+
+            assertThat( lastCommittedTxId, is( store.lastTxId ) );
         }
     }
 }

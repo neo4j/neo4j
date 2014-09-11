@@ -115,13 +115,10 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     private final T requestTarget;
     private ChannelGroup channelGroup;
     private final Map<Channel, Pair<RequestContext, AtomicLong /*time last heard of*/>> connectedSlaveChannels =
-            new ConcurrentHashMap<Channel, Pair<RequestContext, AtomicLong>>();
-    private ExecutorService executor;
-    private ExecutorService workerExecutor;
+            new ConcurrentHashMap<>();
     private ExecutorService targetCallExecutor;
     private final StringLogger msgLog;
-    private final Map<Channel, PartialRequest> partialRequests =
-            new ConcurrentHashMap<Channel, PartialRequest>();
+    private final Map<Channel, PartialRequest> partialRequests = new ConcurrentHashMap<>();
     private final Configuration config;
     private final int frameLength;
     private volatile boolean shuttingDown;
@@ -147,13 +144,13 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     private int chunkSize;
 
     public Server( T requestTarget, Configuration config, Logging logging, int frameLength,
-                   byte applicationProtocolVersion, TxChecksumVerifier txVerifier, Clock clock, ByteCounterMonitor
+            ProtocolVersion protocolVersion, TxChecksumVerifier txVerifier, Clock clock, ByteCounterMonitor
             byteCounterMonitor, RequestMonitor requestMonitor )
     {
         this.requestTarget = requestTarget;
         this.config = config;
         this.frameLength = frameLength;
-        this.applicationProtocolVersion = applicationProtocolVersion;
+        this.applicationProtocolVersion = protocolVersion.getApplicationProtocol();
         this.msgLog = logging.getMessagesLog( getClass() );
         this.txVerifier = txVerifier;
         this.clock = clock;
@@ -172,8 +169,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         this.oldChannelThresholdMillis = config.getOldChannelThreshold();
         chunkSize = config.getChunkSize();
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
-        executor = Executors.newCachedThreadPool( new NamedThreadFactory( "Server receiving" ) );
-        workerExecutor = Executors.newCachedThreadPool( new NamedThreadFactory( "Server receiving" ) );
         targetCallExecutor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + ":"
                 + config.getServerAddress().getPort() ) );
         unfinishedTransactionExecutor = Executors.newScheduledThreadPool( 2, new NamedThreadFactory( "Unfinished " +
@@ -181,6 +176,9 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         silentChannelExecutor = Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Silent channel " +
                 "reaper" ) );
         silentChannelExecutor.scheduleWithFixedDelay( silentChannelFinisher(), 5, 5, TimeUnit.SECONDS );
+
+        ExecutorService executor = Executors.newCachedThreadPool( new NamedThreadFactory( "Server receiving" ) );
+        ExecutorService workerExecutor = Executors.newCachedThreadPool( new NamedThreadFactory( "Server receiving" ) );
         bootstrap = new ServerBootstrap( new NioServerSocketChannelFactory(
                 executor, workerExecutor, config.getMaxConcurrentTransactions() ) );
         bootstrap.setPipelineFactory( this );
@@ -266,7 +264,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             @Override
             public void run()
             {
-                Map<Channel, Boolean/*starting to get old?*/> channels = new HashMap<Channel, Boolean>();
+                Map<Channel, Boolean/*starting to get old?*/> channels = new HashMap<>();
                 synchronized ( connectedSlaveChannels )
                 {
                     for ( Map.Entry<Channel, Pair<RequestContext, AtomicLong>> channel : connectedSlaveChannels
@@ -397,7 +395,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     protected void tryToFinishOffChannel( Channel channel )
     {
-        Pair<RequestContext, AtomicLong> slave = null;
+        Pair<RequestContext, AtomicLong> slave;
         slave = unmapSlave( channel );
         if ( slave == null )
         {
@@ -618,7 +616,11 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     private static void writeStoreId( StoreId storeId, ChannelBuffer targetBuffer )
     {
-        targetBuffer.writeBytes( storeId.serialize() );
+        targetBuffer.writeLong( storeId.getCreationTime() );
+        targetBuffer.writeLong( storeId.getRandomId() );
+        targetBuffer.writeLong( storeId.getStoreVersion() );
+        targetBuffer.writeLong( storeId.getUpgradeTime() );
+        targetBuffer.writeLong( storeId.getUpgradeId() );
     }
 
     private static void writeTransactionStreams( Response<?> response,
@@ -705,7 +707,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     public Map<Channel, RequestContext> getConnectedSlaveChannels()
     {
-        Map<Channel, RequestContext> result = new HashMap<Channel, RequestContext>();
+        Map<Channel, RequestContext> result = new HashMap<>();
         synchronized ( connectedSlaveChannels )
         {
             for ( Map.Entry<Channel, Pair<RequestContext, AtomicLong>> entry : connectedSlaveChannels.entrySet() )

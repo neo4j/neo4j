@@ -115,6 +115,7 @@ public final class TxStateImpl implements TxState
     private final LegacyIndexTransactionState legacyChangesIndexProvider;
     private Map<String, LegacyIndex> nodeLegacyIndexChanges;
     private Map<String, LegacyIndex> relationshipLegacyIndexChanges;
+    private Map<IndexDescriptor, Map<Object, DiffSets<Long>>> indexUpdates;
 
     private boolean hasChanges;
 
@@ -417,6 +418,7 @@ public final class TxStateImpl implements TxState
                 {
                     labelStateNodeDiffSets( label ).remove( nodeId );
                 }
+                nodeState.clearIndexDiffs( nodeId );
                 nodeState.clear();
             }
         }
@@ -999,6 +1001,85 @@ public final class TxStateImpl implements TxState
     {
         return createdConstraintIndexesByConstraint == null ? null :
                 createdConstraintIndexesByConstraint.get( constraint );
+    }
+
+    @Override
+    public DiffSets<Long> indexUpdates( IndexDescriptor descriptor, Object value )
+    {
+        DiffSets<Long> diffs = getIndexUpdates( descriptor, false, value );
+        return diffs == null ? DiffSets.<Long>emptyDiffSets() : diffs;
+    }
+
+    @Override
+    public void indexUpdateProperty( IndexDescriptor descriptor, long nodeId, Object valueBefore, Object valueAfter )
+    {
+        {
+            DiffSets<Long> before = getIndexUpdates( descriptor, true, valueBefore );
+            if ( before != null )
+            {
+                before.remove( nodeId );
+                //if ( hasNodesAddedOrRemoved() && addedAndRemovedNodes().getAdded().contains( nodeId ) )
+                {
+                    if ( before.getRemoved().contains( nodeId ) )
+                    {
+                        getOrCreateNodeState( nodeId ).addIndexDiff( before );
+                    }
+                    else
+                    {
+                        getOrCreateNodeState( nodeId ).removeIndexDiff( before );
+                    }
+                }
+            }
+        }
+        {
+            DiffSets<Long> after = getIndexUpdates( descriptor, true, valueAfter );
+            if ( after != null )
+            {
+                after.add( nodeId );
+                //if ( hasNodesAddedOrRemoved() && addedAndRemovedNodes().getAdded().contains( nodeId ) )
+                {
+                    if ( after.getAdded().contains( nodeId ) )
+                    {
+                        getOrCreateNodeState( nodeId ).addIndexDiff( after );
+                    }
+                    else
+                    {
+                        getOrCreateNodeState( nodeId ).removeIndexDiff( after );
+                    }
+                }
+            }
+        }
+    }
+
+    private DiffSets<Long> getIndexUpdates( IndexDescriptor index, boolean create, Object value )
+    {
+        if ( value == null )
+        {
+            return null;
+        }
+        if ( indexUpdates == null )
+        {
+            if ( !create )
+            {
+                return null;
+            }
+            indexUpdates = new HashMap<>();
+        }
+        Map<Object, DiffSets<Long>> updates = indexUpdates.get( index );
+        if ( updates == null )
+        {
+            if ( !create )
+            {
+                return null;
+            }
+            indexUpdates.put( index, updates = new HashMap<>() );
+        }
+        DiffSets<Long> diffs = updates.get( value );
+        if ( diffs == null && create )
+        {
+            updates.put( value, diffs = new DiffSets<>() );
+        }
+        return diffs;
     }
 
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint()

@@ -27,6 +27,8 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.Protocol;
+import org.neo4j.com.Protocol201;
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
@@ -52,6 +54,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
 import static org.neo4j.com.Protocol.writeString;
+import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
@@ -68,7 +71,7 @@ public class MasterClient201 extends Client<Master> implements MasterClient
      * Version 5 since ?
      * Version 6 since 2014-01-07
      */
-    public static final byte PROTOCOL_VERSION = 6;
+    public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 6, INTERNAL_PROTOCOL_VERSION );
 
     private final long lockReadTimeout;
 
@@ -79,6 +82,12 @@ public class MasterClient201 extends Client<Master> implements MasterClient
         super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
                 readTimeoutSeconds, maxConcurrentChannels, chunkSize, byteCounterMonitor, requestMonitor );
         this.lockReadTimeout = lockReadTimeout;
+    }
+
+    @Override
+    protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
+    {
+        return new Protocol201( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
 
     @Override
@@ -341,6 +350,12 @@ public class MasterClient201 extends Client<Master> implements MasterClient
     {
         return new RequestContext( context.getEpoch(), context.machineId(), context.getEventIdentifier(),
                 0, context.getMasterId(), context.getChecksum() );
+    }
+
+    @Override
+    public ProtocolVersion getProtocolVersion()
+    {
+        return PROTOCOL_VERSION;
     }
 
     protected static IdAllocation readIdAllocation( ChannelBuffer buffer )

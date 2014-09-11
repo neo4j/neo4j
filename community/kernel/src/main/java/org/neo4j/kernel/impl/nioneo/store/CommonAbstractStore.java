@@ -54,7 +54,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
  * Contains common implementation for {@link AbstractStore} and
  * {@link AbstractDynamicStore}.
  */
-public abstract class CommonAbstractStore implements IdSequence
+public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 {
     public static abstract class Configuration
     {
@@ -750,6 +750,7 @@ public abstract class CommonAbstractStore implements IdSequence
      * giving the implementing store way to do anything that it needs to do
      * before the fileChannel is closed.
      */
+    @Override
     public void close()
     {
         if ( fileChannel == null )
@@ -853,7 +854,7 @@ public abstract class CommonAbstractStore implements IdSequence
         {
             return idGenerator.getHighestPossibleIdInUse();
         }
-        
+
         // If we ask for this before we've recovered we can only make a best-effort guess
         // about the highest possible id in use.
         return figureOutHighestIdInUse();

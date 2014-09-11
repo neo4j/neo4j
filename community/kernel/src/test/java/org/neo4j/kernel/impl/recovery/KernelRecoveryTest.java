@@ -81,12 +81,12 @@ public class KernelRecoveryTest
                     // Tx before recovery
                     startEntry( -1, -1 ),
                     commandEntry( node1, NodeCommand.class ),
-                    commitEntry( 1 ),
+                    commitEntry( 2 ),
 
                     // Tx after recovery
                     startEntry( -1, -1 ),
                     commandEntry( node2, NodeCommand.class ),
-                    commitEntry( 2 )
+                    commitEntry( 3 )
                 )
         );
     }

@@ -21,10 +21,6 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -53,6 +49,10 @@ import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.cluster.member.ClusterMember;
+import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck;
+import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck.Outcome;
+import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -62,9 +62,12 @@ import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.nioneo.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.nioneo.store.UnableToCopyStoreFromOldMasterException;
+import org.neo4j.kernel.impl.nioneo.store.UnavailableMembersException;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
@@ -78,8 +81,16 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+import static org.neo4j.kernel.impl.nioneo.store.TransactionIdStore.BASE_TX_ID;
 
 public class SwitchToSlave
 {
@@ -91,6 +102,8 @@ public class SwitchToSlave
             RequestContextFactory.class,
             TransactionCommittingResponseUnpacker.class,
     };
+
+    private static final int VERSION_CHECK_TIMEOUT = 10;
 
     private final Logging logging;
     private final StringLogger msgLog;
@@ -129,76 +142,158 @@ public class SwitchToSlave
                 config.get( HaSettings.read_timeout ).intValue(),
                 config.get( HaSettings.lock_read_timeout ).intValue(),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),
-                config.get( HaSettings.com_chunk_size ).intValue()  );
+                config.get( HaSettings.com_chunk_size ).intValue() );
     }
 
     /**
      * Performs a switch to the slave state. Starts the communication endpoints, switches components to the slave state
      * and ensures that the current database is appropriate for this cluster. It also broadcasts the appropriate
      * Slave Is Available event
+     *
      * @param haCommunicationLife The LifeSupport instance to register the network facilities required for communication
      *                            with the rest of the cluster
-     * @param me The URI this instance must bind to
-     * @param masterUri The URI of the master for which this instance must become slave to
+     * @param me                  The URI this instance must bind to
+     * @param masterUri           The URI of the master for which this instance must become slave to
      * @param cancellationRequest A handle for gracefully aborting the switch
      * @return The URI that was broadcasted as the slave endpoint or null if the task was cancelled
      * @throws Throwable
      */
-    public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri, CancellationRequest
-            cancellationRequest ) throws Throwable
+    public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri,
+                              CancellationRequest cancellationRequest ) throws Throwable
     {
-        console.log( "ServerId " + config.get( ClusterSettings.server_id ) + ", moving to slave for master " +
-                masterUri );
+        InstanceId myId = config.get( ClusterSettings.server_id );
+
+        console.log( "ServerId " + myId + ", moving to slave for master " + masterUri );
 
         assert masterUri != null; // since we are here it must already have been set from outside
 
         idGeneratorFactory.switchToSlave();
-        if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
-        {
-            copyStoreFromMaster( masterUri, cancellationRequest );
-        }
+
+        copyStoreFromMasterIfNeeded( masterUri, cancellationRequest );
 
         /*
-         * The following check is mandatory, since the store copy can be cancelled and if it was actually happening
-         * then we can't continue, as there is no store in place
+         * The following check is mandatory, since the store copy can be cancelled and if it was actually
+         * happening then we can't continue, as there is no store in place
          */
         if ( cancellationRequest.cancellationRequested() )
         {
             return null;
         }
-        
+
+        /*
+         * We get here either with a fresh store from the master copy above so we need to
+         * start the ds or we already had a store, so we have already started the ds. Either way,
+         * make sure it's there.
+         */
         NeoStoreXaDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreXaDataSource.class );
         nioneoDataSource.afterModeSwitch();
+        StoreId myStoreId = nioneoDataSource.getStoreId();
 
-        checkDataConsistency( resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri );
+        boolean consistencyChecksExecutedSuccessfully = executeConsistencyChecks(
+                myId, masterUri, nioneoDataSource, cancellationRequest );
+
+        if ( !consistencyChecksExecutedSuccessfully )
+        {
+            return null;
+        }
 
         if ( cancellationRequest.cancellationRequested() )
         {
             return null;
         }
-        
-        URI slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri );
 
-        console.log( "ServerId " + config.get( ClusterSettings.server_id ) +
-                ", successfully moved to slave for master " + masterUri );
+        // no exception were thrown and we can proceed
+        URI slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri, myStoreId );
+
+        console.log( "ServerId " + myId + ", successfully moved to slave for master " + masterUri );
 
         return slaveUri;
     }
 
-    private void checkDataConsistency( RequestContextFactory requestContextFactory,
-                                          NeoStoreXaDataSource nioneoDataSource, URI masterUri ) throws Throwable
+    private void copyStoreFromMasterIfNeeded( URI masterUri, CancellationRequest cancellationRequest ) throws Throwable
     {
-        // Must be called under lock on XaDataSourceManager
-        LifeSupport checkConsistencyLife = new LifeSupport();
-        TransactionIdStore txIdStore = null;
+        if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
+        {
+            LifeSupport copyLife = new LifeSupport();
+            try
+            {
+                MasterClient masterClient = newMasterClient( masterUri, null, copyLife );
+                copyLife.start();
+
+                boolean masterIsOld = MasterClient.CURRENT.compareTo( masterClient.getProtocolVersion() ) > 0;
+                if ( masterIsOld )
+                {
+                    throw new UnableToCopyStoreFromOldMasterException( MasterClient.CURRENT.getApplicationProtocol(),
+                            masterClient.getProtocolVersion().getApplicationProtocol() );
+                }
+                else
+                {
+                    copyStoreFromMaster( masterClient, cancellationRequest );
+                }
+            }
+            finally
+            {
+                copyLife.shutdown();
+            }
+        }
+    }
+
+    private boolean executeConsistencyChecks( InstanceId myId, URI masterUri, NeoStoreXaDataSource nioneoDataSource,
+                                              CancellationRequest cancellationRequest ) throws Throwable
+    {
+        LifeSupport consistencyCheckLife = new LifeSupport();
         try
         {
-            MasterClient checkConsistencyMaster = newMasterClient( masterUri, nioneoDataSource.getStoreId(),
-                    checkConsistencyLife );
-            checkConsistencyLife.start();
+            StoreId myStoreId = nioneoDataSource.getStoreId();
+
+            MasterClient masterClient = newMasterClient( masterUri, myStoreId, consistencyCheckLife );
+            consistencyCheckLife.start();
+
+            boolean masterIsOld = MasterClient.CURRENT.compareTo( masterClient.getProtocolVersion() ) > 0;
+
+            if ( masterIsOld )
+            {
+                ClusterMembers members = resolver.resolveDependency( ClusterMembers.class );
+                ClusterMemberVersionCheck checker = new ClusterMemberVersionCheck( members, myId, SYSTEM_CLOCK );
+
+                Outcome outcome = checker.doVersionCheck( myStoreId, VERSION_CHECK_TIMEOUT, SECONDS );
+                msgLog.info( "Cluster members version  checked: " + outcome );
+
+                if ( outcome.hasUnavailable() )
+                {
+                    throw new UnavailableMembersException( outcome.getUnavailable() );
+                }
+                if ( outcome.hasMismatched() )
+                {
+                    throw new InconsistentlyUpgradedClusterException( myStoreId, outcome.getMismatched() );
+                }
+            }
+
+            if ( cancellationRequest.cancellationRequested() )
+            {
+                return false;
+            }
+
+            checkDataConsistency( masterClient, resolver.resolveDependency( RequestContextFactory.class ),
+                    nioneoDataSource, masterUri, masterIsOld );
+        }
+        finally
+        {
+            consistencyCheckLife.shutdown();
+        }
+        return true;
+    }
+
+    private void checkDataConsistency( MasterClient masterClient, RequestContextFactory requestContextFactory,
+                                       NeoStoreXaDataSource nioneoDataSource, URI masterUri, boolean masterIsOld )
+            throws Throwable
+    {
+        TransactionIdStore txIdStore = nioneoDataSource.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        try
+        {
             console.log( "Checking store consistency with master" );
-            txIdStore = nioneoDataSource.getDependencyResolver().resolveDependency( TransactionIdStore.class );
-            checkDataConsistencyWithMaster( masterUri, checkConsistencyMaster, nioneoDataSource, txIdStore );
+            checkMyStoreIdAndMastersStoreId( nioneoDataSource, masterIsOld );
+            checkDataConsistencyWithMaster( masterUri, masterClient, nioneoDataSource, txIdStore );
             console.log( "Store is consistent" );
 
             /*
@@ -210,7 +305,7 @@ public class SwitchToSlave
             console.log( "Catching up with master" );
 
             resolver.resolveDependency( TransactionCommittingResponseUnpacker.class ).
-                    unpackResponse( checkConsistencyMaster.pullUpdates( requestContextFactory.newRequestContext() ) );
+                    unpackResponse( masterClient.pullUpdates( requestContextFactory.newRequestContext() ) );
             console.log( "Now consistent with master" );
         }
         catch ( NoSuchLogVersionException e )
@@ -246,25 +341,43 @@ public class SwitchToSlave
         catch ( MismatchingStoreIdException e )
         {
             console.log( "The store does not represent the same database as master. Will remove and fetch a new one from master" );
-            if ( txIdStore != null && txIdStore.getLastCommittedTransactionId() == 0 )
+            if ( txIdStore.getLastCommittedTransactionId() == BASE_TX_ID )
             {
-                msgLog.warn( "Found and deleting empty store with mismatching store id " + e.getMessage() );
+                msgLog.warn( "Found and deleting empty store with mismatching store id", e );
                 stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
             }
             else
             {
-                msgLog.error( "Store cannot participate in cluster due to mismatching store IDs" );
+                msgLog.error( "Store cannot participate in cluster due to mismatching store IDs", e );
             }
             throw e;
         }
-        finally
+    }
+
+    private void checkMyStoreIdAndMastersStoreId( NeoStoreXaDataSource nioneoDataSource, boolean masterIsOld )
+    {
+        if ( !masterIsOld )
         {
-            checkConsistencyLife.shutdown();
+            StoreId myStoreId = nioneoDataSource.getStoreId();
+
+            ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
+            ClusterMember master = first( filter( inRole( MASTER ), clusterMembers.getMembers() ) );
+            StoreId masterStoreId = master.getStoreId();
+
+            if ( !myStoreId.equals( masterStoreId ) )
+            {
+                throw new MismatchingStoreIdException( myStoreId, master.getStoreId() );
+            }
+            else if ( !myStoreId.equalsByUpgradeId( master.getStoreId() ) )
+            {
+                throw new BranchedDataException( "My store with " + myStoreId + " was updated independently from " +
+                        "master's store " + masterStoreId );
+            }
         }
     }
 
     private URI startHaCommunication( LifeSupport haCommunicationLife, NeoStoreXaDataSource nioneoDataSource,
-                                      URI me, URI masterUri )
+                                      URI me, URI masterUri, StoreId storeId )
     {
         MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), haCommunicationLife );
 
@@ -279,7 +392,7 @@ public class SwitchToSlave
         haCommunicationLife.start();
 
         URI slaveHaURI = createHaURI( me, server );
-        clusterMemberAvailability.memberIsAvailable( HighAvailabilityModeSwitcher.SLAVE, slaveHaURI );
+        clusterMemberAvailability.memberIsAvailable( HighAvailabilityModeSwitcher.SLAVE, slaveHaURI, storeId );
 
         return slaveHaURI;
     }
@@ -314,7 +427,7 @@ public class SwitchToSlave
         };
     }
 
-    private URI createHaURI( URI me, Server<?,?> server )
+    private URI createHaURI( URI me, Server<?, ?> server )
     {
         String hostString = ServerUtil.getHostString( server.getSocketAddress() );
         int port = server.getSocketAddress().getPort();
@@ -323,51 +436,40 @@ public class SwitchToSlave
         return URI.create( "ha://" + host + ":" + port + "?serverId=" + serverId );
     }
 
-    private void copyStoreFromMaster( URI masterUri, CancellationRequest cancellationRequest ) throws Throwable
+    private void copyStoreFromMaster( final MasterClient masterClient,
+                                      CancellationRequest cancellationRequest ) throws Throwable
     {
         FileSystemAbstraction fs = resolver.resolveDependency( FileSystemAbstraction.class );
-        // Must be called under lock on XaDataSourceManager
-        LifeSupport life = new LifeSupport();
-        try
-        {
-            // Remove the current store - neostore file is missing, nothing we can really do
-            final MasterClient copyMaster = newMasterClient( masterUri, null, life );
-            life.start();
 
-            // This will move the copied db to the graphdb location
-            console.log( "Copying store from master" );
-            new StoreCopyClient( config, kernelExtensions, console, logging, fs ).copyStore(
-                    new StoreCopyClient.StoreCopyRequester()
-            {
-                @Override
-                public Response<?> copyStore( StoreWriter writer )
+        // This will move the copied db to the graphdb location
+        console.log( "Copying store from master" );
+        new StoreCopyClient( config, kernelExtensions, console, logging, fs ).copyStore(
+                new StoreCopyClient.StoreCopyRequester()
                 {
-                    return copyMaster.copyStore( new RequestContext( 0,
-                            config.get( ClusterSettings.server_id ).toIntegerIndex(), 0, 0, 0, 0 ), writer );
-                }
+                    @Override
+                    public Response<?> copyStore( StoreWriter writer )
+                    {
+                        return masterClient.copyStore( new RequestContext( 0,
+                                config.get( ClusterSettings.server_id ).toIntegerIndex(), 0, BASE_TX_ID, 0, 0 ), writer );
+                    }
 
-                @Override
-                public void done()
-                {   // Nothing to clean up here
-                }
-            }, cancellationRequest );
+                    @Override
+                    public void done()
+                    {   // Nothing to clean up here
+                    }
+                }, cancellationRequest );
 
-            startServicesAgain();
-            console.log( "Finished copying store from master" );
-        }
-        finally
-        {
-            life.stop();
-        }
+        startServicesAgain();
+        console.log( "Finished copying store from master" );
     }
 
-    private MasterClient newMasterClient( URI masterUri, StoreId storeId, LifeSupport life )
+    MasterClient newMasterClient( URI masterUri, StoreId storeId, LifeSupport life )
     {
         MasterClient masterClient = masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(),
                 resolver.resolveDependency( Monitors.class ), storeId, life );
-        if ( !(masterClient instanceof MasterClient210 ))
+        if ( masterClient.getProtocolVersion().compareTo( MasterClient210.PROTOCOL_VERSION ) < 0 )
         {
-            idGeneratorFactory.doTheThing();
+            idGeneratorFactory.enableCompatibilityMode();
         }
         return masterClient;
     }
@@ -376,24 +478,18 @@ public class SwitchToSlave
     {
         for ( Class<? extends Lifecycle> serviceClass : SERVICES_TO_RESTART_FOR_STORE_COPY )
         {
-            ((Lifecycle) resolver.resolveDependency( serviceClass )).start();
+            resolver.resolveDependency( serviceClass ).start();
         }
     }
 
     private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
     {
-        List<Class<? extends Lifecycle>> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
-        Collections.reverse( services );
-        for ( Class serviceClass : services )
+        for ( int i = SERVICES_TO_RESTART_FOR_STORE_COPY.length - 1; i >= 0; i-- )
         {
-            ((Lifecycle) resolver.resolveDependency( serviceClass )).stop();
+            Class<? extends Lifecycle> serviceClass = SERVICES_TO_RESTART_FOR_STORE_COPY[i];
+            resolver.resolveDependency( serviceClass ).stop();
         }
 
-        handleBranchedStore( branchPolicy );
-    }
-
-    private void handleBranchedStore( BranchedDataPolicy branchPolicy  ) throws IOException
-    {
         branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
     }
 

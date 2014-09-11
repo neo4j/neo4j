@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionReprese
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 
+import static org.neo4j.kernel.impl.nioneo.store.TransactionIdStore.BASE_TX_ID;
+
 public class ResponsePacker
 {
     protected final LogicalTransactionStore transactionStore;
@@ -62,7 +64,7 @@ public class ResponsePacker
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
             {
-                if ( toStartFrom > 0 && toStartFrom <= transactionIdStore.getLastCommittedTransactionId() )
+                if ( toStartFrom > BASE_TX_ID && toStartFrom <= transactionIdStore.getLastCommittedTransactionId() )
                 {
                     extractTransactions( toStartFrom, filterVisitor( visitor, filter ) );
                 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,10 +46,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Provider;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -103,6 +106,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -1274,5 +1278,69 @@ public class TestNeoStore
         assertEquals( 10l, neoStore.getLatestConstraintIntroducingTx() );
         neoStore.close();
         life.shutdown();
+    }
+
+    @Test
+    public void shouldInitializeTheTxIdToOne()
+    {
+        StoreFactory factory =
+                new StoreFactory( fs.get(), new File( "graph.db/neostore" ), pageCache, StringLogger.DEV_NULL,
+                        new Monitors() );
+
+        NeoStore neoStore = factory.newNeoStore( true );
+        neoStore.close();
+
+        neoStore = factory.newNeoStore( false );
+        long lastCommittedTransactionId = neoStore.getLastCommittedTransactionId();
+        neoStore.close();
+
+        assertEquals( TransactionIdStore.BASE_TX_ID, lastCommittedTransactionId );
+    }
+
+    @Test
+    public void shouldAddUpgradeFieldsToTheNeoStoreIfNotPresent() throws IOException
+    {
+        FileSystemAbstraction fileSystem = fs.get();
+        File neoStoreDir = new File( "/tmp/graph.db/neostore" );
+        StoreFactory factory =
+                new StoreFactory( fileSystem, neoStoreDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
+        NeoStore neoStore = factory.newNeoStore( true );
+        neoStore.setCreationTime( 3 );
+        neoStore.setRandomNumber( 4 );
+        neoStore.setCurrentLogVersion( 5 );
+        neoStore.setLastCommittedAndClosedTransactionId( 6 );
+        neoStore.setStoreVersion( 7 );
+        neoStore.setGraphNextProp( 8 );
+        neoStore.setLatestConstraintIntroducingTx( 9 );
+        neoStore.flush();
+        neoStore.close();
+
+        File file = new File( neoStoreDir, NeoStore.DEFAULT_NAME );
+        try ( StoreChannel channel = fileSystem.open( file, "rw" ) )
+        {
+            byte[] trailer = UTF8.encode( CommonAbstractStore.buildTypeDescriptorAndVersion( neoStore
+                    .getTypeDescriptor() ) );
+            channel.truncate( channel.size() - 2 * NeoStore.RECORD_SIZE );
+            channel.position( channel.size() - trailer.length );
+            channel.write( ByteBuffer.wrap( trailer ) );
+        }
+
+        assertNotEquals( 10, neoStore.getUpgradeId() );
+        assertNotEquals( 11, neoStore.getUpgradeTime() );
+
+        NeoStore.setOrAddUpgradeIdOnMigration( fileSystem, file, 10 );
+        NeoStore.setOrAddUpgradeTimeOnMigration( fileSystem, file, 11 );
+
+        neoStore = factory.newNeoStore( false );
+        assertEquals( 3, neoStore.getCreationTime() );
+        assertEquals( 4, neoStore.getRandomNumber() );
+        assertEquals( 5, neoStore.getCurrentLogVersion() );
+        assertEquals( 6, neoStore.getLastCommittedTransactionId() );
+        assertEquals( 7, neoStore.getStoreVersion() );
+        assertEquals( 8, neoStore.getGraphNextProp() );
+        assertEquals( 9, neoStore.getLatestConstraintIntroducingTx() );
+        assertEquals( 10, neoStore.getUpgradeId() );
+        assertEquals( 11, neoStore.getUpgradeTime() );
+        neoStore.close();
     }
 }

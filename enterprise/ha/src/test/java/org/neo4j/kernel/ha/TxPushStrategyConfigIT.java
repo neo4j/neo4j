@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.nioneo.store.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
@@ -53,13 +54,13 @@ public class TxPushStrategyConfigIT
     public void shouldPushToSlavesInDescendingOrder() throws Exception
     {
         startCluster( 4, 2, "fixed" );
-        
+
         for ( int i = 0; i < 5; i++ )
         {
             createTransactionOnMaster();
-            assertLastTransactions( lastTx( THIRD_SLAVE, 1 + i ) );
-            assertLastTransactions( lastTx( SECOND_SLAVE, 1 + i ) );
-            assertLastTransactions( lastTx( FIRST_SLAVE, 0 ) );
+            assertLastTransactions( lastTx( THIRD_SLAVE, BASE_TX_ID + 1 + i ) );
+            assertLastTransactions( lastTx( SECOND_SLAVE, BASE_TX_ID + 1 + i ) );
+            assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID ) );
         }
     }
 
@@ -69,16 +70,20 @@ public class TxPushStrategyConfigIT
         startCluster( 5, 2, "round_robin" );
 
         createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, 1 ), lastTx( SECOND_SLAVE, 1 ), lastTx( THIRD_SLAVE, 0 ), lastTx( FOURTH_SLAVE, 0 ) );
+        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 1 ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID ), lastTx( FOURTH_SLAVE, BASE_TX_ID ) );
 
         createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, 1 ), lastTx( SECOND_SLAVE, 2 ), lastTx( THIRD_SLAVE, 2 ), lastTx( FOURTH_SLAVE, 0 ) );
+        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ), lastTx( FOURTH_SLAVE, BASE_TX_ID ) );
 
         createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, 1 ), lastTx( SECOND_SLAVE, 2 ), lastTx( THIRD_SLAVE, 3 ), lastTx( FOURTH_SLAVE, 3 ) );
+        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ), lastTx( FOURTH_SLAVE, BASE_TX_ID + 3 ) );
 
         createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, 4 ), lastTx( SECOND_SLAVE, 2 ), lastTx( THIRD_SLAVE, 3 ), lastTx( FOURTH_SLAVE, 4 ) );
+        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 4 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ), lastTx( FOURTH_SLAVE, BASE_TX_ID + 4 ) );
     }
 
     @Test
@@ -87,13 +92,16 @@ public class TxPushStrategyConfigIT
         startCluster( 4, 2, "fixed" );
 
         createTransactionOn( new InstanceId( FIRST_SLAVE ) );
-        assertLastTransactions( lastTx( MASTER, 1 ), lastTx( FIRST_SLAVE, 1 ), lastTx( SECOND_SLAVE, 0 ), lastTx( THIRD_SLAVE, 1 ) );
+        assertLastTransactions( lastTx( MASTER, BASE_TX_ID + 1 ), lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID ), lastTx( THIRD_SLAVE, BASE_TX_ID + 1 ) );
 
         createTransactionOn( new InstanceId( SECOND_SLAVE ) );
-        assertLastTransactions( lastTx( MASTER, 2 ), lastTx( FIRST_SLAVE, 1 ), lastTx( SECOND_SLAVE, 2 ), lastTx( THIRD_SLAVE, 2 ) );
+        assertLastTransactions( lastTx( MASTER, BASE_TX_ID + 2 ), lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ), lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ) );
 
         createTransactionOn( new InstanceId( THIRD_SLAVE ) );
-        assertLastTransactions( lastTx( MASTER, 3 ), lastTx( FIRST_SLAVE, 1 ), lastTx( SECOND_SLAVE, 3 ), lastTx( THIRD_SLAVE, 3 ) );
+        assertLastTransactions( lastTx( MASTER, BASE_TX_ID + 3 ), lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID + 3 ), lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ) );
     }
 
     @Test
@@ -114,7 +122,7 @@ public class TxPushStrategyConfigIT
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
         createTransaction( newMaster );
-        assertLastTransactions( lastTx( FIRST_SLAVE, 1 ), lastTx( SECOND_SLAVE, 1 ) );
+        assertLastTransactions( lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ), lastTx( SECOND_SLAVE, BASE_TX_ID + 1 ) );
     }
 
     @Test

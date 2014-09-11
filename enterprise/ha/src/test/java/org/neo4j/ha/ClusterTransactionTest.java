@@ -22,7 +22,6 @@ package org.neo4j.ha;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
@@ -33,6 +32,7 @@ import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.test.ha.ClusterManager;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -77,14 +77,15 @@ public class ClusterTransactionTest
                     }
                 }
             } );
-            master.getDependencyResolver().resolveDependency( LifeSupport.class ).
-                    addLifecycleListener( new LifecycleListener()
+            master.getDependencyResolver()
+                    .resolveDependency( LifeSupport.class )
+                    .addLifecycleListener( new LifecycleListener()
                     {
                         @Override
                         public void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to )
                         {
-                            if ( instance.getClass().getName().contains( "DatabaseAvailability" ) && to ==
-                                    LifecycleStatus.STOPPED )
+                            if ( instance.getClass().getName().contains( "DatabaseAvailability" ) &&
+                                    to == LifecycleStatus.STOPPED )
                             {
                                 result.run();
                             }
@@ -94,12 +95,11 @@ public class ClusterTransactionTest
             master.shutdown();
 
             // Then
-            assertThat( result.get(), CoreMatchers.equalTo( true ) );
+            assertThat( result.get(), equalTo( true ) );
         }
         finally
         {
             clusterManager.stop();
         }
-
     }
 }

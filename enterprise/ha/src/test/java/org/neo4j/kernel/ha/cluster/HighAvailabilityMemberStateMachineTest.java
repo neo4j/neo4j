@@ -37,6 +37,7 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -48,6 +49,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
 
 public class HighAvailabilityMemberStateMachineTest
 {
@@ -78,7 +82,7 @@ public class HighAvailabilityMemberStateMachineTest
         ClusterMembers members = mock( ClusterMembers.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
 
-        final Set<ClusterMemberListener> listener = new HashSet<ClusterMemberListener>();
+        final Set<ClusterMemberListener> listener = new HashSet<>();
 
         doAnswer( new Answer()
         {
@@ -116,7 +120,7 @@ public class HighAvailabilityMemberStateMachineTest
         ClusterMembers members = mock( ClusterMembers.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
 
-        final Set<ClusterMemberListener> listener = new HashSet<ClusterMemberListener>();
+        final Set<ClusterMemberListener> listener = new HashSet<>();
 
         doAnswer( new Answer()
         {
@@ -154,7 +158,7 @@ public class HighAvailabilityMemberStateMachineTest
         ClusterMembers members = mock( ClusterMembers.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
 
-        final Set<ClusterMemberListener> listener = new HashSet<ClusterMemberListener>();
+        final Set<ClusterMemberListener> listener = new HashSet<>();
 
         doAnswer( new Answer()
         {
@@ -177,7 +181,7 @@ public class HighAvailabilityMemberStateMachineTest
         toTest.addHighAvailabilityMemberListener( probe );
 
         // When
-        theListener.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER, new InstanceId( 2 ), URI.create( "ha://whatever" ) );
+        theListener.memberIsAvailable( MASTER, new InstanceId( 2 ), URI.create( "ha://whatever" ), StoreId.DEFAULT );
 
         // Then
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
@@ -196,17 +200,17 @@ public class HighAvailabilityMemberStateMachineTest
         ClusterMembers members = mock( ClusterMembers.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
 
-        List<ClusterMember> membersList = new LinkedList<ClusterMember>();
+        List<ClusterMember> membersList = new LinkedList<>();
         // we cannot set outside of the package the isAlive to return false. So do it with a mock
         ClusterMember otherMemberMock = mock( ClusterMember.class );
-        when ( otherMemberMock.getInstanceId() ).thenReturn( other.toIntegerIndex() );
+        when ( otherMemberMock.getInstanceId() ).thenReturn( other );
         when( otherMemberMock.isAlive() ).thenReturn( false );
         membersList.add( otherMemberMock );
 
         membersList.add( new ClusterMember( me ) );
         when( members.getMembers() ).thenReturn( membersList );
 
-        final Set<ClusterMemberListener> listener = new HashSet<ClusterMemberListener>();
+        final Set<ClusterMemberListener> listener = new HashSet<>();
 
         doAnswer( new Answer()
         {
@@ -230,7 +234,7 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Send it to MASTER
         theListener.coordinatorIsElected( me );
-        theListener.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER, me, URI.create("ha://whatever") );
+        theListener.memberIsAvailable( MASTER, me, URI.create("ha://whatever"), StoreId.DEFAULT );
 
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.MASTER) );
 
@@ -255,17 +259,17 @@ public class HighAvailabilityMemberStateMachineTest
         ClusterMembers members = mock( ClusterMembers.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
 
-        List<ClusterMember> membersList = new LinkedList<ClusterMember>();
+        List<ClusterMember> membersList = new LinkedList<>();
         // we cannot set outside of the package the isAlive to return false. So do it with a mock
         ClusterMember otherMemberMock = mock( ClusterMember.class );
-        when ( otherMemberMock.getInstanceId() ).thenReturn( other.toIntegerIndex() );
+        when ( otherMemberMock.getInstanceId() ).thenReturn( other );
         when( otherMemberMock.isAlive() ).thenReturn( false );
         membersList.add( otherMemberMock );
 
         membersList.add( new ClusterMember( me ) );
         when( members.getMembers() ).thenReturn( membersList );
 
-        final Set<ClusterMemberListener> listener = new HashSet<ClusterMemberListener>();
+        final Set<ClusterMemberListener> listener = new HashSet<>();
 
         doAnswer( new Answer()
         {
@@ -288,8 +292,8 @@ public class HighAvailabilityMemberStateMachineTest
         toTest.addHighAvailabilityMemberListener( probe );
 
         // Send it to MASTER
-        theListener.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER, other, URI.create( "ha://whatever" ) );
-        theListener.memberIsAvailable( HighAvailabilityModeSwitcher.SLAVE, me, URI.create( "ha://whatever2" ) );
+        theListener.memberIsAvailable( MASTER, other, URI.create( "ha://whatever" ), StoreId.DEFAULT );
+        theListener.memberIsAvailable( SLAVE, me, URI.create( "ha://whatever2" ), StoreId.DEFAULT );
 
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.SLAVE) );
 
@@ -314,17 +318,17 @@ public class HighAvailabilityMemberStateMachineTest
         ClusterMembers members = mock( ClusterMembers.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
 
-        List<ClusterMember> membersList = new LinkedList<ClusterMember>();
+        List<ClusterMember> membersList = new LinkedList<>();
         // we cannot set outside of the package the isAlive to return false. So do it with a mock
         ClusterMember otherMemberMock = mock( ClusterMember.class );
-        when ( otherMemberMock.getInstanceId() ).thenReturn( other.toIntegerIndex() );
+        when ( otherMemberMock.getInstanceId() ).thenReturn( other );
         when( otherMemberMock.isAlive() ).thenReturn( false );
         membersList.add( otherMemberMock );
 
         membersList.add( new ClusterMember( me ) );
         when( members.getMembers() ).thenReturn( membersList );
 
-        final Set<ClusterMemberListener> listener = new HashSet<ClusterMemberListener>();
+        final Set<ClusterMemberListener> listener = new HashSet<>();
 
         doAnswer( new Answer()
         {
@@ -372,17 +376,17 @@ public class HighAvailabilityMemberStateMachineTest
         ClusterMembers members = mock( ClusterMembers.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
 
-        List<ClusterMember> membersList = new LinkedList<ClusterMember>();
+        List<ClusterMember> membersList = new LinkedList<>();
         // we cannot set outside of the package the isAlive to return false. So do it with a mock
         ClusterMember otherMemberMock = mock( ClusterMember.class );
-        when ( otherMemberMock.getInstanceId() ).thenReturn( other.toIntegerIndex() );
+        when ( otherMemberMock.getInstanceId() ).thenReturn( other );
         when( otherMemberMock.isAlive() ).thenReturn( false );
         membersList.add( otherMemberMock );
 
         membersList.add( new ClusterMember( me ) );
         when( members.getMembers() ).thenReturn( membersList );
 
-        final Set<ClusterMemberListener> listener = new HashSet<ClusterMemberListener>();
+        final Set<ClusterMemberListener> listener = new HashSet<>();
 
         doAnswer( new Answer()
         {
@@ -405,7 +409,7 @@ public class HighAvailabilityMemberStateMachineTest
         toTest.addHighAvailabilityMemberListener( probe );
 
         // Send it to MASTER
-        theListener.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER, other, URI.create("ha://whatever") );
+        theListener.memberIsAvailable( MASTER, other, URI.create("ha://whatever"), StoreId.DEFAULT );
 
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.TO_SLAVE) );
 
@@ -429,7 +433,7 @@ public class HighAvailabilityMemberStateMachineTest
         ClusterMembers members = mock( ClusterMembers.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
 
-        final Set<ClusterMemberListener> listener = new HashSet<ClusterMemberListener>();
+        final Set<ClusterMemberListener> listener = new HashSet<>();
 
         doAnswer( new Answer()
         {
@@ -505,34 +509,6 @@ public class HighAvailabilityMemberStateMachineTest
             slaveIsAvailable = false;
             instanceStops = true;
             lastEvent = event;
-        }
-    }
-
-    private static final class HAPoisonousStateChangeListener implements HighAvailabilityMemberListener
-    {
-
-        @Override
-        public void masterIsElected( HighAvailabilityMemberChangeEvent event )
-        {
-            throw new NullPointerException( "Sample exception" );
-        }
-
-        @Override
-        public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
-        {
-            throw new NullPointerException( "Sample exception" );
-        }
-
-        @Override
-        public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
-        {
-            throw new NullPointerException( "Sample exception" );
-        }
-
-        @Override
-        public void instanceStops( HighAvailabilityMemberChangeEvent event )
-        {
-            throw new NullPointerException( "Sample exception" );
         }
     }
 }

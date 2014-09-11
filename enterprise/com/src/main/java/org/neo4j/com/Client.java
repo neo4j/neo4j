@@ -90,7 +90,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private final RequestMonitor requestMonitor;
 
     public Client( String hostNameOrIp, int port, Logging logging, StoreId storeId, int frameLength,
-                   byte applicationProtocolVersion, long readTimeout,
+                   ProtocolVersion protocolVersion, long readTimeout,
                    int maxConcurrentChannels, int chunkSize, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         assert byteCounterMonitor != null;
@@ -108,10 +108,15 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         this.maxUnusedChannels = maxConcurrentChannels;
         this.mismatchingVersionHandlers = new ArrayList<>( 2 );
         this.address = new InetSocketAddress( hostNameOrIp, port );
-        this.protocol = new Protocol( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
+        this.protocol = createProtocol( chunkSize, protocolVersion.getApplicationProtocol() );
 
         msgLog.info( getClass().getSimpleName() + " communication channel created towards " + hostNameOrIp + ":" +
                 port );
+    }
+
+    protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
+    {
+        return new Protocol214( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
 
     @Override
@@ -130,7 +135,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             {
                 ChannelFuture channelFuture = bootstrap.connect( address );
                 channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
-                Triplet<Channel, ChannelBuffer, ByteBuffer> channel = null;
+                Triplet<Channel, ChannelBuffer, ByteBuffer> channel;
                 if ( channelFuture.isSuccess() )
                 {
                     channel = Triplet.of( channelFuture.getChannel(),

@@ -58,7 +58,7 @@ public class Response<T> implements AutoCloseable
 
     public static <T> Response<T> empty()
     {
-        return new Response<>( null, new StoreId( -1, -1 ), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+        return new Response<>( null, StoreId.DEFAULT, TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }
 
     public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException

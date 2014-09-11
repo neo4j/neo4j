@@ -86,8 +86,8 @@ public class Legacy19PropertyStoreReader implements Closeable
          * [pppp,nnnn] previous, next high bits
          */
         byte modifiers = buffer.get();
-        long prevMod = ( ( modifiers & 0xF0L ) << 28 );
-        long nextMod = ( ( modifiers & 0x0FL ) << 32 );
+        long prevMod = ((modifiers & 0xF0L) << 28);
+        long nextMod = ((modifiers & 0x0FL) << 32);
         long prevProp = getUnsignedInt( buffer );
         long nextProp = getUnsignedInt( buffer );
         record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );

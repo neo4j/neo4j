@@ -60,7 +60,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
                     return false;
 
                 ClusterMember member = ClusterMember.class.cast( instance );
-                if (!member.getMemberId().equals( clusterMember.getMemberId() ))
+                if (!member.getInstanceId().equals( clusterMember.getInstanceId() ))
                     return false;
 
                 if (!member.isAlive()==clusterMember.isAlive())

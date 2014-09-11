@@ -27,7 +27,6 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import org.neo4j.com.MadeUpServer.MadeUpRequestType;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.DevNullLoggingService;
@@ -42,13 +41,15 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
 {
     private final byte internalProtocolVersion;
 
-    public MadeUpClient( int port, StoreId storeIdToExpect,
-            byte internalProtocolVersion, byte applicationProtocolVersion, int chunkSize )
+    public MadeUpClient( int port, StoreId storeIdToExpect, byte internalProtocolVersion,
+                         byte applicationProtocolVersion, int chunkSize )
     {
         super( localhost(), port, new DevNullLoggingService(), storeIdToExpect, FRAME_LENGTH,
-                applicationProtocolVersion, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000,
+                new ProtocolVersion( applicationProtocolVersion, internalProtocolVersion ),
+                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
-                chunkSize, new Monitors().newMonitor( ByteCounterMonitor.class), new Monitors().newMonitor( RequestMonitor.class ) );
+                chunkSize, new Monitors().newMonitor( ByteCounterMonitor.class ),
+                new Monitors().newMonitor( RequestMonitor.class ) );
         this.internalProtocolVersion = internalProtocolVersion;
     }
 
@@ -73,7 +74,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     @Override
     public Response<Integer> multiply( final int value1, final int value2 )
     {
-        return sendRequest( MadeUpRequestType.MULTIPLY, getRequestContext(), new Serializer()
+        return sendRequest( MadeUpServer.MadeUpRequestType.MULTIPLY, getRequestContext(), new Serializer()
         {
             @Override
             public void write( ChannelBuffer buffer ) throws IOException
@@ -93,7 +94,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     @Override
     public Response<Void> fetchDataStream( final MadeUpWriter writer, final int dataSize )
     {
-        return sendRequest( MadeUpRequestType.FETCH_DATA_STREAM, getRequestContext(), new Serializer()
+        return sendRequest( MadeUpServer.MadeUpRequestType.FETCH_DATA_STREAM, getRequestContext(), new Serializer()
         {
             @Override
             public void write( ChannelBuffer buffer ) throws IOException
@@ -115,7 +116,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     @Override
     public Response<Void> sendDataStream( final ReadableByteChannel data )
     {
-        return sendRequest( MadeUpRequestType.SEND_DATA_STREAM, getRequestContext(), new Serializer()
+        return sendRequest( MadeUpServer.MadeUpRequestType.SEND_DATA_STREAM, getRequestContext(), new Serializer()
         {
             @Override
             public void write( ChannelBuffer buffer ) throws IOException
@@ -131,7 +132,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     @Override
     public Response<Integer> throwException( final String messageInException )
     {
-        return sendRequest( MadeUpRequestType.THROW_EXCEPTION, getRequestContext(), new Serializer()
+        return sendRequest( MadeUpServer.MadeUpRequestType.THROW_EXCEPTION, getRequestContext(), new Serializer()
         {
             @Override
             public void write( ChannelBuffer buffer ) throws IOException

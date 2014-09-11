@@ -125,8 +125,8 @@ public interface StoreReadLayer
 
     PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId );
 
-    PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
-                                                            throws IndexNotFoundKernelException;
+    PrimitiveLongResourceIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException;
 
     IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
                                                                     throws SchemaRuleNotFoundException;

@@ -41,9 +41,9 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public boolean hasIndexed( long nodeId, Object propertyValue )
+        public int getIndexedCount( long nodeId, Object propertyValue )
         {
-            return false;
+            return 0;
         }
 
         @Override
@@ -56,5 +56,5 @@ public interface IndexReader extends Resource
      * Verifies that the given nodeId is indexed with the given property value, and returns true if that's
      * the case. Returns false otherwise.
      */
-    boolean hasIndexed( long nodeId, Object propertyValue );
+    int getIndexedCount( long nodeId, Object propertyValue );
 }

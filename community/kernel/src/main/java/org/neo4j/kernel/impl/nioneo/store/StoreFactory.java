@@ -44,7 +44,7 @@ import static org.neo4j.kernel.impl.nioneo.store.TransactionIdStore.BASE_TX_ID;
  */
 public class StoreFactory
 {
-    public static abstract class Configuration
+    public abstract static class Configuration
     {
         public static final Setting<Integer> string_block_size = GraphDatabaseSettings.string_block_size;
         public static final Setting<Integer> array_block_size = GraphDatabaseSettings.array_block_size;
@@ -328,28 +328,26 @@ public class StoreFactory
 
         NeoStore neoStore = newNeoStore( false );
         /*
-        *  created time | random long | backup version | tx id | store version | next prop
-        */
-        for ( int i = 0; i < NeoStore.NUMBER_OF_RECORDS; i++ )
+         * created time | random long | backup version | tx id | store version | next prop | latest constraint tx |
+         * upgrade time | upgrade id
+         */
+        for ( int i = 0; i < NeoStore.META_DATA_RECORD_COUNT; i++ )
         {
             neoStore.nextId();
         }
         neoStore.setCreationTime( storeId.getCreationTime() );
         neoStore.setRandomNumber( storeId.getRandomId() );
+        // If neoStore.creationTime == neoStore.upgradeTime && neoStore.randomNumber == neoStore.upgradeId
+        // then store has never been upgraded
+        neoStore.setUpgradeTime( storeId.getCreationTime() );
+        neoStore.setUpgradeId( storeId.getRandomId() );
         neoStore.setCurrentLogVersion( 0 );
         neoStore.setLastCommittedAndClosedTransactionId( BASE_TX_ID );
         neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         neoStore.setGraphNextProp( -1 );
         neoStore.setLatestConstraintIntroducingTx( 0 );
 
-        try
-        {
-            pageCache.flush();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
+        neoStore.flush();
 
         return neoStore;
     }
@@ -582,7 +580,7 @@ public class StoreFactory
         }
     }
 
-    public String buildTypeDescriptorAndVersion( String typeDescriptor )
+    public static String buildTypeDescriptorAndVersion( String typeDescriptor )
     {
         return typeDescriptor + " " + CommonAbstractStore.ALL_STORES_VERSION;
     }

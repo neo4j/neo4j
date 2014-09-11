@@ -93,7 +93,7 @@ public class TestCommunication
     public void makeSureClientStoreIdsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.server();
-        MadeUpClient client = builder.storeId( new StoreId( 10, 10 ) ).client();
+        MadeUpClient client = builder.storeId( new StoreId( 10, 10, 10, 10 ) ).client();
         life.add( server );
         life.add( client );
         life.start();
@@ -104,7 +104,7 @@ public class TestCommunication
     @Test( expected = MismatchingStoreIdException.class )
     public void makeSureServerStoreIdsMustMatch() throws Throwable
     {
-        MadeUpServer server = builder.storeId( new StoreId( 10, 10 ) ).server();
+        MadeUpServer server = builder.storeId( new StoreId( 10, 10, 10, 10 ) ).server();
         MadeUpClient client = builder.client();
         life.add( server );
         life.add( client );

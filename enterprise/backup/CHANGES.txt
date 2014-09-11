@@ -1,3 +1,6 @@
+2.1.4
+-----
+o Command line tool no longer expects "-from" argument, but "-host" and "-port" instead
 
 2.0.2
 -----
