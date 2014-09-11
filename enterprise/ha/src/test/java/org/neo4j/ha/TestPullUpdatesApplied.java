@@ -208,7 +208,7 @@ public class TestPullUpdatesApplied
 
     private static int runInOtherJvmToGetExitCode( String... args ) throws Exception
     {
-        List<String> allArgs = new ArrayList<>( Arrays.asList( "java", "-cp",
+        List<String> allArgs = new ArrayList<String>( Arrays.asList( "java", "-Djava.awt.headless=true", "-cp",
                 System.getProperty( "java.class.path" ), TestPullUpdatesApplied.class.getName() ) );
         allArgs.addAll( Arrays.asList( args ) );
         Process p = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ) );

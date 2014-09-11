@@ -143,13 +143,14 @@ public abstract class SubProcess<T, P> implements Serializable
             {
                 if ( debugger != null )
                 {
-                    process = start( "java", "-Xmx1G", debugger.listen(), "-cp",
-                            classPath( System.getProperty( "java.class.path" ) ), SubProcess.class.getName(),
-                            serialize( callback ) );
+                    process = start( "java", "-Xmx1G", debugger.listen(), "-Djava.awt.headless=true",
+                            "-cp", classPath( System.getProperty( "java.class.path" ) ),
+                            SubProcess.class.getName(), serialize( callback ) );
                 }
                 else
                 {
-                    process = start( "java", "-Xmx1G", "-cp", classPath( System.getProperty( "java.class.path" ) ),
+                    process = start( "java", "-Xmx1G", "-Djava.awt.headless=true",
+                            "-cp", classPath( System.getProperty( "java.class.path" ) ),
                             SubProcess.class.getName(), serialize( callback ) );
                 }
                 pid = getPid( process );

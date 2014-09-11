@@ -20,6 +20,7 @@
 package org.neo4j.index.impl.lucene;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 import org.junit.Test;
@@ -121,10 +122,7 @@ public class TestRecovery
     {
         createIndex();
 
-        Process process = Runtime.getRuntime().exec( new String[]{
-                "java", "-cp", System.getProperty( "java.class.path" ),
-                AddDeleteQuit.class.getName(), getDbPath().getPath()
-        } );
+        Process process = runJava( AddDeleteQuit.class, getDbPath().getPath() );
         assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
 
         new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() ).shutdown();
@@ -135,16 +133,12 @@ public class TestRecovery
     {
         File path = getDbPath();
         Neo4jTestCase.deleteFileOrDirectory( path );
-        Process process = Runtime.getRuntime().exec( new String[]{
-                "java", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-cp",
-                System.getProperty( "java.class.path" ),
-                AddRelToIndex.class.getName(), getDbPath().getPath()
-        } );
+        Process process = runJava( AddRelToIndex.class, getDbPath().getPath() );
         assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 
         // I would like to do this, but there's no exception propagated out from the constructor
         // if the recovery fails.
-        // new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() ).shutdown();
+        // new EmbeddedGraphDatabase( getDbPath() ).shutdown();
 
         // Instead I have to do this
         FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
@@ -165,10 +159,7 @@ public class TestRecovery
     {
         createIndex();
 
-        Process process = Runtime.getRuntime().exec( new String[]{
-                "java", "-cp", System.getProperty( "java.class.path" ),
-                AddThenDeleteInAnotherTxAndQuit.class.getName(), getDbPath().getPath()
-        } );
+        Process process = runJava( AddThenDeleteInAnotherTxAndQuit.class, getDbPath().getPath() );
         assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() );
@@ -177,6 +168,13 @@ public class TestRecovery
         assertNotNull( db.index().forNodes( "index2" ).get( "key", "value" ).getSingle() );
         transaction.finish();
         db.shutdown();
+    }
+
+    private Process runJava( Class<?> mainClass, String arg ) throws IOException
+    {
+        return Runtime.getRuntime().exec( new String[]{"java", "-cp", System.getProperty( "java.class.path" ),
+                "-Djava.awt.headless=true", mainClass.getName(), arg
+        } );
     }
 
     private void createIndex()
