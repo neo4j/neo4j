@@ -164,7 +164,10 @@ object ClauseConverters {
       case With(false, ListedReturnItems(items), None, None, None, where)
         if !builder.currentQueryGraph.hasOptionalPatterns
           && items.forall(item => !containsAggregate(item.expression))
-          && items.forall { case item: AliasedReturnItem => item.expression == item.identifier } =>
+          && items.forall {
+          case item: AliasedReturnItem => item.expression == item.identifier
+          case x => throw new InternalException("This should have been rewritten to an AliasedReturnItem.")
+        } =>
         val selections = where.asSelections
         builder.
           updateGraph(_.addSelections(selections))

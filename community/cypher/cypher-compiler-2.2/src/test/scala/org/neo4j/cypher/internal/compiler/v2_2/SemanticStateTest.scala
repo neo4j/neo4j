@@ -42,8 +42,8 @@ class SemanticStateTest extends CypherFunSuite {
     val identifier2 = ast.Identifier("foo")(DummyPosition(2))
     val identifier3 = ast.Identifier("foo")(DummyPosition(3))
 
-    SemanticState.clean.implicitIdentifier(identifier1, CTNode) then
-    ((_: SemanticState).implicitIdentifier(identifier2, CTNode)) then
+    SemanticState.clean.implicitIdentifier(identifier1, CTNode) chain
+    ((_: SemanticState).implicitIdentifier(identifier2, CTNode)) chain
     ((_: SemanticState).implicitIdentifier(identifier3, CTNode)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
@@ -56,7 +56,7 @@ class SemanticStateTest extends CypherFunSuite {
     val identifier1 = ast.Identifier("foo")(DummyPosition(0))
     val identifier2 = ast.Identifier("foo")(DummyPosition(3))
 
-    SemanticState.clean.implicitIdentifier(identifier1, CTNode | CTRelationship) then
+    SemanticState.clean.implicitIdentifier(identifier1, CTNode | CTRelationship) chain
     ((_: SemanticState).implicitIdentifier(identifier2, CTNode)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
@@ -64,7 +64,7 @@ class SemanticStateTest extends CypherFunSuite {
         types should equal(CTNode: TypeSpec)
     }
 
-    SemanticState.clean.implicitIdentifier(identifier1, CTRelationship) then
+    SemanticState.clean.implicitIdentifier(identifier1, CTRelationship) chain
     ((_: SemanticState).implicitIdentifier(identifier2, CTNode | CTRelationship)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
@@ -72,7 +72,7 @@ class SemanticStateTest extends CypherFunSuite {
         types should equal(CTRelationship: TypeSpec)
     }
 
-    SemanticState.clean.implicitIdentifier(identifier1, CTNode | CTRelationship) then
+    SemanticState.clean.implicitIdentifier(identifier1, CTNode | CTRelationship) chain
     ((_: SemanticState).implicitIdentifier(identifier2, CTAny.covariant)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
@@ -80,7 +80,7 @@ class SemanticStateTest extends CypherFunSuite {
         types should equal(CTNode | CTRelationship)
     }
 
-    SemanticState.clean.implicitIdentifier(identifier1, CTNode) then
+    SemanticState.clean.implicitIdentifier(identifier1, CTNode) chain
     ((_: SemanticState).implicitIdentifier(identifier2, CTMap.covariant)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
@@ -90,7 +90,7 @@ class SemanticStateTest extends CypherFunSuite {
   }
 
   test("should fail if no possible types remain after implicit identifier declaration") {
-    SemanticState.clean.implicitIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTMap) then
+    SemanticState.clean.implicitIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTMap) chain
       ((_: SemanticState).implicitIdentifier(ast.Identifier("foo")(DummyPosition(3)), CTNode)) match {
       case Right(_) => fail("Expected an error")
       case Left(error) =>
@@ -99,8 +99,8 @@ class SemanticStateTest extends CypherFunSuite {
         error.msg should equal("Type mismatch: foo already defined with conflicting type Map (expected Node)")
     }
 
-    SemanticState.clean.implicitIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode | CTRelationship) then
-    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo")(DummyPosition(3)), CTNode | CTInteger)) then
+    SemanticState.clean.implicitIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode | CTRelationship) chain
+    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo")(DummyPosition(3)), CTNode | CTInteger)) chain
     ((_: SemanticState).implicitIdentifier(ast.Identifier("foo")(DummyPosition(9)), CTInteger | CTRelationship)) match {
       case Right(_) => fail("Expected an error")
       case Left(error) =>
@@ -217,7 +217,7 @@ class SemanticStateTest extends CypherFunSuite {
   }
 
   implicit class ChainableSemanticStateEither(either: Either[SemanticError, SemanticState]) {
-    def then(next: SemanticState => Either[SemanticError, SemanticState]): Either[SemanticError, SemanticState] = {
+    def chain(next: SemanticState => Either[SemanticError, SemanticState]): Either[SemanticError, SemanticState] = {
       either match {
         case Left(_)      => either
         case Right(state) => next(state)

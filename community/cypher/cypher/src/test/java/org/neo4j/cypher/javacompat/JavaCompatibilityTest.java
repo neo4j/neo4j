@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.javacompat;
 
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -28,26 +29,26 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.hamcrest.CoreMatchers.isA;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.isA;
 
 public class JavaCompatibilityTest
 {
-    private GraphDatabaseService db;
     private ExecutionEngine engine;
 
     @Before
     public void setUp() throws IOException
     {
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
         engine = new ExecutionEngine( db );
     }
 
     @Test
     public void collections_in_collections_look_aiight() throws Exception
     {
-        ExecutionResult execute = engine.execute( "CREATE (n:TheNode) RETURN [[ [1,2],[3,4] ],[[5,6]]] as x" );
+        ExtendedExecutionResult execute = engine.execute( "CREATE (n:TheNode) RETURN [[ [1,2],[3,4] ],[[5,6]]] as x" );
         Map<String, Object> next = execute.iterator().next();
+        @SuppressWarnings("unchecked") //We know it's a collection.
         List<List<Object>> x = (List<List<Object>>)next.get( "x" );
         Iterable objects = x.get( 0 );
 

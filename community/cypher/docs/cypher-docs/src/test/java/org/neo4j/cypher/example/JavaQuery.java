@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -57,7 +57,7 @@ public class JavaQuery
         // START SNIPPET: addData
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
 
-        try ( Transaction tx = db.beginTx(); )
+        try ( Transaction tx = db.beginTx())
         {
             Node myNode = db.createNode();
             myNode.setProperty( "name", "my node" );
@@ -68,7 +68,7 @@ public class JavaQuery
         // START SNIPPET: execute
         ExecutionEngine engine = new ExecutionEngine( db );
 
-        ExecutionResult result;
+        ExtendedExecutionResult result;
         try ( Transaction ignored = db.beginTx() )
         {
             result = engine.execute( "match (n {name: 'my node'}) return n, n.name" );

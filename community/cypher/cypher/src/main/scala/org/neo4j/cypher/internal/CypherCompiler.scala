@@ -92,13 +92,7 @@ class CypherCompiler(graph: GraphDatabaseService,
       case ProfileOption => Profiled
     }
 
-    val planType = planTypes.reduceOption[PlanType] {
-      case (Explained, Explained) => Explained
-      case (Profiled, Profiled)   => Profiled
-      case (Explained, Profiled) => throw new InvalidSemanticsException("Can't mix PROFILE and EXPLAIN")
-    }
-
-    planType.getOrElse(Normal)
+    planTypes.reduceOption(_ combineWith _).getOrElse(Normal)
   }
 
   private def getQueryCacheSize : Int =

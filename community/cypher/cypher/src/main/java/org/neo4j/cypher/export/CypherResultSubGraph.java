@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.export;
 
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -72,7 +72,7 @@ public class CypherResultSubGraph implements SubGraph
         }
     }
 
-    public static SubGraph from( ExecutionResult result, GraphDatabaseService gds, boolean addBetween )
+    public static SubGraph from( ExtendedExecutionResult result, GraphDatabaseService gds, boolean addBetween )
     {
         final CypherResultSubGraph graph = new CypherResultSubGraph();
         final List<String> columns = result.columns();

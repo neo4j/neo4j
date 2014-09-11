@@ -72,6 +72,7 @@ import org.neo4j.kernel.Version;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation(Version.class)
+@SuppressWarnings("deprecation")
 public class ComponentVersion extends Version
 {
     public ComponentVersion() { super("${project.artifactId}", "${project.version}"); }

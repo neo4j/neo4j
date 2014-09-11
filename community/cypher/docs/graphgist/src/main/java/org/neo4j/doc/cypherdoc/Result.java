@@ -19,7 +19,7 @@
  */
 package org.neo4j.doc.cypherdoc;
 
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 
 class Result
 {
@@ -27,8 +27,7 @@ class Result
     final String text;
     final String profile;
 
-    public Result( String query, ExecutionResult result )
-    {
+    public Result(String query, ExtendedExecutionResult result) {
         this.query = query;
         text = result.dumpToString();
         String profileText;

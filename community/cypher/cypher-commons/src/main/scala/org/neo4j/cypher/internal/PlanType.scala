@@ -19,7 +19,32 @@
  */
 package org.neo4j.cypher.internal
 
-sealed trait PlanType
-case object Normal extends PlanType
-case object Explained extends PlanType
-case object Profiled extends PlanType
+import org.neo4j.cypher.InvalidSemanticsException
+import org.neo4j.cypher.internal.PlanType.cantMixProfileAndExplain
+
+object PlanType {
+  def cantMixProfileAndExplain: Nothing =  throw new InvalidSemanticsException("Can't mix PROFILE and EXPLAIN")
+}
+
+sealed trait PlanType {
+  def combineWith(other: PlanType): PlanType
+}
+
+case object Normal extends PlanType {
+  def combineWith(other: PlanType) = other
+}
+
+case object Explained extends PlanType {
+  def combineWith(other: PlanType) = other match {
+    case Profiled => cantMixProfileAndExplain
+    case _ => this
+  }
+}
+
+case object Profiled extends PlanType {
+  def combineWith(other: PlanType) = other match {
+    case Explained => cantMixProfileAndExplain
+    case _ => this
+  }
+}
+
