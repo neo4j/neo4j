@@ -96,7 +96,7 @@ public enum BranchedDataPolicy
             @Override
             public boolean accept( File file )
             {
-                return !file.getName().startsWith( "metrics" ) && !file.getName().equals( StringLogger.DEFAULT_NAME ) && !isBranchedDataRootDirectory( file );
+                return !file.getName().startsWith( "metrics" ) && !file.getName().startsWith( "messages." ) && !isBranchedDataRootDirectory( file );
             }
         } );
     }

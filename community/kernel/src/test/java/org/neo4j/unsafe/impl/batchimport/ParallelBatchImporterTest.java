@@ -86,7 +86,6 @@ public class ParallelBatchImporterTest
         int nodeCount = 100_000;
         int relationshipCount = nodeCount * 10;
         inserter.doImport( nodes( nodeCount ), relationships( relationshipCount, nodeCount ), IdMappers.actualIds() );
-        inserter.shutdown();
 
         // THEN
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.getAbsolutePath() );

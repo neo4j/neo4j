@@ -27,6 +27,6 @@ public class AdvancedBootstrapper extends CommunityBootstrapper
 	@Override
 	protected NeoServer createNeoServer()
 	{
-		return new AdvancedNeoServer( configurator, logging );
+		return new AdvancedNeoServer( configurator, dependencies );
 	}
 }

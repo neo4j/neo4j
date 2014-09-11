@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
@@ -62,7 +63,7 @@ public class StoreMigratorFrom19IT
     {
         // GIVEN
         StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR );
-        upgrader.addParticipant( new StoreMigrator( monitor, fs ) );
+        upgrader.addParticipant( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) );
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // WHEN

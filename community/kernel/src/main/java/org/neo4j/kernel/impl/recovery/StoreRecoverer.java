@@ -26,8 +26,8 @@ import java.util.Map;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRecoveryCheck;
@@ -96,7 +96,7 @@ public class StoreRecoverer
         new EmbeddedGraphDatabase(
                 dataDir.getAbsolutePath(),
                 params,
-                new DefaultGraphDatabaseDependencies( logging ) )
+                GraphDatabaseDependencies.newDependencies().logging(logging ) )
             .shutdown();
     }
 }

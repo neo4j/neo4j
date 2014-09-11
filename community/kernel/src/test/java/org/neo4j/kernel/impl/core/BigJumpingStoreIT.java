@@ -35,7 +35,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 
@@ -59,7 +59,7 @@ public class BigJumpingStoreIT
     {
         protected TestDatabase( String storeDir, Map<String, String> params )
         {
-            super( storeDir, params, new DefaultGraphDatabaseDependencies() );
+            super( storeDir, params, GraphDatabaseDependencies.newDependencies() );
             run();
         }
 
