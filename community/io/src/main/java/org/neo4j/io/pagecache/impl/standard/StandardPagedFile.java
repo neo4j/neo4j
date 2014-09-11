@@ -120,7 +120,17 @@ public class StandardPagedFile implements PagedFile
                 CountDownLatch latch = new CountDownLatch( 1 );
                 if ( filePages.replace( pageId, pageRef, latch ) )
                 {
-                    PinnablePage page = table.load( swapper, pageId, pf_flags );
+                    PinnablePage page = null;
+                    try
+                    {
+                        page = table.load( swapper, pageId, pf_flags );
+                    }
+                    catch ( Throwable throwable )
+                    {
+                        filePages.remove( pageId );
+                        latch.countDown();
+                        throw throwable;
+                    }
                     cursor.reset( page, lock );
                     filePages.put( pageId, page );
                     latch.countDown();

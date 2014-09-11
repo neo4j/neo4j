@@ -43,15 +43,18 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     private TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
     private final boolean batchedWrites;
+    private final IdOrderingQueue legacyIndexTransactionOrdering;
 
     public PhysicalLogicalTransactionStore( LogFile logFile, TxIdGenerator txIdGenerator,
             TransactionMetadataCache transactionMetadataCache,
-            TransactionIdStore transactionIdStore, boolean batchedWrites )
+            TransactionIdStore transactionIdStore, IdOrderingQueue legacyIndexTransactionOrdering,
+            boolean batchedWrites )
     {
         this.logFile = logFile;
         this.txIdGenerator = txIdGenerator;
         this.transactionMetadataCache = transactionMetadataCache;
         this.transactionIdStore = transactionIdStore;
+        this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.batchedWrites = batchedWrites;
     }
 
@@ -59,10 +62,12 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     public void init() throws Throwable
     {
         this.appender = batchedWrites ?
-                new BatchingPhysicalTransactionAppender( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore ) :
-                new PhysicalTransactionAppender( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore );
+                new BatchingPhysicalTransactionAppender( logFile, txIdGenerator,
+                        transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering ) :
+                new PhysicalTransactionAppender( logFile, txIdGenerator,
+                        transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
     }
-    
+
     @Override
     public void shutdown() throws Throwable
     {

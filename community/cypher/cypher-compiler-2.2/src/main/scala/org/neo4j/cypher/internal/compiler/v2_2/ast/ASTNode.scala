@@ -66,3 +66,6 @@ sealed trait ASTNodeType { self: ASTNode => }
 trait ASTExpression extends ASTNodeType { self: ASTNode => }
 trait ASTParticle extends ASTNodeType { self: ASTNode => }
 trait ASTPhrase extends ASTNodeType { self: ASTNode => }
+
+// Skip/Limit
+trait ASTSlicingPhrase extends ASTPhrase { self: ASTNode => }

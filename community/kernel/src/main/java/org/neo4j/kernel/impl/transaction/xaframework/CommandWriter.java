@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write3bLengthAndString;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -43,10 +47,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandType;
-
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write3bLengthAndString;
 
 public class CommandWriter implements NeoCommandHandler
 {
@@ -445,7 +445,7 @@ public class CommandWriter implements NeoCommandHandler
         }
         writeDynamicRecords( record.getDeletedRecords() );
     }
-    
+
     @Override
     public void apply()
     {   // Nothing to apply

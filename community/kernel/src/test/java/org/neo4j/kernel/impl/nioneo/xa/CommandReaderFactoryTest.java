@@ -21,42 +21,76 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV0;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV0_19;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV0_20;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV1;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryVersions.LEGACY_LOG_ENTRY_VERSION;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryVersions.LOG_ENTRY_VERSION_2_1;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryVersions.LOG_ENTRY_VERSION_2_2;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.LOG_VERSION_1_9;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.LOG_VERSION_2_0;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.LOG_VERSION_2_1;
+
 public class CommandReaderFactoryTest
 {
     @Test
-    public void testReturnsV0ReaderForVersion0() throws Exception
+    public void testReturnsV0_19ReaderForVersion0AndLogFormat1_9() throws Exception
     {
         // GIVEN
         CommandReaderFactory factory = new CommandReaderFactory.Default();
 
         // WHEN
-        CommandReader reader = factory.newInstance( (byte) 0 );
+        CommandReader reader = factory.newInstance( LOG_VERSION_1_9, LEGACY_LOG_ENTRY_VERSION );
 
         // THEN
-        assertTrue( reader instanceof PhysicalLogNeoCommandReaderV0 );
+        assertTrue( reader instanceof PhysicalLogNeoCommandReaderV0_19 );
     }
 
     @Test
-    public void testReturnsV1ReaderForVersion1() throws Exception
+    public void testReturnsV0_20ReaderForVersion0AndLogFormat2_0() throws Exception
     {
         // GIVEN
         CommandReaderFactory factory = new CommandReaderFactory.Default();
 
         // WHEN
-        CommandReader reader = factory.newInstance( (byte) -1 );
+        CommandReader reader = factory.newInstance( LOG_VERSION_2_0, LEGACY_LOG_ENTRY_VERSION );
+
+        // THEN
+        assertTrue( reader instanceof PhysicalLogNeoCommandReaderV0_20 );
+    }
+
+    @Test
+    public void testReturnsV1ReaderForVersion1AndLogFormat2_1() throws Exception
+    {
+        // GIVEN
+        CommandReaderFactory factory = new CommandReaderFactory.Default();
+
+        // WHEN
+        CommandReader reader = factory.newInstance( LOG_VERSION_2_1, LOG_ENTRY_VERSION_2_1 );
 
         // THEN
         assertTrue( reader instanceof PhysicalLogNeoCommandReaderV1 );
     }
 
     @Test
-    public void testThrowsExceptionForNonExistingVersion() throws Exception
+    public void testReturnsV1ReaderForVersion2AndLogFormat2_2() throws Exception
+    {
+        // GIVEN
+        CommandReaderFactory factory = new CommandReaderFactory.Default();
+
+        // WHEN
+        CommandReader reader = factory.newInstance( LOG_VERSION_2_1, LOG_ENTRY_VERSION_2_2 );
+
+        // THEN
+        assertTrue( reader instanceof PhysicalLogNeoCommandReaderV1 );
+    }
+
+    @Test
+    public void testThrowsExceptionForNonExistingVersionFor2_1() throws Exception
     {
         // GIVEN
         CommandReaderFactory factory = new CommandReaderFactory.Default();
@@ -64,7 +98,26 @@ public class CommandReaderFactoryTest
         // WHEN
         try
         {
-            factory.newInstance( (byte) -5 );
+            factory.newInstance( LOG_VERSION_2_1, (byte) -5 );
+            fail();
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN
+            // good
+        }
+    }
+
+    @Test
+    public void testThrowsExceptionForNonExistingVersionFor1_9() throws Exception
+    {
+        // GIVEN
+        CommandReaderFactory factory = new CommandReaderFactory.Default();
+
+        // WHEN
+        try
+        {
+            factory.newInstance( LOG_VERSION_1_9, (byte) -5 );
             fail();
         }
         catch( IllegalArgumentException e)

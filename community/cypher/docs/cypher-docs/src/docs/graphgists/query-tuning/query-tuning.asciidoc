@@ -23,7 +23,7 @@ And we want to do query to find Pernilla. We might start with the following quer
 
 [source,cypher]
 ----
-cypher 2.1.experimental
+cypher 2.2-cost
 MATCH (p {name:"Pernilla"})
 RETURN p
 ----
@@ -39,7 +39,7 @@ For this query we can include a +Person+ like so:
 
 [source,cypher]
 ----
-cypher 2.1.experimental
+cypher 2.2-cost
 MATCH (p:Person {name:"Pernilla"})
 RETURN p
 ----
@@ -63,7 +63,7 @@ Now if we run the query again it will run more quickly:
 
 [source,cypher]
 ----
-cypher 2.1.experimental
+cypher 2.2-cost
 MATCH (p:Person {name:"Pernilla"})
 RETURN p
 ----

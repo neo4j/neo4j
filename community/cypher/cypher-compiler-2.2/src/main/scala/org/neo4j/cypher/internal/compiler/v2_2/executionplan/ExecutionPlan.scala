@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.ExecutionResult
+import org.neo4j.cypher.{CypherVersion, ExecutionResult}
 
 abstract class ExecutionPlan {
   def execute(queryContext: QueryContext, params: Map[String, Any]): InternalExecutionResult
   def profile(queryContext: QueryContext, params: Map[String, Any]): InternalExecutionResult
   def isPeriodicCommit: Boolean
+  def version: CypherVersion
 }
 

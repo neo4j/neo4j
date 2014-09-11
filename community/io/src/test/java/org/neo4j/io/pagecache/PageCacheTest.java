@@ -27,7 +27,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -69,6 +68,8 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.test.ByteArrayMatcher.byteArray;
+import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
+import static org.neo4j.test.ThreadTestUtils.fork;
 
 public abstract class PageCacheTest<T extends RunnablePageCache>
 {
@@ -244,33 +245,6 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
                 }
             }
         };
-    }
-
-    private Thread fork( Runnable runnable )
-    {
-        String name = "Forked-from-" + Thread.currentThread().getName();
-        Thread thread = new Thread( runnable, name );
-        thread.start();
-        return thread;
-    }
-
-    private void awaitTheadState( Thread thread, long maxWaitMillis, Thread.State first, Thread.State... rest )
-    {
-        EnumSet<Thread.State> set = EnumSet.of( first, rest );
-        long deadline = maxWaitMillis + System.currentTimeMillis();
-        Thread.State currentState;
-        do
-        {
-            currentState = thread.getState();
-            if ( System.currentTimeMillis() > deadline )
-            {
-                throw new AssertionError(
-                        "Timed out waiting for thread state of <" +
-                                set + ">: " + thread + " (state = " +
-                                thread.getState() + ")" );
-            }
-        }
-        while ( !set.contains( currentState ) );
     }
 
     @Test
@@ -2229,7 +2203,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         assertTrue( cursor.next() );
 
         Thread unmapper = fork( $unmap( pageCache, file ) );
-        awaitTheadState( unmapper, 1000,
+        awaitThreadState( unmapper, 1000,
                 Thread.State.BLOCKED, Thread.State.WAITING, Thread.State.TIMED_WAITING );
 
         assertFalse( cursor.shouldRetry() );
@@ -2951,7 +2925,6 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
     @Test
     public void evictionThreadMustGracefullyShutDown() throws Exception
     {
-        // TODO this test takes significantly longer to complete with Muninn, than it does with the StandardPageCache -- investigate why!
         int iterations = 1000;
         final AtomicReference<Throwable> caughtException = new AtomicReference<>();
         Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler()
@@ -2992,6 +2965,55 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
             evictionThread.join();
 
             assertThat( caughtException.get(), is( nullValue() ) );
+        }
+    }
+
+    @Test(timeout = 1000)
+    public void pagesMustReturnToFreelistIfSwapInThrows() throws IOException
+    {
+        generateFileWithRecords( file, recordCount, recordSize );
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        int iterations = maxPages * 2;
+        accessPagesWhileInterrupted( pagedFile, PF_SHARED_LOCK, iterations );
+        accessPagesWhileInterrupted( pagedFile, PF_EXCLUSIVE_LOCK, iterations );
+
+        // Verify that after all those troubles, page faulting starts working again
+        // as soon as our thread is no longer interrupted and the PageSwapper no
+        // longer throws.
+        Thread.interrupted(); // make sure to clear our interruption status
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            verifyRecordsMatchExpected( cursor );
+        }
+        pageCache.unmap( file );
+    }
+
+    private void accessPagesWhileInterrupted(
+            PagedFile pagedFile,
+            int pf_flags,
+            int iterations ) throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( 0, pf_flags ) )
+        {
+            for ( int i = 0; i < iterations; i++ )
+            {
+                Thread.currentThread().interrupt();
+                try
+                {
+                    cursor.next( 0 );
+                    fail( "Page fault did not throw as expected" );
+                }
+                catch ( IOException ignored )
+                {
+                    // We don't care about the exception per se.
+                    // We just want lots of failed page faults.
+                }
+            }
         }
     }
 }

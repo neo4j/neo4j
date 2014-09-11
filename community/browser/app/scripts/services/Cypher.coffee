@@ -36,9 +36,11 @@ angular.module('neo4jApp.services')
           @other = []
           @relationships = []
           @size = 0
+          @displayedSize = 0
           @stats = {}
 
           @size = @_response.data?.length or 0
+          @displayedSize = @size
 
           if @_response.stats
             @_setStats @_response.stats

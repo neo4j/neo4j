@@ -46,7 +46,9 @@ angular.module('neo4jApp.controllers')
     $scope.setActive = (tab) ->
       tab ?= if $scope.tab is 'graph' then 'table' else 'graph'
       $rootScope.stickyTab = $scope.tab = tab
-    $scope.isActive = (tab) -> tab is $scope.tab
+
+    $scope.isActive = (tab) -> 
+      tab is $scope.tab
 
     $scope.resultStatistics = (frame) ->
       if frame?.response
@@ -68,7 +70,10 @@ angular.module('neo4jApp.controllers')
         nonZeroFields.push(field) for field in fields when stats[field.field] > 0
 
         messages = ("#{field.verb} #{stats[field.field]} #{if stats[field.field] is 1 then field.singular else field.plural}" for field in nonZeroFields)
-        messages.push "returned #{frame.response.table.size} #{if frame.response.table.size is 1 then 'row' else 'rows'}"
+        messages.push "returned #{frame.response.table.size} #{if frame.response.table.size is 1 then 'row' else 'rows'} in #{frame.runTime} ms"
+        if (frame.response.table.size > frame.response.table.displayedSize)
+          messages.push "displaying first #{frame.response.table.displayedSize} rows"
+
         joinedMessages = messages.join(', ')
-        "#{joinedMessages.substring(0, 1).toUpperCase()}#{joinedMessages.substring(1)}"
+        "#{joinedMessages.substring(0, 1).toUpperCase()}#{joinedMessages.substring(1)}."
   ]

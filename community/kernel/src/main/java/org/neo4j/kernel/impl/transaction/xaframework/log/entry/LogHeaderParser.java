@@ -31,10 +31,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 
 import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.CURRENT_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.OLDEST_STILL_SUPPORTED_LOG_VERSION;
 
 public class LogHeaderParser
 {
     private static final short CURRENT_FORMAT_VERSION = CURRENT_LOG_VERSION & 0xFF;
+    private static final short OLDEST_STILL_SUPPORTED__FORMAT_VERSION = OLDEST_STILL_SUPPORTED_LOG_VERSION & 0xFF;
     public static final int LOG_HEADER_SIZE = 16;
 
     public static LogHeader readLogHeader( ReadableLogChannel channel ) throws IOException
@@ -134,7 +136,7 @@ public class LogHeaderParser
             return false;
         }
 
-        return logFormatVersion >= CURRENT_FORMAT_VERSION - 1 && logFormatVersion <= CURRENT_FORMAT_VERSION;
+        return logFormatVersion >= OLDEST_STILL_SUPPORTED__FORMAT_VERSION && logFormatVersion <= CURRENT_FORMAT_VERSION;
 
     }
 }

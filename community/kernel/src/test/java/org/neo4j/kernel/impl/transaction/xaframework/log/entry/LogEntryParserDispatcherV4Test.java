@@ -37,7 +37,6 @@ import static org.junit.Assert.assertTrue;
 
 public class LogEntryParserDispatcherV4Test
 {
-
     private final LogEntryParserDispatcher<LogEntryParsersV4> dispatcher =
             new LogEntryParserDispatcher<>( LogEntryParsersV4.values() );
     private final CommandReaderFactory.Default commandReaderFactory = new CommandReaderFactory.Default();
@@ -162,7 +161,7 @@ public class LogEntryParserDispatcherV4Test
     }
 
     @Test
-    public void shouldThrowWhenParsingPrepareEntry() throws IOException
+    public void shouldParsePrepareEntry() throws IOException
     {
         // given
         final byte nextByte = (byte) 7;
@@ -186,7 +185,7 @@ public class LogEntryParserDispatcherV4Test
     }
 
     @Test
-    public void shouldThrowWhenParsingDoneEntry() throws IOException
+    public void shouldParseDoneEntry() throws IOException
     {
         // given
         final byte nextByte = (byte) 7;

@@ -30,6 +30,10 @@ class AstExpressionDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConst
     pprintToString(ident("a")) should equal("a")
   }
 
+  test("Identifier(\"a.foo\") => `a.foo`") {
+    pprintToString(ident("a.foo")) should equal("`a.foo`")
+  }
+
   test("Property(map, name) => map.name") {
     val expr: Expression = Property(ident("a"), PropertyKeyName("name")_)_
     pprintToString(expr) should equal("a.name")

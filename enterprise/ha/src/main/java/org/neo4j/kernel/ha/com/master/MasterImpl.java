@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.com.master;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -125,7 +126,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         this( spi, monitor, logging, config, UNFINISHED_TRANSACTION_CLEANUP_DELAY );
     }
-    
+
     public MasterImpl( SPI spi, Monitor monitor, Logging logging, Config config, int unfinishedSessionsCheckInterval )
     {
         this.spi = spi;
@@ -150,7 +151,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         this.staleSlaveReaper.scheduleWithFixedDelay( reaper,
                 unfinishedSessionsCheckInterval, unfinishedSessionsCheckInterval, TimeUnit.SECONDS );
     }
-    
+
     @Override
     public void stop()
     {
@@ -336,7 +337,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Couldn't get master ID for " + txId, e );
+            throw new RuntimeException( "Couldn't get master ID for transaction id " + txId, e );
         }
     }
 
@@ -353,23 +354,41 @@ public class MasterImpl extends LifecycleAdapter implements Master
     }
 
     @Override
-    public Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type, long...
-            resourceIds )
+    public Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type,
+                                                      long... resourceIds )
     {
+        msgLog.info( "@@@ acquireExclusiveLock: IN: from: " + context.machineId() + " type: " + type + " resources: " +
+                Arrays.toString( resourceIds ) );
+
         assertCorrectEpoch( context );
         LockSession session = resume( context );
         try
         {
             session.client().acquireExclusive( type, resourceIds );
-            return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
+            Response<LockResult> lockResultResponse = packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
+
+            msgLog.info( "@@@ acquireExclusiveLock: OK: from: " + context.machineId() + " type: " + type + " " +
+                    "resources: " + Arrays.toString( resourceIds ) );
+
+            return lockResultResponse;
         }
         catch ( DeadlockDetectedException e )
         {
-            return packResponse( context, new LockResult( e.getMessage() ) );
+            Response<LockResult> lockResultResponse = packResponse( context, new LockResult( e.getMessage() ) );
+
+            msgLog.info( "@@@ acquireExclusiveLock: NOK: from: " + context.machineId() + " type: " + type + " " +
+                    "resources: " + Arrays.toString( resourceIds ) );
+
+            return lockResultResponse;
         }
         catch ( IllegalResourceException e )
         {
-            return packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
+            Response<LockResult> lockResultResponse = packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
+
+            msgLog.info( "@@@ acquireExclusiveLock: NOK: from: " + context.machineId() + " type: " + type + " " +
+                    "resources: " + Arrays.toString( resourceIds ) );
+
+            return lockResultResponse;
         }
         finally
         {
@@ -393,35 +412,53 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private LockSession resume( RequestContext context )
     {
         LockSession session = getLockSession( context );
-        
+
         session.resume();
-        
+
         // set time stamp to zero so that we don't even try to finish it off
         // if getting old. This is because if the tx is active and old then
         // it means it's waiting for a lock and we cannot do anything about it.
         session.resetTime();
-        
+
         return session;
     }
 
     @Override
     public Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType type,
-            long... resourceIds )
+                                                   long... resourceIds )
     {
+        msgLog.info( "@@@ acquireSharedLock: IN: from: " + context.machineId() + " type: " + type + " resources: " +
+                Arrays.toString( resourceIds ) );
+
         assertCorrectEpoch( context );
         LockSession session = resume( context );
         try
         {
             session.client().acquireShared( type, resourceIds );
-            return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
+            Response<LockResult> lockResultResponse = packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
+
+            msgLog.info( "@@@ acquireSharedLock: OK: from: " + context.machineId() + " type: " + type + " resources: " +
+                    Arrays.toString( resourceIds ) );
+
+            return lockResultResponse;
         }
         catch ( DeadlockDetectedException e )
         {
-            return packResponse( context, new LockResult( e.getMessage() ) );
+            Response<LockResult> lockResultResponse = packResponse( context, new LockResult( e.getMessage() ) );
+
+            msgLog.info( "@@@ acquireSharedLock: NOK:deadlock from: " + context.machineId() + " type: " + type +
+                    " resources: " + Arrays.toString( resourceIds ) );
+
+            return lockResultResponse;
         }
         catch ( IllegalResourceException e )
         {
-            return packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
+            Response<LockResult> lockResultResponse = packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
+
+            msgLog.info( "@@@ acquireSharedLock: NOK:error from: " + context.machineId() + " type: " + type + " " +
+                    "resources: " + Arrays.toString( resourceIds ) );
+
+            return lockResultResponse;
         }
         finally
         {
@@ -471,7 +508,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             }
             active = true;
         }
-        
+
         synchronized void suspend()
         {
             if ( !active )

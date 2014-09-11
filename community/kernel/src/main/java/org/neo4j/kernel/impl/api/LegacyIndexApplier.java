@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,8 +36,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
-
-import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
+import org.neo4j.kernel.impl.transaction.xaframework.IdOrderingQueue;
 
 public class LegacyIndexApplier extends NeoCommandHandler.Adapter
 {
@@ -51,11 +52,16 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     private final Map<String, NeoCommandHandler> providerAppliers = new HashMap<>();
     private final IndexConfigStore indexConfigStore;
     private final boolean recovery;
+    private final IdOrderingQueue transactionOrdering;
+    private final long transactionId;
 
-    public LegacyIndexApplier( IndexConfigStore indexConfigStore, ProviderLookup providerLookup, boolean recovery )
+    public LegacyIndexApplier( IndexConfigStore indexConfigStore, ProviderLookup providerLookup,
+            IdOrderingQueue transactionOrdering, long transactionId, boolean recovery )
     {
         this.indexConfigStore = indexConfigStore;
         this.providerLookup = providerLookup;
+        this.transactionOrdering = transactionOrdering;
+        this.transactionId = transactionId;
         this.recovery = recovery;
     }
 
@@ -131,9 +137,29 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     @Override
     public void close()
     {
-        for ( NeoCommandHandler applier : providerAppliers.values() )
+        try
         {
-            applier.close();
+            for ( NeoCommandHandler applier : providerAppliers.values() )
+            {
+                applier.close();
+            }
         }
+        finally
+        {
+            if ( containsLegacyIndexCommands() )
+            {
+                notifyLegacyIndexOperationQueue();
+            }
+        }
+    }
+
+    private boolean containsLegacyIndexCommands()
+    {
+        return defineCommand != null;
+    }
+
+    private void notifyLegacyIndexOperationQueue()
+    {
+        transactionOrdering.removeChecked( transactionId );
     }
 }

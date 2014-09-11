@@ -67,7 +67,11 @@ case object isolateAggregation extends Rewriter {
                 Some(e)
 
             }
-          }(originalExpressions)
+          }(originalExpressions).filter {
+            //Constant expressions should never be isolated
+            case ConstantExpression(_) => false
+            case expr => true
+          }
 
           val withReturnItems: Seq[ReturnItem] = expressionsToGoToWith.map {
             case id: Identifier => AliasedReturnItem(id, id)(id.position)

@@ -43,8 +43,8 @@ class CypherCompiler(graph: GraphDatabaseService,
   private val compatibilityFor1_9 = CompatibilityFor1_9(graph, queryCacheSize)
   private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize)
   private val compatibilityFor2_1 = CompatibilityFor2_1(graph, queryCacheSize, kernelMonitors, kernelAPI)
-  private val compatibilityFor2_2Legacy = CompatibilityFor2_2Legacy(graph, queryCacheSize, kernelMonitors, kernelAPI)
-  private val compatibilityFor2_2Experimental = CompatibilityFor2_2Experimental(graph, queryCacheSize, kernelMonitors, kernelAPI)
+  private val compatibilityFor2_2Rule = CompatibilityFor2_2Rule(graph, queryCacheSize, kernelMonitors, kernelAPI)
+  private val compatibilityFor2_2Cost = CompatibilityFor2_2Cost(graph, queryCacheSize, kernelMonitors, kernelAPI)
 
   @throws(classOf[SyntaxException])
   def parseQuery(queryText: String): ParsedQuery = {
@@ -55,8 +55,9 @@ class CypherCompiler(graph: GraphDatabaseService,
     val statementAsText = preParsedQuery.statement
 
     version match {
-      case CypherVersion.experimental => compatibilityFor2_2Experimental.produceParsedQuery(statementAsText, planType)
-      case CypherVersion.v2_2 => compatibilityFor2_2Legacy.produceParsedQuery(statementAsText, planType)
+      case CypherVersion.`v2_2_cost` => compatibilityFor2_2Cost.produceParsedQuery(statementAsText, planType)
+      case CypherVersion.`v2_2_rule` => compatibilityFor2_2Rule.produceParsedQuery(statementAsText, planType)
+      case CypherVersion.v2_2 => compatibilityFor2_2Rule.produceParsedQuery(statementAsText, planType)
       case CypherVersion.v2_1 => compatibilityFor2_1.parseQuery(statementAsText, planType == Profiled)
       case CypherVersion.v2_0 => compatibilityFor2_0.parseQuery(statementAsText, planType == Profiled)
       case CypherVersion.v1_9 => compatibilityFor1_9.parseQuery(statementAsText, planType == Profiled)

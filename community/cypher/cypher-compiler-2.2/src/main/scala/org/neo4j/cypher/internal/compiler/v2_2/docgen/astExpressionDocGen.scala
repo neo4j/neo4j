@@ -47,7 +47,7 @@ case object astExpressionDocGen extends CustomDocGen[ASTNode] {
   }
 
   implicit class IdentifierConverter(identifier: Identifier) {
-    def asDoc(pretty: DocConverter[Any]) = identifier.name
+    def asDoc(pretty: DocConverter[Any]) = AstNameConverter(identifier.name).asDoc
   }
 
   implicit class LiteralConverter(literal: Literal) {

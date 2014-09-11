@@ -44,7 +44,7 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
   test("MATCH n RETURN count(*)/60/42") {
     assertRewrite(
       "MATCH n RETURN count(*)/60/42",
-      "MATCH n WITH count(*) as `  AGGREGATION15`, 60 as `  AGGREGATION24`, 42 as `  AGGREGATION27` RETURN `  AGGREGATION15`/`  AGGREGATION24`/`  AGGREGATION27` as `count(*)/60/42`")
+      "MATCH n WITH count(*) as `  AGGREGATION15` RETURN `  AGGREGATION15`/60/42 as `count(*)/60/42`")
   }
 
   test("MATCH n-->() RETURN (n)-->({k: count(*)})") {
@@ -62,13 +62,13 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
   test("MATCH n RETURN n, count(n) + 3") {
     assertRewrite(
       "MATCH n RETURN n, count(n) + 3",
-      "MATCH n WITH n, count(n) as `  AGGREGATION18`, 3 as `  AGGREGATION29` RETURN n, `  AGGREGATION18` + `  AGGREGATION29` as `count(n) + 3`")
+      "MATCH n WITH n, count(n) as `  AGGREGATION18`  RETURN n, `  AGGREGATION18` + 3 as `count(n) + 3`")
   }
 
   test("UNWIND [1,2,3] AS a RETURN reduce(y=0, x IN collect(a) | x) AS z") {
     assertRewrite(
       "UNWIND [1,2,3] AS a RETURN reduce(y=0, x IN collect(a) | x) AS z",
-      "UNWIND [1,2,3] as a WITH 0 as `  AGGREGATION36`, collect(a) as `  AGGREGATION44` RETURN reduce(y=`  AGGREGATION36`, x IN `  AGGREGATION44` | x) as z")
+      "UNWIND [1,2,3] as a WITH collect(a) as `  AGGREGATION44` RETURN reduce(y=0, x IN `  AGGREGATION44` | x) as z")
   }
 
   test("UNWIND [1,2,3] AS a RETURN filter(x IN collect(a) WHERE x <> 0) AS z") {
@@ -117,6 +117,19 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
       "match a return length(collect(a))",
       "MATCH a WITH collect(a) AS `  AGGREGATION22` RETURN length(`  AGGREGATION22`) AS `length(collect(a))`")
   }
+
+  test("MATCH a RETURN count(a) > 0") {
+    assertRewrite(
+      "MATCH a RETURN count(a) > 0",
+      "MATCH a WITH count(a) AS `  AGGREGATION15` RETURN `  AGGREGATION15` > 0 AS `count(a) > 0`")
+  }
+
+  test("MATCH a RETURN count(a) > {param}") {
+    assertRewrite(
+      "MATCH a RETURN count(a) > {param}",
+      "MATCH a WITH count(a) AS `  AGGREGATION15` RETURN `  AGGREGATION15` > {param} AS `count(a) > {param}`")
+  }
+
 
   override protected def parseForRewriting(queryText: String) =
     super.parseForRewriting(queryText).endoRewrite(aliasReturnItems)
