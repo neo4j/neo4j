@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 /**
  * The thinking behind an out-of-order sequence is that, to the outside, there's one "last number"
  * which will will never be decremented between times of looking at it. It can move in bigger strides
- * than 1 though. That is because multiple threads can tell it that a certain number is "done",
- * a number that not necessarily is the last one plus one. So if a gap is observed then the number
+ * than 1 though. That is because multiple threads can {@link #offer(long) tell} it that a certain number is "done",
+ * a number that not necessarily is the previously last one plus one. So if a gap is observed then the number
  * that is the logical next one, whenever that arrives, will move the externally visible number to
  * the highest gap-free number set.
  */

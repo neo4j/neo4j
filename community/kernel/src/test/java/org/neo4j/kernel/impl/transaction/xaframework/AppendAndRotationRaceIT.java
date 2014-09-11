@@ -292,7 +292,7 @@ public class AppendAndRotationRaceIT
                 TransactionMetadataCache metadataCache, TransactionIdStore transactionIdStore )
         {
             return new PhysicalTransactionAppender( logFile, txIdGenerator,
-                    metadataCache, transactionIdStore );
+                    metadataCache, transactionIdStore, IdOrderingQueue.BYPASS );
         }
     };
 
@@ -303,7 +303,7 @@ public class AppendAndRotationRaceIT
                 TransactionMetadataCache metadataCache, TransactionIdStore transactionIdStore )
         {
             return new BatchingPhysicalTransactionAppender( logFile, txIdGenerator,
-                    metadataCache, transactionIdStore );
+                    metadataCache, transactionIdStore, IdOrderingQueue.BYPASS );
         }
     };
 }

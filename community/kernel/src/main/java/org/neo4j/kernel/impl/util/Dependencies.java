@@ -61,11 +61,15 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         List<?> options = typeDependencies.get( type );
 
         if (options != null)
+        {
             return selector.select( type, (Iterable<T>) options);
+        }
 
         // Try parent
         if (parent != null)
+        {
             return parent.instance().resolveDependency( type, selector );
+        }
 
         // Out of options
         throw new IllegalArgumentException(
@@ -109,7 +113,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
                 deps = new ArrayList<>(  );
                 typeDependencies.put(type, deps);
             }
-            deps.add(dependency);
+            deps.add( dependency );
 
             // Add as all interfaces
             Class[] interfaces = type.getInterfaces();
@@ -131,7 +135,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
                 deps = new ArrayList<>(  );
                 typeDependencies.put(type, deps);
             }
-            deps.add(dependency);
+            deps.add( dependency );
 
             // Add as all sub-interfaces
             addInterfaces(type.getInterfaces(), dependency);

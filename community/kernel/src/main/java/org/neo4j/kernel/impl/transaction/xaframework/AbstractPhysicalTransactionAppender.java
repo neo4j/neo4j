@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
 
@@ -34,25 +36,39 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     private final TransactionIdStore transactionIdStore;
     private final TransactionLogWriter transactionLogWriter;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
+    private final IndexCommandDetector indexCommandDetector;
+
+    // For the graph store and schema indexes order-of-updates are managed by the high level entity locks
+    // such that changes are applied to the affected records in the same order that they are written to the
+    // log. For the legacy indexes there are no such locks, and hence no such ordering. This queue below
+    // is introduced to manage just that and is only used for transactions that contain any legacy index changes.
+    protected final IdOrderingQueue legacyIndexTransactionOrdering;
 
     public AbstractPhysicalTransactionAppender( LogFile logFile, TxIdGenerator txIdGenerator,
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore )
+            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
+            IdOrderingQueue legacyIndexTransactionOrdering )
     {
         this.logFile = logFile;
         this.transactionIdStore = transactionIdStore;
+        this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.channel = logFile.getWriter();
         this.txIdGenerator = txIdGenerator;
         this.transactionMetadataCache = transactionMetadataCache;
-
-        LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
-        this.transactionLogWriter = new TransactionLogWriter( logEntryWriter );
+        this.indexCommandDetector = new IndexCommandDetector( new CommandWriter( channel ) );
+        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriterv1( channel, indexCommandDetector ) );
     }
 
-    private void append( TransactionRepresentation transaction, long transactionId ) throws IOException
+    /**
+     * @return whether or not this transaction contains any legacy index changes.
+     */
+    private boolean append( TransactionRepresentation transaction, long transactionId ) throws IOException
     {
         channel.getCurrentPosition( positionMarker );
         LogPosition logPosition = positionMarker.newPosition();
 
+        // Reset command writer so that we, after we've written the transaction, can ask it whether or
+        // not any legacy index command was written. If so then there's additional ordering to care about below.
+        indexCommandDetector.reset();
         transactionLogWriter.append( transaction, transactionId );
 
         transactionMetadataCache.cacheTransactionMetadata( transactionId, logPosition, transaction.getMasterId(),
@@ -60,6 +76,13 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                         transaction.getMasterId(), transaction.getAuthorId() ) );
 
         channel.emptyBufferIntoChannelAndClearIt();
+
+        // Offer this transaction id to the queue so that the legacy index applier can take part in the ordering
+        if ( indexCommandDetector.hasWrittenAnyLegacyIndexCommand() )
+        {
+            legacyIndexTransactionOrdering.offer( transactionId );
+        }
+        return indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
     }
 
     @Override
@@ -67,6 +90,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     {
         long transactionId = -1;
         long ticket;
+        boolean hasLegacyIndexChanges;
         // Synchronized with logFile to get absolute control over concurrent rotations happening
         synchronized ( logFile )
         {
@@ -74,13 +98,35 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             // we generate the next transaction id
             logFile.checkRotation();
             transactionId = txIdGenerator.generate( transaction );
-            append( transaction, transactionId );
+            hasLegacyIndexChanges = append( transaction, transactionId );
             ticket = getCurrentTicket();
         }
 
         force( ticket );
-        transactionIdStore.transactionCommitted( transactionId );
+        afterForce( transactionId, hasLegacyIndexChanges );
         return transactionId;
+    }
+
+    private void afterForce( long transactionId, boolean hasLegacyIndexChanges ) throws IOException
+    {
+        try
+        {
+            if ( hasLegacyIndexChanges )
+            {
+                try
+                {
+                    legacyIndexTransactionOrdering.waitFor( transactionId );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new IOException( "Interrupted while waiting for applying legacy index updates", e );
+                }
+            }
+        }
+        finally
+        {
+            transactionIdStore.transactionCommitted( transactionId );
+        }
     }
 
     protected long getCurrentTicket()
@@ -94,8 +140,8 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     public boolean append( CommittedTransactionRepresentation transaction ) throws IOException
     {
         long transactionId;
-        boolean result = false;
         long ticket;
+        boolean hasLegacyIndexChanges;
         // Synchronized with logFile to get absolute control over concurrent rotations happening
         synchronized ( logFile )
         {
@@ -105,9 +151,8 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             if ( lastCommittedTxId + 1 == candidateTransactionId )
             {
                 transactionId = txIdGenerator.generate( transaction.getTransactionRepresentation() );
-                append( transaction.getTransactionRepresentation(), transactionId );
+                hasLegacyIndexChanges = append( transaction.getTransactionRepresentation(), transactionId );
                 ticket = getCurrentTicket();
-                result = true;
             }
             else if ( lastCommittedTxId + 1 < candidateTransactionId )
             {
@@ -122,12 +167,41 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             }
         }
         force( ticket );
-        transactionIdStore.transactionCommitted( transactionId );
-        return result;
+        afterForce( transactionId, hasLegacyIndexChanges );
+        return true;
     }
 
     @Override
     public void close()
     {   // do nothing
+    }
+
+    private static final class IndexCommandDetector extends NeoCommandHandler.Delegator
+    {
+        private boolean hasWrittenAnyLegacyIndexCommand;
+
+        public IndexCommandDetector( NeoCommandHandler delegate )
+        {
+            super( delegate );
+        }
+
+        @Override
+        public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
+        {
+            // If there's any legacy index command in this transaction, there's an index define command
+            // so it's enough to check this command type.
+            hasWrittenAnyLegacyIndexCommand = true;
+            return super.visitIndexDefineCommand( command );
+        }
+
+        public void reset()
+        {
+            hasWrittenAnyLegacyIndexCommand = false;
+        }
+
+        public boolean hasWrittenAnyLegacyIndexCommand()
+        {
+            return hasWrittenAnyLegacyIndexCommand;
+        }
     }
 }

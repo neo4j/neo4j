@@ -188,6 +188,118 @@ public interface NeoCommandHandler extends AutoCloseable
         }
     }
 
+    public static class Delegator implements NeoCommandHandler
+    {
+        private final NeoCommandHandler delegate;
+
+        public Delegator( NeoCommandHandler delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public boolean visitNodeCommand( NodeCommand command ) throws IOException
+        {
+            return delegate.visitNodeCommand( command );
+        }
+
+        @Override
+        public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
+        {
+            return delegate.visitRelationshipCommand( command );
+        }
+
+        @Override
+        public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
+        {
+            return delegate.visitPropertyCommand( command );
+        }
+
+        @Override
+        public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
+        {
+            return delegate.visitRelationshipGroupCommand( command );
+        }
+
+        @Override
+        public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
+        {
+            return delegate.visitRelationshipTypeTokenCommand( command );
+        }
+
+        @Override
+        public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
+        {
+            return delegate.visitLabelTokenCommand( command );
+        }
+
+        @Override
+        public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
+        {
+            return delegate.visitPropertyKeyTokenCommand( command );
+        }
+
+        @Override
+        public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
+        {
+            return delegate.visitSchemaRuleCommand( command );
+        }
+
+        @Override
+        public boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException
+        {
+            return delegate.visitNeoStoreCommand( command );
+        }
+
+        @Override
+        public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
+        {
+            return delegate.visitIndexAddNodeCommand( command );
+        }
+
+        @Override
+        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
+        {
+            return delegate.visitIndexAddRelationshipCommand( command );
+        }
+
+        @Override
+        public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
+        {
+            return delegate.visitIndexRemoveCommand( command );
+        }
+
+        @Override
+        public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
+        {
+            return delegate.visitIndexDeleteCommand( command );
+        }
+
+        @Override
+        public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
+        {
+            return delegate.visitIndexCreateCommand( command );
+        }
+
+        @Override
+        public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
+        {
+            return delegate.visitIndexDefineCommand( command );
+        }
+
+        @Override
+        public void apply()
+        {
+            delegate.apply();
+        }
+
+        @Override
+        public void close()
+        {
+            delegate.close();
+        }
+    }
+
     public static class HandlerVisitor implements Visitor<Command, IOException>
     {
         private final NeoCommandHandler handler;

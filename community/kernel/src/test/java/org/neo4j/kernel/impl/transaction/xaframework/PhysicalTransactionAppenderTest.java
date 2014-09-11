@@ -22,19 +22,34 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 
+import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.test.CleanupRule;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -48,6 +63,7 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.exceptionWithMessage;
+import static org.neo4j.kernel.impl.transaction.xaframework.IdOrderingQueue.BYPASS;
 
 public class PhysicalTransactionAppenderTest
 {
@@ -64,7 +80,7 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, txIdGenerator, positionCache, transactionIdStore );
+                logFile, txIdGenerator, positionCache, transactionIdStore, BYPASS );
 
         // WHEN
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(
@@ -105,7 +121,7 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, txIdGenerator, positionCache, transactionIdStore );
+                logFile, txIdGenerator, positionCache, transactionIdStore, BYPASS );
 
 
         // WHEN
@@ -151,7 +167,7 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, txIdGenerator, positionCache, transactionIdStore );
+                logFile, txIdGenerator, positionCache, transactionIdStore, BYPASS );
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
@@ -182,7 +198,7 @@ public class PhysicalTransactionAppenderTest
                     " but last committed txId=" + latestCommittedTxWhenStarted ) ) );
         }
     }
-    
+
     @Test
     public void shouldNotCallTransactionCommittedOnFailedAppendedTransaction() throws Exception
     {
@@ -198,8 +214,8 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 10 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender( logFile,
-                txIdGenerator, metadataCache, transactionIdStore );
-        
+                txIdGenerator, metadataCache, transactionIdStore, BYPASS );
+
         // WHEN
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );
@@ -214,6 +230,147 @@ public class PhysicalTransactionAppenderTest
             assertTrue( contains( e, failureMessage, IOException.class ) );
             verifyNoMoreInteractions( transactionIdStore );
         }
+    }
+
+    @SuppressWarnings( "rawtypes" )
+    @Test
+    public void shouldOrderTransactionsMakingLegacyIndexChanges() throws Exception
+    {
+        // GIVEN
+        LogFile logFile = mock( LogFile.class );
+        WritableLogChannel channel = new InMemoryLogChannel();
+        when( logFile.getWriter() ).thenReturn( channel );
+        TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
+        when( txIdGenerator.generate( any( TransactionRepresentation.class ) ) ).thenReturn( 1L, 2L, 3L, 4L, 5L );
+        TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 100 );
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        IdOrderingQueue legacyIndexOrdering = new SynchronizedArrayIdOrderingQueue( 5 );
+        TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, txIdGenerator,
+                metadataCache, transactionIdStore, legacyIndexOrdering );
+
+        // WHEN appending 5 simultaneous transaction, of which 3 has legacy index changes [1*,2,3*,4,5*]
+        // LEGEND: * = has legacy index changes
+        boolean[] transactions = {true, false, true, false, true};
+        Future[] committers = committersStartYourEngines( appender, transactions );
+
+        // THEN the ones w/o legacy index changes should just have fallen right through
+        // and the ones w/ such changes should be ordered and wait for each other
+
+        // ... so make sure to let the non-legacy-index transactions through, just because we can
+        boolean[] completed = new boolean[transactions.length];
+        for ( int i = 0; i < transactions.length; i++ )
+        {
+            if ( !transactions[i] )
+            {   // Here's a non-legacy-index transaction
+                assertNotNull( tryComplete( committers[i], 1000 ) );
+                completed[i] = true;
+            }
+        }
+
+        // ... and wait for the legacy index transactions to be completed in order
+        while ( anyBoolean( completed, false ) )
+        {
+            // Look for incomplete transactions (i.e. the legacy index transactions), and among
+            // those there should be one that is completed, whereas the other should not be.
+            Long doneTx = null;
+            for ( int attempt = 0; attempt < 5 && doneTx == null; attempt++ )
+            {
+                for ( int i = 0; i < completed.length; i++ )
+                {
+                    if ( !completed[i] )
+                    {
+                        Long tx = tryComplete( committers[i], 100 );
+                        if ( tx != null )
+                        {
+                            assertNull( "Multiple legacy index transactions seems to have " +
+                                    "moved on from append at the same time", doneTx );
+                            doneTx = tx;
+                            completed[i] = true;
+                        }
+                    }
+                }
+            }
+            assertNotNull( "None done this round", doneTx );
+            legacyIndexOrdering.removeChecked( doneTx );
+        }
+    }
+
+    private Long tryComplete( Future future, int millis )
+    {
+        try
+        {
+            // Let's wait a full second here since in the green case it will return super quickly
+            return (Long)future.get( millis, MILLISECONDS );
+        }
+        catch ( InterruptedException | ExecutionException e )
+        {
+            throw new RuntimeException( "A committer that was expected to be done wasn't", e );
+        }
+        catch ( TimeoutException e )
+        {
+            return null;
+        }
+    }
+
+    private boolean anyBoolean( boolean[] array, boolean lookFor )
+    {
+        for ( boolean item : array )
+        {
+            if ( item == lookFor )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public final @Rule CleanupRule cleanup = new CleanupRule();
+
+    /**
+     * @param transactions a {@code true} "transaction" means it should issue legacy index changes.
+     */
+    @SuppressWarnings( "rawtypes" )
+    private Future[] committersStartYourEngines( final TransactionAppender appender, boolean... transactions )
+    {
+        ExecutorService executor = cleanup.add( Executors.newCachedThreadPool() );
+        Future[] futures = new Future[transactions.length];
+        for ( int i = 0; i < transactions.length; i++ )
+        {
+            final TransactionRepresentation transaction = createTransaction( transactions[i], i );
+            futures[i] = executor.submit( new Callable<Long>()
+            {
+                @Override
+                public Long call() throws IOException
+                {
+                    return appender.append( transaction );
+                }
+            } );
+        }
+        return futures;
+    }
+
+    private TransactionRepresentation createTransaction( boolean includeLegacyIndexCommands, int i )
+    {
+        Collection<Command> commands = new ArrayList<>();
+        if ( includeLegacyIndexCommands )
+        {
+            IndexDefineCommand defineCommand = new IndexDefineCommand();
+            defineCommand.init(
+                    MapUtil.<String,Byte>genericMap( "one", (byte)1 ),
+                    MapUtil.<String,Byte>genericMap( "two", (byte)2 ) );
+            commands.add( defineCommand );
+        }
+        else
+        {
+            NodeCommand nodeCommand = new NodeCommand();
+            NodeRecord record = new NodeRecord( 1+i );
+            record.setInUse( true );
+            nodeCommand.init( new NodeRecord( record.getId() ), record );
+            commands.add( nodeCommand );
+        }
+        PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
+        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0 );
+        return transaction;
     }
 
     private Collection<Command> singleCreateNodeCommand()
