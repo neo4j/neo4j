@@ -94,6 +94,10 @@ public class MuninnPageCache implements RunnablePageCache
     private static final boolean allowAllJavaVersions = Boolean.getBoolean(
             "org.neo4j.io.pagecache.impl.muninn.allowAllJavaVersions" );
 
+    // This is a pre-allocated constant, so we can throw it without allocating any objects:
+    private static final IOException oomException = new IOException(
+            "OutOfMemoryError encountered in the page cache background eviction thread" );
+
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
     private final PageCacheMonitor monitor;
@@ -230,7 +234,6 @@ public class MuninnPageCache implements RunnablePageCache
     @Override
     public synchronized void unmap( File file ) throws IOException
     {
-        assertHealthy();
         FileMapping prev = null;
         FileMapping current = mappedFiles;
 
@@ -353,17 +356,10 @@ public class MuninnPageCache implements RunnablePageCache
         // Once we have enough free pages, we park our thread. Page-faulting will
         // unpark our thread as needed.
         evictorThread = Thread.currentThread();
-        try
-        {
-            continuouslySweepPages();
-        }
-        catch ( IOException e )
-        {
-            evictorException = e;
-        }
+        continuouslySweepPages();
     }
 
-    private void continuouslySweepPages() throws IOException
+    private void continuouslySweepPages()
     {
         int keepFree = Math.min( pagesToKeepFree, pages.length / 2 );
         int clockArm = 0;
@@ -399,7 +395,7 @@ public class MuninnPageCache implements RunnablePageCache
         return keepFree - availablePages;
     }
 
-    int evictPages( int pageCountToEvict, int clockArm ) throws IOException
+    int evictPages( int pageCountToEvict, int clockArm )
     {
         Thread currentThread = Thread.currentThread();
         while ( pageCountToEvict > 0 && !currentThread.isInterrupted() ) {
@@ -432,25 +428,46 @@ public class MuninnPageCache implements RunnablePageCache
                     // dead-locking
                     PageSwapper swapper = page.getSwapper();
                     long filePageId = page.getFilePageId();
+                    boolean pageEvicted = false;
+
                     try
                     {
                         page.evict();
                         pageCountToEvict--;
+                        evictorException = null;
+                        pageEvicted = true;
+                    }
+                    catch ( IOException ioException )
+                    {
+                        evictorException = ioException;
+                    }
+                    catch ( OutOfMemoryError ignore )
+                    {
+                        evictorException = oomException;
+                    }
+                    catch ( Throwable throwable )
+                    {
+                        evictorException = new IOException(
+                                "Eviction thread encountered a problem", throwable );
                     }
                     finally
                     {
                         page.unlockWrite( stamp );
                     }
-                    swapper.evicted( filePageId );
-                    monitor.evicted(filePageId, swapper);
 
-                    MuninnPage next;
-                    do
+                    if ( pageEvicted )
                     {
-                        next = freelist.get();
-                        page.nextFree = next;
+                        swapper.evicted( filePageId );
+                        monitor.evicted( filePageId, swapper );
+
+                        MuninnPage next;
+                        do
+                        {
+                            next = freelist.get();
+                            page.nextFree = next;
+                        }
+                        while ( !freelist.compareAndSet( next, page ) );
                     }
-                    while ( !freelist.compareAndSet( next, page ) );
                 }
             }
 

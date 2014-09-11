@@ -112,7 +112,7 @@ public class AdversarialFileChannel implements StoreChannel
     private int mischiefLimit( ByteBuffer buf )
     {
         int oldLimit = buf.limit();
-        int newLimit = oldLimit - Math.max( buf.remaining() / 2, 1 );
+        int newLimit = oldLimit - buf.remaining() / 2;
         buf.limit( newLimit );
         return oldLimit;
     }
