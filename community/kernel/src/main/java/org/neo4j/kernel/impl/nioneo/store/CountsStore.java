@@ -55,7 +55,7 @@ public class CountsStore
 
     public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
     {
-        if ( startLabelId != ANY_LABEL || typeId != ANY_RELATIONSHIP_TYPE || endLabelId != ANY_LABEL )
+        if ( startLabelId != ANY_LABEL || endLabelId != ANY_LABEL )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }

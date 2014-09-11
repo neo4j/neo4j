@@ -203,6 +203,42 @@ public class RelationshipCountsTest
         assertEquals( 2, during );
     }
 
+    @Test
+    public void shouldCountRelationshipsByType() throws Exception
+    {
+        // given
+        final GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "FOO" ) );
+            graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "FOO" ) );
+            graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "BAR" ) );
+            graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "BAR" ) );
+            graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "BAR" ) );
+            graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "BAZ" ) );
+            tx.success();
+        }
+
+        // when
+        long total = numberOfRelationships(  );
+        long foo = numberOfRelationships( withName( "FOO" ) );
+        long bar = numberOfRelationships( withName( "BAR" ) );
+        long baz = numberOfRelationships( withName( "BAZ" ) );
+        long qux = numberOfRelationships( withName( "QUX" ) );
+
+        // then
+        assertEquals( 2, foo );
+        assertEquals( 3, bar );
+        assertEquals( 1, baz );
+        assertEquals( 0, qux );
+        assertEquals( 6, total );
+    }
+
+    private long numberOfRelationships( RelationshipType type )
+    {
+        return numberOfRelationshipsMatching( null, type, null );
+    }
+
     private long numberOfRelationships()
     {
         return numberOfRelationshipsMatching( null, null, null );

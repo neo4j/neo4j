@@ -47,6 +47,7 @@ public class CountStoreApplier extends NeoCommandHandler.Adapter
     private int nodesDelta;
     private int relsDelta;
     private final Map<Integer/*labelId*/, IntCounter> labelDelta = new HashMap<>();
+    private final Map<Integer/*typeId*/, IntCounter> relationshipTypeDelta = new HashMap<>();
 
     public CountStoreApplier( CountsStore countsStore, NodeStore nodeStore )
     {
@@ -72,24 +73,19 @@ public class CountStoreApplier extends NeoCommandHandler.Adapter
             long[] labelsAfter = labels( after );
             for ( PrimitiveLongIterator added = diff( labelsBefore, labelsAfter ); added.hasNext(); )
             {
-                label( (int) added.next() ).increment();
+                label( added.next() ).increment();
             }
             for ( PrimitiveLongIterator removed = diff( labelsAfter, labelsBefore ); removed.hasNext(); )
             {
-                label( (int) removed.next() ).decrement();
+                label( removed.next() ).decrement();
             }
         }
         return true;
     }
 
-    private IntCounter label( int label )
+    private IntCounter label( Number label )
     {
-        IntCounter counter = labelDelta.get( label );
-        if ( counter == null )
-        {
-            labelDelta.put( label, counter = new IntCounter() );
-        }
-        return counter;
+        return counter( labelDelta, label.intValue() );
     }
 
     @Override
@@ -99,12 +95,19 @@ public class CountStoreApplier extends NeoCommandHandler.Adapter
         if ( record.isCreated() )
         {
             relsDelta++;
+            relationshipType( record.getType() ).increment();
         }
         else if ( !record.inUse() )
         {
             relsDelta--;
+            relationshipType( record.getType() ).decrement();
         }
         return true;
+    }
+
+    private IntCounter relationshipType( int type )
+    {
+        return counter( relationshipTypeDelta, type );
     }
 
     @Override
@@ -118,11 +121,25 @@ public class CountStoreApplier extends NeoCommandHandler.Adapter
         }
         // relationships
         countsStore.updateCountsForRelationship( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
+        for ( Map.Entry<Integer, IntCounter> type : relationshipTypeDelta.entrySet() )
+        {
+            countsStore.updateCountsForRelationship( ANY_LABEL, type.getKey(), ANY_LABEL, type.getValue().value() );
+        }
     }
 
     private long[] labels( NodeRecord node )
     {
         return node.inUse() ? parseLabelsField( node ).get( nodeStore ) : null;
+    }
+
+    private static <KEY> IntCounter counter( Map<KEY, IntCounter> map, KEY key )
+    {
+        IntCounter counter = map.get( key );
+        if ( counter == null )
+        {
+            map.put( key, counter = new IntCounter() );
+        }
+        return counter;
     }
 
     private static PrimitiveLongIterator diff( long[] remove, long[] add )
