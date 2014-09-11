@@ -83,14 +83,19 @@ public class PageCacheStressTest
      * 8136 bytes per page * 100,000 pages = 776 MB for the whole file
      * <p/>
      * 8192 bytes per page * 10,000 pages = 78 MB cache in memory
+     *
+     * 8 threads * 1 counter per thread per record * 100,000 pages * 113 records per page * 8 bytes per counter =
+     * 8 counter per record * 11,300,000 records * 8 bytes per counter =
+     * 90,400,000 counters * 8 bytes per counter =
+     * 723,200,000 bytes = 690 MB memory for counters
      */
     public static class Builder
     {
-        int numberOfPages = 100000;
+        int numberOfPages = 10000;
         int recordsPerPage = 113;
         int numberOfThreads = 8;
         int cachePagePadding = 56;
-        int numberOfCachePages = 10000;
+        int numberOfCachePages = 1000;
 
         SimplePageCacheFactory simplePageCacheFactory;
         int cachePageSize;
