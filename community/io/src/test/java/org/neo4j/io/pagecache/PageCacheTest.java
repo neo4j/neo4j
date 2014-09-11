@@ -44,6 +44,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.adversaries.RandomAdversary;
+import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -3015,5 +3017,78 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
                 }
             }
         }
+    }
+
+    @Test(timeout = 60000)
+    public void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures() throws Exception
+    {
+        RandomAdversary adversary = new RandomAdversary( 0.1, 0.1, 0.1 );
+        adversary.setProbabilityFactor( 0.0 );
+        FileSystemAbstraction fs = new AdversarialFileSystemAbstraction( adversary, this.fs );
+        File fileA = new File( "a" );
+        File fileB = new File( "b" );
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pfA = pageCache.map( fileA, filePageSize );
+        PagedFile pfB = pageCache.map( fileB, filePageSize / 2 + 1 );
+        adversary.setProbabilityFactor( 1.0 );
+
+        for ( int i = 0; i < 100; i++ )
+        {
+            PagedFile pagedFile = rng.nextBoolean()? pfA : pfB;
+            long maxPageId = pagedFile.getLastPageId();
+            boolean performingRead = rng.nextBoolean() && maxPageId != -1;
+            long startingPage = maxPageId == -1? 0 : rng.nextLong( maxPageId + 1 );
+            int pf_flags = performingRead ? PF_SHARED_LOCK : PF_EXCLUSIVE_LOCK;
+            int pageSize = pagedFile.pageSize();
+            byte[] page = new byte[pageSize];
+
+            try ( PageCursor cursor = pagedFile.io( startingPage, pf_flags ) )
+            {
+                if ( performingRead )
+                {
+                    long pagesToLookAt = Math.min( maxPageId, startingPage + 3 ) - startingPage + 1;
+                    for ( int j = 0; j < pagesToLookAt; j++ )
+                    {
+                        assertTrue( cursor.next() );
+                        do
+                        {
+                            cursor.getBytes( page );
+                        }
+                        while ( cursor.shouldRetry() );
+                        for ( byte b : page )
+                        {
+                            assertThat( b, is( page[0] ) );
+                        }
+                    }
+                }
+                else
+                {
+                    for ( int j = 0; j < 3; j++ )
+                    {
+                        assertTrue( cursor.next() );
+                        byte b = (byte) rng.nextInt();
+                        for ( int k = 0; k < pageSize; k++ )
+                        {
+                            cursor.putByte( b );
+                        }
+                        assertFalse( cursor.shouldRetry() );
+                    }
+                }
+            }
+            catch ( AssertionError error )
+            {
+                throw error;
+            }
+            catch ( Throwable throwable )
+            {
+                // Don't worry about it... it's fine!
+                throwable.printStackTrace();
+            }
+        }
+
+        pageCache.unmap( fileA );
+        pageCache.unmap( fileB );
     }
 }
