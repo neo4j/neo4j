@@ -67,43 +67,39 @@ case class estimateSelectivity(stats: GraphStatistics, tokens: TokenContext) ext
     }) * Multiplier(in.valueCount)
   }
 
-  private def calculateSelectivityForPatterns(in: RelationshipWithLabels): Selectivity = {
-    in match {
-      case RelationshipWithLabels(Some(lhs), pattern, Some(rhs), _) =>
-        val relationshipId: Option[Int] = tokens.getOptRelTypeId(pattern.types.head.name)
-        val maxRelCount = stats.nodesWithLabelCardinality(lhs.labelId) * stats.nodesWithLabelCardinality(rhs.labelId)
-        if (maxRelCount == Cardinality(0))
-          return Selectivity(1)
+  private def calculateSelectivityForPatterns(in: RelationshipWithLabels): Selectivity = in match {
+    case RelationshipWithLabels(Some(lhs), pattern, Some(rhs), _) =>
+      val relationshipId: Option[Int] = tokens.getOptRelTypeId(pattern.types.head.name)
+      val maxRelCount = stats.nodesWithLabelCardinality(lhs.labelId) * stats.nodesWithLabelCardinality(rhs.labelId)
+      if (maxRelCount == Cardinality(0))
+        return Selectivity(1)
 
-        val relCount = (lhs.labelId, relationshipId, rhs.labelId) match {
-          case (Some(lId), Some(relId), Some(rId)) =>
-            stats.cardinalityByLabelsAndRelationshipType(Some(lId), Some(RelTypeId(relId)), Some(rId)) *
-              calculateSelectivityForLabel(lhs) *
-              calculateSelectivityForLabel(rhs)
-          case _ =>
-            Cardinality(0)
-        }
-        relCount / maxRelCount
+      val relCount = (lhs.labelId, relationshipId, rhs.labelId) match {
+        case (Some(lId), Some(relId), Some(rId)) =>
+          stats.cardinalityByLabelsAndRelationshipType(Some(lId), Some(RelTypeId(relId)), Some(rId)) *
+            calculateSelectivityForLabel(lhs) *
+            calculateSelectivityForLabel(rhs)
+        case _ =>
+          Cardinality(0)
+      }
+      relCount / maxRelCount
 
-      case RelationshipWithLabels(Some(lhs), pattern, None, _) =>
-        selectivityForPatternWithLabelsOnOneSide(pattern, pattern.dir, lhs.labelId) *
-          calculateSelectivityForLabel(lhs)
+    case RelationshipWithLabels( Some( lhs ), pattern, None, _ ) =>
+      selectivityForPatternWithLabelsOnOneSide( pattern, pattern.dir, lhs.labelId )
 
-      case RelationshipWithLabels(None, pattern, Some(rhs), _) =>
-        selectivityForPatternWithLabelsOnOneSide(pattern, pattern.dir.reverse(), rhs.labelId) *
-          calculateSelectivityForLabel(rhs)
+    case RelationshipWithLabels(None, pattern, Some(rhs), _) =>
+      selectivityForPatternWithLabelsOnOneSide(pattern, pattern.dir.reverse(), rhs.labelId)
 
-      case RelationshipWithLabels(None, pattern: PatternRelationship, None, _) =>
-        val relationshipId: Option[Int] = tokens.getOptRelTypeId(pattern.types.head.name)
+    case RelationshipWithLabels(None, pattern: PatternRelationship, None, _) =>
+      val relationshipId: Option[Int] = tokens.getOptRelTypeId(pattern.types.head.name)
 
-        val maxRelCount = stats.nodesWithLabelCardinality(None) ^ 2
-        if (maxRelCount == Cardinality(0))
-          return Selectivity(1)
-        val relCount = relationshipId.
-          map(id => stats.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(id)), None)).
-          getOrElse(Cardinality(0))
-        relCount / maxRelCount
-    }
+      val maxRelCount = stats.nodesWithLabelCardinality(None) ^ 2
+      if (maxRelCount == Cardinality(0))
+        return Selectivity(1)
+      val relCount = relationshipId.
+        map(id => stats.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(id)), None)).
+        getOrElse(Cardinality(0))
+      relCount / maxRelCount
   }
 
   private def selectivityForPatternWithLabelsOnOneSide(pattern: PatternRelationship,

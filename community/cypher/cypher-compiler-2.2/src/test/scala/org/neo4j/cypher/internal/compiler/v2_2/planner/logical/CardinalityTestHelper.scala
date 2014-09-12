@@ -59,7 +59,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
 
     def withLabel(tuple: (Symbol, Int)): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (tuple._1.name -> tuple._2))
 
-    def withAllNodes(number: Int): TestUnit = copy(allNodes = Some(number))
+    def withGraphNodes(number: Int): TestUnit = copy(allNodes = Some(number))
 
     def withRelationshipCardinality(relationship: (((Symbol, Symbol), Symbol), Int)) = {
       val (((lhs, relType), rhs), cardinality) = relationship
@@ -84,7 +84,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
         knownProperties = knownProperties + propertyName.name
       )
 
-    def foo = {
+    def prepareTestContext:(GraphStatistics, TokenContext) = {
       val labelIds: Map[String, Int] = knownLabelCardinality.map(_._1).zipWithIndex.toMap
       val propertyIds: Map[String, Int] = knownProperties.zipWithIndex.toMap
       val relTypeIds: Map[String, Int] = knownRelationshipCardinality.map(_._1._2).toSeq.distinct.zipWithIndex.toMap
@@ -200,7 +200,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
     }
 
     def shouldHaveCardinality(number: Double) {
-      val (statistics, tokenContext) = foo
+      val (statistics, tokenContext) = prepareTestContext
       val queryGraph = createQueryGraphAndSemanticStableTable()
       val cardinalityModel = QueryGraphCardinalityModel(
         statistics,
@@ -213,10 +213,13 @@ trait CardinalityTestHelper extends QueryGraphProducer {
     }
 
     def shouldHaveSelectivity(number: Double): Unit = {
-      val (statistics, tokenContext) = foo
+      val (statistics, tokenContext) = prepareTestContext
       val queryGraph = createQueryGraphAndSemanticStableTable()
-      val (predicate, result: Selectivity) :: Nil = groupPredicates(estimateSelectivity(statistics, tokenContext))(producePredicates(queryGraph)).toList
-      result should equal(Selectivity(number))
+      val predicates = producePredicates(queryGraph)
+      val selectivityEstimator = estimateSelectivity( statistics, tokenContext )
+      val result: List[(PredicateCombination, Selectivity)] = groupPredicates(selectivityEstimator)(predicates).toList
+      val mostSelective = result.map(_._2).min
+      mostSelective should equal(Selectivity(number))
     }
 
     def createQueryGraphAndSemanticStableTable(): QueryGraph = produceQueryGraphForPattern(query)
