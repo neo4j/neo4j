@@ -515,7 +515,9 @@ public final class TxStateImpl implements TxState
         }
         else
         {
-            getOrCreateNodeState( nodeId ).addProperty( newProperty );
+            NodeState nodeState = getOrCreateNodeState( nodeId );
+//            nodeState.
+            nodeState.addProperty( newProperty );
             nodePropertyChanges().addProperty(nodeId, newProperty.propertyKeyId(), newProperty.value());
         }
         hasChanges = true;
@@ -552,7 +554,7 @@ public final class TxStateImpl implements TxState
     @Override
     public void nodeDoRemoveProperty( long nodeId, DefinedProperty removedProperty )
     {
-        getOrCreateNodeState( nodeId ).removeProperty( removedProperty.propertyKeyId() );
+        getOrCreateNodeState( nodeId ).removeProperty( removedProperty );
         nodePropertyChanges().removeProperty( nodeId, removedProperty.propertyKeyId(),
                 removedProperty.value() );
         hasChanges = true;
@@ -561,14 +563,16 @@ public final class TxStateImpl implements TxState
     @Override
     public void relationshipDoRemoveProperty( long relationshipId, DefinedProperty removedProperty )
     {
-        getOrCreateRelationshipState( relationshipId ).removeProperty( removedProperty.propertyKeyId() );
+        getOrCreateRelationshipState( relationshipId ).removeProperty( removedProperty );
+        //legacyState.relationshipRemoveProperty( relationshipId, removedProperty );
         hasChanges = true;
     }
 
     @Override
     public void graphDoRemoveProperty( DefinedProperty removedProperty )
     {
-        getOrCreateGraphState().removeProperty( removedProperty.propertyKeyId() );
+        getOrCreateGraphState().removeProperty( removedProperty );
+        //legacyState.graphRemoveProperty( removedProperty );
         hasChanges = true;
     }
 

@@ -79,11 +79,9 @@ public interface StoreMigrationParticipant extends Resource
      * @param migrationDir directory where the
      * {@link #migrate(FileSystemAbstraction, File, File, DependencyResolver) migration} put its files.
      * @param storeDir directory the store directory of the to move the migrated files to.
-     * @param leftOversDir directory to store files that are no longer applicable to the new version.
      * @throws IOException if unable to move one or more files.
      */
-    void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir, File storeDir,
-            File leftOversDir ) throws IOException;
+    void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir, File storeDir ) throws IOException;
 
     /**
      * Closes any resources kept open by this migration participant.
@@ -135,7 +133,7 @@ public interface StoreMigrationParticipant extends Resource
 
         @Override
         public void moveMigratedFiles( FileSystemAbstraction fileSystem,
-                File migrationDirectory, File workingDirectory, File leftOversDirectory ) throws IOException
+                File migrationDirectory, File workingDirectory ) throws IOException
         {
             throw new UnsupportedOperationException( "Should not have been called" );
         }

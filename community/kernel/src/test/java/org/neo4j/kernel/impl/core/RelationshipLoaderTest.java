@@ -67,7 +67,7 @@ public class RelationshipLoaderTest
         RelationshipChainLoader chainLoader = mock( RelationshipChainLoader.class );
         when( chainLoader.getMoreRelationships( eq( 1337l ), any( RelationshipLoadingPosition.class ),
                 any( DirectionWrapper.class ),any( int[].class ) ) ).thenReturn( moreRelationships );
-        RelationshipLoader loader = new RelationshipLoader( relCache, chainLoader );
+        RelationshipLoader loader = new RelationshipLoader( null, relCache, chainLoader );
 
         // When
         Triplet<ArrayMap<Integer,RelIdArray>,List<RelationshipImpl>,RelationshipLoadingPosition> result =

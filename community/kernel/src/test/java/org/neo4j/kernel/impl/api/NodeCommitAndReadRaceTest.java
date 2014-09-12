@@ -168,7 +168,7 @@ public class NodeCommitAndReadRaceTest
         EntityFactory entityFactory = mock( EntityFactory.class );
         RelationshipChainLoader relationshipChainLoader = new RelationshipChainLoader( neoStore );
         RelationshipLoader relationshipLoader = new RelationshipLoader(
-                new NoCache<RelationshipImpl>( getClass().getSimpleName() ), relationshipChainLoader );
+                null, new NoCache<RelationshipImpl>( getClass().getSimpleName() ), relationshipChainLoader );
         PersistenceCache cache = /*spy( */new PersistenceCache( nodeCache, mock( AutoLoadingCache.class ),
                 entityFactory, relationshipLoader, propertyKeyTokenHolder, relationshipTokenHolder, labelTokenHolder ) /*)*/;
         // Just an assertion that this apply method isn't called.

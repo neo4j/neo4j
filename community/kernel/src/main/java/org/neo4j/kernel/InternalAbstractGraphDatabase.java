@@ -136,6 +136,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
+import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -219,6 +220,8 @@ public abstract class InternalAbstractGraphDatabase
 
         Iterable<CacheProvider> cacheProviders();
     }
+
+    private LockService locks;
 
     public static class Configuration
     {
@@ -421,7 +424,7 @@ public abstract class InternalAbstractGraphDatabase
         this.monitors = createMonitors();
 
         storeMigrationProcess = new StoreUpgrader( createUpgradeConfiguration(), fileSystem,
-                monitors.newMonitor( StoreUpgrader.Monitor.class ) );
+                monitors.newMonitor( StoreUpgrader.Monitor.class ), logging );
 
         Map<String, String> configParams = config.getParams();
         config.applyChanges( configParams );
@@ -502,6 +505,7 @@ public abstract class InternalAbstractGraphDatabase
 
         threadToTransactionBridge = life.add( new ThreadToStatementContextBridge() );
 
+        locks = new ReentrantLockService();
         nodeManager = createNodeManager();
 
         transactionEventHandlers = new TransactionEventHandlers( createNodeLookup(), createRelationshipLookups(),
@@ -531,7 +535,7 @@ public abstract class InternalAbstractGraphDatabase
         startupStatistics = new StartupStatisticsProvider();
 
         transactionHeaderInformation = createTransactionHeaderInformation();
-        createNeoDataSource();
+        createNeoDataSource( locks );
 
         life.add( new MonitorGc( config, msgLog ) );
 
@@ -861,9 +865,9 @@ public abstract class InternalAbstractGraphDatabase
         return life.add( DefaultLogging.createDefaultLogging( config ) );
     }
 
-    protected void createNeoDataSource()
+    protected void createNeoDataSource( LockService locks )
     {
-        neoDataSource = new NeoStoreXaDataSource( config,
+        neoDataSource = new NeoStoreXaDataSource( config, locks,
                 storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ), jobScheduler, logging,
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
@@ -1209,11 +1213,10 @@ public abstract class InternalAbstractGraphDatabase
                 // Locks used to ensure pessimistic concurrency control between transactions
                 return type.cast( lockManager );
             }
-            else if ( LockService.class.isAssignableFrom( type )
-                    && type.isInstance( neoDataSource.getLockService() ) )
+            else if ( LockService.class.isAssignableFrom( type ) && type.isInstance( locks ) )
             {
                 // Locks used to control concurrent access to the store files
-                return type.cast( neoDataSource.getLockService() );
+                return type.cast( locks );
             }
             else if( StoreFactory.class.isAssignableFrom( type ) && type.isInstance( storeFactory ) )
             {

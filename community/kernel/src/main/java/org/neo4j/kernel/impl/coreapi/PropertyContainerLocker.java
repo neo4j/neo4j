@@ -87,7 +87,7 @@ public class PropertyContainerLocker
             else if(container instanceof Relationship )
             {
                 statement.readOperations().acquireShared( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
-                return new CoreAPILock(stmtProvider, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId())
+                return new CoreAPILock( stmtProvider, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() )
                 {
                     @Override
                     void release( Statement statement, Locks.ResourceType type, long resourceId )

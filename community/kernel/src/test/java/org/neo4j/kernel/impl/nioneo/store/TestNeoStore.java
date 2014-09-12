@@ -82,6 +82,7 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
@@ -214,8 +215,9 @@ public class TestNeoStore
         when(locks.newClient()).thenReturn( lockClient );
         DefaultCaches caches = new DefaultCaches( StringLogger.DEV_NULL, new Monitors() );
         caches.configure( new NoCacheProvider(), config );
+        ReentrantLockService lockService = new ReentrantLockService();
         NodeManager nodeManager = new NodeManager( null, null, new ThreadToStatementContextBridge() );
-        ds = new NeoStoreXaDataSource(config, sf, StringLogger.DEV_NULL,
+        ds = new NeoStoreXaDataSource(config, lockService, sf, StringLogger.DEV_NULL,
                 null, DevNullLoggingService.DEV_NULL,
                 new KernelSchemaStateStore(),
                 mock(TokenNameLookup.class),

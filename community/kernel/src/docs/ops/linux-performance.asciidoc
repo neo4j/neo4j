@@ -12,6 +12,7 @@ This section will guide you through how to set up a file system benchmark and us
 
 == File system benchmark ==
 
+[[linux-performance-setup]]
 === Setup ===
 
 Create a large file with random data. The file should fit in RAM so if your machine has 4GB of RAM a 1-2GB file with random data will be enough. After the file has been created we will read the file sequentially a few times to make sure it is cached.
@@ -60,6 +61,8 @@ The utility will be given a store file (large file we just created) and a name o
 === Running the benchmark ===
 
 Lets try to benchmark 100 transactions of size 100-500 with a record size of 33 bytes (same record size used by the relationship store).
+
+NOTE: The file named `store` should be created and cached first (see <<linux-performance-setup>>).
 
 [source,shell]
 ----

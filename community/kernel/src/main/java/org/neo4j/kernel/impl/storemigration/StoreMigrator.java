@@ -359,8 +359,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     }
 
     @Override
-    public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir,
-                                   File storeDir, File leftOversDir ) throws IOException
+    public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir, File storeDir ) throws IOException
     {
         // The batch importer will create a whole store. so
         // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
@@ -405,12 +404,6 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
 
         StoreFile.deleteIdFile( fileSystem, migrationDir, idFilesToDelete );
 
-        // Move the current ones into the leftovers directory
-        StoreFile.move( fileSystem, storeDir, leftOversDir, filesToMove,
-                true,  // allow to skip non existent source files
-                false, // not allow to overwrite target files
-                StoreFileType.STORE );
-
         // Move the migrated ones into the store directory
         StoreFile.move( fileSystem, migrationDir, storeDir, filesToMove,
                 true, // allow to skip non existent source files
@@ -443,6 +436,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
             final String newName = PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + version;
             fileSystem.renameFile( file, new File( file.getParent(), newName ) );
         }
+        StoreFile.ensureStoreVersion( fileSystem, storeDir, StoreFile.currentStoreFiles() );
 
         // delete old an unused log files
         for ( File file : fileSystem.listFiles( storeDir, allLegacyLogFilesFilter ) )

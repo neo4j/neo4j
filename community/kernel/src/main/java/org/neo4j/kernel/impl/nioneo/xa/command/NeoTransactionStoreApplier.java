@@ -66,7 +66,8 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     private final HighIdTracker highIdTracker;
     
     public NeoTransactionStoreApplier( NeoStore store, IndexingService indexes, CacheAccessBackDoor cacheAccess,
-            LockService lockService, long transactionId, HighIdTrackerFactory highIdTrackerFactory, boolean recovery )
+                                       LockService lockService, LockGroup lockGroup, long transactionId,
+                                       HighIdTrackerFactory highIdTrackerFactory, boolean recovery )
     {
         this.cacheAccess = cacheAccess;
         this.lockService = lockService;
@@ -75,7 +76,7 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
         this.recovery = recovery;
         this.neoStore = store;
         this.indexes = indexes;
-        this.lockGroup = new LockGroup();
+        this.lockGroup = lockGroup;
     }
 
     @Override
@@ -363,6 +364,5 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     @Override
     public void close()
     {
-        lockGroup.close();
     }
 }
