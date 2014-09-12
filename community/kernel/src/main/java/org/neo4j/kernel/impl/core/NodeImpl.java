@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.store.CacheLoader;
 import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -264,26 +265,30 @@ public class NodeImpl extends ArrayBasedPrimitive
             int[] types, CacheUpdateListener cacheUpdateListener )
     {
         Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition> rels = null;
-        synchronized ( this )
+        try ( Lock ignored = relationshipLoader.lowLevelNodeReadLock( id ) )
         {
-            if ( relationships == null || (relationships.length == 0 && relChainPosition.hasMore( direction, types ) ) )
+            synchronized ( this )
             {
-                try
+                if ( relationships == null ||
+                     (relationships.length == 0 && relChainPosition.hasMore( direction, types )) )
                 {
-                    relChainPosition = relationshipLoader.getRelationshipChainPosition( getId() );
-                }
-                catch ( InvalidRecordException e )
-                {
-                    throw new NotFoundException( "Node[" + id + "]" +
-                            " concurrently deleted while loading its relationships?", e );
-                }
+                    try
+                    {
+                        relChainPosition = relationshipLoader.getRelationshipChainPosition( getId() );
+                    }
+                    catch ( InvalidRecordException e )
+                    {
+                        throw new NotFoundException( "Node[" + id + "]" +
+                                                     " concurrently deleted while loading its relationships?", e );
+                    }
 
-                ArrayMap<Integer, RelIdArray> tmpRelMap = new ArrayMap<>();
-                rels = getMoreRelationships( relationshipLoader, tmpRelMap, direction, types );
-                this.relationships = toRelIdArray( tmpRelMap );
-                this.relChainPosition = rels == null ? RelationshipLoadingPosition.EMPTY : rels.third();
-                moreRelationshipsLoaded();
-                cacheUpdateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
+                    ArrayMap<Integer, RelIdArray> tmpRelMap = new ArrayMap<>();
+                    rels = getMoreRelationships( relationshipLoader, tmpRelMap, direction, types );
+                    this.relationships = toRelIdArray( tmpRelMap );
+                    this.relChainPosition = rels == null ? RelationshipLoadingPosition.EMPTY : rels.third();
+                    moreRelationshipsLoaded();
+                    cacheUpdateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
+                }
             }
         }
         if ( rels != null && rels.second().size() > 0 )
@@ -419,41 +424,43 @@ public class NodeImpl extends ArrayBasedPrimitive
             return LoadStatus.NOTHING;
         }
         boolean more;
-        synchronized ( this )
+        try ( Lock ignored = relationshipLoader.lowLevelNodeReadLock( id ) )
         {
-            if ( !hasMoreRelationshipsToLoad( direction, types ) )
+            synchronized ( this )
             {
-                return LoadStatus.NOTHING;
-            }
-            rels = loadMoreRelationships( relationshipLoader, direction, types );
-            ArrayMap<Integer, RelIdArray> addMap = rels.first();
-            if ( addMap.size() == 0 )
-            {
-                return LoadStatus.NOTHING;
-            }
-            for ( int type : addMap.keySet() )
-            {
-                RelIdArray addRels = addMap.get( type );
-                RelIdArray srcRels = getRelIdArray( type );
-                if ( srcRels == null )
+                if ( !hasMoreRelationshipsToLoad( direction, types ) )
                 {
-                    putRelIdArray( addRels );
+                    return LoadStatus.NOTHING;
                 }
-                else
+                rels = loadMoreRelationships( relationshipLoader, direction, types );
+                ArrayMap<Integer, RelIdArray> addMap = rels.first();
+                if ( addMap.size() == 0 )
                 {
-                    RelIdArray newSrcRels = srcRels.addAll( addRels );
-                    // This can happen if srcRels gets upgraded to a RelIdArrayWithLoops
-                    if ( newSrcRels != srcRels )
+                    return LoadStatus.NOTHING;
+                }
+                for ( int type : addMap.keySet() )
+                {
+                    RelIdArray addRels = addMap.get( type );
+                    RelIdArray srcRels = getRelIdArray( type );
+                    if ( srcRels == null )
                     {
-                        putRelIdArray( newSrcRels );
+                        putRelIdArray( addRels );
+                    }
+                    else
+                    {
+                        RelIdArray newSrcRels = srcRels.addAll( addRels );
+                        // This can happen if srcRels gets upgraded to a RelIdArrayWithLoops
+                        if ( newSrcRels != srcRels )
+                        {
+                            putRelIdArray( newSrcRels );
+                        }
                     }
                 }
+                relChainPosition = rels.third();
+                moreRelationshipsLoaded();
+                more = hasMoreRelationshipsToLoad( direction, types );
+                cacheUpdateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
             }
-            relChainPosition = rels.third();
-            moreRelationshipsLoaded();
-            more = hasMoreRelationshipsToLoad( direction, types );
-            cacheUpdateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
-
         }
         relationshipLoader.putAllInRelCache( rels.second() );
         return more ? LoadStatus.LOADED_MORE : LoadStatus.LOADED_END;

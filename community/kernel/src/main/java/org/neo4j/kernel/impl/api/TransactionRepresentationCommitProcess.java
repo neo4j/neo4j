@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
@@ -46,14 +47,14 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     }
 
     @Override
-    public long commit( TransactionRepresentation transaction ) throws TransactionFailureException
+    public long commit( TransactionRepresentation transaction, LockGroup locks ) throws TransactionFailureException
     {
         long transactionId = commitTransaction( transaction );
         
         // apply changes to the store
         try
         {
-            storeApplier.apply( transaction, transactionId, recovery );
+            storeApplier.apply( transaction, locks, transactionId, recovery );
         }
         // TODO catch different types of exceptions here, some which are OK
         catch ( Throwable e )

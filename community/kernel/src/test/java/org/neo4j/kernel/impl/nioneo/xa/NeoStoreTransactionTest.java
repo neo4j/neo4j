@@ -66,6 +66,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -173,7 +174,10 @@ public class NeoStoreTransactionTest
         final long ruleId = neoStore.getSchemaStore().nextId();
         IndexRule schemaRule = indexRule( ruleId, 10, 8, PROVIDER_DESCRIPTOR );
         writeTransaction.createSchemaRule( schemaRule );
-        commitProcess().commit( transactionRepresentationOf( writeTransaction ) );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionRepresentationOf( writeTransaction ), locks );
+        }
 
         // THEN
         verify( cacheAccessBackDoor ).addSchemaRule( schemaRule );
@@ -204,7 +208,10 @@ public class NeoStoreTransactionTest
 
         // WHEN
         writeTransaction.dropSchemaRule( rule );
-        commitProcess().commit( transactionRepresentationOf( writeTransaction ) );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionRepresentationOf( writeTransaction ), locks );
+        }
 
         // THEN
         verify( cacheAccessBackDoor ).removeSchemaRuleFromCache( ruleId );
@@ -229,7 +236,10 @@ public class NeoStoreTransactionTest
         writeTransaction.addLabelToNode( 50, nodeId );
 
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess().commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionCommands, locks );
+        }
 
 
         // WHEN
@@ -241,7 +251,10 @@ public class NeoStoreTransactionTest
 
         transactionCommands = transactionRepresentationOf( writeTransaction );
 
-        commitProcess().commit( transactionCommands );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionCommands, locks );
+        }
 
         // THEN
         // The dynamic label record should be part of what is logged, and it should be set to not in use anymore.
@@ -284,7 +297,10 @@ public class NeoStoreTransactionTest
         writeTransaction.addLabelToNode( 52, nodeId );
 
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess().commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionCommands, locks );
+        }
 
         // WHEN
         // I remove enough labels to inline them, but then add enough new labels to expand it back to dynamic
@@ -299,7 +315,10 @@ public class NeoStoreTransactionTest
 
         transactionCommands = transactionRepresentationOf( writeTransaction );
 
-        commitProcess().commit( transactionCommands );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionCommands, locks );
+        }
 
         final AtomicBoolean nodeCommandsExist = new AtomicBoolean(false);
 
@@ -392,7 +411,10 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess( indexingService ).commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess( indexingService ).commit( transactionCommands, locks );
+        }
 
         // THEN
         assertEquals( asSet(
@@ -414,7 +436,10 @@ public class NeoStoreTransactionTest
         DefinedProperty property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         DefinedProperty property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess().commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionCommands, locks );
+        }
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
@@ -423,7 +448,10 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeChangeProperty( nodeId, property1.propertyKeyId(), newValue1 );
         writeTransaction.nodeChangeProperty( nodeId, property2.propertyKeyId(), newValue2 );
         transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess( indexingService ).commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess( indexingService ).commit( transactionCommands, locks );
+        }
 
         // THEN
         assertEquals( asSet(
@@ -445,7 +473,10 @@ public class NeoStoreTransactionTest
         DefinedProperty property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         DefinedProperty property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess().commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionCommands, locks );
+        }
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
@@ -453,7 +484,10 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeRemoveProperty( nodeId, property1.propertyKeyId() );
         writeTransaction.nodeRemoveProperty( nodeId, property2.propertyKeyId() );
         transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess( indexingService ).commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess( indexingService ).commit( transactionCommands, locks );
+        }
 
         // THEN
         assertEquals( asSet(
@@ -476,14 +510,20 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess().commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionCommands, locks );
+        }
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService ).first();
         writeTransaction.addLabelToNode( labelId, nodeId );
         transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess( indexingService ).commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess( indexingService ).commit( transactionCommands, locks );
+        }
 
         // THEN
         assertEquals( asSet(
@@ -505,7 +545,10 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.addLabelToNode( labelId1, nodeId );
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess().commit( transactionCommands );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionCommands, locks );
+        }
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
@@ -513,7 +556,10 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.addLabelToNode( labelId2, nodeId );
         transactionCommands = transactionRepresentationOf( writeTransaction );
-	 	commitProcess( indexingService ).commit( transactionCommands );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess( indexingService ).commit( transactionCommands, locks );
+        }
 
         // THEN
         assertEquals( asSet(
@@ -538,14 +584,20 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.addLabelToNode( labelId, nodeId );
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess().commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionCommands, locks );
+        }
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService ).first();
         writeTransaction.removeLabelFromNode( labelId, nodeId );
         transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess( indexingService ).commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess( indexingService ).commit( transactionCommands, locks );
+        }
 
         // THEN
         assertEquals( asSet(
@@ -569,7 +621,10 @@ public class NeoStoreTransactionTest
         writeTransaction.addLabelToNode( labelId1, nodeId );
         writeTransaction.addLabelToNode( labelId2, nodeId );
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess().commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionCommands, locks );
+        }
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
@@ -577,7 +632,10 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeRemoveProperty( nodeId, property1.propertyKeyId() );
         writeTransaction.removeLabelFromNode( labelId2, nodeId );
         transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess( indexingService ).commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess( indexingService ).commit( transactionCommands, locks );
+        }
 
         // THEN
         assertEquals( asSet(
@@ -600,7 +658,10 @@ public class NeoStoreTransactionTest
         writeTransaction.addLabelToNode( labelId1, nodeId );
         writeTransaction.addLabelToNode( labelId2, nodeId );
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess().commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionCommands, locks );
+        }
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
@@ -608,7 +669,10 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.removeLabelFromNode( labelId2, nodeId );
         transactionCommands = transactionRepresentationOf( writeTransaction );
-		commitProcess( indexingService ).commit(transactionCommands);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess( indexingService ).commit( transactionCommands, locks );
+        }
 
         // THEN
         assertEquals( asSet(
@@ -712,7 +776,10 @@ public class NeoStoreTransactionTest
         tx.nodeCreate( nodeId );
         int index = 0;
         tx.nodeAddProperty( nodeId, index, string( 70 ) ); // will require a block of size 1
-        commitProcess().commit( transactionRepresentationOf( tx ) );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionRepresentationOf( tx ), locks );
+        }
 
         // WHEN
         Visitor<Command, IOException> verifier = new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
@@ -742,7 +809,10 @@ public class NeoStoreTransactionTest
         tx.nodeAddProperty( nodeId, index2, string( 40 ) ); // will require a block of size 4
         PhysicalTransactionRepresentation representation = transactionRepresentationOf( tx );
         representation.accept( verifier );
-        commitProcess().commit( representation );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( representation, locks );
+        }
     }
 
     @Test
@@ -761,7 +831,10 @@ public class NeoStoreTransactionTest
         TransactionRecordState tx = newWriteTransaction().first();
         SchemaRule rule = indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
         tx.createSchemaRule( rule );
-        commitProcess().commit(transactionRepresentationOf( tx ));
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionRepresentationOf( tx ), locks );
+        }
 
         // -- and a tx creating a node with that label and property key
         IteratorCollector<NodePropertyUpdate> indexUpdates = new IteratorCollector<>( 0 );
@@ -773,7 +846,10 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation representation = transactionRepresentationOf( tx );
         RecoveryCreatingCopyingNeoCommandHandler recoverer = new RecoveryCreatingCopyingNeoCommandHandler();
         representation.accept( recoverer );
-        commitProcess().commit( representation );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( representation, locks );
+        }
         verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
         indexUpdates.assertContent( expectedUpdate );
 
@@ -803,6 +879,7 @@ public class NeoStoreTransactionTest
                 nodeStore.nextId(),
         };
         // create the node records that we will modify in our main tx.
+        try ( LockGroup lockGroup = new LockGroup() )
         {
             TransactionRecordState tx = newWriteTransaction().first();
             for ( int i = 1; i < nodes.length - 1; i++ )
@@ -811,7 +888,7 @@ public class NeoStoreTransactionTest
             }
             tx.nodeAddProperty( nodes[3], 0, "old" );
             tx.nodeAddProperty( nodes[4], 0, "old" );
-            commitProcess().commit(transactionRepresentationOf( tx ));
+            commitProcess().commit(transactionRepresentationOf( tx ), lockGroup );
             reset( locks ); // reset the lock counts
         }
 
@@ -829,7 +906,10 @@ public class NeoStoreTransactionTest
         tx.nodeAddProperty( nodes[6], 0, "value" );
 
         // when
-        commitProcess().commit(transactionRepresentationOf( tx ));
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionRepresentationOf( tx ), locks );
+        }
 
         // then
         // create node, NodeCommand == 1 update
@@ -1047,7 +1127,10 @@ public class NeoStoreTransactionTest
         writeTransaction.createRelationshipTypeToken( typeA, "A" );
         createRelationships( writeTransaction, nodeId, typeA, INCOMING, 20 );
 
-        commitProcess().commit(transactionRepresentationOf( writeTransaction ));
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( transactionRepresentationOf( writeTransaction ), locks );
+        }
         writeTransaction = newWriteTransaction().first();
 
         int typeB = 1;
@@ -1063,7 +1146,10 @@ public class NeoStoreTransactionTest
         }
 
         PhysicalTransactionRepresentation tx = transactionRepresentationOf( writeTransaction );
-        commitProcess().commit(tx);
+        try ( LockGroup locks = new LockGroup() )
+        {
+            commitProcess().commit( tx, locks );
+        }
 
         // THEN
         // The dynamic label record in before should be the same id as in after, and should be in use
@@ -1099,15 +1185,17 @@ public class NeoStoreTransactionTest
         // GIVEN a node with group of type 10
         instantiateNeoStore( 1 );
         int type5 = 5, type10 = 10, type15 = 15;
+        try ( LockGroup locks = new LockGroup() )
         {
             TransactionRecordState tx = newWriteTransaction().first();
             neoStore.getRelationshipTypeTokenStore().setHighId( 16 );
             tx.createRelationshipTypeToken( type5, "5" );
             tx.createRelationshipTypeToken( type10, "10" );
             tx.createRelationshipTypeToken( type15, "15" );
-            commitProcess().commit(transactionRepresentationOf( tx ));
+            commitProcess().commit( transactionRepresentationOf( tx ), locks );
         }
         long nodeId = neoStore.getNodeStore().nextId();
+        try ( LockGroup locks = new LockGroup() )
         {
             TransactionRecordState tx = newWriteTransaction().first();
             long otherNode1Id = neoStore.getNodeStore().nextId();
@@ -1118,30 +1206,32 @@ public class NeoStoreTransactionTest
             tx.relCreate( neoStore.getRelationshipStore().nextId(), type10, nodeId, otherNode1Id );
             // This relationship will cause the switch to dense
             tx.relCreate( neoStore.getRelationshipStore().nextId(), type10, nodeId, otherNode2Id );
-            commitProcess().commit(transactionRepresentationOf( tx ));
+            commitProcess().commit( transactionRepresentationOf( tx ), locks );
             // Just a little validation of assumptions
             assertRelationshipGroupsInOrder( nodeId, type10 );
         }
 
         // WHEN inserting a relationship of type 5
+        try ( LockGroup locks = new LockGroup() )
         {
             TransactionRecordState tx = newWriteTransaction().first();
             long otherNodeId = neoStore.getNodeStore().nextId();
             tx.nodeCreate( otherNodeId );
             tx.relCreate( neoStore.getRelationshipStore().nextId(), type5, nodeId, otherNodeId );
-            commitProcess().commit(transactionRepresentationOf( tx ));
+            commitProcess().commit( transactionRepresentationOf( tx ), locks );
         }
 
         // THEN that group should end up first in the chain
         assertRelationshipGroupsInOrder( nodeId, type5, type10 );
 
         // WHEN inserting a relationship of type 15
+        try ( LockGroup locks = new LockGroup() )
         {
             TransactionRecordState tx = newWriteTransaction().first();
             long otherNodeId = neoStore.getNodeStore().nextId();
             tx.nodeCreate( otherNodeId );
             tx.relCreate( neoStore.getRelationshipStore().nextId(), type15, nodeId, otherNodeId );
-            commitProcess().commit(transactionRepresentationOf( tx ));
+            commitProcess().commit( transactionRepresentationOf( tx ), locks );
         }
 
         // THEN that group should end up last in the chain
@@ -1399,19 +1489,21 @@ public class NeoStoreTransactionTest
 
     private void commitRecovered( TransactionRepresentation recoveredTx, long txId ) throws Exception
     {
-
-        NeoTransactionStoreApplier storeApplier = new NeoTransactionStoreApplier(
-                neoStore, mockIndexing, cacheAccessBackDoor, locks, txId, DEFAULT_HIGH_ID_TRACKING, true );
-
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
         when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );
         NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( mockIndexing,
                 labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(),
                 cacheAccessBackDoor, propertyLoader );
-        try ( CommandApplierFacade applier = new CommandApplierFacade( storeApplier, indexApplier,
-                mock( NeoCommandHandler.class ) ) )
+        try ( LockGroup lockGroup = new LockGroup() )
         {
-            recoveredTx.accept( applier );
+            NeoTransactionStoreApplier storeApplier = new NeoTransactionStoreApplier(
+                    neoStore, mockIndexing, cacheAccessBackDoor, locks, lockGroup,
+                    txId, DEFAULT_HIGH_ID_TRACKING, true );
+            try ( CommandApplierFacade applier = new CommandApplierFacade( storeApplier, indexApplier,
+                                                                           mock( NeoCommandHandler.class ) ) )
+            {
+                recoveredTx.accept( applier );
+            }
         }
     }
 
@@ -1515,18 +1607,18 @@ public class NeoStoreTransactionTest
 
     public static class RecoveryCreatingCopyingNeoCommandHandler implements Visitor<Command, IOException>
     {
-    	private final List<Command> commands = new LinkedList<Command>();
+        private final List<Command> commands = new LinkedList<Command>();
 
         @Override
         public boolean visit( Command element ) throws IOException
         {
-            commands.add(element);
+            commands.add( element );
             return true;
         }
 
-		public TransactionRepresentation getAsRecovered()
-		{
-			return new PhysicalTransactionRepresentation( commands );
-		}
+        public TransactionRepresentation getAsRecovered()
+        {
+            return new PhysicalTransactionRepresentation( commands );
+        }
     }
 }

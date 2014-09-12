@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -138,7 +139,8 @@ public class NeoTransactionStoreApplierTest
     private NeoTransactionStoreApplier newApplier( boolean recovery )
     {
         return new NeoTransactionStoreApplier(
-                neoStore, indexingService, cacheAccess, lockService, transactionId, DEFAULT_HIGH_ID_TRACKING, recovery );
+                neoStore, indexingService, cacheAccess, lockService, new LockGroup(),
+                transactionId, DEFAULT_HIGH_ID_TRACKING, recovery );
     }
 
     @Test

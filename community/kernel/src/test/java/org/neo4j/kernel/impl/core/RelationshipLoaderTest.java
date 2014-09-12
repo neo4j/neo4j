@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -67,7 +68,7 @@ public class RelationshipLoaderTest
         RelationshipChainLoader chainLoader = mock( RelationshipChainLoader.class );
         when( chainLoader.getMoreRelationships( eq( 1337l ), any( RelationshipLoadingPosition.class ),
                 any( DirectionWrapper.class ),any( int[].class ) ) ).thenReturn( moreRelationships );
-        RelationshipLoader loader = new RelationshipLoader( relCache, chainLoader );
+        RelationshipLoader loader = new RelationshipLoader( LockService.NO_LOCK_SERVICE, relCache, chainLoader );
 
         // When
         Triplet<ArrayMap<Integer,RelIdArray>,List<RelationshipImpl>,RelationshipLoadingPosition> result =

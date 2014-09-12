@@ -14,28 +14,13 @@ Finally, data protection should be considered in the upper layers of the surroun
 [[capabilities-data-integrity]]
 == Data Integrity ==
 
-In order to keep data consistent, there needs to be mechanisms and structures that guarantee the integrity of all stored data.
-In Neo4j, data integrity is maintained for the core graph engine together with other data sources - see below.
-
-[[capabilities-core-graph-engine]]
-=== Core Graph Engine ===
-
-In Neo4j, the whole data model is stored as a graph on disk and persisted as 
-part of every committed transaction.
-In the storage layer, Relationships, Nodes, and Properties have direct pointers to each other.
-This maintains integrity without the need for data duplication between the different backend store files.
- 
-[[capabilities-different-data-sources]]
-=== Different Data Sources ===
-
-In a number of scenarios, the core graph engine is combined with other systems 
-in order to achieve optimal performance for non-graph lookups.
-For example, Apache Lucene is frequently used as an additional index system for text queries that would otherwise be very processing-intensive in the graph layer.
-
-To keep these external systems in synchronization with each other, Neo4j provides 
-full Two Phase Commit transaction management, with rollback support over all data 
-sources.
-Thus, failed index insertions into Lucene can be transparently rolled back in all data sources and thus keep data up-to-date.
+In order to keep data consistent, a good database needs mechanisms and
+structures that guarantee the integrity of all stored data. In Neo4j, data
+integrity is guaranteed both for graph elements (Nodes, Relationships and
+Properties) and for non-graph data, such as the indexes. Neo4j's transactional
+architecture ensures that data is protected and provides for fast recovery from
+an unexpected failure, without the need to rebuild internal indexes or other
+costly operations.
 
 [[capabilities-data-integration]]
 == Data Integration ==

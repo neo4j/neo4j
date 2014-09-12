@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
@@ -71,7 +72,10 @@ public class TransactionRepresentationStoreApplierTest
 
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
 
-        applier.apply( transaction, transactionId, false );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            applier.apply( transaction, locks, transactionId, false );
+        }
 
         verify( transaction, times( 1 ) ).accept( Matchers.<Visitor<Command, IOException>>any() );
     }
@@ -88,7 +92,10 @@ public class TransactionRepresentationStoreApplierTest
 
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
 
-        applier.apply( transaction, transactionId, true );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            applier.apply( transaction, locks, transactionId, true );
+        }
 
         verify( transaction, times( 1 ) ).accept( Matchers.<Visitor<Command, IOException>>any() );
         verify( tracker, times( 1 ) ).apply();
@@ -105,7 +112,10 @@ public class TransactionRepresentationStoreApplierTest
         TransactionRepresentation transaction = new PhysicalTransactionRepresentation( indexTransaction() );
 
         // WHEN
-        applier.apply( transaction, transactionId, false );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            applier.apply( transaction, locks, transactionId, false );
+        }
 
         // THEN
         verify( queue ).removeChecked( transactionId );

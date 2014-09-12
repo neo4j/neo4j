@@ -99,6 +99,12 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
             {
                 return actual.accept( thread ) || executionState == ExecutionState.EXECUTED;
             }
+
+            @Override
+            public String toString()
+            {
+                return "(" + actual.toString() + ") or execution completed.";
+            }
         };
     }
 
