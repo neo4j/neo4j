@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.{CypherVersion, SyntaxException}
+import org.neo4j.cypher.{PlannerVersion, CypherVersion, SyntaxException}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.reattachAliasedExpressions
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{KeyToken, TokenType}
@@ -38,7 +38,8 @@ trait ExecutionPlanInProgressRewriter {
 class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
   extends PatternGraphBuilder with PipeBuilder with GraphQueryBuilder {
 
-  val VERSION = CypherVersion.v2_2_rule
+  val PLANNER = PlannerVersion.rulePlanner
+  val VERSION = CypherVersion.v2_2
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
@@ -70,13 +71,13 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
   private def buildUnionQuery(union: Union, context: PlanContext)(implicit pipeMonitor: PipeMonitor): PipeInfo =
     unionBuilder.buildUnionQuery(union, context)
 
-  private def buildIndexQuery(op: IndexOperation): PipeInfo = PipeInfo(new IndexOperationPipe(op), updating = true, version = VERSION)
+  private def buildIndexQuery(op: IndexOperation): PipeInfo = PipeInfo(new IndexOperationPipe(op), updating = true, version = VERSION, planner = PLANNER)
 
   private def buildConstraintQuery(op: UniqueConstraintOperation): PipeInfo = {
     val label = KeyToken.Unresolved(op.label, TokenType.Label)
     val propertyKey = KeyToken.Unresolved(op.propertyKey, TokenType.PropertyKey)
 
-    PipeInfo(new ConstraintOperationPipe(op, label, propertyKey), updating = true, version = VERSION)
+    PipeInfo(new ConstraintOperationPipe(op, label, propertyKey), updating = true, version = VERSION, planner = PLANNER)
   }
 
   def buildQuery(inputQuery: Query, context: PlanContext)(implicit pipeMonitor:PipeMonitor): PipeInfo = {
@@ -100,7 +101,7 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
 
     val pipe = eagernessRewriter(planInProgress.pipe)
 
-    PipeInfo(pipe, planInProgress.isUpdating, version = VERSION)
+    PipeInfo(pipe, planInProgress.isUpdating, version = VERSION, planner = PLANNER)
   }
 
   private def produceAndThrowException(plan: ExecutionPlanInProgress) {

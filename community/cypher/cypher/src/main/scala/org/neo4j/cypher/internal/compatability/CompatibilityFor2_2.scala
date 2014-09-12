@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatability
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.{CypherVersion, ExtendedExecutionResult}
+import org.neo4j.cypher.{PlannerVersion, CypherVersion, ExtendedExecutionResult}
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => ExecutionPlan_v2_2, InternalExecutionResult}
@@ -64,16 +64,16 @@ trait CompatibilityFor2_2 {
     }
 
     def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      ExecutionResultWrapperFor2_2(inner.profile(queryContext(graph, txInfo), params), inner.version)
+      ExecutionResultWrapperFor2_2(inner.profile(queryContext(graph, txInfo), params), inner.version, inner.planner)
 
     def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      ExecutionResultWrapperFor2_2(inner.execute(queryContext(graph, txInfo), params), inner.version)
+      ExecutionResultWrapperFor2_2(inner.execute(queryContext(graph, txInfo), params), inner.version, inner.planner)
 
     def isPeriodicCommit = inner.isPeriodicCommit
   }
 }
 
-case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version: CypherVersion) extends ExtendedExecutionResult {
+case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version: CypherVersion, planner: PlannerVersion) extends ExtendedExecutionResult {
   def planDescriptionRequested = inner.planDescriptionRequested
 
   def javaIterator = inner.javaIterator
@@ -93,7 +93,7 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version:
   def javaColumnAs[T](column: String) = inner.javaColumnAs[T](column)
 
   def executionPlanDescription() =
-    new AmendedRootPlanDescription(inner.executionPlanDescription(), version)
+    new AmendedRootPlanDescription(inner.executionPlanDescription(), version, planner)
 
   def close() = inner.close()
 

@@ -17,16 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.executionplan
+package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.{PlannerVersion, CypherVersion, ExecutionResult}
 
-abstract class ExecutionPlan {
-  def execute(queryContext: QueryContext, params: Map[String, Any]): InternalExecutionResult
-  def profile(queryContext: QueryContext, params: Map[String, Any]): InternalExecutionResult
-  def isPeriodicCommit: Boolean
-  def version: CypherVersion
-  def planner: PlannerVersion
+sealed class PlannerVersion(plannerName: String) {
+  val name = PlannerName.asCanonicalName(plannerName)
 }
 
+object PlannerName {
+  def asCanonicalName(versionName: String) = versionName.toLowerCase
+}
+
+
+case object PlannerVersion {
+  case object costPlanner extends PlannerVersion("cost")
+  case object rulePlanner extends PlannerVersion("rule")
+
+  def apply(versionName: String) = findVersionByExactName(CypherVersionName.asCanonicalName(versionName)).getOrElse {
+    throw new SyntaxException(s"Supported versions are: ${allVersions.map(_.name).mkString(", ")}")
+  }
+
+  def findVersionByExactName(versionName: String) = allVersions.find( _.name == versionName )
+  val default = costPlanner
+  val allVersions = Seq(costPlanner, rulePlanner)
+
+}

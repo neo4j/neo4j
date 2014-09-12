@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
-import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.{PlannerVersion, CypherVersion}
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.{ExpressionConverters, OtherConverters, PatternConverters}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{True, Predicate => CommandPredicate}
@@ -186,6 +185,6 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
     val topLevelPipe = buildPipe(plan)
 
-    PipeInfo(topLevelPipe, updating, None, CypherVersion.v2_2_cost)
+    PipeInfo(topLevelPipe, updating, None, CypherVersion.v2_2, PlannerVersion.costPlanner)
   }
 }

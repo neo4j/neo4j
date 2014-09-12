@@ -63,7 +63,7 @@ class NewPlannerMonitor extends NewLogicalPlanSuccessRateMonitor {
 trait NewPlannerTestSupport extends CypherTestSupport {
   self: ExecutionEngineFunSuite =>
 
-  override def databaseConfig(): Map[String,String] = Map("cypher_parser_version" -> CypherVersion.v2_2_cost.name)
+  override def databaseConfig(): Map[String,String] = Map("cypher_parser_version" -> CypherVersion.v2_2.name)//todo fix me back to cost
 
   val newPlannerMonitor = new NewPlannerMonitor
 
@@ -88,7 +88,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   private def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult =
     eengine.execute(queryText, params.toMap) match {
-      case ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, _) => RewindableExecutionResult(inner)
+      case ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, _, _) => RewindableExecutionResult(inner)
     }
 
   override def execute(queryText: String, params: (String, Any)*) =

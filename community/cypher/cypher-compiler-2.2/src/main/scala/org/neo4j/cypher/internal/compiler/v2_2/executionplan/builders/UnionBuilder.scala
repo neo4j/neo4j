@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 
-import org.neo4j.cypher.{CypherVersion, SyntaxException}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{Query, Union}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{DistinctPipe, PipeMonitor, UnionPipe}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
+import org.neo4j.cypher.{PlannerVersion, CypherVersion, SyntaxException}
 
 
 trait GraphQueryBuilder {
@@ -48,7 +48,7 @@ class UnionBuilder(queryBuilder: GraphQueryBuilder) {
       unionPipe
     }
 
-    PipeInfo(pipe, updating, version = CypherVersion.v2_2_rule)
+    PipeInfo(pipe, updating, version = CypherVersion.v2_2, planner = PlannerVersion.rulePlanner)
   }
 
   private def checkQueriesHaveSameColumns(union: Union) {

@@ -31,7 +31,7 @@ object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
 }
 
-case class PreParsedQuery(statement: String, version: CypherVersion, planType: PlanType)
+case class PreParsedQuery(statement: String, version: CypherVersion, planType: PlanType, plannerVersion: PlannerVersion)
 
 
 class CypherCompiler(graph: GraphDatabaseService,
@@ -53,20 +53,21 @@ class CypherCompiler(graph: GraphDatabaseService,
     val planType = preParsedQuery.planType
     val version = preParsedQuery.version
     val statementAsText = preParsedQuery.statement
+    val plannerVersion = preParsedQuery.plannerVersion
 
-    version match {
-      case CypherVersion.`v2_2_cost` => compatibilityFor2_2Cost.produceParsedQuery(statementAsText, planType)
-      case CypherVersion.`v2_2_rule` => compatibilityFor2_2Rule.produceParsedQuery(statementAsText, planType)
-      case CypherVersion.v2_2 => compatibilityFor2_2Cost.produceParsedQuery(statementAsText, planType)
-      case CypherVersion.v2_1 => compatibilityFor2_1.parseQuery(statementAsText, planType == Profiled)
-      case CypherVersion.v2_0 => compatibilityFor2_0.parseQuery(statementAsText, planType == Profiled)
-      case CypherVersion.v1_9 => compatibilityFor1_9.parseQuery(statementAsText, planType == Profiled)
+    (version, plannerVersion) match {
+      case (CypherVersion.v2_2, PlannerVersion.costPlanner) => compatibilityFor2_2Cost.produceParsedQuery(statementAsText, planType)
+      case (CypherVersion.v2_2, PlannerVersion.rulePlanner) => compatibilityFor2_2Rule.produceParsedQuery(statementAsText, planType)
+      case (CypherVersion.v2_2, _)    => compatibilityFor2_2Cost.produceParsedQuery(statementAsText, planType)
+      case (CypherVersion.v2_1, _)    => compatibilityFor2_1.parseQuery(statementAsText, planType == Profiled)
+      case (CypherVersion.v2_0, _)    => compatibilityFor2_0.parseQuery(statementAsText, planType == Profiled)
+      case (CypherVersion.v1_9, _)    => compatibilityFor1_9.parseQuery(statementAsText, planType == Profiled)
     }
   }
 
   private def preParse(queryWithOption: CypherQueryWithOptions): PreParsedQuery = {
 
-    import CollectionFrosting._
+    import org.neo4j.cypher.internal.CollectionFrosting._
 
     val versionOptions = queryWithOption.options.collectSingle {
       case VersionOption(v) => CypherVersion(v)
@@ -83,7 +84,9 @@ class CypherCompiler(graph: GraphDatabaseService,
       throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
     }
 
-    PreParsedQuery(queryWithOption.statement, cypherVersion, planType)
+    val plannerVersion = calculatePlanerVersion(queryWithOption.options)
+
+    PreParsedQuery(queryWithOption.statement, cypherVersion, planType, plannerVersion)
   }
 
   private def calculatePlanType(options: Seq[CypherOption]) = {
@@ -99,6 +102,19 @@ class CypherCompiler(graph: GraphDatabaseService,
     }
 
     planType.getOrElse(Normal)
+  }
+
+  private def calculatePlanerVersion(options: Seq[CypherOption]) = {
+    val planner = options.collect {
+      case CostPlanner => PlannerVersion.costPlanner
+      case RulePlanner => PlannerVersion.rulePlanner
+    }.distinct
+
+    if (planner.size > 1) {
+      throw new InvalidSemanticsException("Can't use multiple planners")
+    }
+
+    if (planner.isEmpty) PlannerVersion.default else planner.head
   }
 
   private def getQueryCacheSize : Int =

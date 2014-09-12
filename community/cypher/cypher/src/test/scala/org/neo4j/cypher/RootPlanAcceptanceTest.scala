@@ -26,32 +26,81 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     //v2.2 must be handled separately since the resulting compiler is dependent on query
     val versions = CypherVersion.allVersions.filter(!_.name.startsWith(CypherVersion.v2_2.name))
     versions.foreach { v =>
-      assertVersion(v, "create() return 1", v.name )
+
+     given("create() return 1").
+        withCypherVersion(v).
+        shouldHaveCypherVersion(v).
+        shouldHavePlannerVersion(PlannerVersion.rulePlanner)
     }
   }
 
   test("should use cost by default in 2.2") {
-    assertVersion(CypherVersion.v2_2, "match n return n", CypherVersion.v2_2_cost.name)
+    given("match n return n").
+    withCypherVersion(CypherVersion.v2_2).
+    shouldHaveCypherVersion(CypherVersion.v2_2).
+    shouldHavePlannerVersion(PlannerVersion.costPlanner)
   }
 
-  test("should use 2.2-cost when possible in 2.2") {
-    assertVersion(CypherVersion.v2_2_cost, "match n return n", CypherVersion.v2_2_cost.name)
+  test("should use 2.2 cost when possible in 2.2") {
+    given("match n return n").
+      withCypherVersion(CypherVersion.v2_2).
+      withPlannerVersion(PlannerVersion.costPlanner).
+      shouldHaveCypherVersion(CypherVersion.v2_2).
+      shouldHavePlannerVersion(PlannerVersion.costPlanner)
   }
 
-  test("should fallback to 2.2-rule in 2.2") {
-    assertVersion(CypherVersion.v2_2_cost, "create() return 1", CypherVersion.v2_2_rule.name)
+  test("should fallback to 2.2 rule in 2.2") {
+    given("create() return 1").
+      withCypherVersion(CypherVersion.v2_2).
+      withPlannerVersion(PlannerVersion.costPlanner).
+      shouldHaveCypherVersion(CypherVersion.v2_2).
+      shouldHavePlannerVersion(PlannerVersion.rulePlanner)
   }
 
-  test("should use 2.2-rule if we really ask for it in 2.2") {
-    assertVersion(CypherVersion.v2_2_rule, "match n return n", CypherVersion.v2_2_rule.name)
+  test("should use 2.2 rule if we really ask for it in 2.2") {
+    given("match n return n").
+      withCypherVersion(CypherVersion.v2_2).
+      withPlannerVersion(PlannerVersion.rulePlanner).
+      shouldHaveCypherVersion(CypherVersion.v2_2).
+      shouldHavePlannerVersion(PlannerVersion.rulePlanner)
   }
 
+  def given(query: String) = TestQuery(query)
 
-  def assertVersion(v: CypherVersion, query: String, expectedCompiler: String) {
-    val executionResult = eengine.profile(s"cypher ${v.name} ${query}").executionPlanDescription()
-    val planDescription = executionResult.asJava
+  case class TestQuery(query: String,
+                        cypherVersion: Option[CypherVersion] = None,
+                        plannerVersion: Option[PlannerVersion] = None) {
 
-    planDescription.getArguments.get("version") should equal(s"CYPHER ${expectedCompiler}")
+    def withCypherVersion(version: CypherVersion) = copy(cypherVersion = Some(version))
+
+    def withPlannerVersion(version: PlannerVersion) = copy(plannerVersion = Some(version))
+
+    def shouldHaveCypherVersion(version: CypherVersion) = {
+      val planDescription = execute()
+      planDescription.getArguments.get("version") should equal(s"CYPHER ${version.name}")
+
+      copy()
+    }
+
+    def shouldHavePlannerVersion(version: PlannerVersion): Unit = {
+      val planDescription = execute()
+      planDescription.getArguments.get("planner") should equal(s"${version.name}")
+
+      copy()
+    }
+
+    private def execute() = {
+      val planner = plannerVersion match {
+        case Some(v) => s"planner ${v.name}"
+        case None => ""
+      }
+
+      val version = cypherVersion match {
+        case Some(v) => s"cypher ${v.name}"
+        case None => ""
+      }
+      val executionResult = eengine.profile(s"${version} ${planner} ${query}").executionPlanDescription()
+      executionResult.asJava
+    }
   }
-
 }
