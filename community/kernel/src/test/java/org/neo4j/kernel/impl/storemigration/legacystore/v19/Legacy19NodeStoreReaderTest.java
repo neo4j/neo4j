@@ -45,7 +45,7 @@ public class Legacy19NodeStoreReaderTest
         find19FormatHugeStoreDirectory( storeDir );
         Legacy19NodeStoreReader nodeStoreReader =
                 new Legacy19NodeStoreReader( fs, new File( storeDir, "neostore.nodestore.db" ) );
-        assertEquals( 110001, nodeStoreReader.getMaxId() );
+        assertEquals( 1001, nodeStoreReader.getMaxId() );
 
         int nodeCount = 0;
         Iterator<NodeRecord> iterator = nodeStoreReader.iterator();
@@ -57,7 +57,7 @@ public class Legacy19NodeStoreReaderTest
                 nodeCount++;
             }
         }
-        assertEquals( 110000, nodeCount );
+        assertEquals( 1000, nodeCount );
         nodeStoreReader.close();
     }
 }

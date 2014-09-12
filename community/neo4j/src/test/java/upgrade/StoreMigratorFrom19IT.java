@@ -186,28 +186,30 @@ public class StoreMigratorFrom19IT
         verifyNumberOfNodesAndRelationships( verifier );
         verifier.verifyNodeIdsReused();
         verifier.verifyRelationshipIdsReused();
+        verifier.verifyLegacyIndex();
     }
 
     private static void verifySlaveContents( HighlyAvailableGraphDatabase haDb )
     {
         DatabaseContentVerifier verifier = new DatabaseContentVerifier( haDb );
         verifyNumberOfNodesAndRelationships( verifier );
+        verifier.verifyLegacyIndex();
     }
 
 
     private static void verifyNumberOfNodesAndRelationships( DatabaseContentVerifier verifier )
     {
-        verifier.verifyNodes( 110_000 );
-        verifier.verifyRelationships( 99_900 );
+        verifier.verifyNodes( 1_000 );
+        verifier.verifyRelationships( 500 );
     }
 
     private static void verifyNeoStore( NeoStore neoStore )
     {
-        assertEquals( 1405267948320l, neoStore.getCreationTime() );
-        assertEquals( -460827792522586619l, neoStore.getRandomNumber() );
-        assertEquals( 15l, neoStore.getCurrentLogVersion() );
+        assertEquals( 1409818980890L, neoStore.getCreationTime() );
+        assertEquals( 7528833218632030901L, neoStore.getRandomNumber() );
+        assertEquals( 2L, neoStore.getCurrentLogVersion() );
         assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1004L + 3, neoStore.getLastCommittedTransactionId() ); // prior verifications add 3 transactions
+        assertEquals( 8L + 3, neoStore.getLastCommittedTransactionId() ); // prior verifications add 3 transactions
     }
 
     private StoreUpgrader upgrader( StoreMigrator storeMigrator )
