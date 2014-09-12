@@ -123,9 +123,10 @@ public class ClockSweepPageTable implements PageTable, Runnable
             page = freeList.get();
             if ( page == null )
             {
-                if ( sweeperException != null )
+                IOException exception = sweeperException;
+                if ( exception != null )
                 {
-                    throw new IOException( sweeperException );
+                    throw new IOException( exception );
                 }
                 LockSupport.unpark( sweeperThread );
             }
@@ -232,6 +233,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
 
                                     maxPagesToEvict--;
                                     loadedPages--;
+                                    sweeperException = null;
 
                                     // Stop the clock if we're down to a sensible number of free pages.
                                     if( maxPagesToEvict <= 0  )
@@ -264,17 +266,13 @@ public class ClockSweepPageTable implements PageTable, Runnable
                 }
                 maxPagesToEvict = loadedPages - minLoadedPages;
             }
-            catch ( IOException e )
+            catch ( IOException ioe )
             {
-                // Failed to write to disk, this is fatal, shut down.
-                sweeperException = e;
-                return;
+                sweeperException = ioe;
             }
-            catch ( Exception e )
+            catch ( Throwable throwable )
             {
-                // Other than IO Exception, avoid having this thread die at all cost.
-                // TODO: Report this via a monitor rather than like this
-                e.printStackTrace();
+                sweeperException = new IOException( throwable );
             }
         }
     }

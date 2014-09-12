@@ -133,9 +133,9 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
         return inner.renameFile( from, to );
     }
 
-    public void runOutOfDiskSpace()
+    public void runOutOfDiskSpace( boolean outOfSpace )
     {
-        outOfSpace = true;
+        this.outOfSpace = outOfSpace;
     }
 
     public void ensureHasSpace() throws IOException

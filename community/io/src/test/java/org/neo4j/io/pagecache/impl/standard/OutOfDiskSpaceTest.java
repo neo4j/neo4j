@@ -51,7 +51,8 @@ public class OutOfDiskSpaceTest
         RecordingPageCacheMonitor monitor = new RecordingPageCacheMonitor();
         StandardPageCache cache = new StandardPageCache( fs, 2, 512, monitor );
 
-        PagedFile file = cache.map( new File( testDir.directory(), "storefile" ), 512 );
+        File storefile = new File( testDir.directory(), "storefile" );
+        PagedFile file = cache.map( storefile, 512 );
 
         // And given the eviction thread is running
         Thread sweeperThread = new Thread( cache );
@@ -66,7 +67,7 @@ public class OutOfDiskSpaceTest
         }
 
         // When
-        fs.runOutOfDiskSpace();
+        fs.runOutOfDiskSpace( true );
         evictionThreadLatch.countDown();
 
         // Then
@@ -79,9 +80,13 @@ public class OutOfDiskSpaceTest
         catch(IOException e)
         {
             // ok
+            fs.runOutOfDiskSpace( false );
         }
-
-        // 2: The background eviction thread should give up and shut down
-        sweeperThread.join();
+        finally
+        {
+            sweeperThread.interrupt();
+            cache.unmap( storefile );
+            cache.close();
+        }
     }
 }
