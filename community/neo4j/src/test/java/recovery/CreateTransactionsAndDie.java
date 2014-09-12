@@ -97,8 +97,8 @@ public class CreateTransactionsAndDie
     private static int createUncleanDb( String dir, int nrOf2PcTransactionsToRecover ) throws Exception
     {
         Process process = Runtime.getRuntime().exec( new String[]{
-            "java", "-cp", System.getProperty( "java.class.path" ), CreateTransactionsAndDie.class.getName(),
-            dir, "" + nrOf2PcTransactionsToRecover
+                "java", "-cp", System.getProperty( "java.class.path" ), "-Djava.awt.headless=true",
+                CreateTransactionsAndDie.class.getName(), dir, "" + nrOf2PcTransactionsToRecover
         } );
 
         return new ProcessStreamHandler( process, true ).waitForResult();
