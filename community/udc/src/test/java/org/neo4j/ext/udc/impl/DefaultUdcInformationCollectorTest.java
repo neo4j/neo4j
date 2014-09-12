@@ -19,11 +19,14 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
-
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
@@ -47,9 +50,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.neo4j.kernel.logging.Logging;
 
 public class DefaultUdcInformationCollectorTest
 {
@@ -279,7 +280,7 @@ public class DefaultUdcInformationCollectorTest
             if ( type == NodeManager.class )
             {
                 //noinspection unchecked
-                return (T) new NodeManager( null, null, null, null, null, new StubIdGenerator(), null, null, null, null,
+                return (T) new NodeManager( mock(Logging.class), null, null, null, null, new StubIdGenerator(), null, null, null, null,
                         null, null, null,
                         null, null, null );
             }

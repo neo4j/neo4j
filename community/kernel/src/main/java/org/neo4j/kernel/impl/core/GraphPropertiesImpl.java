@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -48,6 +49,9 @@ import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
+import static java.util.Arrays.sort;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.kernel.api.properties.Property.property;
 
 /**
@@ -293,14 +297,21 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
 
     @Override
-    protected void setProperties( Iterator<DefinedProperty> loadedProperties )
+    protected void setProperties(
+            Iterator<DefinedProperty> loadedProperties,
+            PropertyChainVerifier chainVerifier )
     {
         if ( loadedProperties != null && loadedProperties.hasNext() )
         {
+            Collection<DefinedProperty> propertiesCollection = asCollection( loadedProperties );
+            DefinedProperty[] propertiesArray = propertiesCollection.toArray(
+                    new DefinedProperty[ propertiesCollection.size() ]);
+            sort( propertiesArray, ArrayBasedPrimitive.PROPERTY_DATA_COMPARATOR_FOR_SORTING );
+            chainVerifier.verifySortedPropertyChain( propertiesArray, this );
+
             Map<Integer, DefinedProperty> newProperties = new HashMap<>();
-            while ( loadedProperties.hasNext() )
+            for ( DefinedProperty property : propertiesArray )
             {
-                DefinedProperty property = loadedProperties.next();
                 newProperties.put( property.propertyKeyId(), property );
             }
             properties = newProperties;

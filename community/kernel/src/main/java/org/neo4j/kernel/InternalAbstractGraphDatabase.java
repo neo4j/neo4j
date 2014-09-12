@@ -688,14 +688,14 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, locks, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( logging, this, locks, txManager, persistenceManager,
                     persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
                     createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
                     statementContextProvider );
         }
 
         return new NodeManager(
-                logging.getMessagesLog( NodeManager.class ), this, locks, txManager, persistenceManager,
+                logging, this, locks, txManager, persistenceManager,
                 persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
                 createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
                 statementContextProvider );
@@ -707,7 +707,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, locks, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( logging, this, locks, txManager, persistenceManager,
                     persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
             {
@@ -756,7 +756,7 @@ public abstract class InternalAbstractGraphDatabase
             };
         }
 
-        return new NodeManager( logging.getMessagesLog( NodeManager.class ), this, locks, txManager, persistenceManager,
+        return new NodeManager( logging, this, locks, txManager, persistenceManager,
                 persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
         {

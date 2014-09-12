@@ -30,11 +30,11 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 public class ReadOnlyNodeManager extends NodeManager
 {
-    public ReadOnlyNodeManager( StringLogger logger, GraphDatabaseService graphDb, LockService locks,
+    public ReadOnlyNodeManager( Logging logging, GraphDatabaseService graphDb, LockService locks,
                                 AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
                                 EntityIdGenerator idGenerator, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
                                 CacheProvider cacheType, PropertyKeyTokenHolder propertyKeyTokenHolder,
@@ -44,7 +44,7 @@ public class ReadOnlyNodeManager extends NodeManager
                                 Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm,
                                 ThreadToStatementContextBridge statementCtxProvider )
     {
-        super( logger, graphDb, locks, transactionManager, persistenceManager, idGenerator,
+        super( logging, graphDb, locks, transactionManager, persistenceManager, idGenerator,
                 relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, nodeLookup, relationshipLookups,
                 nodeCache, relCache, xaDsm, statementCtxProvider );
     }
