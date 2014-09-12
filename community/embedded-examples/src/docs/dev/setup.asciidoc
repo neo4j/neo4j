@@ -56,6 +56,9 @@ The examples included here use the top-level artifact approach.
 
 === Maven ===
 
+Add the dependency to your project along the lines of the snippet below.
+This is usually done in the `pom.xml` file found in the root directory of the project.
+
 .Maven dependency
 ["source","xml","unnumbered","2",presubs="attributes"]
 --------------------------------------------
