@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
@@ -377,7 +378,7 @@ public class KernelTransactionImplementationTest
         private TransactionRepresentation transaction;
 
         @Override
-        public long commit( TransactionRepresentation representation ) throws TransactionFailureException
+        public long commit( TransactionRepresentation representation, LockGroup locks ) throws TransactionFailureException
         {
             assert transaction == null : "Designed to only allow one transaction";
             transaction = representation;

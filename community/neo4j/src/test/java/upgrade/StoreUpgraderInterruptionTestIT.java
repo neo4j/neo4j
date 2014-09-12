@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
@@ -114,7 +115,8 @@ public class StoreUpgraderInterruptionTestIT
 
     private StoreUpgrader newUpgrader( StoreMigrator migrator )
     {
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, StoreUpgrader.NO_MONITOR );
+        DevNullLoggingService logging = new DevNullLoggingService();
+        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, StoreUpgrader.NO_MONITOR, logging );
         upgrader.addParticipant( migrator );
         return upgrader;
     }

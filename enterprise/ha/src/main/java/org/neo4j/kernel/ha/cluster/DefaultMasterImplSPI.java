@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -122,10 +123,13 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     public long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException,
             TransactionFailureException
     {
-
-        TransactionCommitProcess txCommitProcess = dependencyResolver.resolveDependency( NeoStoreXaDataSource.class ).
-                getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
-        return txCommitProcess.commit( preparedTransaction );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            TransactionCommitProcess txCommitProcess = dependencyResolver
+                    .resolveDependency( NeoStoreXaDataSource.class )
+                    .getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
+            return txCommitProcess.commit( preparedTransaction, locks );
+        }
     }
 
     @Override

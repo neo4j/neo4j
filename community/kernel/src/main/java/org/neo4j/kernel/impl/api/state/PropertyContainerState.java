@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Predicate;
@@ -39,14 +37,14 @@ public class PropertyContainerState extends EntityState
 
     private VersionedHashMap<Integer, DefinedProperty> addedProperties;
     private VersionedHashMap<Integer, DefinedProperty> changedProperties;
-    private Set<Integer> removedProperties;
+    private VersionedHashMap<Integer, DefinedProperty> removedProperties;
 
     private final Predicate<DefinedProperty> excludePropertiesWeKnowAbout = new Predicate<DefinedProperty>()
     {
         @Override
         public boolean accept( DefinedProperty item )
         {
-            return (removedProperties == null || !removedProperties.contains( item.propertyKeyId() ))
+            return (removedProperties == null || !removedProperties.containsKey( item.propertyKeyId() ))
                 && (addedProperties == null || !addedProperties.containsKey( item.propertyKeyId() ))
                 && (changedProperties == null || !changedProperties.containsKey( item.propertyKeyId() ));
         }
@@ -94,34 +92,42 @@ public class PropertyContainerState extends EntityState
 
     public void addProperty( DefinedProperty property )
     {
+        if(removedProperties != null)
+        {
+            DefinedProperty removed = removedProperties.remove( property.propertyKeyId() );
+            if(removed != null)
+            {
+                // This indicates the user did remove+add as two discrete steps, which should be translated to
+                // a single change operation.
+                changeProperty( property );
+                return;
+            }
+        }
         if(addedProperties == null)
         {
             addedProperties = new VersionedHashMap<>();
         }
         addedProperties.put( property.propertyKeyId(), property );
-        if(removedProperties != null)
-        {
-            removedProperties.remove( property.propertyKeyId() );
-        }
+
     }
 
-    public void removeProperty( int propertyKey )
+    public void removeProperty( DefinedProperty property )
     {
         if(addedProperties != null)
         {
-            if(addedProperties.remove( propertyKey ) != null)
+            if(addedProperties.remove( property.propertyKeyId() ) != null)
             {
                 return;
             }
         }
         if(removedProperties == null)
         {
-            removedProperties = Collections.newSetFromMap(new VersionedHashMap<Integer, Boolean>());
+            removedProperties = new VersionedHashMap<>();
         }
-        removedProperties.add( propertyKey );
+        removedProperties.put( property.propertyKeyId(), property );
         if(changedProperties != null)
         {
-            changedProperties.remove( propertyKey );
+            changedProperties.remove( property.propertyKeyId() );
         }
     }
 
@@ -137,7 +143,7 @@ public class PropertyContainerState extends EntityState
 
     public Iterator<Integer> removedProperties()
     {
-        return removedProperties != null ? removedProperties.iterator() : IteratorUtil.<Integer>emptyIterator();
+        return removedProperties != null ? removedProperties.keySet().iterator() : IteratorUtil.<Integer>emptyIterator();
     }
 
     public Iterator<DefinedProperty> addedAndChangedProperties()

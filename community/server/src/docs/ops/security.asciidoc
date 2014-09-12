@@ -6,7 +6,7 @@ Securing access to the Neo4j Server
 
 By default, the Neo4j Server is bundled with a Web server that binds to host +localhost+ on port +7474+, answering only requests from the local machine.
 
-This is configured in the 'conf/neo4j-server.properties' file:
+This is configured in the _conf/neo4j-server.properties_ file:
 
 [source]
 ----
@@ -19,7 +19,7 @@ org.neo4j.server.webserver.port=7474
 #org.neo4j.server.webserver.address=0.0.0.0
 ---- 
 
-If you need to enable access from external hosts, configure the Web server in the 'conf/neo4j-server.properties' by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ to enable access from any host.
+If you need to enable access from external hosts, configure the Web server in the _conf/neo4j-server.properties_ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ to enable access from any host.
 
 == Arbitrary code execution ==
 
@@ -33,7 +33,7 @@ The Neo4j server includes built in support for SSL encrypted communication over 
 The first time the server starts, it automatically generates a self-signed SSL certificate and a private key.
 Because the certificate is self signed, it is not safe to rely on for production use, instead, you should provide your own key and certificate for the server to use.
 
-To provide your own key and certificate, replace the generated key and certificate, or change the neo4j-server.properties file to set the location of your certificate and key:
+To provide your own key and certificate, replace the generated key and certificate, or change the _conf/neo4j-server.properties_ file to set the location of your certificate and key:
 
 [source]
 ----

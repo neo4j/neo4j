@@ -1,143 +1,130 @@
-[[upgrade-guide]]
-Upgrading a Neo4j HA Cluster
-============================
+[[ha-upgrade-guide]]
+Upgrade of a Neo4j HA Cluster
+=============================
 
-This document describes the steps required to upgrade a Neo4j cluster without disrupting its operation.
-This process is referred to as a _rolling upgrade_.
+[CAUTION]
+Before attempting any of the upgrades described here, please
+<<operations-backup, backup your database store!>>
 
-== Upgrading from 1.9.x to 2.0 ==
+To upgrade a Neo4j HA cluster to Neo4j {neo4j-version} requires following 
+a specific process that ensures the cluster remains consistent and all cluster
+instances are able to join and participate following their upgrade.
 
-It is currently _not_ possible to do a rolling upgrade from 1.9.x to 2.0.
-This means that in order for you to upgrade a 1.9.x cluster to 2.0, you will incur some downtime.
+Neo4j supports two approaches to HA cluster upgrades,
+the <<ha-standard-upgrade, standard upgrade process>> and the
+<<ha-rolling-upgrade, rolling upgrade process for zero downtime>>.
+
+[NOTE]
+It is strongly recommended to follow the <<ha-standard-upgrade, standard
+upgrade process>> over the <<ha-rolling-upgrade, rolling upgrade process>>, as
+it is much simpler and less likely to encounter issues.
+
+[IMPORTANT]
+After upgrade is complete, existing backups will not be suitable for updating
+via the <<operations-backup, incremental online backup>>. Please ensure that
+the first backup after upgrading uses an empty target directory, and thus
+performs a full backup.
+
+[[ha-standard-upgrade]]
+== Standard upgrade ==
+
+In order to perform a cluster upgrade to Neo4j {neo4j-version}, you need to first
+upgrade the database store on a single instance, and then allow that store to
+propagate out to slaves.
 
 === Steps ===
 
-In order to upgrade a cluster from 1.9.x to 2.0, you will need to do the following manually:
+The following process is recommended:
 
-. Backup your data!
-. Shut down every cluster member except the master.
-. Install the new version of Neo4j for each slave instance -- removing the data directory, but keeping the configuration.
-. Shut down the master -- this brings your cluster completely offline!
-. Follow the instructions found in <<explicit-upgrade>> for _just_ the master instance -- the data in master instance have now been converted to the new Neo4j 2.0 format.
-. Shut down the master instance again.
-. Distribute the data directory from master to each slave instance -- this saves time by not having to re-build stores and indexes for each slave.
-. Bring master online.
-. Bring slaves online.
+.Backup
+- Before anything else, <<operations-backup, backup your database store!>>
 
-Your entire cluster has now been completely converted to Neo4j 2.0.
+.Shut down the cluster
+- Shut down all instances. This is usually best done one instance after the
+  other, rather than all at once. It is also strongly recommended to shutdown
+  the master of the cluster last.
 
-== Upgrading from 1.8.x to 1.9 ==
+.Upgrade the database store on the previous master
+ . Install Neo4j {neo4j-version} on the previous master, keeping the database
+  store (typically +data/graph.db+) from the previous version.
+ . Disable HA in the configuration, by setting +org.neo4j.server.database.mode=SINGLE+.
+ . <<deployment-upgrading,Upgrade as described for a single instance of Neo4j>> (this may involve configuring with +allow_store_upgrade=true+, as described in <<explicit-upgrade, "Explicit Upgrades">>).
+ . Once upgraded, shut down Neo4j again.
+ . Re-enable HA in the configuration, by setting +org.neo4j.server.database.mode=HA+ again.
 
-The starting assumptions are that there exists a cluster running Neo4j version 1.8 or newer with the corresponding ZooKeeper instances and that the machine which is currently the master is known.
-It is also assumed that on each machine the Neo4j service and the neo4j coordinator service is installed under a directory which from here on is assumed to be /opt/old-neo4j
+.Upgrade the slaves
+- Install Neo4j {neo4j-version} on all previous slaves *and remove their database store* (typically +data/graph.db+). _Slave should not be started with a previous store present._
 
-The process consists of upgrading each machine in turn by removing it from the cluster, moving over the database and starting it back up again.
-Configuration settings also have to be transferred. It is important to note that the last machine to be upgraded must be the master.
-In general, the "cluster version" is defined by the version of the master, providing the master is of the older version the cluster 
-as a whole can operate (the 1.9 instances running in compatibility mode). When a 1.9 instance is elected master however, the older
- instances are not capable of communicating with it, so we have to make sure that the last machine upgraded is the old master. 
- The upgrade process is detected automatically from the joining 1.9 instances and they will not participate in a master election while even a single old instance is part of the cluster.
+.Restart the cluster
+ . Start the previous master instance.
+ . Start each slave, one after the other. Once joined, they will sync the store from the master instance.
 
-=== Step 1: On each slave perform the upgrade ===
+[NOTE]
+For larger databases, it is possible to manually copy the database store from
+the previous master _after it has completed the upgrade_ to the slaves before starting
+them. This will avoid the need for them to sync from the master at startup time.
 
-Download and unpack the new version. Copy over any configuration settings you run your instances with, taking care for deprecated settings and API changes that can occur between versions. 
-Also, ensure that newly introduced settings have proper values (see <<ha-configuration>>).
-The most important thing about the settings setup is the +ha.coordinators+ setting in neo4j.properties which must be set to the value the existing 1.8 instances are using.
-You also have to make sure that all but one instance have the +ha.allow_init_cluster+ setting to +false+ - the machine that has it set to true should be the one that is to become
- the new master.
-In addition, it is necessary that the last machine to be upgraded (the 1.8 master) does not have the +ha.coordinators+ setting present in its configuration file.
-Finally, don't forget to copy over any server plugins you may have.
-First, shutdown the neo4j instance with
+[[ha-rolling-upgrade]]
+== Rolling upgrade ==
 
-[source]
-----
-service neo4j-service stop
-----
+Upgrading a Neo4j cluster without disrupting its operation is referred to as a
+_rolling upgrade_.
 
-Next, uninstall it
+[IMPORTANT]
+*Neo4j {neo4j-version} only supports rolling upgrades from Neo4j 2.0.x
+and previous Neo4j 2.1.x patch releases*.
 
-[source]
-----
-service neo4j-service remove
-----
-Now you can copy over the database. Assuming the old instance is at /opt/old-neo4j and the newly unpacked under /opt/neo4j-enterprise-1.9 the proper command would be
+[CAUTION]
+It is not possible to downgrade a Neo4j cluster without downtime.
 
-[source]
-----
-cp -R /opt/old-neo4j/data/graph.db /opt/neo4j-enterprise-1.9/data/
-----
+In order to perform a rolling upgrade to Neo4j {neo4j-version}, you need to first
+upgrade the database store and then replace the database store of each cluster
+instance with the upgraded version, one at a time, with the cluster master done last.
 
-Next install the neo4j service, which also starts it
+=== Steps ===
 
-[source]
-----	
-/opt/neo4j-enterprise-1.9/bin/neo4j install
-----
+The following process is recommended:
 
-Done. Now check that the services are running and that webadmin reports the version 1.9. Transactions should also be applied from the master as usual.
+.Backup
+- Before anything else, <<operations-backup, backup your database store!>>
 
-=== Step 2:  Upgrade the master, complete the procedure ===
+.Upgrade a single database store
+- Perform upgrade, using one slave instance to do so:
+ . Shut down a single slave instance.
+ . Install Neo4j {neo4j-version} on that instance, keeping the database store (typically +data/graph.db+) from the previous version.
+ . Disable HA in the configuration, by setting +org.neo4j.server.database.mode=SINGLE+.
+ . <<deployment-upgrading,Upgrade as described for a single instance of Neo4j>>. This may involve configuring with +allow_store_upgrade=true+, as described in <<explicit-upgrade, "Explicit Upgrades">>).
+ . Once upgraded, shut down Neo4j again.
+ . Copy the upgraded database store (typically +data/graph.db+) to a separate location.
 
 [WARNING]
-Make sure that the installation that will replace the current master instance does not have +ha.coordinators+ setting present in the +neo4j.properties+ file.
+You *must* also ensure any external application will not attempt to access this
+instance whilst it performs the upgrade in +SINGLE+ mode. You should either
+disable access externally (e.g. in the load balancer), or by reconfiguring the
+port Neo4j will listen on, such that it cannot be found
+(e.g. temporarily set +org.neo4j.server.webserver.port=7470+).
 
-Go to the current master and execute step 1 The moment it will be stopped another instance will take over (the one with the allow_init_cluster setting set to true), transitioning the cluster to 1.9. Finish Step 1 on this machine as well and you will have completed the process.
+.Rejoin the slave to the cluster:
+ . Re-enable HA in the configuration (setting +org.neo4j.server.database.mode=HA+). Also restore any webserver port changes.
+ . Start up, and allow to join the cluster.
 
-=== Step 3:  Cleanup, removing the coordinator services ===
+.Upgrade remaining slaves
+- Repeat for each remaining slave:
+ . Shut down the slave.
+ . Replace the entire database store directory (typically +data/graph.db+) with the upgraded copy.
+ . Start up slave, allow to join the cluster and sync any new transactions.
 
-Each 1.8 installation still has a coordinator service installed and running. To have those removed you need to execute at every upgraded instance
+.Upgrade the master
+  . Shut down the master
+  . Wait for failover to occur to one of the slaves.
+  . Replace the entire database store directory (typically +data/graph.db+) with the upgraded copy.
+  . Start up the old master, and allow to join the cluster. It will now be a slave.
 
-[source]
-----
-service neo4j-coordinator stop
-service neo4j-coordinator remove
-----
+Your entire cluster has now been completely upgraded to Neo4j {neo4j-version}.
 
-After that, the 1.8 instances are no longer active or needed and can be removed or archived.
+[[ha-downgrade]]
+== Downgrading ==
 
-== Upgrading within the 1.9.x series ==
+Downgrade is only supported between Neo4j versions that <<deployment-upgrading,for automatic upgrades>>. This typically means only within patch releases of the same Neo4j version.
 
-[WARNING]
-Due to an bug in the HA code, it may not be possible to do a rolling (i.e. uninterrupted) upgrade to Neo4j 1.9.2 on 1.9 or 1.9.1 clusters. Attempting to do so may lead to an unstable cluster and data loss may occur.
-It is suggested that upgrades to 1.9.2 happen offline, where all instances are shutdown, upgraded and restarted. Upgrading from 1.9.2 to any other version works as described elsewhere in this guide.
-
-Upgrading between 1.9.x versions follows the same general pattern as described in the first part of this guide, but is much simpler because of the compatibility of the configuration options between 1.9.x releases. We will describe a step by step
-procedure, aimed at reducing the master switches to a single change.
-
-=== Step 1: On each slave perform the upgrade ===
-
-Download and unpack the new version. Copy over any configuration settings, ensuring that newly introduced settings have proper values (see <<ha-configuration>>).
-Don't forget to copy over any server plugins you may have.
-
-First, shutdown the neo4j instance with
-
-[source]
-----
-service neo4j-service stop
-----
-
-Next, uninstall it
-
-[source]
-----
-service neo4j-service remove
-----
-Now you can copy over the database. Assuming the old instance is at /opt/old-neo4j and the newly unpacked under /opt/neo4j-enterprise-1.9.x the proper command would be
-
-[source]
-----
-cp -R /opt/old-neo4j/data/graph.db /opt/neo4j-enterprise-1.9.x/data/
-----
-
-Next install the neo4j service, which also starts it
-
-[source]
-----
-/opt/neo4j-enterprise-1.9.x/bin/neo4j install
-----
-
-Now check that the services are running and that webadmin reports the version 1.9.x. Transactions should also be applied from the master as usual.
-
-=== Step 2:  Upgrade the master, complete the procedure ===
-
-Go to the current master and execute step 1 The moment it will be stopped another instance will take over, transitioning the cluster to the new 1.9.x version. Finish Step 1 on this machine as well and you will have completed the process.
+Downgrade follows the same process as for <<ha-standard-upgrade, standard upgrade>>.

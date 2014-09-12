@@ -421,7 +421,7 @@ public abstract class InternalAbstractGraphDatabase
         this.monitors = createMonitors();
 
         storeMigrationProcess = new StoreUpgrader( createUpgradeConfiguration(), fileSystem,
-                monitors.newMonitor( StoreUpgrader.Monitor.class ) );
+                monitors.newMonitor( StoreUpgrader.Monitor.class ), logging );
 
         Map<String, String> configParams = config.getParams();
         config.applyChanges( configParams );

@@ -20,6 +20,8 @@ When used together with a Neo4j server, simply issue the following at the comman
 ./bin/neo4j-shell
 ----
 
+Under windows, the command is named `Neo4jShell.bat`.
+
 For the full list of options, see the reference in the <<shell-manpage,Shell manual page>>.
 
 To connect to a running Neo4j database, use <<read-only-mode>> for local databases
@@ -30,8 +32,7 @@ You need to make sure that the shell jar file is on the classpath when you start
 [[shell-enabling-remote]]
 === Enabling the shell server ===
 
-Shell is enabled from the configuration of the Neo4j kernel, see <<server-configuration>>.
-Here's some sample configurations:
+Shell is enabled by the configuration in _conf/neo4j.properties_. Here are some sample configurations:
 
 [source,plain]
 ----
@@ -48,8 +49,6 @@ remote_shell_port = 1337
 # you can also tell the shell to only support read operations
 remote_shell_read_only = true
 ----
-
-When using the Neo4j server, see <<server-configuration>> for how to add configuration settings in that case.
 
 There are two ways to start the shell, either by connecting to a remote shell server or by pointing it to a Neo4j store path.
 
@@ -359,7 +358,14 @@ all open transactions.
 * +commit+ Commits a transaction.
 * +rollback+ Rollbacks all open transactions.
 
-=== Dumping the database or a cypher result to Cypher statements ===
+=== Dumping the database or Cypher statement results ===
+
+[CAUTION]
+.Experimental feature
+====
+The `dump` command has incomplete functionality.
+It might not work for your use case or data size.
+====
 
 As a simple way of exporting a database or a subset of it, the +dump+ command converts the graph of a Cypher result or the whole database into a single Cypher +create+ statement.
 

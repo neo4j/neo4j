@@ -103,7 +103,7 @@ Note that all 3 installations have the same configuration, except for the +ha.se
 
 *Neo4j instance #1 -- neo4j-01.local*
 
-`conf/neo4j.properties`:
+_conf/neo4j.properties_:
 [source,properties]
 ----
 # Unique server id for this Neo4j instance
@@ -116,7 +116,7 @@ ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 #ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
 ----
 
-`conf/neo4j-server.properties`
+_conf/neo4j-server.properties_
 [source,properties]
 ----
 # Let the webserver only listen on the specified IP.
@@ -129,7 +129,7 @@ org.neo4j.server.database.mode=HA
 
 *Neo4j instance #2 -- neo4j-02.local*
 
-`conf/neo4j.properties`:
+_conf/neo4j.properties_:
 [source,properties]
 ----
 # Unique server id for this Neo4j instance
@@ -142,7 +142,7 @@ ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 #ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
 ----
 
-+conf/neo4j-server.properties+
+_conf/neo4j-server.properties_
 [source,properties]
 ----
 # Let the webserver only listen on the specified IP.
@@ -155,7 +155,7 @@ org.neo4j.server.database.mode=HA
 
 *Neo4j instance #3 -- neo4j-03.local*
 
-+conf/neo4j.properties+:
+_conf/neo4j.properties_:
 [source,properties]
 ----
 # Unique server id for this Neo4j instance
@@ -168,7 +168,7 @@ ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 #ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
 ----
 
-`conf/neo4j-server.properties`
+_conf/neo4j-server.properties_
 [source,properties]
 ----
 # Let the webserver only listen on the specified IP.
@@ -237,7 +237,7 @@ The following settings should be configured for each Neo4j installation.
 
 *Neo4j instance #1 -- ~/neo4j-01*
 
-`conf/neo4j.properties`:
+_conf/neo4j.properties_:
 [source,properties]
 ----
 # Unique server id for this Neo4j instance
@@ -257,7 +257,7 @@ ha.cluster_server = 127.0.0.1:5001
 ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 ----
 
-`conf/neo4j-server.properties`
+_conf/neo4j-server.properties_
 [source,properties]
 ----
 # database location
@@ -276,7 +276,7 @@ org.neo4j.server.database.mode=HA
 
 *Neo4j instance #2 -- ~/neo4j-02*
 
-`conf/neo4j.properties`:
+_conf/neo4j.properties_:
 [source,properties]
 ----
 # Unique server id for this Neo4j instance
@@ -296,7 +296,7 @@ ha.cluster_server = 127.0.0.1:5002
 ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 ----
 
-`conf/neo4j-server.properties`
+_conf/neo4j-server.properties_
 [source,properties]
 ----
 # database location
@@ -315,7 +315,7 @@ org.neo4j.server.database.mode=HA
 
 *Neo4j instance #3 -- ~/neo4j-03*
 
-`conf/neo4j.properties`:
+_conf/neo4j.properties_:
 [source,properties]
 ----
 # Unique server id for this Neo4j instance
@@ -335,7 +335,7 @@ ha.cluster_server = 127.0.0.1:5003
 ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 ----
 
-`conf/neo4j-server.properties`
+_conf/neo4j-server.properties_
 [source,properties]
 ----
 # database location

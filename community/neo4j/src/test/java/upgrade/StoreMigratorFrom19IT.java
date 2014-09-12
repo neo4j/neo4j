@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
@@ -80,12 +81,10 @@ public class StoreMigratorFrom19IT
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // GIVEN
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR );
-        upgrader.addParticipant( new StoreMigrator( monitor, fs ) );
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // WHEN
-        upgrader.migrateIfNeeded( legacyStoreDir );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -118,12 +117,10 @@ public class StoreMigratorFrom19IT
     public void shouldMigrateCluster() throws Throwable
     {
         // Given
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR );
-        upgrader.addParticipant( new StoreMigrator( monitor, fs ) );
         File legacyStoreDir = find19FormatStoreDirectory( storeDir.directory() );
 
         // When
-        upgrader.migrateIfNeeded( legacyStoreDir );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir );
 
         ClusterManager.ManagedCluster cluster =
                 cleanup.add( buildClusterWithMasterDirIn( fs, legacyStoreDir, cleanup ) );
@@ -146,7 +143,8 @@ public class StoreMigratorFrom19IT
 
         // WHEN
         // upgrading that store, the two key tokens for "name" should be merged
-        upgrader( new StoreMigrator( monitor, fs ) ).migrateIfNeeded( storeDir.directory() );
+
+        newStoreUpgrader().migrateIfNeeded( storeDir.directory() );
 
         // THEN
         // verify that the "name" property for both the involved nodes
@@ -186,35 +184,30 @@ public class StoreMigratorFrom19IT
         verifyNumberOfNodesAndRelationships( verifier );
         verifier.verifyNodeIdsReused();
         verifier.verifyRelationshipIdsReused();
+        verifier.verifyLegacyIndex();
     }
 
     private static void verifySlaveContents( HighlyAvailableGraphDatabase haDb )
     {
         DatabaseContentVerifier verifier = new DatabaseContentVerifier( haDb );
         verifyNumberOfNodesAndRelationships( verifier );
+        verifier.verifyLegacyIndex();
     }
 
 
     private static void verifyNumberOfNodesAndRelationships( DatabaseContentVerifier verifier )
     {
-        verifier.verifyNodes( 110_000 );
-        verifier.verifyRelationships( 99_900 );
+        verifier.verifyNodes( 1_000 );
+        verifier.verifyRelationships( 500 );
     }
 
     private static void verifyNeoStore( NeoStore neoStore )
     {
-        assertEquals( 1405267948320l, neoStore.getCreationTime() );
-        assertEquals( -460827792522586619l, neoStore.getRandomNumber() );
-        assertEquals( 15l, neoStore.getCurrentLogVersion() );
+        assertEquals( 1409818980890L, neoStore.getCreationTime() );
+        assertEquals( 7528833218632030901L, neoStore.getRandomNumber() );
+        assertEquals( 2L, neoStore.getCurrentLogVersion() );
         assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1004L + 3, neoStore.getLastCommittedTransactionId() ); // prior verifications add 3 transactions
-    }
-
-    private StoreUpgrader upgrader( StoreMigrator storeMigrator )
-    {
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR );
-        upgrader.addParticipant( storeMigrator );
-        return upgrader;
+        assertEquals( 8L + 3, neoStore.getLastCommittedTransactionId() ); // prior verifications add 3 transactions
     }
 
     private void assertNoDuplicates( Token[] tokens )
@@ -247,6 +240,15 @@ public class StoreMigratorFrom19IT
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
     private final LifeSupport life = new LifeSupport();
+
+    private StoreUpgrader newStoreUpgrader()
+    {
+        DevNullLoggingService logging = new DevNullLoggingService();
+        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, logging );
+        upgrader.addParticipant( new StoreMigrator( monitor, fs ) );
+        return upgrader;
+    }
+
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
     private StoreFactory storeFactory;

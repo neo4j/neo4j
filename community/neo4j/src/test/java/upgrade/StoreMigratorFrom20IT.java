@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
@@ -149,7 +150,8 @@ public class StoreMigratorFrom20IT
 
     private StoreUpgrader upgrader( StoreMigrator storeMigrator )
     {
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR );
+        DevNullLoggingService logging = new DevNullLoggingService();
+        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, logging );
         upgrader.addParticipant( storeMigrator );
         return upgrader;
     }

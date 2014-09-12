@@ -394,8 +394,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 nodeLoader( neoStore.getNodeStore() ) );
         relationshipCache = new AutoLoadingCache<>( cacheProvider.relationship(),
                 relationshipLoader( neoStore.getRelationshipStore() ) );
-        RelationshipLoader relationshipLoader = new RelationshipLoader( relationshipCache, new RelationshipChainLoader(
-                neoStore ) );
+        RelationshipLoader relationshipLoader = new RelationshipLoader(
+                lockService, relationshipCache, new RelationshipChainLoader( neoStore ) );
         PersistenceCache persistenceCache = new PersistenceCache( nodeCache, relationshipCache, nodeManager,
                 relationshipLoader, propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
         CacheAccessBackDoor cacheAccess = new BridgingCacheAccess( schemaCache, updateableSchemaState,

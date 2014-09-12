@@ -21,7 +21,7 @@ This means that you can extend the cluster without changing the configuration of
 
 == Server configuration ==
 
-If you are running Neo4j server, specify +org.neo4j.server.database.mode=HA+ in 'neo4j-server.properties'.
+If you are running Neo4j server, specify +org.neo4j.server.database.mode=HA+ in _conf/neo4j-server.properties_.
 
 .HA server configuration parameters
 [options="header", cols="<33m,<35,<20m,<12"]
@@ -32,7 +32,7 @@ If you are running Neo4j server, specify +org.neo4j.server.database.mode=HA+ in 
 
 == Database configuration ==
 
-HA configuration parameters should be supplied alongside general Neo4j parameters in 'neo4j.properties'.
+HA configuration parameters should be supplied alongside general Neo4j parameters in _conf/neo4j.properties_.
 There are many configurable parameters, most in most cases it isn't necessary to modify the default values.
 The only parameters that need to be specified are +ha.server_id+ and +ha.initial_hosts+.
 

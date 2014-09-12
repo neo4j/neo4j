@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
@@ -64,9 +65,9 @@ public class TransactionRepresentationCommitProcessTest
                 logicalTransactionStore, kernelHealth, transactionIdStore, storeApplier, false );
         
         // WHEN
-        try
+        try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess.commit( mockedTransaction() );
+            commitProcess.commit( mockedTransaction(), locks );
             fail( "Should have failed, something is wrong with the mocking in this test" );
         }
         catch ( TransactionFailureException e )
@@ -91,15 +92,15 @@ public class TransactionRepresentationCommitProcessTest
         KernelHealth kernelHealth = mock( KernelHealth.class );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
-        doThrow( new IOException( rootCause ) ).when( storeApplier ).apply( any( TransactionRepresentation.class ),
-                eq( txId ), eq( false ) );
+        doThrow( new IOException( rootCause ) ).when( storeApplier ).apply(
+                any( TransactionRepresentation.class ), any( LockGroup.class ), eq( txId ), eq( false ) );
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
                 logicalTransactionStore, kernelHealth, transactionIdStore, storeApplier, false );
         
         // WHEN
-        try
+        try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess.commit( mockedTransaction() );
+            commitProcess.commit( mockedTransaction(), locks );
         }
         catch ( TransactionFailureException e )
         {
