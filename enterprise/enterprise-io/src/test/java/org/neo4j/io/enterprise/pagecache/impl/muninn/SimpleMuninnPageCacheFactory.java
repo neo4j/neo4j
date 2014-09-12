@@ -24,11 +24,17 @@ import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.RunnablePageCache;
 import org.neo4j.io.pagecache.stress.SimplePageCacheFactory;
 
-class SimpleMuninnPageCacheFactory implements SimplePageCacheFactory
+public class SimpleMuninnPageCacheFactory implements SimplePageCacheFactory
 {
     @Override
     public RunnablePageCache createPageCache( int numberOfCachePages, int cachePageSize, PageCacheMonitor monitor )
     {
         return new MuninnPageCache( new DefaultFileSystemAbstraction(), numberOfCachePages, cachePageSize, monitor );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Muninn page cache";
     }
 }

@@ -31,4 +31,10 @@ public class SimpleStandardPageCacheFactory implements SimplePageCacheFactory
     {
         return new StandardPageCache( new DefaultFileSystemAbstraction(), numberOfCachePages, cachePageSize, monitor );
     }
+
+    @Override
+    public String toString()
+    {
+        return "Standard page cache";
+    }
 }

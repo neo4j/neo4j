@@ -70,6 +70,6 @@ public class SimpleMonitor implements PageCacheMonitor
     @Override
     public String toString()
     {
-        return format("Monitoring:%n - page faults: %d%n - evictions: %d%n - pins: %d%n - unpins: %d%n - flushes: %d", faults, evictions, pins, unpins, flushes);
+        return format(" - page faults: %d%n - evictions: %d%n - pins: %d%n - unpins: %d%n - flushes: %d", faults, evictions, pins, unpins, flushes);
     }
 }

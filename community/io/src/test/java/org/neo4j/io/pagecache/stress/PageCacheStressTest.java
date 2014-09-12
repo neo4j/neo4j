@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.number.OrderingComparison.greaterThanOrEqualTo;
 import static org.hamcrest.number.OrderingComparison.lessThan;
@@ -134,16 +133,34 @@ public class PageCacheStressTest
             return this;
         }
 
-        @Override
-        public String toString()
+        public Builder withNumberOfPages( int value )
         {
-            return format( "Parameters:%n" +
-                            " - numberOfPages = %d%n" +
-                            " - recordsPerPage = %d%n" +
-                            " - numberOfThreads = %d%n" +
-                            " - numberOfCachePAges = %d%n" +
-                            " - cachePagePadding = %d%n",
-                    numberOfPages, recordsPerPage, numberOfThreads, numberOfCachePages, cachePagePadding );
+            this.numberOfPages = value;
+            return this;
+        }
+
+        public Builder withRecordsPerPage( int value )
+        {
+            this.recordsPerPage = value;
+            return this;
+        }
+
+        public Builder withNumberOfThreads( int value )
+        {
+            this.numberOfThreads = value;
+            return this;
+        }
+
+        public Builder withCachePagePadding( int value )
+        {
+            this.cachePagePadding = value;
+            return this;
+        }
+
+        public Builder withNumberOfCachePages( int value )
+        {
+            this.numberOfCachePages = value;
+            return this;
         }
     }
 }
