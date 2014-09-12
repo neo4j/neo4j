@@ -61,6 +61,15 @@ public class TargetDirectory
             return new File( directory(), name );
         }
 
+        public File graphDbDir() {
+            File dir = new File( directory(), "graph-db" );
+            if ( ! fileSystem.fileExists( dir ) )
+            {
+                fileSystem.mkdir( dir );
+            }
+            return dir;
+        }
+
         @Override
         public Statement apply( final Statement base, Description description )
         {
