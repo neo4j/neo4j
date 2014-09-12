@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.Visitor;
@@ -50,16 +51,19 @@ import static org.neo4j.kernel.impl.transaction.xaframework.IdOrderingQueue.BYPA
 import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
 import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
+import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 public class PhysicalLogicalTransactionStoreTest
 {
+    @Rule
+    public TargetDirectory.TestDirectory dir = testDirForTest( getClass() );
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction(); // new EphemeralFileSystemAbstraction()
     private File testDir;
 
     @Before
     public void setup()
     {
-        testDir = TargetDirectory.forTest( fs, getClass() ).makeGraphDbDir();
+        testDir = dir.graphDbDir();
     }
 
     @Test

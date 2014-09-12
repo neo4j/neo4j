@@ -28,6 +28,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -36,6 +37,24 @@ import static java.lang.String.format;
 
 public class TargetDirectory
 {
+    /**
+     * This class defines a JUnit rule which ensures that the test's working directory is cleaned up. The clean-up
+     * only happens if the test passes, to help diagnose test failures.  For example:
+     * <pre>
+     *   public class SomeTest
+     *   {
+     *     @Rule
+     *     public TargetDirectory.TestDirectory dir = testDirForTest( getClass() );
+     *
+     *     @Test
+     *     public void shouldDoSomething()
+     *     {
+     *       File storeDir = dir.graphDbDir();
+     *       // do stuff with store dir
+     *     }
+     *   }
+     * </pre>
+     */
     public class TestDirectory implements TestRule
     {
         private File subdir = null;
@@ -61,13 +80,17 @@ public class TargetDirectory
             return new File( directory(), name );
         }
 
-        public File graphDbDir() {
-            File dir = new File( directory(), "graph-db" );
+        public File directory( String name ) {
+            File dir = new File( directory(), name );
             if ( ! fileSystem.fileExists( dir ) )
             {
                 fileSystem.mkdir( dir );
             }
             return dir;
+        }
+
+        public File graphDbDir() {
+            return directory( "graph-db" );
         }
 
         @Override
@@ -128,28 +151,32 @@ public class TargetDirectory
     private final FileSystemAbstraction fileSystem;
     private final File base;
 
+    /**
+     * @deprecated Use {@link org.neo4j.test.TargetDirectory.TestDirectory} instead of creating
+     * {@link org.neo4j.test.TargetDirectory} directly. The easiest way to do this is with
+     * {@link #testDirForTest(Class)}.
+     */
     public static TargetDirectory forTest( Class<?> owningTest )
     {
-        //noinspection deprecation
-        return forTest( new DefaultFileSystemAbstraction(), owningTest );
-    }
-
-    public static TargetDirectory forTest( FileSystemAbstraction fileSystem, Class<?> owningTest )
-    {
-        return new TargetDirectory( fileSystem,
-                new File( new File( locateTarget( owningTest ), "test-data" ), owningTest.getName() ) );
+        return new TargetDirectory( new DefaultFileSystemAbstraction(), owningTest );
     }
 
     public static TestDirectory testDirForTest( Class<?> owningTest )
     {
-        //noinspection deprecation
-        return forTest( new DefaultFileSystemAbstraction(), owningTest ).testDirectory();
+        return new TargetDirectory( new DefaultFileSystemAbstraction(), owningTest ).testDirectory();
     }
 
-    private TargetDirectory( FileSystemAbstraction fileSystem, File base )
+    public static TestDirectory testDirForTestWithEphemeralFS( EphemeralFileSystemAbstraction fileSystem,
+                                                               Class<?> owningTest )
+    {
+        return new TargetDirectory( fileSystem, owningTest ).testDirectory();
+    }
+
+    private TargetDirectory( FileSystemAbstraction fileSystem, Class<?> owningTest )
     {
         this.fileSystem = fileSystem;
-        this.base = base.getAbsoluteFile();
+        this.base = new File( new File( locateTarget( owningTest ), "test-data" ), owningTest.getName() )
+                .getAbsoluteFile();
     }
 
     public File cacheDirectory( String name )

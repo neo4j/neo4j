@@ -49,7 +49,6 @@ import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
@@ -120,13 +119,13 @@ public class TestNeoStore
     private PropertyStore pStore;
     private RelationshipTypeTokenStore rtStore;
     private NeoStoreXaDataSource ds;
-    private TargetDirectory targetDirectory;
     private File path;
 
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    @Rule public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTestWithEphemeralFS( fs.get(),
+            getClass() );
     private PageCache pageCache;
 
     private File file( String name )
@@ -137,8 +136,7 @@ public class TestNeoStore
     @Before
     public void setUpNeoStore() throws Exception
     {
-        targetDirectory = TargetDirectory.forTest( fs.get(), getClass() );
-        path = targetDirectory.cleanDirectory( "dir" );
+        path = dir.directory( "dir" );
         Config config = StoreFactory.configForStoreDir(
                 new Config( new HashMap<String, String>(), GraphDatabaseSettings.class ), path );
         Monitors monitors = new Monitors();
@@ -1205,8 +1203,6 @@ public class TestNeoStore
     @Test
     public void testSetBlockSize() throws Exception
     {
-        targetDirectory.cleanup();
-
         initializeStores( stringMap( "string_block_size", "62", "array_block_size", "302" ) );
         assertEquals( 62 + AbstractDynamicStore.BLOCK_HEADER_SIZE,
                 pStore.getStringBlockSize() );
@@ -1243,17 +1239,16 @@ public class TestNeoStore
     public void testSetLatestConstraintTx() throws Exception
     {
         // given
-        new GraphDatabaseFactory().newEmbeddedDatabase( testDir.absolutePath() ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir().getAbsolutePath() ).shutdown();
         Monitors monitors = new Monitors();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
-        DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
         LifeSupport life = new LifeSupport();
         life.start();
         StoreFactory sf = new StoreFactory(
-                configForStoreDir( config, testDir.directory() ),
+                configForStoreDir( config, dir.directory() ),
                 new DefaultIdGeneratorFactory(),
-                createPageCache( fileSystemAbstraction, getClass().getName(), life ),
-                fileSystemAbstraction,
+                createPageCache( fs.get(), getClass().getName(), life ),
+                fs.get(),
                 StringLogger.DEV_NULL,
                 monitors );
 
