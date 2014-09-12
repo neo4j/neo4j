@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -606,7 +607,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void commit() throws TransactionFailureException
     {
         boolean success = false;
-        try
+        try ( LockGroup locks = new LockGroup() )
         {
             // Trigger transaction "before" hooks
             if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
@@ -643,7 +644,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                             startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis() );
 
                     // Commit the transaction
-                    commitProcess.commit( transactionRepresentation );
+                    commitProcess.commit( locks, transactionRepresentation );
                 }
             }
 

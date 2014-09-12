@@ -25,6 +25,7 @@ import org.neo4j.com.Response;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
@@ -59,10 +60,10 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
                     if ( appender.append( transaction ) )
                     {
                         final long transactionId = transaction.getCommitEntry().getTxId();
-                        try
+                        try ( LockGroup locks = new LockGroup() )
                         {
                             // TODO recovery=true needed?
-                            storeApplier.apply( transaction.getTransactionRepresentation(), transactionId, true );
+                            storeApplier.apply( transaction.getTransactionRepresentation(), locks, transactionId, true );
                             handler.accept( transaction );
                         }
                         finally

@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
@@ -72,11 +73,12 @@ public class TransactionRepresentationStoreApplier
         this.propertyLoader = new PropertyLoader( neoStore );
     }
 
-    public void apply( TransactionRepresentation representation, long transactionId, boolean applyRecovered )
+    public void apply( TransactionRepresentation representation, LockGroup lockGroup,
+                       long transactionId, boolean applyRecovered )
             throws IOException
     {
         NeoTransactionStoreApplier storeApplier = new NeoTransactionStoreApplier(
-                neoStore, indexingService, cacheAccess, lockService, transactionId,
+                neoStore, indexingService, cacheAccess, lockService, lockGroup, transactionId,
                 highIdTrackerFactory, applyRecovered );
         NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( indexingService,
                 labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess, propertyLoader );

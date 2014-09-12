@@ -179,6 +179,24 @@ public class TestRelIdArray
         arrayTo.add( 2, DirectionWrapper.INCOMING );
     }
 
+    @Test
+    public void shouldBeAbleToEvictLastIdInBlock() throws Exception
+    {
+        // GIVEN
+        RelIdArray ids = new RelIdArray( 0 );
+        ids.add( 0, OUTGOING );
+        ids.add( 1, OUTGOING );
+        ids.add( 2, OUTGOING );
+        PrimitiveLongSet remove = Primitive.longSet( 1 );
+        remove.add( 1 );
+
+        // WHEN
+        RelIdArray idsWithoutLast = RelIdArray.from( ids, null, remove );
+
+        // THEN
+        assertEquals( Arrays.asList( 0L, 2L ), asList( idsWithoutLast ) );
+    }
+
     private Set<Long> deplete( RelIdIterator iterator )
     {
         HashSet<Long> set = new HashSet<>();

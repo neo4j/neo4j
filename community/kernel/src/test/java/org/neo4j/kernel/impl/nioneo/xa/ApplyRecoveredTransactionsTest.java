@@ -33,6 +33,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandApplierFacade;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.Abstract64BitRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -102,7 +103,7 @@ public class ApplyRecoveredTransactionsTest
     private void applyRecoveredTransaction( long transactionId, Command...commands ) throws IOException
     {
         NeoTransactionStoreApplier applier = new NeoTransactionStoreApplier( neoStore, mock( IndexingService.class ),
-                mock( CacheAccessBackDoor.class ), mock( LockService.class ), transactionId,
+                mock( CacheAccessBackDoor.class ), mock( LockService.class ), new LockGroup(), transactionId,
                 DEFAULT_HIGH_ID_TRACKING, true );
         CommandApplierFacade applierFacade = new CommandApplierFacade( applier,
                 mock( NeoCommandHandler.class ), mock( NeoCommandHandler.class ) );

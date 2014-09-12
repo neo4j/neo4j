@@ -36,6 +36,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -86,7 +87,11 @@ class RebuildFromLogs
         {
             while (cursor.next())
             {
-                storeApplier.apply( cursor.get().getTransactionRepresentation(), cursor.get().getCommitEntry().getTxId(), true );
+                try ( LockGroup locks = new LockGroup() )
+                {
+                    storeApplier.apply( cursor.get().getTransactionRepresentation(), locks,
+                                        cursor.get().getCommitEntry().getTxId(), true );
+                }
             }
         }
 

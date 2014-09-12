@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import org.junit.Test;
-// TODO 2.2-future some tests here may be a good idea to reimplement.
 
+// TODO 2.2-future some tests here may be a good idea to reimplement.
 public class TestXa
 {
     @Test

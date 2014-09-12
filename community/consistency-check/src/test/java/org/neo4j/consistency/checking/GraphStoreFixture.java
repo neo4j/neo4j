@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -318,7 +319,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
         GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory ).setConfig( configuration( false ) ).newGraphDatabase();
-        try
+        try ( LockGroup locks = new LockGroup() )
         {
             TransactionRepresentationCommitProcess commitProcess =
                     new TransactionRepresentationCommitProcess(
@@ -329,7 +330,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                             true /*recovery*/ );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
-            commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),
+            commitProcess.commit( locks, transaction.representation( idGenerator(), masterId(), myId(),
                     transactionIdStore.getLastCommittedTransactionId() ) );
         }
         finally

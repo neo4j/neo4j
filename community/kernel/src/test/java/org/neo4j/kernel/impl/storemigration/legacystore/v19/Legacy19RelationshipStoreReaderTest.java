@@ -56,7 +56,7 @@ public class Legacy19RelationshipStoreReaderTest
                 propCount++;
             }
         }
-        assertEquals( 839596, propCount );
+        assertEquals( 6000, propCount );
         propStoreReader.close();
     }
 }

@@ -27,6 +27,8 @@ import java.util.Map;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -40,11 +42,14 @@ import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
  */
 public class RelationshipLoader
 {
+    private final LockService locks;
     private final Cache<RelationshipImpl> relationshipCache;
     private final RelationshipChainLoader chainLoader;
 
-    public RelationshipLoader( Cache<RelationshipImpl> relationshipCache, RelationshipChainLoader chainLoader )
+    public RelationshipLoader( LockService locks, Cache<RelationshipImpl> relationshipCache,
+                               RelationshipChainLoader chainLoader )
     {
+        this.locks = locks;
         this.relationshipCache = relationshipCache;
         this.chainLoader = chainLoader;
     }
@@ -146,5 +151,10 @@ public class RelationshipLoader
     public RelationshipLoadingPosition getRelationshipChainPosition( long id )
     {
         return chainLoader.getRelationshipChainPosition( id );
+    }
+
+    public Lock lowLevelNodeReadLock( long nodeId )
+    {
+        return locks.acquireNodeLock( nodeId, LockService.LockType.READ_LOCK );
     }
 }

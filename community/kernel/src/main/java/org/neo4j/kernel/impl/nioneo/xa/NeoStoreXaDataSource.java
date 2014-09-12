@@ -91,7 +91,6 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -291,8 +290,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
      * core API are now slowly accumulating in the Kernel implementation. Over time, these components should be
      * refactored into bigger components that wrap the very granular things we depend on here.
      */
-    public NeoStoreXaDataSource( Config config, StoreFactory sf, StringLogger stringLogger, JobScheduler scheduler,
-                                 Logging logging, UpdateableSchemaState updateableSchemaState,
+    public NeoStoreXaDataSource( Config config, LockService lockService, StoreFactory sf, StringLogger stringLogger,
+                                 JobScheduler scheduler, Logging logging, UpdateableSchemaState updateableSchemaState,
                                  TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
                                  PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
                                  RelationshipTypeTokenHolder relationshipTypeTokens, Locks lockManager,
@@ -333,7 +332,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         msgLog = stringLogger;
         this.storeFactory = sf;
         this.updateableSchemaState = updateableSchemaState;
-        this.lockService = new ReentrantLockService();
+        this.lockService = lockService;
         this.legacyIndexProviderLookup = new LegacyIndexApplier.ProviderLookup()
         {
             @Override
@@ -394,7 +393,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 nodeLoader( neoStore.getNodeStore() ) );
         relationshipCache = new AutoLoadingCache<>( cacheProvider.relationship(),
                 relationshipLoader( neoStore.getRelationshipStore() ) );
-        RelationshipLoader relationshipLoader = new RelationshipLoader( relationshipCache, new RelationshipChainLoader(
+        RelationshipLoader relationshipLoader = new RelationshipLoader( lockService, relationshipCache, new RelationshipChainLoader(
                 neoStore ) );
         PersistenceCache persistenceCache = new PersistenceCache( nodeCache, relationshipCache, nodeManager,
                 relationshipLoader, propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );

@@ -24,6 +24,16 @@ import java.util.List;
 
 public class LockGroup implements AutoCloseable
 {
+    private static final boolean FOO = Boolean.getBoolean( "false" );
+
+    public LockGroup()
+    {
+        if (FOO)
+        {
+            System.out.println();
+        }
+    }
+
     private final List<Lock> locks = new ArrayList<>();
 
     public final void add( Lock lock )
