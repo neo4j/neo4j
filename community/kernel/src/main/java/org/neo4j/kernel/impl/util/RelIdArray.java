@@ -913,7 +913,8 @@ public class RelIdArray implements SizeOfObject
                 {
                     long backValue = block.get( j );
                     block.setLength( block.length()-1 );
-                    if ( !excluded.contains( backValue) )
+                    state.length--; // state has a cached block length, so change that too
+                    if ( !excluded.contains( backValue ) )
                     {
                         block.set( backValue, state.relativePosition-1 );
                         swapSuccessful = true;
