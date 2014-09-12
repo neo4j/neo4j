@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -33,15 +34,18 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatHugeStoreDirectory;
+import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 public class Legacy19RelationshipStoreReaderTest
 {
+    @Rule
+    public TargetDirectory.TestDirectory dir = testDirForTest( getClass() );
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Test
     public void shouldReadNodeRecords() throws IOException
     {
-        File storeDir = TargetDirectory.forTest( Legacy19NodeStoreReader.class ).makeGraphDbDir();
+        File storeDir = dir.graphDbDir();
         find19FormatHugeStoreDirectory( storeDir );
         Legacy19PropertyStoreReader propStoreReader =
                 new Legacy19PropertyStoreReader( fs, new File( storeDir, "neostore.propertystore.db" ) );
