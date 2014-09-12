@@ -35,14 +35,14 @@ class Profiler extends PipeDecorator {
   val rowStats: mutable.Map[Pipe, ProfilingIterator] = mutable.Map.empty
 
 
-  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = decoratePipe(pipe, iter) {
+  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = {
     val resultIter = new ProfilingIterator(iter)
 
     rowStats(pipe) = resultIter
     resultIter
   }
 
-  def decorate(pipe: Pipe, state: QueryState): QueryState = decoratePipe(pipe, state) {
+  def decorate(pipe: Pipe, state: QueryState): QueryState = {
     val decoratedContext = state.query match {
       case p: ProfilingQueryContext => new ProfilingQueryContext(p.inner, pipe)
       case _                        => new ProfilingQueryContext(state.query, pipe)
@@ -52,10 +52,6 @@ class Profiler extends PipeDecorator {
     state.copy(query = decoratedContext)
   }
 
-  private def decoratePipe[T](pipe: Pipe, default: T)(f: => T): T = pipe match {
-    case _:NullPipe => default
-    case _ => f
-  }
 
   def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription = {
     if (!isProfileReady)

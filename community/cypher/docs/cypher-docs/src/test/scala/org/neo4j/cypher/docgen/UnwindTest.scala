@@ -39,7 +39,7 @@ class UnwindTest extends DocumentingTestBase {
     testQuery(
       title = "Create a distinct collection",
       text = "We want to transform a collection of duplicates into a set using `DISTINCT`.",
-      queryText = """WITH [1,1,2,2] as coll UNWIND coll as x WITH DISTINCT x RETURN collect(x) as set""",
+      queryText = """WITH [1,1,2,2] as coll UNWIND coll as x WITH DISTINCT x ORDER BY x RETURN collect(x) as set""",
       optionalResultExplanation = "Each value of the original collection is unwound and passed through distinct to create a unique set.",
       assertions = (p) => assertEquals(List(List(1,2)), p.columnAs[Int]("set").toList)
     )

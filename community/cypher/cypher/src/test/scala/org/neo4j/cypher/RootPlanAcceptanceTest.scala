@@ -30,8 +30,8 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     }
   }
 
-  test("should use rule by default in 2.2") {
-    assertVersion(CypherVersion.v2_2, "match n return n", CypherVersion.v2_2_rule.name)
+  test("should use cost by default in 2.2") {
+    assertVersion(CypherVersion.v2_2, "match n return n", CypherVersion.v2_2_cost.name)
   }
 
   test("should use 2.2-cost when possible in 2.2") {

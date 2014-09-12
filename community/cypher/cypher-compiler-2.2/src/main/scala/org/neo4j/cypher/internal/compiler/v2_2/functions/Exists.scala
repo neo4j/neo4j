@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.functions
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.NestedPipeExpression
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters
 import ExpressionConverters._
 import commands.values.TokenType.PropertyKey
@@ -43,6 +44,8 @@ case object Exists extends Function {
       case property: ast.Property =>
         commands.PropertyExists( property.map.asCommandExpression, PropertyKey( property.propertyKey.name ) )
       case expression: ast.PatternExpression =>
+        expression.asCommandPredicate
+      case expression: NestedPipeExpression =>
         expression.asCommandPredicate
     }
 }
