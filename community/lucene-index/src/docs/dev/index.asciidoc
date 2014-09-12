@@ -438,9 +438,9 @@ This functionality is called _auto indexing_ and is controlled both from the dat
 === Configuration ===
 
 By default Auto Indexing is off for both Nodes and Relationships.
-To configure this in the 'neo4j.properties' file, use the configuration keys +node_auto_indexing+ and +relationship_auto_indexing+.
-For embedded mode, use the configuration options +GraphDatabaseSettings.node_auto_indexing+
-and +GraphDatabaseSettings.relationship_auto_indexing+.
+To configure this in the _conf/neo4j.properties_ file, use the configuration keys +node_auto_indexing+ and
++relationship_auto_indexing+. For embedded mode, use the configuration options
++GraphDatabaseSettings.node_auto_indexing+ and +GraphDatabaseSettings.relationship_auto_indexing+.
 In both cases, set the value to +true+.
 This will enable automatic indexing on startup.
 Just note that we're not done yet, see below!

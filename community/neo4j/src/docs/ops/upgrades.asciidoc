@@ -49,7 +49,7 @@ database store):
 
 . Cleanly shut down the older version of Neo4j, if it is running.
 . Install Neo4j {neo4j-version}, and set it up to use the same database store directory (typically +data/graph.db+).
-. Set the Neo4j configuration parameter +allow_store_upgrade=true+ in your 'neo4j.properties' file. Neo4j will fail to start without this configuration set.
+. Set the Neo4j configuration parameter +allow_store_upgrade=true+ in your _conf/neo4j.properties_ file. Neo4j will fail to start without this configuration set.
 . Start up Neo4j.
 . The database store upgrade will occur during startup.
 . The +allow_store_upgrade+ configuration parameter should be removed, set to +false+ or commented out.

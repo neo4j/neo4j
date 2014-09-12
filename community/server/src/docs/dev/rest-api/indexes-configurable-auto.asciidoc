@@ -9,7 +9,7 @@ This approach _cannot_ be used on databases that already have auto-indexes estab
 [CAUTION]
 This technique works, but it is not particularly pleasant. Future versions of Neo4j may remove this loophole in favour of a better structured feature for managing auto-indexing configurations.
 
-Auto-indexing must be enabled through configuration before we can create or configure them. Firstly ensure that you've added some config like this into your server's +neo4j.properties+ file:
+Auto-indexing must be enabled through configuration before we can create or configure them. Firstly ensure that you've added some config like this into your server's _conf/neo4j.properties_ file:
 
 [source]
 ----
