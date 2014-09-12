@@ -29,6 +29,10 @@ angular.module('neo4jApp')
     $scope.arrowWidths = graphStyle.defaultArrayWidths()
     $scope.colors = graphStyle.defaultColors()
 
+    $scope.labelsContracted = yes
+    $scope.typesContracted = yes
+
+
     graphStats = (graph) ->
       resultLabels = {}
       resultRelTypes = {}

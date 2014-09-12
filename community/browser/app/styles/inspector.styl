@@ -2,11 +2,25 @@
 @import 'mixins'
 @import 'nib'
 
-
+inspector-row-height = 39px
 .inspector-footer
   // background-color: #EEF1F8
   font-size: 12px
-  // width: 100%
+  width: 100%
+  .row-toggle
+    float: right
+    display: block
+    width: inspector-row-height 
+    height: inspector-row-height 
+    line-height: inspector-row-height 
+    text-align: center
+    cursor: pointer
+    display: none
+
+  &.contracted
+    max-height: inspector-row-height
+    overflow: hidden
+
   .inspector-footer-row > ul
     // min-height: 28px
     // padding: 5px 9px 5px 10px
