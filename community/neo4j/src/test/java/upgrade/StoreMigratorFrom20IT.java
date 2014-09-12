@@ -97,7 +97,6 @@ public class StoreMigratorFrom20IT
         assertConsistentStore( storeDir.directory() );
     }
 
-    @Ignore("TODO 2.2-future reenable when we merge in support for converting 1.9 logs")
     @Test
     public void shouldMigrateCluster() throws Throwable
     {
