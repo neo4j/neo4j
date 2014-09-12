@@ -298,7 +298,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
-        return schemaRead().indexesGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
+        IndexDescriptor descriptor = schemaRead().indexesGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
+        if ( descriptor == null )
+        {
+            throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
+                                                   propertyKeyId + " not found" );
+        }
+        return descriptor;
     }
 
     @Override

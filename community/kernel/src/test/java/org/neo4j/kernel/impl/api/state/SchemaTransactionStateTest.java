@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -193,23 +194,11 @@ public class SchemaTransactionStateTest
         txContext.indexDrop( state, rule );
 
         // WHEN
-        assertException( getIndexRule(), SchemaRuleNotFoundException.class );
+        assertNull( txContext.indexesGetForLabelAndPropertyKey( state, labelId1, key1 ) );
         Iterator<IndexDescriptor> rulesByLabel = txContext.indexesGetForLabel( state, labelId1 );
 
         // THEN
         assertEquals( emptySetOf( IndexDescriptor.class ), asSet( rulesByLabel ) );
-    }
-
-    private ExceptionExpectingFunction<SchemaRuleNotFoundException> getIndexRule()
-    {
-        return new ExceptionExpectingFunction<SchemaRuleNotFoundException>()
-        {
-            @Override
-            public void call() throws SchemaRuleNotFoundException
-            {
-                txContext.indexesGetForLabelAndPropertyKey( state, labelId1, key1 );
-            }
-        };
     }
 
     private interface ExceptionExpectingFunction<E extends Exception>
@@ -223,7 +212,7 @@ public class SchemaTransactionStateTest
         try
         {
             function.call();
-            fail( "Should have thrown " + exception.getClass().getName() + " exception" );
+            fail( "Should have thrown " + exception.getName() + " exception" );
         }
         catch ( Exception e )
         {
