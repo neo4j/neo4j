@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{PropertyKeyName, HasLabels, LabelName}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{False, HasLabels, LabelName, PropertyKeyName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Multiplier, Cardinality, Selectivity}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Multiplier, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, TokenContext}
-import org.neo4j.cypher.internal.compiler.v2_2.{PropertyKeyId, LabelId, RelTypeId}
+import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.graphdb.Direction
 
 case class estimateSelectivity(stats: GraphStatistics, tokens: TokenContext) extends (PredicateCombination => Selectivity) {
@@ -34,11 +34,26 @@ case class estimateSelectivity(stats: GraphStatistics, tokens: TokenContext) ext
     case rel: RelationshipWithLabels =>
       calculateSelectivityForPatterns(rel)
 
+    // If the property name is not known the the schema, nothing will match
+    case property: PropertyEqualsAndLabelPredicate if property.propertyKey.propertyKeyId.isEmpty =>
+      Selectivity(0)
+
     case property: PropertyEqualsAndLabelPredicate =>
-      calculateSelectivityForLabel(property.label) * calculateSelectivityForPropertyLookup(property)
+      val idxLookup: Option[Selectivity] = getSelectivityForPossibleIndex(property)
+
+      idxLookup.
+      map(_ * calculateSelectivityForLabel(property.label)).
+      getOrElse(Selectivity(1))
 
     case property: PropertyNotEqualsAndLabelPredicate =>
-      calculateSelectivityForLabel(property.label) * (Selectivity(1) - calculateSelectivityForPropertyLookup(property))
+      val idxLookup: Option[Selectivity] = getSelectivityForPossibleIndex(property)
+
+      idxLookup.
+      map(_.inverse * calculateSelectivityForLabel(property.label)).
+      getOrElse(Selectivity(1))
+
+    case SingleExpression(False()) =>
+      Selectivity(0)
 
     case _ =>
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
@@ -57,15 +72,14 @@ case class estimateSelectivity(stats: GraphStatistics, tokens: TokenContext) ext
     labelCardinality / nodeCardinality
   }
 
-  private def calculateSelectivityForPropertyLookup(in: PropertyAndLabelPredicate): Selectivity = {
+  private def getSelectivityForPossibleIndex(in: PropertyAndLabelPredicate): Option[Selectivity] =
     ((in.label.labelId, in.propertyKey.propertyKeyId) match {
       case (Some(labelId), Some(propertyKeyId)) =>
-        stats.indexSelectivity(labelId, propertyKeyId).getOrElse(Selectivity(1))
+        stats.indexSelectivity(labelId, propertyKeyId)
 
       case _ =>
-        Selectivity(0)
-    }) * Multiplier(in.valueCount)
-  }
+        Some(Selectivity(0))
+    }).map(_ * Multiplier(in.valueCount))
 
   private def calculateSelectivityForPatterns(in: RelationshipWithLabels): Selectivity = in match {
     case RelationshipWithLabels(Some(lhs), pattern, Some(rhs), _) =>
@@ -118,7 +132,7 @@ case class estimateSelectivity(stats: GraphStatistics, tokens: TokenContext) ext
       case _ =>
         Cardinality(0)
     }
-    relCount / maxRelCount
+    Selectivity(relCount.amount * (1 / maxRelCount.amount)) // TODO: Find a type safe way of expressing this
   }
 
   implicit class RichLabelName(val label: LabelName) {

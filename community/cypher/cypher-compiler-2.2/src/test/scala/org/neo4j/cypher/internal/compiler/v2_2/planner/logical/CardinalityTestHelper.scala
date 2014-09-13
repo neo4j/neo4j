@@ -104,13 +104,13 @@ trait CardinalityTestHelper extends QueryGraphProducer {
         def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = {
           val labelName: Option[String] = getLabelName(label)
           val propertyName: Option[String] = getPropertyName(property)
-          Some((labelName, propertyName) match {
+          (labelName, propertyName) match {
             case (Some(lName), Some(pName)) =>
               val selectivity = knownIndexSelectivity.get((lName, pName))
-              selectivity.map(Selectivity.apply).getOrElse(GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY)
+              selectivity.map(Selectivity.apply)
 
-            case _ => Selectivity(0)
-          })
+            case _ => Some(Selectivity(0))
+          }
         }
 
         def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
@@ -127,9 +127,11 @@ trait CardinalityTestHelper extends QueryGraphProducer {
             case (Some(lhsId), Some(id), None) =>
               val lhsName = getLabelName(lhsId).get
               val relName = getRelationshipName(id).get
-              Cardinality(knownRelationshipCardinality.collect {
-                case ((a, b, _), value) if a == lhsName && b == relName => value
-              }.sum)
+              val relationshipCounts = knownRelationshipCardinality.collect {
+                case ((x, y, _), cardinality) if x == lhsName && y == relName => cardinality
+              }
+              Cardinality(relationshipCounts.sum)
+
             case (Some(lhsId), None, Some(rhsId)) =>
               val lhsName = getLabelName(lhsId).get
               val rhsName = getLabelName(rhsId).get
