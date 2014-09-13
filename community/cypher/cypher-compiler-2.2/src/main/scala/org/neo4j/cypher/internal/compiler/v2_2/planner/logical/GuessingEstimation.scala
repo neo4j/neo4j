@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality._
 import org.neo4j.cypher.internal.compiler.v2_2.{RelTypeId, ast}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{TokenContext, GraphStatistics}
 import org.neo4j.graphdb.Direction
 
 object GuessingEstimation {
@@ -34,108 +35,36 @@ object GuessingEstimation {
 }
 
 class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
-                                       selectivity: Metrics.SelectivityModel)
+                                       selectivity: Metrics.SelectivityModel,
+                                       tokenContext: TokenContext)
                                       (implicit semanticTable: SemanticTable) extends Metrics.CardinalityModel {
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.GuessingEstimation._
 
+  private val queryGraphCardinalityModel = QueryGraphCardinalityModel(
+    statistics,
+    producePredicates,
+    groupPredicates(estimateSelectivity(statistics, tokenContext)),
+    combinePredicates
+  )
+
   def apply(plan: LogicalPlan): Cardinality = plan match {
-    case AllNodesScan(_, _) =>
-      statistics.nodesWithLabelCardinality(None)
+    case
+      _: AllNodesScan | _: NodeByLabelScan | _: NodeByIdSeek | _: NodeIndexUniqueSeek | _: NodeHashJoin |
+      _: Expand | _: OuterHashJoin | _: OptionalExpand | _: FindShortestPaths | _: Selection | _: Apply |
+      _: Apply | _: SemiApply | _: LetSemiApply | _: LetAntiSemiApply | _: SelectOrSemiApply | _: LetSelectOrSemiApply |
+      _: SelectOrAntiSemiApply | _: LetSelectOrAntiSemiApply | _: DirectedRelationshipByIdSeek |
+      _: UndirectedRelationshipByIdSeek | _: DirectedRelationshipByIdSeek | _: Optional =>
 
-    case NodeByLabelScan(_, Left(_), _) =>
-      statistics.nodesWithLabelCardinality(None) * LABEL_NOT_FOUND_SELECTIVITY
-
-    case NodeByLabelScan(_, Right(labelId), _) =>
-      statistics.nodesWithLabelCardinality(Some(labelId))
-
-    case NodeByIdSeek(_, EntityByIdParameter(_), _) =>
-      Cardinality(1)
-
-    case NodeByIdSeek(_, EntityByIdExprs(exprs), _) =>
-      Cardinality(exprs.size)
-
-    case NodeIndexSeek(_, _, _, _, _) =>
-      statistics.nodesWithLabelCardinality(None) * INDEX_SEEK_SELECTIVITY
-
-    case NodeIndexUniqueSeek(_, _, _, _, _) =>
-      Cardinality(1)
-
-    case NodeHashJoin(_, left, right) =>
-      Cardinality(math.min(cardinality(left).amount, cardinality(right).amount))
-
-    case OuterHashJoin(_, left, right) =>
-      Cardinality(math.min(cardinality(left).amount, cardinality(right).amount))
-
-    case expand @ Expand(left, _, dir, _, types, _, _, length) =>
-      val degree = degreeByRelationshipTypesAndDirection(types, dir).coefficient
-      cardinality(left) * Multiplier(math.pow(degree, averagePathLength(length)))
-
-    case expand @ OptionalExpand(left, _, dir, types, _, _, length, predicates) =>
-      val degree = degreeByRelationshipTypesAndDirection(types, dir).coefficient
-      cardinality(left) * Multiplier(math.pow(degree, averagePathLength(length))) * predicateSelectivity(predicates)
-
-    case FindShortestPaths(left, ShortestPathPattern(_, rel, true)) =>
-      cardinality(left) * DEFAULT_CONNECTIVITY_CHANCE
-
-    case FindShortestPaths(left, ShortestPathPattern(_, rel, false)) =>
-      val degree = degreeByRelationshipTypesAndDirection(rel.types, rel.dir).coefficient
-      cardinality(left) * Multiplier(math.pow(degree, averagePathLength(rel.length)))
-
-    case Selection(predicates, left) =>
-      cardinality(left) * predicateSelectivity(predicates)
+      queryGraphCardinalityModel(plan.solved.lastQueryGraph)
 
     case CartesianProduct(left, right) =>
       cardinality(left) * cardinality(right)
-
-    case Apply(outer, inner) =>
-      cardinality(outer) * cardinality(inner)
-
-    case semiApply @ SemiApply(outer, inner) =>
-      cardinality(outer) // TODO: This is not true. We should calculate cardinality on QG and not LP
-
-    case semiApply @ LetSemiApply(outer, inner, _) =>
-      cardinality(outer) // TODO: This is not true. We should calculate cardinality on QG and not LP
-
-    case semiApply @ AntiSemiApply(outer, inner) =>
-      cardinality(outer)
-      // TODO: This is not true. We should calculate cardinality on QG and not LP
-//    private def semiApplyCardinality(outer: LogicalPlan, exp: ast.Expression) = cardinality(outer) * predicateSelectivity(Seq(exp))
-
-    case semiApply @ LetAntiSemiApply(outer, inner, _) =>
-      cardinality(outer) // TODO: This is not true. We should calculate cardinality on QG and not LP
-
-    case selectOrSemiApply @ SelectOrSemiApply(outer, inner, expr) =>
-      cardinality(outer) * predicateSelectivity(Seq(expr)) // TODO: This is not true. We should calculate cardinality on QG and not LP
-
-    case selectOrSemiApply @ LetSelectOrSemiApply(outer, inner, _, expr) =>
-      cardinality(outer) * predicateSelectivity(Seq(expr)) // TODO: This is not true. We should calculate cardinality on QG and not LP
-
-    case selectOrSemiApply @ SelectOrAntiSemiApply(outer, inner, expr) =>
-      cardinality(outer) * predicateSelectivity(Seq(expr)) // TODO: This is not true. We should calculate cardinality on QG and not LP
-
-    case selectOrSemiApply @ LetSelectOrAntiSemiApply(outer, inner, _, expr) =>
-      cardinality(outer) * predicateSelectivity(Seq(expr)) // TODO: This is not true. We should calculate cardinality on QG and not LP
-
-    case DirectedRelationshipByIdSeek(_, EntityByIdParameter(_), _, _, _) =>
-      Cardinality(1)
-
-    case DirectedRelationshipByIdSeek(_, EntityByIdExprs(exprs), _, _, _) =>
-      Cardinality(exprs.size)
-
-    case UndirectedRelationshipByIdSeek(_, EntityByIdParameter(_), _, _, _) =>
-      Cardinality(2)
-
-    case UndirectedRelationshipByIdSeek(_, EntityByIdExprs(exprs), _, _, _) =>
-      Cardinality(exprs.size) * Multiplier(2)
 
     case Projection(left, _) =>
       cardinality(left)
 
     case ProjectEndpoints(left, _, _, _, directed, _) =>
       if (directed) cardinality(left) else cardinality(left) * Multiplier(2)
-
-    case Optional(input) =>
-      cardinality(input)
 
     case SingleRow(_) =>
       Cardinality(1)

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import Metrics._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{TokenContext, GraphStatistics}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 
 object Metrics {
@@ -93,12 +93,13 @@ object Selectivity {
 
 trait MetricsFactory {
   def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable): SelectivityModel
-  def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable): CardinalityModel
+  def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable,
+    tokenContext: TokenContext): CardinalityModel
   def newCostModel(cardinality: CardinalityModel): CostModel
 
-  def newMetrics(statistics: GraphStatistics, semanticTable: SemanticTable) = {
+  def newMetrics(statistics: GraphStatistics, semanticTable: SemanticTable, tokenContext: TokenContext) = {
     val selectivity = newSelectivityEstimator(statistics, semanticTable)
-    val cardinality = newCardinalityEstimator(statistics, selectivity, semanticTable)
+    val cardinality = newCardinalityEstimator(statistics, selectivity, semanticTable, tokenContext)
     val cost = newCostModel(cardinality)
     Metrics(cost, cardinality, selectivity)
   }

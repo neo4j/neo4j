@@ -65,7 +65,7 @@ case class Planner(monitors: Monitors,
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val unionQuery = ast.asUnionQuery
 
-    val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
+    val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable, planContext)
 
     val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
     val plan = strategy.plan(unionQuery)(context)
