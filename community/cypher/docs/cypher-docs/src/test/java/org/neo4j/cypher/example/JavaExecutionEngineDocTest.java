@@ -71,7 +71,10 @@ public class JavaExecutionEngineDocTest
     @BeforeClass
     public static void prepare()
     {
-        docsTargetDir.mkdirs();
+        if( !docsTargetDir.mkdirs() )
+        {
+            fail("Failed to created necessary directories.");
+        }
     }
 
     @SuppressWarnings("deprecation")

@@ -32,6 +32,9 @@ case object formatErrors extends (Throwable => Option[Doc]) {
     case _: NotImplementedError =>
       Some("???")
 
+    case _: MatchError =>
+      None
+
     case e: Exception =>
       Some(group(s"${e.getClass.getSimpleName}:" :/: e.toString))
 

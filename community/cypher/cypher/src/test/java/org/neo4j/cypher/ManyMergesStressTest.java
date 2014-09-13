@@ -63,7 +63,7 @@ public class ManyMergesStressTest
             db.schema().indexFor( person ).on( "id" ).create();
 
             // THIS SHOULD ALSO WORK
-            // db.schema().constraintFor( person ).on( "id" ).unique().create();
+            db.schema().constraintFor( person ).assertPropertyIsUnique( "id" ).create();
 
             tx.success();
         }
@@ -89,7 +89,7 @@ public class ManyMergesStressTest
             String name = stringPair.other();
             String id = Long.toString( Math.abs( random.nextLong() ) );
             String query =
-                format( "MERGE (%s:Person {id: %s}) ON CREATE SET %s.name = \"%s\";", ident, id, ident, ident, name );
+                format( "MERGE (%s:Person {id: %s}) ON CREATE SET %s.name = \"%s\";", ident, id, ident, name );
 
             ExecutionResult result = engine.execute( query );
             result.iterator().close();

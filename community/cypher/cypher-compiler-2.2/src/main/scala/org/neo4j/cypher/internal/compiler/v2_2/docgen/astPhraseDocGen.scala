@@ -49,8 +49,9 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
   implicit class ClauseConverter(clause: Clause) {
     def asDoc(pretty: DocConverter[Any]): Doc = clause match {
       case clause: Return => clause.asDoc(pretty)
-      case clause: With => clause.asDoc(pretty)
+      case clause: With   => clause.asDoc(pretty)
       case clause: Unwind => clause.asDoc(pretty)
+      case _              => TextDoc(clause.toString)
     }
   }
   abstract class ClosingClauseConverter(prefix: String) {
