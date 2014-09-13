@@ -43,16 +43,16 @@ object StatementConverters {
         commands.DropIndex(s.label.name, Seq(s.property.name))
       case s: ast.CreateUniqueConstraint =>
         commands.CreateUniqueConstraint(
-          id = s.id.name,
+          id = s.identifier.name,
           label = s.label.name,
-          idForProperty = s.idForProperty.name,
-          propertyKey = s.propertyKey.name)
+          idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
+          propertyKey = s.property.propertyKey.name)
       case s: ast.DropUniqueConstraint =>
         commands.DropUniqueConstraint(
-          id = s.id.name,
+          id = s.identifier.name,
           label = s.label.name,
-          idForProperty = s.idForProperty.name,
-          propertyKey = s.propertyKey.name)
+          idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
+          propertyKey = s.property.propertyKey.name)
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown statement during transformation ($statement)")
     }
