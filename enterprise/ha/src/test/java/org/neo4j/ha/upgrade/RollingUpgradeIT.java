@@ -179,7 +179,7 @@ public class RollingUpgradeIT
     {
         debug( "Downloading " + OLD_VERSION + " package" );
         File oldVersionPackage = downloadAndUnpack(
-                "http://download.neo4j.org/artifact?edition=enterprise&version=" + OLD_VERSION + "&distribution=zip",
+                "http://neo4j.com/customer/download/neo4j-enterprise-" + OLD_VERSION + "-windows.zip",
                 DIR.cacheDirectory( "download" ), OLD_VERSION + "-enterprise" );
         String classpath = assembleClassPathFromPackage( oldVersionPackage );
         debug( "Starting " + OLD_VERSION + " cluster in separate jvms" );

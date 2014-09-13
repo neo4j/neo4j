@@ -34,6 +34,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
@@ -43,6 +45,7 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -112,6 +115,15 @@ public class TestPerformUpgradeIfNecessary
         verifyNoMoreInteractions( monitor );
     }
 
+    private class TestLogPrinter implements Visitor<TestLogger.LogCall,RuntimeException>
+    {
+        public boolean visit( TestLogger.LogCall logCall )
+        {
+            System.out.println( logCall.toString() );
+            return false;
+        }
+    }
+
     @Test
     public void shouldUpgradeDatabase() throws IOException
     {
@@ -126,10 +138,18 @@ public class TestPerformUpgradeIfNecessary
         		loadNeo4jProperties(), logging, monitor );
 
         // When
-        boolean exit = upgrader.run();
+        boolean success = upgrader.run();
 
         // Then
-        assertEquals( "dump logs", true, exit );
+        if( !success )
+        {
+            TestLogPrinter testLogPrinter = new TestLogPrinter();
+
+            logging.visitConsoleLog(upgrader.getClass(), testLogPrinter);
+            logging.visitMessagesLog(upgrader.getClass(), testLogPrinter);
+
+            fail();
+        }
 
         InOrder order = inOrder( monitor );
         order.verify( monitor, times( 1 ) ).migrationNeeded();

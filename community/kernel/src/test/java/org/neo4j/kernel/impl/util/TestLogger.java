@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.logging.LogMarker;
 
@@ -48,10 +49,11 @@ public class TestLogger extends StringLogger
         DEBUG,
         INFO,
         WARN,
-        ERROR
+        ERROR,
+        UNKNOWN
     }
 
-    public static final class LogCall
+    public static final class LogCall implements Visitable<LogCall>
     {
 
         protected final Level level;
@@ -77,6 +79,11 @@ public class TestLogger extends StringLogger
         public static LogCall info(String msg,  Throwable c) { return new LogCall(Level.INFO,  msg, c, false); }
         public static LogCall warn(String msg,  Throwable c) { return new LogCall(Level.WARN,  msg, c, false); }
         public static LogCall error(String msg, Throwable c) { return new LogCall(Level.ERROR, msg, c, false); }
+
+        public void accept( Visitor<LogCall,RuntimeException> visitor )
+        {
+            visitor.visit( this );
+        }
 
         @Override
         public String toString()
@@ -269,9 +276,7 @@ public class TestLogger extends StringLogger
     @Override
     public void logMessage( String msg, Throwable cause, boolean flush )
     {
-        throw new RuntimeException("For future-compatibility reasons, please don't use the logMessage methods. " +
-                "Use the debug/info/warn/error methods instead. This exception is thrown to avoid adding new calls and " +
-                "to force refactoring old calls when we're writing tests.");
+        log( Level.UNKNOWN, msg, cause );
     }
 
     @Override
@@ -325,6 +330,14 @@ public class TestLogger extends StringLogger
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    public void visitLogCalls( Visitor<LogCall, RuntimeException> visitor )
+    {
+        for (LogCall logCall : logCalls)
+        {
+            logCall.accept( visitor );
+        }
     }
 
     private Predicate<LogCall> hasLevel( final Level level )

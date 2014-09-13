@@ -71,6 +71,11 @@ public class JavaExecutionEngineDocTest
     @BeforeClass
     public static void prepare()
     {
+        if( docsTargetDir.exists() )
+        {
+            return;
+        }
+
         if( !docsTargetDir.mkdirs() )
         {
             fail("Failed to created necessary directories.");

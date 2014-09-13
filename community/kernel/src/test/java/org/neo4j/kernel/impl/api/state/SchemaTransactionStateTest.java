@@ -34,7 +34,6 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.TxState;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -122,7 +122,7 @@ public class SchemaTransactionStateTest
         IndexDescriptor rule = txContext.indexCreate( state, labelId1, key1 );
 
         // THEN
-        assertEquals( InternalIndexState.POPULATING, txContext.indexGetState( state, rule ) );
+        assertEquals( InternalIndexState.POPULATING, txContext.indexGetState(state, rule) );
     }
 
     @Test
@@ -138,7 +138,7 @@ public class SchemaTransactionStateTest
 
         // THEN
         IndexDescriptor expectedRule = new IndexDescriptor( labelId1, key1 );
-        assertEquals( expectedRule, rule );
+        assertEquals(expectedRule, rule);
         assertEquals( asSet( expectedRule ), asSet( labelRules ) );
     }
 
@@ -168,7 +168,7 @@ public class SchemaTransactionStateTest
         // GIVEN
         // -- the store already have an index on the label and a different property
         IndexDescriptor existingRule1 = new IndexDescriptor( labelId1, key1 );
-        when( store.indexesGetForLabelAndPropertyKey( labelId1, key1 ) ).thenReturn( existingRule1 );
+        when( store.indexesGetForLabelAndPropertyKey(labelId1, key1) ).thenReturn( existingRule1 );
         // -- the store already have an index on a different label with the same property
         IndexDescriptor existingRule2 = new IndexDescriptor( labelId2, key2 );
         when( store.indexesGetForLabelAndPropertyKey( labelId2, key2 ) ).thenReturn( existingRule2 );
@@ -195,23 +195,11 @@ public class SchemaTransactionStateTest
         txContext.indexDrop( state, rule );
 
         // WHEN
-        assertException( getIndexRule(), SchemaRuleNotFoundException.class );
+        assertNull( txContext.indexesGetForLabelAndPropertyKey( state, labelId1, key1 ) );
         Iterator<IndexDescriptor> rulesByLabel = txContext.indexesGetForLabel( state, labelId1 );
 
         // THEN
         assertEquals( emptySetOf( IndexDescriptor.class ), asSet( rulesByLabel ) );
-    }
-
-    private ExceptionExpectingFunction<SchemaRuleNotFoundException> getIndexRule()
-    {
-        return new ExceptionExpectingFunction<SchemaRuleNotFoundException>()
-        {
-            @Override
-            public void call() throws SchemaRuleNotFoundException
-            {
-                txContext.indexesGetForLabelAndPropertyKey( state, labelId1, key1 );
-            }
-        };
     }
 
     private interface ExceptionExpectingFunction<E extends Exception>
@@ -225,7 +213,7 @@ public class SchemaTransactionStateTest
         try
         {
             function.call();
-            fail( "Should have thrown " + exception.getClass().getName() + " exception" );
+            fail( "Should have thrown " + exception.getName() + " exception" );
         }
         catch ( Exception e )
         {

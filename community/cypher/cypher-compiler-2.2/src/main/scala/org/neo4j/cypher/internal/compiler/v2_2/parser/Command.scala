@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.parboiled.scala._
 
 trait Command extends Parser
+  with Expressions
   with Literals
   with Base {
 
@@ -42,13 +43,13 @@ trait Command extends Parser
   }
 
   def CreateUniqueConstraint: Rule1[ast.CreateUniqueConstraint] = rule {
-    group(keyword("CREATE") ~~ ConstraintSyntax) ~~>> (ast.CreateUniqueConstraint(_, _, _, _))
+    group(keyword("CREATE") ~~ ConstraintSyntax) ~~>> (ast.CreateUniqueConstraint(_, _, _))
   }
 
   def DropUniqueConstraint: Rule1[ast.DropUniqueConstraint] = rule {
-    group(keyword("DROP") ~~ ConstraintSyntax) ~~>> (ast.DropUniqueConstraint(_, _, _, _))
+    group(keyword("DROP") ~~ ConstraintSyntax) ~~>> (ast.DropUniqueConstraint(_, _, _))
   }
 
   private def ConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
-    optional(keyword("ASSERT")) ~~ Identifier ~~ "." ~~ PropertyKeyName ~~ keyword("IS UNIQUE")
+    optional(keyword("ASSERT")) ~~ PropertyExpression ~~ keyword("IS UNIQUE")
 }
