@@ -48,6 +48,4 @@ class ConstraintTest extends ParserTest[ast.Command, legacyCommands.AbstractQuer
   }
 
   def convert(astNode: ast.Command): legacyCommands.AbstractQuery = astNode.asQuery
-
-  def Expression: Rule1[ast.Expression] = ???
 }

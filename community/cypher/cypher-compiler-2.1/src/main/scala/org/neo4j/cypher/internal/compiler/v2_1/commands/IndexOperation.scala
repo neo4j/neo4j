@@ -36,11 +36,6 @@ final case class DropIndex(label: String, propertyKeys: Seq[String], queryString
 
 sealed abstract class UniqueConstraintOperation(_id: String, _label: String, _idForProperty: String, _propertyKey: String,
     _queryString: QueryString = QueryString.empty) extends AbstractQuery {
-  override def verifySemantics() {
-    if ( _id != _idForProperty )
-      throw new InvalidSemanticsException( "Unknown identifier `" + _idForProperty + "`, was expecting `" + _id + "`" )
-  }
-
   def id:String
   def label: String
   def idForProperty: String
