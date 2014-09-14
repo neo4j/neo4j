@@ -217,15 +217,10 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
       execute(query)
       fail(s"Did not get the expected syntax error, expected: $message")
     } catch {
-//<<<<<<< HEAD:community/cypher/cypher/src/test/scala/org/neo4j/cypher/internal/compiler/v2_1/SyntaxExceptionTest.scala
       case x: CypherException => {
         val actual = x.getMessage.lines.next.trim
         actual should equal(message)
       }
-//=======
-//      case x: CypherException =>
-//        val actual = x.getMessage.lines.next().trim
-//        assertThat(actual, equalTo(message))
     }
   }
 
@@ -240,7 +235,6 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
           case None => fail(s"Expected matching '$messageRegex', but was '$actual'")
           case Some(_) => ()
         }
-//>>>>>>> upstream/2.0-maint:community/cypher/cypher/src/test/scala/org/neo4j/cypher/internal/compiler/v2_0/SyntaxExceptionTest.scala
     }
   }
 }
