@@ -23,10 +23,12 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, Planner, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, LogicalPlanningTestSupport, Planner, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, TokenContext}
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, RelTypeId}
 import org.scalautils.Equality
+
+import scala.collection.mutable
 
 trait QueryGraphProducer {
   self: LogicalPlanningTestSupport =>
@@ -84,7 +86,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
         knownProperties = knownProperties + propertyName.name
       )
 
-    def prepareTestContext:(GraphStatistics, TokenContext) = {
+    def prepareTestContext:(GraphStatistics, SemanticTable) = {
       val labelIds: Map[String, Int] = knownLabelCardinality.map(_._1).zipWithIndex.toMap
       val propertyIds: Map[String, Int] = knownProperties.zipWithIndex.toMap
       val relTypeIds: Map[String, Int] = knownRelationshipCardinality.map(_._1._2).toSeq.distinct.zipWithIndex.toMap
@@ -177,21 +179,18 @@ trait CardinalityTestHelper extends QueryGraphProducer {
         }
       }
 
-      val tokenContext = new TokenContext {
-        def getOptLabelId(labelName: String) = labelIds.get(labelName)
+      val semanticTable: SemanticTable = new SemanticTable()
+      fill(semanticTable.resolvedLabelIds, labelIds, LabelId.apply)
+      fill(semanticTable.resolvedPropertyKeyNames, propertyIds, PropertyKeyId.apply)
+      fill(semanticTable.resolvedRelTypeNames, relTypeIds, RelTypeId.apply)
 
-        def getOptPropertyKeyId(propertyKeyName: String) = propertyIds.get(propertyKeyName)
+      (statistics, semanticTable)
+    }
 
-        def getOptRelTypeId(relType: String) = relTypeIds.get(relType)
-
-        def getRelTypeName(id: Int) = ???
-        def getRelTypeId(relType: String) = ???
-        def getLabelName(id: Int) = ???
-        def getPropertyKeyId(propertyKeyName: String) = ???
-        def getPropertyKeyName(id: Int) = ???
-        def getLabelId(labelName: String) = ???
+    private def fill[T](destination: mutable.Map[String, T], source: Iterable[(String, Int)], f: Int => T) {
+      source.foreach {
+        case (name: String, id: Int) => destination += name -> f(id)
       }
-      (statistics, tokenContext)
     }
 
     implicit val cardinalityEq = new Equality[Cardinality] {
@@ -202,12 +201,12 @@ trait CardinalityTestHelper extends QueryGraphProducer {
     }
 
     def shouldHaveCardinality(number: Double) {
-      val (statistics, tokenContext) = prepareTestContext
+      val (statistics, semanticTable) = prepareTestContext
       val queryGraph = createQueryGraphAndSemanticStableTable()
       val cardinalityModel = QueryGraphCardinalityModel(
         statistics,
         producePredicates,
-        groupPredicates(estimateSelectivity(statistics, tokenContext)),
+        groupPredicates(estimateSelectivity(statistics, semanticTable)),
         combinePredicates
       )
       val result = cardinalityModel(queryGraph)
@@ -215,10 +214,10 @@ trait CardinalityTestHelper extends QueryGraphProducer {
     }
 
     def shouldHaveSelectivity(number: Double): Unit = {
-      val (statistics, tokenContext) = prepareTestContext
+      val (statistics, semanticTable) = prepareTestContext
       val queryGraph = createQueryGraphAndSemanticStableTable()
       val predicates = producePredicates(queryGraph)
-      val selectivityEstimator = estimateSelectivity( statistics, tokenContext )
+      val selectivityEstimator = estimateSelectivity( statistics, semanticTable )
       val result: List[(PredicateCombination, Selectivity)] = groupPredicates(selectivityEstimator)(predicates).toList
       val mostSelective = result.map(_._2).min
       mostSelective should equal(Selectivity(number))

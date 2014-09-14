@@ -35,15 +35,14 @@ object GuessingEstimation {
 }
 
 class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
-                                       selectivity: Metrics.SelectivityModel,
-                                       tokenContext: TokenContext)
+                                       selectivity: Metrics.SelectivityModel)
                                       (implicit semanticTable: SemanticTable) extends Metrics.CardinalityModel {
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.GuessingEstimation._
 
   private val queryGraphCardinalityModel = QueryGraphCardinalityModel(
     statistics,
     producePredicates,
-    groupPredicates(estimateSelectivity(statistics, tokenContext)),
+    groupPredicates(estimateSelectivity(statistics, semanticTable)),
     combinePredicates
   )
 

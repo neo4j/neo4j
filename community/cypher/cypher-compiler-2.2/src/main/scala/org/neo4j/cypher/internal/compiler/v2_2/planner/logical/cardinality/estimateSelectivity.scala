@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{False, HasLabels, LabelName, PropertyKeyName}
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.PatternRelationship
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Multiplier, Selectivity}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, TokenContext}
+import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.graphdb.Direction
 
-case class estimateSelectivity(stats: GraphStatistics, tokens: TokenContext) extends (PredicateCombination => Selectivity) {
+case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTable) extends (PredicateCombination => Selectivity) {
   def apply(predicateCombo: PredicateCombination): Selectivity = predicateCombo match {
     case SingleExpression(HasLabels(_, label :: Nil)) =>
       calculateSelectivityForLabel(label)
@@ -65,9 +66,9 @@ case class estimateSelectivity(stats: GraphStatistics, tokens: TokenContext) ext
       return Selectivity(1)
     }
 
-    val maybeLabelId: Option[Int] = tokens.getOptLabelId(label.name)
-    val labelCardinality = maybeLabelId.
-      map(l => stats.nodesWithLabelCardinality(Some(LabelId(l)))).
+    val labelCardinality = label.
+      labelId.
+      map(l => stats.nodesWithLabelCardinality(Some(l))).
       getOrElse(Cardinality(0))
     labelCardinality / nodeCardinality
   }
@@ -83,14 +84,14 @@ case class estimateSelectivity(stats: GraphStatistics, tokens: TokenContext) ext
 
   private def calculateSelectivityForPatterns(in: RelationshipWithLabels): Selectivity = in match {
     case RelationshipWithLabels(Some(lhs), pattern, Some(rhs), _) =>
-      val relationshipId: Option[Int] = tokens.getOptRelTypeId(pattern.types.head.name)
+      val relationshipId: Option[RelTypeId] = pattern.types.map(_.relTypeId).head
       val maxRelCount = stats.nodesWithLabelCardinality(lhs.labelId) * stats.nodesWithLabelCardinality(rhs.labelId)
       if (maxRelCount == Cardinality(0))
         return Selectivity(1)
 
       val relCount = (lhs.labelId, relationshipId, rhs.labelId) match {
         case (Some(lId), Some(relId), Some(rId)) =>
-          stats.cardinalityByLabelsAndRelationshipType(Some(lId), Some(RelTypeId(relId)), Some(rId)) *
+          stats.cardinalityByLabelsAndRelationshipType(Some(lId), Some(relId), Some(rId)) *
             calculateSelectivityForLabel(lhs) *
             calculateSelectivityForLabel(rhs)
         case _ =>
@@ -104,14 +105,22 @@ case class estimateSelectivity(stats: GraphStatistics, tokens: TokenContext) ext
     case RelationshipWithLabels(None, pattern, Some(rhs), _) =>
       selectivityForPatternWithLabelsOnOneSide(pattern, pattern.dir.reverse(), rhs.labelId)
 
+    // No relationship type or labels specified
+    case RelationshipWithLabels(None, pattern: PatternRelationship, None, _) if pattern.types.isEmpty =>
+      val maxRelCount = stats.nodesWithLabelCardinality(None) ^ 2
+      if (maxRelCount == Cardinality(0))
+        return Selectivity(1)
+      val relCount = stats.cardinalityByLabelsAndRelationshipType(None, None, None)
+      relCount / maxRelCount
+
     case RelationshipWithLabels(None, pattern: PatternRelationship, None, _) =>
-      val relationshipId: Option[Int] = tokens.getOptRelTypeId(pattern.types.head.name)
+      val relationshipId: Option[RelTypeId] = pattern.types.map(_.relTypeId).head
 
       val maxRelCount = stats.nodesWithLabelCardinality(None) ^ 2
       if (maxRelCount == Cardinality(0))
         return Selectivity(1)
       val relCount = relationshipId.
-        map(id => stats.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(id)), None)).
+        map(id => stats.cardinalityByLabelsAndRelationshipType(None, Some(id), None)).
         getOrElse(Cardinality(0))
       relCount / maxRelCount
   }
@@ -119,16 +128,16 @@ case class estimateSelectivity(stats: GraphStatistics, tokens: TokenContext) ext
   private def selectivityForPatternWithLabelsOnOneSide(pattern: PatternRelationship,
                                                        dir: Direction,
                                                        lhsLabelId: Option[LabelId]): Selectivity = {
-    val relationshipId: Option[Int] = tokens.getOptRelTypeId(pattern.types.head.name)
+    val relationshipId: Option[RelTypeId] = pattern.types.map(_.relTypeId).head
     val maxRelCount = stats.nodesWithLabelCardinality(None) * stats.nodesWithLabelCardinality(lhsLabelId)
     if (maxRelCount == Cardinality(0))
       return Selectivity(1)
 
     val relCount = (lhsLabelId, relationshipId) match {
       case (Some(lId), Some(relId)) if dir == Direction.OUTGOING =>
-        stats.cardinalityByLabelsAndRelationshipType(Some(lId), Some(RelTypeId(relId)), None)
+        stats.cardinalityByLabelsAndRelationshipType(Some(lId), Some(relId), None)
       case (Some(lId), Some(relId)) if dir == Direction.INCOMING =>
-        stats.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(relId)), Some(lId))
+        stats.cardinalityByLabelsAndRelationshipType(None, Some(relId), Some(lId))
       case _ =>
         Cardinality(0)
     }
@@ -136,9 +145,14 @@ case class estimateSelectivity(stats: GraphStatistics, tokens: TokenContext) ext
   }
 
   implicit class RichLabelName(val label: LabelName) {
-    def labelId = tokens.getOptLabelId(label.name).map(LabelId)
+    def labelId: Option[LabelId] = semanticTable.resolvedLabelIds.get(label.name)
   }
+
+  implicit class RichRelTypeName(val relType: RelTypeName) {
+    def relTypeId: Option[RelTypeId] = semanticTable.resolvedRelTypeNames.get(relType.name)
+  }
+
   implicit class RichPropertyKeyName(val property: PropertyKeyName) {
-    def propertyKeyId = tokens.getOptPropertyKeyId(property.name).map(PropertyKeyId)
+    def propertyKeyId: Option[PropertyKeyId] = semanticTable.resolvedPropertyKeyNames.get(property.name)
   }
 }
