@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -37,6 +39,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static java.lang.String.format;
 
@@ -71,25 +74,28 @@ public interface MasterClient extends Master
             }
             catch ( ArrayIndexOutOfBoundsException e )
             {
-                throw Exceptions.withMessage( e, e.getMessage() + " | read invalid ordinal " + statusOrdinal +
-                        ". The whole contents of this channel buffer is " + wholeBufferAsString( buffer ) );
+                int maxBytesToPrint = 1024*40;
+                throw Exceptions.withMessage( e, format( "%s | read invalid ordinal %d. First %db of this channel buffer is:%n%s",
+                        e.getMessage(), statusOrdinal, maxBytesToPrint, beginningOfBufferAsHexString( buffer, maxBytesToPrint ) ) );
             }
             return status.hasMessage() ? new LockResult( readString( buffer ) ) : new LockResult( status );
         }
 
-        private String wholeBufferAsString( ChannelBuffer buffer )
+        private String beginningOfBufferAsHexString( ChannelBuffer buffer, int maxBytesToPrint )
         {
             int prevIndex = buffer.readerIndex();
+            buffer.readerIndex( 0 );
             try
             {
-                buffer.readerIndex( 0 );
-                StringBuilder builder = new StringBuilder();
-                for ( int i = 0; buffer.readable(); i++ )
+                ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream( buffer.readableBytes() );
+                PrintStream stream = new PrintStream( byteArrayStream );
+                HexPrinter printer = new HexPrinter( stream, 4, 8*4 );
+                for ( int i = 0; buffer.readable() && i < maxBytesToPrint; i++ )
                 {
-                    byte value = buffer.readByte();
-                    builder.append( i > 0 ? "," : "" ).append( format( "%x", value ) );
+                    printer.append( buffer.readByte() );
                 }
-                return builder.toString();
+                stream.flush();
+                return byteArrayStream.toString();
             }
             finally
             {

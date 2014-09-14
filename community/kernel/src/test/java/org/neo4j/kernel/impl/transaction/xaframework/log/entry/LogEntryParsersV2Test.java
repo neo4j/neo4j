@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class LogEntryParsersV2Test
 {
