@@ -25,24 +25,13 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class Property(map: Expression, propertyKey: PropertyKeyName)(val position: InputPosition) extends Expression with FunctionTyping {
+case class Property(map: Expression, propertyKey: PropertyKeyName)(val position: InputPosition) extends Expression with SimpleTyping {
+  protected def possibleTypes = CTAny.covariant
 
-  import Doc._
-
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTMap), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTMap), outputType = CTString),
-    Signature(argumentTypes = Vector(CTMap), outputType = CTBoolean),
-    Signature(argumentTypes = Vector(CTMap), outputType = CTFloat),
-    Signature(argumentTypes = Vector(CTMap), outputType = CTNumber),
-    Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTInteger)),
-    Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTString)),
-    Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTBoolean)),
-    Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTFloat)),
-    Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTNumber))
-  )
-
-  protected def possibleTypes = CTAny.invariant
+  override def semanticCheck(ctx: SemanticContext) =
+    map.semanticCheck(ctx) chain
+      map.expectType(CTMap.covariant) chain
+      super.semanticCheck(ctx)
 }
 
 object LegacyProperty {

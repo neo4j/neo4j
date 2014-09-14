@@ -61,7 +61,7 @@ public class TestRecoveryMultipleDataSources
     {
         // Given (create transactions and kill process, leaving it needing for recovery)
         deleteRecursively( new File( dir ) );
-        assertEquals( 0, getRuntime().exec( new String[] { "java", "-cp", getProperty( "java.class.path" ),
+        assertEquals( 0, getRuntime().exec( new String[] { "java", "-Djava.awt.headless=true", "-cp", getProperty( "java.class.path" ),
                 getClass().getName() } ).waitFor() );
 
         // When

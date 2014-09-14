@@ -160,14 +160,28 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("should be semantically incorrect to refer to unknown identifier in create constraint") {
     executeAndEnsureError(
       "create constraint on (foo:Foo) bar.name is unique",
-      "Unknown identifier `bar`, was expecting `foo`"
+      "bar not defined (line 1, column 32)"
+    )
+  }
+
+  test("should be semantically incorrect to refer to nexted property in create constraint") {
+    executeAndEnsureError(
+      "create constraint on (foo:Foo) foo.bar.name is unique",
+      "Cannot index nested properties (line 1, column 40)"
     )
   }
 
   test("should be semantically incorrect to refer to unknown identifier in drop constraint") {
     executeAndEnsureError(
       "drop constraint on (foo:Foo) bar.name is unique",
-      "Unknown identifier `bar`, was expecting `foo`"
+      "bar not defined (line 1, column 30)"
+    )
+  }
+
+  test("should be semantically incorrect to refer to nested property in drop constraint") {
+    executeAndEnsureError(
+      "drop constraint on (foo:Foo) foo.bar.name is unique",
+      "Cannot index nested properties (line 1, column 38)"
     )
   }
 
@@ -401,6 +415,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     executeAndEnsureError(
       "RETURN reduce(x = 0, y IN [1,2,3] | x + y^2)",
       "Type mismatch: accumulator is Integer but expression has type Float (line 1, column 39)"
+    )
+  }
+  test("should return custom type when accessing a property of a non-map") {
+    createNode("prop"->42)
+
+    executeAndEnsureError(
+      "MATCH n WITH n.prop AS n2 RETURN n2.prop",
+      "Type mismatch: expected a map but was 42"
     )
   }
 

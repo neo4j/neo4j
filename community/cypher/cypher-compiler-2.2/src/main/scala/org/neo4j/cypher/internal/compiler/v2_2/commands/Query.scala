@@ -50,7 +50,6 @@ trait AbstractQuery {
   def queryString: QueryString
   def setQueryText(t: String): AbstractQuery
   def getQueryText: String = queryString.text
-  def verifySemantics() {}
 }
 
 case class PeriodicCommitQuery(query: AbstractQuery, batchSize: Option[Long]) extends AbstractQuery {
@@ -61,8 +60,6 @@ case class PeriodicCommitQuery(query: AbstractQuery, batchSize: Option[Long]) ex
   }
 
   override def queryString: QueryString = query.queryString
-
-  override def verifySemantics(): Unit = query.verifySemantics()
 }
 
 case class Query(returns: Return,

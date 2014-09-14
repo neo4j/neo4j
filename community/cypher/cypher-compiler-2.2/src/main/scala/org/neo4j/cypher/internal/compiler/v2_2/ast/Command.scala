@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import symbols._
 
 sealed trait Command extends Statement
 
@@ -31,10 +32,19 @@ case class DropIndex(label: LabelName, property: PropertyKeyName)(val position: 
   def semanticCheck = Seq()
 }
 
-case class CreateUniqueConstraint(id: Identifier, label: LabelName, idForProperty: Identifier, propertyKey: PropertyKeyName)(val position: InputPosition) extends Command {
-  def semanticCheck = Seq()
+trait UniqueConstraintCommand extends Command with SemanticChecking {
+  def identifier: Identifier
+  def label: LabelName
+  def property: Property
+
+  def semanticCheck =
+    identifier.declare(CTNode.covariant) chain
+    property.semanticCheck(Expression.SemanticContext.Simple) chain
+    when (!property.map.isInstanceOf[ast.Identifier]) {
+      SemanticError("Cannot index nested properties", property.position)
+    }
 }
 
-case class DropUniqueConstraint(id: Identifier, label: LabelName, idForProperty: Identifier, propertyKey: PropertyKeyName)(val position: InputPosition) extends Command {
-  def semanticCheck = Seq()
-}
+case class CreateUniqueConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends UniqueConstraintCommand
+
+case class DropUniqueConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends UniqueConstraintCommand

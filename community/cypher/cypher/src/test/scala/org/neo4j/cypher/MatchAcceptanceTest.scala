@@ -1500,12 +1500,14 @@ RETURN a.name""")
     actual should equal(List(Map("a1" -> node1, "r" -> relationship, "b2" -> null, "a2" -> null)))
   }
 
+  //This test is ignored since the fix for this needed to be reverted
+  //As is now this will be a runtime error
   test("MATCH n WITH n.prop AS n2 RETURN n2.prop") {
     // Given a single node
     val node = createNode("prop" -> "42")
 
     // then
-    intercept[SyntaxException](executeWithNewPlanner("MATCH n WITH n.prop AS n2 RETURN n2.prop"))
+    intercept[CypherTypeException](executeWithNewPlanner("MATCH n WITH n.prop AS n2 RETURN n2.prop"))
   }
 
   test("MATCH foo RETURN foo.bar AS x ORDER BY x DESC LIMIT 4") {

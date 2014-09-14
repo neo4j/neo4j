@@ -33,8 +33,6 @@ class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {
     if (semanticErrors.nonEmpty) {
       semanticCheckMonitor.finishSemanticCheckError(queryText, semanticErrors)
     } else {
-      val query = statement.asQuery
-      query.verifySemantics()
       semanticCheckMonitor.finishSemanticCheckSuccess(queryText)
     }
     semanticErrors.map {

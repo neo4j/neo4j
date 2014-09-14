@@ -470,7 +470,6 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey )
-            throws SchemaRuleNotFoundException
     {
         Iterable<IndexDescriptor> committedRules;
         try
@@ -489,13 +488,7 @@ public class StateHandlingStatementOperations implements
                 filterByPropertyKeyId( ruleDiffSet.apply( committedRules.iterator() ),
                         propertyKey ) :
                 committedRules.iterator();
-        IndexDescriptor single = singleOrNull( rules );
-        if ( single == null )
-        {
-            throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
-                    propertyKey + " not found" );
-        }
-        return single;
+        return singleOrNull( rules );
     }
 
     private Iterator<IndexDescriptor> filterByPropertyKeyId(
@@ -770,16 +763,11 @@ public class StateHandlingStatementOperations implements
     private void indexUpdateProperty( KernelStatement state, long nodeId, int labelId, int propertyKey,
                                       Object valueBefore, Object valueAfter )
     {
-        IndexDescriptor descriptor;
-        try
+        IndexDescriptor descriptor = indexesGetForLabelAndPropertyKey( state, labelId, propertyKey );
+        if ( descriptor != null )
         {
-            descriptor = indexesGetForLabelAndPropertyKey( state, labelId, propertyKey );
+            state.txState().indexUpdateProperty( descriptor, nodeId, valueBefore, valueAfter );
         }
-        catch ( SchemaRuleNotFoundException e )
-        {
-            return;
-        }
-        state.txState().indexUpdateProperty( descriptor, nodeId, valueBefore, valueAfter );
     }
 
     @Override
