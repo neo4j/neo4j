@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import java.util.concurrent.CountDownLatch;
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
@@ -48,7 +46,6 @@ class BackupImpl implements TheBackupInterface
     private final SPI spi;
     private final XaDataSourceManager xaDataSourceManager;
     private final KernelPanicEventGenerator kpeg;
-    private CountDownLatch countDownLatch;
 
     public BackupImpl( StringLogger logger, SPI spi, XaDataSourceManager xaDataSourceManager,
                        KernelPanicEventGenerator kpeg,
