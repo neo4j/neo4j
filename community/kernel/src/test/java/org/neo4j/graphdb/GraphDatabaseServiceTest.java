@@ -21,14 +21,22 @@ package org.neo4j.graphdb;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.test.CleanupRule;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class GraphDatabaseServiceTest
@@ -113,7 +121,7 @@ public class GraphDatabaseServiceTest
             {
             }
         }
-        
+
         db.shutdown();
     }
 
@@ -239,4 +247,101 @@ public class GraphDatabaseServiceTest
 
         Assert.assertThat( result.get().getClass(), CoreMatchers.<Object>equalTo( TransactionFailureException.class ) );
     }
+
+    @Test
+    public void shouldLetDetectedDeadlocksDuringCommitBeThrownInTheirOriginalForm() throws Exception
+    {
+        // GIVEN a database with a couple of entities:
+        // (n1) --> (r1) --> (r2) --> (r3)
+        // (n2)
+        GraphDatabaseService db = cleanup.add( new TestGraphDatabaseFactory().newImpermanentDatabase() );
+        Node n1 = createNode( db );
+        Node n2 = createNode( db );
+        Relationship r3 = createRelationship( n1 );
+        Relationship r2 = createRelationship( n1 );
+        Relationship r1 = createRelationship( n1 );
+
+        // WHEN creating a deadlock scenario where the final deadlock would have happened due to locks
+        //      acquired during linkage of relationship records
+        //
+        // (r1) <-- (t1)
+        //   |       ^
+        //   v       |
+        // (t2) --> (n2)
+        OtherThreadExecutor<Void> t2 = cleanup.add( new OtherThreadExecutor<Void>( "T2", null ) );
+        Transaction t1Tx = db.beginTx();
+        Transaction t2Tx = t2.execute( beginTx( db ) );
+        // (t1) <-- (n2)
+        n2.setProperty( "locked", "indeed" );
+        // (t2) <-- (r1)
+        t2.execute( setProperty( r1, "locked", "absolutely" ) );
+        // (t2) --> (n2)
+        Future<Object> t2n2Wait = t2.executeDontWait( setProperty( n2, "locked", "In my dreams" ) );
+        t2.waitUntilWaiting();
+        // (t1) --> (r1) although delayed until commit, this is accomplished by deleting an adjacent
+        //               relationship so that its surrounding relationships are locked at commit time.
+        r2.delete();
+        t1Tx.success();
+        try
+        {
+            t1Tx.close();
+            fail( "Should throw exception about deadlock" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( DeadlockDetectedException.class, e.getClass() );
+        }
+        finally
+        {
+            t2Tx.close();
+        }
+    }
+
+    private WorkerCommand<Void, Transaction> beginTx( final GraphDatabaseService db )
+    {
+        return new WorkerCommand<Void, Transaction>()
+        {
+            @Override
+            public Transaction doWork( Void state ) throws Exception
+            {
+                return db.beginTx();
+            }
+        };
+    }
+
+    private WorkerCommand<Void, Object> setProperty( final PropertyContainer entity,
+            final String key, final String value )
+    {
+        return new WorkerCommand<Void, Object>()
+        {
+            @Override
+            public Object doWork( Void state ) throws Exception
+            {
+                entity.setProperty( key, value );
+                return null;
+            }
+        };
+    }
+
+    private Relationship createRelationship( Node node )
+    {
+        try ( Transaction tx = node.getGraphDatabase().beginTx() )
+        {
+            Relationship rel = node.createRelationshipTo( node, MyRelTypes.TEST );
+            tx.success();
+            return rel;
+        }
+    }
+
+    private Node createNode( GraphDatabaseService db )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            tx.success();
+            return node;
+        }
+    }
+
+    public final @Rule CleanupRule cleanup = new CleanupRule();
 }

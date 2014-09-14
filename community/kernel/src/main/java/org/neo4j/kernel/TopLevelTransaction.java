@@ -86,7 +86,7 @@ public class TopLevelTransaction implements Transaction
     @Override
     public void success()
     {
-    	transactionOutcome.success();
+        transactionOutcome.success();
         transaction.success();
     }
 
@@ -111,6 +111,13 @@ public class TopLevelTransaction implements Transaction
             {
                 transaction.close();
             }
+        }
+        catch ( DeadlockDetectedException e )
+        {
+            // We let deadlock exceptions pass through unchanged since they aren't really transaction failures
+            // in the same sense as unexpected failures are. A deadlock exception signals that the transaction
+            // can be retried and might be successful the next time.
+            throw e;
         }
         catch ( Exception e )
         {
@@ -148,8 +155,8 @@ public class TopLevelTransaction implements Transaction
         return transaction;
     }
 
-	TransactionOutcome getTransactionOutcome()
-	{
-		return transactionOutcome;
-	}
+    TransactionOutcome getTransactionOutcome()
+    {
+        return transactionOutcome;
+    }
 }
