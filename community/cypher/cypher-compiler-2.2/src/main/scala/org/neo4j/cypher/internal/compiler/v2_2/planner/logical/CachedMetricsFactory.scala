@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.CachedFunction
-import Metrics._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
+import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
   def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable) =

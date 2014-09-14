@@ -55,15 +55,20 @@ final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelations
 
 
 trait PatternLength extends InternalDocHandler.ToString[PatternLength] with PageDocFormatting {
+  def implicitPatternNodeCount: Int
   def isSimple: Boolean
 }
 
 case object SimplePatternLength extends PatternLength {
   def isSimple = true
+
+  def implicitPatternNodeCount: Int = 0
 }
 
 final case class VarPatternLength(min: Int, max: Option[Int]) extends PatternLength {
   def isSimple = false
+
+  def implicitPatternNodeCount = max.getOrElse(15)
 }
 
 object VarPatternLength {
