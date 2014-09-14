@@ -1296,7 +1296,7 @@ public class TestNeoStore
     public void shouldAddUpgradeFieldsToTheNeoStoreIfNotPresent() throws IOException
     {
         FileSystemAbstraction fileSystem = fs.get();
-        File neoStoreDir = new File( "/tmp/graph.db/neostore" );
+        File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
         StoreFactory factory =
                 new StoreFactory( fileSystem, neoStoreDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
         NeoStore neoStore = factory.newNeoStore( true );
