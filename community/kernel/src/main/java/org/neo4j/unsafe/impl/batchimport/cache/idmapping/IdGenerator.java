@@ -17,21 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
+package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
-import java.io.IOException;
-
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-
-/**
- * Imports graph data, nodes with their properties and labels separated from relationship with their properties.
- */
-public interface BatchImporter
+public interface IdGenerator
 {
-    void doImport( Iterable<InputNode> nodes, Iterable<InputRelationship> relationships, IdMapping idMapping )
-            throws IOException;
-
-    void shutdown();
+    long generate( Object inputId );
 }

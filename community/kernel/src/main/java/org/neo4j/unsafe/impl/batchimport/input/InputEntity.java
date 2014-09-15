@@ -32,18 +32,18 @@ import static java.lang.String.format;
  */
 public abstract class InputEntity
 {
-    private final long id;
+    private final Object id;
     private final Object[] properties;
     private final Long firstPropertyId;
 
-    public InputEntity( long id, Object[] properties, Long firstPropertyId )
+    public InputEntity( Object id, Object[] properties, Long firstPropertyId )
     {
         this.id = id;
         this.properties = properties;
         this.firstPropertyId = firstPropertyId;
     }
 
-    public long id()
+    public Object id()
     {
         return id;
     }
