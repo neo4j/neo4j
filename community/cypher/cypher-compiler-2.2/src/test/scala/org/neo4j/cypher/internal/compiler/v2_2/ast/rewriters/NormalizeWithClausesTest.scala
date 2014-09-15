@@ -197,8 +197,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
 
   test("does not introduce alias for ORDER BY containing unique aggregate") {
     // Note: aggregations in ORDER BY that don't also appear in WITH are invalid
-    // This is NOT currently detected in semantic checking
-    assertRewrite(
+    assertRewriteAndSemanticErrors(
       """MATCH n
         |WITH n.prop AS prop ORDER BY max(n.foo)
         |RETURN prop
@@ -206,7 +205,8 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n.prop AS prop ORDER BY max(n.foo)
         |RETURN prop
-      """.stripMargin
+      """.stripMargin,
+      "n not defined (line 2, column 34)"
     )
   }
 

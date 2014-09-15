@@ -71,7 +71,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
             ),
             Map[String, Expression]("a" -> ident("a"), "b" -> ident("b"), "r1" -> ident("r1"))
           ),
-          planSingleRow()
+          planArgumentRow(patternNodes = Set("b"))
         ),
         Map[String, Expression]("b" -> ident("b"))
       )

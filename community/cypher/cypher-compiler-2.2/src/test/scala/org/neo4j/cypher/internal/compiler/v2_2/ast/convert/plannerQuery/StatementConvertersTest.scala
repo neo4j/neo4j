@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
  */
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.{SemanticCheckMonitor, SemanticChecker}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeWithClauses, normalizeReturnClauses}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.DocFormatters
+import org.neo4j.cypher.internal.compiler.v2_2.{inSequence, SemanticCheckMonitor, SemanticChecker}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
@@ -40,12 +42,18 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
   val property: Expression = Property( Identifier( "n" ) _, PropertyKeyName( "prop" ) _ ) _
 
-  def buildPlannerQuery(query: String): UnionQuery = {
+  def buildPlannerQuery(query: String, cleanStatement: Boolean = true): UnionQuery = {
     val ast = parser.parse(query)
-    val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
-    semanticChecker.check(query, ast)
+    val cleanedStatement: Statement =
+      if (cleanStatement)
+        ast.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+      else
+        ast
 
-    val rewrittenAst: Statement = Planner.rewriteStatement(astRewriter.rewrite(query, ast)._1)
+    val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
+    semanticChecker.check(query, cleanedStatement)
+
+    val rewrittenAst: Statement = Planner.rewriteStatement(astRewriter.rewrite(query, cleanedStatement)._1)
     rewrittenAst.asInstanceOf[Query].asUnionQuery
   }
 
@@ -435,14 +443,14 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.horizon should equal(
       RegularQueryProjection(Map(
         "n" -> Identifier("n")_,
-        "n.prop" -> Property(Identifier("n")_, PropertyKeyName("prop")_)_
+        "  FRESHID17" -> Property(Identifier("n")_, PropertyKeyName("prop")_)_
       ))
     )
 
     val tail = query.tail.get
     tail.horizon should equal(
       RegularQueryProjection(Map(
-        "n.prop" -> Identifier("n.prop")_,
+        "  FRESHID17" -> ident("  FRESHID17"),
         "  FRESHID33" -> Property(Identifier("n")_, PropertyKeyName("prop2")_)_
       ))
     )
@@ -450,9 +458,18 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val tail2 = tail.tail.get
     val sortItem: DescSortItem = DescSortItem(Identifier("  FRESHID33")_)_
     tail2.horizon should equal(
-      RegularQueryProjection(
-        Map("n.prop" -> Identifier("n.prop")_),
-        QueryShuffle(sortItems = Seq(sortItem)))
+      RegularQueryProjection(Map(
+        "  FRESHID17" -> ident("  FRESHID17"),
+        "  FRESHID33" -> ident("  FRESHID33")
+        ),
+        shuffle = QueryShuffle(sortItems = Seq(sortItem))
+      ))
+
+    val tail3 = tail2.tail.get
+    tail3.horizon should equal (
+      RegularQueryProjection(Map(
+        "n.prop" -> ident("  FRESHID17")
+      ))
     )
   }
 
@@ -472,11 +489,17 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("MATCH (a) WITH a WHERE TRUE RETURN a") {
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("MATCH (a) WITH a WHERE TRUE RETURN a")
-    query.tail should be(empty)
     query.graph.patternNodes should equal(Set(IdName("a")))
-    query.horizon should equal(RegularQueryProjection(Map("a" -> Identifier("a")_)))
-    query.graph.selections.predicates should equal(
-      Set(Predicate(Set.empty, True()_))
+    query.horizon should equal(RegularQueryProjection(Map(
+      "a" -> ident("a"),
+      "  FRESHID23" -> True()_
+    )))
+
+    val tail = query.tail.get
+    tail.tail should be(empty)
+    tail.horizon should equal(RegularQueryProjection(Map("a" -> ident("a"))))
+    tail.graph.selections.predicates should equal(
+      Set(Predicate(Set(IdName("  FRESHID23")), ident("  FRESHID23")))
     )
   }
 
@@ -872,19 +895,29 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail should not be empty
   }
 
-  test("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN *") {
+  test("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner") {
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner")
+    val result = query.toString
+    val expectation =
+      """GIVEN * MATCH (owner) WITH owner AS `owner`, count(*) AS `collected`
+        |GIVEN owner, collected
+        |WITH
+        |  owner AS `owner`,
+        |  collected AS `collected`,
+        |  PatternExpression(
+        |    RelationshipsPattern(
+        |      RelationshipChain(
+        |        NodePattern(Some(owner), ⬨, None, false),
+        |        RelationshipPattern(Some(`  UNNAMED61`), false, ⬨, None, None, BOTH),
+        |        NodePattern(Some(`  UNNAMED64`), ⬨, None, false)
+        |      )
+        |    )
+        |  )
+        |  AS `  FRESHID54`
+        |GIVEN owner,   FRESHID54 WHERE Predicate[  FRESHID54](`  FRESHID54`)
+        |RETURN owner AS `owner`""".stripMargin
 
-    query.graph.patternNodes should equal(Set(IdName("owner")))
-    query.horizon should equal(AggregatingQueryProjection(
-      groupingKeys = Map("owner" -> ident("owner")),
-      aggregationExpressions = Map("collected" -> CountStar()(pos))
-    ))
-
-    val tailQuery = query.tail.get
-
-    tailQuery.graph.patternNodes should be(empty)
-    tailQuery.horizon should equal(RegularQueryProjection(Map("owner" -> ident("owner"))))
+    result should equal(expectation)
   }
 
   test("MATCH (owner) WITH owner, COUNT(*) AS xyz WITH owner, xyz > 0 as collection WHERE (owner)--() RETURN owner") {
@@ -895,19 +928,28 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         |WHERE (owner)--()
         |RETURN owner""".stripMargin)
 
-    query.horizon should equal(AggregatingQueryProjection(
-      groupingKeys = Map("owner" -> ident("owner")),
-      aggregationExpressions = Map("xyz" -> CountStar()(pos))
-    ))
+    val result = query.toString
+    val expectation =
+      """GIVEN * MATCH (owner) WITH owner AS `owner`, count(*) AS `xyz`
+        |GIVEN owner, xyz WITH owner AS `owner`, xyz > 0 AS `collection`
+        |GIVEN owner, collection
+        |WITH
+        |  owner AS `owner`,
+        |  collection AS `collection`,
+        |  PatternExpression(
+        |    RelationshipsPattern(
+        |      RelationshipChain(
+        |        NodePattern(Some(owner), ⬨, None, false),
+        |        RelationshipPattern(Some(`  UNNAMED89`), false, ⬨, None, None, BOTH),
+        |        NodePattern(Some(`  UNNAMED92`), ⬨, None, false)
+        |      )
+        |    )
+        |  )
+        |  AS `  FRESHID82`
+        |GIVEN owner,   FRESHID82 WHERE Predicate[  FRESHID82](`  FRESHID82`)
+        |RETURN owner AS `owner`""".stripMargin
 
-    val tail1Query = query.tail.get
-
-    tail1Query.horizon should equal(RegularQueryProjection(
-      Map(
-        // Removed by inliner since it never gets returned
-        // "collection" -> GreaterThan(ident("xyz"), SignedDecimalIntegerLiteral("0") _) _,
-        "owner" -> ident("owner"))
-    ))
+    result should equal(expectation)
   }
 
   test("UNWIND [1,2,3] AS x RETURN x") {

@@ -19,15 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeWithClauses, normalizeReturnClauses}
-import org.neo4j.cypher.internal.{PlanType, LRUCache}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
-import StatementConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.AbstractQuery
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{Planner, PlanningMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Planner, PlanningMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
