@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.PatternConverters._
@@ -33,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
+import org.neo4j.graphdb.Relationship
 
 case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan) {
   def plan(expr: ast.PatternExpression) = f(expr)
@@ -104,11 +106,21 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case CartesianProduct(left, right) =>
           CartesianProductPipe(buildPipe(left), buildPipe(right))
 
-        case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), SimplePatternLength) =>
+        case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), SimplePatternLength, _) =>
           ExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name))
 
-        case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max)) =>
-          VarLengthExpandPipe(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max)
+        case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), predicates) =>
+          val (keys, exprs) = predicates.unzip
+          val commands = exprs.map(buildPredicate)
+          val predicate = (context: ExecutionContext, state: QueryState, rel: Relationship) => {
+            keys.zip(commands).forall { case (identifier: Identifier, expr: CommandPredicate) =>
+              context(identifier.name) = rel
+              val result = expr.isTrue(context)(state)
+              context.remove(identifier.name)
+              result
+            }
+          }
+          VarLengthExpandPipe(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, predicates) =>
           val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())

@@ -35,16 +35,23 @@ object expand extends CandidateGenerator[PlanTable] {
     } yield {
       val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)
-      val expandF = (otherSide: IdName) => planExpand(plan, nodeId, dir, patternRel.dir, patternRel.types,
-                                                      otherSide, patternRel.name, patternRel.length, patternRel)
+      val availablePredicates = queryGraph.selections.predicatesGiven(plan.availableSymbols + patternRel.name)
+      val (predicates, allPredicates) = availablePredicates.collect {
+        case all @ AllIterablePredicate(identifier, relId @ Identifier(patternRel.name.name), Some(innerPredicate))
+          if !innerPredicate.exists { case expr => expr == relId } =>
+          (identifier, innerPredicate) -> all
+      }.unzip
 
+      val expandF = (otherSide: IdName) => planExpand(plan, nodeId, dir, patternRel.dir, patternRel.types,
+                                                      otherSide, patternRel.name, patternRel.length, patternRel,
+                                                      predicates, allPredicates)
       if (plan.availableSymbols.contains(otherSide)) {
         expandIntoAlreadyExistingNode(expandF, otherSide)
       }
       else
         expandF(otherSide)
     }
-    CandidateList(expandPlans)
+    CandidateList(expandPlans.toList)
   }
 
   /*

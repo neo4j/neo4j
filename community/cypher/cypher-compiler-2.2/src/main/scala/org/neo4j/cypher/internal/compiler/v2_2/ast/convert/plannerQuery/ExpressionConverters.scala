@@ -113,16 +113,7 @@ object ExpressionConverters {
   }
 
   implicit class IdExtractor(val exp: Expression) extends AnyVal {
-    def idNames: Set[IdName] = exp.treeFold(Set.empty[IdName]) {
-      case p: FilteringExpression =>
-        (acc, _) => acc ++
-                    p.expression.idNames ++
-                    p.innerPredicate.map(_.idNames).getOrElse(Set.empty) -
-                    IdName(p.identifier.name)
-
-      case Identifier(name) =>
-        (acc, _) => acc + IdName(name)
-    }
+    def idNames: Set[IdName] = exp.dependencies.map(id => IdName(id.name))
   }
 
   implicit class RangeConvertor(val length: Option[Option[Range]]) extends AnyVal {

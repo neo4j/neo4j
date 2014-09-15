@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{SignedDecimalIntegerLiteral, PatternExpression, Expression}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, SignedDecimalIntegerLiteral, PatternExpression, Expression}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, IdName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.mockito.Mockito._
 
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private implicit val planContext = newMockedPlanContext
@@ -33,6 +34,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("when a predicate that isn't already solved is solvable it should be applied") {
     // Given
     val predicate = mock[Expression]
+    when(predicate.dependencies).thenReturn(Set.empty[Identifier])
     val LogicalPlan = newMockedLogicalPlan("x")
     val selections = Selections(Set(Predicate(LogicalPlan.availableSymbols, predicate)))
 
@@ -48,6 +50,8 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should not try to solve predicates with unmet dependencies") {
     // Given
     val predicate = mock[Expression]
+    when(predicate.dependencies).thenReturn(Set.empty[Identifier])
+
     val selections = Selections(Set(Predicate(Set(IdName("x")), predicate)))
     val LogicalPlan = newMockedLogicalPlanWithProjections("x")
 
@@ -63,7 +67,11 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("when two predicates not already solved are solvable, they should be applied") {
     // Given
     val predicate1 = mock[Expression]
+    when(predicate1.dependencies).thenReturn(Set.empty[Identifier])
+
     val predicate2 = mock[Expression]
+    when(predicate2.dependencies).thenReturn(Set.empty[Identifier])
+
     val selections = Selections(Set(
       Predicate(Set(IdName("x")), predicate1),
       Predicate(Set(IdName("x")), predicate2)))

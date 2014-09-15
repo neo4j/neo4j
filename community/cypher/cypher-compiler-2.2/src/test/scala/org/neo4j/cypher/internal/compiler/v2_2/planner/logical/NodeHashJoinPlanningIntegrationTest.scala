@@ -38,7 +38,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     (new given {
       cardinality = mapCardinality {
         case _: AllNodesScan => 200
-        case Expand(_, IdName("b"), _, _, _, _, _, _) => 10000
+        case Expand(_, IdName("b"), _, _, _, _, _, _, _) => 10000
         case _: Expand => 10
         case _: NodeHashJoin => 20
         case _ => Double.MaxValue

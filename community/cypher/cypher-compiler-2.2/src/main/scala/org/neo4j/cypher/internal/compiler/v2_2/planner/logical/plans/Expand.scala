@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.ast.RelTypeName
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Expression, RelTypeName}
 
 case class Expand(left: LogicalPlan,
                   from: IdName,
@@ -30,7 +30,8 @@ case class Expand(left: LogicalPlan,
                   types: Seq[RelTypeName],
                   to: IdName,
                   relName: IdName,
-                  length: PatternLength)
+                  length: PatternLength,
+                   predicate: Seq[(Identifier, Expression)] = Seq.empty)
                  (val solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
