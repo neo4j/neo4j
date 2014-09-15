@@ -220,7 +220,7 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
 //<<<<<<< HEAD:community/cypher/cypher/src/test/scala/org/neo4j/cypher/internal/compiler/v2_2/SyntaxExceptionTest.scala
       case x: CypherException => {
         val actual = x.getMessage.lines.next.trim
-        actual should equal(message)
+        actual should startWith(message.init)
       }
 //=======
 //      case x: CypherException =>

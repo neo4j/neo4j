@@ -65,7 +65,6 @@ case class FilterExpression(identifier: Identifier, expression: Expression, inne
     this.specifyType(expression.types)
 }
 
-
 case class ExtractExpression(
     identifier: Identifier,
     expression: Expression,

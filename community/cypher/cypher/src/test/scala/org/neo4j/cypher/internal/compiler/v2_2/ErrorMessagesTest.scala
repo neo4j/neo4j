@@ -237,20 +237,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
-  test("aggregations must be included in return") {
-    expectError(
-      "START a=node(0) RETURN a ORDER BY count(*)",
-      "Aggregation expressions must be listed in the RETURN/WITH clause to be used in ORDER BY"
-    )
-  }
-
-  test("aggregations must be included in return2") {
-    expectError(
-      "START a=node(0) RETURN a ORDER BY count(*) LIMIT 1",
-      "Aggregation expressions must be listed in the RETURN/WITH clause to be used in ORDER BY"
-    )
-  }
-
   test("unions must have the same columns") {
     expectError(
       """START a=node(0) RETURN a

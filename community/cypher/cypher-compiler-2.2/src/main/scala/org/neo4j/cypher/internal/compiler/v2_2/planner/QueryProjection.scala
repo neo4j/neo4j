@@ -27,6 +27,13 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 
 sealed trait QueryHorizon extends InternalDocHandler.ToString[QueryHorizon] with PageDocFormatting {
   def exposedSymbols: Set[IdName]
+
+  def dependingExpressions: Seq[Expression]
+
+  def dependencies: Set[IdName] = dependingExpressions.treeFold(Set.empty[IdName]) {
+    case id: Identifier =>
+      (acc, children) => children(acc + IdName(id.name))
+  }
 }
 
 sealed abstract class QueryProjection extends QueryHorizon { // with internalDocBuilder.GeneratorToString[Any]{
@@ -36,6 +43,9 @@ sealed abstract class QueryProjection extends QueryHorizon { // with internalDoc
   def updateShuffle(f: QueryShuffle => QueryShuffle) = withShuffle(f(shuffle))
   def withProjections(projections: Map[String, Expression]): QueryProjection
   def withShuffle(shuffle: QueryShuffle): QueryProjection
+
+  def dependingExpressions: Seq[Expression] =
+    shuffle.sortItems.map(_.expression)
 }
 
 object QueryProjection {
@@ -100,6 +110,8 @@ final case class RegularQueryProjection(projections: Map[String, Expression] = M
     copy(shuffle = shuffle)
 
   def exposedSymbols: Set[IdName] = projections.keys.map(IdName.apply).toSet
+
+  override def dependingExpressions = super.dependingExpressions ++ projections.values
 }
 
 final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression] = Map.empty,
@@ -115,6 +127,8 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
 
   def keySet: Set[String] = groupingKeys.keySet ++ aggregationExpressions.keySet
 
+  override def dependingExpressions = super.dependingExpressions ++ groupingKeys.values ++ aggregationExpressions.values
+
   override def withProjections(groupingKeys: Map[String, Expression]): AggregatingQueryProjection =
     copy(groupingKeys = groupingKeys)
 
@@ -129,4 +143,6 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
 
 case class UnwindProjection(identifier: IdName, exp: Expression) extends QueryHorizon {
   def exposedSymbols: Set[IdName] = Set(identifier)
+
+  override def dependingExpressions = Seq(exp)
 }

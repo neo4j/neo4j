@@ -431,7 +431,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       execute(query).toList
       fail(s"Did not get the expected syntax error, expected: $message")
     } catch {
-      case x: CypherException => x.getMessage.lines.next().trim should equal(message)
+      case x: CypherException => x.getMessage.lines.next().trim should startWith(message.init)
     }
   }
 }

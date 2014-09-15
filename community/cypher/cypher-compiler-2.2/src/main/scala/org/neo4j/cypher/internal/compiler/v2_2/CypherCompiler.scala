@@ -19,16 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.hoistExpressionsInClosingClauses
-import org.neo4j.cypher.internal.{PlanType, LRUCache}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
-import StatementConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.hoistExpressionsInClosingClauses
-import org.neo4j.cypher.internal.compiler.v2_2.commands.AbstractQuery
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{Planner, PlanningMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Planner, PlanningMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
@@ -110,7 +104,8 @@ case class CypherCompiler(parser: CypherParser,
 
   def prepareQuery(queryText: String, planType: PlanType): PreparedQuery = {
     val parsedStatement = parser.parse(queryText)
-    val cleanedStatement: Statement = parsedStatement.endoRewrite(hoistExpressionsInClosingClauses)
+    val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+
     semanticChecker.check(queryText, cleanedStatement)
     val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, cleanedStatement)
     val table = semanticChecker.check(queryText, rewrittenStatement)

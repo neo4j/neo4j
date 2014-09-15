@@ -32,7 +32,9 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val withObj = With(distinct = false, listedReturnItems, None, None, None, None)_
 
     // WHEN
-    val result = withObj.semanticCheck(SemanticState.clean)
+    val beforeState = SemanticState.clean.newChildScope
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 
     // THEN
     result.errors shouldBe empty
@@ -40,14 +42,17 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("should remove identifiers from scope") {
-    // GIVEN MATCH n WITH "a" as X
+    // GIVEN n WITH "a" as X
     val returnItem = AliasedReturnItem(StringLiteral("a")_, ident("X"))_
     val listedReturnItems = ListedReturnItems(Seq(returnItem))_
     val withObj = With(distinct = false, listedReturnItems, None, None, None, None)_
 
-    val beforeState = SemanticState.clean.declareIdentifier(ident("n"), CTNode).right.get
+    val beforeState = SemanticState.clean.newChildScope.declareIdentifier(ident("n"), CTNode).right.get
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
+
     // WHEN
-    val result = withObj.semanticCheck(beforeState)
+    val tree = result.state.scopeTree
 
     // THEN the n identifier is no longer accessible
     result.errors shouldBe empty
@@ -55,19 +60,20 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("test order by scoping") {
-    // GIVEN MATCH n WITH n AS X ORDER BY n.prop, X.prop
+    // GIVEN MATCH n WITH n AS X ORDER BY X.prop1, X.prop2
     val orderBy: OrderBy = OrderBy(Seq(
-      AscSortItem(Property(ident("n"), PropertyKeyName("prop")_)_)_,
-      AscSortItem(Property(ident("X"), PropertyKeyName("prop")_)_)_
+      AscSortItem(Property(ident("X"), PropertyKeyName("prop1")_)_)_,
+      AscSortItem(Property(ident("X"), PropertyKeyName("prop2")_)_)_
     ))_
 
     val returnItem = AliasedReturnItem(ident("n"), ident("X"))_
     val listedReturnItems = ListedReturnItems(Seq(returnItem))_
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
-    val beforeState = SemanticState.clean.declareIdentifier(ident("n"), CTNode).right.get
     // WHEN
-    val result = withObj.semanticCheck(beforeState)
+    val beforeState = SemanticState.clean.newChildScope.declareIdentifier(ident("n"), CTNode).right.get
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 
     // THEN the n identifier is no longer accessible
     result.errors shouldBe empty
@@ -85,9 +91,10 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val listedReturnItems = ListedReturnItems(Seq(returnItem))_
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
-    val beforeState = SemanticState.clean.declareIdentifier(ident("n"), CTNode).right.get
     // WHEN
-    val result = withObj.semanticCheck(beforeState)
+    val beforeState = SemanticState.clean.newChildScope.declareIdentifier(ident("n"), CTNode).right.get
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 
     // THEN the n identifier should be an integer
     result.errors shouldBe empty
@@ -104,9 +111,10 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val listedReturnItems = ListedReturnItems(Seq(returnItem))_
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
-    val beforeState = SemanticState.clean.declareIdentifier(ident("n"), CTNode).right.get
     // WHEN
-    val result = withObj.semanticCheck(beforeState)
+    val beforeState = SemanticState.clean.newChildScope.declareIdentifier(ident("n"), CTNode).right.get
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 
     // THEN the n identifier should be an integer
     result.errors shouldNot be(empty)
@@ -117,7 +125,9 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val withObj = With(distinct = false, ReturnAll()_, None, None, None, None)_
 
     // WHEN
-    val result = withObj.semanticCheck(SemanticState.clean)
+    val beforeState = SemanticState.clean.newChildScope
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 
     // THEN the n identifier should be an integer
     result.errors should be(empty)
@@ -128,7 +138,8 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val withObj = Return(distinct = false, ReturnAll()_, None, None, None)_
 
     // WHEN
-    val result = withObj.semanticCheck(SemanticState.clean)
+    val beforeState = SemanticState.clean.newChildScope
+    val result = withObj.semanticCheck(beforeState)
 
     // THEN
     result.errors shouldNot be(empty)
@@ -147,9 +158,10 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val listedReturnItems = ListedReturnItems(returnItems)_
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
-    val beforeState = SemanticState.clean.declareIdentifier(ident("n"), CTNode).right.get
     // WHEN
-    val result = withObj.semanticCheck(beforeState)
+    val beforeState = SemanticState.clean.newChildScope.declareIdentifier(ident("n"), CTNode).right.get
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 
     // THEN
     result.errors shouldNot be(empty)

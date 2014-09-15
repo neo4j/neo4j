@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.inSequence
 
 class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
   val rewriterUnderTest = isolateAggregation
@@ -132,5 +133,5 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
 
 
   override protected def parseForRewriting(queryText: String) =
-    super.parseForRewriting(queryText).endoRewrite(aliasReturnItems)
+    super.parseForRewriting(queryText).endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
 }

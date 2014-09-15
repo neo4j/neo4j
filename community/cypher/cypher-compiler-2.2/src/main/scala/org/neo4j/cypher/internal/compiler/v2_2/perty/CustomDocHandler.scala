@@ -25,7 +25,7 @@ abstract class CustomDocHandler[T] extends DocHandler[T] {
   trait ToString[S <: T] extends ToStringSupport[S] {
     prettySelf: S with DocFormatting =>
 
-    override def toPrettyString(formatter: DocFormatter) =
-      pprintToString[T](prettySelf, formatter = docFormatter)(docGen.asConverter)
+    override def toPrettyString(formatter: DocFormatter = docFormatter) =
+      pprintToString[T](prettySelf, formatter = formatter)(docGen.asConverter)
   }
 }

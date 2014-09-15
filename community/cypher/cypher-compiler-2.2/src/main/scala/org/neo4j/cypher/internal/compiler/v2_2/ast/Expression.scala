@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
+import scala.collection.immutable.Stack
+
 object Expression {
   sealed trait SemanticContext
   object SemanticContext {
@@ -70,6 +72,24 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
       (acc, _) => acc :+ e
   }
 
+  def dependencies: Set[Identifier] = {
+    val (dependencies, _) = this.treeFold(Set.empty[Identifier] -> Stack.empty[Identifier]) {
+      case fe: FilteringExpression => {
+        case ((deps, spoiled), children) => {
+          val (newDeps, newSpoiled) = children(deps -> spoiled.push(fe.identifier))
+          newDeps ++ fe.expression.dependencies -> newSpoiled.pop
+        }
+      }
+      case id: Identifier => {
+        case (acc @ (_, spoiled), children) if spoiled.contains(id) =>
+          children(acc)
+        case ((deps, spoiled), children) =>
+          children(deps + id -> spoiled)
+      }
+    }
+    dependencies
+  }
+
   def specifyType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
     s => specifyType(typeGen(s))(s)
   def specifyType(possibleTypes: => TypeSpec): SemanticState => Either[SemanticError, SemanticState] =
@@ -89,6 +109,10 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
       case (ss, _)             =>
         SemanticCheckResult.success(ss)
     }
+  }
+
+  def containsAggregate = this.exists {
+    case IsAggregate(_) => true
   }
 }
 

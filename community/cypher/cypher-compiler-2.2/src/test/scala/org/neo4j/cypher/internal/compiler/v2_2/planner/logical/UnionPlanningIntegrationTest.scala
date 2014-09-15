@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  test("MATCH (a:A) RETURN a UNION ALL MATCH (a:B) RETURN a") {
+  test("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a") {
 
     implicit val (logicalPlan, semanticTable) = new given {
       knownLabels = Set("A", "B")
-    } getLogicalPlanFor "MATCH (a:A) RETURN a UNION ALL MATCH (a:B) RETURN a"
+    } getLogicalPlanFor "MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a"
 
     logicalPlan should equal(
       Union(
@@ -38,11 +38,11 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       )(PlannerQuery.empty)
     )
   }
-  test("MATCH (a:A) RETURN a UNION MATCH (a:B) RETURN a") {
+  test("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a") {
 
     implicit val (logicalPlan, semanticTable) = new given {
       knownLabels = Set("A", "B")
-    } getLogicalPlanFor "MATCH (a:A) RETURN a UNION MATCH (a:B) RETURN a"
+    } getLogicalPlanFor "MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a"
 
     logicalPlan should equal(
       Aggregation(

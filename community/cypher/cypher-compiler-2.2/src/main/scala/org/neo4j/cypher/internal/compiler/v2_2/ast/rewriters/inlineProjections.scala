@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
@@ -37,13 +36,14 @@ case object inlineProjections extends Rewriter {
     val inlineReturnItemsInWith = Rewriter.lift(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, context, inlineAliases = true))
     val inlineReturnItemsInReturn = Rewriter.lift(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, context, inlineAliases = false))
 
-    val inliningRewriter = Rewriter.lift {
-      case withClause @ With(false, returnItems @ ListedReturnItems(items), orderBy, _, _, _) =>
+    val inliningRewriter: Rewriter = Rewriter.lift {
+      case withClause @ With(false, returnItems @ ListedReturnItems(items), _, _, _, where) =>
         withClause.copy(
-          returnItems = returnItems.rewrite(inlineReturnItemsInWith).asInstanceOf[ReturnItems]
+          returnItems = returnItems.rewrite(inlineReturnItemsInWith).asInstanceOf[ReturnItems],
+          where = where.map(inlineIdentifiers.narrowed)
         )(withClause.position)
 
-      case returnClause @ Return(_, returnItems: ListedReturnItems, orderBy, skip, limit) =>
+      case returnClause @ Return(_, returnItems: ListedReturnItems, _, _, _) =>
         returnClause.copy(
           returnItems = returnItems.rewrite(inlineReturnItemsInReturn).asInstanceOf[ReturnItems]
         )(returnClause.position)
@@ -74,11 +74,7 @@ case object inlineProjections extends Rewriter {
         val id :: tail = queue
         context.projections.get(id) match {
           case Some(expr) =>
-            val identifiers: List[Identifier] = expr.treeFold(List.empty[Identifier]) {
-              case id: Identifier if !deps(id) =>
-                (acc, children) => children(id :: acc)
-            }
-            (deps, identifiers ++ tail)
+            (deps, (expr.dependencies -- deps).toList ++ tail)
           case None =>
             (deps + id, queue)
         }

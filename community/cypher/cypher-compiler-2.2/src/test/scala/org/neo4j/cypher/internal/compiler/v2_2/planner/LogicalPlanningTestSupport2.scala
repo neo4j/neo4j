@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeWithClauses, normalizeReturnClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
@@ -249,8 +250,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def planFor(queryString: String): SemanticPlan = {
       val parsedStatement = parser.parse(queryString)
-      semanticChecker.check(queryString, parsedStatement)
-      val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement)
+      val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+      semanticChecker.check(queryString, cleanedStatement)
+      val (rewrittenStatement, _) = astRewriter.rewrite(queryString, cleanedStatement)
       val semanticTable = semanticChecker.check(queryString, rewrittenStatement)
       val plannerQuery: LogicalPlan = Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
