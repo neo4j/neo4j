@@ -24,8 +24,14 @@ import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, RelTypeI
 
 trait GraphStatistics {
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality
+
   def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality
+
+  /*
+  The average selectivity for all indexed values in the index.
+   */
   def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity]
+
 }
 
 object GraphStatistics {

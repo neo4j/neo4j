@@ -168,6 +168,26 @@ class QueryPlanTest extends DocumentingTestBase {
     )
   }
 
+//   @Test def nodeOuterHashJoin() {
+//    profileQuery(
+//      title = "Node Outer Hash Join",
+//      text =
+//        """Node Outer Hash Join performs an outer join between two sets of nodes.
+//          |
+//          |If no matching nodes are found, a single row with null for the unmatched part will be produced.
+//          |
+//          |The following query will find all the people and the locations inside a specific country
+//          |where at least a friend of theirs works.
+//        """.stripMargin,
+//      queryText =
+//        """MATCH (person:Person)
+//           OPTIONAL MATCH (person)-[:FRIEND_WITH]->(friend)-[:WORKS_IN]->(location)<-[:IN]-(country: Country)
+//           WHERE id(country) = 42
+//           RETURN person, location""",
+//      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeOuterHashJoin"))
+//    )
+//  }
+
   @Test def sort() {
     profileQuery(
       title = "Sort",
