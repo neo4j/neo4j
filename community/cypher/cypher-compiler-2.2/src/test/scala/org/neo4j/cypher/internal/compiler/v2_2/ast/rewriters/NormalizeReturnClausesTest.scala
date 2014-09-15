@@ -21,36 +21,36 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 
-trait RewriteTest {
-  self: CypherFunSuite =>
+class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest {
+  val rewriterUnderTest: Rewriter = normalizeReturnClauses
 
-  import parser.ParserFixture._
+  test("alias RETURN clause items") {
+    assertRewrite(
+      """MATCH n
+        |RETURN n, n.foo AS foo, n.bar
+      """.stripMargin,
+      """MATCH n
+        |RETURN n AS `n`, n.foo AS foo, n.bar AS `n.bar`
+      """.stripMargin)
+  }
 
-  def rewriterUnderTest: Rewriter
-  val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
+  test("introduce WITH clause for ORDER BY") {
+    assertRewrite(
+      """MATCH n
+        |RETURN n.foo AS foo, n.bar ORDER BY foo SKIP 2 LIMIT 5
+      """.stripMargin,
+      """MATCH n
+        |WITH n.foo AS foo, n.bar AS `  FRESHID31` ORDER BY foo SKIP 2 LIMIT 5
+        |RETURN foo AS foo, `  FRESHID31` AS `n.bar`
+      """.stripMargin)
+  }
 
-  protected def assertRewrite(originalQuery: String, expectedQuery: String) {
+  protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)
-    semanticChecker.check(originalQuery, original)
-
-    val result = rewrite(original)
+    val result = endoRewrite(original)
     assert(result === expected, "\n" + originalQuery)
   }
 
-  protected def parseForRewriting(queryText: String) = parser.parse(queryText)
-
-  protected def rewrite(original: Statement): AnyRef =
-    original.rewrite(rewriterUnderTest)
-
-  protected def endoRewrite(original: Statement): Statement =
-    original.endoRewrite(rewriterUnderTest)
-
-  protected def assertIsNotRewritten(query: String) {
-    val original = parser.parse(query)
-    val result = original.rewrite(rewriterUnderTest)
-    assert(result === original, "\n" + query)
-  }
 }
