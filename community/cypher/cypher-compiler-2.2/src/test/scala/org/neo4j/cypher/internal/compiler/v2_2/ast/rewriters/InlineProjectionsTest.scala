@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.bottomUp
+import org.neo4j.cypher.internal.compiler.v2_2.{inSequence, bottomUp}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{AstRewritingTestSupport, CantHandleQueryException}
 
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {
@@ -203,7 +203,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   private def ast(queryText: String) = {
     val parsed = parser.parse(queryText)
-    parsed.endoRewrite(bottomUp(aliasReturnItems))
+    parsed.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
   }
 }
 
