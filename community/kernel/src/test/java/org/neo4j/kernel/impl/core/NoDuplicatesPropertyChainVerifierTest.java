@@ -23,15 +23,16 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
 
-@RunWith( MockitoJUnitRunner.class )
 public class NoDuplicatesPropertyChainVerifierTest
 {
     private StringBuffer buffer;
@@ -45,7 +46,10 @@ public class NoDuplicatesPropertyChainVerifierTest
     {
         buffer = new StringBuffer();
         logger = StringLogger.wrap( buffer );
-        chainVerifier = new NoDuplicatesPropertyChainVerifier( logger );
+        chainVerifier = new NoDuplicatesPropertyChainVerifier();
+        chainVerifier.addObserver( new NodeManager.CappedLoggingDuplicatePropertyObserver(
+            new ConsoleLogger( StringLogger.cappedLogger( logger, CappedOperation.<String>time( 2, TimeUnit.HOURS ) ) )
+        ) );
     }
 
     @Test
@@ -78,6 +82,7 @@ public class NoDuplicatesPropertyChainVerifierTest
         chainVerifier.verifySortedPropertyChain( propertyChain, entity );
 
         String output = buffer.toString();
-        assertThat( output, containsString( NoDuplicatesPropertyChainVerifier.DUPLICATE_WARNING_MESSAGE ) );
+        assertThat( output, containsString(
+                NodeManager.CappedLoggingDuplicatePropertyObserver.DUPLICATE_WARNING_MESSAGE ) );
     }
 }

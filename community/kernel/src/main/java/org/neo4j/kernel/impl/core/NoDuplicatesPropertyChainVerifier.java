@@ -19,29 +19,32 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 
 class NoDuplicatesPropertyChainVerifier implements PropertyChainVerifier
 {
-    public static final String DUPLICATE_WARNING_MESSAGE = "WARNING: Duplicate property records have been detected in" +
-            " this database store. For further details and resolution please refer to http://neo4j.com/technote/cr73nh";
-
-    private final ConsoleLogger logger;
-
-    public NoDuplicatesPropertyChainVerifier( StringLogger logger )
-    {
-        this.logger = new ConsoleLogger( logger );
-    }
+    private final List<Observer> observers = new ArrayList<>( 1 );
 
     @Override
     public void verifySortedPropertyChain( DefinedProperty[] propertyChain, Primitive entity )
     {
         if ( containsDuplicates( propertyChain ) )
         {
-            logger.warn( DUPLICATE_WARNING_MESSAGE );
+            for ( Observer observer : observers )
+            {
+                observer.inconsistencyFound( entity );
+            }
         }
+    }
+
+    public void addObserver( Observer o )
+    {
+        observers.add( o );
     }
 
     private boolean containsDuplicates( DefinedProperty[] propertyChain )

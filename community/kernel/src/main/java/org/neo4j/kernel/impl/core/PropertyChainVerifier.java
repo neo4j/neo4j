@@ -29,4 +29,11 @@ public interface PropertyChainVerifier
      * @param properties The properties to verify.
      */
     public void verifySortedPropertyChain( DefinedProperty[] properties, Primitive entity );
+
+    public void addObserver( Observer o );
+
+    public interface Observer
+    {
+        void inconsistencyFound( Primitive owningPrimitive );
+    }
 }
