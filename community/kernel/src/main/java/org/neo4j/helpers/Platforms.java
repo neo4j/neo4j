@@ -19,13 +19,12 @@
  */
 package org.neo4j.helpers;
 
+import org.neo4j.kernel.impl.util.SystemUtils;
+
 public class Platforms
 {
-    private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
-
     public static boolean platformIsWindows()
     {
-        return OS_NAME.indexOf( "win" ) >= 0;
+        return SystemUtils.isOsWindows();
     }
-
 }

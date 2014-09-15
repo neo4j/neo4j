@@ -33,6 +33,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.SystemUtils;
 
 /**
  * Create settings for configurations in Neo4j. See {@link org.neo4j.graphdb.factory.GraphDatabaseSettings} for example.
@@ -810,14 +811,12 @@ public final class Settings
 
     public static boolean osIsWindows()
     {
-        String nameOs = System.getProperty( "os.name" );
-        return nameOs.startsWith( "Windows" );
+        return SystemUtils.isOsWindows();
     }
 
     public static boolean osIsMacOS()
     {
-        String nameOs = System.getProperty( "os.name" );
-        return nameOs.equalsIgnoreCase( "Mac OS X" );
+        return SystemUtils.isOsMacOS();
     }
 
     private Settings()
