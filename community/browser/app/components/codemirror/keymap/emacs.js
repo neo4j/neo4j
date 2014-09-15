@@ -1,4 +1,14 @@
-(function() {
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../lib/codemirror"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../lib/codemirror"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
   "use strict";
 
   var Pos = CodeMirror.Pos;
@@ -174,7 +184,7 @@
     if (dup > 1 && event.origin == "+input") {
       var one = event.text.join("\n"), txt = "";
       for (var i = 1; i < dup; ++i) txt += one;
-      cm.replaceSelection(txt, "end", "+input");
+      cm.replaceSelection(txt);
     }
   }
 
@@ -266,7 +276,7 @@
       cm.replaceRange(getFromRing(getPrefix(cm)), start, start, "paste");
       cm.setSelection(start, cm.getCursor());
     },
-    "Alt-Y": function(cm) {cm.replaceSelection(popFromRing());},
+    "Alt-Y": function(cm) {cm.replaceSelection(popFromRing(), "around", "paste");},
 
     "Ctrl-Space": setMark, "Ctrl-Shift-2": setMark,
 
@@ -317,13 +327,7 @@
     },
     "Ctrl-O": repeated(function(cm) { cm.replaceSelection("\n", "start"); }),
     "Ctrl-T": repeated(function(cm) {
-      var pos = cm.getCursor();
-      if (pos.ch < cm.getLine(pos.line).length) pos = Pos(pos.line, pos.ch + 1);
-      var from = cm.findPosH(pos, -2, "char");
-      var range = cm.getRange(from, pos);
-      if (range.length != 2) return;
-      cm.setSelection(from, pos);
-      cm.replaceSelection(range.charAt(1) + range.charAt(0), "end");
+      cm.execCommand("transposeChars");
     }),
 
     "Alt-C": repeated(function(cm) {
@@ -395,4 +399,4 @@
   }
   for (var i = 0; i < 10; ++i) regPrefix(String(i));
   regPrefix("-");
-})();
+});
