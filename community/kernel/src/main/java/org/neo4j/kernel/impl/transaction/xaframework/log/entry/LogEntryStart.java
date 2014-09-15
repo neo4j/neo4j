@@ -131,7 +131,8 @@ public class LogEntryStart extends LogEntry
                 "time=" + timestamp( timeWritten, timeZone ) + "," +
                 "lastCommittedTxWhenTransactionStarted=" + lastCommittedTxWhenTransactionStarted + "," +
                 "additionalHeaderLength=" + (additionalHeader == null ? -1 : additionalHeader.length) + "," +
-                "position=" + startPosition +
+                "position=" + startPosition + "," +
+                "checksum=" + checksum( this ) +
                 "]";
     }
 
