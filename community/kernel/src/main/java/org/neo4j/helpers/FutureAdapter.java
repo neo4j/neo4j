@@ -77,7 +77,8 @@ public abstract class FutureAdapter<V> implements Future<V>
 
     public static final Future<Void> VOID = new Present<>( null );
 
-    public static <T> Future<T> latchGuardedValue( final ValueGetter<T> value, final CountDownLatch guardedByLatch )
+    public static <T> Future<T> latchGuardedValue( final ValueGetter<T> value, final CountDownLatch guardedByLatch,
+            final String jobDescription )
     {
         return new FutureAdapter<T>()
         {
@@ -100,7 +101,7 @@ public abstract class FutureAdapter<V> implements Future<V>
             {
                 if ( !guardedByLatch.await( timeout, unit ) )
                 {
-                    throw new TimeoutException( "Index population job cancel didn't complete within " +
+                    throw new TimeoutException( jobDescription + " didn't complete within " +
                             timeout + " " + unit );
                 }
                 return value.get();

@@ -247,7 +247,7 @@ public class IndexPopulationJob implements Runnable
             storeScan.stop();
         }
 
-        return latchGuardedValue( NO_VALUE, doneSignal );
+        return latchGuardedValue( NO_VALUE, doneSignal, "Index population job cancel" );
     }
 
     /**
