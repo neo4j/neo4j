@@ -44,6 +44,25 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
             PageEvictionCallback onEviction ) throws IOException
     {
         StoreChannel channel = fs.open( file, "rw" );
+        if ( isConservativelyWindows() )
+        {
+            return new WindowsSingleFilePageSwapper( file, channel, filePageSize, onEviction );
+        }
         return new SingleFilePageSwapper( file, channel, filePageSize, onEviction );
+    }
+
+    private boolean isConservativelyWindows()
+    {
+        try
+        {
+            String name = System.getProperty( "os.name", "Windows" );
+            return name.startsWith( "Windows" );
+        }
+        catch ( SecurityException e )
+        {
+            // We don't know, so we're being conservative and assume Windows.
+            // Better safe than sorry.
+            return true;
+        }
     }
 }
