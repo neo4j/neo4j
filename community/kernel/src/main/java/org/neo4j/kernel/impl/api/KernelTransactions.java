@@ -52,7 +52,7 @@ import static java.util.Collections.newSetFromMap;
 /**
  * Central source of transactions in the database.
  *
- * This class maintains references to all transactions, a pool of passive kernel transactions, and provides capabilities
+ * This class maintains references to all transactions and provides capabilities
  * for enumerating all running transactions. During normal operation, acquiring new transactions and enumerating live
  * ones requires no synchronization (although the live list is not guaranteed to be exact).
  */
@@ -85,21 +85,13 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     // End Tx Dependencies
 
     /**
-     * Used to enumerate all transactions in the system, active and idle ones.
-     *
-     * This data structure is *only* updated when brand-new transactions are created, or when transactions are disposed
-     * of. During normal operation (where all transactions come from and are returned to the pool), this will be left
-     * in peace, working solely as a collection of references to all transaction objects (idle and active) in the
-     * database.
-     *
-     * As such, it provides a good mechanism for listing all transactions without requiring synchronization when
-     * starting and committing transactions.
+     * Used to enumerate all transactions in the system.
      */
     private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap(
             new ConcurrentHashMap<KernelTransactionImplementation, Boolean>() );
 
     /**
-     * This is the factory that actually builds brand-new instances.
+     * This is the factory that actually builds brand-new transaction instances.
      */
     private final Factory<KernelTransactionImplementation> factory = new Factory<KernelTransactionImplementation>()
     {
@@ -196,7 +188,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     }
 
     /**
-     * Dispose of all pooled transactions. This is done on shutdown or on internal events (like an HA mode switch) that
+     * Dispose of all transactions. This is done on shutdown or on internal events (like an HA mode switch) that
      * require transactions to be re-created.
      */
     public void disposeAll()
