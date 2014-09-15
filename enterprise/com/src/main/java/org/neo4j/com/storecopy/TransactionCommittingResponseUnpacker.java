@@ -57,15 +57,19 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
                 // read all about it at TransactionAppender#append(CommittedTransactionRepresentation)
                 synchronized ( appender )
                 {
+                    long transactionId = transaction.getCommitEntry().getTxId();
                     if ( appender.append( transaction ) )
                     {
-                        final long transactionId = transaction.getCommitEntry().getTxId();
-                        try (LockGroup locks = new LockGroup())
+                        transactionIdStore.transactionCommitted( transactionId );
+                        try
                         {
-                            // TODO recovery=true needed?
-                            storeApplier.apply( transaction.getTransactionRepresentation(), locks,
-                                                transactionId, true );
-                            handler.accept( transaction );
+                            try ( LockGroup locks = new LockGroup() )
+                            {
+                                // TODO recovery=true needed?
+                                storeApplier.apply( transaction.getTransactionRepresentation(), locks,
+                                                    transactionId, true );
+                                handler.accept( transaction );
+                            }
                         }
                         finally
                         {
@@ -81,8 +85,7 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
 
     @Override
     public void init() throws Throwable
-    {
-
+    {   // Nothing to init
     }
 
     @Override
@@ -103,7 +106,6 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
 
     @Override
     public void shutdown() throws Throwable
-    {
-
+    {   // Nothing to shut down
     }
 }

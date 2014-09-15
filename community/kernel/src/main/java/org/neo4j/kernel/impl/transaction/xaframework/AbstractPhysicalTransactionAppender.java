@@ -109,23 +109,16 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
 
     private void afterForce( long transactionId, boolean hasLegacyIndexChanges ) throws IOException
     {
-        try
+        if ( hasLegacyIndexChanges )
         {
-            if ( hasLegacyIndexChanges )
+            try
             {
-                try
-                {
-                    legacyIndexTransactionOrdering.waitFor( transactionId );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new IOException( "Interrupted while waiting for applying legacy index updates", e );
-                }
+                legacyIndexTransactionOrdering.waitFor( transactionId );
             }
-        }
-        finally
-        {
-            transactionIdStore.transactionCommitted( transactionId );
+            catch ( InterruptedException e )
+            {
+                throw new IOException( "Interrupted while waiting for applying legacy index updates", e );
+            }
         }
     }
 

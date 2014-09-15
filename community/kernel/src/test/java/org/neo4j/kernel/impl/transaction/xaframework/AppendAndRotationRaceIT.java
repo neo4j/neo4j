@@ -227,6 +227,7 @@ public class AppendAndRotationRaceIT
 
                 try
                 {
+                    transactionIdStore.transactionCommitted( transactionId );
                     // apply
                     parkNanos( random.nextInt( 10 ) * 1_000_000 );
                 }

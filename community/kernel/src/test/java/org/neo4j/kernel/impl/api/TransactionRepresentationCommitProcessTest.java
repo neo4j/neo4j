@@ -63,7 +63,7 @@ public class TransactionRepresentationCommitProcessTest
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
                 logicalTransactionStore, kernelHealth, transactionIdStore, storeApplier, false );
-        
+
         // WHEN
         try ( LockGroup locks = new LockGroup() )
         {
@@ -75,7 +75,7 @@ public class TransactionRepresentationCommitProcessTest
             assertThat( e.getMessage(), containsString( "Could not append transaction representation to log" ) );
             assertTrue( contains( e, rootCause.getMessage(), rootCause.getClass() ) );
         }
-        
+
         verify( transactionIdStore, times( 0 ) ).transactionCommitted( txId );
     }
 
@@ -96,7 +96,7 @@ public class TransactionRepresentationCommitProcessTest
                 any( TransactionRepresentation.class ), any( LockGroup.class ), eq( txId ), eq( false ) );
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
                 logicalTransactionStore, kernelHealth, transactionIdStore, storeApplier, false );
-        
+
         // WHEN
         try ( LockGroup locks = new LockGroup() )
         {
@@ -107,8 +107,9 @@ public class TransactionRepresentationCommitProcessTest
             assertThat( e.getMessage(), containsString( "Could not apply the transaction to the store" ) );
             assertTrue( contains( e, rootCause.getMessage(), rootCause.getClass() ) );
         }
-        
+
         // THEN
+        verify( transactionIdStore, times( 1 ) ).transactionCommitted( txId );
         verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
         verifyNoMoreInteractions( transactionIdStore );
     }
