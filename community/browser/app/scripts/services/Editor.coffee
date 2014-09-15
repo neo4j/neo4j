@@ -27,7 +27,8 @@ angular.module('neo4jApp.services')
     'Settings'
     'localStorageService'
     'motdService'
-    (Document, Frame, Settings, localStorageService, motdService) ->
+    '$timeout'
+    (Document, Frame, Settings, localStorageService, motdService, $timeout) ->
       storageKey = 'history'
       class Editor
         constructor: ->
@@ -87,7 +88,9 @@ angular.module('neo4jApp.services')
           idx = @history.length - 1 if idx >= @history.length
           @cursor = idx
           item = @history[idx] or @current
-          @content = item
+          $timeout(=>
+            @content = item
+          , 0)
           @document = null
 
         loadDocument: (id) ->
@@ -150,10 +153,26 @@ angular.module('neo4jApp.services')
         else
           CodeMirror.commands.goLineDown(cm)
 
+      CodeMirror.commands.historyPrev = (cm) ->
+        editor.historyPrev()
+      CodeMirror.commands.historyNext = (cm) ->
+        editor.historyNext()
+
+      CodeMirror.commands.execCurrent = (cm) ->
+        editor.execCurrent()
+
       CodeMirror.keyMap["default"]["Enter"] = "handleEnter"
       CodeMirror.keyMap["default"]["Shift-Enter"] = "newlineAndIndent"
+
+      CodeMirror.keyMap["default"]["Cmd-Enter"] = "execCurrent"
+      CodeMirror.keyMap["default"]["Ctrl-Enter"] = "execCurrent"
+      
       CodeMirror.keyMap["default"]["Up"] = "handleUp"
       CodeMirror.keyMap["default"]["Down"] = "handleDown"
+      CodeMirror.keyMap["default"]["Cmd-Up"] = "historyPrev"
+      CodeMirror.keyMap["default"]["Ctrl-Up"] = "historyPrev"
+      CodeMirror.keyMap["default"]["Cmd-Down"] = "historyNext"
+      CodeMirror.keyMap["default"]["Ctrl-Down"] = "historyNext"
 
       editor
   ]
