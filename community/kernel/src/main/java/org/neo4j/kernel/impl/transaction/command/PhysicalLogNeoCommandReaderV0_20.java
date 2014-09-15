@@ -498,21 +498,9 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
                 record.addPropertyBlock( block );
             }
 
-            int deletedRecords = readDynamicRecords( record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER );
-            if ( deletedRecords == -1 )
+            if ( readDynamicRecords( record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER ) == -1 )
             {
                 return null;
-            }
-
-            assert deletedRecords >= 0;
-            while ( deletedRecords-- > 0 )
-            {
-                DynamicRecord read = readDynamicRecord();
-                if ( read == null )
-                {
-                    return null;
-                }
-                record.addDeletedRecord( read );
             }
 
             if ( (inUse && !record.inUse()) || (!inUse && record.inUse()) )
