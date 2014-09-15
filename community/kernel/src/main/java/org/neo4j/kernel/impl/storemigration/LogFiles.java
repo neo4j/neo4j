@@ -22,21 +22,27 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 
+import static java.util.regex.Pattern.compile;
+
 public class LogFiles
 {
+    public static final FilenameFilter FILENAME_FILTER = new LogicalLogFilenameFilter();
+
     public static final class LogicalLogFilenameFilter implements FilenameFilter
     {
-        private static final String logFilenamePatterns =
-                PhysicalLogFile.REGEX_DEFAULT_NAME + PhysicalLogFile.REGEX_DEFAULT_VERSION_SUFFIX + ".*";
+        private static final Pattern LOG_FILENAME_PATTERN = compile(
+                PhysicalLogFile.REGEX_DEFAULT_NAME + PhysicalLogFile.REGEX_DEFAULT_VERSION_SUFFIX + ".*"
+        );
 
         @Override
         public boolean accept( File dir, String name )
         {
-            return name.matches( logFilenamePatterns );
+            return LOG_FILENAME_PATTERN.matcher( name ).matches();
         }
     }
 
@@ -45,7 +51,7 @@ public class LogFiles
      * to another. Since it just renames files (the standard way of moving with
      * JDK6) from and to must be on the same disk partition.
      *
-     * @param fs
+     * @param fs            The host file system
      * @param fromDirectory The directory that hosts the database and its logs
      * @param toDirectory   The directory to move the log files to
      * @throws IOException If any of the move operations fail for any reason.
@@ -55,13 +61,10 @@ public class LogFiles
         assert fs.isDirectory( fromDirectory );
         assert fs.isDirectory( toDirectory );
 
-        FilenameFilter filter = new LogicalLogFilenameFilter();
-        for ( File logFile : fs.listFiles( fromDirectory ) )
+        File[] logFiles = fs.listFiles( fromDirectory, FILENAME_FILTER );
+        for ( File logFile : logFiles )
         {
-            if ( filter.accept( fromDirectory, logFile.getName() ) )
-            {
-                StoreFile.moveFile( fs, logFile.getName(), fromDirectory, toDirectory, false, false );
-            }
+            StoreFile.moveFile( fs, logFile.getName(), fromDirectory, toDirectory, false, false );
         }
     }
 }
