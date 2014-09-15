@@ -28,6 +28,23 @@ import static org.neo4j.io.pagecache.PageCacheMonitor.NULL;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.RunnablePageCache;
 
+/**
+ * A stress test for page cache(s).
+ *
+ * The test will stress a page cache by mutating records and keeping an invariant for each record. Thus, before writing
+ * to a record, the record is be tested to see if the invariant still holds. Also, at the end of the test all records
+ * are verified in that same manner.
+ *
+ * The test runs using multiple threads. It relies on page cache's exclusive locks to maintain the invariant.
+ *
+ * The page cache covers a fraction of a file, and the access pattern is uniformly random, so that pages are loaded
+ * and evicted frequently.
+ *
+ * Records: a record is 1x counter for each thread, indexed by the threads' number, with 1x checksum = sum of counters.
+ *
+ * Invariant: the sum of counters is always equal to the checksum. For a blank file, this is trivially true:
+ * sum(0, 0, 0, ...) = 0. Any record mutation is a counter increment and checksum increment.
+ */
 public class PageCacheStressTest
 {
     private final SimplePageCacheFactory simplePageCacheFactory;

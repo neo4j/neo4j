@@ -26,6 +26,13 @@ import org.neo4j.io.pagecache.stress.Condition;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 import org.neo4j.io.pagecache.stress.SimpleMonitor;
 
+/**
+ * A stress test for Muninn page cache.
+ *
+ * Uses @PageCacheStressTest - see details there.
+ *
+ * Configured to run until it sees a million evictions, which should take few minutes.
+ */
 public class MuninnPageCacheStressIT
 {
     @Test
