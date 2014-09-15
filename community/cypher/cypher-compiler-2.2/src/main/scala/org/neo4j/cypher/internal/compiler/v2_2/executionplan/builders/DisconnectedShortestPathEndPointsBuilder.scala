@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
+package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{Predicate, ShortestPath}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, PlanBuilder}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{Predicate, ShortestPath}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.PipeMonitor
+import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 
 
 class DisconnectedShortestPathEndPointsBuilder extends PlanBuilder {

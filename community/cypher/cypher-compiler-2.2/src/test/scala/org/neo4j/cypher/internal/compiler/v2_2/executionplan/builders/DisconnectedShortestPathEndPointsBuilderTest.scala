@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
+package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import org.neo4j.cypher.internal.compiler.v2_1.symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_1.mutation.UpdateAction
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.FakePipe
+import org.neo4j.cypher.internal.compiler.v2_2.commands._
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.compiler.v2_2.mutation.UpdateAction
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.FakePipe
 import org.neo4j.graphdb.Direction
 import org.scalatest.mock.MockitoSugar
 
