@@ -73,16 +73,10 @@ case object normalizeWithClauses extends Rewriter {
           item.alias.fold(item)(alias => AliasedReturnItem(alias, alias)(item.position))
         )
         val secondProjection = finalProjection ++ additionalReturnItems
-
         val firstProjection = if (distinct || returnItemList.containsAggregate) {
           initialReturnItems
         } else {
-          val requiredIdentifiers = additionalReturnItems.foldLeft(Set.empty[Identifier]) {
-            (acc, item) => item.expression.treeFold(acc) {
-              case id: Identifier => (acc, children) => children(acc + id)
-            }
-          } diff initialReturnItems.flatMap(_.alias).toSet
-
+          val requiredIdentifiers = additionalReturnItems.map(_.expression.dependencies).flatten.toSet diff initialReturnItems.flatMap(_.alias).toSet
           requiredIdentifiers.toVector.map(i => AliasedReturnItem(i, i)(i.position)) ++ initialReturnItems
         }
 

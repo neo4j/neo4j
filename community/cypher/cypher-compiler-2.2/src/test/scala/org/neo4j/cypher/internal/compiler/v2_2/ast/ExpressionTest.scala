@@ -27,6 +27,8 @@ class ExpressionTest extends CypherFunSuite {
 
   val expression = DummyExpression(CTAny, DummyPosition(0))
 
+
+
   test("shouldReturnCalculatedType") {
     expression.types(SemanticState.clean) should equal(TypeSpec.all)
   }
@@ -55,6 +57,7 @@ class ExpressionTest extends CypherFunSuite {
     expression.types(result.state) shouldBe empty
     result.errors.head.msg should equal ("Type mismatch: expected String but was Integer or Node")
   }
+
   test("shouldRaiseTypeErrorWithCustomMessageWhenMismatchBetweenSpecifiedTypeAndExpectedType") {
     val result = (
       expression.specifyType(CTNode | CTInteger) chain

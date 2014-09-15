@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
@@ -75,11 +74,7 @@ case object inlineProjections extends Rewriter {
         val id :: tail = queue
         context.projections.get(id) match {
           case Some(expr) =>
-            val identifiers: List[Identifier] = expr.treeFold(List.empty[Identifier]) {
-              case id: Identifier if !deps(id) =>
-                (acc, children) => children(id :: acc)
-            }
-            (deps, identifiers ++ tail)
+            (deps, (expr.dependencies -- deps).toList ++ tail)
           case None =>
             (deps + id, queue)
         }
