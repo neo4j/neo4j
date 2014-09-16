@@ -51,7 +51,7 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
   test("ignore new projections if they use an already seen identifier") {
     val ctx = InliningContext().enterQueryPart(mapN).enterQueryPart(mapN)
 
-    ctx.projections should equal(Map.empty)
+    ctx.projections should equal(mapN)
   }
 
   test("ignore new projections when spoilIdentifier is called") {

@@ -50,7 +50,7 @@ case object plannerDocGen extends CustomDocGen[Any] {
   }
 
   implicit class idNameConverter(idName: IdName) {
-    def asDoc = text(idName.name)
+    def asDoc = AstNameConverter(idName.name).asDoc
   }
 
   implicit class predicateConverter(predicate: Predicate) {

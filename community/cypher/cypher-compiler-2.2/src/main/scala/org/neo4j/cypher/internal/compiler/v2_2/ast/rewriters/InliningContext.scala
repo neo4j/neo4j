@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.bottomUp.BottomUpRewriter
 
-case class InliningContext(projections: Map[Identifier, Expression] = Map.empty, seenIdentifiers: Set[Identifier] = Set.empty) {
+case class InliningContext(projections: Map[Identifier, Expression] = Map.empty) {
 
   def enterQueryPart(newProjections: Map[Identifier, Expression]): InliningContext = {
     val inlineExpressions = TypedRewriter[Expression](identifierRewriter)
@@ -31,16 +31,13 @@ case class InliningContext(projections: Map[Identifier, Expression] = Map.empty,
     val resultProjections = if (containsAggregation) {
       projections
     } else {
-      newProjections.foldLeft(projections) {
-        case (m, (k, v)) if seen(k) => m - k
-        case (m, (k, v))            => m + (k -> inlineExpressions(v))
-      }
+      projections ++ newProjections.mapValues(inlineExpressions)
     }
-    copy(projections = resultProjections, seenIdentifiers = seenIdentifiers ++ newProjections.keySet)
+    copy(projections = resultProjections)
   }
 
   def spoilIdentifier(identifier: Identifier): InliningContext =
-    copy(projections = projections - identifier, seenIdentifiers = seenIdentifiers + identifier)
+    copy(projections = projections - identifier)
 
   def identifierRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
     case identifier: Identifier =>
@@ -59,8 +56,6 @@ case class InliningContext(projections: Map[Identifier, Expression] = Map.empty,
         case _               => rel
       }
   })
-
-  def seen(identifier: Identifier) = seenIdentifiers.contains(identifier)
 
   def alias(identifier: Identifier): Option[Identifier] = projections.get(identifier) match {
     case Some(other: Identifier) => Some(other)

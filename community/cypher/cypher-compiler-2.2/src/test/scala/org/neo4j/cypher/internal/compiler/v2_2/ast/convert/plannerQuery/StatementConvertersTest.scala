@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
  */
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeWithClauses, normalizeReturnClauses}
-import org.neo4j.cypher.internal.compiler.v2_2.perty.DocFormatters
-import org.neo4j.cypher.internal.compiler.v2_2.{inSequence, SemanticCheckMonitor, SemanticChecker}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.{SemanticCheckMonitor, SemanticChecker, inSequence}
 import org.neo4j.graphdb.Direction
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -868,21 +867,19 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val result = query.toString
     val expectation =
       """GIVEN * MATCH (owner) WITH owner AS `owner`, count(*) AS `collected`
-        |GIVEN owner, collected
-        |WITH
-        |  owner AS `owner`,
-        |  collected AS `collected`,
-        |  PatternExpression(
-        |    RelationshipsPattern(
-        |      RelationshipChain(
-        |        NodePattern(Some(owner), ⬨, None, false),
-        |        RelationshipPattern(Some(`  UNNAMED61`), false, ⬨, None, None, BOTH),
-        |        NodePattern(Some(`  UNNAMED64`), ⬨, None, false)
+        |GIVEN owner
+        |WHERE
+        |  Predicate[owner](
+        |    PatternExpression(
+        |      RelationshipsPattern(
+        |        RelationshipChain(
+        |          NodePattern(Some(owner), ⬨, None, false),
+        |          RelationshipPattern(Some(`  UNNAMED61`), false, ⬨, None, None, BOTH),
+        |          NodePattern(Some(`  UNNAMED64`), ⬨, None, false)
+        |        )
         |      )
         |    )
         |  )
-        |  AS `  FRESHID54`
-        |GIVEN owner,   FRESHID54 WHERE Predicate[  FRESHID54](`  FRESHID54`)
         |RETURN owner AS `owner`""".stripMargin
 
     result should equal(expectation)
@@ -928,47 +925,22 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val result = query.toString
     val expectation =
-    """GIVEN * MATCH (owner) WITH owner AS `owner`, count(*) AS `xyz`
-      |GIVEN owner, xyz
-      |WITH
-      |  owner AS `owner`,
-      |  GreaterThan(xyz, SignedDecimalIntegerLiteral("0")) AS `collection`
-      |GIVEN owner, collection
-      |WITH
-      |  owner AS `owner`,
-      |  collection AS `collection`,
-      |  PatternExpression(
-      |    RelationshipsPattern(
-      |      RelationshipChain(
-      |        NodePattern(Some(owner), ⬨, None, false),
-      |        RelationshipPattern(Some(`  UNNAMED89`), false, ⬨, None, None, BOTH),
-      |        NodePattern(Some(`  UNNAMED92`), ⬨, None, false)
-      |      )
-      |    )
-      |  )
-      |  AS `  FRESHID82`
-      |GIVEN owner,   FRESHID82 WHERE Predicate[  FRESHID82](`  FRESHID82`)
-      |RETURN owner AS `owner`""".stripMargin
-// Use once perty is re-enabled
-//    val expectation =
-//      """GIVEN * MATCH (owner) WITH owner AS `owner`, count(*) AS `xyz`
-//        |GIVEN owner, xyz WITH owner AS `owner`, xyz > 0 AS `collection`
-//        |GIVEN owner, collection
-//        |WITH
-//        |  owner AS `owner`,
-//        |  collection AS `collection`,
-//        |  PatternExpression(
-//        |    RelationshipsPattern(
-//        |      RelationshipChain(
-//        |        NodePattern(Some(owner), ⬨, None, false),
-//        |        RelationshipPattern(Some(`  UNNAMED89`), false, ⬨, None, None, BOTH),
-//        |        NodePattern(Some(`  UNNAMED92`), ⬨, None, false)
-//        |      )
-//        |    )
-//        |  )
-//        |  AS `  FRESHID82`
-//        |GIVEN owner,   FRESHID82 WHERE Predicate[  FRESHID82](`  FRESHID82`)
-//        |RETURN owner AS `owner`""".stripMargin
+      """GIVEN * MATCH (owner) WITH owner AS `owner`, count(*) AS `xyz`
+        |GIVEN owner
+        |WHERE
+        |  Predicate[owner](
+        |    PatternExpression(
+        |      RelationshipsPattern(
+        |        RelationshipChain(
+        |          NodePattern(Some(owner), ⬨, None, false),
+        |          RelationshipPattern(Some(`  UNNAMED89`), false, ⬨, None, None, BOTH),
+        |          NodePattern(Some(`  UNNAMED92`), ⬨, None, false)
+        |        )
+        |      )
+        |    )
+        |  )
+        |RETURN owner AS `owner`""".stripMargin
+
     result should equal(expectation)
   }
 
@@ -1080,6 +1052,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     result should equal(expectation)
   }
 
+  // scalastyle:off
   test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2, a2") {
     val UnionQuery(query :: Nil, _) =
       buildPlannerQuery("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2, a2")
@@ -1094,11 +1067,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         |    GIVEN a1, r
         |    MATCH (a2), (b2), (a2)<-[r]-(b2)
         |    WHERE Predicate[a1,a2](Equals(a1, a2))
-        |  }
+        |   }
         |RETURN a1 AS `a1`, r AS `r`, b2 AS `b2`, a2 AS `a2`""".stripMargin
 
     result should equal(expectation)
   }
+  // scalastyle:on
 
   test("MATCH (a:A) OPTIONAL MATCH (a)-->(b:B) OPTIONAL MATCH (a)-->(c:C) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d") {
     val UnionQuery(query :: Nil, _) =

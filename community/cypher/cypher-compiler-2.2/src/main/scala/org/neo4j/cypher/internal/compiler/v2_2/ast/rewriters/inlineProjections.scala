@@ -74,11 +74,12 @@ case object inlineProjections extends Rewriter {
         val id :: tail = queue
         context.projections.get(id) match {
           case Some(expr) =>
-            (deps, (expr.dependencies -- deps).toList ++ tail)
+            val exprDependencies = expr.dependencies
+            (deps - id ++ exprDependencies, (exprDependencies -- deps).toList ++ tail)
           case None =>
             (deps + id, queue)
         }
-    })((Set.empty, List(identifier)))
+    })((Set(identifier), List(identifier)))
     dependencies
   }
 
@@ -89,9 +90,13 @@ case object inlineProjections extends Rewriter {
         case item: AliasedReturnItem
           if context.projections.contains(item.identifier) && inlineAliases =>
           val dependencies = findAllDependencies(item.identifier, context)
-          dependencies.map { id =>
-            AliasedReturnItem(id.copy()(id.position), id.copy()(id.position))(item.position)
-          }.toSeq
+          if (dependencies == Set(item.identifier)) {
+            Seq(item)
+          } else {
+            dependencies.map { id =>
+              AliasedReturnItem(id.copy()(id.position), id.copy()(id.position))(item.position)
+            }.toSeq
+          }
         case item: AliasedReturnItem => Seq(
           item.copy(expression = inlineExpressions(item.expression))(item.position)
         )

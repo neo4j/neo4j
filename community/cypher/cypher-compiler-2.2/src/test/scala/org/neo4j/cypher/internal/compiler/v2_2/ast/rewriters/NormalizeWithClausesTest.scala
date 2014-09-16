@@ -504,8 +504,8 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
   }
 
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
-    val original = parseForRewriting(originalQuery)
-    val expected = parseForRewriting(expectedQuery)
+    val original = parseForRewriting(originalQuery.replace("\r\n", "\n"))
+    val expected = parseForRewriting(expectedQuery.replace("\r\n", "\n"))
     val result = endoRewrite(original)
     assert(result === expected, "\n" + originalQuery)
 
