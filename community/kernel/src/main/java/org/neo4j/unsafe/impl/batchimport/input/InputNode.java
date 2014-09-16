@@ -38,7 +38,7 @@ public class InputNode extends InputEntity
      * @param labels
      * @param labelField is a hack to bypass String[] labels, consumers should check that field first.
      */
-    public InputNode( long id, Object[] properties, Long firstPropertyId, String[] labels, Long labelField )
+    public InputNode( Object id, Object[] properties, Long firstPropertyId, String[] labels, Long labelField )
     {
         super( id, properties, firstPropertyId );
         this.labels = labels;
