@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
 
 case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
-                            (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                            (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   val symbols: SymbolTable = {
     val newIdentifiers = expressions.map {
       case (name, expression) => name -> expression.getType(source.symbols)

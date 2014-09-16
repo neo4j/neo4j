@@ -82,7 +82,7 @@ trait Pipe extends Effectful {
 }
 
 case class NullPipe(symbols: SymbolTable = SymbolTable())
-                   (implicit val monitor: PipeMonitor) extends Pipe {
+                   (implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
 
   val typeAssertions =
     SymbolTypeAssertionCompiler.compile(

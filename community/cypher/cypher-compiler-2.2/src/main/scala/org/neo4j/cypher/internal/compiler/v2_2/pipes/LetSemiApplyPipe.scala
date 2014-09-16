@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{PlanDescriptionI
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negated: Boolean)
-                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
       (outerContext) =>

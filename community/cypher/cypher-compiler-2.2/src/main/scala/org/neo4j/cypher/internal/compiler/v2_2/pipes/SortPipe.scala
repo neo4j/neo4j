@@ -30,7 +30,7 @@ case class Ascending(id:String) extends SortDescription
 case class Descending(id:String) extends SortDescription
 
 case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])(implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with Comparer {
+  extends PipeWithSource(source, monitor) with Comparer with RonjaPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toList.
       sortWith((a, b) => compareBy(a, b, orderBy)(state)).iterator

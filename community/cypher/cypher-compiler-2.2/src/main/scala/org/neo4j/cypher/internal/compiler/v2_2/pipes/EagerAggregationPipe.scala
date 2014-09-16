@@ -33,7 +33,7 @@ import scala.collection.mutable.{Map => MutableMap}
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
 case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expression], aggregations: Map[String, AggregationExpression])
-                          (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                          (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   val symbols: SymbolTable = createSymbols()
 

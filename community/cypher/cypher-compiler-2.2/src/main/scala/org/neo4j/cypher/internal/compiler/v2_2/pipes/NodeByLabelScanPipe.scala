@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.A
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{SymbolTable, _}
 
-case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])(implicit pipeMonitor: PipeMonitor) extends Pipe {
+case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])(implicit pipeMonitor: PipeMonitor)
+  extends Pipe
+  with RonjaPipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val optLabelId = label match {

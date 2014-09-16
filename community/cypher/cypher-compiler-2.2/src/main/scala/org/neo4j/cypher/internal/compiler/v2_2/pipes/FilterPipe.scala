@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.LegacyExpression
 
 case class FilterPipe(source: Pipe, predicate: Predicate)
-                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   val symbols = source.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =

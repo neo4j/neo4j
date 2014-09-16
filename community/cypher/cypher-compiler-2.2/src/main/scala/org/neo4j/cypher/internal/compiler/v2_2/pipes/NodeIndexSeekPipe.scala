@@ -35,7 +35,7 @@ case class NodeIndexSeekPipe(ident: String,
                              propertyKey: PropertyKeyToken,
                              valueExpr: QueryExpression[Expression],
                              unique: Boolean = false)
-                            (implicit pipeMonitor: PipeMonitor) extends Pipe {
+                            (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
 
   val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 

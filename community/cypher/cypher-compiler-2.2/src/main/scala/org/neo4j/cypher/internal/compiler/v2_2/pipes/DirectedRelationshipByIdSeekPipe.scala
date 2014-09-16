@@ -30,8 +30,10 @@ import org.neo4j.graphdb.Relationship
 
 
 case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityByIdRhs, toNode: String, fromNode: String)
-                                           (implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
-
+                                           (implicit pipeMonitor: PipeMonitor)
+  extends Pipe
+  with CollectionSupport
+  with RonjaPipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
     val relIdExprs = relIdExpr.expressions(ctx, state).flatMap(Option(_))

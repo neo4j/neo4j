@@ -27,7 +27,10 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.{Node, Relationship}
 
 case class ProjectEndpointsPipe(source: Pipe, relName: String, start: String, end: String, directed: Boolean = true, simpleLength: Boolean = true)
-                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with CollectionSupport {
+                               (implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor)
+  with CollectionSupport
+  with RonjaPipe {
   val symbols: SymbolTable =
     source.symbols.add(start, CTNode).add(end, CTNode)
 

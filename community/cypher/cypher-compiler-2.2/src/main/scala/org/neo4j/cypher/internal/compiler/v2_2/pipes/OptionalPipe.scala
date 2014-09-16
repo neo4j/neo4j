@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{PlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
-case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   val notFoundExecutionContext: ExecutionContext =
     nullableIdentifiers.foldLeft(ExecutionContext.empty)( (context, identifier) => context += identifier -> null )

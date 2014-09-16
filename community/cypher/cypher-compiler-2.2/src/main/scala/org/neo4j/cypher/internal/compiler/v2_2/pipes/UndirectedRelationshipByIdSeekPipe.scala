@@ -31,8 +31,10 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.Relationship
 
 case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityByIdRhs, toNode: String, fromNode: String)
-                                             (implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
-
+                                             (implicit pipeMonitor: PipeMonitor)
+  extends Pipe
+  with CollectionSupport
+  with RonjaPipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
     val relIds = relIdExpr.expressions(ctx, state).flatMap(Option(_))

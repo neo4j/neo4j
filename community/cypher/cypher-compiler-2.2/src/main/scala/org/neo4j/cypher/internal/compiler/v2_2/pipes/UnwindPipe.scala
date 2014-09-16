@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{PlanDescription,
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)(implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with CollectionSupport {
+  extends PipeWithSource(source, monitor) with CollectionSupport with RonjaPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.flatMap {
       context =>

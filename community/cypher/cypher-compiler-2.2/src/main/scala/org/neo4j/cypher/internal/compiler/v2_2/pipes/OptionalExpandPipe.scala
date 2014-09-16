@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Direction, Node}
 
 case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: String, dir: Direction, types: Seq[String], predicate: Predicate)
-                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   val nulls: ExecutionContext =
     ExecutionContext.empty.newWith(Seq(relName -> null, to -> null))
 

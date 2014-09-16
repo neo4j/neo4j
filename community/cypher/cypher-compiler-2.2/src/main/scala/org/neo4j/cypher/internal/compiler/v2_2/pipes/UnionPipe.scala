@@ -44,7 +44,7 @@ case class UnionPipe(sources: List[Pipe], columns:List[String])(implicit val mon
   override def localEffects = Effects.NONE
 }
 
-case class NewUnionPipe(l: Pipe, r: Pipe)(implicit val monitor: PipeMonitor) extends Pipe {
+case class NewUnionPipe(l: Pipe, r: Pipe)(implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
   def planDescription: PlanDescription =
     new PlanDescriptionImpl(this, "Union", TwoChildren(l.planDescription, r.planDescription), Seq.empty)
 
