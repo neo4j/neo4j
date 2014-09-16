@@ -24,6 +24,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{PrintCommand, PrintN
 
 import scala.collection.mutable
 
+object StringPrintingConverter {
+  val NEW_LINE = System.getProperty("line.separator")
+}
+
 class StringPrintingConverter(var builder: mutable.StringBuilder = new mutable.StringBuilder()) extends PrintingConverter[String] {
   def clear() {
     builder.clear()
@@ -37,7 +41,7 @@ class StringPrintingConverter(var builder: mutable.StringBuilder = new mutable.S
         builder = builder ++= text
 
       case PrintNewLine(indent) =>
-        builder += '\n'
+        builder.append(StringPrintingConverter.NEW_LINE)
         var remaining = indent
         while (remaining > 0) {
           builder = builder += ' '
