@@ -166,7 +166,7 @@ public class StubPageCursor implements PageCursor
     @Override
     public boolean shouldRetry() throws IOException
     {
-        throw new UnsupportedOperationException( "TODO" );
+        return false;
     }
 
     public long getCount( int recordNumber, int counterNumber )
