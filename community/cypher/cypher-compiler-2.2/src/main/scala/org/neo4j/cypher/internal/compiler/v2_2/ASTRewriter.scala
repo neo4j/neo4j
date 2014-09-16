@@ -19,16 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_2.ast.conditions.containsNoReturnStar
+import org.neo4j.cypher.internal.compiler.v2_2.ast.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterStep, RewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{ReturnAll, Statement, UnaliasedReturnItem}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterStepSequencer}
 
 class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters: Boolean = true) {
 
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
   def rewrite(queryText: String, statement: Statement): (Statement, Map[String, Any]) = {
+
     rewritingMonitor.startRewriting(queryText, statement)
 
     val (extractParameters, extractedParameters) = if (shouldExtractParameters)
@@ -37,6 +38,8 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       (Rewriter.lift(PartialFunction.empty), Map.empty[String, Any])
 
     val rewriter = RewriterStepSequencer.newDefault("ASTRewriter")(
+      enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),
+
       foldConstants,
       ApplyRewriter("extractParameters", extractParameters),
       nameMatchPatternElements,
@@ -45,7 +48,9 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       normalizeEqualsArgumentOrder,
       addUniquenessPredicates,
       expandStar,
-      enableCondition(containsNoReturnStar),
+
+      enableCondition(containsNoNodesOfType[ReturnAll]),
+
       isolateAggregation
     )
 

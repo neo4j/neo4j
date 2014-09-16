@@ -26,7 +26,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
 
   import parser.ParserFixture._
 
-  test("name all NodePatterns in Query" ) {
+  test("name all NodePatterns in Query") {
     val original = parser.parse("MATCH (n)-[r:Foo]->() RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20`) RETURN n")
 
@@ -90,5 +90,11 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     assert(result === expected)
   }
 
+  test("does not touch parameters") {
+    val original = parser.parse("MATCH (n)-[r:Foo]->({p}) RETURN n")
+    val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20` {p}) RETURN n")
 
+    val result = original.rewrite(nameMatchPatternElements)
+    assert(result === expected)
+  }
 }

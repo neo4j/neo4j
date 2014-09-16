@@ -72,7 +72,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build optional ProjectEndpoints") {
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2").plan match {
       case Projection(Apply(
-        Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _, _), _),
+        Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _, _, _), _),
         Apply(SingleRow(_), Optional(
           Selection(
             predicates,
@@ -91,7 +91,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build optional ProjectEndpoints with extra predicates") {
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2").plan match {
       case Projection(Apply(
-        Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _, _), _),
+        Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _, _,_), _),
         Apply(SingleRow(_), Optional(
           Selection(
             predicates1,
@@ -116,7 +116,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build optional ProjectEndpoints with extra predicates 2") {
     planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2").plan  match {
       case Projection(Apply(
-        Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _, _), _),
+        Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _, _, _), _),
         Apply(SingleRow(_), Optional(
           Selection(
             predicates,

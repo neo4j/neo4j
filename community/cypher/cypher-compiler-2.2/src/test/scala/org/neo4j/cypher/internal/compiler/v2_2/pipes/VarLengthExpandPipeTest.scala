@@ -286,6 +286,45 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     second("b") should equal(endNode)
   }
 
+  test("should support var length expand with expansion-stage filtering") {
+    // given
+    val firstNode = newMockedNode(4)
+    val startNode = newMockedNode(1)
+    val middleNode = newMockedNode(2)
+    val endNode = newMockedNode(3)
+    val initialRelationship = newMockedRealtionship(4, firstNode, startNode)
+    val leftRelationship1 = newMockedRealtionship(1, startNode, middleNode)
+    val leftRelationship2 = newMockedRealtionship(2, startNode, middleNode)
+    val rightRelationship = newMockedRealtionship(3, middleNode, endNode)
+    val query = mock[QueryContext]
+    replyWithMap(query, Map(
+      (firstNode, Direction.OUTGOING) -> Seq(initialRelationship),
+      (startNode, Direction.INCOMING) -> Seq(initialRelationship),
+      (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+      (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
+      (endNode, Direction.INCOMING) -> Seq(rightRelationship)
+    ).withDefaultValue(Seq.empty)
+    )
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> firstNode)))
+
+    def filteringStep(context: ExecutionContext, q: QueryState, rel: Relationship): Boolean = rel.getId != 2
+
+
+    // when
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING,
+                                     Seq.empty, 3, None, filteringStep).createResults(queryState).toList
+
+    // then
+    val (single :: Nil) = result
+    single("a") should equal(firstNode)
+    single("r") should equal(List(initialRelationship, leftRelationship1, rightRelationship))
+    single("b") should equal(endNode)
+  }
+
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
 
   private def newMockedNode(id: Int) = {

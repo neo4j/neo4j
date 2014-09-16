@@ -29,10 +29,13 @@ import org.neo4j.graphdb.{Direction, Node, Relationship}
 import scala.collection.mutable
 
 case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction,
-                               projectedDir: Direction, types: Seq[String], min: Int, max: Option[Int])(implicit pipeMonitor: PipeMonitor)
+                               projectedDir: Direction, types: Seq[String], min: Int, max: Option[Int],
+                               filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true)
+                              (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) {
 
-  private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int]): Iterator[(Node, Seq[Relationship])] = {
+  private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
+                              row: ExecutionContext): Iterator[(Node, Seq[Relationship])] = {
     val stack = new mutable.Stack[(Node, Seq[Relationship])]
     stack.push((node, Seq.empty))
 
@@ -41,7 +44,7 @@ case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, 
         val (node, rels) = stack.pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue)) {
           val relationships: Iterator[Relationship] = state.query.getRelationshipsFor(node, dir, types)
-          relationships.foreach { rel =>
+          relationships.filter(filteringStep.curried(row)(state)).foreach { rel =>
             val otherNode = rel.getOtherNode(node)
             if (!rels.contains(rel)) {
               stack.push((otherNode, rels :+ rel))
@@ -66,7 +69,7 @@ case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, 
         val fromNode: Any = getFromNode(row)
         fromNode match {
           case n: Node =>
-            val paths = varLengthExpand(n, state, max)
+            val paths = varLengthExpand(n, state, max, row)
             paths.collect {
               case (node, rels) if rels.length >= min =>
                 row.newWith(Seq(relName -> rels, toName -> node))

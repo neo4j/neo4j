@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.conditions
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.ReturnAll
+import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
+import scala.reflect.ClassTag
 
-case object containsNoReturnStar extends (Any => Seq[String]) {
-
+case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends (Any => Seq[String]) {
   import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
-
-  def apply(that: Any): Seq[String] =
-    that
-      .fold[Seq[ReturnAll]](Seq.empty) { case x: ReturnAll => (acc) => acc :+ x }
-      .map { (item: ReturnAll) => s"Expected none but found ReturnAll at position ${item.position}"}
+  def apply(that: Any): Seq[String] = {
+    that.fold(Seq.empty[ASTNode]) {
+      case node: ASTNode if node.getClass == tag.runtimeClass =>
+        (acc) => acc :+ node
+    }.map(node => s"Expected none but found ReturnAll at position ${node.position}")
+  }
 }

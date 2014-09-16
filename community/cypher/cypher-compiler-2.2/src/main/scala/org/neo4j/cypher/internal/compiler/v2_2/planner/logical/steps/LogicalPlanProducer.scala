@@ -94,9 +94,14 @@ object LogicalPlanProducer {
                  to: IdName,
                  relName: IdName,
                  length: PatternLength,
-                 pattern: PatternRelationship) =
-    Expand(left, from, dir, projectedDir, types, to, relName, length)(
-      left.solved.updateGraph(_.addPatternRel(pattern)))
+                 pattern: PatternRelationship,
+                 predicates: Seq[(Identifier, Expression)] = Seq.empty,
+                 allPredicates: Seq[Expression] = Seq.empty) =
+    Expand(left, from, dir, projectedDir, types, to, relName, length, predicates)(
+      left.solved.updateGraph(_
+        .addPatternRel(pattern)
+        .addPredicates(allPredicates: _*)
+      ))
 
   def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan) =
     Selection(predicates, left)(left.solved)
