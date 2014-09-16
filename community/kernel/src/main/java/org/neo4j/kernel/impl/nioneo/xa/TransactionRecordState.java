@@ -158,7 +158,7 @@ public class TransactionRecordState
         }
 
         // Collect nodes, relationships, properties
-        List<Command> nodeCommands = new ArrayList<>();
+        List<Command> nodeCommands = new ArrayList<>( context.getNodeRecords().changeSize() );
         for ( RecordChange<Long, NodeRecord, Void> change : context.getNodeRecords().changes() )
         {
             NodeRecord record = change.forReadingLinkage();
@@ -169,7 +169,7 @@ public class TransactionRecordState
         }
         Collections.sort( nodeCommands, COMMAND_SORTER );
 
-        List<Command> relCommands = new ArrayList<>();
+        List<Command> relCommands = new ArrayList<>( context.getRelRecords().changeSize() );
         for ( RecordProxy<Long, RelationshipRecord, Void> record : context.getRelRecords().changes() )
         {
             Command.RelationshipCommand command = new Command.RelationshipCommand();
@@ -178,7 +178,7 @@ public class TransactionRecordState
         }
         Collections.sort( relCommands, COMMAND_SORTER );
 
-        List<Command> propCommands = new ArrayList<>();
+        List<Command> propCommands = new ArrayList<>( context.getPropertyRecords().changeSize() );
         for ( RecordChange<Long, PropertyRecord, PrimitiveRecord> change : context.getPropertyRecords().changes() )
         {
             Command.PropertyCommand command = new Command.PropertyCommand();
@@ -187,7 +187,7 @@ public class TransactionRecordState
         }
         Collections.sort( propCommands, COMMAND_SORTER );
 
-        List<Command> relGroupCommands = new ArrayList<>();
+        List<Command> relGroupCommands = new ArrayList<>( context.getRelGroupRecords().changeSize() );
         for ( RecordProxy<Long, RelationshipGroupRecord, Integer> change : context.getRelGroupRecords().changes() )
         {
             Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
@@ -195,6 +195,7 @@ public class TransactionRecordState
             relGroupCommands.add( command );
         }
         Collections.sort( relGroupCommands, COMMAND_SORTER );
+
         addFiltered( commands, Mode.CREATE, propCommands, relCommands, nodeCommands, relGroupCommands );
         addFiltered( commands, Mode.UPDATE, propCommands, relCommands, nodeCommands, relGroupCommands );
         addFiltered( commands, Mode.DELETE, propCommands, relCommands, nodeCommands, relGroupCommands );
@@ -233,8 +234,9 @@ public class TransactionRecordState
         return context.relationshipDelete( relId );
     }
 
-    private void addFiltered( Collection<Command> target, Mode mode,
-            Collection<? extends Command>... commands )
+    @SafeVarargs
+    private final void addFiltered( Collection<Command> target, Mode mode,
+                                    Collection<? extends Command>... commands )
     {
         for ( Collection<? extends Command> c : commands )
         {

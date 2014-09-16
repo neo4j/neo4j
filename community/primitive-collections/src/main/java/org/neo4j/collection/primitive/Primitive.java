@@ -138,4 +138,24 @@ public class Primitive
     {
         return new PrimitiveIntObjectHashMap<>( new IntKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
     }
+
+    public static PrimitiveLongIterator iterator( final long... longs )
+    {
+        return new PrimitiveLongIterator()
+        {
+            int i;
+
+            @Override
+            public boolean hasNext()
+            {
+                return i < longs.length;
+            }
+
+            @Override
+            public long next()
+            {
+                return longs[i++];
+            }
+        };
+    }
 }

@@ -19,24 +19,9 @@
  */
 package org.neo4j.kernel.api.heuristics;
 
-import org.neo4j.graphdb.Direction;
-
 public interface StatisticsData
 {
-    public static final int RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL = -1;
+    long totalNumberOfNodes();
 
-    /** Label id -> relative occurrence, value between 0 and 1. The total may be > 1, since labels may co-occur. */
-    double labelDistribution(int labelId);
-
-    /** Relationship type id -> relative occurrence, value between 0 and 1. The total adds up to 1 */
-    double relationshipTypeDistribution(int relType);
-
-    /** Relationship degree distribution for a label/rel type/direction triplet. */
-    double degree( int labelId, int relType, Direction direction );
-
-    /** Ratio of live nodes (i.e. nodes that are not deleted or corrupted) of all addressable nodes */
-    double liveNodesRatio();
-
-    /** Maximum number of addressable nodes */
-    long maxAddressableNodes();
+    long nodesWithLabel( int labelId );
 }

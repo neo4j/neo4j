@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -56,6 +57,7 @@ public abstract class StatementOperationsTestHelper
             mock( SchemaWriteOperations.class ),
             mock( SchemaStateOperations.class ),
             mock( LockOperations.class ),
+            mock( CountsOperations.class ),
             mock( LegacyIndexReadOperations.class ),
             mock( LegacyIndexWriteOperations.class ) );
     }

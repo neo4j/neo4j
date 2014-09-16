@@ -181,4 +181,8 @@ public interface StoreReadLayer
                    Register.Object.In<Direction> expandDirection, NeoRegister.Relationship.Out relId,
                    NeoRegister.RelType.Out relType, Register.Object.Out<Direction> direction,
                    NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId );
+
+    long countsForNode( int labelId );
+
+    long countsForRelationship( int startLabelId, int typeId, int endLabelId );
 }

@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.kernel.impl.nioneo.store.CountsStore;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -114,6 +115,7 @@ public class DiskLayer implements StoreReadLayer
     private final PropertyStore propertyStore;
     private final SchemaStorage schemaStorage;
     private final Provider<PropertyStore> propertyStoreProvider;
+    private final CountsStore countsStore;
 
     private static class PropertyStoreProvider implements Provider<PropertyStore>
     {
@@ -152,6 +154,7 @@ public class DiskLayer implements StoreReadLayer
         this.relationshipStore = this.neoStore.getRelationshipStore();
         this.propertyStore = this.neoStore.getPropertyStore();
         this.propertyStoreProvider = new PropertyStoreProvider( neoStoreProvider );
+        this.countsStore = neoStore.getCountsStore();
     }
 
     @Override
@@ -787,5 +790,17 @@ public class DiskLayer implements StoreReadLayer
             neighborNodeId )
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long countsForNode( int labelId )
+    {
+        return countsStore.countsForNode( labelId );
+    }
+
+    @Override
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    {
+        return countsStore.countsForRelationship( startLabelId, typeId, endLabelId );
     }
 }

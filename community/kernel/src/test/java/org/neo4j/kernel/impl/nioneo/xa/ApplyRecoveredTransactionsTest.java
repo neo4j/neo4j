@@ -106,7 +106,7 @@ public class ApplyRecoveredTransactionsTest
                 mock( CacheAccessBackDoor.class ), mock( LockService.class ), new LockGroup(), transactionId,
                 DEFAULT_HIGH_ID_TRACKING, true );
         CommandApplierFacade applierFacade = new CommandApplierFacade( applier,
-                mock( NeoCommandHandler.class ), mock( NeoCommandHandler.class ) );
+                mock( NeoCommandHandler.class ), mock( NeoCommandHandler.class ), mock( NeoCommandHandler.class ) );
         new PhysicalTransactionRepresentation( Arrays.asList( commands ) ).accept( applierFacade );
     }
     

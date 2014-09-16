@@ -99,6 +99,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private LabelTokenStore labelTokenStore;
     private SchemaStore schemaStore;
     private RelationshipGroupStore relGroupStore;
+    private CountsStore countsStore;
 
     // Fields the neostore keeps cached and must be initialized on startup
     private volatile long creationTimeField = FIELD_NOT_INITIALIZED;
@@ -125,8 +126,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                      FileSystemAbstraction fileSystemAbstraction, final StringLogger stringLogger,
                      RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore, PropertyStore propStore,
                      RelationshipStore relStore, NodeStore nodeStore, SchemaStore schemaStore,
-                     RelationshipGroupStore relGroupStore, StoreVersionMismatchHandler versionMismatchHandler,
-                     Monitors monitors )
+                     RelationshipGroupStore relGroupStore, CountsStore countsStore,
+                     StoreVersionMismatchHandler versionMismatchHandler, Monitors monitors )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 stringLogger, versionMismatchHandler, monitors );
@@ -137,6 +138,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         this.nodeStore = nodeStore;
         this.schemaStore = schemaStore;
         this.relGroupStore = relGroupStore;
+        this.countsStore = countsStore;
         this.relGrabSize = conf.get( Configuration.relationship_grab_size );
         this.transactionCloseWaitLogger = new CappedOperation<Void>( time( 30, SECONDS ) )
         {
@@ -233,6 +235,11 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         {
             relGroupStore.close();
             relGroupStore = null;
+        }
+        if ( countsStore != null )
+        {
+            countsStore.close();
+            countsStore = null;
         }
     }
 
@@ -722,6 +729,11 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     public RelationshipGroupStore getRelationshipGroupStore()
     {
         return relGroupStore;
+    }
+
+    public CountsStore getCountsStore()
+    {
+        return countsStore;
     }
 
     @Override

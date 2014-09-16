@@ -42,16 +42,11 @@ import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 
 public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command, IOException>
 {
-    private final NeoCommandHandler storeApplier;
-    private final NeoCommandHandler indexApplier;
-    private final NeoCommandHandler legacyIndexApplier;
+    private final NeoCommandHandler[] handlers;
 
-    public CommandApplierFacade( NeoCommandHandler storeApplier, NeoCommandHandler indexApplier,
-            NeoCommandHandler legacyIndexApplier )
+    public CommandApplierFacade( NeoCommandHandler... handlers )
     {
-        this.storeApplier = storeApplier;
-        this.indexApplier = indexApplier;
-        this.legacyIndexApplier = legacyIndexApplier;
+        this.handlers = handlers;
     }
     
     @Override
@@ -65,15 +60,17 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     {
         try
         {
-            indexApplier.apply();
-            legacyIndexApplier.apply();
-            storeApplier.apply();
+            for ( int i = handlers.length; i-- > 0; )
+            {
+                handlers[i].apply();
+            }
         }
         finally
         {
-            indexApplier.close();
-            legacyIndexApplier.close();
-            storeApplier.close();
+            for ( int i = handlers.length; i-- > 0; )
+            {
+                handlers[i].close();
+            }
         }
     }
 
@@ -87,95 +84,210 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitNodeCommand( NodeCommand command ) throws IOException
     {
-        storeApplier.visitNodeCommand( command );
-        indexApplier.visitNodeCommand( command );
-        return true;
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitNodeCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
     {
-        storeApplier.visitRelationshipCommand( command );
-        return true;
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitRelationshipCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
     {
-        storeApplier.visitPropertyCommand( command );
-        indexApplier.visitPropertyCommand( command );
-        return true;
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitPropertyCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
     {
-        return storeApplier.visitRelationshipGroupCommand( command );
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitRelationshipGroupCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
     {
-        return storeApplier.visitRelationshipTypeTokenCommand( command );
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitRelationshipTypeTokenCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
     {
-        return storeApplier.visitPropertyKeyTokenCommand( command );
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitPropertyKeyTokenCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
     {
-        return storeApplier.visitSchemaRuleCommand( command );
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitSchemaRuleCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException
     {
-        return storeApplier.visitNeoStoreCommand( command );
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitNeoStoreCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
     {
-        return storeApplier.visitLabelTokenCommand( command );
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitLabelTokenCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
     {
-        return legacyIndexApplier.visitIndexRemoveCommand( command );
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitIndexRemoveCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
     {
-        return legacyIndexApplier.visitIndexAddNodeCommand( command );
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitIndexAddNodeCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
     {
-        return legacyIndexApplier.visitIndexAddRelationshipCommand( command );
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitIndexAddRelationshipCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
     {
-        return legacyIndexApplier.visitIndexDeleteCommand( command );
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitIndexDeleteCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
     {
-        return legacyIndexApplier.visitIndexCreateCommand( command );
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitIndexCreateCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
     {
-        return legacyIndexApplier.visitIndexDefineCommand( command );
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitIndexDefineCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
     }
 }

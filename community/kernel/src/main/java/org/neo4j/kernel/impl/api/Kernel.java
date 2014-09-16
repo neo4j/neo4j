@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.heuristics.StatisticsData;
-import org.neo4j.kernel.impl.api.statistics.StatisticsService;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -63,17 +63,15 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class Kernel extends LifecycleAdapter implements KernelAPI
 {
-    private final StatisticsService statisticsService;
     private final KernelTransactions transactions;
     private final TransactionHooks hooks;
     private final KernelHealth health;
     private final TransactionMonitor transactionMonitor;
 
-    public Kernel( StatisticsService statisticsService, KernelTransactions transactionFactory,
+    public Kernel( KernelTransactions transactionFactory,
                    TransactionHooks hooks, KernelHealth health, TransactionMonitor transactionMonitor )
     {
         this.transactions = transactionFactory;
-        this.statisticsService = statisticsService;
         this.hooks = hooks;
         this.health = health;
         this.transactionMonitor = transactionMonitor;
@@ -103,7 +101,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public StatisticsData heuristics()
     {
-        return statisticsService.statistics();
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override

@@ -17,25 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.statistics;
+package org.neo4j.kernel.impl.api.operations;
 
-import org.neo4j.kernel.api.heuristics.StatisticsData;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.impl.api.KernelStatement;
 
-/**
- * Exposes regular statistics, but does not actively gather new statistics.
- */
-public class StaleStatisticsService extends LifecycleAdapter implements StatisticsService
+public interface CountsOperations
 {
-    private final StatisticsService delegate;
+    /** @see org.neo4j.kernel.api.CountsRead#countsForNode(int) */
+    long countsForNode( KernelStatement statement, int labelId );
 
-    public StaleStatisticsService( StatisticsService delegate )
-    {
-        this.delegate = delegate;
-    }
-
-    @Override
-    public StatisticsData statistics() {
-        return delegate.statistics();
-    }
+    /** @see org.neo4j.kernel.api.CountsRead#countsForRelationship(int, int, int) */
+    long countsForRelationship( KernelStatement statement, int startLabelId, int typeId, int endLabelId );
 }

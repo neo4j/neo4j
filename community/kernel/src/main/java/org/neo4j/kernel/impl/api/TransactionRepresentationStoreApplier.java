@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
 import org.neo4j.kernel.impl.nioneo.xa.command.HighIdTracker;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionIndexApplier;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.nioneo.xa.command.RecoveredHighIdTracker;
@@ -77,16 +78,17 @@ public class TransactionRepresentationStoreApplier
                        long transactionId, boolean applyRecovered )
             throws IOException
     {
-        NeoTransactionStoreApplier storeApplier = new NeoTransactionStoreApplier(
+        NeoCommandHandler storeApplier = new NeoTransactionStoreApplier(
                 neoStore, indexingService, cacheAccess, lockService, locks, transactionId,
                 highIdTrackerFactory, applyRecovered );
-        NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( indexingService,
+        NeoCommandHandler countStoreApplier = new CountStoreApplier( neoStore.getCountsStore(), neoStore.getNodeStore() );
+        NeoCommandHandler indexApplier = new NeoTransactionIndexApplier( indexingService,
                 labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess, propertyLoader );
-        LegacyIndexApplier legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,
+        NeoCommandHandler legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,
                 legacyIndexProviderLookup, legacyIndexTransactionOrdering, transactionId, applyRecovered );
 
         try ( CommandApplierFacade applier = new CommandApplierFacade(
-                storeApplier, indexApplier, legacyIndexApplier ) )
+                storeApplier, countStoreApplier, indexApplier, legacyIndexApplier ) )
         {
             representation.accept( applier );
         }

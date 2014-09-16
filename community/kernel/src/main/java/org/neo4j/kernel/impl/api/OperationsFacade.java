@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -129,6 +130,11 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     final LockOperations locking()
     {
         return operations.locking();
+    }
+
+    final CountsOperations counting()
+    {
+        return operations.counting();
     }
 
     // <DataRead>
@@ -883,4 +889,22 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         return legacyIndexRead().relationshipLegacyIndexesGetAll( statement );
     }
     // </Legacy index>
+
+    // <Counts>
+
+    @Override
+    public long countsForNode( int labelId )
+    {
+        statement.assertOpen();
+        return counting().countsForNode( statement, labelId );
+    }
+
+    @Override
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    {
+        statement.assertOpen();
+        return counting().countsForRelationship( statement, startLabelId, typeId, endLabelId );
+    }
+
+    // </Counts
 }

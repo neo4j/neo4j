@@ -67,8 +67,6 @@ import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.statistics.StatisticsService;
-import org.neo4j.kernel.impl.api.statistics.StatisticsServiceRepository;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.api.store.DiskLayer;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
@@ -434,8 +432,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
             LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
                     nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
-            StatisticsService statisticsService =
-                    new StatisticsServiceRepository( fs, config, storeLayer, scheduler ).loadStatistics();
             final NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier =
                     new NeoStoreTransactionContextSupplier( neoStore );
 
@@ -529,7 +525,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     transactionHeaderInformationFactory, persistenceCache, storeLayer, transactionCommitProcess, indexConfigStore,
                     legacyIndexProviderLookup, hooks, transactionMonitor, life, readOnly ));
 
-            kernel = new Kernel( statisticsService, kernelTransactions, hooks, kernelHealth, transactionMonitor );
+            kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
 
             life.add( logFile );
             life.add( logicalTransactionStore );
@@ -543,7 +539,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     loadSchemaCache();
                 }
             } );
-            life.add( statisticsService );
             life.add( new LifecycleAdapter()
             {
                 @Override
@@ -766,7 +761,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 legacyIndexStore );
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
-                new SchemaStateConcern( updateableSchemaState ), null, stateHandlingContext, stateHandlingContext );
+                new SchemaStateConcern( updateableSchemaState ), null, stateHandlingContext, stateHandlingContext,
+                stateHandlingContext );
         // + Constraints
         ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations = new ConstraintEnforcingEntityOperations(
                 parts.entityWriteOperations(), parts.entityReadOperations(), parts.schemaReadOperations() );
@@ -774,19 +770,20 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         DataIntegrityValidatingStatementOperations dataIntegrityContext = new DataIntegrityValidatingStatementOperations(
                 parts.keyWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations() );
         parts = parts.override( null, dataIntegrityContext, constraintEnforcingEntityOperations,
-                constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null, null, null );
+                constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null, null, null, null );
         // + Locking
         LockingStatementOperations lockingContext = new LockingStatementOperations( parts.entityReadOperations(),
                 parts.entityWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations(),
                 parts.schemaStateOperations() );
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
-                lockingContext, null, null );
+                lockingContext, null, null, null );
         // + Guard
         if ( guard != null )
         {
             GuardingStatementOperations guardingOperations = new GuardingStatementOperations(
                     parts.entityWriteOperations(), parts.entityReadOperations(), guard );
-            parts = parts.override( null, null, guardingOperations, guardingOperations, null, null, null, null, null, null );
+            parts = parts.override( null, null, guardingOperations, guardingOperations, null, null, null, null, null,
+                                    null, null );
         }
 
         return parts;

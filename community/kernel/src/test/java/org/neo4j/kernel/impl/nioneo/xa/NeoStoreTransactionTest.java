@@ -1499,8 +1499,7 @@ public class NeoStoreTransactionTest
             NeoTransactionStoreApplier storeApplier = new NeoTransactionStoreApplier(
                     neoStore, mockIndexing, cacheAccessBackDoor, locks, lockGroup,
                     txId, DEFAULT_HIGH_ID_TRACKING, true );
-            try ( CommandApplierFacade applier = new CommandApplierFacade( storeApplier, indexApplier,
-                                                                           mock( NeoCommandHandler.class ) ) )
+            try ( CommandApplierFacade applier = new CommandApplierFacade( storeApplier, indexApplier ) )
             {
                 recoveredTx.accept( applier );
             }

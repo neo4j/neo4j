@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.nioneo.store.CountsStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.HighIdTracker;
@@ -62,6 +63,10 @@ public class TransactionRepresentationStoreApplierTest
             mock( LegacyIndexApplier.ProviderLookup.class );
     private final IndexConfigStore indexConfigStore = mock( IndexConfigStore.class );
     private final int transactionId = 12;
+
+    {
+        when( neoStore.getCountsStore() ).thenReturn( mock( CountsStore.class ) );
+    }
 
     @Test
     public void transactionRepresentationShouldAcceptApplierVisitor() throws IOException

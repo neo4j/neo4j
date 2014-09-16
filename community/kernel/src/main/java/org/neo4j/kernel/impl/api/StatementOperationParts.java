@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -40,6 +41,7 @@ public class StatementOperationParts
     private final SchemaWriteOperations schemaWriteOperations;
     private final SchemaStateOperations schemaStateOperations;
     private final LockOperations lockingStatementOperations;
+    private final CountsOperations countsStatementOperations;
     private final LegacyIndexReadOperations legacyIndexReadOperations;
     private final LegacyIndexWriteOperations legacyIndexWriteOperations;
 
@@ -52,6 +54,7 @@ public class StatementOperationParts
             SchemaWriteOperations schemaWriteOperations,
             SchemaStateOperations schemaStateOperations,
             LockOperations lockingStatementOperations,
+            CountsOperations countsStatementOperations,
             LegacyIndexReadOperations legacyIndexReadOperations,
             LegacyIndexWriteOperations legacyIndexWriteOperations )
     {
@@ -63,6 +66,7 @@ public class StatementOperationParts
         this.schemaWriteOperations = schemaWriteOperations;
         this.schemaStateOperations = schemaStateOperations;
         this.lockingStatementOperations = lockingStatementOperations;
+        this.countsStatementOperations = countsStatementOperations;
         this.legacyIndexReadOperations = legacyIndexReadOperations;
         this.legacyIndexWriteOperations = legacyIndexWriteOperations;
     }
@@ -117,6 +121,11 @@ public class StatementOperationParts
         return checkNotNull( legacyIndexWriteOperations, LegacyIndexWriteOperations.class );
     }
 
+    public CountsOperations counting()
+    {
+        return checkNotNull( countsStatementOperations, CountsOperations.class );
+    }
+
     public StatementOperationParts override(
             KeyReadOperations keyReadOperations,
             KeyWriteOperations keyWriteOperations,
@@ -126,6 +135,7 @@ public class StatementOperationParts
             SchemaWriteOperations schemaWriteOperations,
             SchemaStateOperations schemaStateOperations,
             LockOperations lockingStatementOperations,
+            CountsOperations countsStatementOperations,
             LegacyIndexReadOperations legacyIndexReadOperations,
             LegacyIndexWriteOperations legacyIndexWriteOperations )
     {
@@ -138,6 +148,7 @@ public class StatementOperationParts
             eitherOr( schemaWriteOperations, this.schemaWriteOperations, SchemaWriteOperations.class ),
             eitherOr( schemaStateOperations, this.schemaStateOperations, SchemaStateOperations.class ),
             eitherOr( lockingStatementOperations, this.lockingStatementOperations, LockOperations.class ),
+            eitherOr( countsStatementOperations, this.countsStatementOperations, CountsOperations.class ),
             eitherOr( legacyIndexReadOperations, this.legacyIndexReadOperations, LegacyIndexReadOperations.class ),
             eitherOr( legacyIndexWriteOperations, this.legacyIndexWriteOperations, LegacyIndexWriteOperations.class ) );
     }
