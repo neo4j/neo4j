@@ -46,7 +46,7 @@ OPTIONAL MATCH (me)-[r:STATUS]-(secondlatestupdate)
 DELETE r
 CREATE (me)-[:STATUS]->(latest_update {text:'Status',date:123})
 WITH latest_update, collect(secondlatestupdate) as seconds
-FOREACH(x in seconds | CREATE latest_update-[:NEXT]->x)
+FOREACH(x in seconds | CREATE (latest_update)-[:NEXT]->(x))
 RETURN latest_update.text as new_status""",
       optionalResultExplanation =
         """
@@ -57,10 +57,10 @@ Dividing the query into steps, this query resembles adding new item in middle of
   and only the latest update would be added through a `STATUS` relationship;
   all earlier updates would be connected to their subsequent updates through a `NEXT` relationship. (`DELETE r`).
 . Now, create the new `statusupdate` node (with text and date as properties) and connect this with the user through a `STATUS` relationship
-  (`CREATE me-[:STATUS]->(latest_update { text:'Status',date:123 })`).
+  (`CREATE (me)-[:STATUS]->(latest_update { text:'Status',date:123 })`).
 . Pipe over `statusupdate` or an empty collection to the next query part
   (`WITH latest_update, collect(secondlatestupdate) AS seconds`).
-. Now, create a `NEXT` relationship between the latest status update and the second latest status update (if it exists) (`FOREACH(x in seconds | CREATE latest_update-[:NEXT]->x)`).""",
+. Now, create a `NEXT` relationship between the latest status update and the second latest status update (if it exists) (`FOREACH(x in seconds | CREATE (latest_update)-[:NEXT]->(x))`).""",
       assertions = (p) => assertEquals(List(Map("new_status" -> "Status")), p.toList))
   }
 }
