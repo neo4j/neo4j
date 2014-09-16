@@ -36,8 +36,8 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
 
     // Run the return item expressions, and replace the execution context's with their values
     val returnExpressions = input.map(ctx => {
-      val newMap = Materialized.mapValues(expressions, (expression: Expression) => expression(ctx)(state))
-      ctx.newFrom(newMap)
+      val newMap = Eagerly.mutableMapValues(expressions, (expression: Expression) => expression(ctx)(state))
+      ctx.copy(m = newMap)
     })
 
     /*
@@ -62,7 +62,7 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
   def planDescription = source.planDescription.andThen(this, "Distinct")
 
   def symbols: SymbolTable = {
-    val identifiers = Materialized.mapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))
+    val identifiers = Eagerly.immutableMapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))
     SymbolTable(identifiers)
   }
 

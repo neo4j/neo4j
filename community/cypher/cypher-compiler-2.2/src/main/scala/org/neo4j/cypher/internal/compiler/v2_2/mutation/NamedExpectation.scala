@@ -68,7 +68,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
             properties
           case IsMap(f)             =>
             val m = f(state.query)
-            Materialized.mapValues(m, Literal)
+            Eagerly.immutableMapValues(m, Literal)
         }
     }
     DataExpectation(expectedProps, labels)
