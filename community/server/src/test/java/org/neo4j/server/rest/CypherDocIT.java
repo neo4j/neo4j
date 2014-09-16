@@ -124,7 +124,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                     @REL( start = "I", end = "him", type = "know", properties = { } ),
                     @REL( start = "I", end = "you", type = "know", properties = { } ) } )
     public void testDataColumnOrder() throws UnsupportedEncodingException {
-        String script = createScript( "START x  = node(%I%) MATCH x -[r]-> n RETURN type(r), n.name, n.age" );
+        String script = createScript( "START x  = node(%I%) MATCH (x)-[r]->(n) RETURN type(r), n.name, n.age" );
 
         String response = cypherRestCall( script, Status.OK );
 
@@ -269,7 +269,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                     @PROP( key = "prop", value = "World", type = GraphDescription.PropType.STRING ) } ) } )
     public void nodes_are_represented_as_nodes() throws Exception {
         data.get();
-        String script = "START n = node(%I%) MATCH n-[r]->() RETURN n, r";
+        String script = "START n = node(%I%) MATCH (n)-[r]->() RETURN n, r";
 
         String response = cypherRestCall( script, Status.OK );
 
@@ -334,7 +334,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                     @REL( start = "I", end = "him", type = "know", properties = { } ),
                     @REL( start = "I", end = "you", type = "know", properties = { } ) } )
     public void testProfiling() throws Exception {
-        String script = createScript( "START x = node(%I%) MATCH x -[r]-> n RETURN type(r), n.name, n.age" );
+        String script = createScript( "START x = node(%I%) MATCH (x)-[r]->(n) RETURN type(r), n.name, n.age" );
 
         // WHEN
         String response = doCypherRestCall( cypherUri() + "?profile=true", script, Status.OK );
@@ -386,7 +386,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void send_queries_with_errors() throws Exception {
         data.get();
-        String script = "START x = node:node_auto_index(name={startName}) MATCH path = (x-[r]-friend) WHERE frien"
+        String script = "START x = node:node_auto_index(name={startName}) MATCH path = (x)-[r]-(friend) WHERE frien"
                         + ".name = {name} RETURN type(r)";
         String response = cypherRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
