@@ -146,10 +146,9 @@ angular.module('neo4jApp.services')
         @calculateStyle(selector)
 
       forRelationship: (rel) ->
-        style_element = @calculateStyle(@relationshipSelector(rel))
-        if not style_element.props.caption
-          style_element.props.caption = '{type}'
-        style_element
+        selector = @relationshipSelector(rel)
+        @setDefaultRelationshipStyling(selector, rel)
+        @calculateStyle(selector)
 
       findAvailableDefaultColor: () ->
         usedColors = {}
@@ -162,6 +161,18 @@ angular.module('neo4jApp.services')
             return defaultColor
 
         return provider.defaultColors[0]
+
+      setDefaultRelationshipStyling: (selector, relationship) ->
+        rule = @findRule(selector)
+
+        if not rule?
+          rule = new StyleRule(selector, angular.extend({color: provider.defaultStyle.relationship.color}, @getDefaultRelationshipCaption()))
+          @rules.push(rule)
+          @persist()
+        if not rule.props.caption?
+          default_caption = @getDefaultRelationshipCaption()
+          angular.extend(rule.props, default_caption)
+          @persist()
 
       setDefaultStyling: (selector, item) ->
         rule = @findRule(selector)
@@ -180,6 +191,9 @@ angular.module('neo4jApp.services')
         return {caption: '{id}'} if not item or not item.propertyList?.length > 0
         default_caption = {caption: "{#{item.propertyList?[0].key}}"}
         default_caption
+
+      getDefaultRelationshipCaption: (item) ->
+        return {caption: '{type}'} 
 
       #
       # Methods for getting and modifying rules
