@@ -50,10 +50,11 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     public long commit( TransactionRepresentation transaction, LockGroup locks ) throws TransactionFailureException
     {
         long transactionId = commitTransaction( transaction );
-        
+
         // apply changes to the store
         try
         {
+            transactionIdStore.transactionCommitted( transactionId );
             storeApplier.apply( transaction, locks, transactionId, recovery );
         }
         // TODO catch different types of exceptions here, some which are OK

@@ -56,8 +56,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -94,8 +92,8 @@ public class PhysicalTransactionAppenderTest
         appender.append( transaction );
 
         // THEN
-        verify( transactionIdStore, times( 1 ) ).transactionCommitted( txId );
-        try(PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader()))
+        try ( PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel,
+                new VersionAwareLogEntryReader() ) )
         {
             reader.next();
             TransactionRepresentation tx = reader.get().getTransactionRepresentation();
@@ -144,7 +142,6 @@ public class PhysicalTransactionAppenderTest
         appender.append( transaction );
 
         // THEN
-        verify( transactionIdStore, times( 1 ) ).transactionCommitted( txId );
         PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader() );
         reader.next();
         TransactionRepresentation result = reader.get().getTransactionRepresentation();
