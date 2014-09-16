@@ -32,21 +32,23 @@ object renderDetails extends (PlanDescription => String) {
     val plans: Seq[PlanDescription] = plan.toSeq
     val names = renderAsTree.createUniqueNames(plan)
 
-    val headers = Seq("Operator", "Rows", "DbHits", "Identifiers", "Other")
+    val headers = Seq("Operator", "EstimatedRows", "Rows", "DbHits", "Identifiers", "Other")
     val rows = plans.map {
       p =>
         val name: String = names(p)
         val rows: String = p.arguments.collectFirst { case Rows(count) => count.toString }.getOrElse("?")
+        val estimatedRows: String = p.arguments.collectFirst { case EstimatedRows(count) => count.toString }.getOrElse("?")
         val dbHits: String = p.arguments.collectFirst { case DbHits(count) => count.toString }.getOrElse("?")
         val ids: String = p.arguments.collect { case IntroducedIdentifier(id) => id }.mkString(", ")
         val other = p.arguments.collect {
           case x
             if !x.isInstanceOf[Rows] &&
               !x.isInstanceOf[DbHits] &&
+              !x.isInstanceOf[EstimatedRows] &&
               !x.isInstanceOf[IntroducedIdentifier] => PlanDescriptionArgumentSerializer.serialize(x)
         }.mkString("; ")
 
-        Seq(name, rows, dbHits, ids, other)
+        Seq(name, estimatedRows, rows, dbHits, ids, other)
     }
 
     renderTable(headers, rows)

@@ -37,6 +37,7 @@ object PlanDescriptionArgumentSerializer {
       case _: EntityByIdRhs => arg.toString
       case _: IntroducedIdentifier => arg.toString
       case _: Rows => arg.toString
+      case _: EstimatedRows => arg.toString
 
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here

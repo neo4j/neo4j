@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.Relationship
 
 case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityByIdRhs, toNode: String, fromNode: String)
-                                             (implicit pipeMonitor: PipeMonitor)
+                                             (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with CollectionSupport
   with RonjaPipe {
@@ -75,4 +75,6 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityBy
   override def localEffects = Effects.READS_ENTITIES
 
   def sources: Seq[Pipe] = Seq.empty
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

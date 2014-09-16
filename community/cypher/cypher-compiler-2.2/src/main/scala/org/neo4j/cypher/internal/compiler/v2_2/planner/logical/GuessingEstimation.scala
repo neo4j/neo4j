@@ -102,8 +102,17 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
         )
       )
 
+    case _: Aggregation =>
+      Cardinality(1)
+
+    case _: UnwindCollection =>
+      Cardinality(1)
+
     case SortedLimit(input, _, _) =>
       cardinality(input)
+
+    case Union(l, r) =>
+      cardinality(l) + cardinality(r)
   }
 
   def averagePathLength(length:PatternLength) = length match {

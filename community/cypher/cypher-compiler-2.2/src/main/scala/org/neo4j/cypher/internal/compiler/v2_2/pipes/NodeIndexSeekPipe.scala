@@ -35,7 +35,8 @@ case class NodeIndexSeekPipe(ident: String,
                              propertyKey: PropertyKeyToken,
                              valueExpr: QueryExpression[Expression],
                              unique: Boolean = false)
-                            (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
+                            (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+  extends Pipe with RonjaPipe {
 
   val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
@@ -74,4 +75,6 @@ case class NodeIndexSeekPipe(ident: String,
   def sources: Seq[Pipe] = Seq.empty
 
   override def localEffects = Effects.READS_NODES
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

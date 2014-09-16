@@ -49,7 +49,7 @@ class ExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty).createResults(queryState).toList
+    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -63,7 +63,7 @@ class ExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty).createResults(queryState).toList
+    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)().createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -78,7 +78,7 @@ class ExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty).createResults(queryState).toList
+    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)().createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -92,7 +92,7 @@ class ExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe("a", row("a" -> null))
 
     // when
-    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty).createResults(queryState).toList
+    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)().createResults(queryState).toList
 
     // then
     result should be (empty)
@@ -105,7 +105,7 @@ class ExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty).createResults(queryState).toList
+    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result

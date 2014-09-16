@@ -42,7 +42,7 @@ class ApplyPipeTest extends CypherFunSuite {
       def sources: Seq[Pipe] = ???
     }
 
-    val result = ApplyPipe(lhs, rhs)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = ApplyPipe(lhs, rhs)()(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(lhsData)
   }
@@ -64,7 +64,7 @@ class ApplyPipeTest extends CypherFunSuite {
       def sources: Seq[Pipe] = ???
     }
 
-    val result = ApplyPipe(lhs, rhs)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = ApplyPipe(lhs, rhs)()(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(lhsData.map(_ + rhsData))
   }
@@ -85,7 +85,7 @@ class ApplyPipeTest extends CypherFunSuite {
       def sources: Seq[Pipe] = ???
     }
 
-    val result = ApplyPipe(lhs, rhs)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = ApplyPipe(lhs, rhs)()(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(lhsData)
   }

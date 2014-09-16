@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.A
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{SymbolTable, _}
 
-case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])(implicit pipeMonitor: PipeMonitor)
+case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])
+                              (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with RonjaPipe {
 
@@ -67,4 +68,6 @@ case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])(im
   def sources: Seq[Pipe] = Seq.empty
 
   override def localEffects = Effects.READS_NODES
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

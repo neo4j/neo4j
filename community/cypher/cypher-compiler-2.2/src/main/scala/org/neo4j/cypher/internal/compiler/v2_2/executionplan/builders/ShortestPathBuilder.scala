@@ -32,7 +32,7 @@ class ShortestPathBuilder extends PlanBuilder {
     val item = q.patterns.filter(yesOrNo(p, _)).head
     val shortestPath = item.token.asInstanceOf[ShortestPath]
 
-    val pipe = new ShortestPathPipe(p, shortestPath)
+    val pipe = new ShortestPathPipe(p, shortestPath)()
 
     plan.copy(pipe = pipe, query = q.copy(patterns = q.patterns.filterNot(_ == item) :+ item.solve))
   }

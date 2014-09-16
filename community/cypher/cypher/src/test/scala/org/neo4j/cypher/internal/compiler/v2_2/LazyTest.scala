@@ -246,7 +246,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     //Given:
     val limited = new LimitedIterator[Map[String, Any]](4, (x) => Map("val" -> x))
     val input = new FakePipe(limited, "val" -> CTInteger)
-    val pipe = new FilterPipe(input, GreaterThan(Identifier("val"), Literal(3)))
+    val pipe = new FilterPipe(input, GreaterThan(Identifier("val"), Literal(3)))()
 
     //When:
     val iter = pipe.createResults(QueryStateHelper.empty)

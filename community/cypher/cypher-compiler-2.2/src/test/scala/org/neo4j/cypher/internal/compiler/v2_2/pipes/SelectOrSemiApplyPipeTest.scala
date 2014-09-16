@@ -35,7 +35,9 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
     })
 
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result =
+      SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = false)()(newMonitor).
+        createResults(QueryStateHelper.empty).toList
 
     result should equal(List(Map("a" -> 1)))
   }
@@ -49,7 +51,9 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
     })
 
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = true)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result =
+      SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = true)()(newMonitor).
+        createResults(QueryStateHelper.empty).toList
 
     result should equal(List(Map("a" -> 2)))
   }
@@ -59,7 +63,9 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = new FakePipe(Iterator.empty)
 
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result =
+      SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = false)()(newMonitor).
+        createResults(QueryStateHelper.empty).toList
 
     result should equal(List.empty)
   }
@@ -69,7 +75,9 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = new FakePipe(Iterator(Map("a" -> 1)))
 
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result =
+      SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = false)()(newMonitor).
+        createResults(QueryStateHelper.empty).toList
 
     result should equal(lhsData)
   }
@@ -79,7 +87,8 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val lhs = new FakePipe(Iterator.empty)
 
     // Should not throw
-    SelectOrSemiApplyPipe(lhs, rhs, True(), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
+    SelectOrSemiApplyPipe(lhs, rhs, True(), negated = false)()(newMonitor).
+      createResults(QueryStateHelper.empty).toList
   }
 
   test("should let pass the one satisfying the expression even if the rhs is empty") {
@@ -87,7 +96,8 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = new FakePipe(Iterator.empty)
 
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result =
+      SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)), negated = false)()(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(List(Map("a" -> 2)))
   }
@@ -101,7 +111,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
       })
 
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)), negated = false)()(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(List(Map("a" -> 1), Map("a" -> 2)))
   }
@@ -115,7 +125,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
       })
 
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)), negated = false)()(newMonitor).createResults(QueryStateHelper.empty).toList
     result should equal(List.empty)
   }
 }

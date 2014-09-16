@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
-case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)(implicit pipeMonitor: PipeMonitor)
+case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
+                        (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.filter {
@@ -45,8 +46,10 @@ case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)(implicit p
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: inner :: Nil) = sources
-    copy(source = source, inner = inner)
+    copy(source = source, inner = inner)(estimatedCardinality)
   }
 
   override def localEffects = Effects.NONE
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

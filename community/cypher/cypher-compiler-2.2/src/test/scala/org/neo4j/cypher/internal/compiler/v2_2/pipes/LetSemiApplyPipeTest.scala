@@ -33,7 +33,9 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
     })
 
-    val result = LetSemiApplyPipe(lhs, rhs, "let", negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result =
+      LetSemiApplyPipe(lhs, rhs, "let", negated = false)()(newMonitor).
+        createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
       Map("a" -> 1, "let" -> true),
@@ -50,7 +52,9 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
     })
 
-    val result = LetSemiApplyPipe(lhs, rhs, "let", negated = true)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result =
+      LetSemiApplyPipe(lhs, rhs, "let", negated = true)()(newMonitor).
+      createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
       Map("a" -> 1, "let" -> false),
@@ -63,7 +67,9 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = new FakePipe(Iterator.empty)
 
-    val result = LetSemiApplyPipe(lhs, rhs, "let", negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result =
+      LetSemiApplyPipe(lhs, rhs, "let", negated = false)()(newMonitor).
+        createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
       Map("a" -> 1, "let" -> false),
@@ -76,7 +82,9 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = new FakePipe(Iterator.empty)
 
-    val result = LetSemiApplyPipe(lhs, rhs, "let", negated = true)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result =
+      LetSemiApplyPipe(lhs, rhs, "let", negated = true)()(newMonitor).
+        createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
       Map("a" -> 1, "let" -> true),
@@ -89,7 +97,9 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = new FakePipe(Iterator(Map("a" -> 1)))
 
-    val result = LetSemiApplyPipe(lhs, rhs, "let", negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result =
+      LetSemiApplyPipe(lhs, rhs, "let", negated = false)()(newMonitor).
+        createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
       Map("a" -> 1, "let" -> true),
@@ -102,7 +112,9 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = new FakePipe(Iterator(Map("a" -> 1)))
 
-    val result = LetSemiApplyPipe(lhs, rhs, "let", negated = true)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result =
+      LetSemiApplyPipe(lhs, rhs, "let", negated = true)()(newMonitor).
+      createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
       Map("a" -> 1, "let" -> false),
@@ -116,6 +128,6 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val lhs = new FakePipe(Iterator.empty)
 
     // Should not throw
-    LetSemiApplyPipe(lhs, rhs, "let", negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
+    LetSemiApplyPipe(lhs, rhs, "let", negated = false)()(newMonitor).createResults(QueryStateHelper.empty).toList
   }
 }

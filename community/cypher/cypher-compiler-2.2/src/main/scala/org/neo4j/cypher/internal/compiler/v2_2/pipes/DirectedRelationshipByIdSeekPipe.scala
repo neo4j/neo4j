@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Relationship
 
 
 case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityByIdRhs, toNode: String, fromNode: String)
+                                           (val estimatedCardinality: Option[Long] = None)
                                            (implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with CollectionSupport
@@ -52,7 +53,7 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityById
     pipe = this,
     name = "DirectedRelationshipByIdSeekPipe",
     children = NoChildren,
-    arguments = Seq(
+    _arguments = Seq(
       Arguments.IntroducedIdentifier(ident),
       Arguments.IntroducedIdentifier(toNode),
       Arguments.IntroducedIdentifier(fromNode),
@@ -71,4 +72,6 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityById
   def sources: Seq[Pipe] = Seq.empty
 
   override def localEffects = Effects.READS_ENTITIES
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

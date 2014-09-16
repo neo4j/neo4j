@@ -43,7 +43,8 @@ case class EntityByIdExprs(exprs: Seq[Expression]) extends EntityByIdRhs {
     exprs.map(_.apply(ctx)(state))
 }
 
-case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)(implicit pipeMonitor: PipeMonitor)
+case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)
+                           (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with CollectionSupport
   with RonjaPipe {
@@ -70,4 +71,6 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)(implicit 
   def sources: Seq[Pipe] = Seq.empty
 
   override def localEffects = Effects.READS_NODES
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

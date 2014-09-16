@@ -27,4 +27,9 @@ object combinePredicates extends (Set[EstimatedPredicateCombination] => (Set[Pre
     combinations.toSeq.sortBy(_._2).headOption.map {
       case (combination, selectivity) => combination.containedPredicates -> selectivity
     }.getOrElse(Set.empty[Predicate] -> Selectivity(1))
+//  combinations.map {
+//    p => p._1.containedPredicates -> p._2
+//  }.reduceOption[(Set[Predicate], Selectivity)] {
+//    case ((accPreds, accSel), (preds, selectivity)) => (accPreds ++ preds) -> (accSel * selectivity)
+//  }.getOrElse(Set.empty[Predicate] -> Selectivity(1))
 }

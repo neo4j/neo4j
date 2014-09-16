@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression,
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.LegacyExpression
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
-case class SkipPipe(source: Pipe, exp: Expression)(implicit pipeMonitor: PipeMonitor)
+case class SkipPipe(source: Pipe, exp: Expression)
+                   (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with NumericHelper with RonjaPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     if(input.isEmpty)
@@ -47,8 +48,10 @@ case class SkipPipe(source: Pipe, exp: Expression)(implicit pipeMonitor: PipeMon
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)
+    copy(source = head)(estimatedCardinality)
   }
 
   override def localEffects = exp.effects
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

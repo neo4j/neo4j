@@ -31,12 +31,13 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.{True, Predicate => Comm
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.helpers.Eagerly
 import org.neo4j.graphdb.Relationship
 
-case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan) {
+case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan, cardinality: Metrics.CardinalityModel) {
   def plan(expr: ast.PatternExpression) = f(expr)
 }
 
@@ -69,45 +70,46 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
     def buildPipe(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext): Pipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
-      plan match {
+
+      val result: Pipe with RonjaPipe = plan match {
         case Projection(left, expressions) =>
-          ProjectionNewPipe(buildPipe(left), Eagerly.immutableMapValues(expressions, buildExpression))
+          ProjectionNewPipe(buildPipe(left), Eagerly.immutableMapValues(expressions, buildExpression))()
 
         case ProjectEndpoints(left, rel, start, end, directed, length) =>
-          ProjectEndpointsPipe(buildPipe(left), rel.name, start.name, end.name, directed, length.isSimple)
+          ProjectEndpointsPipe(buildPipe(left), rel.name, start.name, end.name, directed, length.isSimple)()
 
         case sr @ SingleRow(ids) =>
           NullPipe(new SymbolTable(sr.typeInfo))
 
         case AllNodesScan(IdName(id), _) =>
-          AllNodesScanPipe(id)
+          AllNodesScanPipe(id)()
 
         case NodeByLabelScan(IdName(id), label, _) =>
-          NodeByLabelScanPipe(id, label)
+          NodeByLabelScanPipe(id, label)()
 
         case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
-          NodeByIdSeekPipe(id, nodeIdExpr.asEntityByIdRhs)
+          NodeByIdSeekPipe(id, nodeIdExpr.asEntityByIdRhs)()
 
         case DirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-          DirectedRelationshipByIdSeekPipe(id, relIdExpr.asEntityByIdRhs, toNode, fromNode)
+          DirectedRelationshipByIdSeekPipe(id, relIdExpr.asEntityByIdRhs, toNode, fromNode)()
 
         case UndirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-          UndirectedRelationshipByIdSeekPipe(id, relIdExpr.asEntityByIdRhs, toNode, fromNode)
+          UndirectedRelationshipByIdSeekPipe(id, relIdExpr.asEntityByIdRhs, toNode, fromNode)()
 
         case NodeIndexSeek(IdName(id), label, propertyKey, valueExpr, _) =>
-          NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), unique = false)
+          NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), unique = false)()
 
         case NodeIndexUniqueSeek(IdName(id), label, propertyKey, valueExpr, _) =>
-          NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), unique = true)
+          NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), unique = true)()
 
         case Selection(predicates, left) =>
-          FilterPipe(buildPipe(left), predicates.map(buildPredicate).reduce(_ ++ _))
+          FilterPipe(buildPipe(left), predicates.map(buildPredicate).reduce(_ ++ _))()
 
         case CartesianProduct(left, right) =>
-          CartesianProductPipe(buildPipe(left), buildPipe(right))
+          CartesianProductPipe(buildPipe(left), buildPipe(right))()
 
         case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), SimplePatternLength, _) =>
-          ExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name))
+          ExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name))()
 
         case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), predicates) =>
           val (keys, exprs) = predicates.unzip
@@ -120,81 +122,83 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
               result
             }
           }
-          VarLengthExpandPipe(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)
+          VarLengthExpandPipe(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)()
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, predicates) =>
           val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
-          OptionalExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name), predicate)
+          OptionalExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name), predicate)()
 
         case NodeHashJoin(node, left, right) =>
-          NodeHashJoinPipe(node.name, buildPipe(left), buildPipe(right))
+          NodeHashJoinPipe(node.name, buildPipe(left), buildPipe(right))()
 
         case OuterHashJoin(node, left, right) =>
-          NodeOuterHashJoinPipe(node.name, buildPipe(left), buildPipe(right), (right.availableSymbols -- left.availableSymbols).map(_.name))
+          NodeOuterHashJoinPipe(node.name, buildPipe(left), buildPipe(right), (right.availableSymbols -- left.availableSymbols).map(_.name))()
 
         case Optional(inner) =>
-          OptionalPipe(inner.availableSymbols.map(_.name), buildPipe(inner))
+          OptionalPipe(inner.availableSymbols.map(_.name), buildPipe(inner))()
 
         case Apply(outer, inner) =>
-          ApplyPipe(buildPipe(outer), buildPipe(inner))
+          ApplyPipe(buildPipe(outer), buildPipe(inner))()
 
         case SemiApply(outer, inner) =>
-          SemiApplyPipe(buildPipe(outer), buildPipe(inner), negated = false)
+          SemiApplyPipe(buildPipe(outer), buildPipe(inner), negated = false)()
 
         case AntiSemiApply(outer, inner) =>
-          SemiApplyPipe(buildPipe(outer), buildPipe(inner), negated = true)
+          SemiApplyPipe(buildPipe(outer), buildPipe(inner), negated = true)()
 
         case LetSemiApply(outer, inner, idName) =>
-          LetSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, negated = false)
+          LetSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, negated = false)()
 
         case LetAntiSemiApply(outer, inner, idName) =>
-          LetSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, negated = true)
+          LetSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, negated = true)()
 
         case apply@SelectOrSemiApply(outer, inner, predicate) =>
-          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), buildPredicate(predicate), negated = false)
+          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), buildPredicate(predicate), negated = false)()
 
         case apply@SelectOrAntiSemiApply(outer, inner, predicate) =>
-          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), buildPredicate(predicate), negated = true)
+          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), buildPredicate(predicate), negated = true)()
 
         case apply@LetSelectOrSemiApply(outer, inner, idName, predicate) =>
-          LetSelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, buildPredicate(predicate), negated = false)
+          LetSelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, buildPredicate(predicate), negated = false)()
 
         case apply@LetSelectOrAntiSemiApply(outer, inner, idName, predicate) =>
-          LetSelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, buildPredicate(predicate), negated = true)
+          LetSelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, buildPredicate(predicate), negated = true)()
 
         case Sort(left, sortItems) =>
-          SortPipe(buildPipe(left), sortItems)
+          SortPipe(buildPipe(left), sortItems)()
 
         case Skip(input, count) =>
-          SkipPipe(buildPipe(input), buildExpression(count))
+          SkipPipe(buildPipe(input), buildExpression(count))()
 
         case Limit(input, count) =>
-          LimitPipe(buildPipe(input), buildExpression(count))
+          LimitPipe(buildPipe(input), buildExpression(count))()
 
         case SortedLimit(input, exp, sortItems) =>
-          TopPipe(buildPipe(input), sortItems.map(_.asCommandSortItem).toList, exp.asCommandExpression)
+          TopPipe(buildPipe(input), sortItems.map(_.asCommandSortItem).toList, exp.asCommandExpression)()
 
         case Aggregation(input, groupingExpressions, aggregatingExpressions) =>
           EagerAggregationPipe(
             buildPipe(input),
             Eagerly.immutableMapValues[String, ast.Expression, commands.expressions.Expression](groupingExpressions, x => x.asCommandExpression),
             Eagerly.immutableMapValues[String, ast.Expression, AggregationExpression](aggregatingExpressions, x => x.asCommandExpression.asInstanceOf[AggregationExpression])
-          )
+          )()
 
         case FindShortestPaths(input, shortestPath) =>
           val legacyShortestPaths = shortestPath.expr.asLegacyPatterns(shortestPath.name.map(_.name))
           val legacyShortestPath = legacyShortestPaths.head
-          new ShortestPathPipe(buildPipe(input), legacyShortestPath)
+          new ShortestPathPipe(buildPipe(input), legacyShortestPath)()
 
         case Union(lhs, rhs) =>
-          NewUnionPipe(buildPipe(lhs), buildPipe(rhs))
+          NewUnionPipe(buildPipe(lhs), buildPipe(rhs))()
 
         case UnwindCollection(lhs, identifier, collection) =>
-          UnwindPipe(buildPipe(lhs), collection.asCommandExpression, identifier.name)
+          UnwindPipe(buildPipe(lhs), collection.asCommandExpression, identifier.name)()
 
         case x =>
           throw new CantHandleQueryException(x.toString)
       }
+
+      result.setEstimatedCardinality(context.cardinality(plan).amount.toLong)
     }
 
     val topLevelPipe = buildPipe(plan)

@@ -55,7 +55,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")))
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -72,7 +72,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(Literal("hello"), Literal("world"))))
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(Literal("hello"), Literal("world"))))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -89,7 +89,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(Literal("hello"), Literal("world"))), unique = true)
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(Literal("hello"), Literal("world"))), unique = true)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -108,7 +108,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(
       Collection(
         Literal("hello"),
-        Literal(null))))
+        Literal(null))))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -127,7 +127,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(
       Collection(
         Literal("hello"),
-        Literal(null))), unique = true)
+        Literal(null))), unique = true)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -143,7 +143,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection()))
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection()))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -162,7 +162,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(
       Literal("hello"),
       Literal("hello")
-    )))
+    )))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -182,7 +182,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(
       Literal("hello"),
       Literal("world")
-    )))
+    )))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -194,7 +194,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     val queryState = QueryStateHelper.empty
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Literal("wut?")))
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Literal("wut?")))()
 
     // then
     val msg = intercept[CypherTypeException](pipe.createResults(queryState)).getMessage
@@ -207,7 +207,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     val queryState =  QueryStateHelper.emptyWith( query = exactUniqueIndexFor("hello"->Some(node)) )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")), unique = true)
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")), unique = true)()
     val result = pipe.createResults(queryState)
 
     // then

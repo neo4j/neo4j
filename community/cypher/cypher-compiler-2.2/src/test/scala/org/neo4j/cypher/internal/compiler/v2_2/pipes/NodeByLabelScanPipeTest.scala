@@ -38,7 +38,7 @@ class NodeByLabelScanPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = NodeByLabelScanPipe("a", Right(LabelId(12))).createResults(queryState)
+    val result = NodeByLabelScanPipe("a", Right(LabelId(12)))().createResults(queryState)
 
     // then
     result.map(_("a")).toList should equal(nodes)

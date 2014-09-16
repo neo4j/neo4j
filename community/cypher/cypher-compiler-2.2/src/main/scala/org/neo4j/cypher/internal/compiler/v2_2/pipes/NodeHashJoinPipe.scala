@@ -29,7 +29,8 @@ import org.neo4j.graphdb.Node
 import scala.collection.mutable
 
 case class NodeHashJoinPipe(nodeIdentifier: String, left: Pipe, right: Pipe)
-                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
+                           (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val table = new mutable.HashMap[Long, mutable.MutableList[ExecutionContext]]
@@ -62,7 +63,7 @@ case class NodeHashJoinPipe(nodeIdentifier: String, left: Pipe, right: Pipe)
       pipe = this,
       name = "NodeHashJoin",
       children = TwoChildren(left.planDescription, right.planDescription),
-      arguments = Seq(KeyNames(Seq(nodeIdentifier)))
+      _arguments = Seq(KeyNames(Seq(nodeIdentifier)))
     )
 
   def symbols: SymbolTable = left.symbols.add(right.symbols.identifiers).add(nodeIdentifier, CTNode)
@@ -71,8 +72,10 @@ case class NodeHashJoinPipe(nodeIdentifier: String, left: Pipe, right: Pipe)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (left :: right :: Nil) = sources
-    copy(left = left, right = right)
+    copy(left = left, right = right)(estimatedCardinality)
   }
 
   override def localEffects = Effects.NONE
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

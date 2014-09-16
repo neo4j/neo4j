@@ -44,7 +44,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> node2), row("b" -> node3)))
 
     // when
-    val result = NodeHashJoinPipe("b", left, right).createResults(queryState)
+    val result = NodeHashJoinPipe("b", left, right)().createResults(queryState)
 
     // then
     result.map(_("b")).toList should equal(List(node2))
@@ -63,7 +63,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> node2, "c" -> 30), row("b" -> node2, "c" -> 40)))
 
     // when
-    val result = NodeHashJoinPipe("b", left, right).createResults(queryState)
+    val result = NodeHashJoinPipe("b", left, right)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -85,7 +85,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> node2, "c" -> 30), row("b" -> node1, "c" -> 40)))
 
     // when
-    val result = NodeHashJoinPipe("b", left, right).createResults(queryState)
+    val result = NodeHashJoinPipe("b", left, right)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -106,7 +106,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> null, "c" -> 30), row("b" -> node2, "c" -> 40)))
 
     // when
-    val result = NodeHashJoinPipe("b", left, right).createResults(queryState)
+    val result = NodeHashJoinPipe("b", left, right)().createResults(queryState)
 
     // then
     result.toList should equal(List(

@@ -60,7 +60,14 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedQueryGraph = mock[QueryGraph]
 
-  def newMockedPipeExecutionPlanBuilderContext = mock[PipeExecutionBuilderContext]
+  def newMockedPipeExecutionPlanBuilderContext: PipeExecutionBuilderContext = {
+    val context = mock[PipeExecutionBuilderContext]
+    val cardinality = new Metrics.CardinalityModel {
+      def apply(v1: LogicalPlan) = Cardinality(1)
+    }
+    when(context.cardinality).thenReturn(cardinality)
+    context
+  }
 
   def newMetricsFactory = SimpleMetricsFactory
 
