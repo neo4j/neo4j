@@ -42,7 +42,7 @@ import org.neo4j.kernel.logging.Logging;
  * The migration will happen to a separate, isolated directory so that an incomplete migration will not affect
  * the original database. Only when a successful migration has taken place the migrated store will replace
  * the original database.
- *
+ * <p/>
  * Migration process at a glance:
  * <ol>
  * <li>Participants are asked whether or not there's a need for migration</li>
@@ -53,7 +53,7 @@ import org.neo4j.kernel.logging.Logging;
  * replacing only the existing files, so that if only some store files needed migration the others are left intact</li>
  * <li>Migration is completed and participant resources are closed</li>
  * </ol>
- *
+ * <p/>
  * TODO walk through crash scenarios and how they are handled.
  *
  * @see StoreMigrationParticipant
@@ -268,7 +268,7 @@ public class StoreUpgrader
     }
 
     private void migrateToIsolatedDirectory( List<StoreMigrationParticipant> participantsNeedingMigration,
-            File storeDir, File migrationDirectory )
+                                             File storeDir, File migrationDirectory )
     {
         try
         {
@@ -383,7 +383,8 @@ public class StoreUpgrader
     public static class UpgradingStoreVersionNotFoundException extends UnableToUpgradeException
     {
         private static final String MESSAGE =
-                "'%s' does not contain a store version, please ensure that the original database was shut down in a clean state.";
+                "'%s' does not contain a store version, please ensure that the original database was shut down in a " +
+                        "clean state.";
 
         public UpgradingStoreVersionNotFoundException( String filenameWithoutStoreVersion )
         {

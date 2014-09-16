@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -90,7 +91,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         return Boolean.getBoolean( "logger" ) ? StringLogger.SYSTEM : StringLogger.DEV_NULL;
     }
 
-    void dump( File storeFile )
+    void dump( File storeFile ) throws IOException
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -111,6 +112,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         finally
         {
             store.close();
+            pageCache.close();
             life.shutdown();
         }
     }
