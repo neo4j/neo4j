@@ -42,8 +42,11 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.adversaries.RandomAdversary;
+import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -3013,6 +3016,118 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
                     // We don't care about the exception per se.
                     // We just want lots of failed page faults.
                 }
+            }
+        }
+    }
+
+    @Ignore( "Ignored because the StandardPageCache doesn't yet pass this test." )
+    @Test(timeout = 60000)
+    public void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures() throws Exception
+    {
+        // NOTE: This test is inherently non-deterministic. This means that every failure must be
+        // thoroughly investigated, since they have a good chance of being a real issue.
+        // This is effectively a targeted robustness test.
+
+        RandomAdversary adversary = new RandomAdversary( 0.5, 0.2, 0.2 );
+        adversary.setProbabilityFactor( 0.0 );
+        FileSystemAbstraction fs = new AdversarialFileSystemAbstraction( adversary, this.fs );
+        File fileA = new File( "a" );
+        File fileB = new File( "b" );
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pfA = pageCache.map( fileA, filePageSize );
+        PagedFile pfB = pageCache.map( fileB, filePageSize / 2 + 1 );
+        adversary.setProbabilityFactor( 1.0 );
+
+        for ( int i = 0; i < 50000; i++ )
+        {
+            PagedFile pagedFile = rng.nextBoolean()? pfA : pfB;
+            long maxPageId = pagedFile.getLastPageId();
+            boolean performingRead = rng.nextBoolean() && maxPageId != -1;
+            long startingPage = maxPageId == -1? 0 : rng.nextLong( maxPageId + 1 );
+            int pf_flags = performingRead ? PF_SHARED_LOCK : PF_EXCLUSIVE_LOCK;
+            int pageSize = pagedFile.pageSize();
+
+            try ( PageCursor cursor = pagedFile.io( startingPage, pf_flags ) )
+            {
+                if ( performingRead )
+                {
+                    performConsistentAdversarialRead( cursor, maxPageId, startingPage, pageSize );
+                }
+                else
+                {
+                    performConsistentAdversarialWrite( cursor, rng, pageSize );
+                }
+            }
+            catch ( AssertionError error )
+            {
+                throw error;
+            }
+            catch ( Throwable throwable )
+            {
+                // Don't worry about it... it's fine!
+//                throwable.printStackTrace(); // only enable this when debugging test failures.
+            }
+        }
+
+        // Unmapping will cause pages to be flushed.
+        // We don't want that to fail, since it will upset the test tear-down.
+        adversary.setProbabilityFactor( 0.0 );
+
+        // Do some post-chaos verification of what has been written.
+        verifyAdversarialPagedContent( pfA );
+        verifyAdversarialPagedContent( pfB );
+
+        pageCache.unmap( fileA );
+        pageCache.unmap( fileB );
+    }
+
+    private void performConsistentAdversarialRead( PageCursor cursor, long maxPageId, long startingPage,
+                                                   int pageSize ) throws IOException
+    {
+        long pagesToLookAt = Math.min( maxPageId, startingPage + 3 ) - startingPage + 1;
+        for ( int j = 0; j < pagesToLookAt; j++ )
+        {
+            assertTrue( cursor.next() );
+            readAndVerifyAdversarialPage( cursor, pageSize );
+        }
+    }
+
+    private void readAndVerifyAdversarialPage( PageCursor cursor, int pageSize ) throws IOException
+    {
+        byte[] actualPage = new byte[pageSize];
+        byte[] expectedPage = new byte[pageSize];
+        do
+        {
+            cursor.getBytes( actualPage );
+        }
+        while ( cursor.shouldRetry() );
+        Arrays.fill( expectedPage, actualPage[0] );
+        assertThat( actualPage, byteArray( expectedPage ) );
+    }
+
+    private void performConsistentAdversarialWrite( PageCursor cursor, ThreadLocalRandom rng, int pageSize ) throws IOException
+    {
+        for ( int j = 0; j < 3; j++ )
+        {
+            assertTrue( cursor.next() );
+            byte b = (byte) rng.nextInt();
+            for ( int k = 0; k < pageSize; k++ )
+            {
+                cursor.putByte( b );
+            }
+            assertFalse( cursor.shouldRetry() );
+        }
+    }
+
+    private void verifyAdversarialPagedContent( PagedFile pagedFile ) throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        {
+            while ( cursor.next() )
+            {
+                readAndVerifyAdversarialPage( cursor, pagedFile.pageSize() );
             }
         }
     }

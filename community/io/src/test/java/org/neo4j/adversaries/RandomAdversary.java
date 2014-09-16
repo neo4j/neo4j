@@ -25,7 +25,7 @@ package org.neo4j.adversaries;
 @SuppressWarnings( "unchecked" )
 public class RandomAdversary extends AbstractAdversary
 {
-    private static final double STANDARD_PROPABILITY_FACTOR = 1.0;
+    private static final double STANDARD_PROBABILITY_FACTOR = 1.0;
     private final double mischiefRate;
     private final double failureRate;
     private final double errorRate;
@@ -46,7 +46,7 @@ public class RandomAdversary extends AbstractAdversary
         this.mischiefRate = mischiefRate;
         this.failureRate = failureRate;
         this.errorRate = errorRate;
-        probabilityFactor = STANDARD_PROPABILITY_FACTOR;
+        probabilityFactor = STANDARD_PROBABILITY_FACTOR;
     }
 
     @Override
@@ -76,7 +76,7 @@ public class RandomAdversary extends AbstractAdversary
         {
             if ( resetUponFailure )
             {
-                probabilityFactor = STANDARD_PROPABILITY_FACTOR;
+                probabilityFactor = STANDARD_PROBABILITY_FACTOR;
             }
             throwOneOf( OutOfMemoryError.class, NullPointerException.class );
         }
@@ -84,7 +84,7 @@ public class RandomAdversary extends AbstractAdversary
         {
             if ( resetUponFailure )
             {
-                probabilityFactor = STANDARD_PROPABILITY_FACTOR;
+                probabilityFactor = STANDARD_PROBABILITY_FACTOR;
             }
             throwOneOf( failureTypes );
         }

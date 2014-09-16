@@ -35,9 +35,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.adversaries.Adversary;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.function.Function;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -48,13 +47,18 @@ import org.neo4j.io.fs.StoreChannel;
 @SuppressWarnings("unchecked")
 public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
 {
-    private final DefaultFileSystemAbstraction delegate;
+    private final FileSystemAbstraction delegate;
     private final Adversary adversary;
 
     public AdversarialFileSystemAbstraction( Adversary adversary )
     {
+        this( adversary, new DefaultFileSystemAbstraction() );
+    }
+
+    public AdversarialFileSystemAbstraction( Adversary adversary, FileSystemAbstraction delegate )
+    {
         this.adversary = adversary;
-        delegate = new DefaultFileSystemAbstraction();
+        this.delegate = delegate;
     }
 
     public StoreChannel open( File fileName, String mode ) throws IOException
@@ -146,7 +150,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     public void moveToDirectory( File file, File toDirectory ) throws IOException
     {
         adversary.injectFailure(
-                SecurityException.class, IllegalArgumentException.class, NotFoundException.class,
+                SecurityException.class, IllegalArgumentException.class, FileNotFoundException.class,
                 NullPointerException.class, IOException.class );
         delegate.moveToDirectory( file, toDirectory );
     }

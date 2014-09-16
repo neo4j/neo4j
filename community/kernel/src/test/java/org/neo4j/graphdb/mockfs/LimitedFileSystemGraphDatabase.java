@@ -35,6 +35,6 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
 
     public void runOutOfDiskSpaceNao()
     {
-        this.fs.runOutOfDiskSpace();
+        this.fs.runOutOfDiskSpace( true );
     }
 }
