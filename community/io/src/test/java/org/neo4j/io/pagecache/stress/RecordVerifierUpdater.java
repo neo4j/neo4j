@@ -22,6 +22,8 @@ package org.neo4j.io.pagecache.stress;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageCursor;
 
 public class RecordVerifierUpdater
@@ -35,33 +37,46 @@ public class RecordVerifierUpdater
         this.numberOfCounters = numberOfCounters;
     }
 
-    public void verifyChecksumAndUpdateCount( PageCursor cursor, int recordNumber, int counterNumber )
+    // under exclusive lock: no retries necessary
+    public void verifyChecksumAndUpdateCount( PageCursor cursor, int recordNumber, int counterNumber ) throws IOException
     {
         verifyChecksum( cursor, recordNumber );
 
         updateCount( cursor, recordNumber, counterNumber );
     }
 
-    public void verifyCount( PageCursor cursor, int recordNumber, int counterNumber, long expectedCount )
+    // under shared lock: remember to retry
+    public void verifyCount( PageCursor cursor, int recordNumber, int counterNumber, long expectedCount ) throws IOException
     {
-        cursor.setOffset( recordNumber * getRecordSize() + counterNumber * SizeOfLong );
-        long actualCount = cursor.getLong();
+        long actualCount;
+        do
+        {
+            cursor.setOffset( recordNumber * getRecordSize() + counterNumber * SizeOfLong );
+
+            actualCount = cursor.getLong();
+        } while ( cursor.shouldRetry() );
 
         assertThat( actualCount, is( expectedCount ) );
     }
 
-    public void verifyChecksum( PageCursor cursor, int recordNumber )
+    // under shared lock or exclusive lock: must retry
+    public void verifyChecksum( PageCursor cursor, int recordNumber ) throws IOException
     {
-        cursor.setOffset( recordNumber * getRecordSize() );
-
         long actualChecksum = 0;
-        for ( int i = 0; i < numberOfCounters; i++ )
+        long checksum;
+        do
         {
-            long count = cursor.getLong();
+            cursor.setOffset( recordNumber * getRecordSize() );
 
-            actualChecksum += count;
-        }
-        long checksum = cursor.getLong();
+            for ( int i = 0; i < numberOfCounters; i++ )
+            {
+                long count = cursor.getLong();
+
+                actualChecksum += count;
+            }
+
+            checksum = cursor.getLong();
+        } while ( cursor.shouldRetry() );
 
         assertThat( actualChecksum, is( checksum ) );
     }
