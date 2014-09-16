@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.helpers.{Eagerly, CollectionSupport}
 import org.neo4j.cypher.internal.{Profiled, Explained, PlanType}
 import org.neo4j.graphdb.ResourceIterator
 
@@ -62,7 +62,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaIterator: ResourceIterator[java.util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
-    def next() = self.next().mapValues(makeValueJavaCompatible).asJava
+    def next() = Eagerly.immutableMapValues(self.next(), makeValueJavaCompatible).asJava
   }
 
   override def toList: List[Predef.Map[String, Any]] = result.toList
@@ -85,7 +85,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   private def makeValueJavaCompatible(value: Any): Any = value match {
     case iter: Seq[_]    => iter.map(makeValueJavaCompatible).asJava
-    case iter: Map[_, _] => iter.mapValues(makeValueJavaCompatible).asJava
+    case iter: Map[_, _] => Eagerly.immutableMapValues(iter, makeValueJavaCompatible).asJava
     case x               => x
   }
 
