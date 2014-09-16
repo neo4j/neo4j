@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyCreator;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -45,6 +46,7 @@ import static org.neo4j.unsafe.impl.batchimport.Utils.propertyKeysAndValues;
  */
 public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelationship>>
 {
+    private final IdMapper idMapper;
     private final BatchingTokenRepository<?> propertyKeyRepository;
     private final BatchingTokenRepository<?> relationshipTypeRepository;
     private final RelationshipStore relationshipStore;
@@ -53,12 +55,13 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelat
 
     public RelationshipEncoderStep( StageControl control, String name,
             int workAheadSize, int numberOfExecutors,
-            BatchingTokenRepository<?> propertyKeyRepository,
+            IdMapper idMapper, BatchingTokenRepository<?> propertyKeyRepository,
             BatchingTokenRepository<?> relationshipTypeRepository,
             RelationshipStore relationshipStore, PropertyStore propertyStore,
             NodeRelationshipLink nodeRelationshipLink )
     {
         super( control, name, workAheadSize, numberOfExecutors );
+        this.idMapper = idMapper;
         this.propertyKeyRepository = propertyKeyRepository;
         this.relationshipTypeRepository = relationshipTypeRepository;
         this.relationshipStore = relationshipStore;
@@ -73,7 +76,7 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelat
         List<RelationshipRecord> relationshipRecords = new ArrayList<>( batch.size() );
         for ( InputRelationship batchRelationship : batch )
         {
-            long relationshipId = batchRelationship.id();
+            long relationshipId = idMapper.get( batchRelationship.id() );
             relationshipStore.setHighId( relationshipId+1 );
             int typeId = batchRelationship.hasTypeId() ? batchRelationship.typeId() :
                     relationshipTypeRepository.getOrCreateId( batchRelationship.type() );

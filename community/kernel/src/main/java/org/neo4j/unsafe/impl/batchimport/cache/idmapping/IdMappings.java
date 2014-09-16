@@ -17,20 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.cache;
+package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
-import java.util.Iterator;
-
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-
-/**
- * Maps ids from {@link InputEntity input entities} into ids used in the store.
- */
-public interface IdMapper
+public class IdMappings
 {
-    Iterator<InputNode> wrapNodes( Iterator<InputNode> nodes );
+    public static IdMapping actual()
+    {
+        return new IdMapping()
+        {
+            private final IdMapper idMapper = IdMappers.actual();
+            private final IdGenerator idGenerator = IdGenerators.fromInput();
 
-    Iterator<InputRelationship> wrapRelationships( Iterator<InputRelationship> relationships );
+            @Override
+            public IdMapper idMapper()
+            {
+                return idMapper;
+            }
+
+            @Override
+            public IdGenerator idGenerator()
+            {
+                return idGenerator;
+            }
+        };
+    }
 }

@@ -17,21 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
+package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
-import java.io.IOException;
-
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-
-/**
- * Imports graph data, nodes with their properties and labels separated from relationship with their properties.
- */
-public interface BatchImporter
+public class IdMappers
 {
-    void doImport( Iterable<InputNode> nodes, Iterable<InputRelationship> relationships, IdMapping idMapping )
-            throws IOException;
+    /**
+     * An {@link IdMapper} that doesn't touch the input ids, but just asserts that node ids arrive in ascending order.
+     */
+    public static IdMapper actual()
+    {
+        return new IdMapper()
+        {
+            @Override
+            public void put( Object inputId, long actualId )
+            {   // No need to remember anything
+            }
 
-    void shutdown();
+            @Override
+            public void sort()
+            {   // No need to sort anything
+            }
+
+            @Override
+            public long get( Object inputId )
+            {
+                return ((Long)inputId).longValue();
+            }
+        };
+    }
 }
