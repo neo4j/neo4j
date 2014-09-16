@@ -66,8 +66,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.cache.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.cache.IdMappers;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappings;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
@@ -184,8 +183,8 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
                                                             new Configuration.OverrideFromConfig( config ), logging, executionMonitor );
         Iterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
-        IdMapper idMapper = IdMappers.actualIds();
-        importer.doImport( nodes, relationships, idMapper );
+        importer.doImport( nodes, relationships, IdMappings.actual() );
+        progressMonitor.finished();
 
         // Finish the import of nodes and relationships
         importer.shutdown();

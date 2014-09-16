@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
-import org.neo4j.unsafe.impl.batchimport.cache.IdMappers;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappings;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.SilentExecutionMonitor;
@@ -91,7 +91,7 @@ public class ParallelBatchImporterTest
         // WHEN
         int nodeCount = 100_000;
         int relationshipCount = nodeCount * 10;
-        inserter.doImport( nodes( nodeCount ), relationships( relationshipCount, nodeCount ), IdMappers.actualIds() );
+        inserter.doImport( nodes( nodeCount ), relationships( relationshipCount, nodeCount ), IdMappings.actual() );
         inserter.shutdown();
 
         // THEN
@@ -248,7 +248,7 @@ public class ParallelBatchImporterTest
             {
                 return new PrefetchingIterator<InputNode>()
                 {
-                    private int cursor;
+                    private long cursor;
                     private final Object[] properties = new Object[]{
                             "name", "Nisse " + cursor,
                             "age", 10,

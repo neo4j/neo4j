@@ -52,6 +52,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
@@ -91,6 +92,13 @@ class BackupService
             return consistent;
         }
     }
+
+    static final String TOO_OLD_BACKUP = "It's been too long since this backup was last " + "updated, and it has " +
+            "fallen too far behind the database transaction stream for incremental backup to be possible. You need to" +
+            " perform a full backup at this point. " + "You can modify this time interval by setting the '" +
+            GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a higher value.";
+
+    static final String DIFFERENT_STORE = "Target directory contains full backup of a logically different store.";
 
     private final FileSystemAbstraction fileSystem;
     private final StringLogger logger;
@@ -263,7 +271,7 @@ class BackupService
 
     static GraphDatabaseAPI startTemporaryDb( String targetDirectory, ConfigParam... params )
     {
-        Map<String, String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<>();
         config.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         config.put( InternalAbstractGraphDatabase.Configuration.log_configuration_file.name(),
                 "neo4j-backup-logback.xml" );
@@ -307,16 +315,15 @@ class BackupService
             unpacker.unpackResponse( response, handler );
             consistent = true;
         }
+        catch ( MismatchingStoreIdException e )
+        {
+            throw new RuntimeException( DIFFERENT_STORE, e );
+        }
         catch ( RuntimeException e )
         {
             if ( e.getCause() != null && e.getCause() instanceof MissingLogDataException )
             {
-                throw new IncrementalBackupNotPossibleException(
-                        "It's been too long since this backup was last updated, and it has "
-                                + "fallen too far behind the database transaction stream for incremental backup to be possible. "
-                                + "You need to perform a full backup at this point. You can modify this time interval by setting "
-                                + "the '" + GraphDatabaseSettings.keep_logical_logs.name()
-                                + "' configuration on the database to a " + "higher value.", e.getCause() );
+                throw new IncrementalBackupNotPossibleException( TOO_OLD_BACKUP, e.getCause() );
             }
             throw new RuntimeException( "Failed to perform incremental backup.", e );
         }
@@ -336,7 +343,14 @@ class BackupService
             }
             catch ( Throwable throwable )
             {
-                throw new RuntimeException( throwable );
+                if ( consistent )
+                {
+                    logger.warn( "Unable to stop backup client", throwable );
+                }
+                else
+                {
+                    throw new RuntimeException( "Unable to stop backup client", throwable );
+                }
             }
         }
         return new BackupOutcome( handler.getLastSeenTransactionId(), consistent );
