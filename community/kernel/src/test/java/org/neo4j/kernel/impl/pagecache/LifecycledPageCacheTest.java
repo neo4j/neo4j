@@ -53,10 +53,9 @@ public class LifecycledPageCacheTest
                 mapped_memory_total_size.name(), Integer.toString(4096 * 16) ) );
 
         // When
-        PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fsRule.get() );
         PageCache cache = new LifecycledPageCache(
-                pageCacheFactory, swapperFactory, new Neo4jJobScheduler(), config, new Monitors().newMonitor( PageCacheMonitor.class ) );
+                swapperFactory, new Neo4jJobScheduler(), config, new Monitors().newMonitor( PageCacheMonitor.class ) );
 
         // Then
         assertThat(cache.pageSize(), equalTo(4096));

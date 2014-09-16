@@ -28,8 +28,6 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
-import org.neo4j.kernel.impl.pagecache.PageCacheFactory;
-import org.neo4j.kernel.impl.pagecache.StandardPageCacheFactory;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -44,10 +42,9 @@ public class PageCacheRule extends ExternalResource
         {
             pageCache.stop();
         }
-        PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
         pageCache = new LifecycledPageCache(
-                pageCacheFactory, swapperFactory, jobScheduler, config, new Monitors().newMonitor( PageCacheMonitor.class ) );
+                swapperFactory, jobScheduler, config, new Monitors().newMonitor( PageCacheMonitor.class ) );
         pageCache.start();
         return pageCache;
     }

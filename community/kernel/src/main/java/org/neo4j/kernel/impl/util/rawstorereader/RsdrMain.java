@@ -46,8 +46,6 @@ import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
-import org.neo4j.kernel.impl.pagecache.PageCacheFactory;
-import org.neo4j.kernel.impl.pagecache.StandardPageCacheFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
@@ -99,10 +97,9 @@ public class RsdrMain
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
-        PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( files );
         LifecycledPageCache pageCache = new LifecycledPageCache(
-                pageCacheFactory, swapperFactory, jobScheduler, config, new Monitors().newMonitor( PageCacheMonitor.class ) );
+                swapperFactory, jobScheduler, config, new Monitors().newMonitor( PageCacheMonitor.class ) );
         pageCache.start();
         StringLogger logger = StringLogger.DEV_NULL;
         StoreFactory factory = new StoreFactory(

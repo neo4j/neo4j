@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RunnablePageCache;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -43,14 +44,13 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     private volatile JobScheduler.JobHandle pageEvictionJobHandle;
 
     public LifecycledPageCache(
-            PageCacheFactory pageCacheFactory,
             PageSwapperFactory swapperFactory,
             JobScheduler scheduler,
             Config config,
             PageCacheMonitor monitor )
     {
         this.scheduler = scheduler;
-        this.pageCache = pageCacheFactory.createPageCache(
+        this.pageCache = new MuninnPageCache(
                 swapperFactory,
                 calculateMaxPages( config ),
                 calculatePageSize( config ),

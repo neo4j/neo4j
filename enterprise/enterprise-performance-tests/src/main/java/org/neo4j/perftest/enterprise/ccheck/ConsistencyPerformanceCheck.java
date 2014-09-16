@@ -42,8 +42,6 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
-import org.neo4j.kernel.impl.pagecache.PageCacheFactory;
-import org.neo4j.kernel.impl.pagecache.StandardPageCacheFactory;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -128,11 +126,10 @@ public class ConsistencyPerformanceCheck
         Config tuningConfiguration = buildTuningConfiguration( configuration );
         jobScheduler = new Neo4jJobScheduler();
         fileSystem = new DefaultFileSystemAbstraction();
-        PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
         Monitors monitors = new Monitors();
         pageCache = new LifecycledPageCache(
-                pageCacheFactory, swapperFactory, jobScheduler, tuningConfiguration, monitors.newMonitor( PageCacheMonitor.class ) );
+                swapperFactory, jobScheduler, tuningConfiguration, monitors.newMonitor( PageCacheMonitor.class ) );
         jobScheduler.init();
         pageCache.start();
         DirectStoreAccess directStoreAccess = createScannableStores( configuration.get( DataGenerator.store_dir ),

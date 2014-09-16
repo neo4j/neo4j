@@ -48,7 +48,6 @@ public class StandalonePageCacheFactory
         );
         Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler( schedulerName ) );
         LifecycledPageCache pageCache = life.add( new LifecycledPageCache(
-                new StandardPageCacheFactory(),
                 new SingleFilePageSwapperFactory( fileSystem ),
                 scheduler,
                 config,
