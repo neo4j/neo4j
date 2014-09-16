@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.{ExpressionConverters, OtherConverters, PatternConverters}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{True, Predicate => CommandPredicate}
@@ -34,8 +33,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
-import org.neo4j.graphdb.Relationship
 import org.neo4j.cypher.internal.helpers.Eagerly
+import org.neo4j.graphdb.Relationship
 
 case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan) {
   def plan(expr: ast.PatternExpression) = f(expr)

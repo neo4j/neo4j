@@ -76,14 +76,16 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
   }
 
-  private def calculateSelectivityForLabel(label: LabelName): Selectivity = {
+  private def calculateSelectivityForLabel(label: LabelName): Selectivity =
+    calculateSelectivityForLabel(label.labelId)
+
+  private def calculateSelectivityForLabel(label: Option[LabelId]): Selectivity = {
     val nodeCardinality = stats.nodesWithLabelCardinality(None)
     if (nodeCardinality == Cardinality(0)) {
       return Selectivity(1)
     }
 
     val labelCardinality = label.
-      labelId.
       map(l => stats.nodesWithLabelCardinality(Some(l))).
       getOrElse(Cardinality(0))
     labelCardinality / nodeCardinality
@@ -104,13 +106,16 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
       if (maxRelCount == Cardinality(0))
         return Selectivity(1)
 
+      val lhsSelectivity = calculateSelectivityForLabel(lhs)
+      val rhsSelectivity = calculateSelectivityForLabel(rhs)
+
       val relCount =
         if (pattern.types.isEmpty) {
           (lhs.labelId, rhs.labelId) match {
-            case (Some(lId), Some(rId)) =>
-              stats.cardinalityByLabelsAndRelationshipType(Some(lId), None, Some(rId)) *
-                calculateSelectivityForLabel(lhs) *
-                calculateSelectivityForLabel(rhs)
+            case (Some(lId), Some(rId)) if pattern.dir == Direction.OUTGOING =>
+              stats.cardinalityByLabelsAndRelationshipType(Some(lId), None, Some(rId)) * lhsSelectivity * rhsSelectivity
+            case (Some(lId), Some(rId)) if pattern.dir == Direction.INCOMING =>
+              stats.cardinalityByLabelsAndRelationshipType(Some(rId), None, Some(lId)) * lhsSelectivity * rhsSelectivity
             case _ =>
               Cardinality(0)
           }
@@ -118,10 +123,10 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
         } else {
           val relationshipId: Option[RelTypeId] = pattern.types.map(_.relTypeId).head
           (lhs.labelId, relationshipId, rhs.labelId) match {
-            case (Some(lId), Some(relId), Some(rId)) =>
-              stats.cardinalityByLabelsAndRelationshipType(Some(lId), Some(relId), Some(rId)) *
-                calculateSelectivityForLabel(lhs) *
-                calculateSelectivityForLabel(rhs)
+            case (Some(lId), Some(relId), Some(rId)) if pattern.dir == Direction.OUTGOING =>
+              stats.cardinalityByLabelsAndRelationshipType(Some(lId), Some(relId), Some(rId)) * lhsSelectivity * rhsSelectivity
+            case (Some(lId), Some(relId), Some(rId)) if pattern.dir == Direction.INCOMING =>
+              stats.cardinalityByLabelsAndRelationshipType(Some(rId), Some(relId), Some(lId)) * lhsSelectivity * rhsSelectivity
             case _ =>
               Cardinality(0)
           }
@@ -181,7 +186,8 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
       }
     }).getOrElse(Cardinality(0))
 
-    Selectivity(relCount.amount * (1 / maxRelCount.amount)) // TODO: Find a type safe way of expressing this
+    // We need to factor in the selectivity of the label predicate as well as the relationship selectivity
+    calculateSelectivityForLabel(lhsLabelId) * (relCount / maxRelCount)
   }
 
   implicit class RichLabelName(val label: LabelName) {

@@ -205,7 +205,7 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
       shouldHaveCardinality(50)
   }
 
-  ignore("relationship cardinality given a label on one side") { // This should work
+  test("relationship cardinality given a label on one side") {
     givenPattern("MATCH (a:A)-[r:TYPE]->(b)").
       withGraphNodes(100).
       withLabel('A -> 30).
