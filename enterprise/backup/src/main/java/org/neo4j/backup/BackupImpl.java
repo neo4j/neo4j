@@ -46,8 +46,8 @@ class BackupImpl implements TheBackupInterface
     private final LogFileInformation logFileInformation;
 
     public BackupImpl( StoreCopyServer storeCopyServer, Monitors monitors,
-            LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
-            LogFileInformation logFileInformation, GraphDatabaseAPI db )
+                       LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
+                       LogFileInformation logFileInformation, GraphDatabaseAPI db )
     {
         this.storeCopyServer = storeCopyServer;
         this.logicalTransactionStore = logicalTransactionStore;
@@ -67,7 +67,7 @@ class BackupImpl implements TheBackupInterface
             RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter );
             ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
                     transactionIdStore, logFileInformation, db,
-                    copyStartContext.lastAppliedTransaction()+1 ); // mandatory transaction id
+                    copyStartContext.lastAppliedTransaction() + 1 ); // mandatory transaction id
             long optionalTransactionId = boBackACoupleOfTransactionsIfRequired(
                     copyStartContext.lastAppliedTransaction() ); // optional transaction id
             return responsePacker.packResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
@@ -77,9 +77,9 @@ class BackupImpl implements TheBackupInterface
     private long boBackACoupleOfTransactionsIfRequired( long transactionWhenStartingCopy )
     {
         int atLeast = 10;
-        if ( transactionIdStore.getLastCommittedTransactionId()-transactionWhenStartingCopy < atLeast )
+        if ( transactionIdStore.getLastCommittedTransactionId() - transactionWhenStartingCopy < atLeast )
         {
-            return max( 1, transactionIdStore.getLastCommittedTransactionId()-atLeast );
+            return max( 1, transactionIdStore.getLastCommittedTransactionId() - atLeast );
         }
         return transactionWhenStartingCopy;
     }

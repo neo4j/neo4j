@@ -52,6 +52,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
@@ -92,6 +93,13 @@ class BackupService
         }
     }
 
+    static final String TOO_OLD_BACKUP = "It's been too long since this backup was last " + "updated, and it has " +
+            "fallen too far behind the database transaction stream for incremental backup to be possible. You need to" +
+            " perform a full backup at this point. " + "You can modify this time interval by setting the '" +
+            GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a higher value.";
+
+    static final String DIFFERENT_STORE = "Target directory contains full backup of a logically different store.";
+
     private final FileSystemAbstraction fileSystem;
     private final StringLogger logger;
 
@@ -112,18 +120,21 @@ class BackupService
     }
 
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, String targetDirectory,
-            boolean checkConsistency, Config tuningConfiguration )
+                                boolean checkConsistency, Config tuningConfiguration )
     {
         if ( directoryContainsDb( targetDirectory ) )
         {
             throw new RuntimeException( targetDirectory + " already contains a database" );
         }
+
         Map<String, String> params = tuningConfiguration.getParams();
         params.put( GraphDatabaseSettings.store_dir.name(), targetDirectory );
         tuningConfiguration.applyChanges( params );
+
         long timestamp = System.currentTimeMillis();
         long lastCommittedTx = -1;
         boolean consistent = !checkConsistency; // default to true if we're not checking consistency
+
         GraphDatabaseAPI targetDb = null;
         try
         {
@@ -162,13 +173,17 @@ class BackupService
                 targetDb.shutdown();
             }
         }
+
         bumpMessagesDotLogFile( targetDirectory, timestamp );
         if ( checkConsistency )
         {
             try
             {
-                consistent = new ConsistencyCheckService().runFullConsistencyCheck( targetDirectory,
-                        tuningConfiguration, ProgressMonitorFactory.textual( System.err ), logger ).isSuccessful();
+                consistent = new ConsistencyCheckService().runFullConsistencyCheck(
+                        targetDirectory,
+                        tuningConfiguration,
+                        ProgressMonitorFactory.textual( System.err ),
+                        logger ).isSuccessful();
             }
             catch ( ConsistencyCheckIncompleteException e )
             {
@@ -183,12 +198,13 @@ class BackupService
     }
 
     BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
-            boolean verification ) throws IncrementalBackupNotPossibleException
+                                       boolean verification ) throws IncrementalBackupNotPossibleException
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
             throw new RuntimeException( targetDirectory + " doesn't contain a database" );
         }
+
         // In case someone deleted the logical log from a full backup
         ConfigParam keepLogs = new ConfigParam()
         {
@@ -209,12 +225,13 @@ class BackupService
         {
             targetDb.shutdown();
         }
+
         bumpMessagesDotLogFile( targetDirectory, backupStartTime );
         return outcome;
     }
 
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort,
-            String targetDirectory, boolean verification, Config config )
+                                                       String targetDirectory, boolean verification, Config config )
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
@@ -230,6 +247,7 @@ class BackupService
             {
                 // Our existing backup is out of date.
                 logger.info( "Existing backup is too far out of date, a new full backup will be performed." );
+
                 File targetDirFile = new File( targetDirectory );
                 FileUtils.deleteRecursively( targetDirFile );
                 return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(), verification,
@@ -263,7 +281,7 @@ class BackupService
 
     static GraphDatabaseAPI startTemporaryDb( String targetDirectory, ConfigParam... params )
     {
-        Map<String, String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<>();
         config.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         config.put( InternalAbstractGraphDatabase.Configuration.log_configuration_file.name(),
                 "neo4j-backup-logback.xml" );
@@ -282,14 +300,16 @@ class BackupService
      * Performs an incremental backup based off the given context. This means
      * receiving and applying selectively (i.e. irrespective of the actual state
      * of the target db) a set of transactions starting at the desired txId and
-     * spanning up to the latest of the master
+     * spanning up to the latest of the master, for every data source
+     * registered.
      *
      * @param targetDb           The database that contains a previous full copy
-     * @param context            The context, containing transaction id to start streaming transaction from
+     * @param context            The context, i.e. a mapping of data source name to txid
+     *                           which will be the first in the returned stream
      * @return A backup context, ready to perform
      */
-    private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort,
-            GraphDatabaseAPI targetDb, RequestContext context ) throws IncrementalBackupNotPossibleException
+    private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
+                                                  RequestContext context ) throws IncrementalBackupNotPossibleException
     {
         DependencyResolver resolver = targetDb.getDependencyResolver();
         Monitors monitors = resolver.resolveDependency( Monitors.class );
@@ -297,6 +317,8 @@ class BackupService
                 resolver.resolveDependency( Logging.class ), targetDb.storeId(),
                 monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ), monitors.newMonitor( RequestMonitor.class, BackupClient.class ) );
         client.start();
+
+        boolean successfullyReadLastCommittedTxs = false;
         boolean consistent = false;
         ProgressTxHandler handler = new ProgressTxHandler();
         try
@@ -307,21 +329,21 @@ class BackupService
             unpacker.unpackResponse( response, handler );
             consistent = true;
         }
+        catch ( MismatchingStoreIdException e )
+        {
+            throw new RuntimeException( DIFFERENT_STORE, e );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Failed to perform incremental backup.", e );
+        }
         catch ( RuntimeException e )
         {
             if ( e.getCause() != null && e.getCause() instanceof MissingLogDataException )
             {
-                throw new IncrementalBackupNotPossibleException(
-                        "It's been too long since this backup was last updated, and it has "
-                                + "fallen too far behind the database transaction stream for incremental backup to be possible. "
-                                + "You need to perform a full backup at this point. You can modify this time interval by setting "
-                                + "the '" + GraphDatabaseSettings.keep_logical_logs.name()
-                                + "' configuration on the database to a " + "higher value.", e.getCause() );
+                throw new IncrementalBackupNotPossibleException( TOO_OLD_BACKUP, e.getCause() );
             }
-            throw new RuntimeException( "Failed to perform incremental backup.", e );
-        }
-        catch ( IOException e )
-        {
+
             throw new RuntimeException( "Failed to perform incremental backup.", e );
         }
         catch ( Throwable throwable )
@@ -336,7 +358,14 @@ class BackupService
             }
             catch ( Throwable throwable )
             {
-                throw new RuntimeException( throwable );
+                if ( successfullyReadLastCommittedTxs )
+                {
+                    logger.warn( "Unable to stop backup client", throwable );
+                }
+                else
+                {
+                    throw new RuntimeException( "Unable to stop backup client", throwable );
+                }
             }
         }
         return new BackupOutcome( handler.getLastSeenTransactionId(), consistent );
