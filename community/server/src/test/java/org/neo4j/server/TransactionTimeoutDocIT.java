@@ -52,7 +52,7 @@ public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
         server = server().withProperty( TRANSACTION_TIMEOUT, "1" ).build();
         server.start();
 
-        String tx = HTTP.POST( txURI(), asList( map( "statement", "CREATE n" ) ) ).location();
+        String tx = HTTP.POST( txURI(), asList( map( "statement", "CREATE (n)" ) ) ).location();
 
         // When
         Thread.sleep( 1000 * 5 );

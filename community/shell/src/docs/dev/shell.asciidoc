@@ -298,7 +298,7 @@ Cypher commands are given all shell variables as parameters and the special +sel
 
 * `START n = node({self}) MATCH (n)-[:KNOWS]->(friend) RETURN friend;` will
 return the nodes connected to the current node.
-* `START n=node({me}) CREATE friend={props}, (me)-[r:KNOWS]->(friend);` will
+* `START n=node({me}) CREATE (me)-[r:KNOWS]->(friend {props});` will
 create the friend and the relationship according to the variables available.
 
 [[shell-listing-indexes-and-constraints]]

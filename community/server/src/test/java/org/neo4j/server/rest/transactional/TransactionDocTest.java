@@ -88,7 +88,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN n' } ] }" ) )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN n' } ] }" ) )
                 .post( location );
 
         // Then
@@ -114,7 +114,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN n','resultDataContents':['REST'] } ] }" ) )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN n','resultDataContents':['REST'] } ] }" ) )
                 .post( location );
 
         // Then
@@ -184,7 +184,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN id(n)' } ] }" ) )
                 .post( location + "/commit" );
 
         // Then
@@ -209,7 +209,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN id(n)' } ] }" ) )
                 .post( getDataUri() + "transaction/commit" );
 
         // Then
@@ -237,11 +237,11 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
                 .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{'statements':[{'statement':" +
-                        "'CREATE ( bike:Bike { weight: 10 } )" +
-                        "CREATE ( frontWheel:Wheel { spokes: 3 } )" +
-                        "CREATE ( backWheel:Wheel { spokes: 32 } )" +
-                        "CREATE p1 = bike -[:HAS { position: 1 } ]-> frontWheel " +
-                        "CREATE p2 = bike -[:HAS { position: 2 } ]-> backWheel " +
+                        "'CREATE ( bike:Bike { weight: 10 } ) " +
+                        "CREATE ( frontWheel:Wheel { spokes: 3 } ) " +
+                        "CREATE ( backWheel:Wheel { spokes: 32 } ) " +
+                        "CREATE p1 = (bike)-[:HAS { position: 1 } ]->(frontWheel) " +
+                        "CREATE p2 = (bike)-[:HAS { position: 2 } ]->(backWheel) " +
                         "RETURN bike, p1, p2', " +
                         "'resultDataContents': ['row','graph']}] }" ) )
                         .post( getDataUri() + "transaction/commit" );
@@ -267,7 +267,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     {
         // Given
         HTTP.Response firstReq = POST( getDataUri() + "transaction",
-                HTTP.RawPayload.quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) );
+                HTTP.RawPayload.quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN id(n)' } ] }" ) );
         String location = firstReq.location();
 
         // Document
