@@ -136,14 +136,15 @@ public class MuninnPageCache implements RunnablePageCache
 
         this.swapperFactory = swapperFactory;
         this.cachePageSize = cachePageSize;
-        this.pages = new MuninnPage[maxPages];
         this.monitor = monitor;
+        this.pages = new MuninnPage[maxPages];
 
+        MemoryReleaser memoryReleaser = new MemoryReleaser( maxPages );
         MuninnPage pageList = null;
         int cachePageId = maxPages;
         while ( cachePageId --> 0 )
         {
-            MuninnPage page = new MuninnPage( cachePageSize );
+            MuninnPage page = new MuninnPage( cachePageSize, cachePageId, memoryReleaser );
             pages[cachePageId] = page;
             page.nextFree = pageList;
             pageList = page;
@@ -307,6 +308,13 @@ public class MuninnPageCache implements RunnablePageCache
         {
             pages[i] = null;
         }
+    }
+
+    @Override
+    protected void finalize() throws Throwable
+    {
+        close();
+        super.finalize();
     }
 
     private void assertHealthy() throws IOException

@@ -50,7 +50,13 @@ final class MuninnPage extends StampedLock implements Page
         directBufferCtor = ctor;
     }
 
-    final int cachePageSize;
+    private final int cachePageSize;
+    private final int cachePageId;
+
+    // We keep this reference to prevent the MemoryReleaser from becoming
+    // finalizable until all our pages are finalizable or collected.
+    private final MemoryReleaser memoryReleaser;
+
     private long pointer;
 
     // Optimistically incremented; occasionally truncated to a max of 5.
@@ -63,9 +69,11 @@ final class MuninnPage extends StampedLock implements Page
     private long filePageId = PageCursor.UNBOUND_PAGE_ID;
     private boolean dirty;
 
-    public MuninnPage( int cachePageSize )
+    public MuninnPage( int cachePageSize, int cachePageId, MemoryReleaser memoryReleaser )
     {
         this.cachePageSize = cachePageSize;
+        this.cachePageId = cachePageId;
+        this.memoryReleaser = memoryReleaser;
     }
 
     private boolean checkBounds( int position )
@@ -356,15 +364,8 @@ final class MuninnPage extends StampedLock implements Page
         if ( pointer == 0 )
         {
             pointer = UnsafeUtil.malloc( cachePageSize );
+            memoryReleaser.registerPointer( cachePageId, pointer );
         }
-    }
-
-    @Override
-    protected void finalize() throws Throwable
-    {
-        super.finalize();
-        UnsafeUtil.free( pointer );
-        pointer = 0;
     }
 
     public PageSwapper getSwapper()

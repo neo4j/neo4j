@@ -27,7 +27,7 @@ import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
 
-class MuninnWritePageCursor extends MuninnPageCursor
+final class MuninnWritePageCursor extends MuninnPageCursor
 {
     public MuninnWritePageCursor( MuninnCursorFreelist freelist )
     {

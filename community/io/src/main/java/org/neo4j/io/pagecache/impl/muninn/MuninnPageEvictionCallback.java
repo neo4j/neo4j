@@ -23,7 +23,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
-public class MuninnPageEvictionCallback implements PageEvictionCallback
+final class MuninnPageEvictionCallback implements PageEvictionCallback
 {
     private final PrimitiveLongObjectMap<MuninnPage>[] translationTables;
     private final StampedLock[] translationTableLocks;

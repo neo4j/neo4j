@@ -34,7 +34,8 @@ public class MuninnPageSwappingTest extends PageSwappingTest
     @Override
     protected Page createPage( int cachePageSize )
     {
-        MuninnPage page = new MuninnPage( cachePageSize );
+        MemoryReleaser memoryReleaser = new MemoryReleaser( 1 );
+        MuninnPage page = new MuninnPage( cachePageSize, 0, memoryReleaser );
         long stamp = page.writeLock();
         try
         {

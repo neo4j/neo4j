@@ -80,7 +80,10 @@ abstract class MuninnPageCursor implements PageCursor
     {
         unpinCurrentPage();
         pagedFile = null;
-        freelist.returnCursor( this );
+        if ( freelist != null )
+        {
+            freelist.returnCursor( this );
+        }
     }
 
     @Override

@@ -19,17 +19,30 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import java.io.File;
-
-final class FileMapping
+class MemoryReleaser
 {
-    public volatile FileMapping next;
-    public final File file;
-    public final MuninnPagedFile pagedFile;
+    private final long[] rawPointers;
 
-    public FileMapping( File file, MuninnPagedFile pagedFile )
+    public MemoryReleaser( int maxPages )
     {
-        this.file = file;
-        this.pagedFile = pagedFile;
+        this.rawPointers = new long[maxPages];
+    }
+
+    @Override
+    protected void finalize() throws Throwable
+    {
+        int length = rawPointers.length;
+        for ( int i = 0; i < length; i++ )
+        {
+            long pointer = rawPointers[i];
+            rawPointers[i] = 0;
+            UnsafeUtil.free( pointer );
+        }
+        super.finalize();
+    }
+
+    public void registerPointer( int cachePageId, long pointer )
+    {
+        rawPointers[cachePageId] = pointer;
     }
 }

@@ -33,7 +33,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
-class MuninnPagedFile implements PagedFile
+final class MuninnPagedFile implements PagedFile
 {
     private static int stripeFactor = Integer.getInteger(
             "org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.stripeFactor", 8 );
@@ -136,11 +136,13 @@ class MuninnPagedFile implements PagedFile
         MuninnPageCursor cursor;
         if ( (pf_flags & PF_SHARED_LOCK) == 0 )
         {
-            cursor = writeCursors.takeCursor();
+//            cursor = writeCursors.takeCursor();
+            cursor = new MuninnWritePageCursor( null );
         }
         else
         {
-            cursor = readCursors.takeCursor();
+//            cursor = readCursors.takeCursor();
+            cursor = new MuninnReadPageCursor( null );
         }
 
         cursor.initialise( this, pageId, pf_flags );

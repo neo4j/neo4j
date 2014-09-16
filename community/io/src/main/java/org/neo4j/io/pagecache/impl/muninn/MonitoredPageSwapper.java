@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapper;
 
-public class MonitoredPageSwapper implements PageSwapper
+final class MonitoredPageSwapper implements PageSwapper
 {
     private final PageSwapper pageSwapper;
     private final PageCacheMonitor monitor;
