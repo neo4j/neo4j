@@ -45,9 +45,9 @@ sealed trait ClosingClause extends Clause with SemanticChecking {
     checkLimit
 
   // use an empty state when checking skip & limit, as these have entirely isolated context
-  private def checkSkip: SemanticState => Seq[SemanticError] =
+  protected def checkSkip: SemanticState => Seq[SemanticError] =
     s => skip.semanticCheck(SemanticState.clean).errors
-  private def checkLimit: SemanticState => Seq[SemanticError] =
+  protected def checkLimit: SemanticState => Seq[SemanticError] =
     s => limit.semanticCheck(SemanticState.clean).errors
 }
 
@@ -270,6 +270,9 @@ case class Return(
     limit: Option[Limit])(val position: InputPosition) extends ClosingClause {
 
   def name = "RETURN"
+
+  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck =
+    checkSkip chain checkLimit
 
   override def semanticCheck = super.semanticCheck chain checkIdentifiersInScope
 

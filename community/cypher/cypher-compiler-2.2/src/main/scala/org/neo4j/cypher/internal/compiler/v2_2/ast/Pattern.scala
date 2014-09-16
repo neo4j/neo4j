@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.InternalException
 
 object Pattern {
   sealed trait SemanticContext
@@ -36,7 +35,7 @@ object Pattern {
   }
 
   object findDuplicateRelationships extends (Pattern => Set[Seq[Identifier]]) {
-    import Foldable._
+    import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 
     def apply(pattern: Pattern): Set[Seq[Identifier]] = {
       val (seen, duplicates) = pattern.fold((Set.empty[Identifier], Seq.empty[Identifier])) {
@@ -65,7 +64,7 @@ object Pattern {
   }
 }
 
-import Pattern._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Pattern._
 
 case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode with ASTParticle {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
@@ -181,8 +180,8 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
     element match {
       case RelationshipChain(_, rel, _) =>
         rel.identifier.flatMap(id => state.symbol(id.name)) match {
-          case Some(symbol) if symbol.positions.length > 1 => {
-            SemanticCheckResult.error(state, SemanticError(s"Bound relationships not allowed in $name(...)", rel.position, symbol.positions(0)))
+          case Some(symbol) if symbol.positions.size > 1 => {
+            SemanticCheckResult.error(state, SemanticError(s"Bound relationships not allowed in $name(...)", rel.position, symbol.positions.head))
           }
           case _ =>
             SemanticCheckResult.success(state)

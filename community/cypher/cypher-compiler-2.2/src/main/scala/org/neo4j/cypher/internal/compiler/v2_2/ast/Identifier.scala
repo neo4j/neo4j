@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
-import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 case class Identifier(name: String)(val position: InputPosition) extends Expression {
 
@@ -36,8 +35,8 @@ case class Identifier(name: String)(val position: InputPosition) extends Express
   def declare(possibleTypes: TypeSpec) =
     (_: SemanticState).declareIdentifier(this, possibleTypes)
 
-  def declare(typeGen: SemanticState => TypeSpec) =
-    (s: SemanticState) => s.declareIdentifier(this, typeGen(s))
+  def declare(typeGen: SemanticState => TypeSpec, positions: Set[InputPosition] = Set.empty) =
+    (s: SemanticState) => s.declareIdentifier(this, typeGen(s), positions)
 
   def implicitDeclaration(possibleType: CypherType) =
     (_: SemanticState).implicitIdentifier(this, possibleType)

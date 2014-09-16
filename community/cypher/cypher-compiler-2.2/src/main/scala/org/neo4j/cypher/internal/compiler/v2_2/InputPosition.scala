@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-class InputPosition(val offset: Int, val line: Int, val column: Int) {
+case class InputPosition(offset: Int, line: Int, column: Int) {
   override def hashCode = 41 * offset
   override def equals(that: Any): Boolean = that match {
     case that: InputPosition =>

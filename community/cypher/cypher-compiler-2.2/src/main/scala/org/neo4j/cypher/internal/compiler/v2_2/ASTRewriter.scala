@@ -31,7 +31,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
   def rewrite(queryText: String, statement: Statement, semanticState: SemanticState): (Statement, Map[String, Any]) = {
     rewritingMonitor.startRewriting(queryText, statement)
 
-    val namespaceIdentifiers = identifierNamespacing(semanticState.scopeTree)
+    val namespacedIdentifiers = namespaceIdentifiers(semanticState.scopeTree)
 
     val (extractParameters, extractedParameters) = if (shouldExtractParameters)
       literalReplacement(statement)
@@ -42,7 +42,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),
 
       foldConstants,
-      ApplyRewriter("namespaceIdentifiers", namespaceIdentifiers),
+      ApplyRewriter("namespaceIdentifiers", namespacedIdentifiers),
       ApplyRewriter("extractParameters", extractParameters),
       nameMatchPatternElements,
       normalizeMatchPredicates,

@@ -59,6 +59,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[Node]("a").toList should equal (List(a2))
   }
 
+  test("should honour the column name for RETURN items") {
+    val start: Node = createNode(Map("name" -> "Someone Else"))
+    val result = executeWithNewPlanner(s"MATCH a WITH a.name AS a RETURN a")
+    result.columnAs[String]("a").toList should equal (List("Someone Else"))
+  }
+
   test("should filter based on rel prop name") {
     val start: Node = createNode()
     val a: Node = createNode()
