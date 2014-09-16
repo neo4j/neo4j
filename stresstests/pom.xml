@@ -1,15 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <parent>
-    <artifactId>parent</artifactId>
-    <groupId>org.neo4j</groupId>
-    <version>2.2-SNAPSHOT</version>
-  </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent</artifactId>
+    <version>2.2-SNAPSHOT</version>
+    <relativePath>..</relativePath>
+  </parent>
 
-  <artifactId>stresstests</artifactId>
+  <artifactId>neo4j-stresstests</artifactId>
+  <version>2.2-SNAPSHOT</version>
+
+  <name>Neo4j Page Cache Stress Tests</name>
+  <packaging>jar</packaging>
+  <description>A package for page cache stress tests.</description>
+
+  <properties>
+    <license-text.header>GPL-3-header.txt</license-text.header>
+    <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+  </properties>
+
+  <scm>
+    <url>https://github.com/neo4j/neo4j/tree/master/stresstests</url>
+  </scm>
 
   <dependencies>
     <dependency>
