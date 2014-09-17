@@ -68,7 +68,7 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
       withGraphNodes(40).
       withLabel('A -> 20).
       withLabel('B -> 30).
-      shouldHaveCardinality(Math.min(20, 30))
+      shouldHaveCardinality(40.0 * (20.0/40) * (30.0/40))
   }
 
   test("node cardinality given multiple labels 2") {
@@ -76,7 +76,7 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
       withGraphNodes(40).
       withLabel('A -> 30).
       withLabel('B -> 20).
-      shouldHaveCardinality(Math.min(20, 30))
+      shouldHaveCardinality(40.0 * (30.0/40) * (20.0/40))
   }
 
   test("node cardinality when label is missing from store") {
@@ -113,7 +113,7 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
       withGraphNodes(40).
       withKnownProperty('prop).
       withLabel('A -> 10).
-      shouldHaveCardinality(10)
+      shouldHaveCardinality(40.0 * (10.0/40) * DEFAULT_PREDICATE_SELECTIVITY)
   }
 
   test("cardinality for label and property equality when index is not present 2") {
@@ -145,8 +145,8 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
       withGraphNodes(40).
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .3).
-      withIndexSelectivity(('A, 'bar) -> .4). // (a:A AND a.prop = 42) OR (a:A AND a.bar = 43)
-      shouldHaveCardinality(30 * .4)
+      withIndexSelectivity(('A, 'bar) -> .4).
+      shouldHaveCardinality(40.0 * (30.0 / 40) * DEFAULT_PREDICATE_SELECTIVITY) // Label selectivity and one DEFAULT_PREDICATE_SELECTIVITY
   }
 
   test("cardinality for multiple OR:ed equality predicates where one is backed by index and one is not") {
@@ -155,7 +155,7 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .3).
       withKnownProperty('bar).
-      shouldHaveCardinality(30)
+      shouldHaveCardinality(40.0 * (30.0 / 40) * DEFAULT_PREDICATE_SELECTIVITY)
   }
 
   ignore("cardinality for property equality predicate when property name is unknown") { // We can get away with not doing this
@@ -176,7 +176,7 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .3).
       withIndexSelectivity(('A, 'bar) -> .4).
-      shouldHaveCardinality(30 * .3)
+      shouldHaveCardinality(30 * .3 * DEFAULT_PREDICATE_SELECTIVITY)
   }
 
   test("cardinality for multiple AND:ed equality predicates where one is backed by index and one is not") {
@@ -185,7 +185,7 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .3).
       withKnownProperty('bar).
-      shouldHaveCardinality(30 * .3)
+      shouldHaveCardinality(30 * .3 * DEFAULT_PREDICATE_SELECTIVITY)
   }
 
   test("cardinality for label and property equality when no index is present") {
@@ -193,7 +193,7 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
       withGraphNodes(40).
       withLabel('A -> 30).
       withKnownProperty('prop).
-      shouldHaveCardinality(30)
+      shouldHaveCardinality(40.0 * (30.0/40) * DEFAULT_PREDICATE_SELECTIVITY)
   }
 
   test("relationship cardinality given labels on both sides") {
@@ -245,6 +245,19 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
     givenPattern("MATCH (a:FOO) WHERE id(a) IN [1,2,3]").
       withGraphNodes(1000).
       withLabel('FOO -> 500).
-      shouldHaveCardinality(3)
+      shouldHaveCardinality(1000.0 * (500.0/1000) * (3.0/1000))
   }
+
+  /*
+  BI-DIRECTIONAL RELS
+  AGGREGATION
+  SKIP/LIMIT
+  WHERE following WITH
+  VARLENGTH RELS
+  EXISTS
+
+  OPTIONAL MATCHES
+  UNWIND
+  SHORTEST PATHS
+   */
 }

@@ -45,7 +45,7 @@ case class groupPredicates(selectivityEstimator: PredicateCombination => Selecti
   }
 
   def findCombinations(predicates: Set[Predicate]): Set[EstimatedPredicateCombination] = {
-    predicates.flatMap {
+    val combinations = predicates.flatMap {
       case expression@ExpressionPredicate(Not(In(Property(Identifier(name), propertyKey), Collection(expressions)))) =>
         val labelPredicates: Set[(LabelName, ExpressionPredicate)] = predicates.labelsFor(name)
         val labelsCombinedWithExpression: Set[PredicateCombination] = labelPredicates.map {
@@ -73,15 +73,17 @@ case class groupPredicates(selectivityEstimator: PredicateCombination => Selecti
           RelationshipWithLabels(lhsLabel, pattern, rhsLabel, containedPredicates)
         }
 
-      case or @ ExpressionPredicate(Ors(operands)) =>
-        val (combination, _) = operands.flatMap { operand =>
-          apply(predicates - or + ExpressionPredicate(operand))
-        }.maxBy(_._2)
-        Some(combination)
+      case or@ExpressionPredicate(ors@Ors(operands)) =>
+        val orPreds: Set[Predicate] = operands.map(ExpressionPredicate.apply).toSet
+        val leastSelectivePredicateCombo: PredicateCombination = apply(orPreds).maxBy(_._2)._1
+
+        Some(OrCombination(ors, leastSelectivePredicateCombo))
 
       case ExpressionPredicate(expression) =>
         Some(SingleExpression(expression))
-    }.map(combination => combination -> selectivityEstimator(combination))
+    }
+
+    combinations.map(combination => combination -> selectivityEstimator(combination))
   }
 
   def findMostUsefulCombination(predicates: Set[Predicate]): EstimatedPredicateCombination =

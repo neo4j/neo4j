@@ -72,6 +72,9 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
       if func.function == Some(functions.Id) =>
       Cardinality(c.expressions.size) / stats.nodesWithLabelCardinality(None)
 
+    case OrCombination(_, inner) =>
+      apply(inner)
+
     case _ =>
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
   }

@@ -20,27 +20,31 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeWithClauses, normalizeReturnClauses}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, LogicalPlanningTestSupport, Planner, QueryGraph}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, TokenContext}
-import org.neo4j.cypher.internal.compiler.v2_2.{inSequence, LabelId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, Planner, QueryGraph, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
+import org.scalatest.mock.MockitoSugar
 import org.scalautils.Equality
 
 import scala.collection.mutable
 
-trait QueryGraphProducer {
+trait QueryGraphProducer extends MockitoSugar {
   self: LogicalPlanningTestSupport =>
 
   def produceQueryGraphForPattern(query: String): QueryGraph = {
     val q = query + " RETURN 1"
     val ast = parser.parse(q)
+    val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
     val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
-    val firstRewriteStep = astRewriter.rewrite(query, cleanedStatement)._1
+    val semanticState = semanticChecker.check(query, cleanedStatement)
+
+    val firstRewriteStep = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
     val rewrittenAst: Statement =
-      Planner.rewriteStatement(firstRewriteStep)
+      Planner.rewriteStatement(firstRewriteStep, semanticState.scopeTree)
 
     rewrittenAst.asInstanceOf[Query].asUnionQuery.queries.head.graph
   }
@@ -116,17 +120,15 @@ trait CardinalityTestHelper extends QueryGraphProducer {
           }
         }
 
-        def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
+        def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
           (fromLabel, relTypeId, toLabel) match {
             case (_, Some(id), _) if getRelationshipName(id).isEmpty => Cardinality(0)
-            case (Some(lhsId), Some(id), Some(rhsId)) => {
-              val lhsName = getLabelName(lhsId).get
-              val relName = getRelationshipName(id).get
+            case (Some(lhsId), Some(id), Some(rhsId)) =>
+            val lhsName = getLabelName(lhsId).get
               val rhsName = getLabelName(rhsId).get
               getRelationshipName(id)
                 .map(relName => Cardinality(knownRelationshipCardinality((lhsName, relName, rhsName))))
                 .getOrElse(Cardinality(0))
-            }
             case (Some(lhsId), Some(id), None) =>
               val lhsName = getLabelName(lhsId).get
               val relName = getRelationshipName(id).get
@@ -165,7 +167,6 @@ trait CardinalityTestHelper extends QueryGraphProducer {
             case (None, None, None) =>
               Cardinality(knownRelationshipCardinality.values.sum)
           }
-        }
 
         private def getLabelName(labelId: LabelId) = labelIds.collectFirst {
           case (name, id) if id == labelId.id => name
