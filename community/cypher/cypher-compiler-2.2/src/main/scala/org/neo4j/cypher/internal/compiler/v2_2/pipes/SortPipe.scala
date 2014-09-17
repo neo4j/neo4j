@@ -29,8 +29,9 @@ trait SortDescription {
 case class Ascending(id:String) extends SortDescription
 case class Descending(id:String) extends SortDescription
 
-case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])(implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with Comparer {
+case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
+                   (val estimatedCardinality: Option[Long] = None)(implicit monitor: PipeMonitor)
+  extends PipeWithSource(source, monitor) with Comparer with RonjaPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toList.
       sortWith((a, b) => compareBy(a, b, orderBy)(state)).iterator
@@ -57,6 +58,8 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])(implicit monito
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)
+    copy(source = head)(estimatedCardinality)
   }
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

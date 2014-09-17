@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.Pipe
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityByIdRhs => PipeEntityByIdRhs}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityByIdRhs => PipeEntityByIdRhs, RonjaPipe, Pipe}
 import org.neo4j.cypher
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_2.commands
@@ -83,6 +82,7 @@ object PlanDescription {
     case class KeyNames(keys: Seq[String]) extends Argument
     case class KeyExpressions(expressions: Seq[commands.expressions.Expression]) extends Argument
     case class EntityByIdRhs(value: PipeEntityByIdRhs) extends Argument
+    case class EstimatedRows(value: Long) extends Argument
   }
 }
 
@@ -124,9 +124,14 @@ final case class TwoChildren(lhs: PlanDescription, rhs: PlanDescription) extends
 final case class PlanDescriptionImpl(pipe: Pipe,
                                      name: String,
                                      children: Children,
-                                     arguments: Seq[Argument]) extends PlanDescription {
+                                     _arguments: Seq[Argument]) extends PlanDescription {
 
   self =>
+
+  def arguments: Seq[Argument] = _arguments ++ (pipe match {
+    case r: RonjaPipe => r.estimatedCardinality.map(EstimatedRows.apply)
+    case _            => None
+  })
 
   def find(name: String): Seq[PlanDescription] =
     children.find(name) ++ (if (this.name == name)
@@ -137,7 +142,7 @@ final case class PlanDescriptionImpl(pipe: Pipe,
 
 
 
-  def addArgument(argument: Argument): PlanDescription = copy(arguments = arguments :+ argument)
+  def addArgument(argument: Argument): PlanDescription = copy(_arguments = _arguments :+ argument)
 
   def map(f: PlanDescription => PlanDescription): PlanDescription = f(copy(children = children.map(f)))
 

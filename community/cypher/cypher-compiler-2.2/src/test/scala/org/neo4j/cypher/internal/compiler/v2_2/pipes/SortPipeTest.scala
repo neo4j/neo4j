@@ -31,7 +31,7 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
 
   test("empty input gives empty output") {
     val source = new FakePipe(List(), "x" -> CTAny)
-    val sortPipe = new SortPipe(source, List(Ascending("x")))
+    val sortPipe = new SortPipe(source, List(Ascending("x")))()
 
     assertEquals(List(), sortPipe.createResults(QueryStateHelper.empty).toList)
   }
@@ -39,7 +39,7 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
   test("simple sorting is supported") {
     val list:Seq[MutableMap[String, Any]] = List(MutableMap("x" -> "B"), MutableMap("x" -> "A"))
     val source = new FakePipe(list, "x" -> CTString)
-    val sortPipe = new SortPipe(source, List(Ascending("x")))
+    val sortPipe = new SortPipe(source, List(Ascending("x")))()
 
     assertEquals(List(MutableMap("x" -> "A"), MutableMap("x" -> "B")), sortPipe.createResults(QueryStateHelper.empty).toList)
   }
@@ -52,7 +52,7 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
 
     val sortPipe = new SortPipe(source, List(
       Ascending("x"),
-      Ascending("y")))
+      Ascending("y")))()
 
     assertEquals(List(
       MutableMap("x" -> "A", "y" -> 100),
@@ -68,7 +68,7 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
 
     val sortPipe = new SortPipe(source, List(
       Ascending("x"),
-      Descending("y")))
+      Descending("y")))()
 
     assertEquals(List(
       MutableMap("x" -> "A", "y" -> 100),
@@ -83,7 +83,7 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
       MutableMap("y" -> 2))
     val source = new FakePipe(list, "y"->CTNumber)
 
-    val sortPipe = new SortPipe(source, List(Ascending("y")))
+    val sortPipe = new SortPipe(source, List(Ascending("y")))()
 
     assertEquals(List(
       MutableMap("y" -> 1),

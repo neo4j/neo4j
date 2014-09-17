@@ -59,7 +59,7 @@ class AggregationBuilder extends PlanBuilder  {
     val seq = expressions.aggregates.map(exp => "  INTERNAL_AGGREGATE" + UUID.randomUUID() -> exp).toList
     val namedAggregates = seq.toMap
 
-    val resultPipe = new EagerAggregationPipe(planToAggregate.pipe, expressions.keys, namedAggregates)
+    val resultPipe = new EagerAggregationPipe(planToAggregate.pipe, expressions.keys, namedAggregates)()
 
 
     // Mark return items as done if they are extracted

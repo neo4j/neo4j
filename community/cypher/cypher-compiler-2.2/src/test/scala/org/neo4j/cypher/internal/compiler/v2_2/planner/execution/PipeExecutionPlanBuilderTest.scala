@@ -53,7 +53,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(ProjectionNewPipe(NullPipe(), Map("42" -> legacy.Literal(42))))
+    pipeInfo.pipe should equal(ProjectionNewPipe(NullPipe(), Map("42" -> legacy.Literal(42)))())
   }
 
   test("simple pattern query") {
@@ -62,7 +62,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(AllNodesScanPipe("n"))
+    pipeInfo.pipe should equal(AllNodesScanPipe("n")())
   }
 
   test("simple label scan query") {
@@ -71,7 +71,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(NodeByLabelScanPipe("n", Right(LabelId(12))))
+    pipeInfo.pipe should equal(NodeByLabelScanPipe("n", Right(LabelId(12)))())
   }
 
   test("simple node by id seek query") {
@@ -81,7 +81,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", PipeEntityByIdExprs(Seq(astLiteral.asCommandExpression))))
+    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", PipeEntityByIdExprs(Seq(astLiteral.asCommandExpression)))())
   }
 
   test("simple node by id seek query with multiple values") {
@@ -93,7 +93,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", PipeEntityByIdExprs(Seq(astCollection.asCommandExpression))))
+    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", PipeEntityByIdExprs(Seq(astCollection.asCommandExpression)))())
   }
 
   test("simple relationship by id seek query") {
@@ -105,7 +105,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", PipeEntityByIdExprs(Seq(astLiteral.asCommandExpression)), toNode, fromNode))
+    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", PipeEntityByIdExprs(Seq(astLiteral.asCommandExpression)), toNode, fromNode)())
   }
 
   test("simple relationship by id seek query with multiple values") {
@@ -119,7 +119,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", PipeEntityByIdExprs(astCollection.map(_.asCommandExpression)), toNode, fromNode))
+    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", PipeEntityByIdExprs(astCollection.map(_.asCommandExpression)), toNode, fromNode)())
   }
 
   test("simple undirected relationship by id seek query with multiple values") {
@@ -133,7 +133,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", PipeEntityByIdExprs(astCollection.map(_.asCommandExpression)), toNode, fromNode))
+    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", PipeEntityByIdExprs(astCollection.map(_.asCommandExpression)), toNode, fromNode)())
   }
 
   test("simple cartesian product") {
@@ -142,14 +142,14 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val logicalPlan = CartesianProduct(lhs, rhs)_
     val pipeInfo = build(logicalPlan)
 
-    pipeInfo.pipe should equal(CartesianProductPipe(AllNodesScanPipe("n"), AllNodesScanPipe("m")))
+    pipeInfo.pipe should equal(CartesianProductPipe(AllNodesScanPipe("n")(), AllNodesScanPipe("m")())())
   }
 
   test("simple expand") {
     val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength)_
     val pipeInfo = build(logicalPlan)
 
-    pipeInfo.pipe should equal(ExpandPipe( AllNodesScanPipe("a"), "a", "r1", "b", Direction.INCOMING, Seq() ))
+    pipeInfo.pipe should equal(ExpandPipe( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq() )())
   }
 
   test("simple hash join") {
@@ -163,8 +163,8 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo.pipe should equal(NodeHashJoinPipe(
       "b",
-      ExpandPipe( AllNodesScanPipe("a"), "a", "r1", "b", Direction.INCOMING, Seq() ),
-      ExpandPipe( AllNodesScanPipe("c"), "c", "r2", "b", Direction.INCOMING, Seq() )
-    ))
+      ExpandPipe( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq() )(),
+      ExpandPipe( AllNodesScanPipe("c")(), "c", "r2", "b", Direction.INCOMING, Seq() )()
+    )())
   }
 }

@@ -46,7 +46,7 @@ class TopPipeBuilder extends PlanBuilder with SortingPreparations {
       case _                          => throw new ThisShouldNotHappenError("Andres", "This builder should not be called for this query")
     }
 
-    val resultPipe = new TopPipe(newPlan.pipe, sortItems.toList, limitExpression)
+    val resultPipe = new TopPipe(newPlan.pipe, sortItems.toList, limitExpression)()
 
     val solvedSort = q.sort.map(_.solve)
 

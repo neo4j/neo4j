@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.Predicate
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.LegacyExpression
 
-case class FilterPipe(source: Pipe, predicate: Predicate)
-                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinality: Option[Long] = None)
+                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   val symbols = source.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =
@@ -35,8 +35,10 @@ case class FilterPipe(source: Pipe, predicate: Predicate)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)
+    copy(source = source)(estimatedCardinality)
   }
 
   override def localEffects = predicate.effects
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

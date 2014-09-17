@@ -24,8 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{PlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
-case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)(implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with CollectionSupport {
+case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)
+                     (val estimatedCardinality: Option[Long] = None)(implicit monitor: PipeMonitor)
+  extends PipeWithSource(source, monitor) with CollectionSupport with RonjaPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.flatMap {
       context =>
@@ -42,6 +43,8 @@ case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)(
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)
+    copy(source = head)(estimatedCardinality)
   }
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

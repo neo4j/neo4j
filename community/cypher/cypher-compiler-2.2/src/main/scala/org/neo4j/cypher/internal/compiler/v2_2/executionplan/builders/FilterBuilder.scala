@@ -37,7 +37,7 @@ class FilterBuilder extends PlanBuilder {
     val newPipe = if (pred == True()) {
       p
     } else {
-      new FilterPipe(p, pred)
+      new FilterPipe(p, pred)()
     }
 
     val newQuery = q.where.filterNot(item.contains) ++ item.map(_.solve)

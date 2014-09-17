@@ -38,7 +38,7 @@ class AllNodesScanPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = AllNodesScanPipe("a").createResults(queryState)
+    val result = AllNodesScanPipe("a")().createResults(queryState)
 
     // then
     result.map(_("a")).toList should equal(nodes)

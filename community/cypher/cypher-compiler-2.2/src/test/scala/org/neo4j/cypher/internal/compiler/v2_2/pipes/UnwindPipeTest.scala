@@ -30,13 +30,13 @@ class UnwindPipeTest extends CypherFunSuite {
 
   private def unwindWithInput(data: Traversable[Map[String, Any]]) = {
     val source = new FakePipe(data, "x" -> CTCollection(CTInteger))
-    val unwindPipe = new UnwindPipe(source, Identifier("x"), "y")
+    val unwindPipe = new UnwindPipe(source, Identifier("x"), "y")()
     unwindPipe.createResults(QueryStateHelper.empty).toList
   }
 
   test("symbols are correct") {
     val source = new FakePipe(List.empty, "x" -> CTCollection(CTInteger), "something else" -> CTCollection(CTAny))
-    val unwindPipe = new UnwindPipe(source, Identifier("x"), "y")
+    val unwindPipe = new UnwindPipe(source, Identifier("x"), "y")()
     unwindPipe.symbols.identifiers should equal(Map(
       "y" -> CTInteger,
       "something else" -> CTCollection(CTAny),

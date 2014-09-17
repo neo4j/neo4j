@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 object optionalMatches extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
     val optionalApplies = applyOptional(planTable, queryGraph)
-    val optionals = optional(planTable, queryGraph)
+    val optionals = optional(planTable, queryGraph)       // TODO: These other plans are optimisations. We should rewrite to them instead of plan here
     val outerJoins = outerJoin(planTable, queryGraph)
     val optionalExpands = optionalExpand(planTable, queryGraph)
     optionalApplies ++ optionals ++ outerJoins ++ optionalExpands

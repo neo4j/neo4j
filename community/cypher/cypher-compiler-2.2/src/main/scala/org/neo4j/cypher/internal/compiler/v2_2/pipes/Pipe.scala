@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.mutation.Effectful
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{ArgumentPlanDescription, PlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -82,7 +83,7 @@ trait Pipe extends Effectful {
 }
 
 case class NullPipe(symbols: SymbolTable = SymbolTable())
-                   (implicit val monitor: PipeMonitor) extends Pipe {
+                   (implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
 
   val typeAssertions =
     SymbolTypeAssertionCompiler.compile(
@@ -105,6 +106,13 @@ case class NullPipe(symbols: SymbolTable = SymbolTable())
   def dup(sources: List[Pipe]): Pipe = this
 
   def sources: Seq[Pipe] = Seq.empty
+
+  def estimatedCardinality: Option[Long] = Some(1)
+
+  def setEstimatedCardinality(estimated: Long): Pipe with RonjaPipe = {
+    assert(estimated == 1)
+    this
+  }
 }
 
 abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe {

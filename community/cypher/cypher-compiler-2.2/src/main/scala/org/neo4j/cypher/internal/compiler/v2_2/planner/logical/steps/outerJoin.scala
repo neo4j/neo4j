@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
@@ -29,19 +29,20 @@ object outerJoin extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
 
     val outerJoinPlans = for {
-      optionalQG <- queryGraph.optionalMatches
-      lhs <- planTable.plans if applicable(lhs, optionalQG)
+      optionalQG <- queryGraph.optionalMatches if optionalQG.argumentIds.size == 1
+      joinNode <- optionalQG.argumentIds.headOption.toSeq if queryGraph.patternNodes(joinNode)
+      lhs <- planTable.plans if applicable(joinNode, lhs, optionalQG)
     } yield {
       val rhs = context.strategy.plan(optionalQG.withoutArguments())
-      planOuterHashJoin(optionalQG.argumentIds.head, lhs, rhs)
+      planOuterHashJoin(joinNode, lhs, rhs)
     }
 
     CandidateList(outerJoinPlans)
   }
 
-  private def applicable(outerPlan: LogicalPlan, optionalQG: QueryGraph) = {
-    val singleArgumentAvailable = optionalQG.argumentIds.size == 1 && outerPlan.availableSymbols(optionalQG.argumentIds.head)
+  private def applicable(joinNode: IdName, outerPlan: LogicalPlan, optionalQG: QueryGraph) = {
+    val availableInOuterPlan = outerPlan.availableSymbols(joinNode)
     val isSolved = outerPlan.solved.graph.optionalMatches.contains(optionalQG)
-    singleArgumentAvailable && !isSolved
+    availableInOuterPlan && !isSolved
   }
 }

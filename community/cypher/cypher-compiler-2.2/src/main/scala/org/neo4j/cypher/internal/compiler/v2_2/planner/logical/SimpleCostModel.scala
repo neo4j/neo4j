@@ -40,8 +40,8 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
   val DIJKSTRA_OVERHEAD                        = CostPerRow(0.05)
 
   def apply(plan: LogicalPlan): Cost = plan match {
-    case _: SingleRow =>
-      Cost(0)
+    case sr: SingleRow =>
+      Cardinality(1) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * sr.coveredIds.size // This is probably too high but we need non-zero cost, even for sr
 
     case _: AllNodesScan =>
       cardinality(plan) * STORE_ACCESS_COST_PER_ROW

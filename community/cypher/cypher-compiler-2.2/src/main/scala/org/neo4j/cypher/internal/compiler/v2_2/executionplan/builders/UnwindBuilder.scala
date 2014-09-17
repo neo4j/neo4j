@@ -40,7 +40,7 @@ class UnwindBuilder extends PlanBuilder {
     val item: Unwind = findUnwindItem(plan).get
     plan.copy(
       query = plan.query.copy(start = plan.query.start.replace(Unsolved(item), Solved(item))),
-      pipe = new UnwindPipe(plan.pipe, item.expression, item.identifier)
+      pipe = new UnwindPipe(plan.pipe, item.expression, item.identifier)()
     )
   }
 }

@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.A
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
 
-case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
-                            (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])(val estimatedCardinality: Option[Long] = None)
+                            (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   val symbols: SymbolTable = {
     val newIdentifiers = expressions.map {
       case (name, expression) => name -> expression.getType(source.symbols)
@@ -53,8 +53,10 @@ case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)
+    copy(source = source)(estimatedCardinality)
   }
 
   override def localEffects = expressions.effects
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

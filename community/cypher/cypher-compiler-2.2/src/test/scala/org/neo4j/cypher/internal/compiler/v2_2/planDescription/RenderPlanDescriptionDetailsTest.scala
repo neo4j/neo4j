@@ -36,11 +36,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments)
 
     renderDetails(plan) should equal(
-      """+----------+------+--------+-------------+-------+
-        || Operator | Rows | DbHits | Identifiers | Other |
-        |+----------+------+--------+-------------+-------+
-        ||     NAME |   42 |     33 |           n |       |
-        |+----------+------+--------+-------------+-------+
+      """+----------+---------------+------+--------+-------------+-------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
+        |+----------+---------------+------+--------+-------------+-------+
+        ||     NAME |             1 |   42 |     33 |           n |       |
+        |+----------+---------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
 
@@ -55,11 +55,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments)
 
     renderDetails(plan) should equal(
-      """+----------+------+--------+-------------+-------+
-        || Operator | Rows | DbHits | Identifiers | Other |
-        |+----------+------+--------+-------------+-------+
-        ||     NAME |   42 |     33 |     a, b, c |       |
-        |+----------+------+--------+-------------+-------+
+      """+----------+---------------+------+--------+-------------+-------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
+        |+----------+---------------+------+--------+-------------+-------+
+        ||     NAME |             1 |   42 |     33 |     a, b, c |       |
+        |+----------+---------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
 
@@ -77,11 +77,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments)
 
     renderDetails(plan) should equal(
-      """+----------+------+--------+------------------+-------+
-        || Operator | Rows | DbHits |      Identifiers | Other |
-        |+----------+------+--------+------------------+-------+
-        ||     NAME |   42 |     33 | a, b, c, d, e, f |       |
-        |+----------+------+--------+------------------+-------+
+      """+----------+---------------+------+--------+------------------+-------+
+        || Operator | EstimatedRows | Rows | DbHits |      Identifiers | Other |
+        |+----------+---------------+------+--------+------------------+-------+
+        ||     NAME |             1 |   42 |     33 | a, b, c, d, e, f |       |
+        |+----------+---------------+------+--------+------------------+-------+
         |""".stripMargin)
   }
 
@@ -91,11 +91,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments)
 
     renderDetails(plan) should equal(
-      """+----------+------+--------+-------------+-------+
-        || Operator | Rows | DbHits | Identifiers | Other |
-        |+----------+------+--------+-------------+-------+
-        ||     NAME |    ? |      ? |           n |       |
-        |+----------+------+--------+-------------+-------+
+      """+----------+---------------+------+--------+-------------+-------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
+        |+----------+---------------+------+--------+-------------+-------+
+        ||     NAME |             1 |    ? |      ? |           n |       |
+        |+----------+---------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
 
@@ -107,12 +107,12 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
     val plan2 = PlanDescriptionImpl(pipe, "NAME", SingleChild(plan1), args2)
 
     renderDetails(plan2) should equal(
-      """+----------+------+--------+-------------+--------------+
-        || Operator | Rows | DbHits | Identifiers |        Other |
-        |+----------+------+--------+-------------+--------------+
-        ||  NAME(0) |    2 |    633 |           b | :Label(Prop) |
-        ||  NAME(1) |   42 |     33 |           a |              |
-        |+----------+------+--------+-------------+--------------+
+      """+----------+---------------+------+--------+-------------+--------------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers |        Other |
+        |+----------+---------------+------+--------+-------------+--------------+
+        ||  NAME(0) |             1 |    2 |    633 |           b | :Label(Prop) |
+        ||  NAME(1) |             1 |   42 |     33 |           a |              |
+        |+----------+---------------+------+--------+-------------+--------------+
         |""".stripMargin)
   }
 }

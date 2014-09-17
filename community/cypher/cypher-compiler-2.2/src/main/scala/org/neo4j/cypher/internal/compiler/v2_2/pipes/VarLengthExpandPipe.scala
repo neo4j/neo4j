@@ -31,8 +31,8 @@ import scala.collection.mutable
 case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction,
                                projectedDir: Direction, types: Seq[String], min: Int, max: Option[Int],
                                filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true)
-                              (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) {
+                               (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(Node, Seq[Relationship])] = {
@@ -94,8 +94,10 @@ case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, 
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(head)
+    copy(head)(estimatedCardinality)
   }
 
   override def localEffects = Effects.READS_ENTITIES
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

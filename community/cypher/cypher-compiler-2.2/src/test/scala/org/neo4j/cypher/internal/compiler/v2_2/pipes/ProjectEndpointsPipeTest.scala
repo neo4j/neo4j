@@ -52,7 +52,9 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = true, simpleLength = true).createResults(queryState).toList
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", "b", directed = true, simpleLength = true)().
+        createResults(queryState).toList
 
     // then
     result should equal(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
@@ -70,7 +72,9 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = false, simpleLength = true).createResults(queryState).toList
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", "b", directed = false, simpleLength = true)().
+        createResults(queryState).toList
 
     // then
     result should equal(List(
@@ -99,7 +103,9 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = true, simpleLength = false).createResults(queryState).toList
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", "b", directed = true, simpleLength = false)().
+        createResults(queryState).toList
 
     // then
     result should equal(List(
@@ -129,7 +135,9 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = false, simpleLength = false).createResults(queryState).toList
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", "b", directed = false, simpleLength = false)().
+      createResults(queryState).toList
 
     // then
     result should equal(List(
@@ -147,7 +155,9 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = true, simpleLength = false).createResults(queryState).toList
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", "b", directed = true, simpleLength = false)().
+        createResults(queryState).toList
 
     // then
     result should be('isEmpty)
@@ -162,7 +172,9 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = ProjectEndpointsPipe(left, "r", "a", "b", directed = false, simpleLength = false).createResults(queryState).toList
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", "b", directed = false, simpleLength = false)().
+        createResults(queryState).toList
 
     // then
     result should be('isEmpty)

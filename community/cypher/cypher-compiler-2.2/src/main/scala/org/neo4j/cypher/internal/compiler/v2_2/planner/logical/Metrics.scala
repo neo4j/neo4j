@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import Metrics._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{TokenContext, GraphStatistics}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 
 object Metrics {
@@ -37,7 +37,7 @@ object Metrics {
 
   // This metric estimates the selectivity of an expression
   // (e.g. by algebraic analysis or using statistics)
-  type SelectivityModel = Expression => Multiplier
+  type SelectivityModel = Expression => Selectivity
 }
 
 case class Metrics(cost: CostModel, cardinality: CardinalityModel, selectivity: SelectivityModel)
@@ -52,12 +52,14 @@ case class Cost(gummyBears: Double) extends Ordered[Cost] {
 case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def compare(that: Cardinality) = amount.compare(that.amount)
   def *(that: Multiplier) = Cardinality(amount * that.coefficient)
+  def *(that: Selectivity) = Cardinality(amount * that.factor)
   def +(that: Cardinality) = Cardinality(amount + that.amount)
   def *(that: Cardinality) = Cardinality(amount * that.amount)
+  def /(that: Cardinality) = Selectivity(amount / that.amount)
   def *(that: CostPerRow) = Cost(amount * that.cost)
   def *(that: Cost) = Cost(amount * that.gummyBears)
+  def ^(a: Int) = Cardinality(Math.pow(amount, a))
   def map(f: Double => Double) = Cardinality(f(amount))
-  def /(that:Cardinality) = Multiplier(amount.toDouble / that.amount)
 }
 
 case class CostPerRow(cost: Double) {
@@ -68,6 +70,23 @@ case class Multiplier(coefficient: Double) {
   def +(other: Multiplier): Multiplier = Multiplier(other.coefficient + coefficient)
   def -(other: Multiplier): Multiplier = Multiplier(other.coefficient - coefficient)
   def *(other: Multiplier): Multiplier = Multiplier(other.coefficient * coefficient)
+}
+
+case class Selectivity(factor: Double) extends Ordered[Selectivity] {
+  def -(other: Selectivity) = Selectivity(factor - other.factor)
+  def *(other: Selectivity) = Selectivity(other.factor * factor)
+  def *(other: Multiplier) = Selectivity(factor * other.coefficient)
+  def ^(a: Int):Selectivity = Selectivity(Math.pow(factor, a))
+  def inverse: Selectivity = Selectivity(1 - factor)
+
+  def compare(that: Selectivity) = factor.compare(that.factor)
+}
+
+object Selectivity {
+
+  implicit def turnSeqIntoSingleSelectivity(p: Seq[Selectivity]):Selectivity =
+    p.reduceOption(_ * _).getOrElse(Selectivity(1))
+
 }
 
 trait MetricsFactory {

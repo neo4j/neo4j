@@ -27,7 +27,10 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.{Node, Relationship}
 
 case class ProjectEndpointsPipe(source: Pipe, relName: String, start: String, end: String, directed: Boolean = true, simpleLength: Boolean = true)
-                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with CollectionSupport {
+                               (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor)
+  with CollectionSupport
+  with RonjaPipe {
   val symbols: SymbolTable =
     source.symbols.add(start, CTNode).add(end, CTNode)
 
@@ -42,8 +45,10 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String, start: String, en
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)
+    copy(source = source)(estimatedCardinality)
   }
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 
   private def projector(qtx: QueryContext): Projector =
     if (directed)

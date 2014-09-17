@@ -51,7 +51,9 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 1, None).createResults(queryState).toList
+    val result =
+      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 1, None)()
+      .createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -82,7 +84,9 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 1, None).createResults(queryState).toList
+    val result =
+      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 1, None)().
+        createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -117,7 +121,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 1, None).createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 1, None)().
+      createResults(queryState).toList
 
     // then
     val (first :: second :: third :: fourth :: Nil) = result
@@ -158,7 +163,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 1, Some(1)).createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 1, Some(1))().
+      createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -193,7 +199,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 2, Some(2)).createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 2, Some(2))().
+      createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -232,7 +239,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> firstNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 2, Some(3)).createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 2, Some(3))().
+      createResults(queryState).toList
 
     // then
     val (first :: second :: third :: fourth :: Nil) = result
@@ -274,7 +282,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     // (b)-[r]->(a)
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.INCOMING, Seq.empty, 1, None).createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.INCOMING, Seq.empty, 1, None)().
+      createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -316,7 +325,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING,
-                                     Seq.empty, 3, None, filteringStep).createResults(queryState).toList
+                                     Seq.empty, 3, None, filteringStep)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result

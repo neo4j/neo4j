@@ -29,8 +29,14 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
 
   val costPerRow = CostPerRow(1)
 
-  def apply(plan: LogicalPlan): Cost =
-    cardinality(plan) * costPerRow +
+  def apply(plan: LogicalPlan): Cost = {
+    // input cardinality for leaf plans is computed as the number of rows produced,
+    // for non-leaf plans it is the cardinality of their lhs. This is probably still not right.
+    val inputCardinality =
+      plan.lhs.map(cardinality).getOrElse(cardinality(plan))
+
+    inputCardinality * costPerRow +
     plan.lhs.map(this).getOrElse(Cost(0)) +
     plan.rhs.map(this).getOrElse(Cost(0))
+  }
 }

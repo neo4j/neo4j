@@ -32,7 +32,7 @@ class TopPipeTest extends CypherFunSuite {
 
   test("top10From5ReturnsAll") {
     val input = createFakePipeWith(5)
-    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(10))
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(10))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     result should equal(List(0, 1, 2, 3, 4))
@@ -40,7 +40,7 @@ class TopPipeTest extends CypherFunSuite {
 
   test("top10From3ReturnsAllDesc") {
     val input = createFakePipeWith(3)
-    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(10))
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(10))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     result should equal(List(2, 1, 0))
@@ -48,7 +48,7 @@ class TopPipeTest extends CypherFunSuite {
 
   test("top5From20ReturnsAll") {
     val input = createFakePipeWith(20)
-    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     result should equal(List(0, 1, 2, 3, 4))
@@ -56,7 +56,7 @@ class TopPipeTest extends CypherFunSuite {
 
   test("top3From10ReturnsAllDesc") {
     val input = createFakePipeWith(10)
-    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(3))
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(3))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     result should equal(List(9, 8, 7))
@@ -66,7 +66,7 @@ class TopPipeTest extends CypherFunSuite {
     val in = (0 until 100).toSeq.map(i => Map("a" -> i)).reverse
     val input = new FakePipe(in, "a" -> CTInteger)
 
-    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     result should equal(List(0, 1, 2, 3, 4))
@@ -76,7 +76,7 @@ class TopPipeTest extends CypherFunSuite {
     val in = ((0 until 5).toSeq ++ (0 until 5).toSeq).map(i => Map("a" -> i)).reverse
     val input = new FakePipe(in, "a" -> CTInteger)
 
-    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(5))
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     result should equal(List(4, 4, 3, 3, 2))
@@ -86,7 +86,7 @@ class TopPipeTest extends CypherFunSuite {
     val in = List(Map("a" -> 0),Map("a" -> 1),Map("a" -> 1))
     val input = new FakePipe(in, "a" -> CTInteger)
 
-    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(2))
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(2))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     result should equal(List(1,1))
@@ -95,7 +95,7 @@ class TopPipeTest extends CypherFunSuite {
   test("emptyInputIsNotAProblem") {
     val input = new FakePipe(Iterator.empty, "a" -> CTInteger)
 
-    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     result should equal(List.empty)
@@ -104,7 +104,7 @@ class TopPipeTest extends CypherFunSuite {
   test("nullInputIsNotAProblem") {
     val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)), "a" -> CTInteger)
 
-    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     result should equal(List(10,null))
