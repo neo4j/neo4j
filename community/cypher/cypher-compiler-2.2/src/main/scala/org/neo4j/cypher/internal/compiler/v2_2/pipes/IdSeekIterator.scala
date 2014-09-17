@@ -25,8 +25,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.NumericHelper
 import org.neo4j.cypher.EntityNotFoundException
 
+import scala.annotation.tailrec
+
 class IdSeekIterator[T <: PropertyContainer](ident: String, operations: Operations[T], nodeIds: Iterator[Any])
-  extends Iterator[ExecutionContext] with NumericHelper {
+  extends Iterator[T] with NumericHelper {
 
   private var cached = cacheNext()
 
@@ -35,11 +37,12 @@ class IdSeekIterator[T <: PropertyContainer](ident: String, operations: Operatio
   def next() = cached match {
     case Some(result) =>
       cached = cacheNext()
-      ExecutionContext.from(ident -> result)
+      result
     case None =>
       Iterator.empty.next
   }
 
+  @tailrec
   private def cacheNext(): Option[T] = {
     if (nodeIds.hasNext) {
       val id = asLongEntityId(nodeIds.next())

@@ -29,10 +29,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 case class AllNodesScanPipe(ident: String)(val estimatedCardinality: Option[Long] = None)
                            (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    state.query.nodeOps.all.map(n =>
-      state.initialContext.getOrElse(ExecutionContext.empty) += (ident -> n)
-    )
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
+    state.query.nodeOps.all.map(n => baseContext.newWith(ident, n))
+  }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 

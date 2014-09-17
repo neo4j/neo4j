@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
-import org.neo4j.cypher.internal.compiler.v2_2.{ExecutionContext, symbols}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.Relationship
 
@@ -38,13 +37,14 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityById
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
     val relIdExprs = relIdExpr.expressions(ctx, state).flatMap(Option(_))
-    new IdSeekIterator[Relationship](ident, state.query.relationshipOps, relIdExprs.iterator).map {
-      ctx =>
-        val r = ctx(ident)
-        r match {
-          case r: Relationship => ctx += (fromNode -> r.getStartNode) += (toNode -> r.getEndNode)
-        }
-    }.map(ctx.clone() ++ _)
+    new IdSeekIterator[Relationship](state.query.relationshipOps, relIdExprs.iterator).map {
+      r =>
+        val m = ctx.m.clone()
+        m.put(ident, r)
+        m.put(fromNode, r.getStartNode)
+        m.put(toNode, r.getEndNode)
+        ctx.copy(m = m)
+    }
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)

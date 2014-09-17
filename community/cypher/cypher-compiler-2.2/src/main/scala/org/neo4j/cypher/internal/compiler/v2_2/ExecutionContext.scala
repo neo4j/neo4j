@@ -58,10 +58,10 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
   override def toMap[T, U](implicit ev: (String, Any) <:< (T, U)): immutable.Map[T, U] = m.toMap(ev)
 
   def newWith(newEntries: Seq[(String, Any)]) =
-    createWithNewMap(MutableMaps.create(this.m) ++= newEntries)
+    createWithNewMap(m.clone() ++= newEntries)
 
   def newWith(newEntries: scala.collection.Map[String, Any]) =
-    createWithNewMap(MutableMaps.create(this.m) ++= newEntries)
+    createWithNewMap(m.clone() ++= newEntries)
 
   def newFrom(newEntries: Seq[(String, Any)]) =
     createWithNewMap(MutableMaps.create(newEntries: _*))
@@ -70,9 +70,15 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
     createWithNewMap(MutableMaps.create(newEntries))
 
   def newWith(newEntry: (String, Any)) =
-    createWithNewMap(MutableMaps.create(this.m) += newEntry)
+    createWithNewMap(m.clone() += newEntry)
 
-  override def clone(): ExecutionContext = newFrom(m)
+  def newWith(key: String, value: Any) = {
+    val newMap = m.clone()
+    newMap.put(key, value)
+    createWithNewMap(newMap)
+  }
+
+  override def clone(): ExecutionContext = createWithNewMap(m.clone())
 
   protected def createWithNewMap(newMap: MutableMap[String, Any]) = {
     copy(m = newMap)
