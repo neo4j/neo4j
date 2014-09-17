@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{DescSortItem, AscSortItem, Expression, RelTypeName}
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
@@ -32,6 +32,11 @@ case object plannerDocGen extends CustomDocGen[Any] {
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
   def newDocDrill = mkDocDrill[Any]() {
+    // ast objects (temporary, shouldn't be here, only exist for tests)
+    case Identifier(name) => inner => AstNameConverter(name).asDoc
+    case _: CountStar => inner => "count(*)"
+
+    // planner objects
     case idName: IdName => inner => idName.asDoc
     case predicate: Predicate => inner => predicate.asDoc(inner)
     case selections: Selections => inner => selections.asDoc(inner)

@@ -930,25 +930,47 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val result = query.toString
     val expectation =
-      """GIVEN * MATCH (owner) WITH owner AS `owner`, count(*) AS `xyz`
-        |GIVEN owner, xyz WITH owner AS `owner`, xyz > 0 AS `collection`
-        |GIVEN owner, collection
-        |WITH
-        |  owner AS `owner`,
-        |  collection AS `collection`,
-        |  PatternExpression(
-        |    RelationshipsPattern(
-        |      RelationshipChain(
-        |        NodePattern(Some(owner), ⬨, None, false),
-        |        RelationshipPattern(Some(`  UNNAMED89`), false, ⬨, None, None, BOTH),
-        |        NodePattern(Some(`  UNNAMED92`), ⬨, None, false)
-        |      )
-        |    )
-        |  )
-        |  AS `  FRESHID82`
-        |GIVEN owner,   FRESHID82 WHERE Predicate[  FRESHID82](`  FRESHID82`)
-        |RETURN owner AS `owner`""".stripMargin
-
+    """GIVEN * MATCH (owner) WITH owner AS `owner`, count(*) AS `xyz`
+      |GIVEN owner, xyz
+      |WITH
+      |  owner AS `owner`,
+      |  GreaterThan(xyz, SignedDecimalIntegerLiteral("0")) AS `collection`
+      |GIVEN owner, collection
+      |WITH
+      |  owner AS `owner`,
+      |  collection AS `collection`,
+      |  PatternExpression(
+      |    RelationshipsPattern(
+      |      RelationshipChain(
+      |        NodePattern(Some(owner), ⬨, None, false),
+      |        RelationshipPattern(Some(`  UNNAMED89`), false, ⬨, None, None, BOTH),
+      |        NodePattern(Some(`  UNNAMED92`), ⬨, None, false)
+      |      )
+      |    )
+      |  )
+      |  AS `  FRESHID82`
+      |GIVEN owner,   FRESHID82 WHERE Predicate[  FRESHID82](`  FRESHID82`)
+      |RETURN owner AS `owner`""".stripMargin
+// Use once perty is re-enabled
+//    val expectation =
+//      """GIVEN * MATCH (owner) WITH owner AS `owner`, count(*) AS `xyz`
+//        |GIVEN owner, xyz WITH owner AS `owner`, xyz > 0 AS `collection`
+//        |GIVEN owner, collection
+//        |WITH
+//        |  owner AS `owner`,
+//        |  collection AS `collection`,
+//        |  PatternExpression(
+//        |    RelationshipsPattern(
+//        |      RelationshipChain(
+//        |        NodePattern(Some(owner), ⬨, None, false),
+//        |        RelationshipPattern(Some(`  UNNAMED89`), false, ⬨, None, None, BOTH),
+//        |        NodePattern(Some(`  UNNAMED92`), ⬨, None, false)
+//        |      )
+//        |    )
+//        |  )
+//        |  AS `  FRESHID82`
+//        |GIVEN owner,   FRESHID82 WHERE Predicate[  FRESHID82](`  FRESHID82`)
+//        |RETURN owner AS `owner`""".stripMargin
     result should equal(expectation)
   }
 
