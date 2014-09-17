@@ -40,7 +40,7 @@ trait RewriteTest {
     assert(result === expected, "\n" + originalQuery)
   }
 
-  protected def parseForRewriting(queryText: String) = parser.parse(queryText)
+  protected def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"))
 
   protected def rewrite(original: Statement): AnyRef =
     original.rewrite(rewriterUnderTest)

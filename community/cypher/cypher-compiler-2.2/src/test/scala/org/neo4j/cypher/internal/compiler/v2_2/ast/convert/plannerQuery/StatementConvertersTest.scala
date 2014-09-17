@@ -43,7 +43,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   val property: Expression = Property( Identifier( "n" ) _, PropertyKeyName( "prop" ) _ ) _
 
   def buildPlannerQuery(query: String, cleanStatement: Boolean = true): UnionQuery = {
-    val ast = parser.parse(query)
+    val ast = parser.parse(query.replace("\r\n", "\n"))
     val cleanedStatement: Statement =
       if (cleanStatement)
         ast.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
