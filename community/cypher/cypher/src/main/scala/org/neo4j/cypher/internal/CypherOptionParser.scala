@@ -32,7 +32,7 @@ case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) ex
 
   def AllOptions: Rule1[Seq[CypherOption]] = zeroOrMore(AnyCypherOption, WS)
 
-  def AnyCypherOption: Rule1[CypherOption] = Version | Explain | Profile
+  def AnyCypherOption: Rule1[CypherOption] = Version | Planner| Explain | Profile
 
   def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
 
@@ -41,14 +41,22 @@ case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) ex
       keyword("CYPHER") ~ WS ~ VersionNumber
     }
 
+  def Planner =rule("PLANNER") (
+    keyword("PLANNER COST") ~ push(CostPlanner)
+      | keyword("PLANNER RULE") ~ push(RulePlanner)
+  )
+
   def VersionNumber =
-    rule("Version") { group(Digits ~ "." ~ Digits ~ optional(("." | "-") ~ VersionName) ) ~> VersionOption }
+    rule("Version") { group(Digits ~ "." ~ Digits) ~> VersionOption}
 
   def Digits =
     oneOrMore("0" - "9")
 
   def VersionName: Rule0 =
     IdentifierStart ~ zeroOrMore(IdentifierPart)
+
+  def PlannerName: Rule0 =
+    IdentifierStart ~ oneOrMore(IdentifierPart)
 
   def Profile = keyword("PROFILE") ~ push(ProfileOption)
 

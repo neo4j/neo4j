@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatability
 import java.io.PrintWriter
 
 import org.neo4j.cypher.internal.AmendedRootPlanDescription
-import org.neo4j.cypher.{PlanDescription, CypherVersion, ExecutionResult, ExtendedExecutionResult}
+import org.neo4j.cypher._
 
 case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionRequested: Boolean, version: CypherVersion) extends ExtendedExecutionResult {
   def columns = inner.columns
@@ -42,7 +42,7 @@ case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionR
   def javaColumnAs[T](column: String) = inner.javaColumnAs[T](column)
 
   def executionPlanDescription(): PlanDescription =
-    new AmendedRootPlanDescription(inner.executionPlanDescription(), version)
+    new AmendedRootPlanDescription(inner.executionPlanDescription(), version, PlannerVersion.rulePlanner)
 
   def close() = inner.close()
 

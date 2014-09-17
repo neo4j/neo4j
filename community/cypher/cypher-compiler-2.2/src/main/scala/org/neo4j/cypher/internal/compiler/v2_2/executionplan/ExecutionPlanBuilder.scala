@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.{CypherVersion, PeriodicCommitInOpenTransactionException}
+import org.neo4j.cypher.{PlannerVersion, CypherVersion, PeriodicCommitInOpenTransactionException}
 import org.neo4j.cypher.internal.Profiled
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
@@ -35,7 +35,8 @@ import org.neo4j.graphdb.GraphDatabaseService
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
                     periodicCommit: Option[PeriodicCommitInfo] = None,
-                    version: CypherVersion)
+                    version: CypherVersion,
+                    planner: PlannerVersion)
 
 case class PeriodicCommitInfo(size: Option[Long]) {
   def batchRowCount = size.getOrElse(/* defaultSize */ 1000L)
@@ -57,7 +58,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
     val abstractQuery = inputQuery.abstractQuery
 
     val pipeInfo = pipeBuilder.producePlan(inputQuery, planContext)
-    val PipeInfo(pipe, updating, periodicCommitInfo, compilerVersion) = pipeInfo
+    val PipeInfo(pipe, updating, periodicCommitInfo, cypherVersion, plannerVersion) = pipeInfo
 
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
     val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, inputQuery.planType)
@@ -69,7 +70,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, profileMarker)
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new UpdateCountingQueryContext(queryContext), params, true)
       def isPeriodicCommit = periodicCommitInfo.isDefined
-      def version = compilerVersion
+      def version = cypherVersion
+      def planner = plannerVersion
     }
   }
 

@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal
 
 import java.util
 
-import org.neo4j.cypher.{CypherVersion, PlanDescription}
+import org.neo4j.cypher.{PlannerVersion, CypherVersion, PlanDescription}
 import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription}
 import scala.collection.JavaConverters._
 
-class AmendedRootPlanDescription(child: PlanDescription, version: CypherVersion) extends PlanDescription {
+class AmendedRootPlanDescription(child: PlanDescription, version: CypherVersion, planner: PlannerVersion) extends PlanDescription {
 
   self =>
 
@@ -44,6 +44,7 @@ class AmendedRootPlanDescription(child: PlanDescription, version: CypherVersion)
       val newArgs = new util.HashMap[String, AnyRef]()
       newArgs.putAll(args)
       newArgs.put("version", s"CYPHER ${version.name}")
+      newArgs.put("planner", planner.name)
       java.util.Collections.unmodifiableMap[String, AnyRef](newArgs)
     }
 
@@ -57,7 +58,8 @@ class AmendedRootPlanDescription(child: PlanDescription, version: CypherVersion)
     val innerToString = childAsJava.toString
     val arguments = asJava.getArguments
     val version = arguments.get("version")
-    s"Compiler $version\n\n$innerToString"
+    val planner = arguments.get("planner")
+    s"Compiler $version $planner\n\n$innerToString"
   }
 
   def render(builder: StringBuilder, separator: String, levelSuffix: String) = child.render(builder, separator, levelSuffix)
