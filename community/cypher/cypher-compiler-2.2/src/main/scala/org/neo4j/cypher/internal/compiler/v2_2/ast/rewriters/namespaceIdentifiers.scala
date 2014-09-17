@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
 
+import scala.collection.mutable
+
 case class namespaceIdentifiers(scopeTree: Scope) extends Rewriter {
   type IdentifierNames = Map[(String, InputPosition), String]
 
@@ -39,19 +41,39 @@ case class namespaceIdentifiers(scopeTree: Scope) extends Rewriter {
       case (acc, (name, symbol)) => acc :+ symbol
     } ++ scope.children.flatMap(findAllSymbols)
 
-  private def findShadowedIdentifiers(scope: Scope): Seq[Symbol] =
-    findAllSymbols(scope)
-      .sortBy(_.positions.size)
-      .flatMap(symbol => symbol.positions.map(_ -> symbol))
-      .toMap
+  /*
+   Find clusters of symbols that can be proven to point to the same value.
+   */
+  private def findClusters(symbols: Seq[Symbol]) = {
+    val map = symbols.flatMap(symbol => symbol.positions.map(_ -> symbol)).toMap
+    val initialStack = map.keys.zip(map.keys).toList
+    val (_, clustering) = Stream.iterate(initialStack -> Map.empty[InputPosition, InputPosition]) {
+      case (Nil, clusters) =>
+        Nil -> clusters
+      case (stack, clusters) =>
+        val (cluster, position) :: _ = stack
+        if (!clusters.contains(position)) {
+          val newStack = map(position).positions.map(cluster -> _).toList ++ stack.tail
+          val newClusters = clusters + (position -> cluster)
+          newStack -> newClusters
+        } else {
+          stack.tail -> clusters
+        }
+    }.find(_._1.isEmpty).get
+    symbols.groupBy(symbol => clustering(symbol.positions.head))
+  }
+
+  private def findShadowedIdentifiers(scope: Scope): Seq[Symbol] = {
+    findClusters(findAllSymbols(scope))
       .values
       .toSeq
-      .distinct
-      .groupBy(_.name)
-      .filter { case (_, symbols) => symbols.length > 1 }
+      .groupBy(_.head.name)
+      .filter { case (_, symbols) => symbols.length > 1}
       .values
       .flatten
+      .flatten
       .toSeq
+  }
 
   private def namespacedIdentifierNames(scope: Scope): IdentifierNames =
     findShadowedIdentifiers(scope).flatMap { symbol =>

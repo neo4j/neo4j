@@ -78,6 +78,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[Node]("a").toList should equal(List(a))
   }
 
+  test("should cope with shadowed variables") {
+    val node = createNode("name" -> "Foo")
+    val result = executeWithNewPlanner(s"MATCH n WITH n.name AS n RETURN n")
+    result.columnAs[String]("n").toList should equal(List("Foo"))
+  }
+
   test("should get neighbours") {
     val n1: Node = createNode()
     val n2: Node = createNode()

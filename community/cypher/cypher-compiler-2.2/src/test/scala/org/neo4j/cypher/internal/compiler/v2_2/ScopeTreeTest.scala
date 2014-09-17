@@ -201,7 +201,9 @@ class ScopeTreeTest extends CypherFunSuite {
     val scopeTree = scopesOf(ast)
 
     scopeTree should equal(scope()(
-      scope(nodeSymbol("a", 6, 18, 32))(),
+      scope(nodeSymbol("root", 6), nodeSymbol("book", 28, 134))(
+        scope(stringSymbol("name", 41, 103), nodeSymbol("root", 6, 79), nodeSymbol("tag", 93), nodeSymbol("book", 28, 121))()
+      ),
       scope()()
     ))
   }
@@ -224,6 +226,9 @@ class ScopeTreeTest extends CypherFunSuite {
 
   def intSymbol(name: String, offsets: Int*): Symbol =
     typedSymbol(name, TypeSpec.exact(CTInteger), offsets: _*)
+
+  def stringSymbol(name: String, offsets: Int*): Symbol =
+    typedSymbol(name, TypeSpec.exact(CTString), offsets: _*)
 
   def intCollectionSymbol(name: String, offsets: Int*): Symbol =
     typedSymbol(name, TypeSpec.exact(CTCollection(CTInteger)), offsets: _*)
