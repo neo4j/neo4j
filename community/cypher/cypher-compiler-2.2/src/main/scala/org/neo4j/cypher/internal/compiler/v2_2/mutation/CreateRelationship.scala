@@ -37,7 +37,7 @@ object RelationshipEndpoint {
 case class RelationshipEndpoint(node: Expression, props: Map[String, Expression], labels: Seq[KeyToken])
   extends GraphElementPropertyFunctions {
   def rewrite(f: (Expression) => Expression): RelationshipEndpoint =
-    RelationshipEndpoint(node.rewrite(f), Materialized.mapValues(props, (expression: Expression) => expression.rewrite(f)), labels.map(_.typedRewrite[KeyToken](f)))
+    RelationshipEndpoint(node.rewrite(f), Eagerly.immutableMapValues(props, (expression: Expression) => expression.rewrite(f)), labels.map(_.typedRewrite[KeyToken](f)))
 
   def symbolTableDependencies: Set[String] = {
     val nodeDeps = node match {
@@ -68,7 +68,7 @@ extends UpdateAction
   override def rewrite(f: (Expression) => Expression) = {
     val newFrom = from.rewrite(f)
     val newTo = to.rewrite(f)
-    val newProps = Materialized.mapValues(props, (expr: Expression) => expr.rewrite(f))
+    val newProps = Eagerly.immutableMapValues(props, (expr: Expression) => expr.rewrite(f))
     CreateRelationship(key, newFrom, newTo, typ, newProps)
   }
 

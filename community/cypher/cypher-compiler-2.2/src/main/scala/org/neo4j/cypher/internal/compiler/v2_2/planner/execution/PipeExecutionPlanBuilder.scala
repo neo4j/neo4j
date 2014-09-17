@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.graphdb.Relationship
+import org.neo4j.cypher.internal.helpers.Eagerly
 
 case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan) {
   def plan(expr: ast.PatternExpression) = f(expr)
@@ -71,7 +72,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
       plan match {
         case Projection(left, expressions) =>
-          ProjectionNewPipe(buildPipe(left), expressions.mapValues(buildExpression))
+          ProjectionNewPipe(buildPipe(left), Eagerly.immutableMapValues(expressions, buildExpression))
 
         case ProjectEndpoints(left, rel, start, end, directed, length) =>
           ProjectEndpointsPipe(buildPipe(left), rel.name, start.name, end.name, directed, length.isSimple)
@@ -177,8 +178,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case Aggregation(input, groupingExpressions, aggregatingExpressions) =>
           EagerAggregationPipe(
             buildPipe(input),
-            groupingExpressions.mapValues(_.asCommandExpression),
-            aggregatingExpressions.mapValues(_.asCommandExpression.asInstanceOf[AggregationExpression]))
+            Eagerly.immutableMapValues[String, ast.Expression, commands.expressions.Expression](groupingExpressions, x => x.asCommandExpression),
+            Eagerly.immutableMapValues[String, ast.Expression, AggregationExpression](aggregatingExpressions, x => x.asCommandExpression.asInstanceOf[AggregationExpression])
+          )
 
         case FindShortestPaths(input, shortestPath) =>
           val legacyShortestPaths = shortestPath.expr.asLegacyPatterns(shortestPath.name.map(_.name))

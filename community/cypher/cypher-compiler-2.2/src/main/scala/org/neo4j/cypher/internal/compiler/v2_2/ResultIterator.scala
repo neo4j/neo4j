@@ -71,7 +71,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
     if (closer.isClosed) return Iterator.empty.next()
 
     val input: collection.Map[String, Any] = inner.next()
-    val result: Map[String, Any] = Materialized.mapValues(input, materialize)
+    val result: Map[String, Any] = Eagerly.immutableMapValues(input, materialize)
     if (!inner.hasNext) {
       close(success = true)
     }
@@ -79,8 +79,8 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
   }
 
   private def materialize(v: Any): Any = v match {
-    case (x: Stream[_]) => x.map(materialize).toList
-    case (x: Map[_, _]) => Materialized.mapValues(x, materialize)
+    case (x: Stream[_])   => x.map(materialize).toList
+    case (x: Map[_, _])   => Eagerly.immutableMapValues(x, materialize)
     case (x: Iterable[_]) => x.map(materialize)
     case x => x
   }
