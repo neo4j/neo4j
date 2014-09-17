@@ -11,10 +11,14 @@ describe 'Service: Editor', ->
   Document = {}
   Editor = {}
   Settings = {}
-  beforeEach inject (_Document_, _Editor_, _Settings_) ->
+  $timeout = null
+  $httpBackend = null
+  beforeEach inject (_Document_, _Editor_, _Settings_, _$timeout_, _$httpBackend_) ->
     Document = _Document_
     Editor = _Editor_
     Settings = _Settings_
+    $timeout = _$timeout_
+    $httpBackend = _$httpBackend_
     Document.reset([{
       id: 1
       content: 'test content'
@@ -26,8 +30,8 @@ describe 'Service: Editor', ->
         Editor.addToHistory("command " + i)
 
       Editor.addToHistory('new command')
-      expect(Editor.history.length).toBe Settings.maxHistory
-      expect(Editor.history[0]).toBe 'new command'
+      expect(Editor.history.history.length).toBe Settings.maxHistory
+      expect(Editor.history.history[0]).toBe 'new command'
 
 
   describe '#loadDocument', ->
@@ -87,15 +91,18 @@ describe 'Service: Editor', ->
 
   describe '#historySet', ->
     it 'should clear the current document id', ->
-      Editor.history = ['first', 'second']
+      Editor.history.history = ['first', 'second']
       Editor.loadDocument 1
       expect(Editor.document).toBeTruthy()
       Editor.historySet(0)
       expect(Editor.document).toBeFalsy()
 
   describe '#setContent', ->
+    beforeEach ->
+      $httpBackend.when('JSONP', 'http://assets.neo4j.org/v2/json/neo4jmotd?callback=JSON_CALLBACK&count=10?plain=true').respond('')
     it 'should set the content', ->
       Editor.setContent 'hello'
+      $timeout.flush()
       expect(Editor.content).toBe 'hello'
     it 'should clear the current document ID', ->
       Editor.loadDocument 1

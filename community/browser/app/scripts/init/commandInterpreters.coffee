@@ -74,10 +74,10 @@ angular.module('neo4jApp')
       matches: "#{cmdchar}history"
       templateUrl: 'views/frame-history.html'
       exec: [
-        'Editor',
-        (Editor) ->
+        'HistoryService',
+        (HistoryService) ->
           (input, q) ->
-            q.resolve(angular.copy(Editor.history))
+            q.resolve(angular.copy(HistoryService.history))
             q.promise
       ]
 
