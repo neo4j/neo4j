@@ -116,7 +116,7 @@ public class ConsistencyCheckService
                 }
                 catch ( IOException e )
                 {
-                    logger.error( "Faiure during shutdown of label scan store", e );
+                    logger.error( "Failure during shutdown of label scan store", e );
                 }
             }
         }
@@ -124,7 +124,14 @@ public class ConsistencyCheckService
         {
             report.close();
             neoStore.close();
-            pageCache.stop();
+            try
+            {
+                pageCache.stop();
+            }
+            catch ( IOException e )
+            {
+                logger.error( "Failure during shutdown of the page cache", e );
+            }
             jobScheduler.shutdown();
         }
 

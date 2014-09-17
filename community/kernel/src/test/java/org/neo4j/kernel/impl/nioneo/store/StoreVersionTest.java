@@ -125,6 +125,7 @@ public class StoreVersionTest
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
                 NeoStore.versionLongToString( NeoStore.getStoreVersion( fs.get(),
                         new File( outputDir, NeoStore.DEFAULT_NAME ) ) ) );
+        neoStore.close();
     }
 
     @Test

@@ -19,6 +19,8 @@
  */
 package org.neo4j.test;
 
+import java.io.IOException;
+
 import org.junit.rules.ExternalResource;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -40,7 +42,15 @@ public class PageCacheRule extends ExternalResource
     {
         if ( pageCache != null )
         {
-            pageCache.stop();
+            try
+            {
+                pageCache.stop();
+            }
+            catch ( IOException e )
+            {
+                throw new AssertionError(
+                        "Failed to stop existing PageCache prior to creating a new one", e );
+            }
         }
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
         pageCache = new LifecycledPageCache(
@@ -61,7 +71,14 @@ public class PageCacheRule extends ExternalResource
     {
         if ( pageCache != null )
         {
-            pageCache.stop();
+            try
+            {
+                pageCache.stop();
+            }
+            catch ( IOException e )
+            {
+                throw new AssertionError( "Failed to stop PageCache after test", e );
+            }
             pageCache = null;
         }
         jobScheduler.shutdown();

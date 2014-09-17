@@ -112,7 +112,6 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         finally
         {
             store.close();
-            pageCache.close();
             life.shutdown();
         }
     }

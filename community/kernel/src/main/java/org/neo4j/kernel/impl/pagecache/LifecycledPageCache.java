@@ -77,13 +77,14 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     }
 
     @Override
-    public void stop()
+    public void stop() throws IOException
     {
         JobScheduler.JobHandle handle = pageEvictionJobHandle;
         if ( handle != null )
         {
             handle.cancel( true );
         }
+        close();
     }
 
     @Override

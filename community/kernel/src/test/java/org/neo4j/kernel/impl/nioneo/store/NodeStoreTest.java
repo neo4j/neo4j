@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -185,7 +186,20 @@ public class NodeStoreTest
                 DEV_NULL,
                 monitors );
         factory.createNodeStore();
-        return factory.newNodeStore();
+        nodeStore = factory.newNodeStore();
+        return nodeStore;
+    }
+
+    private NodeStore nodeStore;
+
+    @After
+    public void tearDown()
+    {
+        if ( nodeStore != null )
+        {
+            nodeStore.close();
+            nodeStore = null;
+        }
     }
 
     @ClassRule

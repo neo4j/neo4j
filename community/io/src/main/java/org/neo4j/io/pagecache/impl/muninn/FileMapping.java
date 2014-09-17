@@ -32,4 +32,11 @@ final class FileMapping
         this.file = file;
         this.pagedFile = pagedFile;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "FileMapping[fname = %s, refCount = %s] :: %s",
+                file.getName(), pagedFile.getRefCount(), next );
+    }
 }
