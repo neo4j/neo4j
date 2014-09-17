@@ -23,9 +23,19 @@ public class SystemUtils
 {
     public static boolean isOsWindows()
     {
+        return osNameHasPrefix( "Windows" );
+    }
+
+    public static boolean isOsMacOS()
+    {
+        return osNameHasPrefix( "Mac" );
+    }
+
+    private static boolean osNameHasPrefix( String osPrefix )
+    {
         try {
             String osName = System.getProperty( "os.name" );
-            return osName != null && osName.startsWith( "Windows" );
+            return osName != null && osName.startsWith( osPrefix );
         } catch (SecurityException ex) {
             return false;
         }

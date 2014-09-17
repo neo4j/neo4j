@@ -27,7 +27,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapper;
 
 public class SingleFilePageSwapperFactory implements PageSwapperFactory
 {
@@ -45,6 +44,25 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
             PageEvictionCallback onEviction ) throws IOException
     {
         StoreChannel channel = fs.open( file, "rw" );
+        if ( isConservativelyWindows() )
+        {
+            return new WindowsSingleFilePageSwapper( file, channel, filePageSize, onEviction );
+        }
         return new SingleFilePageSwapper( file, channel, filePageSize, onEviction );
+    }
+
+    private boolean isConservativelyWindows()
+    {
+        try
+        {
+            String name = System.getProperty( "os.name", "Windows" );
+            return name.startsWith( "Windows" );
+        }
+        catch ( SecurityException e )
+        {
+            // We don't know, so we're being conservative and assume Windows.
+            // Better safe than sorry.
+            return true;
+        }
     }
 }
