@@ -21,12 +21,15 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.locks.LockSupport;
 
 import org.junit.Rule;
@@ -55,28 +58,30 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappings;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.SilentExecutionMonitor;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
+
+import static java.lang.System.currentTimeMillis;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 
 @RunWith(Parameterized.class)
 public class ParallelBatchImporterTest
 {
-    private static final long SEED = 12345L;
     private static final String[] LABELS = new String[]{"Person", "Guy"};
     private static final int NODE_COUNT = 100_000;
-    private static final int RELATIONSHIP_COUNT = NODE_COUNT * 10;
-
+    public final @Rule TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private static final Configuration config = new Configuration.Default()
     {
         @Override
@@ -85,16 +90,20 @@ public class ParallelBatchImporterTest
             return 30;
         }
     };
+    private final WriterFactory writerFactory;
+    private final InputIdGenerator idGenerator;
+    private final IdMapping idMapping;
 
-    @Rule
-    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters(name = "{0},{1},{2}")
     public static Collection<Object[]> data()
     {
         return Arrays.asList(
-                new Object[]{"synchronous", SYNCHRONOUS},
-                new Object[]{"slow-synchronous", synchronousSlowWriterFactory}
+                // synchronous I/O, actual node id input
+                new Object[]{SYNCHRONOUS, new LongInputIdGenerator(), IdMappings.actual()},
+                // extra slow synchronous I/O, actual node id input
+                new Object[]{synchronousSlowWriterFactory, new LongInputIdGenerator(), IdMappings.actual()},
+                // synchronous I/O, string id input
+                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), IdMappings.strings( LongArrayFactory.AUTO )}
                 // FIXME: disable these WriterFactories due to a race in IoQueue
 //                ,
 //                new Object[]{"io-queue", new IoQueue( config.numberOfIoThreads(), SYNCHRONOUS )},
@@ -102,11 +111,13 @@ public class ParallelBatchImporterTest
         );
     }
 
-    @Parameterized.Parameter(0)
-    public String ignored; // needed to make Parametrized happy
+    public ParallelBatchImporterTest( WriterFactory writerFactory, InputIdGenerator idGenerator, IdMapping idMapping )
+    {
+        this.writerFactory = writerFactory;
+        this.idGenerator = idGenerator;
+        this.idMapping = idMapping;
 
-    @Parameterized.Parameter(1)
-    public WriterFactory writerFactory;
+    }
 
     @Test
     public void shouldImportCsvData() throws Exception
@@ -117,7 +128,10 @@ public class ParallelBatchImporterTest
                 new SilentExecutionMonitor(), writerFactory );
 
         // WHEN
-        inserter.doImport( nodes( NODE_COUNT ), relationships( RELATIONSHIP_COUNT, NODE_COUNT ), IdMappings.actual() );
+        inserter.doImport(
+                nodes( NODE_COUNT, idGenerator ),
+                relationships( NODE_COUNT * 10, idGenerator ),
+                idMapping );
         inserter.shutdown();
 
         // THEN
@@ -143,6 +157,68 @@ public class ParallelBatchImporterTest
                 result.isSuccessful() );
     }
 
+    private static abstract class InputIdGenerator
+    {
+        protected final long seed = currentTimeMillis();
+        protected volatile Random randomType, random;
+
+        abstract Object nextNodeId();
+
+        void resetRandomness()
+        {
+            randomType = new Random( seed );
+            random = new Random( seed );
+        }
+
+        abstract Object randomExisting();
+
+        String randomType()
+        {
+            return "TYPE" + randomType.nextInt( 3 );
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName();
+        }
+    }
+
+    private static class LongInputIdGenerator extends InputIdGenerator
+    {
+        private volatile int id;
+
+        @Override
+        Object nextNodeId()
+        {
+            return (long) id++;
+        }
+
+        @Override
+        Object randomExisting()
+        {
+            return (long) random.nextInt( NODE_COUNT );
+        }
+    }
+
+    private static class StringInputIdGenerator extends InputIdGenerator
+    {
+        private final List<String> strings = new ArrayList<>();
+
+        @Override
+        Object nextNodeId()
+        {
+            String string = UUID.randomUUID().toString();
+            strings.add( string );
+            return string;
+        }
+
+        @Override
+        Object randomExisting()
+        {
+            return strings.get( random.nextInt( strings.size() ) );
+        }
+    }
 
     protected void verifyData( int nodeCount, GraphDatabaseService db )
     {
@@ -212,37 +288,46 @@ public class ParallelBatchImporterTest
         public void shutdown()
         { //noop
         }
+
+        @Override
+        public String toString()
+        {
+            return "Slow SYNCHRONOUS";
+        }
     };
 
-    private static Iterable<InputRelationship> relationships( final long count, final long maxNodeId )
+    private static Iterable<InputRelationship> relationships( final long count, final InputIdGenerator idGenerator )
     {
         return new Iterable<InputRelationship>()
         {
             @Override
             public Iterator<InputRelationship> iterator()
             {
+                idGenerator.resetRandomness();
                 return new PrefetchingIterator<InputRelationship>()
                 {
-                    private final Random random = new Random( SEED );
                     private int cursor;
-                    private final Object[] properties = new Object[]{
-                            "name", "Nisse " + cursor,
-                            "age", 10,
-                            "long-string", "OK here goes... a long string that will certainly end up in a dynamic " +
-                            "record1234567890!@#$%^&*()_|",
-                            "array", new long[]{1234567890123L, 987654321987L, 123456789123L, 987654321987L}
-                    };
 
                     @Override
                     protected InputRelationship fetchNextOrNull()
                     {
                         if ( cursor < count )
                         {
+                            Object[] properties = new Object[]{
+                                    "name", "Nisse " + cursor,
+                                    "age", 10,
+                                    "long-string", "OK here goes... a long string that will certainly end up in a dynamic " +
+                                    "record1234567890!@#$%^&*()_|",
+                                    "array", new long[]{1234567890123L, 987654321987L, 123456789123L, 987654321987L}
+                            };
+
                             try
                             {
+                                Object startNode = idGenerator.randomExisting();
+                                Object endNode = idGenerator.randomExisting();
                                 return new InputRelationship( cursor, properties, null,
-                                        Math.abs( random.nextLong() % maxNodeId ),
-                                        Math.abs( random.nextLong() % maxNodeId ), "TYPE" + random.nextInt( 3 ), null );
+                                        startNode, endNode,
+                                        idGenerator.randomType(), null );
                             }
                             finally
                             {
@@ -256,7 +341,7 @@ public class ParallelBatchImporterTest
         };
     }
 
-    private static Iterable<InputNode> nodes( final long count )
+    private static Iterable<InputNode> nodes( final long count, final InputIdGenerator idGenerator )
     {
         return new Iterable<InputNode>()
         {
@@ -265,23 +350,24 @@ public class ParallelBatchImporterTest
             {
                 return new PrefetchingIterator<InputNode>()
                 {
-                    private long cursor;
-                    private final Object[] properties = new Object[]{
-                            "name", "Nisse " + cursor,
-                            "age", 10,
-                            "long-string", "OK here goes... a long string that will certainly end up in a dynamic " +
-                            "record1234567890!@#$%^&*()_|",
-                            "array", new long[]{1234567890123L, 987654321987L, 123456789123L, 987654321987L}
-                    };
+                    private int cursor;
 
                     @Override
                     protected InputNode fetchNextOrNull()
                     {
                         if ( cursor < count )
                         {
+                            Object[] properties = new Object[]{
+                                    "name", "Nisse " + cursor,
+                                    "age", 10,
+                                    "long-string", "OK here goes... a long string that will certainly end up in a dynamic " +
+                                    "record1234567890!@#$%^&*()_|",
+                                    "array", new long[]{1234567890123L, 987654321987L, 123456789123L, 987654321987L}
+                            };
+
                             try
                             {
-                                return new InputNode( cursor, properties, null, LABELS, null );
+                                return new InputNode( idGenerator.nextNodeId(), properties, null, LABELS, null );
                             }
                             finally
                             {

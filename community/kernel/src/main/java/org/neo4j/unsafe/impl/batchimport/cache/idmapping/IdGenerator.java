@@ -19,6 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
+import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+
+/**
+ * Generates ids given an input id, input ids that comes from {@link InputNode#id()} during importing of nodes.
+ */
 public interface IdGenerator
 {
     long generate( Object inputId );

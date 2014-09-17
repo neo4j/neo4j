@@ -20,14 +20,21 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 /**
- * Abstraction of a {@code long[]} so that different implementations can be plugged in, for example
- * off-heap, dynamically growing, or other implementations.
+ * Super interface for primitive arrays.
  */
-public interface LongArray extends NumberArray
+public interface NumberArray
 {
-    long get( long index );
+    /**
+     * @return length of the array, i.e. the capacity.
+     */
+    long length();
 
-    void set( long index, long value );
+    void swap( long fromIndex, long toIndex, int numberOfEntries );
 
-    void setAll( long value );
+    /**
+     * @return highest set index or -1 if no set.
+     */
+    long highestSetIndex();
+
+    void visitMemoryStats( MemoryStatsVisitor visitor );
 }

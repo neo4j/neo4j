@@ -21,6 +21,9 @@ package org.neo4j.unsafe.impl.batchimport.store.io;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Monitors queued jobs, executed jobs and can hence answer if there are any active jobs or not.
+ */
 class JobMonitor
 {
     private final AtomicInteger activeCount = new AtomicInteger();

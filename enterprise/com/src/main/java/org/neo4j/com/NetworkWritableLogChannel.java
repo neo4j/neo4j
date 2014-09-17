@@ -26,8 +26,6 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.CURRENT_LOG_VERSION;
-
 public class NetworkWritableLogChannel implements WritableLogChannel
 {
     private final ChannelBuffer delegate;

@@ -19,6 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+/**
+ * Waits until an execution is completed, but doesn't print anything.
+ */
 public class SilentExecutionMonitor extends PollingExecutionMonitor
 {
     public SilentExecutionMonitor()

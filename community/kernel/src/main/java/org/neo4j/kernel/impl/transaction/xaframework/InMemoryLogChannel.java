@@ -25,8 +25,6 @@ import java.util.Arrays;
 
 import org.neo4j.io.fs.StoreChannel;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.CURRENT_LOG_VERSION;
-
 public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChannel
 {
     private final byte[] bytes = new byte[1000];

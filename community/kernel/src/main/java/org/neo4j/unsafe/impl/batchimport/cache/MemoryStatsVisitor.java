@@ -20,14 +20,11 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 /**
- * Abstraction of a {@code long[]} so that different implementations can be plugged in, for example
- * off-heap, dynamically growing, or other implementations.
+ * Visits objects able to provide stats about amount of used memory.
  */
-public interface LongArray extends NumberArray
+public interface MemoryStatsVisitor
 {
-    long get( long index );
+    void heapUsage( long bytes );
 
-    void set( long index, long value );
-
-    void setAll( long value );
+    void offHeapUsage( long bytes );
 }

@@ -24,6 +24,14 @@ import java.util.LinkedList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
+
+/**
+ * A queue of {@link WriteJob write jobs} for one and the same {@link Writer}.
+ * As jobs are {@link #offer(WriteJob) offered} a task is submitted to an {@link ExecutorService}
+ * managed by this queue. If there have been multiple jobs offered before the task is executed
+ * then all of them will be {@link #drain() collected} and executed in the same task.
+ */
 class WriteQueue implements Callable<Void>
 {
     private final LinkedList<WriteJob> queue = new LinkedList<>();

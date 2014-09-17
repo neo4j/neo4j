@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;

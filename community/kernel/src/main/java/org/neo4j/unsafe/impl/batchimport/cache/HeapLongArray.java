@@ -28,6 +28,7 @@ public class HeapLongArray implements LongArray
 {
     private final long[][] shards;
     private final long length;
+    private long highestSetIndex = -1;
 
     public HeapLongArray( long length )
     {
@@ -57,6 +58,16 @@ public class HeapLongArray implements LongArray
     public void set( long index, long value )
     {
         shard( index )[arrayIndex( index )] = value;
+        if ( index > highestSetIndex )
+        {
+            highestSetIndex = index;
+        }
+    }
+
+    @Override
+    public long highestSetIndex()
+    {
+        return highestSetIndex;
     }
 
     private long[] shard( long index )
@@ -93,5 +104,11 @@ public class HeapLongArray implements LongArray
     private int shardIndex( long index )
     {
         return index < Integer.MAX_VALUE ? 0 : (int) (index / Integer.MAX_VALUE);
+    }
+
+    @Override
+    public void visitMemoryStats( MemoryStatsVisitor visitor )
+    {
+        visitor.heapUsage( length*8 ); // roughly
     }
 }

@@ -19,6 +19,15 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
+import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
+import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringIdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+
+/**
+ * Place to instantiate common {@link IdMapper} implementations.
+ */
 public class IdMappers
 {
     /**
@@ -49,6 +58,22 @@ public class IdMappers
             {
                 return ((Long)inputId).longValue();
             }
+
+            @Override
+            public void visitMemoryStats( MemoryStatsVisitor visitor )
+            {   // No memory usage
+            }
         };
+    }
+
+    /**
+     *
+     * @param cacheFactory {@link LongArrayFactory} for allocating memory for the cache used by this index.
+     * @return {@link IdMapping} for when node ids given to {@link InputNode} and {@link InputRelationship} are
+     * strings with o association with the actual ids in the database.
+     */
+    public static IdMapper strings( LongArrayFactory cacheFactory )
+    {
+        return new StringIdMapper( cacheFactory );
     }
 }

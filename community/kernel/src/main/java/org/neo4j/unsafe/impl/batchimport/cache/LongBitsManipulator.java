@@ -49,20 +49,24 @@ public class LongBitsManipulator
 
         public long set( long field, long value )
         {
-            if ( value < 0 || value > maxValue )
+            if ( value < -1 || value > maxValue )
             {
                 throw new IllegalStateException( "Invalid value " + value + ", max is " + maxValue );
             }
 
             long otherBits = field & ~mask;
-            return (value << bitOffset) | otherBits;
+            return ((value << bitOffset)&mask) | otherBits;
         }
 
         public long clear( long field, boolean trueForAllOnes )
         {
             long otherBits = field & ~mask;
-            long clearMask = trueForAllOnes ? mask : ~mask;
-            return otherBits | clearMask;
+            return trueForAllOnes ?
+                    // all bits in this slot as 1
+                    otherBits | mask :
+
+                    // all bits in this slot as 0
+                    otherBits;
         }
     }
 

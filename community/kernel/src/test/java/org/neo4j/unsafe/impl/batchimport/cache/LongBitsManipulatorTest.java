@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
-
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
@@ -53,5 +51,50 @@ public class LongBitsManipulatorTest
 
         // THEN
         assertEquals( -1, manipulator.get( field, 0 ) );
+    }
+
+    @Test
+    public void shouldHandleMinusOneValues() throws Exception
+    {
+        // GIVEN
+        LongBitsManipulator manipulator = new LongBitsManipulator( 1, 5, 10, 16, 32 ); // = 64 bits
+
+        // WHEN/THEN
+        long field = 0;
+        for ( int i = 0; i < 5; i++ )
+        {   // For every value, set all others to 0, the current to -1 and verify all
+            for ( int j = 0; j < 5; j++ )
+            {
+                if ( j == i )
+                {   // The current one
+                    long valueAfterClearWouldHaveChangedIt = manipulator.clear( field, j, true );
+                    field = manipulator.set( field, j, -1 );
+                    // We piggy pack testing of clear(true) vs. set -1 here
+                    assertEquals( "Clear(true) and set -1 produced different results for i:" + i + ", j:" + j,
+                            field, valueAfterClearWouldHaveChangedIt );
+                }
+                else
+                {   // The other ones
+                    long valueAfterClearWouldHaveChangedIt = manipulator.clear( field, j, false );
+                    field = manipulator.set( field, j, 0 );
+                    // We piggy pack testing of clear(false) vs. set 0 here
+                    assertEquals( "Clear(false) and set 0 produced different results for i:" + i + ", j:" + j,
+                            field, valueAfterClearWouldHaveChangedIt );
+                }
+            }
+
+            for ( int j = 0; j < 5; j++ )
+            {
+                long value = manipulator.get( field, j );
+                if ( j == i )
+                {   // The current one
+                    assertEquals( -1L, value );
+                }
+                else
+                {   // The other ones
+                    assertEquals( 0L, value );
+                }
+            }
+        }
     }
 }

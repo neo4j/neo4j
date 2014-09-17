@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
