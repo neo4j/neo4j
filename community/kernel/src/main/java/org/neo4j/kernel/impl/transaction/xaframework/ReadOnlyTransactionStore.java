@@ -49,10 +49,10 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
         PhysicalLogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 0, LogPruneStrategyFactory.NO_PRUNING,
                 transactionIdStore, new ReadOnlyLogVersionRepository(fs, fromPath),
                 monitors.newMonitor( PhysicalLogFile.Monitor.class ), LogRotationControl.NO_ROTATION_CONTROL,
-                transactionMetadataCache, new Visitor<ReadableLogChannel, IOException>()
+                transactionMetadataCache, new Visitor<ReadableVersionableLogChannel, IOException>()
         {
             @Override
-            public boolean visit( ReadableLogChannel readableLogChannel ) throws IOException
+            public boolean visit( ReadableVersionableLogChannel readableLogChannel ) throws IOException
             {
                 return true;
             }

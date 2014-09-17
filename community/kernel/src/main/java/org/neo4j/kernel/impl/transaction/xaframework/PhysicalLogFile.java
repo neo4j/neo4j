@@ -53,7 +53,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     private final TransactionIdStore transactionIdStore;
     private final PhysicalLogFiles logFiles;
     private final TransactionMetadataCache transactionMetadataCache;
-    private final Visitor<ReadableLogChannel, IOException> recoveredDataVisitor;
+    private final Visitor<ReadableVersionableLogChannel, IOException> recoveredDataVisitor;
     private final Monitor monitor;
     private final ByteBuffer headerBuffer = ByteBuffer.allocate( 16 );
     private final LogRotationControl logRotationControl;
@@ -67,7 +67,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
                             LogVersionRepository logVersionRepository, Monitor monitor,
                             LogRotationControl logRotationControl,
                             TransactionMetadataCache transactionMetadataCache,
-                            Visitor<ReadableLogChannel, IOException> recoveredDataVisitor )
+                            Visitor<ReadableVersionableLogChannel, IOException> recoveredDataVisitor )
     {
         this.fileSystem = fileSystem;
         this.rotateAtSize = rotateAtSize;
@@ -136,12 +136,13 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     private void doRecoveryOn( PhysicalLogVersionedStoreChannel toRecover,
-                               Visitor<ReadableLogChannel, IOException> recoveredDataVisitor ) throws IOException
+                               Visitor<ReadableVersionableLogChannel, IOException> recoveredDataVisitor )
+            throws IOException
     {
         if ( new LogRecoveryCheck( toRecover ).recoveryRequired() )
         {   // There's already data in here, which means recovery will need to be performed.
             monitor.recoveryRequired( toRecover.getVersion() );
-            ReadableLogChannel recoveredDataChannel =
+            ReadableVersionableLogChannel recoveredDataChannel =
                     new ReadAheadLogChannel( toRecover, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
             recoveredDataVisitor.visit( recoveredDataChannel );
             // intentionally keep it open since we're continuing using the underlying channel for the writer below
@@ -189,7 +190,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
              */
             logRotationControl.awaitAllTransactionsClosed();
             logRotationControl.forceEverything();
-            
+
             channel = rotate( channel );
             writer.setChannel( channel );
         }
@@ -224,7 +225,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public ReadableLogChannel getReader( LogPosition position ) throws IOException
+    public ReadableVersionableLogChannel getReader( LogPosition position ) throws IOException
     {
         PhysicalLogVersionedStoreChannel logChannel = openForVersion( logFiles, fileSystem, position.getLogVersion() );
         logChannel.position( position.getByteOffset() );
@@ -242,13 +243,13 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         assert header.logVersion == version;
         return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
     }
-    
+
     public interface Monitor
     {
         void recoveryRequired( long recoveredLogVersion );
-        
+
         void recoveryCompleted();
-        
+
         void opened( File logFile, long logVersion, long lastTransactionId, boolean clean );
 
         void failureToTruncate( File logFile, IOException e );
@@ -257,7 +258,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     @Override
     public void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException
     {
-        try ( ReadableLogChannel reader = getReader( startingFromPosition ) )
+        try ( ReadableVersionableLogChannel reader = getReader( startingFromPosition ) )
         {
             visitor.visit( startingFromPosition, reader );
         }

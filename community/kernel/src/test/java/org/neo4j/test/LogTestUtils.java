@@ -37,11 +37,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreCh
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalWritableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
 import static javax.transaction.xa.Xid.MAXBQUALSIZE;
 import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
@@ -123,7 +124,7 @@ public class LogTestUtils
 
             PhysicalLogVersionedStoreChannel channel =
                     new PhysicalLogVersionedStoreChannel( file, logHeader.logVersion, logHeader.logFormatVersion );
-            ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
+            ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
 
             // Assert entries are what we expected
             try ( IOCursor<LogEntry> cursor = deserializer.logEntries( logChannel ) )
@@ -197,7 +198,7 @@ public class LogTestUtils
                     new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion );
             ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, NO_MORE_CHANNELS,
                     DEFAULT_READ_AHEAD_SIZE );
-            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader();
+            LogEntryReader<ReadableLogChannel> entryReader = new LogEntryReaderFactory().create();
 
             LogEntry entry;
             while ( (entry = entryReader.readLogEntry( inBuffer )) != null )

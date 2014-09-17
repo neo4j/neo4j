@@ -27,17 +27,11 @@ import static java.lang.Math.min;
 public class PhysicalWritableLogChannel implements WritableLogChannel
 {
     private LogVersionedStoreChannel channel;
-    private final ByteBuffer buffer = ByteBuffer.allocate( 4*1024 );
+    private final ByteBuffer buffer = ByteBuffer.allocate( 4 * 1024 );
 
     public PhysicalWritableLogChannel( LogVersionedStoreChannel channel )
     {
         this.channel = channel;
-    }
-
-    @Override
-    public byte getLogFormatVersion()
-    {
-        return channel.getLogFormatVersion();
     }
 
     @Override

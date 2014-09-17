@@ -25,27 +25,28 @@ import java.io.IOException;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
 
-public class LogFileRecoverer implements Visitor<ReadableLogChannel, IOException>
+public class LogFileRecoverer implements Visitor<ReadableVersionableLogChannel, IOException>
 {
-    private final VersionAwareLogEntryReader logEntryReader;
+    private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
     private final Visitor<CommittedTransactionRepresentation, IOException> visitor;
 
-    public LogFileRecoverer( VersionAwareLogEntryReader logEntryReader,
-            Visitor<CommittedTransactionRepresentation, IOException> visitor )
+    public LogFileRecoverer( LogEntryReader<ReadableVersionableLogChannel> logEntryReader,
+                             Visitor<CommittedTransactionRepresentation, IOException> visitor )
     {
         this.logEntryReader = logEntryReader;
         this.visitor = visitor;
     }
 
     @Override
-    public boolean visit( ReadableLogChannel channel ) throws IOException
+    public boolean visit( ReadableVersionableLogChannel channel ) throws IOException
     {
         // Intentionally don't close the cursor here since after recovery the channel is still used.
         // I dislike this exception to the rule though.
-        PhysicalTransactionCursor physicalTransactionCursor = new PhysicalTransactionCursor( channel, logEntryReader );
+        PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
+                new PhysicalTransactionCursor<>( channel, logEntryReader );
         while (physicalTransactionCursor.next() && visitor.visit( physicalTransactionCursor.get() ) );
         if ( visitor instanceof Closeable )
         {

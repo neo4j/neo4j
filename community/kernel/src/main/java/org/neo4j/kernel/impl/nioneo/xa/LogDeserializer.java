@@ -23,16 +23,16 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.DefaultLogEntryParserFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryParserFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReaderFactory;
 
-public class LogDeserializer implements LogReader<ReadableLogChannel>
+public class LogDeserializer implements LogReader<ReadableVersionableLogChannel>
 {
-    private final LogEntryReader<ReadableLogChannel> logEntryReader;
+    private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
 
     public LogDeserializer()
     {
@@ -41,21 +41,21 @@ public class LogDeserializer implements LogReader<ReadableLogChannel>
 
     public LogDeserializer( LogEntryParserFactory logEntryParserFactory, CommandReaderFactory commandReaderFactory )
     {
-        logEntryReader = new VersionAwareLogEntryReader( logEntryParserFactory, commandReaderFactory );
+        logEntryReader = new LogEntryReaderFactory( logEntryParserFactory, commandReaderFactory ).versionable();
     }
 
     @Override
-    public IOCursor<LogEntry> logEntries( ReadableLogChannel channel )
+    public IOCursor<LogEntry> logEntries( ReadableVersionableLogChannel channel )
     {
         return new LogCursor( channel );
     }
 
     private class LogCursor implements IOCursor<LogEntry>
     {
-        private final ReadableLogChannel channel;
+        private final ReadableVersionableLogChannel channel;
         private LogEntry entry;
 
-        public LogCursor( ReadableLogChannel channel )
+        public LogCursor( ReadableVersionableLogChannel channel )
         {
             this.channel = channel;
         }

@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
@@ -131,13 +132,13 @@ public class IndexCreationTest
         long version = ds.getCurrentLogVersion();
         pLogFile.forceRotate();
 
-        ReadableLogChannel logFileChannel = pLogFile.getReader( new LogPosition( version, LOG_HEADER_SIZE ) );
+        ReadableVersionableLogChannel logChannel =pLogFile.getReader( new LogPosition( version, LOG_HEADER_SIZE ) );
 
         LogDeserializer deserializer = new LogDeserializer();
 
         final AtomicBoolean success = new AtomicBoolean( false );
 
-        try ( IOCursor<LogEntry> cursor = deserializer.logEntries( logFileChannel ) )
+        try ( IOCursor<LogEntry> cursor = deserializer.logEntries( logChannel ) )
         {
             List<Command> commandsInFirstEntry = new ArrayList<>();
             boolean startFound = false;

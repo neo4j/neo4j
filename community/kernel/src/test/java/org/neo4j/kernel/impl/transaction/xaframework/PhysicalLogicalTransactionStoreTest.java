@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.LogFileRecoverer;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.Monitor;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
@@ -126,25 +126,27 @@ public class PhysicalLogicalTransactionStoreTest
 
         life = new LifeSupport();
         final AtomicInteger recoveredTransactions = new AtomicInteger();
+        final LogFileRecoverer recoverer = new LogFileRecoverer(
+                new LogEntryReaderFactory().versionable(),
+                new Visitor<CommittedTransactionRepresentation, IOException>()
+                {
+                    @Override
+                    public boolean visit( CommittedTransactionRepresentation committedTx ) throws IOException
+                    {
+                        TransactionRepresentation transaction = committedTx.getTransactionRepresentation();
+                        assertArrayEquals( additionalHeader, transaction.additionalHeader() );
+                        assertEquals( masterId, transaction.getMasterId() );
+                        assertEquals( authorId, transaction.getAuthorId() );
+                        assertEquals( timeStarted, transaction.getTimeStarted() );
+                        assertEquals( timeCommitted, transaction.getTimeCommitted() );
+                        assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
+                        recoveredTransactions.incrementAndGet();
+                        return true;
+                    }
+                } );
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                         transactionIdStore, mock( LogVersionRepository.class), monitor, logRotationControl,
-                        positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader(),
-                                new Visitor<CommittedTransactionRepresentation, IOException>()
-        {
-            @Override
-            public boolean visit( CommittedTransactionRepresentation committedTx ) throws IOException
-            {
-                TransactionRepresentation transaction = committedTx.getTransactionRepresentation();
-                assertArrayEquals( additionalHeader, transaction.additionalHeader() );
-                assertEquals( masterId, transaction.getMasterId() );
-                assertEquals( authorId, transaction.getAuthorId() );
-                assertEquals( timeStarted, transaction.getTimeStarted() );
-                assertEquals( timeCommitted, transaction.getTimeCommitted() );
-                assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
-                recoveredTransactions.incrementAndGet();
-                return true;
-            }
-        } ) ) );
+                positionCache, recoverer ) );
 
         life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache,
                 transactionIdStore, BYPASS, true ) );
@@ -194,25 +196,27 @@ public class PhysicalLogicalTransactionStoreTest
 
         life = new LifeSupport();
         final AtomicInteger recoveredTransactions = new AtomicInteger();
+        final LogFileRecoverer recoverer = new LogFileRecoverer(
+                new LogEntryReaderFactory().versionable(),
+                new Visitor<CommittedTransactionRepresentation, IOException>()
+                {
+                    @Override
+                    public boolean visit( CommittedTransactionRepresentation committedTx ) throws IOException
+                    {
+                        TransactionRepresentation transaction = committedTx.getTransactionRepresentation();
+                        assertArrayEquals( additionalHeader, transaction.additionalHeader() );
+                        assertEquals( masterId, transaction.getMasterId() );
+                        assertEquals( authorId, transaction.getAuthorId() );
+                        assertEquals( timeStarted, transaction.getTimeStarted() );
+                        assertEquals( timeCommitted, transaction.getTimeCommitted() );
+                        assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
+                        recoveredTransactions.incrementAndGet();
+                        return true;
+                    }
+                } );
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                 transactionIdStore, mock( LogVersionRepository.class), monitor, logRotationControl,
-                positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader(),
-                        new Visitor<CommittedTransactionRepresentation, IOException>()
-        {
-            @Override
-            public boolean visit( CommittedTransactionRepresentation committedTx ) throws IOException
-            {
-                TransactionRepresentation transaction = committedTx.getTransactionRepresentation();
-                assertArrayEquals( additionalHeader, transaction.additionalHeader() );
-                assertEquals( masterId, transaction.getMasterId() );
-                assertEquals( authorId, transaction.getAuthorId() );
-                assertEquals( timeStarted, transaction.getTimeStarted() );
-                assertEquals( timeCommitted, transaction.getTimeCommitted() );
-                assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
-                recoveredTransactions.incrementAndGet();
-                return true;
-            }
-        } )));
+                positionCache, recoverer ));
 
         LogicalTransactionStore store = life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
                 positionCache, transactionIdStore, BYPASS, true ) );
@@ -261,12 +265,12 @@ public class PhysicalLogicalTransactionStoreTest
         return commands;
     }
 
-    private Visitor<ReadableLogChannel, IOException> noRecoveryAsserter()
+    private Visitor<ReadableVersionableLogChannel, IOException> noRecoveryAsserter()
     {
-        return new Visitor<ReadableLogChannel, IOException>()
+        return new Visitor<ReadableVersionableLogChannel, IOException>()
         {
             @Override
-            public boolean visit( ReadableLogChannel channel ) throws IOException
+            public boolean visit( ReadableVersionableLogChannel channel ) throws IOException
             {
                 // THEN
                 fail( "Should be nothing to recover" );
@@ -275,12 +279,12 @@ public class PhysicalLogicalTransactionStoreTest
         };
     }
 
-    private Visitor<ReadableLogChannel, IOException> emptyRecoveryVisitor()
+    private Visitor<ReadableVersionableLogChannel, IOException> emptyRecoveryVisitor()
     {
-        return new Visitor<ReadableLogChannel, IOException>()
+        return new Visitor<ReadableVersionableLogChannel, IOException>()
         {
             @Override
-            public boolean visit( ReadableLogChannel element ) throws IOException
+            public boolean visit( ReadableVersionableLogChannel element ) throws IOException
             {
                 return false;
             }

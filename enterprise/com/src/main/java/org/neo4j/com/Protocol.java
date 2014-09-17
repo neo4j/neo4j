@@ -44,8 +44,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Cursors;
 
 /**
@@ -95,10 +95,11 @@ public abstract class Protocol
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
             {
-                LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader();
+                LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
                 NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
 
-                try (PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, reader ))
+                try ( PhysicalTransactionCursor<ReadableLogChannel> cursor =
+                              new PhysicalTransactionCursor<>( channel, reader ) )
                 {
                     while (cursor.next() && visitor.visit( cursor.get() ))
                     {
@@ -261,7 +262,7 @@ public abstract class Protocol
         public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
                 IOException
         {
-            LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader();
+            LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
             NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
 
             int authorId = channel.getInt();
@@ -296,9 +297,9 @@ public abstract class Protocol
         public Iterable<CommittedTransactionRepresentation> read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
                 throws IOException
         {
-            LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader();
+            LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
             NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
-            return Cursors.iterable( new PhysicalTransactionCursor( channel, reader ) );
+            return Cursors.iterable( new PhysicalTransactionCursor<>( channel, reader ) );
         }
     };
 

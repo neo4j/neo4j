@@ -30,13 +30,14 @@ import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 
-public class PhysicalTransactionCursor implements IOCursor<CommittedTransactionRepresentation>
+public class PhysicalTransactionCursor<T extends ReadableLogChannel>
+        implements IOCursor<CommittedTransactionRepresentation>
 {
-    private final ReadableLogChannel channel;
-    private final LogEntryReader<ReadableLogChannel> entryReader;
+    private final T channel;
+    private final LogEntryReader<T> entryReader;
     private CommittedTransactionRepresentation current;
 
-    public PhysicalTransactionCursor( ReadableLogChannel channel, LogEntryReader<ReadableLogChannel> entryReader )
+    public PhysicalTransactionCursor( T channel, LogEntryReader<T> entryReader )
     {
         this.channel = channel;
         this.entryReader = entryReader;
