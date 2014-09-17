@@ -81,6 +81,9 @@ case class groupPredicates(selectivityEstimator: PredicateCombination => Selecti
 
       case ExpressionPredicate(expression) =>
         Some(SingleExpression(expression))
+
+      case ExistsPredicate(idName) =>
+        Some(ExistsCombination(idName))
     }
 
     combinations.map(combination => combination -> selectivityEstimator(combination))

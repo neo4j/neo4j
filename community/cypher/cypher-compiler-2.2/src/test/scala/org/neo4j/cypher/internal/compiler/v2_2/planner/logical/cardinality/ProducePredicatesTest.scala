@@ -28,18 +28,23 @@ import org.neo4j.graphdb.Direction
 
 class ProducePredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer {
   test("single node produces no predicates") {
-    predicatesFor("MATCH a") should equal(Set())
+    predicatesFor("MATCH a") should equal(Set(
+      ExistsPredicate("a")
+    ))
   }
 
   test("single node with labels produces one predicate") {
     predicatesFor("MATCH (a:Person)") should equal(Set(
-      ExpressionPredicate(HasLabels(ident("a"), Seq(LabelName("Person") _)) _)
+      ExpressionPredicate(HasLabels(ident("a"), Seq(LabelName("Person") _)) _),
+      ExistsPredicate("a")
     ))
   }
 
   test("pattern with one relationship produces one predicate") {
     predicatesFor("MATCH a-[r]->(b)") should equal(Set(
-      PatternPredicate(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength))
+      PatternPredicate(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
+      ExistsPredicate("a"),
+      ExistsPredicate("b")
     ))
   }
 

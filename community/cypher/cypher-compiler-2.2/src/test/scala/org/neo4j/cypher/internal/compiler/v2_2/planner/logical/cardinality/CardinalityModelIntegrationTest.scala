@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CardinalityTestHelper
 
-class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityTestHelper {
+class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityTestHelper {
 
   test("all nodes is gotten from stats") {
     givenPattern("MATCH (n)").

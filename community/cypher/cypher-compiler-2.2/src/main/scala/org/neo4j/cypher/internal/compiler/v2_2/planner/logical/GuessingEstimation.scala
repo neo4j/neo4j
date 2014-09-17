@@ -44,7 +44,7 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     statistics,
     producePredicates,
     groupPredicates(estimateSelectivity(statistics, semanticTable)),
-    combinePredicates
+    combinePredicates.assumeIndependence
   )
 
   def apply(plan: LogicalPlan): Cardinality = plan match {

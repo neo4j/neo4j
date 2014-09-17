@@ -22,12 +22,18 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Selectivity
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.groupPredicates._
 
-object combinePredicates extends (Set[EstimatedPredicateCombination] => (Set[Predicate], Selectivity)) {
-  def apply(combinations: Set[EstimatedPredicateCombination]): (Set[Predicate], Selectivity) =
-  // Assume independence between predicates and simply multiply them together
-  combinations.map {
-    p => p._1.containedPredicates -> p._2
-  }.reduceOption[(Set[Predicate], Selectivity)] {
-    case ((accPreds, accSel), (preds, selectivity)) => (accPreds ++ preds) -> (accSel * selectivity)
-  }.getOrElse(Set.empty[Predicate] -> Selectivity(1))
+object combinePredicates {
+  // Multiply all predicates together to get one selectivity
+  def assumeIndependence(combinations: Set[EstimatedPredicateCombination]): (Set[Predicate], Selectivity) =
+    combinations.map {
+      p => p._1.containedPredicates -> p._2
+    }.reduceOption[(Set[Predicate], Selectivity)] {
+      case ((accPreds, accSel), (preds, selectivity)) => (accPreds ++ preds) -> (accSel * selectivity)
+    }.getOrElse(Set.empty[Predicate] -> Selectivity(1))
+
+  // Find the most selective predicate combination and use it
+  def assumeDependence(combinations: Set[EstimatedPredicateCombination]): (Set[Predicate], Selectivity) =
+    combinations.toSeq.sortBy(_._2).headOption.map {
+      case (combination, selectivity) => combination.containedPredicates -> selectivity
+    }.getOrElse(Set.empty[Predicate] -> Selectivity(1))
 }

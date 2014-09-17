@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 
 object producePredicates extends (QueryGraph => Set[Predicate]) {
   def apply(qg: QueryGraph): Set[Predicate] =
-    qg.selections.flatPredicates.map(ExpressionPredicate.apply).toSet ++
-    qg.patternRelationships.map(PatternPredicate.apply).toSet
+    qg.selections.flatPredicates.map(ExpressionPredicate.apply).toSet[Predicate] ++
+    qg.patternRelationships.map(PatternPredicate.apply).toSet[Predicate] ++
+    qg.patternNodes.map(ExistsPredicate.apply).toSet[Predicate]
 }
