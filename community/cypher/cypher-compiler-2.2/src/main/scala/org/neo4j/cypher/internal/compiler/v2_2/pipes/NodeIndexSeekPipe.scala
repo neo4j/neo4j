@@ -50,7 +50,7 @@ case class NodeIndexSeekPipe(ident: String,
     val index = indexFactory(state)
     val resultNodes = indexQuery(valueExpr, ExecutionContext.empty, state, index, label.name, propertyKey.name)
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
-    resultNodes.map(node => baseContext.newWith(ident, node))
+    resultNodes.map(node => baseContext.newWith1(ident, node))
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)

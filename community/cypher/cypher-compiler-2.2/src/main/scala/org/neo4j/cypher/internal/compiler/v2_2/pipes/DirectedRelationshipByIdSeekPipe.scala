@@ -36,15 +36,8 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityById
   with RonjaPipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
-    val relIdExprs = relIdExpr.expressions(ctx, state).flatMap(Option(_))
-    new IdSeekIterator[Relationship](state.query.relationshipOps, relIdExprs.iterator).map {
-      r =>
-        val m = ctx.m.clone()
-        m.put(ident, r)
-        m.put(fromNode, r.getStartNode)
-        m.put(toNode, r.getEndNode)
-        ctx.copy(m = m)
-    }
+    val relIds = relIdExpr.expressions(ctx, state).flatMap(Option(_))
+    new DirectedRelationshipIdSeekIterator(ident, fromNode, toNode, ctx, state.query.relationshipOps, relIds.iterator)
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)

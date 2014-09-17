@@ -31,7 +31,7 @@ case class AllNodesScanPipe(ident: String)(val estimatedCardinality: Option[Long
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
-    state.query.nodeOps.all.map(n => baseContext.newWith(ident, n))
+    state.query.nodeOps.all.map(n => baseContext.newWith1(ident, n))
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)

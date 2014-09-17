@@ -52,9 +52,7 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
-    new IdSeekIterator[Node](state.query.nodeOps, nodeIds.iterator).map {
-      node => ctx.clone().newWith(ident, node)
-    }
+    new NodeIdSeekIterator(ident, ctx, state.query.nodeOps, nodeIds.iterator)
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)

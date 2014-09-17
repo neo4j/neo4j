@@ -19,40 +19,98 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.graphdb.PropertyContainer
-import org.neo4j.cypher.internal.compiler.v2_2.spi.Operations
+import org.neo4j.cypher.EntityNotFoundException
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.NumericHelper
-import org.neo4j.cypher.EntityNotFoundException
+import org.neo4j.cypher.internal.compiler.v2_2.spi.Operations
+import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 
-import scala.annotation.tailrec
+abstract class IdSeekIterator[T <: PropertyContainer]
+  extends Iterator[ExecutionContext] with NumericHelper {
 
-class IdSeekIterator[T <: PropertyContainer](ident: String, operations: Operations[T], nodeIds: Iterator[Any])
-  extends Iterator[T] with NumericHelper {
+  private var cachedEntity: T = computeNextEntity()
 
-  private var cached = cacheNext()
+  protected def operations: Operations[T]
+  protected def entityIds: Iterator[Any]
 
-  def hasNext = cached.isDefined
+  protected def hasNextEntity = cachedEntity != null
 
-  def next() = cached match {
-    case Some(result) =>
-      cached = cacheNext()
+  protected def nextEntity() = {
+    if (hasNextEntity) {
+      val result = cachedEntity
+      cachedEntity = computeNextEntity()
       result
-    case None =>
-      Iterator.empty.next
+    } else {
+      Iterator.empty.next()
+    }
   }
 
-  @tailrec
-  private def cacheNext(): Option[T] = {
-    if (nodeIds.hasNext) {
-      val id = asLongEntityId(nodeIds.next())
+  private def computeNextEntity(): T = {
+    while (entityIds.hasNext) {
       try {
-        Some(operations.getById(id))
-      } catch {
-        case _: EntityNotFoundException => cacheNext()
+        return operations.getById(asLongEntityId(entityIds.next()))
       }
+      catch {
+        case _: EntityNotFoundException =>
+      }
+    }
+    null.asInstanceOf[T]
+  }
+}
+
+final class NodeIdSeekIterator(ident: String,
+                               baseContext: ExecutionContext,
+                               protected val operations: Operations[Node],
+                               protected val entityIds: Iterator[Any])
+  extends IdSeekIterator[Node] {
+
+  def hasNext: Boolean = hasNextEntity
+
+  def next(): ExecutionContext =
+    baseContext.newWith1(ident, nextEntity())
+}
+
+final class DirectedRelationshipIdSeekIterator(ident: String,
+                                               fromNode: String,
+                                               toNode: String,
+                                               baseContext: ExecutionContext,
+                                               protected val operations: Operations[Relationship],
+                                               protected val entityIds: Iterator[Any])
+  extends IdSeekIterator[Relationship] {
+
+  def hasNext: Boolean = hasNextEntity
+
+  def next(): ExecutionContext = {
+    val rel = nextEntity()
+    baseContext.newWith3(ident, rel, fromNode, rel.getStartNode, toNode, rel.getEndNode)
+  }
+}
+
+final class UndirectedRelationshipIdSeekIterator(ident: String,
+                                                 fromNode: String,
+                                                 toNode: String,
+                                                 baseContext: ExecutionContext,
+                                                 protected val operations: Operations[Relationship],
+                                                 protected val entityIds: Iterator[Any])
+  extends IdSeekIterator[Relationship] {
+
+  private var lastEntity: Relationship = null
+  private var lastStart: Node = null
+  private var lastEnd: Node = null
+  private var emitSibling = false
+
+  def hasNext: Boolean = emitSibling || hasNextEntity
+
+  def next(): ExecutionContext = {
+    if (emitSibling) {
+      emitSibling = false
+      baseContext.newWith3(ident, lastEntity, fromNode, lastEnd, toNode, lastStart)
     } else {
-      None
+      emitSibling = true
+      lastEntity = nextEntity()
+      lastStart = lastEntity.getStartNode
+      lastEnd = lastEntity.getEndNode
+      baseContext.newWith3(ident, lastEntity, fromNode, lastStart, toNode, lastEnd)
     }
   }
 }

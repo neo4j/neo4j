@@ -33,6 +33,7 @@ object ExecutionContext {
 case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
                             mutationCommands: Queue[UpdateAction] = Queue.empty)
   extends MutableMap[String, Any] {
+
   def get(key: String): Option[Any] = m.get(key)
 
   def iterator: Iterator[(String, Any)] = m.iterator
@@ -72,9 +73,26 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
   def newWith(newEntry: (String, Any)) =
     createWithNewMap(m.clone() += newEntry)
 
-  def newWith(key: String, value: Any) = {
+  // This may seem silly but it has measurable impact in tight loops
+
+  def newWith1(key1: String, value1: Any) = {
     val newMap = m.clone()
-    newMap.put(key, value)
+    newMap.put(key1, value1)
+    createWithNewMap(newMap)
+  }
+
+  def newWith2(key1: String, value1: Any, key2: String, value2: Any) = {
+    val newMap = m.clone()
+    newMap.put(key1, value1)
+    newMap.put(key2, value2)
+    createWithNewMap(newMap)
+  }
+
+  def newWith3(key1: String, value1: Any, key2: String, value2: Any, key3: String, value3: Any) = {
+    val newMap = m.clone()
+    newMap.put(key1, value1)
+    newMap.put(key2, value2)
+    newMap.put(key3, value3)
     createWithNewMap(newMap)
   }
 
