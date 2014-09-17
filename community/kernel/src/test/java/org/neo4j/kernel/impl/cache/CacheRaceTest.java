@@ -38,6 +38,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.test.Barrier;
@@ -57,6 +59,22 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class CacheRaceTest
 {
+    private static final Predicate<StackTraceElement[]> PersistenceCache_apply = new Predicate<StackTraceElement[]>()
+    {
+        @Override
+        public boolean accept( StackTraceElement[] trace )
+        {
+            for ( StackTraceElement element : trace )
+            {
+                if ( "apply".equals( element.getMethodName() ) &&
+                     PersistenceCache.class.getName().equals( element.getClassName() ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    };
     private final NodeCache nodeCache = new NodeCache();
     public final @Rule DatabaseRule db = new ImpermanentDatabaseRule()
     {
@@ -86,7 +104,7 @@ public class CacheRaceTest
                 @Override
                 public Cache<RelationshipImpl> call() throws Exception
                 {
-                    return new StrongReferenceCache<RelationshipImpl>( CacheProvider.RELATIONSHIP_CACHE_NAME );
+                    return new StrongReferenceCache<>( CacheProvider.RELATIONSHIP_CACHE_NAME );
                 }
             } );
         }
@@ -101,11 +119,11 @@ public class CacheRaceTest
         Barrier.Control committing = new Barrier.Control();
         Future<Node> node = threading.execute( createNode( committing ), graphDb );
         committing.await();
-        nodeCache.clear();
-        Barrier.Control updateCache = nodeCache.blockThread( "create-node" );
+        Barrier.Control updateCache = nodeCache.blockThread( "create-node", PersistenceCache_apply );
         threading.threadBlockMonitor( currentThread(), new Release( updateCache ) );
         committing.release();
         updateCache.await(); // the 'create-node' thread is awaiting permission to update the cache
+        nodeCache.clear();
         List<String> before = countRelationshipsOfAllNodes( graphDb ); // read the store to re-populate the cache
 
         // when
@@ -113,7 +131,10 @@ public class CacheRaceTest
         node.get();
 
         // then
-        List<String> after = countRelationshipsOfAllNodes( graphDb ); // read the store to re-populate the cache
+        List<String> after = countRelationshipsOfAllNodes( graphDb ); // read resulting state
+        // if before > after: we have encountered the race condition.
+        // if before < after: we have managed to read the state before the transaction was written,
+        //    and the cache needs to be cleared later.
         assertEquals( join( "\n\t", after ), before.size(), after.size() );
     }
 
@@ -126,11 +147,11 @@ public class CacheRaceTest
         Barrier.Control committing = new Barrier.Control();
         Future<Relationship> rel = threading.execute( addRelationship( committing ), node );
         committing.await();
-        nodeCache.clear();
-        Barrier.Control updateCache = nodeCache.blockThread( "add-relationship" );
+        Barrier.Control updateCache = nodeCache.blockThread( "add-relationship", PersistenceCache_apply );
         threading.threadBlockMonitor( currentThread(), new Release( updateCache ) );
         committing.release();
         updateCache.await(); // the 'create-node' thread is awaiting permission to update the cache
+        nodeCache.clear();
         List<String> before = countRelationshipsOfAllNodes( graphDb ); // read the store to re-populate the cache
 
         // when
@@ -138,7 +159,10 @@ public class CacheRaceTest
         rel.get();
 
         // then
-        List<String> after = countRelationshipsOfAllNodes( graphDb ); // read the store to re-populate the cache
+        List<String> after = countRelationshipsOfAllNodes( graphDb ); // read resulting state
+        // if before > after: we have encountered the race condition.
+        // if before < after: we have managed to read the state before the transaction was written,
+        //    and the cache needs to be cleared later.
         assertEquals( join( "\n\t", after ), before.size(), after.size() );
     }
 
@@ -184,7 +208,7 @@ public class CacheRaceTest
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            List<String> relationships = new ArrayList<String>();
+            List<String> relationships = new ArrayList<>();
             for ( Node node : GlobalGraphOperations.at( graphDb ).getAllNodes() )
             {
                 for ( Relationship relationship : node.getRelationships() )
@@ -220,29 +244,53 @@ public class CacheRaceTest
 
     private static class NodeCache extends StrongReferenceCache<NodeImpl>
     {
-        private final Map<String/*thread name*/, Barrier> barriers = new ConcurrentHashMap<String, Barrier>();
+        private final Map<String, Function<StackTraceElement[], Barrier>> barriers = new ConcurrentHashMap<>();
 
         public NodeCache()
         {
             super( CacheProvider.NODE_CACHE_NAME );
         }
 
-        public Barrier.Control blockThread( String threadName )
+        public Barrier.Control blockThread( String threadName, Predicate<StackTraceElement[]> tracePredicate )
         {
             Barrier.Control barrier = new Barrier.Control();
-            barriers.put( threadName, barrier );
+            barriers.put( threadName, new Conditional<StackTraceElement[], Barrier>( tracePredicate, barrier ) );
             return barrier;
         }
 
         @Override
         public NodeImpl get( long key )
         {
-            Barrier barrier = barriers.get( currentThread().getName() );
+            Barrier barrier = barrierFor( currentThread() );
             if ( barrier != null )
             {
                 barrier.reached();
             }
             return super.get( key );
+        }
+
+        private Barrier barrierFor( Thread thread )
+        {
+            Function<StackTraceElement[], Barrier> conditional = barriers.get( thread.getName() );
+            return conditional == null ? null : conditional.apply( thread.getStackTrace() );
+        }
+    }
+
+    private static class Conditional<CONDITION, VALUE> implements Function<CONDITION, VALUE>
+    {
+        private final Predicate<CONDITION> predicate;
+        private final VALUE value;
+
+        public Conditional( Predicate<CONDITION> predicate, VALUE value )
+        {
+            this.predicate = predicate;
+            this.value = value;
+        }
+
+        @Override
+        public VALUE apply( CONDITION condition )
+        {
+            return predicate.accept( condition ) ? value : null;
         }
     }
 

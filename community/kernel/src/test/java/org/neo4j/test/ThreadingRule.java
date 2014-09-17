@@ -141,6 +141,12 @@ public class ThreadingRule extends ExternalResource
                 case WAITING:
                 case TIMED_WAITING:
                     StackTraceElement[] trace = thread.getStackTrace();
+                    if ( trace[0].isNativeMethod() &&
+                         Thread.class.getName().equals( trace[0].getClassName() ) &&
+                         "sleep".equals( trace[0].getMethodName() ) )
+                    {
+                        break; // don't regard Thread.sleep() as being blocked
+                    }
                     if ( lastState == state && Arrays.equals( trace, lastTrace ) )
                     {
                         action.run();
