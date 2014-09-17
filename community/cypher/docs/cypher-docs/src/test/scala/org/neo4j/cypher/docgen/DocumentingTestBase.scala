@@ -28,7 +28,7 @@ import org.neo4j.cypher.export.{DatabaseSubGraph, SubGraphExporter}
 import org.neo4j.cypher.internal.{RewindableExecutionResult, ServerExecutionEngine}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
-import org.neo4j.cypher.internal.helpers.{GraphIcing, Materialized}
+import org.neo4j.cypher.internal.helpers.{GraphIcing, Eagerly}
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.{CypherException, ExecutionResult}
 import org.neo4j.graphdb._
@@ -443,9 +443,9 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     m map { case (k: String, v: T) => (node(k), v) }
 
   private def mapMapValue(v: Any): Any = v match {
-    case v: Map[_, _] => Materialized.mapValues(v, mapMapValue).asJava
-    case seq: Seq[_] => seq.map(mapMapValue).asJava
-    case v: Any => v
+    case v: Map[_, _] => Eagerly.immutableMapValues(v, mapMapValue).asJava
+    case seq: Seq[_]  => seq.map(mapMapValue).asJava
+    case v: Any       => v
   }
 
   private def dumpQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: Either[CypherException, InternalExecutionResult], consoleData: String) {

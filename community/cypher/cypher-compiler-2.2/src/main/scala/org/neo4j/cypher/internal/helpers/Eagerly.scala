@@ -19,28 +19,21 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import scala.collection.{TraversableLike, mutable, immutable}
+import scala.collection.{immutable, mutable}
 
-// This is deprecated. All these helper classes should move
-// to cypher compiler so that we may change API between
-// versions
-//
-// The replacement is called org.neo4j.internal.helpers.Eagerly
-//
-@deprecated
-object Materialized {
+object Eagerly {
 
-  def mapValues[A, B, C](m: collection.Map[A, B], f: B => C): Map[A, C] = {
-    val builder: mutable.Builder[(A, C), Map[A, C]] = mapBuilder(m)
+  // These two methods could in theory be replaced by a single one. My attempts so far didn't type out or broke scalac. You get a cookie if you get it to work -- boggle
 
-    for ( ((k, v)) <- m )
-      builder += k -> f(v)
+  def immutableMapValues[A, B, C](m: collection.Map[A, B], f: B => C): immutable.Map[A, C] =
+    mapToBuilder(m, f, immutable.Map.newBuilder[A, C])
+
+  def mutableMapValues[A, B, C](m: collection.Map[A, B], f: B => C): mutable.Map[A, C] =
+    mapToBuilder(m, f, mutable.Map.newBuilder[A, C])
+
+  private def mapToBuilder[A, B, C, To](m: collection.Map[A, B], f: B => C, builder: mutable.Builder[(A,C ), To]): To = {
+    builder.sizeHint(m.size)
+    m.foldLeft(builder) { case (acc, (k, v)) => acc += ((k, f(v))) }
     builder.result()
-  }
-
-  def mapBuilder[A, B](underlying: TraversableLike[_, _]): mutable.Builder[(A, B), Map[A, B]] = {
-    val builder = immutable.Map.newBuilder[A, B]
-    builder.sizeHint(underlying)
-    builder
   }
 }
