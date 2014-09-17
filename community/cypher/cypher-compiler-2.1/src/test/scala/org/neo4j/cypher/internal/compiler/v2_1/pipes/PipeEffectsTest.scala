@@ -92,7 +92,10 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
       -> Effects.READS_NODES,
 
     DistinctPipe(NullPipe(), Map.empty)
-      -> Effects.NONE
+      -> Effects.NONE,
+
+    OptionalMatchPipe(NullPipe(), NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]]), SymbolTable())
+      -> Effects.READS_NODES
   )
 
   EFFECTS.foreach { case (pipe: Pipe, effects: Effects) =>
