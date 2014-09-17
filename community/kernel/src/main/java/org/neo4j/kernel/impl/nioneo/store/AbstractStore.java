@@ -22,16 +22,12 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -49,7 +45,6 @@ public abstract class AbstractStore extends CommonAbstractStore
     public static abstract class Configuration
         extends CommonAbstractStore.Configuration
     {
-        public static final GraphDatabaseSetting.BooleanSetting rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 
     private Config conf;
@@ -60,19 +55,6 @@ public abstract class AbstractStore extends CommonAbstractStore
      * @return The record size
      */
     public abstract int getRecordSize();
-
-    @Override
-    protected long figureOutHighestIdInUse()
-    {
-        try
-        {
-            return getFileChannel().size()/getRecordSize();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
 
     public AbstractStore( File fileName, Config conf, IdType idType,
                           IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
@@ -110,127 +92,10 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
     }
 
-    /**
-     * Sets the high id of {@link IdGenerator}.
-     *
-     * @param id
-     *            The high id
-     */
-    public void setHighId( int id )
-    {
-        super.setHighId( id );
-    }
-
-    private long findHighIdBackwards() throws IOException
-    {
-        // Duplicated method
-        StoreChannel fileChannel = getFileChannel();
-        int recordSize = getRecordSize();
-        long fileSize = fileChannel.size();
-        long highId = fileSize / recordSize;
-        ByteBuffer byteBuffer = ByteBuffer.allocate( getRecordSize() );
-        for ( long i = highId; i > 0; i-- )
-        {
-            fileChannel.position( i * recordSize );
-            if ( fileChannel.read( byteBuffer ) > 0 )
-            {
-                byteBuffer.flip();
-                boolean isInUse = isRecordInUse( byteBuffer );
-                byteBuffer.clear();
-                if ( isInUse )
-                {
-                    return i;
-                }
-            }
-        }
-        return 0;
-    }
-
-    protected boolean isRecordInUse(ByteBuffer buffer)
+    protected boolean isRecordInUse( ByteBuffer buffer )
     {
         byte inUse = buffer.get();
         return ( ( inUse & 0x1 ) == Record.IN_USE.byteValue() );
-    }
-
-    /**
-     * Rebuilds the {@link IdGenerator} by looping through all records and
-     * checking if record in use or not.
-     *
-     * @throws IOException
-     *             if unable to rebuild the id generator
-     */
-    @Override
-    protected void rebuildIdGenerator()
-    {
-        if ( isReadOnly() && !isBackupSlave() )
-        {
-            throw new ReadOnlyDbException();
-        }
-
-        stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName()
-            + "] ..." );
-        closeIdGenerator();
-        if ( fileSystemAbstraction.fileExists( new File( getStorageFileName().getPath() + ".id" ) ))
-        {
-            boolean success = fileSystemAbstraction.deleteFile( new File( getStorageFileName().getPath() + ".id" ));
-            assert success;
-        }
-        createIdGenerator( new File( getStorageFileName().getPath() + ".id" ));
-        openIdGenerator( false );
-        StoreChannel fileChannel = getFileChannel();
-        long highId = 1;
-        long defraggedCount = 0;
-        try
-        {
-            long fileSize = fileChannel.size();
-            int recordSize = getRecordSize();
-            boolean fullRebuild = true;
-            if ( (boolean) conf.get( Configuration.rebuild_idgenerators_fast ) )
-            {
-                fullRebuild = false;
-                highId = findHighIdBackwards();
-            }
-            ByteBuffer byteBuffer = ByteBuffer.allocate( recordSize );
-            // Duplicated code block
-            LinkedList<Long> freeIdList = new LinkedList<Long>();
-            if ( fullRebuild )
-            {
-                for ( long i = 0; i * recordSize < fileSize && recordSize > 0;
-                    i++ )
-                {
-                    fileChannel.position( i * recordSize );
-                    byteBuffer.clear();
-                    fileChannel.read( byteBuffer );
-                    byteBuffer.flip();
-                    if ( !isRecordInUse( byteBuffer ) )
-                    {
-                        freeIdList.add( i );
-                    }
-                    else
-                    {
-                        highId = i;
-                        setHighId( highId+1 );
-                        while ( !freeIdList.isEmpty() )
-                        {
-                            freeId( freeIdList.removeFirst() );
-                            defraggedCount++;
-                        }
-                    }
-                }
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException(
-                "Unable to rebuild id generator " + getStorageFileName(), e );
-        }
-        setHighId( highId + 1 );
-        stringLogger.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
-                " defragged count=" + defraggedCount, true );
-        stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
-            + " (defragged=" + defraggedCount + ")" );
-        closeIdGenerator();
-        openIdGenerator( false );
     }
 
     public abstract List<WindowPoolStats> getAllWindowPoolStats();

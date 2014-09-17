@@ -49,7 +49,7 @@ public class DynamicStringStore extends AbstractDynamicStore
         super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
     }
-    
+
     @Override
     public void accept( RecordStore.Processor processor, DynamicRecord record )
     {
@@ -61,17 +61,4 @@ public class DynamicStringStore extends AbstractDynamicStore
     {
         return TYPE_DESCRIPTOR;
     }
-
-    @Override
-    public void setHighId( long highId )
-    {
-        super.setHighId( highId );
-    }
-
-    @Override
-    public long nextBlockId()
-    {
-        return super.nextBlockId();
-    }
-
 }
