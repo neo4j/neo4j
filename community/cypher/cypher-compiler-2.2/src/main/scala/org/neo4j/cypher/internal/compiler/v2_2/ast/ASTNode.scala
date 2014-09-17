@@ -31,13 +31,11 @@ trait ASTNode
   with PageDocFormatting /* multi line */
   // with LineDocFormatting  /* single line */
   // with SimpleDocHandler.ToString[ASTNode] /* like default toString() */ {
-  with InternalDocHandler.ToString[ASTNode] /* see InternalDocHandler for more choices */
+  // with InternalDocHandler.ToString[ASTNode] /* see InternalDocHandler for more choices */
 {
 
   import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
   import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
-
-//  val toStringVal = toString()
 
   def position: InputPosition
 
