@@ -29,7 +29,7 @@ import StatementConverters._
 case class PreparedQuery(statement: Statement,
                          queryText: String,
                          extractedParams: Map[String, Any],
-                         planType: PlanType)(val semanticTable: SemanticTable) {
+                         planType: PlanType)(val semanticTable: SemanticTable, val scopeTree: Scope) {
 
   def abstractQuery: AbstractQuery = statement.asQuery.setQueryText(queryText)
 
@@ -38,5 +38,5 @@ case class PreparedQuery(statement: Statement,
     case _ => false
   }
 
-  def rewrite(rewriter: Rewriter): PreparedQuery = copy(statement = statement.endoRewrite(rewriter))(semanticTable)
+  def rewrite(rewriter: Rewriter): PreparedQuery = copy(statement = statement.endoRewrite(rewriter))(semanticTable, scopeTree)
 }

@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{namespaceIdentifiers, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{Planner, PlanningMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.{LRUCache, PlanType}
 import org.neo4j.graphdb.GraphDatabaseService
@@ -104,12 +104,15 @@ case class CypherCompiler(parser: CypherParser,
 
   def prepareQuery(queryText: String, planType: PlanType): PreparedQuery = {
     val parsedStatement = parser.parse(queryText)
-    val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
 
-    semanticChecker.check(queryText, cleanedStatement)
-    val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, cleanedStatement)
-    val table = semanticChecker.check(queryText, rewrittenStatement)
-    PreparedQuery(rewrittenStatement, queryText, extractedParams, planType)(table)
+    val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+    val originalSemanticState = semanticChecker.check(queryText, cleanedStatement)
+
+    val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
+    val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement)
+
+    val table = SemanticTable(types = postRewriteSemanticState.typeTable)
+    PreparedQuery(rewrittenStatement, queryText, extractedParams, planType)(table, postRewriteSemanticState.scopeTree)
   }
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {

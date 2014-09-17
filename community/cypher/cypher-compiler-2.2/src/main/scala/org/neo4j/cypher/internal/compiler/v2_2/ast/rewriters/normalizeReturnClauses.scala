@@ -48,7 +48,8 @@ case object normalizeReturnClauses extends Rewriter {
         case i: AliasedReturnItem =>
           i
         case i =>
-          AliasedReturnItem(i.expression, Identifier(i.name)(i.expression.position))(i.position)
+          val newPosition = i.expression.position.copy(offset = i.expression.position.offset + 1)
+          AliasedReturnItem(i.expression, Identifier(i.name)(newPosition))(i.position)
       })
       Seq(
         clause.copy(returnItems = ListedReturnItems(aliasedItems)(returnItemList.position))(clause.position)
@@ -56,11 +57,12 @@ case object normalizeReturnClauses extends Rewriter {
 
     case clause @ Return(distinct, returnItemList: ListedReturnItems, orderBy, skip, limit) =>
       val (aliasProjection, finalProjection) = returnItemList.items.map(i => {
+        val newPosition = i.expression.position.copy(offset = i.expression.position.offset + 1)
         if (i.alias.isDefined) {
-          (i, AliasedReturnItem(i.alias.get, i.alias.get)(i.position))
+          (i, AliasedReturnItem(i.alias.get, i.alias.get.copy()(newPosition))(i.position))
         } else {
           val newIdentifier = Identifier(FreshIdNameGenerator.name(i.expression.position))(i.position)
-          (AliasedReturnItem(i.expression, newIdentifier)(i.position), AliasedReturnItem(newIdentifier, Identifier(i.name)(i.expression.position))(i.position))
+          (AliasedReturnItem(i.expression, newIdentifier)(i.position), AliasedReturnItem(newIdentifier, Identifier(i.name)(newPosition))(i.position))
         }
       }).unzip
 

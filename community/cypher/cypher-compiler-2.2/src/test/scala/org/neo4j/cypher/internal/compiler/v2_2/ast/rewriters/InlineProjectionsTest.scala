@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{AstRewritingTestSupport,
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 
   test("should inline: MATCH a, b, c WITH c AS c, b AS a RETURN c") {
-    val result = projectionInlinedAst("MATCH a, b, c WITH c AS c, b AS a RETURN c")
+    val result = projectionInlinedAst("MATCH a, b, c WITH c AS c, b AS d RETURN c")
 
-    result should equal(ast("MATCH a, b, c WITH c AS c, b AS a RETURN c"))
+    result should equal(ast("MATCH a, b, c WITH c AS c, b AS b RETURN c AS c"))
   }
 
   test("should inline: WITH {b} AS tmp, {r} AS r WITH {a} AS b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b") {
@@ -39,9 +39,9 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   test("should inline: MATCH a, b, c WITH c AS d, b AS a RETURN d") {
-    val result = projectionInlinedAst("MATCH a, b, c WITH c AS d, b AS a RETURN d")
+    val result = projectionInlinedAst("MATCH a, b, c WITH c AS d, b AS e RETURN d")
 
-    result should equal(ast("MATCH a, b, c WITH c AS c, b AS a RETURN c AS d"))
+    result should equal(ast("MATCH a, b, c WITH c AS c, b AS b RETURN c AS d"))
   }
 
   test("should  inline: MATCH n WITH n AS m RETURN m => MATCH n RETURN n") {
@@ -156,7 +156,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   test("MATCH n WITH n.prop AS x WITH x LIMIT 10 RETURN x" ) {
     val result = projectionInlinedAst("MATCH n WITH n.prop AS x WITH x LIMIT 10 RETURN x")
 
-    result should equal(ast("MATCH n WITH n.prop AS x WITH x LIMIT 10 RETURN x AS x"))
+    result should equal(ast("MATCH n WITH n AS n WITH n AS n LIMIT 10 RETURN n.prop AS x"))
   }
 
   test("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b" ) {

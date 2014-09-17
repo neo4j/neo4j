@@ -26,7 +26,7 @@ import StatementConverters._
 import org.neo4j.cypher.SyntaxException
 
 class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {
-  def check(queryText: String, statement: Statement): SemanticTable = {
+  def check(queryText: String, statement: Statement): SemanticState = {
     semanticCheckMonitor.startSemanticCheck(queryText)
     val SemanticCheckResult(semanticState, semanticErrors) = statement.semanticCheck(SemanticState.clean)
 
@@ -39,7 +39,7 @@ class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {
       error => throw new SyntaxException(s"${error.msg} (${error.position})", queryText, error.position.offset)
     }
 
-    SemanticTable(types = semanticState.typeTable)
+    semanticState
   }
 
 }

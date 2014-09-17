@@ -32,7 +32,7 @@ import scala.collection.immutable.HashMap
 // s3.localSymbol(n) = Symblol(n, Seq(1, 2), type(n))
 // s4.localSymbol(n) = Symblol(n, Seq(1, 2, 3), type(n))
 //
-case class Symbol(name: String, positions: Seq[InputPosition], types: TypeSpec)
+case class Symbol(name: String, positions: Set[InputPosition], types: TypeSpec)
 
 case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = None) {
   lazy val actualUnCoerced = expected.fold(specified)(specified intersect)
@@ -59,7 +59,7 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
   def importScope(other: Scope) =
     copy(symbolTable = symbolTable ++ other.symbolTable)
 
-  def updateIdentifier(identifier: String, types: TypeSpec, positions: Seq[InputPosition]) =
+  def updateIdentifier(identifier: String, types: TypeSpec, positions: Set[InputPosition]) =
     copy(symbolTable = symbolTable.updated(identifier, Symbol(identifier, positions, types)))
 }
 
@@ -85,7 +85,7 @@ object SemanticState {
 
     def importScope(other: Scope): ScopeLocation = location.replace(scope.importScope(other))
 
-    def updateIdentifier(identifier: String, types: TypeSpec, positions: Seq[InputPosition]): ScopeLocation =
+    def updateIdentifier(identifier: String, types: TypeSpec, positions: Set[InputPosition]): ScopeLocation =
       location.replace(scope.updateIdentifier(identifier, types, positions))
   }
 }
@@ -103,28 +103,28 @@ case class SemanticState(currentScope: ScopeLocation, typeTable: IdentityMap[ast
 
   def importScope(scope: Scope) = copy(currentScope = currentScope.importScope(scope))
 
-  def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
+  def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(identifier.name) match {
       case None =>
-        Right(updateIdentifier(identifier, possibleTypes, Seq(identifier.position)))
+        Right(updateIdentifier(identifier, possibleTypes, positions + identifier.position))
       case Some(symbol) =>
-        Left(SemanticError(s"${identifier.name} already declared", identifier.position, symbol.positions:_*))
+        Left(SemanticError(s"${identifier.name} already declared", identifier.position, symbol.positions.toSeq: _*))
     }
 
   def implicitIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(identifier.name) match {
       case None         =>
-        Right(updateIdentifier(identifier, possibleTypes, Seq(identifier.position)))
+        Right(updateIdentifier(identifier, possibleTypes, Set(identifier.position)))
       case Some(symbol) =>
         val inferredTypes = symbol.types intersect possibleTypes
         if (inferredTypes.nonEmpty) {
-          Right(updateIdentifier(identifier, inferredTypes, symbol.positions :+ identifier.position))
+          Right(updateIdentifier(identifier, inferredTypes, symbol.positions + identifier.position))
         } else {
           val existingTypes = symbol.types.mkString(", ", " or ")
           val expectedTypes = possibleTypes.mkString(", ", " or ")
           Left(SemanticError(
             s"Type mismatch: ${identifier.name} already defined with conflicting type $existingTypes (expected $expectedTypes)",
-            identifier.position, symbol.positions:_*))
+            identifier.position, symbol.positions.toSeq: _*))
         }
     }
 
@@ -133,7 +133,7 @@ case class SemanticState(currentScope: ScopeLocation, typeTable: IdentityMap[ast
       case None         =>
         Left(SemanticError(s"${identifier.name} not defined", identifier.position))
       case Some(symbol) =>
-        Right(updateIdentifier(identifier, symbol.types, symbol.positions :+ identifier.position))
+        Right(updateIdentifier(identifier, symbol.types, symbol.positions + identifier.position))
     }
 
   def specifyType(expression: ast.Expression, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
@@ -152,7 +152,7 @@ case class SemanticState(currentScope: ScopeLocation, typeTable: IdentityMap[ast
 
   def expressionType(expression: ast.Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
 
-  private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Seq[InputPosition]) =
+  private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Set[InputPosition]) =
     copy(
       currentScope = currentScope.updateIdentifier(identifier.name, types, locations),
       typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types))

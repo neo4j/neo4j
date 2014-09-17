@@ -33,8 +33,11 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition
 
   def declareIdentifiers(previousScope: Scope) =
     items.foldSemanticCheck(item => item.alias match {
+      case Some(identifier) if item.expression == identifier =>
+        val positions = previousScope.symbol(identifier.name).fold(Set.empty[InputPosition])(_.positions)
+        identifier.declare(item.expression.types, positions)
       case Some(identifier) => identifier.declare(item.expression.types)
-      case None             => Identifier(item.name)(item.position).declare(item.expression.types)
+      case None             => (state) => SemanticCheckResult(state, Seq.empty)
     })
 
   private def ensureProjectedToUniqueIds: SemanticCheck = {

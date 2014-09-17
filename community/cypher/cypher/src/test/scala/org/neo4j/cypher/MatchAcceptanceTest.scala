@@ -59,6 +59,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[Node]("a").toList should equal (List(a2))
   }
 
+  test("should honour the column name for RETURN items") {
+    val start: Node = createNode(Map("name" -> "Someone Else"))
+    val result = executeWithNewPlanner(s"MATCH a WITH a.name AS a RETURN a")
+    result.columnAs[String]("a").toList should equal (List("Someone Else"))
+  }
+
   test("should filter based on rel prop name") {
     val start: Node = createNode()
     val a: Node = createNode()
@@ -70,6 +76,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       s"match (node)-[r:KNOWS]->(a) WHERE r.name = 'monkey' RETURN a"
     )
     result.columnAs[Node]("a").toList should equal(List(a))
+  }
+
+  test("should cope with shadowed variables") {
+    val node = createNode("name" -> "Foo")
+    val result = executeWithNewPlanner(s"MATCH n WITH n.name AS n RETURN n")
+    result.columnAs[String]("n").toList should equal(List("Foo"))
   }
 
   test("should get neighbours") {

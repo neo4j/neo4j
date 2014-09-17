@@ -28,8 +28,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
 
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
-  def rewrite(queryText: String, statement: Statement): (Statement, Map[String, Any]) = {
-
+  def rewrite(queryText: String, statement: Statement, semanticState: SemanticState): (Statement, Map[String, Any]) = {
     rewritingMonitor.startRewriting(queryText, statement)
 
     val (extractParameters, extractedParameters) = if (shouldExtractParameters)
