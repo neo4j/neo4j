@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{namespaceIdentifiers, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
@@ -112,7 +112,7 @@ case class CypherCompiler(parser: CypherParser,
     val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement)
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable)
-    PreparedQuery(rewrittenStatement, queryText, extractedParams, planType)(table)
+    PreparedQuery(rewrittenStatement, queryText, extractedParams, planType)(table, postRewriteSemanticState.scopeTree)
   }
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {

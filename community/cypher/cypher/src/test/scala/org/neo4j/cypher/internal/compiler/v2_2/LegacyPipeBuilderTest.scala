@@ -53,7 +53,7 @@ class LegacyPipeBuilderTest
   val planner = new Planner(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor])
 
   class FakePreparedQuery(q: AbstractQuery)
-    extends PreparedQuery(mock[Statement], "q", Map.empty, Normal)(SemanticTable()) {
+    extends PreparedQuery(mock[Statement], "q", Map.empty, Normal)(SemanticTable(), Scope(Map.empty, Seq.empty)) {
     override def abstractQuery: AbstractQuery = q
 
     override def isPeriodicCommit: Boolean = q.isInstanceOf[PeriodicCommitQuery]

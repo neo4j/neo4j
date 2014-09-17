@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterStepSequencer}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors,
@@ -45,17 +45,14 @@ case class Planner(monitors: Monitors,
 
   val executionPlanBuilder:PipeExecutionPlanBuilder = maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(monitors))
 
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo =
-    producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)
-
-  private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo = {
-    Planner.rewriteStatement(statement) match {
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
+    Planner.rewriteStatement(inputQuery.statement, inputQuery.scopeTree) match {
       case ast: Query =>
-        monitor.startedPlanning(query)
-        val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, semanticTable)(planContext)
-        monitor.foundPlan(query, logicalPlan)
+        monitor.startedPlanning(inputQuery.queryText)
+        val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, inputQuery.semanticTable)(planContext)
+        monitor.foundPlan(inputQuery.queryText, logicalPlan)
         val result = executionPlanBuilder.build(logicalPlan)(pipeBuildContext)
-        monitor.successfulPlanning(query, result)
+        monitor.successfulPlanning(inputQuery.queryText, result)
         result
 
       case _ =>
@@ -87,20 +84,28 @@ case class Planner(monitors: Monitors,
 object Planner {
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
-  val rewriter = RewriterStepSequencer.newDefault("Planner")(
-    rewriteEqualityToInCollection,
-    splitInCollectionsToIsolateConstants,
-    CNFNormalizer,
-    collapseInCollectionsContainingConstants,
-    nameVarLengthRelationships,
-    namePatternPredicates,
-    nameUpdatingClauses,
-    projectNamedPaths,
-    projectFreshSortExpressions,
-    inlineProjections
-  )
+  def getRewriter(scopeTree: Scope): Rewriter = {
+    val namespacedIdentifiers = namespaceIdentifiers(scopeTree)
 
-  def rewriteStatement(statement: Statement) = statement.endoRewrite(rewriter)
+    RewriterStepSequencer.newDefault("Planner")(
+      ApplyRewriter("namespaceIdentifiers", namespacedIdentifiers),
+
+      rewriteEqualityToInCollection,
+      splitInCollectionsToIsolateConstants,
+      CNFNormalizer,
+      collapseInCollectionsContainingConstants,
+      nameVarLengthRelationships,
+      namePatternPredicates,
+      nameUpdatingClauses,
+      projectNamedPaths,
+      projectFreshSortExpressions,
+      inlineProjections
+    )
+  }
+
+  def rewriteStatement(statement: Statement, scopeTree: Scope) = {
+    statement.endoRewrite(getRewriter(scopeTree))
+  }
 }
 
 trait PlanningMonitor {
