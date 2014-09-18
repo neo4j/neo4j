@@ -2562,6 +2562,14 @@ class CypherParserTest extends CypherFunSuite {
       CreateIndex("MyLabel", Seq("prop1")))
   }
 
+  test("create index with invalid type") {
+    evaluating {
+      expectQuery(
+        "create simplex index on :MyLabel(prop1)",
+        CreateIndex("MyLabel", Seq("prop1")))
+    } should produce[SyntaxException]
+  }
+
   test("create index on multiple properties") {
     evaluating {
       expectQuery(

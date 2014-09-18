@@ -27,7 +27,7 @@ sealed trait Command extends Statement
 sealed trait IndexType
 final case object SimpleIndexType extends IndexType
 
-case class CreateIndex(label: LabelName, property: PropertyKeyName, val indexType: IndexType)(val position: InputPosition) extends Command {
+case class CreateIndex(indexType: IndexType, label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends Command {
   def semanticCheck = Seq()
 }
 
