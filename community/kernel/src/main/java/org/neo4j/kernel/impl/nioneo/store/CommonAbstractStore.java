@@ -23,9 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.OverlappingFileLockException;
+import java.util.LinkedList;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -49,10 +49,12 @@ public abstract class CommonAbstractStore
     {
         public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
         public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
-        
-        public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
-        public static final GraphDatabaseSetting.BooleanSetting backup_slave = GraphDatabaseSettings.backup_slave;
-        public static final GraphDatabaseSetting.BooleanSetting use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
+
+        public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
+        public static final Setting<Boolean> backup_slave = GraphDatabaseSettings.backup_slave;
+        public static final Setting<Boolean> use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
+
+        public static final Setting<Boolean> rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 
     public static final String ALL_STORES_VERSION = "v0.A.0";
@@ -282,10 +284,109 @@ public abstract class CommonAbstractStore
         }
     }
 
-    /**
-     * Should rebuild the id generator from scratch.
-     */
-    protected abstract void rebuildIdGenerator();
+    /** Should rebuild the id generator from scratch. */
+    protected void rebuildIdGenerator()
+    {
+        if ( isReadOnly() && !isBackupSlave() )
+        {
+            throw new ReadOnlyDbException();
+        }
+
+        stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
+        closeIdGenerator();
+        File idFile = new File( getStorageFileName().getPath() + ".id" );
+        if ( fileSystemAbstraction.fileExists( idFile ) )
+        {
+            boolean success = fileSystemAbstraction.deleteFile( idFile );
+            assert success : "Couldn't delete " + idFile.getPath() + ", still open?";
+        }
+        createIdGenerator( idFile );
+        openIdGenerator( false );
+        setHighId( getNumberOfReservedLowIds() );
+        StoreChannel fileChannel = getFileChannel();
+        boolean fastRebuild = doFastIdGeneratorRebuild();
+        long defraggedCount = 0;
+        try
+        {
+            long fileSize = fileChannel.size();
+            int recordSize = getRecordSize();
+            if ( fastRebuild )
+            {
+                setHighId( findHighIdBackwards() );
+            }
+            else
+            {
+                defraggedCount = fullScanIdRebuild( fileChannel, fileSize, recordSize,
+                        reserveIdsDuringRebuild() );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException(
+                    "Unable to rebuild id generator " + getStorageFileName(), e );
+        }
+        stringLogger.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
+                " defragged count=" + defraggedCount, true );
+        stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId() +
+                " (defragged=" + defraggedCount + ")" );
+
+        if ( !fastRebuild )
+        {
+            closeIdGenerator();
+            openIdGenerator( false );
+        }
+    }
+
+    protected boolean reserveIdsDuringRebuild()
+    {
+        return false;
+    }
+
+    private long fullScanIdRebuild( StoreChannel fileChannel, long fileSize, int recordSize, boolean justReserveIds )
+            throws IOException
+    {
+        long defraggedCount = 0;
+        ByteBuffer byteBuffer = ByteBuffer.allocate( recordSize );
+        LinkedList<Long> freeIdList = new LinkedList<Long>();
+        for ( long i = getNumberOfReservedLowIds(); i * recordSize < fileSize; i++ )
+        {
+            fileChannel.position( i * recordSize );
+            byteBuffer.clear();
+            fileChannel.read( byteBuffer );
+            byteBuffer.flip();
+            if ( !isRecordInUse( byteBuffer ) )
+            {
+                if ( justReserveIds )
+                {
+                    byteBuffer.clear();
+                    byteBuffer.put( Record.IN_USE.byteValue() ).putInt(
+                        Record.RESERVED.intValue() );
+                    byteBuffer.flip();
+                    fileChannel.write( byteBuffer, i * recordSize );
+                    byteBuffer.clear();
+                }
+                else
+                {
+                    freeIdList.add( i );
+                }
+            }
+            else
+            {
+                setHighId( i + 1 );
+                while ( !freeIdList.isEmpty() )
+                {
+                    freeId( freeIdList.removeFirst() );
+                    defraggedCount++;
+                }
+            }
+        }
+        return defraggedCount;
+    }
+
+    protected boolean doFastIdGeneratorRebuild()
+    {
+        return configuration.get( Configuration.rebuild_idgenerators_fast );
+    }
 
     /**
      * This method should close/release all resources that the implementation of
@@ -503,10 +604,50 @@ public abstract class CommonAbstractStore
 
     protected IdGenerator openIdGenerator( File fileName, int grabSize, boolean firstTime )
     {
-        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType(), figureOutHighestIdInUse() );
+        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize,
+                getIdType(), findHighIdBackwards() );
     }
 
-    protected abstract long figureOutHighestIdInUse();
+    protected long findHighIdBackwards()
+    {
+        try
+        {
+            StoreChannel fileChannel = getFileChannel();
+            int recordSize = getRecordSize();
+            long fileSize = fileChannel.size();
+            long highId = fileSize / recordSize;
+            ByteBuffer byteBuffer = ByteBuffer.allocate( bytesRequiredToDetermineInUse() );
+            for ( long i = highId; i > 0; i-- )
+            {
+                fileChannel.position( i * recordSize );
+                if ( fileChannel.read( byteBuffer ) > 0 )
+                {
+                    byteBuffer.flip();
+                    boolean isInUse = isRecordInUse( byteBuffer );
+                    byteBuffer.clear();
+                    if ( isInUse )
+                    {
+                        return i+1;
+                    }
+                }
+            }
+            return 0;
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException(
+                "Unable to rebuild id generator " + getStorageFileName(), e );
+        }
+    }
+
+    public abstract int getRecordSize();
+
+    protected abstract boolean isRecordInUse( ByteBuffer recordData );
+
+    protected int bytesRequiredToDetermineInUse()
+    {   // For most records it's enough with looking at the first byte
+        return 1;
+    }
 
     protected void createIdGenerator( File fileName )
     {
@@ -659,6 +800,11 @@ public abstract class CommonAbstractStore
     public long getNumberOfIdsInUse()
     {
         return idGenerator.getNumberOfIdsInUse();
+    }
+
+    protected int getNumberOfReservedLowIds()
+    {
+        return 0;
     }
 
     public WindowPoolStats getWindowPoolStats()

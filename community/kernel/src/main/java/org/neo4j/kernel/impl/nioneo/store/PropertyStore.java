@@ -713,6 +713,12 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     }
 
     @Override
+    protected int bytesRequiredToDetermineInUse()
+    {
+        return getRecordSize();
+    }
+
+    @Override
     public void logVersions(StringLogger.LineLogger logger )
     {
         super.logVersions( logger );
