@@ -37,7 +37,7 @@ abstract class StartPipe[T <: PropertyContainer](source: Pipe,
     input.flatMap(ctx => {
       val source = createSource(ctx, state)
       source.map(x => {
-        ctx.newWith(name -> x)
+        ctx.newWith1(name, x)
       })
     })
   }

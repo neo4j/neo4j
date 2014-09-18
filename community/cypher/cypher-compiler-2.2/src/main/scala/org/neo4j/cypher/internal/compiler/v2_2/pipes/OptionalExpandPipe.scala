@@ -29,8 +29,6 @@ import org.neo4j.graphdb.{Direction, Node}
 case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: String, dir: Direction, types: Seq[String], predicate: Predicate)
                              (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
-  val nulls: ExecutionContext =
-    ExecutionContext.empty.newWith(Seq(relName -> null, to -> null))
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
@@ -43,23 +41,26 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
           case n: Node =>
             val relationships = state.query.getRelationshipsFor(n, dir, types)
             val contextWithRelationships = relationships.map {
-              case r => row.newWith(Seq(relName -> r, to -> r.getOtherNode(n)))
+              case r => row.newWith2(relName, r, to, r.getOtherNode(n))
             }.filter(ctx => predicate.isTrue(ctx))
 
             if (contextWithRelationships.hasNext) {
               contextWithRelationships
             } else {
-              Iterator(row ++ nulls)
+              Iterator(withNulls(row))
             }
 
           case value if value == null =>
-            Iterator(row ++ nulls)
+            Iterator(withNulls(row))
 
           case value =>
             throw new InternalException(s"Expected to find a node at $from but found $value instead")
         }
     }
   }
+
+  private def withNulls(row: ExecutionContext) =
+    row.newWith2(relName, null, to, null)
 
   def getFromNode(row: ExecutionContext): Any =
     row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))

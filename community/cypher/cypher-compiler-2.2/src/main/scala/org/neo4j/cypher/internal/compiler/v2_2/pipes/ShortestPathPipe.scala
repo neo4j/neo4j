@@ -45,10 +45,11 @@ case class ShortestPathPipe(source: Pipe, ast: ShortestPath)
       case path: Path    => Stream(path)
     }
 
-    result.map {
-      (path: Path) =>
-        val newValues: Seq[(String, Any)] = Seq(pathName -> path) ++ getRelIterator(path)
-        ctx.newWith(newValues)
+    ast.relIterator match {
+      case Some(relName) =>
+        result.map { (path: Path) => ctx.newWith2(pathName, path, relName, path.relationships().asScala.toSeq) }
+      case None =>
+        result.map { (path: Path) => ctx.newWith1(pathName, path) }
     }
   })
 
@@ -57,12 +58,6 @@ case class ShortestPathPipe(source: Pipe, ast: ShortestPath)
     ast.relIterator match {
       case None    => withPath
       case Some(x) => withPath.add(x, CTCollection(CTRelationship))
-    }
-  }
-
-  private def getRelIterator(p: Path): TraversableOnce[(String, Seq[Relationship])] = {
-    ast.relIterator.map {
-      relName => relName -> p.relationships().asScala.toSeq
     }
   }
 

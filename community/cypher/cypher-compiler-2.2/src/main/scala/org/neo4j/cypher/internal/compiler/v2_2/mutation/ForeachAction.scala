@@ -34,7 +34,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
     val seq = makeTraversable(collection(context)(state))
 
     for (element <- seq) {
-      val inner = context.newWith(id, element)
+      val inner = context.newWith1(id, element)
 
       // We do a fold left here to allow updates to introduce
       // symbols in each others context.

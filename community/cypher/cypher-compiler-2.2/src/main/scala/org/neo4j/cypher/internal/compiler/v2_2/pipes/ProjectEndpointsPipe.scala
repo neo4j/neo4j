@@ -63,7 +63,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String, start: String, en
     else {
       val (startNode, endNode) = findVarLengthRelEndpoints(rels, qtx)
       Iterator(
-        context += (start -> startNode) += (end -> endNode)
+        context.newWith2(start, startNode, end, endNode)
       )
     }
   }
@@ -75,8 +75,8 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String, start: String, en
     else {
       val (startNode, endNode) = findVarLengthRelEndpoints(rels, qtx)
       Iterator(
-        context += (start -> startNode) += (end -> endNode),
-        context.clone() += (start -> endNode) += (end -> startNode) += (relName -> rels.reverse)
+        context.newWith2(start, startNode, end, endNode),
+        context.newWith3(start, endNode, end, startNode, relName, rels.reverse)
       )
     }
   }
@@ -84,15 +84,15 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String, start: String, en
   private def projectDirected(qtx: QueryContext): Projector = (context: ExecutionContext) => {
     val (startNode, endNode) = findSimpleLengthRelEndpoints(context, qtx)
     Iterator(
-      context += (start -> startNode) += (end -> endNode)
+      context.newWith2(start, startNode, end, endNode)
     )
   }
 
   private def projectUndirected(qtx: QueryContext): Projector = (context: ExecutionContext) => {
     val (startNode, endNode) = findSimpleLengthRelEndpoints(context, qtx)
     Iterator(
-      context.clone() += (start -> startNode) += (end -> endNode),
-      context += (start -> endNode) += (end -> startNode)
+      context.newWith2(start, startNode, end, endNode),
+      context.newWith2(start, endNode, end, startNode)
     )
   }
 

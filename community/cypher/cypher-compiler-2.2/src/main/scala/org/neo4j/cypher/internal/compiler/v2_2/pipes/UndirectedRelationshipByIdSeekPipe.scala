@@ -38,21 +38,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityBy
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
     val relIds = relIdExpr.expressions(ctx, state).flatMap(Option(_))
-    new IdSeekIterator[Relationship](ident, state.query.relationshipOps, relIds.iterator).flatMap {
-      ctx =>
-        val r = ctx(ident) match {
-          case r: Relationship => r
-          case x => throw new InternalException(s"Expected a relationship, got $x")
-        }
-
-        val s = r.getStartNode
-        val e = r.getEndNode
-
-        Seq(
-          ctx.newWith(Seq(ident -> r, toNode -> e, fromNode -> s)),
-          ctx.newWith(Seq(ident -> r, toNode -> s, fromNode -> e))
-        )
-    }.map(ctx.clone() ++ _)
+    new UndirectedRelationshipIdSeekIterator(ident, fromNode, toNode, ctx, state.query.relationshipOps, relIds.iterator)
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)

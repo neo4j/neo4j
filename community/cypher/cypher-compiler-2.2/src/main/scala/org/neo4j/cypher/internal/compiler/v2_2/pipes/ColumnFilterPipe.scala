@@ -47,7 +47,7 @@ case class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem])
         case ReturnItem(_, name)                                          => newMap.put(name, ctx(name))
       }
 
-      ctx.newFrom( newMap )
+      ctx.newFromMutableMap( newMap )
     })
   }
 

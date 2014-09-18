@@ -21,17 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 object MutableMaps {
 
-  def create(size: Int) : collection.mutable.Map[String, Any] = new collection.mutable.OpenHashMap[String, Any](if (size < 16) 16 else size)
+  def create(size: Int) : collection.mutable.Map[String, Any] =
+    new collection.mutable.OpenHashMap[String, Any](if (size < 16) 16 else size)
 
-  def empty : collection.mutable.Map[String, Any] = create(16)
+  def empty: collection.mutable.Map[String, Any] = create(16)
 
-  def create(input: scala.collection.Map[String, Any]) : collection.mutable.Map[String, Any] = {
-    val m = create(input.size)
-    input.foreach( (kv) => m.put(kv._1,kv._2))
-    m
-  }
+  def create(input: scala.collection.Map[String, Any]) : collection.mutable.Map[String, Any] =
+    create(input.size) ++= input
 
   def create(input: (String, Any)*) : collection.mutable.Map[String, Any] = {
-     collection.mutable.OpenHashMap(input:_*)
+    create(input.size) ++= input
   }
 }
