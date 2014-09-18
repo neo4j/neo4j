@@ -243,13 +243,23 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
       shouldHaveCardinality(0)
   }
 
-  ignore("optional match from a known label") { // TODO: Should work
-    givenPattern("MATCH (a:FOO) OPTIONAL MATCH (a)-[:TYPE]->(:BAR)").
-      withGraphNodes(1000).
+  test("optional match from an unknown known label") {
+    givenPattern("MATCH (a) OPTIONAL MATCH (a)-[:TYPE]->(:BAR)").
+      withGraphNodes(10000).
       withLabel('FOO -> 1).
       withLabel('BAR -> 1000).
       withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 1000).
-      shouldHaveCardinality(1 + 1000)
+      withRelationshipCardinality('BAZ -> 'TYPE -> 'BAR -> 300).
+      shouldHaveCardinality(10000)
+  }
+
+  test("optional match from a known label") {
+    givenPattern("MATCH (a:FOO) OPTIONAL MATCH (a)-[:TYPE]->(:BAR)").
+      withGraphNodes(10000).
+      withLabel('FOO -> 1).
+      withLabel('BAR -> 1000).
+      withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 100).
+      shouldHaveCardinality(100)
   }
 
   test("predicates in optional match do not decrease the cardinality matches") {
@@ -259,6 +269,23 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
       withLabel('BAR -> 0).
       withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 0).
       shouldHaveCardinality(500)
+  }
+
+  test("optional match will in worst case be a cartesian product") {
+    givenPattern("MATCH (a) OPTIONAL MATCH (b)").
+      withGraphNodes(1000).
+      shouldHaveCardinality(1000 * 1000)
+  }
+
+  test("multiple optional matches") {
+    givenPattern("MATCH (a:FOO) OPTIONAL MATCH (b:BAR) OPTIONAL MATCH (a) WHERE a.prop = 42").
+      withGraphNodes(10000).
+      withLabel('FOO -> 100).
+      withLabel('BAR -> 200).
+      withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 0).
+      withRelationshipCardinality('FOO -> 'TYPE -> 'BAZ -> 1).
+      withIndexSelectivity(('FOO, 'prop) -> .3).
+      shouldHaveCardinality(100 * 200)
   }
 
   test("node by id should be recognized as such") {
