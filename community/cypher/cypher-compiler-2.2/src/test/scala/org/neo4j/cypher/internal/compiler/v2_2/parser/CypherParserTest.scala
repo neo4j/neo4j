@@ -2556,6 +2556,12 @@ class CypherParserTest extends CypherFunSuite {
       CreateIndex("MyLabel", Seq("prop1")))
   }
 
+  test("create simple index on single property") {
+    expectQuery(
+      "create simple index on :MyLabel(prop1)",
+      CreateIndex("MyLabel", Seq("prop1")))
+  }
+
   test("create index on multiple properties") {
     evaluating {
       expectQuery(
