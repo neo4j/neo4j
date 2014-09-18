@@ -21,6 +21,8 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 abstract class MuninnCursorFreelist
 {
+    private static boolean disableCursorPooling = Boolean.getBoolean(
+            "org.neo4j.io.pagecache.impl.muninn.MuninnCursorFreelist.disableCursorPooling" );
     private static final int MAX_CURSORS_PER_FREELIST = 1000;
 
     static class CursorRef
@@ -50,6 +52,15 @@ abstract class MuninnCursorFreelist
 
     public MuninnPageCursor takeCursor()
     {
+        if ( disableCursorPooling )
+        {
+            return createNewCursor();
+        }
+        return takeFromPoolOrCreate();
+    }
+
+    private MuninnPageCursor takeFromPoolOrCreate()
+    {
         CursorRef ref = freelist.get();
         MuninnPageCursor cursor = ref.cursor;
         if ( cursor == null )
@@ -65,12 +76,15 @@ abstract class MuninnCursorFreelist
 
     public void returnCursor( MuninnPageCursor cursor )
     {
-        CursorRef ref = freelist.get();
-        if ( ref.counter < MAX_CURSORS_PER_FREELIST )
+        if ( !disableCursorPooling )
         {
-            cursor.nextFree = ref.cursor;
-            ref.cursor = cursor;
-            ref.counter++;
+            CursorRef ref = freelist.get();
+            if ( ref.counter < MAX_CURSORS_PER_FREELIST )
+            {
+                cursor.nextFree = ref.cursor;
+                ref.cursor = cursor;
+                ref.counter++;
+            }
         }
     }
 }
