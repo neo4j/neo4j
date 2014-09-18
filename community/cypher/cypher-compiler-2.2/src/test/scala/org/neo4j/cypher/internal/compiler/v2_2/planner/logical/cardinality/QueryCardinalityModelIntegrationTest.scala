@@ -205,15 +205,35 @@ class QueryCardinalityModelIntegrationTest extends CypherFunSuite with LogicalPl
       shouldHaveCardinality(50)
   }
 
+  test("relationship cardinality given labels on both sides bidirectional") {
+    givenPattern("MATCH (a:A)-[r:TYPE]-(b:B)").
+      withGraphNodes(40).
+      withLabel('A -> 30).
+      withLabel('B -> 20).
+      withRelationshipCardinality('A -> 'TYPE -> 'B -> 10).
+      withRelationshipCardinality('B -> 'TYPE -> 'A -> 20).
+      shouldHaveCardinality(30)
+  }
+
   test("relationship cardinality given a label on one side") {
     givenPattern("MATCH (a:A)-[r:TYPE]->(b)").
-      withGraphNodes(100).
+      withGraphNodes(10000).
       withLabel('A -> 30).
       withLabel('B -> 20).
       withLabel('C -> 40).
       withRelationshipCardinality('A -> 'TYPE -> 'B -> 50).
       withRelationshipCardinality('A -> 'TYPE -> 'C -> 50).
       shouldHaveCardinality(100)
+  }
+
+  test("relationship cardinality given a label on one side bidirectional") {
+    givenPattern("MATCH (a:A)-[r:TYPE]-(b)").
+      withGraphNodes(10000).
+      withLabel('A -> 300).
+      withLabel('B -> 200).
+      withRelationshipCardinality('A -> 'TYPE -> 'B -> 80).
+      withRelationshipCardinality('B -> 'TYPE -> 'A -> 50).
+      shouldHaveCardinality(50 + 80) //Assume independence
   }
 
   test("given empty database, all predicates should return 0 cardinality") {

@@ -19,14 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
-import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CardinalityTestHelper, Cardinality, QueryGraphProducer, Selectivity}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, TokenContext}
-import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, RelTypeId}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CardinalityTestHelper, QueryGraphProducer}
 import org.neo4j.graphdb.Direction
 
 class EstimateSelectivityTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer with CardinalityTestHelper {
