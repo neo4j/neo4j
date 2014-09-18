@@ -52,6 +52,8 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -263,7 +265,7 @@ public class StoreUpgraderTest
         assertThat( neoStore.getUpgradeId(), not( equalTo( -1L ) ) );
         assertThat( neoStore.getUpgradeTime(), not( equalTo( -1L ) ) );
 
-        long minuteAgo = System.currentTimeMillis() - 1000;
+        long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );
         assertThat( neoStore.getUpgradeTime(), greaterThan( minuteAgo ) );
     }
 

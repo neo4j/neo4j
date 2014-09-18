@@ -76,17 +76,19 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelat
         List<RelationshipRecord> relationshipRecords = new ArrayList<>( batch.size() );
         for ( InputRelationship batchRelationship : batch )
         {
-            long relationshipId = idMapper.get( batchRelationship.id() );
+            long relationshipId = batchRelationship.id();
             relationshipStore.setHighId( relationshipId+1 );
+            long startNodeId = idMapper.get( batchRelationship.startNode() );
+            long endNodeId = idMapper.get( batchRelationship.endNode() );
             int typeId = batchRelationship.hasTypeId() ? batchRelationship.typeId() :
                     relationshipTypeRepository.getOrCreateId( batchRelationship.type() );
             RelationshipRecord relationshipRecord = new RelationshipRecord( relationshipId,
-                    batchRelationship.startNode(), batchRelationship.endNode(), typeId );
+                    startNodeId, endNodeId, typeId );
             relationshipRecord.setInUse( true );
 
             // Set first/second next rel
             long firstNextRel = nodeRelationshipLink.getAndPutRelationship(
-                    batchRelationship.startNode(), typeId, batchRelationship.startDirection(), relationshipId, true );
+                    startNodeId, typeId, batchRelationship.startDirection(), relationshipId, true );
             relationshipRecord.setFirstNextRel( firstNextRel );
             if ( batchRelationship.isLoop() )
             {
@@ -95,7 +97,7 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelat
             else
             {
                 relationshipRecord.setSecondNextRel( nodeRelationshipLink.getAndPutRelationship(
-                        batchRelationship.endNode(), typeId, INCOMING, relationshipId, true ) );
+                        endNodeId, typeId, INCOMING, relationshipId, true ) );
             }
 
             // Most rels will not be first in chain

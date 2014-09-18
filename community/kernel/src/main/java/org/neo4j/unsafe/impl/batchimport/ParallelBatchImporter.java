@@ -96,23 +96,38 @@ public class ParallelBatchImporter implements BatchImporter
     public void doImport( Iterable<InputNode> nodes, Iterable<InputRelationship> relationships,
                           IdMapping idMapping ) throws IOException
     {
-        // TODO log about import starting
+        logger.info( "Import starting" );
 
         long startTime = currentTimeMillis();
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
                 writeMonitor, logging, writerFactory ) )
         {
-            // Stage 1 -- nodes, properties, labels
+            // Some temporary caches and indexes in the import
             IdMapper idMapper = idMapping.idMapper();
             IdGenerator idGenerator = idMapping.idGenerator();
+            NodeRelationshipLink nodeRelationshipLink = new NodeRelationshipLinkImpl(
+                    LongArrayFactory.AUTO, config.denseNodeThreshold() );
+
+            // Stage 1 -- nodes, properties, labels
             NodeStage nodeStage = new NodeStage( nodes.iterator(), idMapper, idGenerator, neoStore );
 
             // Stage 2 -- calculate dense node threshold
-            NodeRelationshipLink nodeRelationshipLink = new NodeRelationshipLinkImpl(
-                    LongArrayFactory.AUTO, config.denseNodeThreshold() );
             CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage(
-                    relationships.iterator(), nodeRelationshipLink );
-            executeStages( nodeStage, calculateDenseNodesStage );
+                    relationships.iterator(), nodeRelationshipLink, idMapper );
+
+            // Execute stages 1 and 2 in parallel or sequentially?
+            if ( idMapper.needsPreparation() )
+            {   // The id mapper of choice needs preparation in order to get ids from it,
+                // So we need to execute the node stage first as it fills the id mapper and prepares it in the end,
+                // before executing any stage that needs ids from the id mapper, for example calc dense node stage.
+                executeStages( nodeStage );
+                executeStages( calculateDenseNodesStage );
+            }
+            else
+            {   // The id mapper of choice doesn't need any preparation, so we can go ahead and execute
+                // the node and calc dende node stages in parallel.
+                executeStages( nodeStage, calculateDenseNodesStage );
+            }
 
             // Stage 3 -- relationships, properties
             executeStages( new RelationshipStage( relationships.iterator(), idMapper,
@@ -183,12 +198,14 @@ public class ParallelBatchImporter implements BatchImporter
 
     public class CalculateDenseNodesStage extends Stage
     {
-        public CalculateDenseNodesStage( Iterator<InputRelationship> input, NodeRelationshipLink nodeRelationshipLink )
+        public CalculateDenseNodesStage( Iterator<InputRelationship> input, NodeRelationshipLink nodeRelationshipLink,
+                IdMapper idMapper )
         {
             super( logging, "Calculate dense nodes", config );
             input( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );
 
-            add( new CalculateDenseNodesStep( control(), config.workAheadSize(), nodeRelationshipLink, logger ) );
+            add( new CalculateDenseNodesStep( control(), config.workAheadSize(), nodeRelationshipLink,
+                    idMapper, logger ) );
         }
     }
 
