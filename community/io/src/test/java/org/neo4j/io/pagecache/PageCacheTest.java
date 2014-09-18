@@ -557,7 +557,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         }
     }
 
-    @Test( timeout = 1000 )
+    @Test( timeout = 10000 )
     public void rewindMustStartScanningOverFromTheBeginning() throws IOException
     {
         int numberOfRewindsToTest = 10;
