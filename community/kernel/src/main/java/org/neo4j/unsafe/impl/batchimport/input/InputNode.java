@@ -31,6 +31,7 @@ public class InputNode extends InputEntity
 {
     private final String[] labels;
     private final Long labelField;
+    private final Object id;
 
     /**
      * @param id
@@ -40,9 +41,15 @@ public class InputNode extends InputEntity
      */
     public InputNode( Object id, Object[] properties, Long firstPropertyId, String[] labels, Long labelField )
     {
-        super( id, properties, firstPropertyId );
+        super( properties, firstPropertyId );
+        this.id = id;
         this.labels = labels;
         this.labelField = labelField;
+    }
+
+    public Object id()
+    {
+        return id;
     }
 
     public String[] labels()

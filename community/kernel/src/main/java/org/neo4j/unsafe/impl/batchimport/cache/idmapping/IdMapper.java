@@ -36,14 +36,24 @@ public interface IdMapper
     void put( Object inputId, long actualId );
 
     /**
+     * @return whether or not a call to {@link #prepare()} needs to commence after all calls to
+     * {@link #put(Object, long)} and before any call to {@link #get(Object)}. I.e. whether or not all ids
+     * needs to be put before making any call to {@link #get(Object)}.
+     */
+    boolean needsPreparation();
+
+    /**
      * After all mappings have been {@link #put(Object, long)} call this method to prepare for
      * {@link #get(Object) querying}.
      */
-    void sort();
+    void prepare();
 
     /**
-     * Returns an actual node id representing {@code inputId}. For this call to work {@link #sort()} must have
-     * been called after all calls to {@link #put(Object, long)} have been made.
+     * Returns an actual node id representing {@code inputId}. For this call to work {@link #prepare()} must have
+     * been called after all calls to {@link #put(Object, long)} have been made,
+     * iff {@link #needsPreparation()} returns {@code true}. Otherwise ids can be retrieved right after
+     * @link #put(Object, long) being put}
+     *
      * @param inputId the input id to get the actual node id for.
      * @return the actual node id previously specified by {@link #put(Object, long)}.
      */

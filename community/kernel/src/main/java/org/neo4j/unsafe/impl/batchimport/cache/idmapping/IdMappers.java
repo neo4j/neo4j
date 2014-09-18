@@ -34,8 +34,14 @@ public class IdMappers
             }
 
             @Override
-            public void sort()
-            {   // No need to sort anything
+            public boolean needsPreparation()
+            {
+                return false;
+            }
+
+            @Override
+            public void prepare()
+            {   // No need to prepare anything
             }
 
             @Override
