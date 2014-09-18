@@ -56,10 +56,12 @@ import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMo
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -304,7 +306,7 @@ public class StoreUpgraderTest
             assertThat( neoStore.getUpgradeId(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
             assertThat( neoStore.getUpgradeTime(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
 
-            long minuteAgo = System.currentTimeMillis() - 1000;
+            long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );
             assertThat( neoStore.getUpgradeTime(), greaterThan( minuteAgo ) );
             neoStore.close();
         }

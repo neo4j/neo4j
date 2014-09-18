@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2014 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"§
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -37,13 +38,15 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
 {
     private final NodeRelationshipLink nodeRelationshipLink;
     private long highestSeenNodeId;
-    private StringLogger logger;
+    private final StringLogger logger;
+    private final IdMapper idMapper;
 
     public CalculateDenseNodesStep( StageControl control, int workAheadSize,
-            NodeRelationshipLink nodeRelationshipLink, StringLogger logger )
+            NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper, StringLogger logger )
     {
         super( control, "CALCULATOR", workAheadSize, 1 );
         this.nodeRelationshipLink = nodeRelationshipLink;
+        this.idMapper = idMapper;
         this.logger = logger;
     }
 
@@ -52,9 +55,11 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
     {
         for ( InputRelationship rel : batch )
         {
+            long startNode = idMapper.get( rel.startNode() );
+            long endNode = idMapper.get( rel.endNode() );
             try
             {
-                nodeRelationshipLink.incrementCount( rel.startNode() );
+                nodeRelationshipLink.incrementCount( startNode );
             }
             catch ( ArrayIndexOutOfBoundsException e )
             {
@@ -65,7 +70,7 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
             {
                 try
                 {
-                    nodeRelationshipLink.incrementCount( rel.endNode() );
+                    nodeRelationshipLink.incrementCount( endNode );
                 }
                 catch ( ArrayIndexOutOfBoundsException e )
                 {
@@ -74,7 +79,7 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
                 }
             }
 
-            highestSeenNodeId = max( highestSeenNodeId, max( rel.startNode(), rel.endNode() ) );
+            highestSeenNodeId = max( highestSeenNodeId, max( startNode, endNode ) );
         }
         return null; // end of the line
     }
