@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSuppo
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.scalatest.mock.MockitoSugar
 import org.scalautils.Equality
-
+import scala.Symbol
 import scala.collection.mutable
 
 trait QueryGraphProducer extends MockitoSugar {
