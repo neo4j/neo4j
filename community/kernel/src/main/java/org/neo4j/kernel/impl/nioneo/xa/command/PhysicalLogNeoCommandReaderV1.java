@@ -158,6 +158,11 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             command = new IndexCommand.CreateCommand();
             break;
         }
+        case NeoCommandType.UPDATE_COUNTS_COMMAND:
+        {
+            command = new Command.CountsCommand();
+            break;
+        }
         case NeoCommandType.NONE:
         {
             command = null;
@@ -661,6 +666,17 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             Map<String, Byte> indexNames = readMap( channel );
             Map<String, Byte> keys = readMap( channel );
             indexDefineCommand.init( indexNames, keys );
+            return true;
+        }
+
+        @Override
+        public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+        {
+            int startLabelId = channel.getInt();
+            int typeId = channel.getInt();
+            int endLabelId = channel.getInt();
+            long delta = channel.getLong();
+            command.init( startLabelId, typeId, endLabelId, delta );
             return true;
         }
 

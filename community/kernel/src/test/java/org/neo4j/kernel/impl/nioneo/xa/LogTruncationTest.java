@@ -59,6 +59,7 @@ import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.CountsCommand;
 
 /**
  * At any point, a power outage may stop us from writing to the log, which means that, at any point, all our commands
@@ -121,6 +122,11 @@ public class LogTruncationTest
         IndexDefineCommand indexDefineCommand = new IndexDefineCommand();
         indexDefineCommand.init( MapUtil.<String, Byte>genericMap( "string1", (byte) 45, "key1", (byte) 2 ), MapUtil.<String, Byte>genericMap( "string", (byte) 2 ) );
         permutations.put( IndexDefineCommand.class, new Command[] { indexDefineCommand } );
+
+        // Counts commands
+        CountsCommand countsCommand = new CountsCommand();
+        countsCommand.init( 17, 2, 13, -2 );
+        permutations.put( CountsCommand.class, new Command[]{ countsCommand } );
     }
 
     @Test

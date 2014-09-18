@@ -127,7 +127,7 @@ public interface TxState
         void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
                                         Iterator<Integer> removed );
 
-        void visitNodeLabelChanges( long id, Iterator<Integer> added, Iterator<Integer> removed );
+        void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed );
 
         void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex );
 
@@ -185,7 +185,7 @@ public interface TxState
         }
 
         @Override
-        public void visitNodeLabelChanges( long id, Iterator<Integer> added, Iterator<Integer> removed )
+        public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
         {   // Ignore
         }
 

@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -141,6 +142,11 @@ public class RelationshipLoader
     public int getRelationshipCount( long id, int i, DirectionWrapper direction )
     {
         return chainLoader.getRelationshipCount( id, i, direction );
+    }
+
+    public void visitRelationshipCounts( long nodeId, DegreeVisitor visitor )
+    {
+        chainLoader.visitRelationshipCounts( nodeId, visitor );
     }
 
     public Integer[] getRelationshipTypes( long id )

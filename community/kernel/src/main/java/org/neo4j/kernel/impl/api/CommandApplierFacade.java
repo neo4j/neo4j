@@ -290,4 +290,18 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
         }
         return result;
     }
+
+    @Override
+    public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+    {
+        boolean result = true;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( !handler.visitUpdateCountsCommand( command ) )
+            {
+                result = false;
+            }
+        }
+        return result;
+    }
 }

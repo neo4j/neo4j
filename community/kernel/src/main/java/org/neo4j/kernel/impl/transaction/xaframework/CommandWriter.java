@@ -257,6 +257,21 @@ public class CommandWriter implements NeoCommandHandler
         return true;
     }
 
+    @Override
+    public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+    {
+        long delta = command.delta();
+        if ( delta != 0 )
+        { // only write commands that will make a difference
+            channel.put( NeoCommandType.UPDATE_COUNTS_COMMAND )
+                   .putInt( command.startLabelId() )
+                   .putInt( command.typeId() )
+                   .putInt( command.endLabelId() )
+                   .putLong( delta );
+        }
+        return true;
+    }
+
     private void writeMap( Map<String, Byte> map ) throws IOException
     {
         channel.put( (byte)map.size() );

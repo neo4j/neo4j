@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.nioneo.xa.command;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -39,6 +41,8 @@ import org.neo4j.kernel.impl.nioneo.xa.PropertyRecordChange;
 import static java.util.Collections.unmodifiableCollection;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.api.CountsKey.label;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipType;
 
 /**
  * Command implementations for all the commands that can be performed on a Neo
@@ -555,6 +559,67 @@ public abstract class Command
         public Collection<DynamicRecord> getRecordsBefore()
         {
             return recordsBefore;
+        }
+    }
+
+    public static class CountsCommand extends Command
+    {
+        private int startLabelId;
+        private int typeId;
+        private int endLabelId;
+        private long delta;
+
+        public CountsCommand init( int startLabelId, int typeId, int endLabelId, long delta )
+        {
+            assert startLabelId != ReadOperations.ANY_LABEL || endLabelId != ReadOperations.ANY_LABEL : String.format(
+                    "CountsCommand should only be used for composite counts. " +
+                    "The key may contain at most one wildcard label. startLabelId=%s, typeId=%s, endLabelId=%s",
+                    startLabelId, typeId, endLabelId );
+            this.startLabelId = startLabelId;
+            this.typeId = typeId;
+            this.endLabelId = endLabelId;
+            this.delta = delta;
+            return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "UpdateCounts[(%s)-%s->(%s) %s %d]",
+                                  label( startLabelId ), relationshipType( typeId ), label( endLabelId ),
+                                  delta < 0 ? "-" : "+", Math.abs( delta ) );
+        }
+
+        @Override
+        public boolean handle( NeoCommandHandler handler ) throws IOException
+        {
+            return handler.visitUpdateCountsCommand( this );
+        }
+
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            // no record to visit
+        }
+
+        public int startLabelId()
+        {
+            return startLabelId;
+        }
+
+        public int typeId()
+        {
+            return typeId;
+        }
+
+        public int endLabelId()
+        {
+            return endLabelId;
+        }
+
+        public long delta()
+        {
+            return delta;
         }
     }
 }
