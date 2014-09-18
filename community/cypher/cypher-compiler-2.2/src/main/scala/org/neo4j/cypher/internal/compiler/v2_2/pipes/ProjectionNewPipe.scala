@@ -38,13 +38,13 @@ case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
     input.map {
       original =>
-        val projection = ExecutionContext.empty
+        val m = MutableMaps.create(expressions.size)
         expressions.foreach {
           case (name, expression) =>
-            projection += name -> expression(original)(state)
+            m.put(name, expression(original)(state))
         }
 
-        projection
+        ExecutionContext(m)
     }
 
   override def planDescription =

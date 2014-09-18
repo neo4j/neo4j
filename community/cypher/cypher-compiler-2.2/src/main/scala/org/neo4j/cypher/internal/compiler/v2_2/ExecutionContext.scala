@@ -67,8 +67,8 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
   def newFrom(newEntries: Seq[(String, Any)]) =
     createWithNewMap(MutableMaps.create(newEntries: _*))
 
-  def newFrom(newEntries: scala.collection.Map[String, Any]) =
-    createWithNewMap(MutableMaps.create(newEntries))
+  def newFromMutableMap(newEntries: scala.collection.mutable.Map[String, Any]) =
+    createWithNewMap(newEntries)
 
   def newWith(newEntry: (String, Any)) =
     createWithNewMap(m.clone() += newEntry)

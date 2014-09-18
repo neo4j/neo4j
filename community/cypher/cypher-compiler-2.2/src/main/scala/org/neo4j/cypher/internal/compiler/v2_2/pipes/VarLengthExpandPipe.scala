@@ -72,7 +72,7 @@ case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, 
             val paths = varLengthExpand(n, state, max, row)
             paths.collect {
               case (node, rels) if rels.length >= min =>
-                row.newWith(Seq(relName -> rels, toName -> node))
+                row.newWith2(relName, rels, toName, node)
             }
 
           case value => throw new InternalException(s"Expected to find a node at $fromName but found $value instead")

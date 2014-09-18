@@ -54,9 +54,10 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
     val result = MutableMap[NiceHasher, (ExecutionContext, Seq[AggregationFunction])]()
     val keyNames: Seq[String] = keyExpressions.map(_._1).toSeq
     val aggregationNames: Seq[String] = aggregations.map(_._1).toSeq
+    val mapSize = keyNames.size + aggregationNames.size
 
     def createResults(key: NiceHasher, aggregator: scala.Seq[AggregationFunction], ctx: ExecutionContext): ExecutionContext = {
-      val newMap = MutableMaps.empty
+      val newMap = MutableMaps.create(mapSize)
 
       //add key values
       (keyNames zip key.original).foreach(newMap += _)
@@ -64,7 +65,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
       //add aggregated values
       (aggregationNames zip aggregator.map(_.result)).foreach(newMap += _)
 
-      ctx.newFrom(newMap)
+      ctx.newFromMutableMap( newMap )
     }
 
     def createEmptyResult(params:Map[String,Any]): Iterator[ExecutionContext] = {

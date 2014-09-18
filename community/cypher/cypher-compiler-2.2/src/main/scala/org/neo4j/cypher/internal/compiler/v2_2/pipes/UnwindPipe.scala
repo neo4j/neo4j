@@ -31,7 +31,7 @@ case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)
     input.flatMap {
       context =>
         val seq = makeTraversable(collection(context)(state))
-        seq.map(x => context.newWith((identifier, x)))
+        seq.map(x => context.newWith1(identifier, x))
     }
 
   def planDescription: PlanDescription =
