@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
 public class CountsStore
 {

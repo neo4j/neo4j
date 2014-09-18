@@ -29,34 +29,41 @@ import org.neo4j.helpers.Pair;
  */
 public class InputRelationship extends InputEntity
 {
-    private final long startNode;
-    private final long endNode;
+    private final long id;
+    private final Object startNode;
+    private final Object endNode;
     private final String type;
     private final Integer typeId;
 
-    public InputRelationship( long id, Object[] properties, Long firstPropertyId, long startNode, long endNode,
+    public InputRelationship( long id, Object[] properties, Long firstPropertyId, Object startNode, Object endNode,
             String type, Integer typeId )
     {
-        super( id, properties, firstPropertyId );
+        super( properties, firstPropertyId );
+        this.id = id;
         this.startNode = startNode;
         this.endNode = endNode;
         this.type = type;
         this.typeId = typeId;
     }
 
-    public long startNode()
+    public long id()
+    {
+        return id;
+    }
+
+    public Object startNode()
     {
         return startNode;
     }
 
-    public long endNode()
+    public Object endNode()
     {
         return endNode;
     }
 
     public boolean isLoop()
     {
-        return startNode == endNode;
+        return startNode.equals( endNode );
     }
 
     public Direction startDirection()
