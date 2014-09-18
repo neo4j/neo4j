@@ -319,6 +319,7 @@ public class MuninnPageCache implements RunnablePageCache
         {
             pages[i] = null;
         }
+        freelist.set( null );
     }
 
     @Override
