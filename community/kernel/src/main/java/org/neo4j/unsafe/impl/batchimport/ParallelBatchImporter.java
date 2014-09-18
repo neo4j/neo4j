@@ -66,7 +66,7 @@ public class ParallelBatchImporter implements BatchImporter
     private final LifeSupport life = new LifeSupport();
     private final WriterFactory writerFactory;
 
-    public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
+    ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
                                    Logging logging, ExecutionMonitor executionMonitor, WriterFactory writerFactory )
     {
         this.storeDir = storeDir;
@@ -85,7 +85,7 @@ public class ParallelBatchImporter implements BatchImporter
                                   Configuration config, Logging logging, ExecutionMonitor executionMonitor )
     {
         this( storeDir, fileSystem, config, logging, executionMonitor,
-                // Temporarily disabled I/O parallellization since there's an issue with it that sometimes
+                // FIXME: Temporarily disabled I/O parallellization since there's an issue with it that sometimes
                 // gets exposed. It's purely an optimization anyway.
 //                new IoQueue( config.numberOfIoThreads(), BatchingWindowPoolFactory.SYNCHRONOUS )
                 BatchingWindowPoolFactory.SYNCHRONOUS

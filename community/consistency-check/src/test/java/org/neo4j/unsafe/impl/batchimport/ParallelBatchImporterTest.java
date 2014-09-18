@@ -22,6 +22,8 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
@@ -30,6 +32,8 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
@@ -57,7 +61,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.SilentExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.Writer;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.WriterFactory;
-import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 import org.neo4j.unsafe.impl.batchimport.store.io.SimplePool;
 
@@ -67,38 +70,62 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.SYNCHRONOUS;
 
+@RunWith(Parameterized.class)
 public class ParallelBatchImporterTest
 {
     private static final long SEED = 12345L;
-    protected static final String[] LABELS = new String[]{"Person", "Guy"};
-    public final @Rule TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private static final String[] LABELS = new String[]{"Person", "Guy"};
+    private static final int NODE_COUNT = 100_000;
+    private static final int RELATIONSHIP_COUNT = NODE_COUNT * 10;
 
-    private void shouldImportCsvData0( WriterFactory delegateWriterFactory ) throws Exception
+    private static final Configuration config = new Configuration.Default()
+    {
+        @Override
+        public int denseNodeThreshold()
+        {
+            return 30;
+        }
+    };
+
+    @Rule
+    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> data()
+    {
+        return Arrays.asList(
+                new Object[]{"synchronous", SYNCHRONOUS},
+                new Object[]{"slow-synchronous", synchronousSlowWriterFactory}
+                // FIXME: disable these WriterFactories due to a race in IoQueue
+//                ,
+//                new Object[]{"io-queue", new IoQueue( config.numberOfIoThreads(), SYNCHRONOUS )},
+//                new Object[]{"slow-io-queue", new IoQueue( config.numberOfIoThreads(), synchronousSlowWriterFactory )}
+        );
+    }
+
+    @Parameterized.Parameter(0)
+    public String ignored; // needed to make Parametrized happy
+
+    @Parameterized.Parameter(1)
+    public WriterFactory writerFactory;
+
+    @Test
+    public void shouldImportCsvData() throws Exception
     {
         // GIVEN
-        Configuration config = new Configuration.Default()
-        {
-            @Override
-            public int denseNodeThreshold()
-            {
-                return 30;
-            }
-        };
-        BatchImporter inserter = new ParallelBatchImporter( directory.absolutePath(),
+        final BatchImporter inserter = new ParallelBatchImporter( directory.absolutePath(),
                 new DefaultFileSystemAbstraction(), config, new DevNullLoggingService(),
-                new SilentExecutionMonitor(), new IoQueue( config.numberOfIoThreads(), delegateWriterFactory ) );
+                new SilentExecutionMonitor(), writerFactory );
 
         // WHEN
-        int nodeCount = 100_000;
-        int relationshipCount = nodeCount * 10;
-        inserter.doImport( nodes( nodeCount ), relationships( relationshipCount, nodeCount ), IdMappings.actual() );
+        inserter.doImport( nodes( NODE_COUNT ), relationships( RELATIONSHIP_COUNT, NODE_COUNT ), IdMappings.actual() );
         inserter.shutdown();
 
         // THEN
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
-            verifyData( nodeCount, db );
+            verifyData( NODE_COUNT, db );
             tx.success();
         }
         finally
@@ -115,46 +142,6 @@ public class ParallelBatchImporterTest
                 new Config(), ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
         assertTrue( "Database contains inconsistencies, there should be a report in " + storeDir,
                 result.isSuccessful() );
-    }
-
-    @Test
-    public void shouldImportCsvData() throws Exception
-    {
-        shouldImportCsvData0( SYNCHRONOUS );
-    }
-
-    @Test
-    public void shouldImportCsvDataWhenWritesAreSlow() throws Exception
-    {
-        shouldImportCsvData0( new WriterFactory()
-        {
-            @Override
-            public Writer create( final File file, final StoreChannel channel, final Monitor monitor )
-            {
-                return new Writer()
-                {
-                    final Writer delegate = SYNCHRONOUS.create( file, channel, monitor );
-
-                    @Override
-                    public void write( ByteBuffer data, long position, SimplePool<ByteBuffer> pool )
-                            throws IOException
-                    {
-                        LockSupport.parkNanos( 50_000_000 ); // slowness comes from here
-                        delegate.write( data, position, pool );
-                    }
-                };
-            }
-
-            @Override
-            public void awaitEverythingWritten()
-            {   // no-op
-            }
-
-            @Override
-            public void shutdown()
-            {   // no-op
-            }
-        } );
     }
 
     protected void verifyData( int nodeCount, GraphDatabaseService db )
@@ -195,6 +182,36 @@ public class ParallelBatchImporterTest
                 db.findNodesByLabelAndProperty( firstLabel, "age", 10 );
         assertEquals( count( foundNodes ), nodeCount );
     }
+
+    private static WriterFactory synchronousSlowWriterFactory = new WriterFactory()
+    {
+        @Override
+        public Writer create( final File file, final StoreChannel channel, final Monitor monitor )
+        {
+            return new Writer()
+            {
+                final Writer delegate = SYNCHRONOUS.create( file, channel, monitor );
+
+                @Override
+                public void write( ByteBuffer data, long position, SimplePool<ByteBuffer> pool )
+                        throws IOException
+                {
+                    LockSupport.parkNanos( 50_000_000 ); // slowness comes from here
+                    delegate.write( data, position, pool );
+                }
+            };
+        }
+
+        @Override
+        public void awaitEverythingWritten()
+        {   // no-op
+        }
+
+        @Override
+        public void shutdown()
+        {   // no-op
+        }
+    };
 
     private static Iterable<InputRelationship> relationships( final long count, final long maxNodeId )
     {
