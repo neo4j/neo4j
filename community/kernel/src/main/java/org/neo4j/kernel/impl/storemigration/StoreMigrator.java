@@ -203,7 +203,6 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
             finally
             {
                 propertyStore.close();
-                pageCache.close();
                 life.shutdown();
             }
         }

@@ -45,8 +45,6 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
-import org.neo4j.kernel.impl.pagecache.PageCacheFactory;
-import org.neo4j.kernel.impl.pagecache.StandardPageCacheFactory;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -76,10 +74,9 @@ public class ConsistencyCheckService
         Monitors monitors = new Monitors();
         tuningConfiguration = configForStoreDir( tuningConfiguration, new File( storeDir ) );
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
-        PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
         LifecycledPageCache pageCache = new LifecycledPageCache(
-                pageCacheFactory, swapperFactory, jobScheduler, tuningConfiguration, monitors.newMonitor( PageCacheMonitor.class ) );
+                swapperFactory, jobScheduler, tuningConfiguration, monitors.newMonitor( PageCacheMonitor.class ) );
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
@@ -119,7 +116,7 @@ public class ConsistencyCheckService
                 }
                 catch ( IOException e )
                 {
-                    logger.error( "Faiure during shutdown of label scan store", e );
+                    logger.error( "Failure during shutdown of label scan store", e );
                 }
             }
         }
@@ -127,7 +124,14 @@ public class ConsistencyCheckService
         {
             report.close();
             neoStore.close();
-            pageCache.stop();
+            try
+            {
+                pageCache.stop();
+            }
+            catch ( IOException e )
+            {
+                logger.error( "Failure during shutdown of the page cache", e );
+            }
             jobScheduler.shutdown();
         }
 

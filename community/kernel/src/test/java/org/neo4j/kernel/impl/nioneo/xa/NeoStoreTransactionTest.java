@@ -36,26 +36,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandApplierFacade;
@@ -97,7 +93,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
@@ -125,7 +120,6 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.IdType.NODE;
@@ -932,6 +926,7 @@ public class NeoStoreTransactionTest
     public void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithDifferentTypes() throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
+        resetFileSystem();
         instantiateNeoStore( 50 );
         Pair<TransactionRecordState, NeoStoreTransactionContext> transactionContextPair =
                 newWriteTransaction();
@@ -969,6 +964,7 @@ public class NeoStoreTransactionTest
             throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
+        resetFileSystem();
         instantiateNeoStore( 49 );
         Pair<TransactionRecordState, NeoStoreTransactionContext> transactionContextPair =
                 newWriteTransaction();
@@ -997,6 +993,7 @@ public class NeoStoreTransactionTest
             throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
+        resetFileSystem();
         instantiateNeoStore( 8 );
         Pair<TransactionRecordState, NeoStoreTransactionContext> transactionContextPair =
                 newWriteTransaction();
@@ -1023,6 +1020,7 @@ public class NeoStoreTransactionTest
     public void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithOneType() throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
+        resetFileSystem();
         instantiateNeoStore( 13 );
         Pair<TransactionRecordState, NeoStoreTransactionContext> transactionContextPair =
                 newWriteTransaction();
@@ -1044,6 +1042,7 @@ public class NeoStoreTransactionTest
     public void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithManyTypes() throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
+        resetFileSystem();
         instantiateNeoStore( 1 );
         Pair<TransactionRecordState, NeoStoreTransactionContext> transactionAndContextPair =
                 newWriteTransaction();
@@ -1117,6 +1116,7 @@ public class NeoStoreTransactionTest
     public void movingBilaterallyOfTheDenseNodeThresholdIsConsistent() throws Exception
     {
         // GIVEN
+        resetFileSystem();
         instantiateNeoStore( 10 );
         final long nodeId = neoStore.getNodeStore().nextId();
 
@@ -1183,6 +1183,7 @@ public class NeoStoreTransactionTest
     public void shouldSortRelationshipGroups() throws Exception
     {
         // GIVEN a node with group of type 10
+        resetFileSystem();
         instantiateNeoStore( 1 );
         int type5 = 5, type10 = 10, type15 = 15;
         try ( LockGroup locks = new LockGroup() )
@@ -1341,7 +1342,8 @@ public class NeoStoreTransactionTest
 
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private EphemeralFileSystemAbstraction fs;
+    private PageCache pageCache;
     private Config config;
     @SuppressWarnings("deprecation")
     private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
@@ -1356,27 +1358,24 @@ public class NeoStoreTransactionTest
     @Before
     public void before() throws Exception
     {
+        fs = new EphemeralFileSystemAbstraction();
+        pageCache = pageCacheRule.getPageCache( fs, new Config() );
         instantiateNeoStore( parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) );
     }
 
     private void instantiateNeoStore( int denseNodeThreshold ) throws Exception
     {
-        if ( neoStore != null )
-        {
-            fs.clear();
-        }
-
         config = new Config( stringMap(
                 GraphDatabaseSettings.dense_node_threshold.name(), "" + denseNodeThreshold ) );
 
         File storeDir = new File( "dir" );
         config = configForStoreDir( config, storeDir );
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get(), config );
+
         StoreFactory storeFactory = new StoreFactory(
                 config,
                 idGeneratorFactory,
                 pageCache,
-                fs.get(),
+                fs,
                 DEV_NULL,
                 new Monitors() );
         neoStore = storeFactory.createNeoStore();
@@ -1445,6 +1444,17 @@ public class NeoStoreTransactionTest
         {
             verify( lock ).release();
         }
+        neoStore.close();
+    }
+
+    public void resetFileSystem()
+    {
+        if ( neoStore != null )
+        {
+            neoStore.close();
+        }
+        fs = new EphemeralFileSystemAbstraction();
+        pageCache = pageCacheRule.getPageCache( fs, new Config() );
     }
 
     private Pair<TransactionRecordState, NeoStoreTransactionContext> newWriteTransaction()
@@ -1506,63 +1516,6 @@ public class NeoStoreTransactionTest
         }
     }
 
-    public static final LabelScanStore NO_LABEL_SCAN_STORE = new LabelScanStore()
-    {
-        @Override
-        public LabelScanReader newReader()
-        {
-            return LabelScanReader.EMPTY;
-        }
-
-        @Override
-        public LabelScanWriter newWriter()
-        {
-            return LabelScanWriter.EMPTY;
-        }
-
-        @Override
-        public void stop()
-        {   // Do nothing
-        }
-
-        @Override
-        public void start()
-        {   // Do nothing
-        }
-
-        @Override
-        public void shutdown()
-        {   // Do nothing
-        }
-
-        @Override
-        public void recover( Iterator<NodeLabelUpdate> updates )
-        {   // Do nothing
-        }
-
-        @Override
-        public AllEntriesLabelScanReader newAllEntriesReader()
-        {
-            return null;
-        }
-
-        @Override
-        public ResourceIterator<File> snapshotStoreFiles()
-        {
-            return emptyIterator();
-        }
-
-        @Override
-        public void init()
-        {   // Do nothing
-        }
-
-        @Override
-        public void force()
-        {   // Do nothing
-        }
-    };
-
     private class IteratorCollector<T> implements Answer<Object>
     {
         private final int arg;
@@ -1606,7 +1559,7 @@ public class NeoStoreTransactionTest
 
     public static class RecoveryCreatingCopyingNeoCommandHandler implements Visitor<Command, IOException>
     {
-        private final List<Command> commands = new LinkedList<Command>();
+        private final List<Command> commands = new LinkedList<>();
 
         @Override
         public boolean visit( Command element ) throws IOException

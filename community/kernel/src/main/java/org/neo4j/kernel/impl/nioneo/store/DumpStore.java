@@ -86,7 +86,6 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
             }
         }
         life.shutdown();
-        pageCache.close();
     }
 
     private static StringLogger logger()

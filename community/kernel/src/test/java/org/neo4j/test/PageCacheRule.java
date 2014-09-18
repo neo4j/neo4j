@@ -19,6 +19,8 @@
  */
 package org.neo4j.test;
 
+import java.io.IOException;
+
 import org.junit.rules.ExternalResource;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -28,8 +30,6 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
-import org.neo4j.kernel.impl.pagecache.PageCacheFactory;
-import org.neo4j.kernel.impl.pagecache.StandardPageCacheFactory;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -42,12 +42,19 @@ public class PageCacheRule extends ExternalResource
     {
         if ( pageCache != null )
         {
-            pageCache.stop();
+            try
+            {
+                pageCache.stop();
+            }
+            catch ( IOException e )
+            {
+                throw new AssertionError(
+                        "Failed to stop existing PageCache prior to creating a new one", e );
+            }
         }
-        PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
         pageCache = new LifecycledPageCache(
-                pageCacheFactory, swapperFactory, jobScheduler, config, new Monitors().newMonitor( PageCacheMonitor.class ) );
+                swapperFactory, jobScheduler, config, new Monitors().newMonitor( PageCacheMonitor.class ) );
         pageCache.start();
         return pageCache;
     }
@@ -64,7 +71,14 @@ public class PageCacheRule extends ExternalResource
     {
         if ( pageCache != null )
         {
-            pageCache.stop();
+            try
+            {
+                pageCache.stop();
+            }
+            catch ( IOException e )
+            {
+                throw new AssertionError( "Failed to stop PageCache after test", e );
+            }
             pageCache = null;
         }
         jobScheduler.shutdown();

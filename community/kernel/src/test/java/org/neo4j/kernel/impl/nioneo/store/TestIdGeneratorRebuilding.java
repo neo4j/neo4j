@@ -127,6 +127,7 @@ public class TestIdGeneratorRebuilding
         nextIds.add( store.nextId() ); // 7
         nextIds.add( store.nextId() ); // 51
         assertThat( nextIds, contains( 2L, 3L, 5L, 7L, 50L ) );
+        store.close();
     }
 
     @Test
@@ -187,6 +188,7 @@ public class TestIdGeneratorRebuilding
         nextIds.add( store.nextId() ); // 7
         nextIds.add( store.nextId() ); // 51
         assertThat( nextIds, contains( 2L, 3L, 5L, 7L, 51L ) );
+        store.close();
     }
 
     @Test
@@ -243,5 +245,6 @@ public class TestIdGeneratorRebuilding
         nextIds.add( store.nextId() ); // recordsPerPage - 1
         nextIds.add( store.nextId() ); // recordsPerPage * 3 (we didn't use this id in the create-look above)
         assertThat( nextIds, contains( recordsPerPage - 2L, recordsPerPage - 1L, recordsPerPage * 3L ) );
+        store.close();
     }
 }

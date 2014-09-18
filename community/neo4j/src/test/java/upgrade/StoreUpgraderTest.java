@@ -306,6 +306,7 @@ public class StoreUpgraderTest
 
             long minuteAgo = System.currentTimeMillis() - 1000;
             assertThat( neoStore.getUpgradeTime(), greaterThan( minuteAgo ) );
+            neoStore.close();
         }
         finally
         {

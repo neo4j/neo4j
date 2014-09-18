@@ -121,8 +121,6 @@ import org.neo4j.kernel.impl.nioneo.xa.RelationshipCreator;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipLocker;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
-import org.neo4j.kernel.impl.pagecache.PageCacheFactory;
-import org.neo4j.kernel.impl.pagecache.StandardPageCacheFactory;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -228,10 +226,9 @@ public class BatchInserterImpl implements BatchInserter
         this.fileSystem = fileSystem;
         this.storeDir = new File( FileUtils.fixSeparatorsInPath( storeDir ) );
         Neo4jJobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
-        PageCacheFactory pageCacheFactory = new StandardPageCacheFactory();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
         LifecycledPageCache pageCache = life.add( new LifecycledPageCache(
-                pageCacheFactory, swapperFactory, jobScheduler, config, monitors.newMonitor( PageCacheMonitor.class ) ) );
+                swapperFactory, jobScheduler, config, monitors.newMonitor( PageCacheMonitor.class ) ) );
 
 
         msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );

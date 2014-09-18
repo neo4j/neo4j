@@ -46,6 +46,7 @@ public class StoreFactoryTest
 {
     private LifeSupport life;
     private StoreFactory storeFactory;
+    private NeoStore neostore;
 
     @Before
     public void setup()
@@ -65,6 +66,7 @@ public class StoreFactoryTest
     @After
     public void teardown()
     {
+        neostore.close();
         life.shutdown();
     }
 
@@ -72,7 +74,7 @@ public class StoreFactoryTest
     public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup() throws Exception
     {
         // When
-        NeoStore neostore = storeFactory.createNeoStore();
+        neostore = storeFactory.createNeoStore();
 
         // Then
         assertThat( neostore.getUpgradeId(), equalTo( neostore.getRandomNumber() ) );

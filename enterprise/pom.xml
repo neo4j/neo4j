@@ -28,7 +28,6 @@
   </scm>
 
   <modules>
-    <module>enterprise-io</module>
     <module>com</module>
     <module>cluster</module>
     <module>backup</module>
