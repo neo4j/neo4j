@@ -143,7 +143,7 @@ public class ReadAheadLogChannel implements ReadableLogChannel
                 if ( nextChannel == channel )
                 {
                     // no more channels so we cannot satisfy the requested number of bytes
-                    throw new ReadPastEndException();
+                    throw ReadPastEndException.INSTANCE;
                 }
                 channel = nextChannel;
             }

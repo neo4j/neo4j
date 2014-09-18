@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha.com.master;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -357,9 +356,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type,
                                                       long... resourceIds )
     {
-        msgLog.info( "@@@ acquireExclusiveLock: IN: from: " + context.machineId() + " type: " + type + " resources: " +
-                Arrays.toString( resourceIds ) );
-
         assertCorrectEpoch( context );
         LockSession session = resume( context );
         try
@@ -367,26 +363,17 @@ public class MasterImpl extends LifecycleAdapter implements Master
             session.client().acquireExclusive( type, resourceIds );
             Response<LockResult> lockResultResponse = packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
 
-            msgLog.info( "@@@ acquireExclusiveLock: OK: from: " + context.machineId() + " type: " + type + " " +
-                    "resources: " + Arrays.toString( resourceIds ) );
-
             return lockResultResponse;
         }
         catch ( DeadlockDetectedException e )
         {
             Response<LockResult> lockResultResponse = packResponse( context, new LockResult( e.getMessage() ) );
 
-            msgLog.info( "@@@ acquireExclusiveLock: NOK: from: " + context.machineId() + " type: " + type + " " +
-                    "resources: " + Arrays.toString( resourceIds ) );
-
             return lockResultResponse;
         }
         catch ( IllegalResourceException e )
         {
             Response<LockResult> lockResultResponse = packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
-
-            msgLog.info( "@@@ acquireExclusiveLock: NOK: from: " + context.machineId() + " type: " + type + " " +
-                    "resources: " + Arrays.toString( resourceIds ) );
 
             return lockResultResponse;
         }
@@ -427,9 +414,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType type,
                                                    long... resourceIds )
     {
-        msgLog.info( "@@@ acquireSharedLock: IN: from: " + context.machineId() + " type: " + type + " resources: " +
-                Arrays.toString( resourceIds ) );
-
         assertCorrectEpoch( context );
         LockSession session = resume( context );
         try
@@ -437,26 +421,17 @@ public class MasterImpl extends LifecycleAdapter implements Master
             session.client().acquireShared( type, resourceIds );
             Response<LockResult> lockResultResponse = packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
 
-            msgLog.info( "@@@ acquireSharedLock: OK: from: " + context.machineId() + " type: " + type + " resources: " +
-                    Arrays.toString( resourceIds ) );
-
             return lockResultResponse;
         }
         catch ( DeadlockDetectedException e )
         {
             Response<LockResult> lockResultResponse = packResponse( context, new LockResult( e.getMessage() ) );
 
-            msgLog.info( "@@@ acquireSharedLock: NOK:deadlock from: " + context.machineId() + " type: " + type +
-                    " resources: " + Arrays.toString( resourceIds ) );
-
             return lockResultResponse;
         }
         catch ( IllegalResourceException e )
         {
             Response<LockResult> lockResultResponse = packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
-
-            msgLog.info( "@@@ acquireSharedLock: NOK:error from: " + context.machineId() + " type: " + type + " " +
-                    "resources: " + Arrays.toString( resourceIds ) );
 
             return lockResultResponse;
         }
