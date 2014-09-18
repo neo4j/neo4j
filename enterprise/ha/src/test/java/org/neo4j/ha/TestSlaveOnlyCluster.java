@@ -19,20 +19,17 @@
  */
 package org.neo4j.ha;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.test.ha.ClusterManager.fromXml;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-
-import java.net.URI;
+import java.io.File;
+import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -41,84 +38,46 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.fromXml;
+
 public class TestSlaveOnlyCluster
 {
-    public final TargetDirectory directory = TargetDirectory.forTest( getClass() );
+    private final TargetDirectory directory = TargetDirectory.forTest( getClass() );
+    private static final String PROPERTY = "foo";
+    private static final String VALUE = "bar";
 
     @Test
     public void testMasterElectionAfterMasterRecoversInSlaveOnlyCluster() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ) .toURI() ),
-                directory.cleanDirectory( "masterrecovery" ), MapUtil.stringMap(),
-                MapUtil.<Integer, Map<String, String>>genericMap(
-                        2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
-                        3, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ) )
-        );
-
+        final ClusterManager clusterManager = createCluster( "masterrecovery", 1, 2 );
         try
         {
             clusterManager.start();
 
-            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
+            final ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+            cluster.await( allSeesAllAsAvailable() );
 
-            final CountDownLatch failedLatch = new CountDownLatch( 2 );
-            final CountDownLatch electedLatch = new CountDownLatch( 2 );
-            HeartbeatListener masterDownListener = new HeartbeatListener()
-            {
-                @Override
-                public void failed( InstanceId server )
-                {
-                    failedLatch.countDown();
-                }
+            final HighlyAvailableGraphDatabase master = cluster.getMaster();
+            final CountDownLatch masterFailedLatch = createMasterFailLatch( cluster );
 
-                @Override
-                public void alive( InstanceId server )
-                {
-                }
-            };
+            final ClusterManager.RepairKit repairKit = cluster.fail( master );
 
-            for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : clusterManager.getDefaultCluster()
-                    .getAllMembers() )
-            {
-                if ( !highlyAvailableGraphDatabase.isMaster() )
-                {
-                    highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class )
-                            .addHeartbeatListener( masterDownListener );
-
-                    highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class )
-                            .addClusterListener( new ClusterListener.Adapter()
-                    {
-                        @Override
-                        public void elected( String role, InstanceId electedMember, URI availableAtUri )
-                        {
-                            electedLatch.countDown();
-                        }
-                    } );
-                }
-            }
-
-            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
-            ClusterManager.RepairKit repairKit = clusterManager.getDefaultCluster().fail( master );
-
-            failedLatch.await();
+            masterFailedLatch.await( 60, TimeUnit.SECONDS );
 
             repairKit.repair();
 
-            electedLatch.await();
+            cluster.await( allSeesAllAsAvailable() );
 
-            HighlyAvailableGraphDatabase slaveDatabase = clusterManager.getDefaultCluster().getAnySlave();
-            long nodeId;
-            try ( Transaction tx = slaveDatabase.beginTx() )
-            {
-                Node node = slaveDatabase.createNode();
-                node.setProperty( "foo", "bar" );
-                nodeId = node.getId();
-                tx.success();
-            }
+            long nodeId = createNodeWithPropertyOn( cluster.getAnySlave(), PROPERTY, VALUE );
 
             try ( Transaction ignore = master.beginTx() )
             {
-                assertThat( master.getNodeById( nodeId ).getProperty( "foo" ).toString(), equalTo( "bar" ) );
+                assertThat( (String) master.getNodeById( nodeId ).getProperty( PROPERTY ), equalTo( VALUE ) );
             }
         }
         finally
@@ -130,27 +89,72 @@ public class TestSlaveOnlyCluster
     @Test
     public void testMasterElectionAfterSlaveOnlyInstancesStartFirst() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                directory.cleanDirectory( "slaveonly" ), MapUtil.stringMap(),
-                MapUtil.<Integer, Map<String, String>>genericMap(
-                        1, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
-                        2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ) )
-        );
+        final ClusterManager clusterManager = createCluster( "slaveonly", 1, 2 );
 
         try
         {
             clusterManager.start();
-
             ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( masterAvailable( cluster.getMemberByServerId( new InstanceId ( 1 ) ),
-                    cluster.getMemberByServerId( new InstanceId( 2 ) ) ) );
+            cluster.await( allSeesAllAsAvailable() );
 
-            HighlyAvailableGraphDatabase master = cluster.getMaster();
-            assertThat( cluster.getServerId( master ).toIntegerIndex(), CoreMatchers.equalTo( 3 ) );
+            assertThat( cluster.getServerId( cluster.getMaster() ), equalTo( new InstanceId( 3 ) ) );
         }
         finally
         {
             clusterManager.stop();
         }
+    }
+
+    private ClusterManager createCluster( String dirname, int... slaveIds ) throws URISyntaxException
+    {
+        final File dir = directory.cleanDirectory( dirname );
+        System.out.println( dir );
+        final ClusterManager.Provider provider = fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() );
+        final Map<Integer, Map<String, String>> instanceConfig = new HashMap<>( slaveIds.length );
+        for ( int slaveId : slaveIds )
+        {
+            instanceConfig.put( slaveId, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ) );
+        }
+
+        return new ClusterManager( provider, dir, MapUtil.stringMap(), instanceConfig );
+    }
+
+    private long createNodeWithPropertyOn( HighlyAvailableGraphDatabase db, String property, String value )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( property, value );
+
+            tx.success();
+
+            return node.getId();
+        }
+    }
+
+    private CountDownLatch createMasterFailLatch( ClusterManager.ManagedCluster cluster )
+    {
+        final CountDownLatch failedLatch = new CountDownLatch( 2 );
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+        {
+            if ( !db.isMaster() )
+            {
+                db.getDependencyResolver().resolveDependency( ClusterClient.class )
+                        .addHeartbeatListener( new HeartbeatListener()
+                        {
+                            @Override
+                            public void failed( InstanceId server )
+                            {
+                                failedLatch.countDown();
+                            }
+
+                            @Override
+                            public void alive( InstanceId server )
+                            {
+                            }
+                        } );
+            }
+        }
+        return failedLatch;
     }
 }
