@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
@@ -67,7 +66,7 @@ public class LuceneAllEntriesIndexAccessorReader implements BoundedIterable<Long
     }
 
     @Override
-    public void close() throws IOException
+    public void close() throws Exception
     {
         documents.close();
     }

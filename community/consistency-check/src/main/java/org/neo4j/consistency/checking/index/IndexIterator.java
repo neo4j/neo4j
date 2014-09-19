@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.checking.index;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.direct.BoundedIterable;
@@ -42,14 +41,14 @@ public class IndexIterator implements BoundedIterable<Long>
         {
             return reader.maxCount();
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             throw new RuntimeException( e );
         }
     }
 
     @Override
-    public void close() throws IOException
+    public void close() throws Exception
     {
         if ( indexReader != null )
         {

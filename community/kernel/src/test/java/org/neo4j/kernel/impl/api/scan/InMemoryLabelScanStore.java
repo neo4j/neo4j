@@ -155,7 +155,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
             }
 

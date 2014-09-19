@@ -19,11 +19,12 @@
  */
 package org.neo4j.com.storecopy;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-public interface StoreWriter extends AutoCloseable
+public interface StoreWriter extends Closeable
 {
     // "hasData" is an effect of the block format not supporting a zero length block
     // whereas a neostore file may actually be 0 bytes we'll have to keep track

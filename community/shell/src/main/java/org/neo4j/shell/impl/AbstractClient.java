@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell.impl;
 
-import java.io.Closeable;
 import java.io.Serializable;
 import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
@@ -32,6 +31,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.helpers.Cancelable;
 import org.neo4j.shell.Console;
 import org.neo4j.shell.CtrlCHandler;
 import org.neo4j.shell.Output;
@@ -94,13 +94,22 @@ public abstract class AbstractClient implements ShellClient
         while ( !end )
         {
             String command = readLine( getPrompt() );
-            try ( Closeable ignored = signalHandler.install( ctrlcAction ) )
+            Cancelable cancelable = null;
+            try
             {
+                cancelable = signalHandler.install( ctrlcAction );
                 evaluate( command );
             }
             catch ( Exception e )
             {
                 printStackTrace( e );
+            }
+            finally
+            {
+                if ( cancelable != null )
+                {
+                    cancelable.cancel();
+                }
             }
         }
         this.shutdown();
