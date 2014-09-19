@@ -25,13 +25,25 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.io.pagecache.stress.Conditions.timePeriod;
 
 import org.junit.Test;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
+import org.neo4j.io.pagecache.stress.SimpleMonitor;
 
 /**
  * Notice the class name: this is _not_ going to be run as part of the main build.
  */
 public class PageCacheStressTesting
 {
+    static {
+        // This is disabled by default, but we have tests that verify that
+        // pinned and unpinned are called correctly.
+        // Setting this property here in the test class should ensure that
+        // it is set before the MuninnPageCache classes are loaded, and
+        // thus before they check this value.
+        System.setProperty(
+                "org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.monitorPinUnpin", "true" );
+    }
+
     @Test
     public void shouldBehaveCorrectlyUnderStress() throws Exception
     {
@@ -42,6 +54,8 @@ public class PageCacheStressTesting
         int cachePagePadding = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_CACHE_PAGE_PADDING", "56" ) );
         int numberOfCachePages = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_NUMBER_OF_CACHE_PAGES", "1000" ) );
 
+        PageCacheMonitor monitor = new SimpleMonitor();
+
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
                 .with( timePeriod( durationInMinutes, MINUTES ) )
                 .withNumberOfPages( numberOfPages )
@@ -49,9 +63,12 @@ public class PageCacheStressTesting
                 .withNumberOfThreads( numberOfThreads )
                 .withCachePagePadding( cachePagePadding )
                 .withNumberOfCachePages( numberOfCachePages )
+                .with( monitor )
                 .build();
 
         runner.run();
+
+        System.out.println(monitor);
     }
 
     private static String fromEnvironmentOrDefault( String environmentVariableName, String defaultValue )
