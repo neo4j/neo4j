@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,6 +39,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.ImpermanentDatabaseRule;
+
+import static java.lang.String.format;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -116,7 +122,8 @@ public class TestConcurrentModificationOfRelationshipChains
         // then
         try ( Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( RelationshipGrabSize, count( node1.getRelationships() ) );
+            List<String> found = stringsOf( node1.getRelationships().iterator() );
+            assertEquals( join( "\n\t", found ), RelationshipGrabSize, found.size() );
             tx.success();
         }
     }
@@ -133,7 +140,8 @@ public class TestConcurrentModificationOfRelationshipChains
         // then
         try ( Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( RelationshipGrabSize, count( node1.getRelationships() ) );
+            List<String> found = stringsOf( node1.getRelationships().iterator() );
+            assertEquals( join( "\n\t", found ), RelationshipGrabSize , found.size() );
             tx.success();
         }
     }
@@ -156,7 +164,45 @@ public class TestConcurrentModificationOfRelationshipChains
         // then
         try ( Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( RelationshipGrabSize, count( rels ) );
+            List<String> found = stringsOf( rels );
+            assertEquals( join( "\n\t", found ), RelationshipGrabSize, found.size() );
+            tx.success();
+        }
+    }
+
+    @Test
+    @Ignore("2014-09-17: Ignored because it is questionable if we should support transferring an iterator from one " +
+            "transaction to another like this. This issue could still manifest with multiple threads, but at that " +
+            "point it is essentially a regular concurrent update issue, and \"expected behaviour.\"\n" +
+            "The test fails because the iterator from the first tx references state that gets evicted from the cache " +
+            "by the deleting transaction. The transaction in between makes sure that the evicted state is fully " +
+            "populated before being evicted, thus manifesting the issue.")
+    public void relationshipChainPositionCachePoisoningFromSameThreadWithReadsInBetween()
+    {
+        // given
+        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+
+        // when
+        Iterator<Relationship> rels;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            rels = node1.getRelationships().iterator();
+            tx.success();
+        }
+        List<String> before;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            before = stringsOf( node1.getRelationships().iterator() );
+            tx.success();
+        }
+        deleteRelationshipInSameThread( firstFromSecondBatch );
+
+        // then
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            List<String> found = stringsOf( rels );
+            assertEquals( join( "\n\t", found ) + "\nBefore delete:" + join( "\n\t", before ),
+                          RelationshipGrabSize, found.size() );
             tx.success();
         }
     }
@@ -179,7 +225,8 @@ public class TestConcurrentModificationOfRelationshipChains
         // then
         try ( Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( RelationshipGrabSize, count( rels ) );
+            List<String> found = stringsOf( rels );
+            assertEquals( join( "\n\t", found ), RelationshipGrabSize, found.size() );
             tx.success();
         }
     }
@@ -200,7 +247,8 @@ public class TestConcurrentModificationOfRelationshipChains
         // then
         try ( Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( RelationshipGrabSize + 1, count( node1.getRelationships() ) );
+            List<String> found = stringsOf( node1.getRelationships().iterator() );
+            assertEquals( join( "\n\t", found ), RelationshipGrabSize + 1, found.size() );
             tx.success();
         }
     }
@@ -246,7 +294,8 @@ public class TestConcurrentModificationOfRelationshipChains
         // then
         try ( Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( DenseNode + 1, IteratorUtil.count( node.getRelationships( TYPE ) ) );
+            List<String> found = stringsOf( node.getRelationships( TYPE ).iterator() );
+            assertEquals( join( "\n\t", found ), DenseNode + 1, found.size() );
             tx.success();
         }
     }
@@ -278,5 +327,34 @@ public class TestConcurrentModificationOfRelationshipChains
     private void clearCaches()
     {
         db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( Caches.class ).clear();
+    }
+
+    private static List<String> stringsOf( Iterator<Relationship> rels )
+    {
+        List<String> strings = new ArrayList<>();
+        while ( rels.hasNext() )
+        {
+            Relationship rel = rels.next();
+            try
+            {
+                strings.add( format( "(%d)-[%d]->(%d)", rel.getStartNode().getId(), rel.getId(),
+                                     rel.getEndNode().getId() ) );
+            }
+            catch ( Exception e )
+            {
+                strings.add( rel + " - " + e );
+            }
+        }
+        return strings;
+    }
+
+    private static String join( String sep, Collection<?> items )
+    {
+        StringBuilder result = new StringBuilder();
+        for ( Object item : items )
+        {
+            result.append( sep ).append( item );
+        }
+        return result.toString();
     }
 }

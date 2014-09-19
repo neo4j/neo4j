@@ -17,43 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.statistics;
+package org.neo4j.kernel.impl.api;
 
-/**
- * A wrapper for a primitive int counter, allowing it to be passed around different components.
- */
-public class IntCounter
+class RelationshipDataExtractor implements RelationshipVisitor<RuntimeException>
 {
-    private int count = 0;
-
-    public int value()
-    {
-        return count;
-    }
-
-    public void increment()
-    {
-        count++;
-    }
-
-    public void decrement()
-    {
-        count--;
-    }
-
-    public void set( int value )
-    {
-        this.count = value;
-    }
+    private int type;
+    private long startNode;
+    private long endNode;
 
     @Override
-    public String toString()
+    public void visit( long relId, int type, long startNode, long endNode )
     {
-        return Integer.toString( count );
+        this.type = type;
+        this.startNode = startNode;
+        this.endNode = endNode;
     }
 
-    public void add( int delta )
+    public int type()
     {
-        count += delta;
+        return type;
+    }
+
+    public long startNode()
+    {
+        return startNode;
+    }
+
+    public long endNode()
+    {
+        return endNode;
     }
 }

@@ -257,22 +257,24 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            if ( state.txState().nodeIsDeletedInThisTx( nodeId ) )
-            {
-                return PrimitiveIntCollections.emptyIterator();
-            }
-
-            if ( state.txState().nodeIsAddedInThisTx( nodeId ) )
-            {
-                return PrimitiveIntCollections.toPrimitiveIterator(
-                        state.txState().nodeStateLabelDiffSets( nodeId ).getAdded().iterator() );
-            }
-
-            return state.txState().nodeStateLabelDiffSets( nodeId ).augment(
-                    storeLayer.nodeGetLabels( nodeId ) );
+            return nodeGetLabels( storeLayer, state.txState(), nodeId );
         }
-
         return storeLayer.nodeGetLabels( nodeId );
+    }
+
+    public static PrimitiveIntIterator nodeGetLabels( StoreReadLayer storeLayer, TxState txState, long nodeId )
+            throws EntityNotFoundException
+    {
+        if ( txState.nodeIsDeletedInThisTx( nodeId ) )
+        {
+            return PrimitiveIntCollections.emptyIterator();
+        }
+        if ( txState.nodeIsAddedInThisTx( nodeId ) )
+        {
+            return PrimitiveIntCollections.toPrimitiveIterator(
+                    txState.nodeStateLabelDiffSets( nodeId ).getAdded().iterator() );
+        }
+        return txState.nodeStateLabelDiffSets( nodeId ).augment( storeLayer.nodeGetLabels( nodeId ) );
     }
 
     @Override

@@ -47,6 +47,7 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.store.CacheLoader;
 import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -705,5 +706,18 @@ public class NodeImpl extends ArrayBasedPrimitive
             types.add( ids.getType() );
         }
         return types.iterator();
+    }
+
+    public void visitDegrees( RelationshipLoader relationshipLoader, DegreeVisitor visitor,
+                              CacheUpdateListener cacheUpdateListener )
+    {
+        ensureAllRelationshipsAreLoaded( relationshipLoader, cacheUpdateListener );
+        RelIdArray[] relationships = this.relationships;
+        for ( RelIdArray byType : relationships )
+        {
+            int outgoing = byType.length( DirectionWrapper.OUTGOING );
+            int incoming = byType.length( DirectionWrapper.INCOMING );
+            visitor.visitDegree( byType.getType(), outgoing, incoming );
+        }
     }
 }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
@@ -61,5 +62,12 @@ public class DenseNodeImpl extends NodeImpl
     {
         return hasMoreRelationshipsToLoad() ? iterator( relationshipLoader.getRelationshipTypes( getId() ) ) :
             super.getRelationshipTypes( relationshipLoader, cacheUpdateListener );
+    }
+
+    @Override
+    public void visitDegrees( RelationshipLoader relationshipLoader, DegreeVisitor visitor,
+                              CacheUpdateListener cacheUpdateListener )
+    {
+        relationshipLoader.visitRelationshipCounts( getId(), visitor );
     }
 }

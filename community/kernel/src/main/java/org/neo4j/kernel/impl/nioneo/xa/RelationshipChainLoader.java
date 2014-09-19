@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.core.DenseNodeChainPosition;
 import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
 import org.neo4j.kernel.impl.core.SingleChainPosition;
@@ -192,6 +193,30 @@ public class RelationshipChainLoader
                 return 0;
             }
             return getRelationshipCount( node, group, direction );
+        }
+    }
+
+    public void visitRelationshipCounts( long nodeId, DegreeVisitor visitor )
+    {
+        NodeRecord node = nodeStore.getRecord( nodeId );
+        long nextRecord = node.getNextRel();
+        if ( Record.NO_NEXT_RELATIONSHIP.is( nextRecord ) )
+        {
+            return;
+        }
+        if ( !node.isDense() )
+        {
+            throw new UnsupportedOperationException( "non-dense nodes should be handled by the cache layer" );
+        }
+        // visit the counts of this dense node
+        while ( !Record.NO_NEXT_RELATIONSHIP.is( nextRecord ) )
+        {
+            RelationshipGroupRecord group = relationshipGroupStore.getRecord( nextRecord );
+            nextRecord = group.getNext();
+            int outgoing = getRelationshipCount( node, group.getFirstOut() );
+            int incoming = getRelationshipCount( node, group.getFirstIn() );
+            int loops = getRelationshipCount( node, group.getFirstLoop() );
+            visitor.visitDegree( group.getType(), outgoing + loops, incoming + loops );
         }
     }
 

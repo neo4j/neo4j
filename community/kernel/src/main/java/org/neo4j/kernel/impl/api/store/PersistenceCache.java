@@ -36,8 +36,10 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
+import org.neo4j.kernel.impl.core.DenseNodeImpl;
 import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -437,6 +439,11 @@ public class PersistenceCache
             throws EntityNotFoundException
     {
         return getNode( nodeId ).getDegree( relationshipLoader, type, direction, NODE_CACHE_SIZE_LISTENER );
+    }
+
+    public void nodeVisitDegrees( long nodeId, DegreeVisitor visitor ) throws EntityNotFoundException
+    {
+        getNode( nodeId ).visitDegrees( relationshipLoader, visitor, NODE_CACHE_SIZE_LISTENER );
     }
 
     public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId )

@@ -111,12 +111,15 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
 
     graph.inTx {
       val result = executeWithNewPlanner("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p")
-        .toList
+        .map(_.mapValues {
+        case l: List[Any] => l.toSet
+        case x => x
+      }).toList
 
       result should equal(List(
-        Map("p" -> List(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
+        Map("p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
         Map("p" -> 42),
-        Map("p" -> List(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
+        Map("p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
         Map("p" -> 42)
       ))
     }
@@ -189,11 +192,14 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
 
     graph.inTx {
       val result = executeWithNewPlanner("match (n) with case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p, count(n) as c return p, c")
-        .toSet
+        .map(_.mapValues {
+        case l: List[Any] => l.toSet
+        case x => x
+      }).toSet
 
       result should equal(Set(
-        Map("c" -> 1, "p" -> List(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
-        Map("c" -> 1, "p" -> List(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
+        Map("c" -> 1, "p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
+        Map("c" -> 1, "p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
         Map("c" -> 2, "p" -> 42)
       ))
     }

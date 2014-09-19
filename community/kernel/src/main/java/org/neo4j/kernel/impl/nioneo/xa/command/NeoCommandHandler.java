@@ -72,6 +72,7 @@ public interface NeoCommandHandler extends AutoCloseable
     boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException;
     boolean visitIndexCreateCommand( CreateCommand command ) throws IOException;
     boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException;
+    boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException;
     
     /**
      * Applies pending changes that might have been accumulated when visiting the commands.
@@ -84,6 +85,7 @@ public interface NeoCommandHandler extends AutoCloseable
      */
     @Override
     void close();
+
 
     public static class Adapter implements NeoCommandHandler
     {
@@ -177,6 +179,13 @@ public interface NeoCommandHandler extends AutoCloseable
         {
             return true;
         }
+
+        @Override
+        public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+        {
+            return true;
+        }
+
         @Override
         public void apply()
         {
@@ -285,6 +294,12 @@ public interface NeoCommandHandler extends AutoCloseable
         public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
         {
             return delegate.visitIndexDefineCommand( command );
+        }
+
+        @Override
+        public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+        {
+            return delegate.visitUpdateCountsCommand( command );
         }
 
         @Override

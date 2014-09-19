@@ -20,17 +20,22 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.api.CountsKey;
+import org.neo4j.kernel.impl.api.CountsVisitor;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
-public class CountsStore
+public class CountsStore implements CountsVisitor.Visitable
 {
-    private final ConcurrentMap<Key, AtomicLong> counts = new ConcurrentHashMap<>();
+    private final ConcurrentMap<CountsKey, AtomicLong> counts = new ConcurrentHashMap<>();
 
     public void close()
     {
@@ -44,35 +49,43 @@ public class CountsStore
 
     public long countsForNode( int labelId )
     {
-        return get( new NodeKey( labelId ) );
+        return get( nodeKey( labelId ) );
     }
 
     public void updateCountsForNode( int labelId, long delta )
     {
-        update( new NodeKey( labelId ), delta );
+        update( nodeKey( labelId ), delta );
     }
 
     public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
     {
-        if ( startLabelId != ANY_LABEL || endLabelId != ANY_LABEL )
+        if ( !(startLabelId == ANY_LABEL || endLabelId == ANY_LABEL) )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
-        return get( new RelationshipKey( startLabelId, typeId, endLabelId ) );
+        return get( relationshipKey( startLabelId, typeId, endLabelId ) );
     }
 
     public void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
     {
-        update( new RelationshipKey( startLabelId, typeId, endLabelId ), delta );
+        update( relationshipKey( startLabelId, typeId, endLabelId ), delta );
     }
 
-    private long get( Key key )
+    public void accept( CountsVisitor visitor )
+    {
+        for ( Map.Entry<CountsKey, AtomicLong> entry : counts.entrySet() )
+        {
+            entry.getKey().accept( visitor, entry.getValue().get() );
+        }
+    }
+
+    private long get( CountsKey key )
     {
         AtomicLong count = counts.get( key );
         return count == null ? 0 : count.get();
     }
 
-    private void update( Key key, long delta )
+    private void update( CountsKey key, long delta )
     {
         AtomicLong count = counts.get( key );
         if ( count == null )
@@ -85,74 +98,5 @@ public class CountsStore
             }
         }
         count.getAndAdd( delta );
-    }
-
-    private static abstract class Key
-    {
-        @Override
-        public abstract int hashCode();
-
-        @Override
-        public abstract boolean equals( Object obj );
-    }
-
-    private static class NodeKey extends Key
-    {
-        private final int labelId;
-
-        public NodeKey( int labelId )
-        {
-            this.labelId = labelId;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            return this == o || (o instanceof NodeKey) && labelId == ((NodeKey) o).labelId;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return labelId;
-        }
-    }
-
-    private static class RelationshipKey extends Key
-    {
-        private final int startLabelId;
-        private final int typeId;
-        private final int endLabelId;
-
-        public RelationshipKey( int startLabelId, int typeId, int endLabelId )
-        {
-            this.startLabelId = startLabelId;
-            this.typeId = typeId;
-            this.endLabelId = endLabelId;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( (o instanceof RelationshipKey) )
-            {
-                RelationshipKey that = (RelationshipKey) o;
-                return endLabelId == that.endLabelId && startLabelId == that.startLabelId && typeId == that.typeId;
-            }
-            return false;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = startLabelId;
-            result = 31 * result + typeId;
-            result = 31 * result + endLabelId;
-            return result;
-        }
     }
 }

@@ -17,43 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.statistics;
+package org.neo4j.kernel.impl.api;
 
-/**
- * A wrapper for a primitive int counter, allowing it to be passed around different components.
- */
-public class IntCounter
+public interface DegreeVisitor
 {
-    private int count = 0;
-
-    public int value()
-    {
-        return count;
-    }
-
-    public void increment()
-    {
-        count++;
-    }
-
-    public void decrement()
-    {
-        count--;
-    }
-
-    public void set( int value )
-    {
-        this.count = value;
-    }
-
-    @Override
-    public String toString()
-    {
-        return Integer.toString( count );
-    }
-
-    public void add( int delta )
-    {
-        count += delta;
-    }
+    void visitDegree( int type, int outgoing, int incoming );
 }

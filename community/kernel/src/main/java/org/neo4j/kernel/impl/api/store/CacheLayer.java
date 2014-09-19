@@ -60,6 +60,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
+import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -279,7 +280,7 @@ public class CacheLayer implements StoreReadLayer
             throws EntityNotFoundException
     {
         return persistenceCache.relationshipGetProperty( relationshipId, propertyKeyId,
-                relationshipPropertyLoader );
+                                                         relationshipPropertyLoader );
     }
 
     @Override
@@ -460,6 +461,12 @@ public class CacheLayer implements StoreReadLayer
             throws EntityNotFoundException
     {
         return persistenceCache.nodeGetDegree( nodeId, relType, direction );
+    }
+
+    @Override
+    public void nodeVisitDegrees( long nodeId, DegreeVisitor visitor ) throws EntityNotFoundException
+    {
+        persistenceCache.nodeVisitDegrees( nodeId, visitor );
     }
 
     @Override

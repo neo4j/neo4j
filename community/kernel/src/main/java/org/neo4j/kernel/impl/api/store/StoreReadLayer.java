@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.Token;
@@ -68,6 +69,9 @@ public interface StoreReadLayer
             throws EntityNotFoundException;
 
     int nodeGetDegree( long nodeId, Direction direction, int relType )
+            throws EntityNotFoundException;
+
+    void nodeVisitDegrees( long nodeId, DegreeVisitor visitor )
             throws EntityNotFoundException;
 
     PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId )

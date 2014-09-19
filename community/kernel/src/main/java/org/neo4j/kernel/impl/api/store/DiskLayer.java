@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -253,13 +254,19 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( "expected to be answered by cache" );
     }
 
     @Override
     public int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( "expected to be answered by cache" );
+    }
+
+    @Override
+    public void nodeVisitDegrees( long nodeId, DegreeVisitor visitor ) throws EntityNotFoundException
+    {
+        throw new UnsupportedOperationException( "expected to be answered by cache" );
     }
 
     @Override

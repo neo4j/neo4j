@@ -22,14 +22,17 @@ package org.neo4j.kernel.impl.api;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -58,6 +61,9 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 
+import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
+import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+
 /**
  * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
@@ -79,6 +85,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     // State
     private final TransactionRecordState recordState;
+    private final CountsState counts = new CountsState();
     private TxStateImpl txState;
     private TransactionType transactionType = TransactionType.ANY;
     private TransactionHooks.TransactionHooksState hooksState;
@@ -347,13 +354,65 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 @Override
                 public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
                 {
+                    try
+                    {
+                        // update counts
+                        for ( PrimitiveIntIterator labels = labelsOf( startNode ); labels.hasNext(); )
+                        {
+                            int label = labels.next();
+                            counts.increment( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
+                            counts.increment( label, type, ANY_LABEL );
+                        }
+                        for ( PrimitiveIntIterator labels = labelsOf( endNode ); labels.hasNext(); )
+                        {
+                            int label = labels.next();
+                            counts.increment( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label );
+                            counts.increment( ANY_LABEL, type, label );
+                        }
+                    }
+                    catch ( EntityNotFoundException e )
+                    {
+                        throw new IllegalStateException( "Nodes with added relationships should exist.", e );
+                    }
+
+                    // record the state changes to be made to the store
                     recordState.relCreate( id, type, startNode, endNode );
                 }
 
                 @Override
                 public void visitDeletedRelationship( long id )
                 {
+                    try
+                    {
+                        // update counts
+                        RelationshipDataExtractor rel = new RelationshipDataExtractor();
+                        storeLayer.relationshipVisit( id, rel );
+                        for ( PrimitiveIntIterator labels = labelsOf( rel.startNode() ); labels.hasNext(); )
+                        {
+                            int label = labels.next();
+                            counts.decrement( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
+                            counts.decrement( label, rel.type(), ANY_LABEL );
+                        }
+                        for ( PrimitiveIntIterator labels = labelsOf( rel.endNode() ); labels.hasNext(); )
+                        {
+                            int label = labels.next();
+                            counts.decrement( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label );
+                            counts.decrement( ANY_LABEL, rel.type(), label );
+                        }
+                    }
+                    catch ( EntityNotFoundException e )
+                    {
+                        throw new IllegalStateException(
+                                "Relationship being deleted should exist along with its nodes.", e );
+                    }
+
+                    // record the state changes to be made to the store
                     recordState.relDelete( id );
+                }
+
+                private PrimitiveIntIterator labelsOf( long nodeId ) throws EntityNotFoundException
+                {
+                    return StateHandlingStatementOperations.nodeGetLabels( storeLayer, txState, nodeId );
                 }
 
                 @Override
@@ -414,16 +473,55 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 }
 
                 @Override
-                public void visitNodeLabelChanges( long id, Iterator<Integer> added, Iterator<Integer> removed )
+                public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
                 {
-                    while(removed.hasNext())
+                    try
                     {
-                        recordState.removeLabelFromNode( removed.next(), id );
+                        // update counts
+                        if ( !(added.isEmpty() && removed.isEmpty()) )
+                        {
+                            // get the relationship counts from *before* this transaction,
+                            // the relationship changes will compensate for what happens during the transaction
+                            storeLayer.nodeVisitDegrees( id, new DegreeVisitor()
+                            {
+                                @Override
+                                public void visitDegree( int type, int outgoing, int incoming )
+                                {
+                                    for ( Integer label : added )
+                                    {
+                                        // untyped
+                                        counts.updateCountsForRelationship( label, -1, -1, outgoing );
+                                        counts.updateCountsForRelationship( -1, -1, label, incoming );
+                                        // typed
+                                        counts.updateCountsForRelationship( label, type, -1, outgoing );
+                                        counts.updateCountsForRelationship( -1, type, label, incoming );
+                                    }
+                                    for ( Integer label : removed )
+                                    {
+                                        // untyped
+                                        counts.updateCountsForRelationship( label, -1, -1, -outgoing );
+                                        counts.updateCountsForRelationship( -1, -1, label, -incoming );
+                                        // typed
+                                        counts.updateCountsForRelationship( label, type, -1, -outgoing );
+                                        counts.updateCountsForRelationship( -1, type, label, -incoming );
+                                    }
+                                }
+                            } );
+                        }
+                    }
+                    catch ( EntityNotFoundException e )
+                    {
+                         // ok, the node was created in this transaction
                     }
 
-                    while(added.hasNext())
+                    // record the state changes to be made to the store
+                    for ( Integer label : removed )
                     {
-                        recordState.addLabelToNode( added.next(), id );
+                        recordState.removeLabelFromNode( label, id );
+                    }
+                    for ( Integer label : added )
+                    {
+                        recordState.addLabelToNode( label, id );
                     }
                 }
 
@@ -624,6 +722,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 List<Command> commands = new ArrayList<>();
                 recordState.extractCommands( commands );
                 legacyIndexTransactionState.extractCommands( commands );
+                counts.extractCommands( commands );
 
                 /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
                  * if there are any changes imposed by this transaction. Some changes made inside a transaction undo

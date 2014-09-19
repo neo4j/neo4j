@@ -256,7 +256,7 @@ public final class TxStateImpl implements TxState
         return new NodeState.Visitor()
         {
             @Override
-            public void visitLabelChanges( long nodeId, Iterator<Integer> added, Iterator<Integer> removed )
+            public void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed )
             {
                 visitor.visitNodeLabelChanges( nodeId, added, removed );
             }

@@ -384,7 +384,13 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         {
             return false;
         }
-        
+
+        @Override
+        public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+        {
+            return false;
+        }
+
         @Override
         public void apply()
         {

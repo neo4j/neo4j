@@ -25,9 +25,12 @@ import java.io.IOException;
 import org.junit.rules.ExternalResource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -85,6 +88,21 @@ public abstract class DatabaseRule extends ExternalResource
             }
             return result;
         }
+    }
+
+    public Transaction beginTx()
+    {
+        return database.beginTx();
+    }
+
+    public Node createNode( Label... labels )
+    {
+        return database.createNode( labels );
+    }
+
+    public Schema schema()
+    {
+        return database.schema();
     }
 
     @Override
@@ -158,7 +176,7 @@ public abstract class DatabaseRule extends ExternalResource
 
     public void restartDatabase( RestartAction action )
     {
-        FileSystemAbstraction fs = database.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
+        FileSystemAbstraction fs = resolveDependency( FileSystemAbstraction.class );
         database.shutdown();
         action.run( fs, new File( storeDir ) );
         database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
@@ -182,10 +200,14 @@ public abstract class DatabaseRule extends ExternalResource
 
     public void clearCache()
     {
-        NeoStoreXaDataSource dataSource =
-                database.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        NeoStoreXaDataSource dataSource = resolveDependency( NeoStoreXaDataSource.class );
 
         dataSource.getNodeCache().clear();
         dataSource.getRelationshipCache().clear();
+    }
+
+    public <T> T resolveDependency( Class<T> type )
+    {
+        return database.getDependencyResolver().resolveDependency( type );
     }
 }
