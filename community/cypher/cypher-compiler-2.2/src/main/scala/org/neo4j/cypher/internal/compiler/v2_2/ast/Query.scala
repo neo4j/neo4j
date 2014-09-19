@@ -100,7 +100,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   private def checkClauses: SemanticCheck = s => {
     val result = clauses.foldLeft(SemanticCheckResult.success(s.newChildScope))((lastResult, clause) => clause match {
-      case c: ClosingClause =>
+      case c: HorizonClause =>
         val closingResult = c.semanticCheck(lastResult.state)
         val nextState = closingResult.state.newSiblingScope
         val continuationResult = c.semanticCheckContinuation(closingResult.state.currentScope.scope)(nextState)

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, SemanticState}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
-class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
+class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should introduce identifiers into scope") {
     // GIVEN WITH "a" as n

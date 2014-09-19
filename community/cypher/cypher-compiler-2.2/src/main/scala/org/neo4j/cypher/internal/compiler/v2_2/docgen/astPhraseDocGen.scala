@@ -54,8 +54,8 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
       case _              => TextDoc(clause.toString)
     }
   }
-  abstract class ClosingClauseConverter(prefix: String) {
-    def clause: ClosingClause
+  abstract class ProjectionClauseConverter {
+    def clause: ProjectionClause
     def where: Option[Where]
 
     def asDoc(pretty: DocConverter[Any]): Doc = {
@@ -65,15 +65,15 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
       val skip: Doc = clause.skip.map(pretty)
       val limit: Doc = clause.limit.map(pretty)
       val predicate: Doc = where.map(pretty)
-      section(prefix, distinct :+: items :+: predicate :+: orderBy :+: skip :+: limit)
+      section(clause.name, distinct :+: items :+: predicate :+: orderBy :+: skip :+: limit)
     }
   }
 
-  implicit class ReturnConverter(val clause: Return) extends ClosingClauseConverter("RETURN") {
+  implicit class ReturnConverter(val clause: Return) extends ProjectionClauseConverter {
     def where = None
   }
 
-  implicit class WithConverter(val clause: With) extends ClosingClauseConverter("WITH") {
+  implicit class WithConverter(val clause: With) extends ProjectionClauseConverter {
     def where = clause.where
   }
 

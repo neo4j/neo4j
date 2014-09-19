@@ -113,8 +113,8 @@ object StatementConverters {
           pair match {
             case Seq(clause)                                   => (groups, last)
             case Seq(_: ast.With, _: ast.Return)               => combine
-            case Seq(_: ast.ClosingClause, _)                  => split
-            case Seq(_, _: ast.ClosingClause)                  => combine
+            case Seq(_: ast.ProjectionClause, _)                  => split
+            case Seq(_, _: ast.ProjectionClause)                  => combine
             case Seq(_: ast.UpdateClause, _)                   => split
             case Seq(_, _: ast.UpdateClause)                   => split
             case Seq(_: ast.Match, _)                          => split
@@ -294,17 +294,17 @@ object StatementConverters {
         val tailQueryBuilder = builder.tail.fold(subBuilder)(t => subBuilder.tail(t))
         builder.tail(tailQueryBuilder.returns(commands.AllIdentifiers()))
       }
-      ClosingClauseConverter(clause).closeQueryBuilder(builderToClose)
+      ProjectionClauseConverter(clause).closeQueryBuilder(builderToClose)
     }
 
     def closeQueryBuilder(close: commands.QueryBuilder => commands.Query, builder: commands.QueryBuilder): commands.Query = {
       val subBuilder = clause.where.foldLeft(new commands.QueryBuilder())((b, w) => b.where(w.expression.asCommandPredicate))
       val tailQueryBuilder = builder.tail.fold(subBuilder)(t => subBuilder.tail(t))
-      ClosingClauseConverter(clause).closeQueryBuilder(builder.tail(close(tailQueryBuilder)))
+      ProjectionClauseConverter(clause).closeQueryBuilder(builder.tail(close(tailQueryBuilder)))
     }
   }
 
-  implicit class ClosingClauseConverter(val clause: ast.ClosingClause) extends AnyVal {
+  implicit class ProjectionClauseConverter(val clause: ast.ProjectionClause) extends AnyVal {
     def closeQueryBuilder(builder: commands.QueryBuilder): commands.Query = {
       val columns = returnColumns
 

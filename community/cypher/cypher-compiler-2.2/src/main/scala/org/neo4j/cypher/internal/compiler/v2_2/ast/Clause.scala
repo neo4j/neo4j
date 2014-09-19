@@ -29,28 +29,6 @@ sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
 
 sealed trait UpdateClause extends Clause
 
-sealed trait ClosingClause extends Clause with SemanticChecking {
-  def distinct: Boolean
-  def returnItems: ReturnItems
-  def orderBy: Option[OrderBy]
-  def skip: Option[Skip]
-  def limit: Option[Limit]
-
-  def semanticCheck = returnItems.semanticCheck
-
-  def semanticCheckContinuation(previousScope: Scope): SemanticCheck =
-    returnItems.declareIdentifiers(previousScope) chain
-    orderBy.semanticCheck chain
-    checkSkip chain
-    checkLimit
-
-  // use an empty state when checking skip & limit, as these have entirely isolated context
-  protected def checkSkip: SemanticState => Seq[SemanticError] =
-    s => skip.semanticCheck(SemanticState.clean).errors
-  protected def checkLimit: SemanticState => Seq[SemanticError] =
-    s => limit.semanticCheck(SemanticState.clean).errors
-}
-
 case class LoadCSV(withHeaders: Boolean, urlString: Expression, identifier: Identifier, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
   val name = "LOAD CSV"
 
@@ -239,13 +217,39 @@ case class Unwind(expression: Expression, identifier: Identifier)(val position: 
     }
 }
 
+sealed trait HorizonClause extends Clause with SemanticChecking {
+  def semanticCheckContinuation(previousScope: Scope): SemanticCheck
+}
+
+sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
+  def distinct: Boolean
+  def returnItems: ReturnItems
+  def orderBy: Option[OrderBy]
+  def skip: Option[Skip]
+  def limit: Option[Limit]
+
+  def semanticCheck = returnItems.semanticCheck
+
+  def semanticCheckContinuation(previousScope: Scope): SemanticCheck =
+    returnItems.declareIdentifiers(previousScope) chain
+      orderBy.semanticCheck chain
+      checkSkip chain
+      checkLimit
+
+  // use an empty state when checking skip & limit, as these have entirely isolated context
+  protected def checkSkip: SemanticState => Seq[SemanticError] =
+    s => skip.semanticCheck(SemanticState.clean).errors
+  protected def checkLimit: SemanticState => Seq[SemanticError] =
+    s => limit.semanticCheck(SemanticState.clean).errors
+}
+
 case class With(
     distinct: Boolean,
     returnItems: ReturnItems,
     orderBy: Option[OrderBy],
     skip: Option[Skip],
     limit: Option[Limit],
-    where: Option[Where])(val position: InputPosition) extends ClosingClause {
+    where: Option[Where])(val position: InputPosition) extends ProjectionClause {
   def name = "WITH"
 
   override def semanticCheck =
@@ -267,7 +271,7 @@ case class Return(
     returnItems: ReturnItems,
     orderBy: Option[OrderBy],
     skip: Option[Skip],
-    limit: Option[Limit])(val position: InputPosition) extends ClosingClause {
+    limit: Option[Limit])(val position: InputPosition) extends ProjectionClause {
 
   def name = "RETURN"
 

@@ -53,7 +53,7 @@ case object projectFreshSortExpressions extends Rewriter {
       )
 
     case r@Return(distinct, lri@ListedReturnItems(_), Some(orderBy), skip, limit) =>
-      val (firstProjection, secondProjection, identifierItems, newOrderBy) = splitupClosingClause(lri, orderBy)
+      val (firstProjection, secondProjection, identifierItems, newOrderBy) = splitupReturnItems(lri, orderBy)
       Seq(
         With(distinct = false, returnItems = ListedReturnItems(firstProjection)(lri.position), orderBy = None, skip = None, limit = None, where = None)(r.position),
         With(distinct = false, returnItems = ListedReturnItems(secondProjection)(lri.position), orderBy = None, skip = None, limit = None, where = None)(r.position),
@@ -64,7 +64,7 @@ case object projectFreshSortExpressions extends Rewriter {
       Seq(clause)
   }
 
-  private def splitupClosingClause(returnItems: ListedReturnItems, orderBy: OrderBy): (Seq[ReturnItem], Seq[ReturnItem], Seq[ReturnItem], OrderBy) = {
+  private def splitupReturnItems(returnItems: ListedReturnItems, orderBy: OrderBy): (Seq[ReturnItem], Seq[ReturnItem], Seq[ReturnItem], OrderBy) = {
     val aliases = returnItems.items
 
     val (aliasDependencies, nonAliasDependencies) = orderBy.treeFold(Seq.empty[Identifier]) {
