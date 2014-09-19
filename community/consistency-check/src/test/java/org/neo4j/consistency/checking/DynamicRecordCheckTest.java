@@ -25,10 +25,10 @@ import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

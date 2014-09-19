@@ -26,7 +26,7 @@ import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**

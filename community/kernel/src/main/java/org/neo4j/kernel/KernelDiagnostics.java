@@ -32,8 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
@@ -45,7 +44,7 @@ import org.neo4j.kernel.info.DiagnosticsProvider;
 @Deprecated
 abstract class KernelDiagnostics implements DiagnosticsProvider
 {
-    static void register( DiagnosticsManager manager, InternalAbstractGraphDatabase graphdb, NeoStoreXaDataSource ds )
+    static void register( DiagnosticsManager manager, InternalAbstractGraphDatabase graphdb, NeoStoreDataSource ds )
     {
         manager.prependProvider( new Versions( graphdb.getClass(), ds ) );
         ds.registerDiagnosticsWith( manager );
@@ -57,7 +56,7 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
         private final Class<? extends GraphDatabaseService> graphDb;
         private final StoreId storeId;
 
-        public Versions( Class<? extends GraphDatabaseService> graphDb, NeoStoreXaDataSource ds )
+        public Versions( Class<? extends GraphDatabaseService> graphDb, NeoStoreDataSource ds )
         {
             this.graphDb = graphDb;
             this.storeId = ds.getStoreId();

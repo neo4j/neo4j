@@ -19,7 +19,7 @@
  */
 package org.neo4j.com;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.test.subprocess.SubProcess;
 
 public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData> implements ServerInterface

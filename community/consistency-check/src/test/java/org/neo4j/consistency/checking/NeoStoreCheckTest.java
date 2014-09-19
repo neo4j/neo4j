@@ -22,8 +22,8 @@ package org.neo4j.consistency.checking;
 import org.junit.Test;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;

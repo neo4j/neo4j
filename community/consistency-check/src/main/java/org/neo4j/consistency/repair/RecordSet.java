@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.nioneo.store.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
 
 class RecordSet<R extends Abstract64BitRecord> implements Iterable<R>
 {

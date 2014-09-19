@@ -21,7 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 
 /**
  * Represents a transaction of changes to the underlying graph.
@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
  * Clearly separating between the concept of a transaction and the concept of a statement allows us to cater to this
  * type of isolation requirements.
  *
- * This class has a 1-1 relationship with{@link org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState}, please see its'
+ * This class has a 1-1 relationship with{@link org.neo4j.kernel.impl.transaction.state.TransactionRecordState}, please see its'
  * javadoc for details.
  *
  * Typical usage:

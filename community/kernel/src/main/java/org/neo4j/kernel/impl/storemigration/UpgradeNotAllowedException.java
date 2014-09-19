@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreFailureException;
+import org.neo4j.kernel.impl.store.StoreFailureException;
 
 public abstract class UpgradeNotAllowedException extends StoreFailureException
 {

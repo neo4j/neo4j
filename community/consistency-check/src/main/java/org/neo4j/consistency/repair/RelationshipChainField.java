@@ -19,8 +19,8 @@
  */
 package org.neo4j.consistency.repair;
 
-import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 @SuppressWarnings( "boxing" )
 public enum RelationshipChainField

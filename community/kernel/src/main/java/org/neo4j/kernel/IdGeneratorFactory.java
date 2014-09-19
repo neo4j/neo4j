@@ -22,7 +22,7 @@ package org.neo4j.kernel;
 import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGenerator;
 
 /**
  * @deprecated This will be moved to internal packages in the next major release.

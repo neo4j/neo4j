@@ -24,9 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.CommandRecordVisitor;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.CommandRecordVisitor;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
 import static org.neo4j.helpers.collection.MapUtil.reverse;
 

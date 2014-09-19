@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -52,8 +53,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -287,7 +287,7 @@ public class IndexRecoveryIT
 
     private void rotateLogs() throws IOException
     {
-        NeoStoreXaDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        NeoStoreDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
         DependencyResolver dependencyResolver = dataSource.getDependencyResolver();
         PhysicalLogFile physicalLogFile = dependencyResolver.resolveDependency( PhysicalLogFile.class );
         physicalLogFile.forceRotate();

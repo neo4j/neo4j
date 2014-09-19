@@ -37,18 +37,18 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.IOCursor;
+import org.neo4j.kernel.impl.transaction.log.LogDeserializer;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -58,7 +58,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
 
 /**
  * Test for a problem where multiple threads getting an index for the first time
@@ -126,7 +126,7 @@ public class IndexCreationTest
 
     private void verifyThatIndexCreationTransactionIsTheFirstOne() throws Exception
     {
-        NeoStoreXaDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
         PhysicalLogFile pLogFile = ds.getDependencyResolver().resolveDependency( PhysicalLogFile.class );
         long version = ds.getCurrentLogVersion();
         pLogFile.forceRotate();

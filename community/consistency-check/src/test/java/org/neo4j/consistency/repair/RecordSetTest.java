@@ -21,7 +21,7 @@ package org.neo4j.consistency.repair;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static org.junit.Assert.assertEquals;
 

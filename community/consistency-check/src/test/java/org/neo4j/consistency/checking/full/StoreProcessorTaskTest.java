@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.consistency.checking.full.TaskExecutionOrder.MULTI_PASS;
 import static org.neo4j.consistency.checking.full.TaskExecutionOrder.SINGLE_THREADED;
 
@@ -33,10 +34,11 @@ import java.io.File;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 @SuppressWarnings("unchecked")
 public class StoreProcessorTaskTest

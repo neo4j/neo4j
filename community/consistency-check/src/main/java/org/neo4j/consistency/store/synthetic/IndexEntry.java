@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.store.synthetic;
 
-import org.neo4j.kernel.impl.nioneo.store.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
 
 /**
  * Synthetic record type that stands in for a real record to fit in conveniently

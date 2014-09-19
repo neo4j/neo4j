@@ -26,7 +26,7 @@ import static java.lang.String.format;
 /**
  * Description of a single index as needed by the {@link org.neo4j.kernel.impl.api.index.IndexProxy} cake
  * <p/>
- * This is a IndexContext cake level representation of {@link org.neo4j.kernel.impl.nioneo.store.IndexRule}
+ * This is a IndexContext cake level representation of {@link org.neo4j.kernel.impl.store.record.IndexRule}
  */
 public class IndexDescriptor
 {

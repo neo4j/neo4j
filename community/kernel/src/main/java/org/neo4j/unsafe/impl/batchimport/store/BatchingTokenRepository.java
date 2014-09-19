@@ -23,12 +23,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.TokenStore;
-import org.neo4j.kernel.impl.nioneo.xa.TokenCreator;
+import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.kernel.impl.transaction.state.TokenCreator;
 
 import static java.lang.Math.max;
 

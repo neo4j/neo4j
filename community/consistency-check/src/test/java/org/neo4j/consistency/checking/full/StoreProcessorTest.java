@@ -25,8 +25,8 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;

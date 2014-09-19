@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha.com.master;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;

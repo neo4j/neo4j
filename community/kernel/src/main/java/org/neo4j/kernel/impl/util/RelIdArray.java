@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.cache.SizeOfObject;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 import static java.lang.System.arraycopy;
 

@@ -26,10 +26,10 @@ import java.util.Map;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
-import org.neo4j.kernel.impl.nioneo.store.IdRange;
+import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdRange;
 
-import static org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl.createGenerator;
+import static org.neo4j.kernel.impl.store.id.IdGeneratorImpl.createGenerator;
 
 /**
  * Batching version of an {@link IdGeneratorFactory} where all {@link IdGenerator id generators} are

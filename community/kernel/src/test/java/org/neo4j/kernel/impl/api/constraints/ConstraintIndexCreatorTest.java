@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.util.Providers;
 
 import static org.junit.Assert.assertEquals;
@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
-import static org.neo4j.kernel.impl.nioneo.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
+import static org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
 
 public class ConstraintIndexCreatorTest
 {

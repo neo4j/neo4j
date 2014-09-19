@@ -23,10 +23,10 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.CommandRecordVisitor;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandType;
+import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.CommandRecordVisitor;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 
 import static java.lang.String.format;
 

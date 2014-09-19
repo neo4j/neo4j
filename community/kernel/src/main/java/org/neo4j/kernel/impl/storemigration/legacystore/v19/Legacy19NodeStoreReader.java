@@ -27,9 +27,9 @@ import java.util.Iterator;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 
 import static java.nio.ByteBuffer.allocateDirect;

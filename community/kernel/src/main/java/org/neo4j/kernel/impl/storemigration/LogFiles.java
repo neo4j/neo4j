@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 
 import static java.util.regex.Pattern.compile;
 

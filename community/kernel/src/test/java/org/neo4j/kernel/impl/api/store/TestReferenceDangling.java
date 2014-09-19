@@ -26,7 +26,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.Caches;
-import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 /**

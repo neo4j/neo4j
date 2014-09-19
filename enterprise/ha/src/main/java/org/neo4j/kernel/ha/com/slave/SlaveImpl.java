@@ -26,7 +26,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.com.master.Slave;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 
 public class SlaveImpl implements Slave
 {

@@ -40,11 +40,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -245,12 +245,12 @@ public class UniqueIndexRecoveryTests
 
     private void rotateLog() throws IOException
     {
-        NeoStoreXaDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
         ds.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).forceRotate();
     }
 
     private void flushAll()
     {
-        db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class ).forceEverything();
+        db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class ).forceEverything();
     }
 }

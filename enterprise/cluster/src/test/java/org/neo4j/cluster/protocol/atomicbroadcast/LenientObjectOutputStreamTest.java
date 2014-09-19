@@ -33,7 +33,7 @@ import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 
 import static junit.framework.Assert.assertEquals;
 

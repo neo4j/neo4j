@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.id;
 
-import org.neo4j.kernel.impl.nioneo.store.IdRange;
+import org.neo4j.kernel.impl.store.id.IdRange;
 
 public final class IdAllocation
 {

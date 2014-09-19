@@ -27,11 +27,11 @@ import org.neo4j.consistency.checking.LabelChainWalker;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels;
-import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
-import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
+import org.neo4j.kernel.impl.store.DynamicNodeLabels;
+import org.neo4j.kernel.impl.store.NodeLabels;
+import org.neo4j.kernel.impl.store.NodeLabelsField;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 public class NodeLabelReader
 {

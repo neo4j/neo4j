@@ -24,8 +24,8 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
-import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 

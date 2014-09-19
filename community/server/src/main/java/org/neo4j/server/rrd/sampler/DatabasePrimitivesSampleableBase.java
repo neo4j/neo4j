@@ -19,8 +19,9 @@
  */
 package org.neo4j.server.rrd.sampler;
 
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.server.rrd.Sampleable;
+
 import org.rrd4j.DsType;
 
 public abstract class DatabasePrimitivesSampleableBase implements Sampleable

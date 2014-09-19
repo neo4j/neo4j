@@ -31,8 +31,8 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.nioneo.store.MultipleUnderlyingStorageExceptions;
-import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.MultipleUnderlyingStorageExceptions;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 /**
  * Holds currently open index updaters that are created dynamically when requested for any existing index in

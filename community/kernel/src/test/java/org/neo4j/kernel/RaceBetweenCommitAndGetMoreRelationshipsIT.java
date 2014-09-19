@@ -32,7 +32,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.core.Caches;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 
 public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
 {

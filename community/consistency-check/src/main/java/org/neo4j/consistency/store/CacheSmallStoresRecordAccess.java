@@ -19,9 +19,9 @@
  */
 package org.neo4j.consistency.store;
 
-import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 public class CacheSmallStoresRecordAccess extends DelegatingRecordAccess
 {

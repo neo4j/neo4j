@@ -38,10 +38,10 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
-import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 import com.sun.management.OperatingSystemMXBean;
 
@@ -90,14 +90,14 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
             xadsm.addListener( new DataSourceManager.Listener()
             {
                 @Override
-                public void registered( NeoStoreXaDataSource ds )
+                public void registered( NeoStoreDataSource ds )
                 {
                     crashPing = startupStatistics.numberOfRecoveredTransactions() > 0;
                     storeId = Long.toHexString( ds.getRandomIdentifier() );
                 }
 
                 @Override
-                public void unregistered( NeoStoreXaDataSource ds )
+                public void unregistered( NeoStoreDataSource ds )
                 {
                     crashPing = false;
                     storeId = null;

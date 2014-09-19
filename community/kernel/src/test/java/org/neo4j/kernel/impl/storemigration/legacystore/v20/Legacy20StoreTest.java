@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.assertLegacyAndCurrentVersionHaveSameLength;
 
 import org.junit.Test;

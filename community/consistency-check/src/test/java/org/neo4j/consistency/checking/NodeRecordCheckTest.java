@@ -25,16 +25,16 @@ import java.util.Collection;
 import org.junit.Test;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PreAllocatedRecords;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels;
-import org.neo4j.kernel.impl.nioneo.store.labels.InlineNodeLabels;
+import org.neo4j.kernel.impl.store.DynamicArrayStore;
+import org.neo4j.kernel.impl.store.DynamicNodeLabels;
+import org.neo4j.kernel.impl.store.InlineNodeLabels;
+import org.neo4j.kernel.impl.store.PreAllocatedRecords;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.util.Arrays.asList;
 

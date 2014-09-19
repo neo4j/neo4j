@@ -28,11 +28,11 @@ import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.store.DiffStore;
 import org.neo4j.consistency.store.DirectDiffRecordAccess;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
+import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class IncrementalDiffCheck extends DiffCheck

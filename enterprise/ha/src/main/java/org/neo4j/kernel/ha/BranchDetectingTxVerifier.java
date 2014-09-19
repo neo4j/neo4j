@@ -22,8 +22,8 @@ package org.neo4j.kernel.ha;
 import java.io.IOException;
 
 import org.neo4j.com.TxChecksumVerifier;
-import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**

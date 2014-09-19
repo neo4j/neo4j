@@ -23,7 +23,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 public interface LegacyRelationshipStoreReader extends Closeable
 {

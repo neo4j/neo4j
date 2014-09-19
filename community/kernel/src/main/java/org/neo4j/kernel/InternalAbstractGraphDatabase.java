@@ -84,6 +84,7 @@ import org.neo4j.kernel.configuration.ConfigurationChangeListener;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -135,16 +136,10 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.nioneo.xa.CommitProcessFactory;
-import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -152,14 +147,17 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
-import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionCounters;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+import org.neo4j.kernel.impl.transaction.DefaultTxIdGenerator;
+import org.neo4j.kernel.impl.transaction.RecoveryVerifier;
+import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.TxIdGenerator;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -267,7 +265,7 @@ public abstract class InternalAbstractGraphDatabase
     protected LifecycledPageCache pageCache;
     protected StoreFactory storeFactory;
     protected DiagnosticsManager diagnosticsManager;
-    protected NeoStoreXaDataSource neoDataSource;
+    protected NeoStoreDataSource neoDataSource;
     protected RecoveryVerifier recoveryVerifier;
     protected Guard guard;
     protected NodeAutoIndexerImpl nodeAutoIndexer;
@@ -829,8 +827,8 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void createNeoDataSource()
     {
-        neoDataSource = new NeoStoreXaDataSource( config,
-                storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ), jobScheduler, logging,
+        neoDataSource = new NeoStoreDataSource( config,
+                storeFactory, logging.getMessagesLog( NeoStoreDataSource.class ), jobScheduler, logging,
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                 lockManager, this, transactionEventHandlers,

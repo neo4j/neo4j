@@ -23,14 +23,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecordAllocator;
-import org.neo4j.kernel.impl.nioneo.store.IdSequence;
+import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
+import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 import static java.lang.Integer.parseInt;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.string_block_size;
-import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.BLOCK_HEADER_SIZE;
+import static org.neo4j.kernel.impl.store.AbstractDynamicStore.BLOCK_HEADER_SIZE;
 
 /**
  * {@link DynamicRecordAllocator} that allocates records using a {@link BatchingIdSequence}

@@ -30,6 +30,7 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -39,9 +40,8 @@ import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
-import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
@@ -104,7 +104,7 @@ public class SwitchToMaster
         {
 
             idGeneratorFactory.switchToMaster();
-            NeoStoreXaDataSource neoStoreXaDataSource = dataSourceManager.getDataSource();
+            NeoStoreDataSource neoStoreXaDataSource = dataSourceManager.getDataSource();
             neoStoreXaDataSource.afterModeSwitch();
 
             MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb );

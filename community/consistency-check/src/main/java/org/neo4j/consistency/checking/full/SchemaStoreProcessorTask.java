@@ -21,8 +21,8 @@ package org.neo4j.consistency.checking.full;
 
 import org.neo4j.consistency.checking.SchemaRecordCheck;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class SchemaStoreProcessorTask<R extends AbstractBaseRecord> extends StoreProcessorTask<R>
 {

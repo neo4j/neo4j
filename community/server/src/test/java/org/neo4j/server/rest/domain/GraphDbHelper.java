@@ -42,7 +42,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.server.database.Database;
 
 import static org.neo4j.graphdb.DynamicLabel.label;

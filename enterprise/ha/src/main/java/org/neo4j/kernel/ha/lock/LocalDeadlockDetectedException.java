@@ -23,8 +23,8 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.DumpLocksVisitor;
+import org.neo4j.kernel.impl.locking.LockType;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.StringBuilderStringLogger;
 
 import static java.lang.String.format;

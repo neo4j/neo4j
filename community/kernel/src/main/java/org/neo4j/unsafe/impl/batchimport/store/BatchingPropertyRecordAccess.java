@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
-import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
 /**
  * {@link BatchingRecordAccess} for {@link PropertyRecord property records}.

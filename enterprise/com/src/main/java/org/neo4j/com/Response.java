@@ -22,8 +22,8 @@ package org.neo4j.com;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
 public class Response<T> implements AutoCloseable
 {

@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 

@@ -36,10 +36,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -225,7 +225,7 @@ public class TestRecoveryScenarios
 
     private void rotateLog() throws IOException
     {
-        NeoStoreXaDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        NeoStoreDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
         DependencyResolver dependencyResolver = dataSource.getDependencyResolver();
         PhysicalLogFile physicalLogFile = dependencyResolver.resolveDependency( PhysicalLogFile.class );
         physicalLogFile.forceRotate();
@@ -233,7 +233,7 @@ public class TestRecoveryScenarios
 
     private void flushAll()
     {
-        NeoStoreXaDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        NeoStoreDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
         dataSource.forceEverything();
     }
 

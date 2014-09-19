@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 
 public class Protocol201 extends Protocol
 {

@@ -20,17 +20,19 @@
 package org.neo4j.kernel.impl.core;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.nioneo.store.NodeStore.RECORD_SIZE;
+
+import static org.neo4j.kernel.impl.store.NodeStore.RECORD_SIZE;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.JumpingFileSystemAbstraction.JumpingFileChannel;
-import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGenerator;
 
 public class TestJumpingIdGenerator
 {

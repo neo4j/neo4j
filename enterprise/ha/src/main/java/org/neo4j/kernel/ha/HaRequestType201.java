@@ -35,7 +35,7 @@ import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
-import org.neo4j.kernel.impl.nioneo.store.IdRange;
+import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;

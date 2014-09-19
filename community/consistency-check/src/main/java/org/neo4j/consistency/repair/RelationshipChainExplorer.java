@@ -19,8 +19,8 @@
  */
 package org.neo4j.consistency.repair;
 
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.neo4j.consistency.repair.RelationshipChainDirection.NEXT;
 import static org.neo4j.consistency.repair.RelationshipChainDirection.PREV;

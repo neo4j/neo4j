@@ -23,11 +23,11 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransactionContextSupplier;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static org.hamcrest.CoreMatchers.equalTo;

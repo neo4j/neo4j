@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 public class SingleChainPosition implements RelationshipLoadingPosition

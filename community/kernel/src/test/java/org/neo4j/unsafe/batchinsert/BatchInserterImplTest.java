@@ -30,7 +30,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.StoreLocker;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TargetDirectory;
 

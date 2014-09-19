@@ -25,15 +25,15 @@ import java.util.ListIterator;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.locking.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
 
-import static org.neo4j.kernel.impl.transaction.LockType.READ;
-import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
+import static org.neo4j.kernel.impl.locking.LockType.READ;
+import static org.neo4j.kernel.impl.locking.LockType.WRITE;
 
 /**
  * A read/write lock is a lock that will allow many transactions to acquire read

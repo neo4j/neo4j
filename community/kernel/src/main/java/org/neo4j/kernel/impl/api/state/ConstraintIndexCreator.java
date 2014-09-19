@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 
 import static java.util.Collections.singleton;
 

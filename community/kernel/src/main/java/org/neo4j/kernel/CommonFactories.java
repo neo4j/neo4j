@@ -20,7 +20,7 @@
 package org.neo4j.kernel;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
+import org.neo4j.kernel.impl.transaction.RecoveryVerifier;
 
 @Deprecated
 public class CommonFactories

@@ -27,18 +27,18 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.commandEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.commitEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.containsExactly;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.startEntry;
+import static org.neo4j.kernel.impl.transaction.LogMatchers.commandEntry;
+import static org.neo4j.kernel.impl.transaction.LogMatchers.commitEntry;
+import static org.neo4j.kernel.impl.transaction.LogMatchers.containsExactly;
+import static org.neo4j.kernel.impl.transaction.LogMatchers.logEntries;
+import static org.neo4j.kernel.impl.transaction.LogMatchers.startEntry;
 
 public class KernelRecoveryTest
 {

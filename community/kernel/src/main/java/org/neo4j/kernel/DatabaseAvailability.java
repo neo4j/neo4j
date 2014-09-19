@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;

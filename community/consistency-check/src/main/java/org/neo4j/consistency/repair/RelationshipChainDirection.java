@@ -21,7 +21,7 @@ package org.neo4j.consistency.repair;
 
 import static java.lang.String.format;
 
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 public enum RelationshipChainDirection
 {

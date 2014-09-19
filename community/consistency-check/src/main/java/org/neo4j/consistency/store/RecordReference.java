@@ -20,7 +20,7 @@
 package org.neo4j.consistency.store;
 
 import org.neo4j.consistency.report.PendingReferenceCheck;
-import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public interface RecordReference<RECORD extends AbstractBaseRecord>
 {

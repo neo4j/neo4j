@@ -35,10 +35,10 @@ import org.neo4j.com.Serializer;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Functions;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
@@ -70,7 +70,7 @@ public class SlaveClient extends Client<Slave> implements Slave
             @Override
             public void write( ChannelBuffer buffer ) throws IOException
             {
-                writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+                writeString( buffer, NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME );
                 buffer.writeLong( upToAndIncludingTxId );
             }
         }, Protocol.VOID_DESERIALIZER );
