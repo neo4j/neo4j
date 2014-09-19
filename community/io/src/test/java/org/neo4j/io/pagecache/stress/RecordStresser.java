@@ -29,33 +29,41 @@ import java.util.concurrent.Callable;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-public class Updater implements Callable<Verifier>
+public class RecordStresser implements Callable<Void>
 {
     private static final Random Random = new Random();
 
     private final PagedFile pagedFile;
     private final Condition condition;
+    private final ChecksumVerifier checksumVerifier;
+    private final CountUpdater countUpdater;
+    private final CountKeeper countKeeper;
     private final int maxPages;
     private final int recordsPerPage;
-    private final RecordVerifierUpdater recordVerifierUpdater;
     private final int counterNumber;
 
-    public Updater( PagedFile pagedFile, Condition condition, int maxPages, int recordsPerPage, RecordVerifierUpdater
-            recordVerifierUpdater, int counterNumber )
+    public RecordStresser( PagedFile pagedFile,
+                           Condition condition,
+                           ChecksumVerifier checksumVerifier,
+                           CountUpdater countUpdater,
+                           CountKeeper countKeeper,
+                           int maxPages,
+                           int recordsPerPage,
+                           int counterNumber )
     {
         this.pagedFile = pagedFile;
         this.condition = condition;
+        this.checksumVerifier = checksumVerifier;
+        this.countUpdater = countUpdater;
+        this.countKeeper = countKeeper;
         this.maxPages = maxPages;
         this.recordsPerPage = recordsPerPage;
-        this.recordVerifierUpdater = recordVerifierUpdater;
         this.counterNumber = counterNumber;
     }
 
     @Override
-    public Verifier call() throws Exception
+    public Void call() throws Exception
     {
-        long[] writesPerRecord = new long[maxPages * recordsPerPage];
-
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
             while ( !condition.fulfilled() )
@@ -63,14 +71,18 @@ public class Updater implements Callable<Verifier>
                 int pageNumber = Random.nextInt( maxPages );
                 assertTrue( "I must be able to access pages", cursor.next( pageNumber ) );
 
-                int recordIndex = Random.nextInt( recordsPerPage );
-                recordVerifierUpdater.verifyChecksumAndUpdateCount( cursor, recordIndex, counterNumber );
-                writesPerRecord[pageNumber * recordsPerPage + recordIndex]++;
+                int recordNumber = Random.nextInt( recordsPerPage );
+
+                checksumVerifier.verifyChecksum( cursor, recordNumber );
+
+                countUpdater.updateCount( cursor, recordNumber, counterNumber );
+
+                countKeeper.onCounterUpdated( pageNumber, recordNumber, counterNumber );
 
                 assertFalse( "Exclusive lock, so never a need to retry", cursor.shouldRetry() );
             }
         }
 
-        return new Verifier( pagedFile, counterNumber, recordsPerPage, writesPerRecord, recordVerifierUpdater );
+        return null;
     }
 }

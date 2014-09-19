@@ -21,7 +21,7 @@ package org.neo4j.io.pagecache.stress;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.stress.StressTestRecord.SizeOfCounter;
 
 import java.io.IOException;
@@ -29,51 +29,32 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-public class ChecksumVerifier
+public class CountKeeper
 {
-    private final int recordsPerPage;
+    private final PagedFile pagedFile;
     private final int countersPerRecord;
 
-    public ChecksumVerifier( int recordsPerPage, int countersPerRecord )
+    public CountKeeper( PagedFile pagedFile, int countersPerRecord )
     {
-        this.recordsPerPage = recordsPerPage;
+        this.pagedFile = pagedFile;
         this.countersPerRecord = countersPerRecord;
     }
 
-    public void verifyChecksums( PagedFile pagedFile ) throws Exception
+    public void onCounterUpdated( int pageNumber, int recordNumber, int counterNumber ) throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( pageNumber, PF_EXCLUSIVE_LOCK ) )
         {
-            while ( cursor.next() )
-            {
-                for ( int recordNumber = 0; recordNumber < recordsPerPage; recordNumber++ )
-                {
-                    verifyChecksum( cursor, recordNumber );
-                }
-            }
+            assertThat( "i must be able to access pages", cursor.next(), is( true ) );
+
+            setOffset( cursor, recordNumber, counterNumber );
+            long count = cursor.getLong();
+            setOffset( cursor, recordNumber, counterNumber );
+            cursor.putLong( count + 1 );
         }
     }
 
-    public void verifyChecksum( PageCursor cursor, int recordNumber ) throws IOException
+    private void setOffset( PageCursor cursor, int recordNumber, int counterNumber )
     {
-        long actualChecksum = 0;
-        long checksum;
-
-        do
-        {
-            cursor.setOffset( recordNumber * (countersPerRecord + 1) * SizeOfCounter );
-
-            for ( int i = 0; i < countersPerRecord; i++ )
-            {
-                long count = cursor.getLong();
-
-                actualChecksum += count;
-            }
-
-            checksum = cursor.getLong();
-        } while ( cursor.shouldRetry() );
-
-        assertThat( actualChecksum, is( checksum ) );
+        cursor.setOffset( (recordNumber * countersPerRecord + counterNumber) * SizeOfCounter );
     }
-
 }

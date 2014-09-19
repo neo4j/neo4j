@@ -24,9 +24,16 @@ import static org.hamcrest.number.OrderingComparison.greaterThanOrEqualTo;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.io.pagecache.PageCacheMonitor.NULL;
+import static org.neo4j.io.pagecache.stress.StressTestRecord.SizeOfCounter;
 
+import java.io.File;
+import java.nio.file.Files;
+
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RunnablePageCache;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 /**
  * A stress test for page cache(s).
@@ -47,39 +54,58 @@ import org.neo4j.io.pagecache.RunnablePageCache;
  */
 public class PageCacheStressTest
 {
-    private final SimplePageCacheFactory simplePageCacheFactory;
+    private final int numberOfPages;
+    private final int recordsPerPage;
+    private final int numberOfThreads;
+
     private final int numberOfCachePages;
     private final int cachePageSize;
-    private final PageCacheMonitor monitor;
 
-    private final PageCacheStresser pageCacheStresser;
+    private final PageCacheMonitor monitor;
     private final Condition condition;
 
     private PageCacheStressTest( Builder builder )
     {
-        this.simplePageCacheFactory = builder.simplePageCacheFactory;
+        this.numberOfPages = builder.numberOfPages;
+        this.recordsPerPage = builder.recordsPerPage;
+        this.numberOfThreads = builder.numberOfThreads;
+
         this.numberOfCachePages = builder.numberOfCachePages;
         this.cachePageSize = builder.cachePageSize;
+
         this.monitor = builder.monitor;
-        this.pageCacheStresser = builder.pageCacheStresser;
         this.condition = builder.condition;
     }
 
     public void run() throws Exception
     {
-        RunnablePageCache pageCache = simplePageCacheFactory.createPageCache( numberOfCachePages, cachePageSize, monitor );
+        RunnablePageCache pageCacheUnderTest = new MuninnPageCache( new DefaultFileSystemAbstraction(), numberOfCachePages, cachePageSize, monitor );
+        RunnablePageCache pageCacheKeepingCount = new MuninnPageCache( new DefaultFileSystemAbstraction(), numberOfCachePages, cachePageSize, monitor );
 
-        Thread thread = new Thread( pageCache );
-        thread.start();
+        Thread thread1 = new Thread( pageCacheUnderTest );
+        Thread thread2 = new Thread( pageCacheKeepingCount );
+        thread1.start();
+        thread2.start();
 
         try
         {
-            pageCacheStresser.stress( pageCache, condition );
+            File file = Files.createTempFile( "pagecachestresstest", ".bin" ).toFile();
+            file.deleteOnExit();
+            PagedFile pagedFile = pageCacheKeepingCount.map( file, recordsPerPage * numberOfThreads * SizeOfCounter );
+
+            CountKeeperFactory countKeeperFactory = new CountKeeperFactory( pagedFile, recordsPerPage, numberOfThreads );
+            PageCacheStresser pageCacheStresser = new PageCacheStresser( numberOfPages, recordsPerPage, numberOfThreads );
+
+            pageCacheStresser.stress( pageCacheUnderTest, condition, countKeeperFactory );
+
+            pageCacheKeepingCount.unmap( file );
         }
         finally
         {
-            thread.interrupt();
-            thread.join();
+            thread1.interrupt();
+            thread2.interrupt();
+            thread1.join();
+            thread2.join();
         }
     }
 
@@ -111,25 +137,19 @@ public class PageCacheStressTest
         int recordsPerPage = 113;
         int numberOfThreads = 8;
         int cachePagePadding = 56;
+
         int numberOfCachePages = 1000;
-
-        SimplePageCacheFactory simplePageCacheFactory;
         int cachePageSize;
-        PageCacheMonitor monitor = NULL;
 
-        PageCacheStresser pageCacheStresser;
+        PageCacheMonitor monitor = NULL;
         Condition condition;
 
-        public PageCacheStressTest build( SimplePageCacheFactory simplePageCacheFactory )
+        public PageCacheStressTest build()
         {
-            this.simplePageCacheFactory = simplePageCacheFactory;
-
             assertThat( "the cache should cover only a fraction of the mapped file",
                     numberOfPages, is( greaterThanOrEqualTo( 10 * numberOfCachePages ) ) );
 
-            pageCacheStresser = new PageCacheStresser( numberOfPages, recordsPerPage, numberOfThreads );
-
-            int pageSize = recordsPerPage * pageCacheStresser.getRecordSize();
+            int pageSize = recordsPerPage * (numberOfThreads + 1) * SizeOfCounter;
 
             assertThat( "padding should not allow another page to fit", cachePagePadding, is( lessThan( pageSize ) ) );
 

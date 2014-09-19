@@ -19,9 +19,10 @@
  */
 package org.neo4j.io.pagecache.stress;
 
+import static org.neo4j.io.pagecache.stress.StressTestRecord.SizeOfCounter;
+
 import java.io.File;
 import java.nio.file.Files;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -36,45 +37,64 @@ public class PageCacheStresser
     private final int maxPages;
     private final int recordsPerPage;
     private final int numberOfThreads;
-    private RecordVerifierUpdater recordVerifierUpdater;
 
     public PageCacheStresser( int maxPages, int recordsPerPage, int numberOfThreads )
     {
         this.maxPages = maxPages;
         this.recordsPerPage = recordsPerPage;
         this.numberOfThreads = numberOfThreads;
-        this.recordVerifierUpdater = new RecordVerifierUpdater( this.numberOfThreads );
     }
 
-    public void stress( PageCache pageCache, Condition condition ) throws Exception
+    public void stress( PageCache pageCache, Condition condition, CountKeeperFactory countKeeperFactory ) throws Exception
     {
-        File file = Files.createTempFile( "pagecachestress", ".bin" ).toFile();
+        File file = Files.createTempFile( "pagecacheundertest", ".bin" ).toFile();
         file.deleteOnExit();
+        PagedFile pagedFile = pageCache.map( file, recordsPerPage * (numberOfThreads + 1) * SizeOfCounter );
 
-        PagedFile pagedFile = pageCache.map( file, recordsPerPage * recordVerifierUpdater.getRecordSize() );
+        ChecksumVerifier checksumVerifier = new ChecksumVerifier( recordsPerPage, numberOfThreads );
 
-        List<Updater> updaters = new LinkedList<>();
+        List<RecordStresser> recordStressers = prepare( condition, countKeeperFactory, pagedFile, checksumVerifier );
+
+        execute( recordStressers );
+
+        countKeeperFactory.createVerifier().verifyCounts( pagedFile );
+        checksumVerifier.verifyChecksums( pagedFile );
+
+        pageCache.unmap( file );
+    }
+
+    private List<RecordStresser> prepare( Condition condition, CountKeeperFactory countKeeperFactory, PagedFile pagedFile, ChecksumVerifier checksumVerifier )
+    {
+        CountUpdater countUpdater = new CountUpdater( numberOfThreads );
+
+        List<RecordStresser> recordStressers = new LinkedList<>();
         for ( int threadNumber = 0; threadNumber < numberOfThreads; threadNumber++ )
         {
-            updaters.add(
-                    new Updater(
-                            pagedFile, condition, maxPages, recordsPerPage, recordVerifierUpdater, threadNumber
+            recordStressers.add(
+                    new RecordStresser(
+                            pagedFile,
+                            condition,
+                            checksumVerifier,
+                            countUpdater,
+                            countKeeperFactory.createRecordKeeper(),
+                            maxPages,
+                            recordsPerPage,
+                            threadNumber
+
                     )
             );
         }
+        return recordStressers;
+    }
 
+    private void execute( List<RecordStresser> recordStressers ) throws InterruptedException,
+            java.util.concurrent.ExecutionException
+    {
         ExecutorService executorService = Executors.newFixedThreadPool( numberOfThreads );
 
         try
         {
-            Collection<Verifier> verifiers = new LinkedList<>();
-
-            for ( Future<Verifier> future : executorService.invokeAll( updaters ) )
-            {
-                verifiers.add( future.get() );
-            }
-
-            for ( Future<Void> future : executorService.invokeAll( verifiers ) )
+            for ( Future<Void> future : executorService.invokeAll( recordStressers ) )
             {
                 future.get();
             }
@@ -83,14 +103,5 @@ public class PageCacheStresser
         {
             executorService.shutdown();
         }
-
-        new ChecksumVerifier().verify( pagedFile, recordsPerPage, recordVerifierUpdater );
-
-        pageCache.unmap( file );
-    }
-
-    public int getRecordSize()
-    {
-        return recordVerifierUpdater.getRecordSize();
     }
 }

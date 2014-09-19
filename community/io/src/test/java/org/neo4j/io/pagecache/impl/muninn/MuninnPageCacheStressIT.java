@@ -51,7 +51,7 @@ public class MuninnPageCacheStressIT
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
                 .with( simpleMonitor )
                 .with( condition )
-                .build( new SimpleMuninnPageCacheFactory() );
+                .build();
 
         runner.run();
     }

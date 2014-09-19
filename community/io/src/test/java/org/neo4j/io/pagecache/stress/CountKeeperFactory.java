@@ -19,10 +19,28 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-import org.neo4j.io.pagecache.PageCacheMonitor;
-import org.neo4j.io.pagecache.RunnablePageCache;
+import org.neo4j.io.pagecache.PagedFile;
 
-public interface SimplePageCacheFactory
+public class CountKeeperFactory
 {
-    public RunnablePageCache createPageCache( int numberOfCachePages, int cachePageSize, PageCacheMonitor monitor );
+    private final PagedFile pagedFile;
+    private final int recordsPerPage;
+    private final int countersPerRecord;
+
+    public CountKeeperFactory( PagedFile pagedFile, int recordsPerPage, int countersPerRecord )
+    {
+        this.pagedFile = pagedFile;
+        this.recordsPerPage = recordsPerPage;
+        this.countersPerRecord = countersPerRecord;
+    }
+
+    public CountKeeper createRecordKeeper()
+    {
+        return new CountKeeper( pagedFile, countersPerRecord );
+    }
+
+    public CountVerifier createVerifier()
+    {
+        return new CountVerifier( pagedFile, recordsPerPage, countersPerRecord );
+    }
 }
