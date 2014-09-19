@@ -26,6 +26,9 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
 
   def apply(input: ast.Statement): InliningContext = {
     input.treeFold(InliningContext()) {
+      case (With(false, ListedReturnItems(items), _, _, _, Some(Where(where: Identifier)))) =>
+        (context, children) => children(context.enterQueryPart(aliasedReturnItems(items)).spoilIdentifier(where))
+
       case (With(false, ListedReturnItems(items), _, _, _, _)) =>
         (context, children) => children(context.enterQueryPart(aliasedReturnItems(items)))
 
