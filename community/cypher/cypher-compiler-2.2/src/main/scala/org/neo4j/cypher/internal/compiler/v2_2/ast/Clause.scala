@@ -218,6 +218,9 @@ case class Unwind(expression: Expression, identifier: Identifier)(val position: 
 }
 
 sealed trait HorizonClause extends Clause with SemanticChecking {
+  def semanticCheck = s =>
+    SemanticCheckResult.success(s.noteCurrentScope(this))
+
   def semanticCheckContinuation(previousScope: Scope): SemanticCheck
 }
 
@@ -228,7 +231,9 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   def skip: Option[Skip]
   def limit: Option[Limit]
 
-  def semanticCheck = returnItems.semanticCheck
+  override def semanticCheck =
+    super.semanticCheck chain
+    returnItems.semanticCheck
 
   def semanticCheckContinuation(previousScope: Scope): SemanticCheck =
     returnItems.declareIdentifiers(previousScope) chain
@@ -275,10 +280,10 @@ case class Return(
 
   def name = "RETURN"
 
+  override def semanticCheck = super.semanticCheck chain checkIdentifiersInScope
+
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck =
     checkSkip chain checkLimit
-
-  override def semanticCheck = super.semanticCheck chain checkIdentifiersInScope
 
   protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] =
     state =>

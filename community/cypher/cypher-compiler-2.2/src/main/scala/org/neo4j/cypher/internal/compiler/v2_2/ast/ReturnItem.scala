@@ -53,8 +53,7 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition
 }
 
 case class ReturnAll()(val position: InputPosition) extends ReturnItems {
-  def semanticCheck = s =>
-    SemanticCheckResult.success(s.noteCurrentScope(this))
+  def semanticCheck = SemanticCheckResult.success
 
   def declareIdentifiers(previousScope: Scope) = s =>
     SemanticCheckResult.success(s.importScope(previousScope))
