@@ -48,10 +48,12 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 
 import static java.util.Arrays.asList;
 
@@ -68,7 +70,7 @@ import static org.neo4j.kernel.impl.nioneo.xa.command.Command.CountsCommand;
 public class LogTruncationTest
 {
     private final InMemoryLogChannel inMemoryChannel = new InMemoryLogChannel();
-    private final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader();
+    private final LogEntryReader<ReadableLogChannel> logEntryReader = new LogEntryReaderFactory().create();
     private final CommandWriter serializer = new CommandWriter( inMemoryChannel );
     private final LogEntryWriterv1 writer = new LogEntryWriterv1( inMemoryChannel, serializer );
     /** Stores all known commands, and an arbitrary set of different permutations for them */

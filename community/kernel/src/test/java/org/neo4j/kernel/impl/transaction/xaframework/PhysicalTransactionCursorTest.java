@@ -43,20 +43,19 @@ import static org.mockito.Mockito.when;
 public class PhysicalTransactionCursorTest
 {
 
-    private final ReadableLogChannel channel = mock( ReadableLogChannel.class );
-    private final LogEntryReader<ReadableLogChannel> entryReader = mock( LogEntryReader.class );
+    private final ReadableVersionableLogChannel channel = mock( ReadableVersionableLogChannel.class );
+    private final LogEntryReader<ReadableVersionableLogChannel> entryReader = mock( LogEntryReader.class );
 
     private static final LogEntry NULL_ENTRY = null;
     private static final LogEntryStart A_START_ENTRY = new LogEntryStart( 0, 0, 0l, 0l, null, LogPosition.UNSPECIFIED );
     private static final LogEntryCommit A_COMMIT_ENTRY = new OnePhaseCommit( 42, 0 );
     private static final LogEntryCommand A_COMMAND_ENTRY = new LogEntryCommand( new Command.NodeCommand() );
+    private final PhysicalTransactionCursor<ReadableVersionableLogChannel> cursor =
+            new PhysicalTransactionCursor<>( channel, entryReader );
 
     @Test
     public void shouldCloseTheUnderlyingChannel() throws IOException
     {
-        // given
-        final PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, entryReader );
-
         // when
         cursor.close();
 
@@ -68,8 +67,6 @@ public class PhysicalTransactionCursorTest
     public void shouldReturnFalseWhenThereAreNoEntries() throws IOException
     {
         // given
-        final PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, entryReader );
-
         when( entryReader.readLogEntry( channel ) ).thenReturn( NULL_ENTRY );
 
         // when
@@ -84,8 +81,6 @@ public class PhysicalTransactionCursorTest
     public void shouldReturnFalseWhenThereIsAStartEntryButNoCommitEntries() throws IOException
     {
         // given
-        final PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, entryReader );
-
         when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, NULL_ENTRY );
 
         // when
@@ -100,8 +95,6 @@ public class PhysicalTransactionCursorTest
     public void shouldCallTheVisitorWithTheFoundTransaction() throws IOException
     {
         // given
-        final PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, entryReader );
-
         when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, A_COMMAND_ENTRY, A_COMMIT_ENTRY );
 
         // when

@@ -19,22 +19,33 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.Closeable;
-import java.io.IOException;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
-public interface ReadableLogChannel extends PositionAwareChannel, Closeable
+public class InMemoryVersionableLogChannel extends InMemoryLogChannel implements ReadableVersionableLogChannel
 {
-    byte get() throws IOException, ReadPastEndException;
+    private final long version;
+    private final byte formatVersion;
 
-    short getShort() throws IOException, ReadPastEndException;
+    public InMemoryVersionableLogChannel()
+    {
+        this( 0, CURRENT_LOG_VERSION );
+    }
 
-    int getInt() throws IOException, ReadPastEndException;
+    public InMemoryVersionableLogChannel( long version, byte formatVersion )
+    {
+        this.version = version;
+        this.formatVersion = formatVersion;
+    }
 
-    long getLong() throws IOException, ReadPastEndException;
+    @Override
+    public long getVersion()
+    {
+        return version;
+    }
 
-    float getFloat() throws IOException, ReadPastEndException;
-
-    double getDouble() throws IOException, ReadPastEndException;
-
-    void get( byte[] bytes, int length ) throws IOException, ReadPastEndException;
+    @Override
+    public byte getLogFormatVersion()
+    {
+        return formatVersion;
+    }
 }

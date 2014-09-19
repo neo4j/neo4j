@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadOnlyLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
@@ -269,10 +269,10 @@ public class StoreCopyClient
         }
     };
 
-    public static class NoRecoveryAssertingVisitor implements Visitor<ReadableLogChannel, IOException>
+    public static class NoRecoveryAssertingVisitor implements Visitor<ReadableVersionableLogChannel, IOException>
     {
         @Override
-        public boolean visit( ReadableLogChannel element ) throws IOException
+        public boolean visit( ReadableVersionableLogChannel element ) throws IOException
         {
             throw new UnsupportedOperationException( "There should not be any recovery needed here" );
         }

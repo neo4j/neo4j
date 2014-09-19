@@ -32,30 +32,12 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     private final byte[] bytes = new byte[1000];
     private final ByteBuffer asWriter = ByteBuffer.wrap( bytes );
     private final ByteBuffer asReader = ByteBuffer.wrap( bytes );
-    private final byte logFormatVersion;
-
-    public InMemoryLogChannel()
-    {
-        this( CURRENT_LOG_VERSION );
-    }
-
-    public InMemoryLogChannel( byte logFormatVersion )
-    {
-
-        this.logFormatVersion = logFormatVersion;
-    }
 
     public void reset()
     {
         asWriter.clear();
         asReader.clear();
         Arrays.fill( bytes, (byte) 0 );
-    }
-
-    @Override
-    public byte getLogFormatVersion()
-    {
-        return logFormatVersion;
     }
 
     @Override
@@ -126,7 +108,7 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public void close() throws IOException
     {
     }
-    
+
     @Override
     public void emptyBufferIntoChannelAndClearIt() throws IOException
     {

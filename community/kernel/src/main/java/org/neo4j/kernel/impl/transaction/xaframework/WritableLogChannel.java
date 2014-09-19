@@ -22,15 +22,13 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.Closeable;
 import java.io.IOException;
 
-public interface WritableLogChannel extends Closeable
+public interface WritableLogChannel extends PositionAwareChannel, Closeable
 {
-    byte getLogFormatVersion();
-
     /**
      * Writes any changes not present in the channel yet and clears the buffer.
      */
     void emptyBufferIntoChannelAndClearIt() throws IOException;
-    
+
     /**
      * Forces the data that has already been written to the underlying channel, down to disk.
      * Must not write any data to the channel.
@@ -50,6 +48,4 @@ public interface WritableLogChannel extends Closeable
     WritableLogChannel putDouble( double value ) throws IOException;
 
     WritableLogChannel put( byte[] value, int length ) throws IOException;
-
-    void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException;
 }

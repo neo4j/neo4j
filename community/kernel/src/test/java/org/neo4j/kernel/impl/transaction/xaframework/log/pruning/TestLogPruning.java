@@ -42,8 +42,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReaderFactory;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.junit.Assert.assertEquals;
@@ -52,8 +52,8 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.CURRENT_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
 public class TestLogPruning
 {
@@ -240,7 +240,7 @@ public class TestLogPruning
             {
                 final AtomicInteger counter = new AtomicInteger();
                 LogFileRecoverer reader = new LogFileRecoverer(
-                        new VersionAwareLogEntryReader(),
+                        new LogEntryReaderFactory().versionable(),
                         new Visitor<CommittedTransactionRepresentation, IOException>()
                         {
                             @Override
@@ -262,7 +262,8 @@ public class TestLogPruning
                 PhysicalLogVersionedStoreChannel versionedStoreChannel =
                         new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, CURRENT_LOG_VERSION );
                 versionedStoreChannel.position( LOG_HEADER_SIZE );
-                try ( ReadableLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
+                try ( ReadableVersionableLogChannel channel =
+                              new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
                 {
                     reader.visit( channel );
                 }

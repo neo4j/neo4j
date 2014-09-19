@@ -30,7 +30,7 @@ import static java.lang.System.arraycopy;
 /**
  * Basically a sequence of {@link StoreChannel channels} seamlessly seen as one.
  */
-public class ReadAheadLogChannel implements ReadableLogChannel
+public class ReadAheadLogChannel implements ReadableVersionableLogChannel
 {
     public static final int DEFAULT_READ_AHEAD_SIZE = 1024*4;
 
@@ -46,6 +46,12 @@ public class ReadAheadLogChannel implements ReadableLogChannel
         this.readAheadSize = readAheadSize;
         this.aheadBuffer = ByteBuffer.allocate( readAheadSize );
         aheadBuffer.position( aheadBuffer.capacity() );
+    }
+
+    @Override
+    public long getVersion()
+    {
+        return channel.getVersion();
     }
 
     @Override

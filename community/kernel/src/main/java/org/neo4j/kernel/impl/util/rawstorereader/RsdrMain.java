@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -276,7 +277,7 @@ public class RsdrMain
 
         PhysicalLogVersionedStoreChannel channel =
                 new PhysicalLogVersionedStoreChannel( fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
-        ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
+        ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
         return deserializer.logEntries( logChannel );
     }
 

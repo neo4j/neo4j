@@ -200,10 +200,10 @@ public class PhysicalLogFileTest
         Monitor monitor = mock( Monitor.class );
         life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategyFactory.NO_PRUNING,
                 transactionIdStore, logVersionRepository, monitor, logRotationControl,
-                new TransactionMetadataCache( 10, 100 ), new Visitor<ReadableLogChannel, IOException>()
+                new TransactionMetadataCache( 10, 100 ), new Visitor<ReadableVersionableLogChannel, IOException>()
                         {
                             @Override
-                            public boolean visit( ReadableLogChannel element ) throws IOException
+                            public boolean visit( ReadableVersionableLogChannel element ) throws IOException
                             {
                                 assertEquals( (byte) 2, element.get() );
                                 assertEquals( 23324, element.getInt() );
@@ -263,11 +263,11 @@ public class PhysicalLogFileTest
     public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
     private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L );
-    private static final Visitor<ReadableLogChannel, IOException> NO_RECOVERY_EXPECTED =
-            new Visitor<ReadableLogChannel, IOException>()
-    {
+    private static final Visitor<ReadableVersionableLogChannel, IOException> NO_RECOVERY_EXPECTED =
+            new Visitor<ReadableVersionableLogChannel, IOException>()
+            {
         @Override
-        public boolean visit( ReadableLogChannel element ) throws IOException
+        public boolean visit( ReadableVersionableLogChannel element ) throws IOException
         {
             fail( "No recovery expected" );
             return false;

@@ -27,39 +27,23 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
-/**
- * Version aware implementation of LogEntryReader
- * Starting with Neo4j version 2.1, log entries are prefixed with a version. This allows for Neo4j instances of
- * different versions to exchange transaction data, either directly or via logical logs. This implementation of
- * LogEntryReader makes use of the version information to deserialize command entries that hold commands created
- * with previous versions of Neo4j. Support for this comes from the required {@link org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory} which can
- * provide deserializers for Commands given the version.
- */
-public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogChannel>
+class VersionAwareLogEntryReader
 {
     private final LogEntryParserFactory logEntryParserFactory;
     private final CommandReaderFactory commandReaderFactory;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
 
-    public VersionAwareLogEntryReader()
-    {
-        this( new DefaultLogEntryParserFactory(), new CommandReaderFactory.Default() );
-    }
-
-    public VersionAwareLogEntryReader( LogEntryParserFactory logEntryParserFactory,
-                                       CommandReaderFactory commandReaderFactory )
+    VersionAwareLogEntryReader( LogEntryParserFactory logEntryParserFactory, CommandReaderFactory commandReaderFactory )
     {
         this.logEntryParserFactory = logEntryParserFactory;
         this.commandReaderFactory = commandReaderFactory;
     }
 
-    @Override
-    public LogEntry readLogEntry( ReadableLogChannel channel ) throws IOException
+    LogEntry readLogEntry( ReadableLogChannel channel, byte logFormatVersion ) throws IOException
     {
         try
         {
             channel.getCurrentPosition( positionMarker );
-            byte logFormatVersion = channel.getLogFormatVersion();
             LogEntryParserDispatcher dispatcher = logEntryParserFactory.newInstance( logFormatVersion );
             while ( true )
             {

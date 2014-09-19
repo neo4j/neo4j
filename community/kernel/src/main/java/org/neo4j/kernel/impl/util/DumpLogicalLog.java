@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
 
@@ -93,7 +93,7 @@ public class DumpLogicalLog
             PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
                     fileChannel, logHeader.logVersion, logHeader.logFormatVersion
             );
-            ReadableLogChannel logChannel =
+            ReadableVersionableLogChannel logChannel =
                     new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
 
             try ( IOCursor<LogEntry> cursor = deserializer.logEntries( logChannel ) )

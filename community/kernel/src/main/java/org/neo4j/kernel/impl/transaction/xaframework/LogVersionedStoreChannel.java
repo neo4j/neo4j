@@ -19,15 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
-
 import org.neo4j.io.fs.StoreChannel;
 
-public interface LogVersionedStoreChannel extends StoreChannel
+public interface LogVersionedStoreChannel extends StoreChannel, PositionAwareChannel, VersionableLog
 {
-    long getVersion();
-
-    byte getLogFormatVersion();
-
-    void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException;
 }

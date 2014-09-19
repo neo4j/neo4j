@@ -66,7 +66,8 @@ public class LogMatchers
 
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( fileChannel, header.logVersion, header.logFormatVersion );
-        ReadableLogChannel logChannel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS, 4096 );
+        ReadableVersionableLogChannel logChannel =
+                new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS, 4096 );
         return iterable( deserializer.logEntries( logChannel ) );
     }
 

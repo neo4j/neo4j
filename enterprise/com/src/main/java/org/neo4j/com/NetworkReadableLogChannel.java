@@ -39,13 +39,6 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
     }
 
     @Override
-    public byte getLogFormatVersion()
-    {
-        // we send only latest version of logs over the wire
-        return CURRENT_LOG_VERSION;
-    }
-
-    @Override
     public byte get() throws IOException
     {
         try

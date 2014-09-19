@@ -38,13 +38,6 @@ public class NetworkWritableLogChannel implements WritableLogChannel
     }
 
     @Override
-    public byte getLogFormatVersion()
-    {
-        // we send only latest version of logs over the wire
-        return CURRENT_LOG_VERSION;
-    }
-
-    @Override
     public void force() throws IOException
     {
     }

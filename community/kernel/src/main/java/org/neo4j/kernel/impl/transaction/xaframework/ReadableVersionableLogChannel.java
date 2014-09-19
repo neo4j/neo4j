@@ -19,22 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-public interface ReadableLogChannel extends PositionAwareChannel, Closeable
+public interface ReadableVersionableLogChannel extends ReadableLogChannel, VersionableLog
 {
-    byte get() throws IOException, ReadPastEndException;
-
-    short getShort() throws IOException, ReadPastEndException;
-
-    int getInt() throws IOException, ReadPastEndException;
-
-    long getLong() throws IOException, ReadPastEndException;
-
-    float getFloat() throws IOException, ReadPastEndException;
-
-    double getDouble() throws IOException, ReadPastEndException;
-
-    void get( byte[] bytes, int length ) throws IOException, ReadPastEndException;
 }

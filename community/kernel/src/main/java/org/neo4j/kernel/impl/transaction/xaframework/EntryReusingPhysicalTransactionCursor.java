@@ -25,12 +25,11 @@ import java.util.List;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
 
-public class EntryReusingPhysicalTransactionCursor extends PhysicalTransactionCursor
+public class EntryReusingPhysicalTransactionCursor<T extends ReadableLogChannel> extends PhysicalTransactionCursor<T>
 {
     private final List<Command> entries = new ArrayList<>();
 
-    public EntryReusingPhysicalTransactionCursor( ReadableLogChannel channel,
-            LogEntryReader<ReadableLogChannel> entryReader)
+    public EntryReusingPhysicalTransactionCursor( T channel, LogEntryReader<T> entryReader )
     {
         super( channel, entryReader);
     }

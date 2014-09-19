@@ -108,7 +108,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
@@ -116,8 +116,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -440,29 +440,30 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
             PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, PhysicalLogFile.DEFAULT_NAME, fs );
 
-            LogFileInformation logFileInformation = dependencies.satisfyDependency(
-                    new PhysicalLogFileInformation( logFiles, transactionMetadataCache, neoStore,
-                            new PhysicalLogFileInformation.SPI()
+            final PhysicalLogFileInformation.SPI logInformation = new PhysicalLogFileInformation.SPI()
+            {
+                @Override
+                public long getTimestampForVersion( long version ) throws IOException
+                {
+                    LogPosition position = new LogPosition( version, LOG_HEADER_SIZE );
+                    try ( ReadableVersionableLogChannel channel = logFile.getReader( position ) )
+                    {
+                        final LogEntryReader<ReadableVersionableLogChannel> reader =
+                                new LogEntryReaderFactory().versionable();
+                        LogEntry entry;
+                        while ( (entry = reader.readLogEntry( channel )) != null )
+                        {
+                            if ( entry instanceof LogEntryStart )
                             {
-                                @Override
-                                public long getTimestampForVersion( long version ) throws IOException
-                                {
-                                    LogPosition position = new LogPosition( version, LOG_HEADER_SIZE );
-                                    try ( ReadableLogChannel channel = logFile.getReader( position ) )
-                                    {
-                                        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader();
-                                        LogEntry entry;
-                                        while ( (entry = reader.readLogEntry( channel )) != null )
-                                        {
-                                            if ( entry instanceof LogEntryStart )
-                                            {
-                                                return ((LogEntryStart) entry).getTimeWritten();
-                                            }
-                                        }
-                                    }
-                                    return -1;
-                                }
-                            }) );
+                                return ((LogEntryStart) entry).getTimeWritten();
+                            }
+                        }
+                    }
+                    return -1;
+                }
+            };
+            LogFileInformation logFileInformation = dependencies.satisfyDependency(
+                    new PhysicalLogFileInformation( logFiles, transactionMetadataCache, neoStore, logInformation ) );
 
             LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
                     logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
@@ -482,8 +483,9 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
             RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer,
                     recoveredCount, logMonitor );
-            Visitor<ReadableLogChannel, IOException> logFileRecoverer =
-                    new LogFileRecoverer( new VersionAwareLogEntryReader(), recoveryVisitor );
+            LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
+            Visitor<ReadableVersionableLogChannel, IOException> logFileRecoverer =
+                    new LogFileRecoverer( logEntryReader, recoveryVisitor );
             logFile = dependencies.satisfyDependency( new PhysicalLogFile( fs, logFiles,
                     config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), logPruneStrategy, neoStore,
                     neoStore, logMonitor, this, transactionMetadataCache, logFileRecoverer ) );

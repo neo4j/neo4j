@@ -39,9 +39,10 @@ import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.xaframework.log.entry.OnePhaseCommit;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.test.CleanupRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -65,12 +66,13 @@ import static org.neo4j.kernel.impl.transaction.xaframework.IdOrderingQueue.BYPA
 
 public class PhysicalTransactionAppenderTest
 {
+    private final InMemoryVersionableLogChannel channel = new InMemoryVersionableLogChannel();
+
     @Test
     public void shouldAppendTransactions() throws Exception
     {
         // GIVEN
         LogFile logFile = mock( LogFile.class );
-        InMemoryLogChannel channel = new InMemoryLogChannel();
         when( logFile.getWriter() ).thenReturn( channel );
         TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
         long txId = 15;
@@ -92,8 +94,9 @@ public class PhysicalTransactionAppenderTest
         appender.append( transaction );
 
         // THEN
-        try ( PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel,
-                new VersionAwareLogEntryReader() ) )
+        final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
+        try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
+                      new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
             reader.next();
             TransactionRepresentation tx = reader.get().getTransactionRepresentation();
@@ -111,7 +114,6 @@ public class PhysicalTransactionAppenderTest
     {
         // GIVEN
         LogFile logFile = mock( LogFile.class );
-        InMemoryLogChannel channel = new InMemoryLogChannel();
         when( logFile.getWriter() ).thenReturn( channel );
         TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
         long txId = 15;
@@ -142,7 +144,9 @@ public class PhysicalTransactionAppenderTest
         appender.append( transaction );
 
         // THEN
-        PhysicalTransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader() );
+        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
+        PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
+                new PhysicalTransactionCursor<>( channel, logEntryReader );
         reader.next();
         TransactionRepresentation result = reader.get().getTransactionRepresentation();
         assertArrayEquals( additionalHeader, result.additionalHeader() );
