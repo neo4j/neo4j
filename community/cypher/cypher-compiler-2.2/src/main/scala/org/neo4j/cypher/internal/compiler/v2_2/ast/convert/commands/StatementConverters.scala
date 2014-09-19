@@ -152,7 +152,11 @@ object StatementConverters {
       builder.startItems(builder.startItems ++ startItems: _*).where(wherePredicate)
     }
 
-    private def startItems = clause.items.map {
+    private def startItems = clause.items.map(_.asCommandStartItem)
+  }
+
+  implicit class StartItemConverter(val item: ast.StartItem) extends AnyVal {
+    def asCommandStartItem = item match {
       case ast.NodeByIds(identifier, ids) =>
         commands.NodeById(identifier.name, commandexpressions.Literal(ids.map(_.value)))
       case ast.NodeByParameter(identifier, parameter) =>

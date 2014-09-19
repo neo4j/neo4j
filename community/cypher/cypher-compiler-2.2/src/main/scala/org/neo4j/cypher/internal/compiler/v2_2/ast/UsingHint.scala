@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.Hint
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 sealed trait UsingHint extends ASTNode with ASTPhrase with SemanticCheckable {
   def identifier: Identifier
@@ -33,7 +32,7 @@ sealed trait RonjaHint extends UsingHint
 
 // allowed on start item
 
-sealed trait LegacyHint extends UsingHint
+sealed trait LegacyIndexHint extends UsingHint {
   self: StartItem =>
 }
 
@@ -57,10 +56,10 @@ sealed trait NodeStartItem extends StartItem {
 }
 
 case class NodeByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression)(val position: InputPosition)
-  extends NodeStartItem with LegacyHint
+  extends NodeStartItem with LegacyIndexHint
 
 case class NodeByIndexQuery(identifier: Identifier, index: Identifier, query: Expression)(val position: InputPosition)
-  extends NodeStartItem with LegacyHint
+  extends NodeStartItem with LegacyIndexHint
 
 case class NodeByParameter(identifier: Identifier, parameter: Parameter)(val position: InputPosition) extends NodeStartItem
 case class AllNodes(identifier: Identifier)(val position: InputPosition) extends NodeStartItem

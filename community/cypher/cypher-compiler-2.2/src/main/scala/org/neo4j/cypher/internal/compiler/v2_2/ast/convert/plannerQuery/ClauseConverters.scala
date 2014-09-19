@@ -211,7 +211,7 @@ object ClauseConverters {
     def addStartToLogicalPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder = {
         builder.updateGraph { qg =>
           val items = clause.items.map {
-            case hints: LegacyHint => Right(hints)
+            case hints: LegacyIndexHint => Right(hints)
             case item              => Left(item)
           }
 
@@ -220,7 +220,7 @@ object ClauseConverters {
 
           if (nonHints.nonEmpty) {
             val itemString = items.mkString(", ")
-            throw new InternalException("Unsupported start items encountered: $itemString")
+            throw new InternalException(s"Unsupported start items encountered: $itemString")
           }
 
           qg.addHints(hints)

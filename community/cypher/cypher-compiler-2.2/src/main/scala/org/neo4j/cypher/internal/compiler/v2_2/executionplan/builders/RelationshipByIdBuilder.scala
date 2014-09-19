@@ -41,7 +41,7 @@ class RelationshipByIdBuilder extends PlanBuilder {
       EntityProducer[Relationship]("Rels(RelationshipById)", Arguments.LegacyExpression(expression)) {
         (ctx: ExecutionContext, state: QueryState) =>
           getElements[Relationship](expression(ctx)(state), key, (id) => state.query.relationshipOps.getById(id))
-      })
+      })()
 
     val remainingQ: Seq[QueryToken[StartItem]] = q.start.filterNot(_ == startItemToken) :+ startItemToken.solve
 

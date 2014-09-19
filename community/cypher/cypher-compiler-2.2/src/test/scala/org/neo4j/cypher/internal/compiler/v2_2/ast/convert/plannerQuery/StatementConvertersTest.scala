@@ -1106,7 +1106,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _) =
       buildPlannerQuery("START n=node:nodes(name = \"A\") RETURN n")
 
-    val hint: LegacyHint = NodeByIdentifiedIndex(ident("n"), ident("nodes"), ident("name"), StringLiteral("A")_)_
+    val hint: LegacyIndexHint = NodeByIdentifiedIndex(ident("n"), ident("nodes"), ident("name"), StringLiteral("A")_)_
 
     query.graph.hints should equal(Set(hint))
     query.tail should equal(None)
@@ -1116,7 +1116,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _) =
       buildPlannerQuery("START n=node:nodes(\"name:A\") RETURN n")
 
-    val hint: LegacyHint = NodeByIndexQuery(ident("n"), ident("nodes"), StringLiteral("name:A")_)_
+    val hint: LegacyIndexHint = NodeByIndexQuery(ident("n"), ident("nodes"), StringLiteral("name:A")_)_
 
     query.graph.hints should equal(Set(hint))
     query.tail should equal(None)
