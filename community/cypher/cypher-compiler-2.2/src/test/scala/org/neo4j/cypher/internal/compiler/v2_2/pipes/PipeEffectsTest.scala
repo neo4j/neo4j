@@ -52,7 +52,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
     ExecuteUpdateCommandsPipe(NullPipe(), Seq(MergeNodeAction("n", Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)))
       -> (Effects.READS_NODES | Effects.WRITES_NODES),
 
-    NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]])
+    NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]])()
       -> Effects.READS_NODES,
 
     LoadCSVPipe(NullPipe(), null, Literal("apa"), "line", None)
@@ -85,16 +85,16 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
     EmptyResultPipe(NullPipe())
       -> Effects.NONE,
 
-    EagerPipe(NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]]))
+    EagerPipe(NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]])())
       -> Effects.NONE,
 
-    DistinctPipe(NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]]), Map.empty)
+    DistinctPipe(NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]])(), Map.empty)
       -> Effects.READS_NODES,
 
     DistinctPipe(NullPipe(), Map.empty)
       -> Effects.NONE,
 
-    OptionalMatchPipe(NullPipe(), NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]]), SymbolTable())
+    OptionalMatchPipe(NullPipe(), NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]])(), SymbolTable())
       -> Effects.READS_NODES
   )
 

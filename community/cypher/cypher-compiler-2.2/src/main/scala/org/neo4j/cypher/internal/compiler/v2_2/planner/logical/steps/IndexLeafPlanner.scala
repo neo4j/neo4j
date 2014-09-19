@@ -104,3 +104,11 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
     context.planContext.getIndexRule(label, property)
 
 }
+
+object legacyHintLeafPlanner extends LeafPlanner {
+  def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
+    CandidateList(qg.hints.toSeq.collect {
+      case hint: LegacyIndexHint => planLegacyHintSeek(IdName(hint.identifier.name), hint, qg.argumentIds)
+    })
+  }
+}

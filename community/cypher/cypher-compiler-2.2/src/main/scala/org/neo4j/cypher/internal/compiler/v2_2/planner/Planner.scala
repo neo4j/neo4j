@@ -43,7 +43,7 @@ case class Planner(monitors: Monitors,
                    strategy: PlanningStrategy = new QueryPlanningStrategy(),
                    queryGraphSolver: QueryGraphSolver = new GreedyQueryGraphSolver()) extends PipeBuilder {
 
-  val executionPlanBuilder:PipeExecutionPlanBuilder = maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(monitors))
+  val executionPlanBuilder: PipeExecutionPlanBuilder = maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(monitors))
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
     Planner.rewriteStatement(inputQuery.statement, inputQuery.scopeTree) match {
@@ -51,7 +51,7 @@ case class Planner(monitors: Monitors,
         monitor.startedPlanning(inputQuery.queryText)
         val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, inputQuery.semanticTable)(planContext)
         monitor.foundPlan(inputQuery.queryText, logicalPlan)
-        val result = executionPlanBuilder.build(logicalPlan)(pipeBuildContext)
+        val result = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext)
         monitor.successfulPlanning(inputQuery.queryText, result)
         result
 
