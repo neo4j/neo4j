@@ -48,7 +48,10 @@ object PlanningStrategyConfiguration {
       labelScanLeafPlanner,
 
       // MATCH n RETURN n
-      allNodesLeafPlanner
+      allNodesLeafPlanner,
+
+      // Legacy indices
+      legacyHintLeafPlanner
     )
   )
 }

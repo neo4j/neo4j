@@ -152,7 +152,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
       def apply(v1: ExecutionContext, v2: QueryState): Iterator[Node] = Iterator(node)
 
       def arguments: Seq[Argument] = Seq.empty
-    })
+    })()
     (pipe, iter)
   }
 
