@@ -233,7 +233,7 @@ final class MuninnPagedFile implements PagedFile
         @Override
         protected MuninnPageCursor createNewCursor()
         {
-            return new MuninnReadPageCursor( this );
+            return new MuninnReadPageCursor();
         }
     }
 
@@ -242,7 +242,7 @@ final class MuninnPagedFile implements PagedFile
         @Override
         protected MuninnPageCursor createNewCursor()
         {
-            return new MuninnWritePageCursor( this );
+            return new MuninnWritePageCursor();
         }
     }
 }
