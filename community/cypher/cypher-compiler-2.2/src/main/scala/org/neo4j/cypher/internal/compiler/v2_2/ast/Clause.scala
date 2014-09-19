@@ -266,7 +266,7 @@ case class With(
     where.semanticCheck
 
   private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
-    case li: ListedReturnItems => li.items.filter(!_.alias.isDefined).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
+    case li: ReturnItems => li.items.filter(!_.alias.isDefined).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
     case _                     => Seq()
   }
 }
@@ -285,14 +285,11 @@ case class Return(
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck =
     checkSkip chain checkLimit
 
-  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] =
-    state =>
-      returnItems match {
-        case _: ReturnAll if state.currentScope.isEmpty =>
-          Seq(SemanticError("RETURN * is not allowed when there are no identifiers in scope", position))
-        case _ =>
-          Seq()
-    }
+  protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = s =>
+    if (returnItems.includeExisting && s.currentScope.isEmpty)
+      Seq(SemanticError("RETURN * is not allowed when there are no identifiers in scope", position))
+    else
+      Seq()
 }
 
 case class PragmaWithout(excluded: Seq[Identifier])(val position: InputPosition) extends HorizonClause {

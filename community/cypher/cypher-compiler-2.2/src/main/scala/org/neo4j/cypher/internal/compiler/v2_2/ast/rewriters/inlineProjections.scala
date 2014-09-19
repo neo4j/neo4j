@@ -37,15 +37,15 @@ case object inlineProjections extends Rewriter {
     val inlineReturnItemsInReturn = Rewriter.lift(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, context, inlineAliases = false))
 
     val inliningRewriter: Rewriter = Rewriter.lift {
-      case withClause @ With(false, returnItems @ ListedReturnItems(items), _, _, _, where) =>
+      case withClause: With if !withClause.distinct =>
         withClause.copy(
-          returnItems = returnItems.rewrite(inlineReturnItemsInWith).asInstanceOf[ReturnItems],
-          where = where.map(inlineIdentifiers.narrowed)
+          returnItems = withClause.returnItems.rewrite(inlineReturnItemsInWith).asInstanceOf[ReturnItems],
+          where = withClause.where.map(inlineIdentifiers.narrowed)
         )(withClause.position)
 
-      case returnClause @ Return(_, returnItems: ListedReturnItems, _, _, _) =>
+      case returnClause: Return =>
         returnClause.copy(
-          returnItems = returnItems.rewrite(inlineReturnItemsInReturn).asInstanceOf[ReturnItems]
+          returnItems = returnClause.returnItems.rewrite(inlineReturnItemsInReturn).asInstanceOf[ReturnItems]
         )(returnClause.position)
 
       case m @ Match(_, mPattern, mHints, mOptWhere) =>
@@ -85,8 +85,8 @@ case object inlineProjections extends Rewriter {
 
   private def aliasedReturnItemRewriter(inlineExpressions: Expression => Expression, context: InliningContext,
                                         inlineAliases: Boolean): PartialFunction[AnyRef, AnyRef] = {
-    case lri @ ListedReturnItems(items) =>
-      val newItems = items.flatMap {
+    case ri: ReturnItems =>
+      val newItems = ri.items.flatMap {
         case item: AliasedReturnItem
           if context.projections.contains(item.identifier) && inlineAliases =>
           val dependencies = findAllDependencies(item.identifier, context)
@@ -101,6 +101,6 @@ case object inlineProjections extends Rewriter {
           item.copy(expression = inlineExpressions(item.expression))(item.position)
         )
       }
-      lri.copy(items = newItems)(lri.position)
+      ri.copy(items = newItems)(ri.position)
   }
 }

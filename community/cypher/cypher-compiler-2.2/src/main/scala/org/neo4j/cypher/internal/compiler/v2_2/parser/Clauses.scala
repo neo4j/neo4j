@@ -97,7 +97,7 @@ trait Clauses extends Parser
 
   def Pragma: Rule1[ast.Clause] = rule("") {
     keyword("_PRAGMA") ~~ (
-        group(keyword("WITH NONE") ~ push(ast.ListedReturnItems(Seq())(_)) ~~ optional(Skip) ~~ optional(Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, None, _, _, _))
+        group(keyword("WITH NONE") ~ push(ast.ReturnItems(includeExisting = false, Seq())(_)) ~~ optional(Skip) ~~ optional(Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, None, _, _, _))
       | group(keyword("WITHOUT") ~~ oneOrMore(Identifier, separator = CommaSep)) ~~>> (ast.PragmaWithout(_))
     )
   }
@@ -140,8 +140,8 @@ trait Clauses extends Parser
   }
 
   private def ReturnItems: Rule1[ast.ReturnItems] = rule("'*', an expression") (
-      "*" ~ push(ast.ReturnAll()(_))
-    | oneOrMore(ReturnItem, separator = CommaSep) ~~>> (ast.ListedReturnItems(_))
+      "*" ~ zeroOrMore(CommaSep ~ ReturnItem) ~~>> (ast.ReturnItems(includeExisting = true, _))
+    | oneOrMore(ReturnItem, separator = CommaSep) ~~>> (ast.ReturnItems(includeExisting = false, _))
   )
 
   private def ReturnItem: Rule1[ast.ReturnItem] = rule (

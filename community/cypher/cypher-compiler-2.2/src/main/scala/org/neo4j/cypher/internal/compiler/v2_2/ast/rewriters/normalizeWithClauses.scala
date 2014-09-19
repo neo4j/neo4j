@@ -54,36 +54,41 @@ case object normalizeWithClauses extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
-    case clause @ With(_, returnItemList: ListedReturnItems, None, _, _, None) =>
-      val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(returnItemList.items)
+    case clause @ With(_, ri, None, _, _, None) =>
+      val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
-      Seq(clause.copy(returnItems = ListedReturnItems(initialReturnItems)(returnItemList.position))(clause.position))
+      Seq(clause.copy(returnItems = ri.copy(items = initialReturnItems)(ri.position))(clause.position))
 
-    case clause @ With(distinct, returnItemList: ListedReturnItems, orderBy, skip, limit, where) =>
-      val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(returnItemList.items)
+    case clause @ With(distinct, ri, orderBy, skip, limit, where) =>
+      val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
       val (introducedReturnItems, updatedOrderBy, updatedWhere) = aliasOrderByAndWhere(aliasedReturnItems.map(i => i.expression -> i.alias.get).toMap, orderBy, where)
 
       if (orderBy == updatedOrderBy && where == updatedWhere) {
-        Seq(clause.copy(returnItems = ListedReturnItems(initialReturnItems)(returnItemList.position))(clause.position))
+        Seq(clause.copy(returnItems = ri.copy(items = initialReturnItems)(ri.position))(clause.position))
       } else if (introducedReturnItems.isEmpty) {
-        Seq(clause.copy(returnItems = ListedReturnItems(initialReturnItems)(returnItemList.position), orderBy = updatedOrderBy, where = updatedWhere)(clause.position))
+        Seq(clause.copy(returnItems = ri.copy(items = initialReturnItems)(ri.position), orderBy = updatedOrderBy, where = updatedWhere)(clause.position))
       } else {
-        val introducedIdentifiers = introducedReturnItems.map(_.identifier)
+        val secondProjection = if (ri.includeExisting) {
+          introducedReturnItems
+        } else {
+          initialReturnItems.map(item =>
+            item.alias.fold(item)(alias => AliasedReturnItem(alias, alias)(item.position))
+          ) ++ introducedReturnItems
+        }
 
-        val secondProjection = initialReturnItems.map(item =>
-          item.alias.fold(item)(alias => AliasedReturnItem(alias, alias)(item.position))
-        ) ++ introducedReturnItems
-        val firstProjection = if (distinct || returnItemList.containsAggregate) {
+        val firstProjection = if (distinct || ri.containsAggregate || ri.includeExisting) {
           initialReturnItems
         } else {
           val requiredIdentifiers = introducedReturnItems.map(_.expression.dependencies).flatten.toSet diff initialReturnItems.flatMap(_.alias).toSet
           requiredIdentifiers.toVector.map(i => AliasedReturnItem(i, i)(i.position)) ++ initialReturnItems
         }
 
+        val introducedIdentifiers = introducedReturnItems.map(_.identifier)
+
         Seq(
-          With(distinct = distinct, returnItems = ListedReturnItems(firstProjection)(returnItemList.position), orderBy = None, skip = None, limit = None, where = None)(clause.position),
-          With(distinct = false, returnItems = ListedReturnItems(secondProjection)(returnItemList.position), orderBy = updatedOrderBy, skip = skip, limit = limit, where = updatedWhere)(clause.position),
+          With(distinct = distinct, returnItems = ri.copy(items = firstProjection)(ri.position), orderBy = None, skip = None, limit = None, where = None)(clause.position),
+          With(distinct = false, returnItems = ri.copy(items = secondProjection)(ri.position), orderBy = updatedOrderBy, skip = skip, limit = limit, where = updatedWhere)(clause.position),
           PragmaWithout(introducedIdentifiers)(clause.position)
         )
       }

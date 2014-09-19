@@ -53,13 +53,13 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest {
   test("duplicate WITH containing WHERE") {
     assertRewrite(
       """MATCH n
-        |WITH n.prop AS prop WHERE prop > 2
+        |WITH n.prop AS prop WHERE prop
         |RETURN prop
       """.stripMargin,
       """MATCH n
         |WITH n.prop AS prop
-        |WITH prop AS prop WHERE prop > 2
-        |RETURN prop
+        |WITH prop AS prop WHERE prop
+        |RETURN prop AS prop
       """.stripMargin)
   }
 
@@ -77,12 +77,12 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest {
 
     assertRewrite(
       """MATCH n
-        |WITH DISTINCT n.prop AS prop WHERE prop > 2
+        |WITH DISTINCT n.prop AS prop WHERE prop
         |RETURN prop
       """.stripMargin,
       """MATCH n
         |WITH DISTINCT n.prop AS prop
-        |WITH prop AS prop WHERE prop > 2
+        |WITH prop AS prop WHERE prop
         |RETURN prop
       """.stripMargin)
   }
@@ -103,12 +103,12 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest {
   test("carry SKIP and LIMIT with WHERE") {
     assertRewrite(
       """MATCH n
-        |WITH n.prop AS prop SKIP 2 LIMIT 5 WHERE prop > 2
+        |WITH n.prop AS prop SKIP 2 LIMIT 5 WHERE prop
         |RETURN prop
       """.stripMargin,
       """MATCH n
         |WITH n.prop AS prop
-        |WITH prop AS prop SKIP 2 LIMIT 5 WHERE prop > 2
+        |WITH prop AS prop SKIP 2 LIMIT 5 WHERE prop
         |RETURN prop
       """.stripMargin)
   }
@@ -116,71 +116,27 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest {
   test("keep WHERE with ORDER BY") {
     assertRewrite(
       """MATCH n
-        |WITH n.prop AS prop ORDER BY prop WHERE prop > 2
+        |WITH n.prop AS prop ORDER BY prop WHERE prop
         |RETURN prop
       """.stripMargin,
       """MATCH n
         |WITH n.prop AS prop
-        |WITH prop AS prop ORDER BY prop WHERE prop > 2
+        |WITH prop AS prop ORDER BY prop WHERE prop
         |RETURN prop
       """.stripMargin)
   }
 
-  test("match n RETURN n ORDER BY n.prop") {
-    assertRewrite(
-      "match n RETURN n ORDER BY n.prop",
-      "match n WITH n WITH n AS n, n.prop AS `  FRESHID28` RETURN n AS n ORDER BY `  FRESHID28`")
-  }
-
-  test("match n RETURN n ORDER BY n.prop LIMIT 2") {
-    assertRewrite(
-      "match n RETURN n ORDER BY n.prop LIMIT 2",
-      "match n WITH n WITH n AS n, n.prop AS `  FRESHID28` RETURN n AS n ORDER BY `  FRESHID28` LIMIT 2")
-  }
-
-  test("match n RETURN n ORDER BY n.prop SKIP 5") {
-    assertRewrite(
-      "match n RETURN n ORDER BY n.prop SKIP 5",
-      "match n WITH n WITH n AS n, n.prop AS `  FRESHID28` RETURN n AS n ORDER BY `  FRESHID28` SKIP 5")
-  }
-
-  test("MATCH foo RETURN foo.bar AS x ORDER BY x DESC LIMIT 4") {
-    assertRewrite(
-      "MATCH foo RETURN foo.bar AS x ORDER BY x DESC LIMIT 4",
-      "MATCH foo WITH foo.bar AS x WITH x AS x RETURN x AS x ORDER BY x DESC LIMIT 4")
-  }
-
-  test("MATCH foo RETURN {meh} AS x ORDER BY x.prop DESC LIMIT 4") {
-    assertRewrite(
-      "MATCH foo RETURN {meh} AS x ORDER BY x.prop DESC LIMIT 4",
-      "MATCH foo WITH {meh} AS x WITH x AS x, x.prop AS `  FRESHID39` RETURN x AS x ORDER BY `  FRESHID39` DESC LIMIT 4")
-  }
-
-  test("match n return n order by n.name ASC skip 2") {
-    assertRewrite(
-      "match n return n order by n.name ASC skip 2",
-      "match n with n with n AS n, n.name AS `  FRESHID28` return n AS n order by `  FRESHID28` ASC skip 2"
-    )
-  }
-
-  test("match x RETURN DISTINCT x as otherName ORDER BY x.name") {
-    assertRewrite(
-      "match x RETURN DISTINCT x as otherName ORDER BY x.name",
-      "match x WITH x AS x, x as otherName WITH otherName AS otherName, x.name AS `  FRESHID50` RETURN DISTINCT otherName AS otherName ORDER BY `  FRESHID50`"
-    )
-  }
-
-  test("match x RETURN x as otherName ORDER BY x.name + otherName.name") {
-    assertRewrite(
-      "match x RETURN x.prop as otherName ORDER BY x.name + otherName",
-      "match x WITH x AS x, x.prop as otherName WITH otherName AS otherName, x.name + otherName AS `  FRESHID51` RETURN otherName AS otherName ORDER BY `  FRESHID51`"
-    )
-  }
-
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
-    val original = parseForRewriting(originalQuery)
-    val expected = parseForRewriting(expectedQuery)
+    val original = ast(originalQuery)
+    val expected = ast(expectedQuery)
     val result = endoRewrite(original)
     assert(result === expected, "\n" + originalQuery)
+  }
+
+  private def ast(queryText: String) = {
+    val parsed = parseForRewriting(queryText)
+    val normalized = parsed.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+    val checkResult = normalized.semanticCheck(SemanticState.clean)
+    normalized.endoRewrite(inSequence(expandStar(checkResult.state)))
   }
 }

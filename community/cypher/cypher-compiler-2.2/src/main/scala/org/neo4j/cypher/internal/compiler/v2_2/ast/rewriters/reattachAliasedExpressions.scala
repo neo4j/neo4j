@@ -27,17 +27,17 @@ case object reattachAliasedExpressions extends Rewriter {
   def apply(in: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(in)
 
   private val findingRewriter: Rewriter = Rewriter.lift {
-    case r@Return(_, ListedReturnItems(items), orderBy, _, _) =>
-      val innerRewriter = expressionRewriter(items)
-      r.copy(
-        orderBy = r.orderBy.endoRewrite(innerRewriter)
-      )(r.position)
+    case clause: Return =>
+      val innerRewriter = expressionRewriter(clause.returnItems.items)
+      clause.copy(
+        orderBy = clause.orderBy.endoRewrite(innerRewriter)
+      )(clause.position)
 
-    case w@With(_, ListedReturnItems(items), orderBy, _, _, where) =>
-      val innerRewriter = expressionRewriter(items)
-      w.copy(
-        orderBy = w.orderBy.endoRewrite(innerRewriter)
-      )(w.position)
+    case clause: With =>
+      val innerRewriter = expressionRewriter(clause.returnItems.items)
+      clause.copy(
+        orderBy = clause.orderBy.endoRewrite(innerRewriter)
+      )(clause.position)
   }
 
   private def expressionRewriter(items: Seq[ReturnItem]): Rewriter = {

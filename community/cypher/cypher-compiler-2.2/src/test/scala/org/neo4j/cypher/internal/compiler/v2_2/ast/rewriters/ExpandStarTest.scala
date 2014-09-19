@@ -93,6 +93,13 @@ class ExpandStarTest extends CypherFunSuite {
       "MATCH a,x,y WITH x, y MATCH b RETURN b, x, y")
   }
 
+  test("keeps listed items during expand") {
+    assertRewrite(
+      "MATCH (n) WITH *, 1 AS b RETURN *",
+      "MATCH (n) WITH n, 1 AS b RETURN b, n"
+    )
+  }
+
   private def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
     val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))

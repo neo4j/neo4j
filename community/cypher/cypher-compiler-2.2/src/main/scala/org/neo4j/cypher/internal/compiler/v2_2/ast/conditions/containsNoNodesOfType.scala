@@ -28,6 +28,6 @@ case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extend
     that.fold(Seq.empty[ASTNode]) {
       case node: ASTNode if node.getClass == tag.runtimeClass =>
         (acc) => acc :+ node
-    }.map(node => s"Expected none but found ReturnAll at position ${node.position}")
+    }.map(node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}")
   }
 }

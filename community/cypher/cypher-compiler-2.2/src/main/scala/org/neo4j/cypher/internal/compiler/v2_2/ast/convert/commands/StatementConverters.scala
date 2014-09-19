@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands
 import ExpressionConverters._
 import PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{expressions => commandexpressions, values => commandvalues}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.StartItem
-import org.neo4j.cypher.internal.compiler.v2_2.commands.PeriodicCommitQuery
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{expressions => commandexpressions, values => commandvalues, ReturnColumn, StartItem, PeriodicCommitQuery}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 object StatementConverters {
@@ -316,16 +314,18 @@ object StatementConverters {
       )(builder).returns(columns:_*)
     }
 
-    private def returnColumns = clause.returnItems match {
-      case ast.ListedReturnItems(items) =>
-        items.map {
-          case ast.AliasedReturnItem(expr, identifier) =>
-            commands.ReturnItem(expr.asCommandExpression, identifier.name)
-          case ast.UnaliasedReturnItem(expr, identifier) =>
-            commands.ReturnItem(expr.asCommandExpression, identifier)
-        }
-      case _: ast.ReturnAll =>
-        Seq(commands.AllIdentifiers())
+    private def returnColumns = {
+      val maybeAllIdentifiers = if (clause.returnItems.includeExisting)
+        Some(commands.AllIdentifiers(): ReturnColumn)
+      else
+        None
+
+      maybeAllIdentifiers.toSeq ++ clause.returnItems.items.map {
+        case ast.AliasedReturnItem(expr, identifier) =>
+          commands.ReturnItem(expr.asCommandExpression, identifier.name)
+        case ast.UnaliasedReturnItem(expr, identifier) =>
+          commands.ReturnItem(expr.asCommandExpression, identifier)
+      }
     }
 
     private def addAggregates(columns: Seq[commands.ReturnColumn]) = (b: commands.QueryBuilder) =>

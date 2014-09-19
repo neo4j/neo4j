@@ -78,13 +78,13 @@ object ClauseConverters {
 
   implicit class ReturnConverter(val clause: Return) extends AnyVal {
     def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
-      case Return(distinct, returnItems@ListedReturnItems(items), optOrderBy, skip, limit) =>
+      case Return(distinct, ri, optOrderBy, skip, limit) if !ri.includeExisting =>
 
         val shuffle = optOrderBy.asQueryShuffle.
           withSkip(skip).
           withLimit(limit)
 
-        val projection = items.
+        val projection = ri.items.
           asQueryProjection(distinct).
           withShuffle(shuffle)
 
@@ -97,15 +97,14 @@ object ClauseConverters {
   }
 
   implicit class ReturnItemsConverter(val clause: ReturnItems) extends AnyVal {
-    def asReturnItems(current: QueryGraph): Seq[ReturnItem] = clause match {
-      case _: ReturnAll => QueryProjection.forIds(current.allCoveredIds)
-      case ListedReturnItems(items) => items
-    }
+    def asReturnItems(current: QueryGraph): Seq[ReturnItem] =
+      if (clause.includeExisting)
+        QueryProjection.forIds(current.allCoveredIds) ++ clause.items
+      else
+        clause.items
 
-    def getContainedPatternExpressions:Set[PatternExpression] = clause match {
-      case _: ReturnAll => Set.empty
-      case ListedReturnItems(items) => items.flatMap(_.expression.extractPatternExpressions).toSet
-    }
+    def getContainedPatternExpressions: Set[PatternExpression] =
+      clause.items.flatMap(_.expression.extractPatternExpressions).toSet
   }
 
   implicit class MatchConverter(val clause: Match) extends AnyVal {
@@ -155,10 +154,10 @@ object ClauseConverters {
 
       Handles: ... WITH * [WHERE <predicate>] ...
        */
-      case With(false, ListedReturnItems(items), None, None, None, where)
+      case With(false, ri, None, None, None, where)
         if !builder.currentQueryGraph.hasOptionalPatterns
-          && items.forall(item => !containsAggregate(item.expression))
-          && items.forall {
+          && ri.items.forall(item => !containsAggregate(item.expression))
+          && ri.items.forall {
           case item: AliasedReturnItem => item.expression == item.identifier
           case x => throw new InternalException("This should have been rewritten to an AliasedReturnItem.")
         } =>
@@ -171,7 +170,7 @@ object ClauseConverters {
 
       Handles all other WITH clauses
        */
-      case With(distinct, projection: ReturnItems, orderBy, skip, limit, where) =>
+      case With(distinct, projection, orderBy, skip, limit, where) =>
         val selections = where.asSelections
         val returnItems = projection.asReturnItems(builder.currentQueryGraph)
 

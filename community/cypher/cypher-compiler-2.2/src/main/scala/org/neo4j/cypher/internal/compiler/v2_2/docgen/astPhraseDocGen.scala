@@ -77,19 +77,13 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
     def where = clause.where
   }
 
-  implicit class ReturnItemsConverter(items: ReturnItems) {
-    def asDoc(pretty: DocConverter[Any]): Doc = items match {
-      case allItems: ReturnAll => allItems.asDoc(pretty)
-      case listedItems: ListedReturnItems => listedItems.asDoc(pretty)
-    }
-  }
-
-  implicit class ReturnAllConverter(val items: ReturnAll) {
-    def asDoc(pretty: DocConverter[Any]) = text("*")
-  }
-
-  implicit class ListedReturnItemsConverter(val items: ListedReturnItems) {
-    def asDoc(pretty: DocConverter[Any]) = sepList(items.items.map(pretty))
+  implicit class ReturnItemsConverter(returnItems: ReturnItems) {
+    def asDoc(pretty: DocConverter[Any]): Doc = if (returnItems.includeExisting && returnItems.items.isEmpty)
+      text("*")
+    else if (returnItems.includeExisting)
+      text("*,") :/: sepList(returnItems.items.map(pretty))
+    else
+      sepList(returnItems.items.map(pretty))
   }
 
   implicit class ReturnItemConverter(item: ReturnItem) {

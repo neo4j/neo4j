@@ -75,7 +75,7 @@ class PeriodicCommitHintTest extends FunSuite with Positional {
     val hint = PeriodicCommitHint(Some(value))(periodicCommitPos)
     val literal: StringLiteral = StringLiteral("Hello world!")(pos)
     val returnItem = UnaliasedReturnItem(literal, "Hello world!")(pos)
-    val returnItems = ListedReturnItems(Seq(returnItem))(pos)
+    val returnItems = ReturnItems(includeExisting = false, Seq(returnItem))(pos)
     val returns: Return = Return(false, returnItems, None, None, None)(pos)
     val queryPart = SingleQuery(Seq(returns))(pos)
     val query = Query(Some(hint), queryPart)(pos)

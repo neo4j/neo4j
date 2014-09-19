@@ -409,7 +409,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   private def parseReturnedExpr(queryText: String) =
     projectionInlinedAst(queryText) match {
-      case Query(_, SingleQuery(Seq(_, Return(_, ListedReturnItems(Seq(AliasedReturnItem(expr, Identifier("p")))), _, _, _)))) => expr
+      case Query(_, SingleQuery(Seq(_, Return(_, ReturnItems(_, Seq(AliasedReturnItem(expr, Identifier("p")))), _, _, _)))) => expr
     }
 
   private def projectionInlinedAst(queryText: String) = ast(queryText).endoRewrite(inlineProjections)

@@ -19,22 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.conditions
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.InputPosition
+import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
 
-class ContainsNoNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport {
+case class containsNoMatchingNodes(matcher: PartialFunction[ASTNode, String]) extends (Any => Seq[String]) {
+  import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 
-  val condition: (Any => Seq[String]) = containsNoNodesOfType[UnaliasedReturnItem]()
-
-  test("Happy when not finding UnaliasedReturnItem") {
-    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(None, Seq(), None, naked = true)_)))_, Seq(), None)_
-
-    condition(ast) should equal(Seq())
-  }
-
-  test("Fails when finding UnaliasedReturnItem") {
-    val ast: ASTNode = Return(false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(Identifier("foo")_, "foo")_))_, None, None, None)_
-
-    condition(ast) should equal(Seq("Expected none but found UnaliasedReturnItem at position line 1, column 0"))
+  def apply(that: Any): Seq[String] = {
+    that.fold(Seq.empty[(String, InputPosition)]) {
+      case node: ASTNode if matcher.isDefinedAt(node) =>
+        (acc) => acc :+ ((matcher(node), node.position))
+    }.map{ case (name, position) => s"Expected none but found $name at position $position" }
   }
 }

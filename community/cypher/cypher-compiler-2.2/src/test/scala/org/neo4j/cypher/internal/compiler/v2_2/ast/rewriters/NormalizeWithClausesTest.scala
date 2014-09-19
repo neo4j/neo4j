@@ -161,6 +161,34 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """.stripMargin)
   }
 
+  test("does not introduce identifiers for ORDER BY expressions in WITH *") {
+    assertRewrite(
+      """MATCH n
+        |WITH *, n.prop AS prop ORDER BY n.foo DESC
+        |RETURN prop
+      """.stripMargin,
+      """MATCH n
+        |WITH *, n.prop AS prop
+        |WITH *, n.foo AS `  FRESHID42` ORDER BY `  FRESHID42` DESC
+        |_PRAGMA WITHOUT `  FRESHID42`
+        |RETURN prop
+      """.stripMargin)
+  }
+
+  test("does not introduce identifiers for WHERE expression in WITH *") {
+    assertRewrite(
+      """MATCH n
+        |WITH *, n.prop AS prop WHERE n.foo > 10
+        |RETURN prop
+      """.stripMargin,
+      """MATCH n
+        |WITH *, n.prop AS prop
+        |WITH *, n.foo > 10 AS `  FRESHID43` WHERE `  FRESHID43`
+        |_PRAGMA WITHOUT `  FRESHID43`
+        |RETURN prop
+      """.stripMargin)
+  }
+
   test("does not attach ORDER BY expressions to unaliased items") {
     // Note: unaliased items in WITH are invalid, and will be caught during semantic check
     assertRewriteAndSemanticErrors(
@@ -507,6 +535,21 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
         |with a as a, true as `  FRESHID23` where `  FRESHID23`
         |_PRAGMA WITHOUT `  FRESHID23`
         |return a
+      """.stripMargin
+    )
+  }
+
+  test("match (n) return * order by id(n)") {
+    assertRewrite(
+      """MATCH (n)
+        |WITH * ORDER BY id(n)
+        |RETURN *
+      """.stripMargin,
+      """match (n)
+        |WITH *
+        |WITH *, id(n) AS `  FRESHID26` ORDER BY `  FRESHID26`
+        |_PRAGMA WITHOUT `  FRESHID26`
+        |RETURN *
       """.stripMargin
     )
   }
