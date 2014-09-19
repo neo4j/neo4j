@@ -85,7 +85,7 @@ case class Start(items: Seq[StartItem], where: Option[Where])(val position: Inpu
 }
 
 
-case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: Option[Where])(val position: InputPosition) extends Clause with SemanticChecking {
+case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], where: Option[Where])(val position: InputPosition) extends Clause with SemanticChecking {
   def name = "MATCH"
 
   def semanticCheck =
@@ -284,15 +284,4 @@ case class Return(
         case _ =>
           Seq()
     }
-}
-
-case class PeriodicCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable {
-  def name = s"USING PERIODIC COMMIT $size"
-
-  override def semanticCheck: SemanticCheck = size match {
-    case Some(integer) if integer.value <= 0 =>
-      SemanticError(s"Commit size error - expected positive value larger than zero, got ${integer.value}", integer.position)
-    case _ =>
-      SemanticCheckResult.success
-  }
 }

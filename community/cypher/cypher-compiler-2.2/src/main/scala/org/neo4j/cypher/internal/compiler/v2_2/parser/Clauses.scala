@@ -95,15 +95,15 @@ trait Clauses extends Parser
     | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
 
-  def PeriodicCommitHint: Rule1[ast.PeriodicCommitHint] = rule("USING PERIODIC COMMIT") (
-    group(keyword("USING PERIODIC COMMIT") ~~ optional(SignedIntegerLiteral)) ~~>> (ast.PeriodicCommitHint(_))
-  )
-
   private def Where: Rule1[ast.Where] = rule("WHERE") {
     group(keyword("WHERE") ~~ Expression) ~~>> (ast.Where(_))
   }
 
-  private def Hint: Rule1[ast.Hint] = rule("USING") (
+  def PeriodicCommitHint: Rule1[ast.PeriodicCommitHint] = rule("USING PERIODIC COMMIT") (
+    group(keyword("USING PERIODIC COMMIT") ~~ optional(SignedIntegerLiteral)) ~~>> (ast.PeriodicCommitHint(_))
+  )
+
+  private def Hint: Rule1[ast.UsingHint] = rule("USING") (
       group(keyword("USING INDEX") ~~ Identifier ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _))
     | group(keyword("USING SCAN") ~~ Identifier ~~ NodeLabel) ~~>> (ast.UsingScanHint(_, _))
   )

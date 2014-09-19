@@ -20,18 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import symbols._
 
-sealed trait Hint extends ASTNode with ASTPhrase with SemanticCheckable {
-  def identifier: Identifier
-}
+case class PeriodicCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable {
+  def name = s"USING PERIODIC COMMIT $size"
 
-case class UsingIndexHint(identifier: Identifier, label: LabelName, property: Identifier)(val position: InputPosition) extends Hint {
-  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
-}
-
-case class UsingScanHint(identifier: Identifier, label: LabelName)(val position: InputPosition) extends Hint {
-  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
+  override def semanticCheck: SemanticCheck = size match {
+    case Some(integer) if integer.value <= 0 =>
+      SemanticError(s"Commit size error - expected positive value larger than zero, got ${integer.value}", integer.position)
+    case _ =>
+      SemanticCheckResult.success
+  }
 }
