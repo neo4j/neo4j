@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Expression}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTAnnotationMap, Identifier, Expression}
 import scala.collection.mutable
 
-case class SemanticTable(types: IdentityMap[Expression, ExpressionTypeInfo] = IdentityMap.empty) {
+case class SemanticTable(types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty) {
   var resolvedLabelIds: mutable.Map[String, LabelId] = new mutable.HashMap[String, LabelId]
   var resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId]
   var resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]

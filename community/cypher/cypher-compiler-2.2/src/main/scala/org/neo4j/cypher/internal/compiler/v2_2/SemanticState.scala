@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.{TreeZipper, TreeElem}
+import ast.ASTAnnotationMap
+import helpers.{TreeZipper, TreeElem}
 import symbols._
 import scala.collection.immutable.HashMap
 
@@ -66,7 +67,7 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
 
 object SemanticState {
   implicit object ScopeZipper extends TreeZipper[Scope]
-  val clean = SemanticState(Scope.empty.location, IdentityMap.empty)
+  val clean = SemanticState(Scope.empty.location, ASTAnnotationMap.empty)
 
   implicit class ScopeLocation(val location: ScopeZipper.Location) extends AnyVal {
     def scope: Scope = location.elem
@@ -91,7 +92,7 @@ object SemanticState {
 }
 import SemanticState.ScopeLocation
 
-case class SemanticState(currentScope: ScopeLocation, typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo]) {
+case class SemanticState(currentScope: ScopeLocation, typeTable: ASTAnnotationMap[ast.Expression, ExpressionTypeInfo]) {
   def scopeTree = currentScope.rootScope
 
   def newChildScope = copy(currentScope = currentScope.newChildScope)

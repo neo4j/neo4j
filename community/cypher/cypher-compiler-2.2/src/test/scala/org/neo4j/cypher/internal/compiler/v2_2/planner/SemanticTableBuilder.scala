@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_2.{ExpressionTypeInfo, IdentityMap}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTAnnotationMap, Expression}
+import org.neo4j.cypher.internal.compiler.v2_2.ExpressionTypeInfo
 
 object SemanticTableBuilder {
   def apply() = new SemanticTableBuilder
@@ -34,7 +34,7 @@ class SemanticTableBuilder {
     this
   }
 
-  def result() = SemanticTable(types = IdentityMap(typeBuilder.result(): _*))
+  def result() = SemanticTable(types = ASTAnnotationMap(typeBuilder.result(): _*))
 }
 
 
