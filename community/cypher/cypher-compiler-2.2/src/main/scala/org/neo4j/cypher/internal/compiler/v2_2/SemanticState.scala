@@ -67,7 +67,7 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
 
 object SemanticState {
   implicit object ScopeZipper extends TreeZipper[Scope]
-  val clean = SemanticState(Scope.empty.location, ASTAnnotationMap.empty)
+  val clean = SemanticState(Scope.empty.location, ASTAnnotationMap.empty, ASTAnnotationMap.empty)
 
   implicit class ScopeLocation(val location: ScopeZipper.Location) extends AnyVal {
     def scope: Scope = location.elem
@@ -92,7 +92,7 @@ object SemanticState {
 }
 import SemanticState.ScopeLocation
 
-case class SemanticState(currentScope: ScopeLocation, typeTable: ASTAnnotationMap[ast.Expression, ExpressionTypeInfo]) {
+case class SemanticState(currentScope: ScopeLocation, typeTable: ASTAnnotationMap[ast.Expression, ExpressionTypeInfo], recordedScopes: ASTAnnotationMap[ast.ASTNode, Scope]) {
   def scopeTree = currentScope.rootScope
 
   def newChildScope = copy(currentScope = currentScope.newChildScope)
@@ -158,4 +158,10 @@ case class SemanticState(currentScope: ScopeLocation, typeTable: ASTAnnotationMa
       currentScope = currentScope.updateIdentifier(identifier.name, types, locations),
       typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types))
     )
+
+  def noteCurrentScope(astNode: ast.ASTNode): SemanticState =
+    copy(recordedScopes = recordedScopes.updated(astNode, currentScope.scope))
+
+  def scope(astNode: ast.ASTNode): Option[Scope] =
+    recordedScopes.get(astNode)
 }

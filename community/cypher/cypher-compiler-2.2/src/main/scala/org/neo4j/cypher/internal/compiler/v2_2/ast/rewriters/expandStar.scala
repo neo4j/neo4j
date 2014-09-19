@@ -21,21 +21,25 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.compiler.v2_2.{SemanticState, Rewriter, bottomUp}
+import org.neo4j.helpers.ThisShouldNotHappenError
 
-case object expandStar extends Rewriter {
+case class expandStar(state: SemanticState) extends Rewriter {
 
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    case x: ReturnAll =>
-      val identifiers = x.seenIdentifiers.get.filter(UnNamedNameGenerator.isNamed).toSeq.sorted
-      val returnItems: Seq[ReturnItem] = identifiers.map { id =>
-        val expr = Identifier(id)(x.position)
-        val alias = Identifier(id)(x.position)
-        AliasedReturnItem(expr, alias)(x.position)
+    case returnall: ReturnAll =>
+      val scope = state.scope(returnall).getOrElse {
+        throw new ThisShouldNotHappenError("cleishm", "ReturnAll should note its Scope in the SemanticState")
       }
-      ListedReturnItems(returnItems)(x.position)
+
+      val symbolNames = scope.symbolNames.filter(UnNamedNameGenerator.isNamed)
+      val returnItems: Seq[ReturnItem] = symbolNames.toSeq.sorted.map { id =>
+        val expr = Identifier(id)(returnall.position)
+        val alias = Identifier(id)(returnall.position)
+        AliasedReturnItem(expr, alias)(returnall.position)
+      }
+      ListedReturnItems(returnItems)(returnall.position)
   }
 }
-
