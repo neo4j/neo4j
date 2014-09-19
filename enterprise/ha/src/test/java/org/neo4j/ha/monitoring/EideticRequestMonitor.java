@@ -19,9 +19,8 @@
  */
 package org.neo4j.ha.monitoring;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.com.monitor.RequestMonitor;
 
@@ -31,36 +30,28 @@ import org.neo4j.com.monitor.RequestMonitor;
  */
 public class EideticRequestMonitor implements RequestMonitor
 {
-    /** Guarded by 'requests'. */
-    private final List<Map<String, String>> requests = new ArrayList<>();
-    /** Guarded by 'this'. */
-    private int requestsEnded;
+    private AtomicInteger startedRequests = new AtomicInteger( 0 );
+    private AtomicInteger endedRequests = new AtomicInteger( 0 );
 
     @Override
     public void beginRequest( Map<String, String> requestContext )
     {
-        synchronized ( requests )
-        {
-            requests.add( requestContext );
-        }
+        startedRequests.incrementAndGet();
     }
 
     @Override
     public void endRequest( Throwable t )
     {
-        synchronized ( this )
-        {
-            requestsEnded++;
-        }
+        endedRequests.incrementAndGet();
     }
 
-    public List<Map<String, String>> getRequests()
+    public int getStartedRequests()
     {
-        return requests;
+        return startedRequests.get();
     }
 
-    public int getRequestsEnded()
+    public int getEndedRequests()
     {
-        return requestsEnded;
+        return endedRequests.get();
     }
 }
