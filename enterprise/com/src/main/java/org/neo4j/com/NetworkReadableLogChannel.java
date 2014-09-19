@@ -48,71 +48,92 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
     @Override
     public byte get() throws IOException
     {
-        if ( delegate.readableBytes() < 1 )
+        try
         {
-            throw new ReadPastEndException();
+            return delegate.readByte();
         }
-        return delegate.readByte();
+        catch( IndexOutOfBoundsException e )
+        {
+            throw ReadPastEndException.INSTANCE;
+        }
     }
 
     @Override
     public short getShort() throws IOException
     {
-        if ( delegate.readableBytes() < 2 )
+        try
         {
-            throw new ReadPastEndException();
+            return delegate.readShort();
         }
-        return delegate.readShort();
+        catch( IndexOutOfBoundsException e )
+        {
+            throw ReadPastEndException.INSTANCE;
+        }
     }
 
     @Override
     public int getInt() throws IOException
     {
-        if ( delegate.readableBytes() < 4 )
+        try
         {
-            throw new ReadPastEndException();
+            return delegate.readInt();
         }
-        return delegate.readInt();
+        catch( IndexOutOfBoundsException e )
+        {
+            throw ReadPastEndException.INSTANCE;
+        }
     }
 
     @Override
     public long getLong() throws IOException
     {
-        if ( delegate.readableBytes() < 8 )
+        try
         {
-            throw new ReadPastEndException();
+            return delegate.readLong();
         }
-        return delegate.readLong();
+        catch( IndexOutOfBoundsException e )
+        {
+            throw ReadPastEndException.INSTANCE;
+        }
     }
 
     @Override
     public float getFloat() throws IOException
     {
-        if ( delegate.readableBytes() < 4 )
+        try
         {
-            throw new ReadPastEndException();
+            return delegate.readFloat();
         }
-        return delegate.readFloat();
+        catch( IndexOutOfBoundsException e )
+        {
+            throw ReadPastEndException.INSTANCE;
+        }
     }
 
     @Override
     public double getDouble() throws IOException
     {
-        if ( delegate.readableBytes() < 8 )
+        try
         {
-            throw new ReadPastEndException();
+            return delegate.readDouble();
         }
-        return delegate.readDouble();
+        catch( IndexOutOfBoundsException e )
+        {
+            throw ReadPastEndException.INSTANCE;
+        }
     }
 
     @Override
     public void get( byte[] bytes, int length ) throws IOException
     {
-        if ( delegate.readableBytes() < length )
+        try
         {
-            throw new ReadPastEndException();
+            delegate.readBytes( bytes, 0, length );
         }
-        delegate.readBytes( bytes, 0, length );
+        catch( IndexOutOfBoundsException e )
+        {
+            throw ReadPastEndException.INSTANCE;
+        }
     }
 
     @Override

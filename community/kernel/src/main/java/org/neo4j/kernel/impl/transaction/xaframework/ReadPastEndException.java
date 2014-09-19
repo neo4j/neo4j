@@ -27,10 +27,17 @@ import java.nio.channels.ReadableByteChannel;
  * Thrown when reading from a {@link ReadableByteChannel} into a buffer
  * and not enough bytes ({@link ByteBuffer#limit()}) could be read.
  */
-public class ReadPastEndException extends IOException
+public final class ReadPastEndException extends IOException
 {
-    public ReadPastEndException()
+    public static final ReadPastEndException INSTANCE = new ReadPastEndException();
+
+    private ReadPastEndException()
     {
-        super();
+    }
+
+    @Override
+    public Throwable fillInStackTrace()
+    {
+        return this;
     }
 }

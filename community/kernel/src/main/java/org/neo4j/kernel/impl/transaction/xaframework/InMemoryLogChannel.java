@@ -185,7 +185,7 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     {
         if ( asReader.remaining() < i )
         {
-            throw new ReadPastEndException();
+            throw ReadPastEndException.INSTANCE;
         }
     }
 
