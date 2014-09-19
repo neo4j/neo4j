@@ -76,7 +76,7 @@ case class NodeByIndex(varName: String, idxName: String, key: Expression, expres
     Arguments.LegacyExpression(expression),
     Arguments.LegacyIndex(idxName),
     Arguments.LegacyExpression(key)))
-  with ReadOnlyStartItem with NodeStartItemIdentifiers {
+  with ReadOnlyStartItem with NodeStartItemIdentifiers with Hint {
   override def localEffects = Effects.READS_NODES
 }
 
@@ -84,7 +84,7 @@ case class NodeByIndexQuery(varName: String, idxName: String, query: Expression)
   extends StartItem(varName, Seq(
     Arguments.LegacyExpression(query),
     Arguments.LegacyIndex(idxName)))
-  with ReadOnlyStartItem with NodeStartItemIdentifiers {
+  with ReadOnlyStartItem with NodeStartItemIdentifiers with Hint {
   override def localEffects = Effects.READS_NODES
 }
 

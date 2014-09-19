@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands
 import ExpressionConverters._
 import PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{expressions => commandexpressions, values => commandvalues, ReturnColumn, StartItem, PeriodicCommitQuery}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{expressions => commandexpressions, values => commandvalues, Hint, ReturnColumn, StartItem, PeriodicCommitQuery}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 object StatementConverters {
@@ -180,12 +180,7 @@ object StatementConverters {
     def addToQueryBuilder(builder: commands.QueryBuilder) = {
       val matches = builder.matching ++ clause.pattern.asLegacyPatterns
       val namedPaths = builder.namedPaths ++ clause.pattern.asLegacyNamedPaths
-      val indexHints = builder.using ++ clause.hints.map {
-        case ast.UsingIndexHint(identifier, label, property) =>
-          commands.SchemaIndex(identifier.name, label.name, property.name, commands.AnyIndex, None)
-        case ast.UsingScanHint(identifier, label) =>
-          commands.NodeByLabel(identifier.name, label.name)
-      }
+      val indexHints: Seq[StartItem with Hint] = builder.using ++ clause.hints.map(_.asCommandStartHint)
       val wherePredicate: commands.Predicate = (builder.where, clause.where) match {
         case (p, None)                  => p
         case (commands.True(), Some(w)) => w.expression.asCommandPredicate
@@ -198,6 +193,15 @@ object StatementConverters {
         using(indexHints: _*).
         where(wherePredicate).
         isOptional(clause.optional)
+    }
+  }
+
+  implicit class RonjaHintConverter(val item: ast.RonjaHint) extends AnyVal {
+    def asCommandStartHint = item match {
+      case ast.UsingIndexHint(identifier, label, property) =>
+        commands.SchemaIndex(identifier.name, label.name, property.name, commands.AnyIndex, None)
+      case ast.UsingScanHint(identifier, label) =>
+        commands.NodeByLabel(identifier.name, label.name)
     }
   }
 

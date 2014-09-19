@@ -194,15 +194,15 @@ class ScopeTreeTest extends CypherFunSuite {
     ))
   }
 
-  //////000000000011111111112222222222333333333344444444445555555555
-  //////012345678901234567890123456789012345678901234567890123456789
-  test("START root = node(0) CREATE book FOREACH(name in ['a','b','c'] | CREATE UNIQUE root-[:tag]->(tag {name:name})<-[:tagged]-book) RETURN book AS book") {
-    val ast = parser.parse("START root = node(0) CREATE book FOREACH(name in ['a','b','c'] | CREATE UNIQUE root-[:tag]->(tag {name:name})<-[:tagged]-book) RETURN book")
+  //////0000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222
+  //////0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+  test("MATCH root CREATE book FOREACH(name in ['a','b','c'] | CREATE UNIQUE root-[:tag]->(tag {name:name})<-[:tagged]-book) RETURN book") {
+    val ast = parser.parse("MATCH root CREATE book FOREACH(name in ['a','b','c'] | CREATE UNIQUE root-[:tag]->(tag {name:name})<-[:tagged]-book) RETURN book")
     val scopeTree = scopesOf(ast)
 
     scopeTree should equal(scope()(
-      scope(nodeSymbol("root", 6), nodeSymbol("book", 28, 134))(
-        scope(stringSymbol("name", 41, 103), nodeSymbol("root", 6, 79), nodeSymbol("tag", 93), nodeSymbol("book", 28, 121))()
+      scope(nodeSymbol("root", 6), nodeSymbol("book", 18, 124))(
+        scope(stringSymbol("name", 31, 93), nodeSymbol("root", 6, 69), nodeSymbol("tag", 83), nodeSymbol("book", 18, 111))()
       ),
       scope()()
     ))
