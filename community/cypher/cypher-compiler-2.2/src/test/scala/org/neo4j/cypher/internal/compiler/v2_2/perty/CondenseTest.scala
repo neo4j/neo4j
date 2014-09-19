@@ -47,4 +47,13 @@ class CondenseTest extends CypherFunSuite {
   test("Keeps new lines (using Vector)") {
     condense(Vector(PrintText("a"), PrintNewLine(2), PrintText("b"))) should equal(Vector(PrintText("a"), PrintNewLine(2), PrintText("b")))
   }
+
+  test("Removes trailing space") {
+    condense(Vector(PrintText(""))) should equal(Vector(PrintText("")))
+    condense(Vector(PrintText(" "))) should equal(Vector(PrintText("")))
+    condense(Vector(PrintText("a "))) should equal(Vector(PrintText("a")))
+    condense(Vector(PrintText("a"))) should equal(Vector(PrintText("a")))
+    condense(Vector(PrintText(" a b"))) should equal(Vector(PrintText(" a b")))
+    condense(Vector(PrintText(" a b  "))) should equal(Vector(PrintText(" a b")))
+  }
 }

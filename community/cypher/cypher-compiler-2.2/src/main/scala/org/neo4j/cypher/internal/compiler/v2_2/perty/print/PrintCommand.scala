@@ -25,6 +25,23 @@ sealed abstract class PrintCommand
 
 case class PrintText(value: String) extends PrintCommand {
   override def toString = s"PrintText(${quoteString(value)})"
+
+  def withoutTrailingSpace: PrintText = {
+    val tail = tailLength
+
+    if (tail == value.length) this else PrintText(value.substring(0, tail))
+  }
+
+  private def tailLength: Int = {
+    var tail = value.length
+    while (tail > 0) {
+      val index = tail -1
+      if (! Character.isWhitespace(value.charAt(index)))
+        return tail
+      tail = index
+    }
+    tail
+  }
 }
 
 case class PrintNewLine(indent: Int) extends PrintCommand

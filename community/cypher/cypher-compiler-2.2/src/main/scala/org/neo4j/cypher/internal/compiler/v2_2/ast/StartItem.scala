@@ -22,36 +22,3 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2._
 import symbols._
 
-sealed trait StartItem extends ASTNode with ASTPhrase with SemanticCheckable {
-  def identifier: Identifier
-}
-
-sealed trait NodeStartItem extends StartItem {
-  def semanticCheck = identifier.declare(CTNode)
-}
-
-case class NodeByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends NodeStartItem {
-  override def semanticCheck = {
-    val name = identifier.name
-    val idString = ids.map(_.stringVal).mkString(", ")
-    val predicate = if (ids.size == 1) s"= $idString" else s"IN [$idString]"
-    val msg = s"Using 'START $name = node($idString)' is no longer supported.  Please instead use 'MATCH $name WHERE id($name) $predicate'"
-    SemanticCheckResult.error(_, SemanticError(msg, position, identifier.position +: ids.map(_.position): _*))
-  }
-}
-
-case class NodeByParameter(identifier: Identifier, parameter: Parameter)(val position: InputPosition) extends NodeStartItem
-case class AllNodes(identifier: Identifier)(val position: InputPosition) extends NodeStartItem
-case class NodeByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression)(val position: InputPosition) extends NodeStartItem
-case class NodeByIndexQuery(identifier: Identifier, index: Identifier, query: Expression)(val position: InputPosition) extends NodeStartItem
-
-
-sealed trait RelationshipStartItem extends StartItem {
-  def semanticCheck = identifier.declare(CTRelationship)
-}
-
-case class RelationshipByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends RelationshipStartItem
-case class RelationshipByParameter(identifier: Identifier, parameter: Parameter)(val position: InputPosition) extends RelationshipStartItem
-case class AllRelationships(identifier: Identifier)(val position: InputPosition) extends RelationshipStartItem
-case class RelationshipByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression)(val position: InputPosition) extends RelationshipStartItem
-case class RelationshipByIndexQuery(identifier: Identifier, index: Identifier, query: Expression)(val position: InputPosition) extends RelationshipStartItem
