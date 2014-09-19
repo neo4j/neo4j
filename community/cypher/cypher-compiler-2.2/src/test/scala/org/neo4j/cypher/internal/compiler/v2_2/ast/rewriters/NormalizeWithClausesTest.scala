@@ -86,7 +86,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n AS n
         |WITH n AS n, length(n.prop) AS `  FRESHID24` ORDER BY `  FRESHID24`
-        |WITH n AS n
+        |_PRAGMA WITHOUT `  FRESHID24`
         |RETURN n
       """.stripMargin)
   }
@@ -100,7 +100,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n AS n
         |WITH n AS n, length(n.prop) > 10 AS `  FRESHID36` WHERE `  FRESHID36`
-        |WITH n AS n
+        |_PRAGMA WITHOUT `  FRESHID36`
         |RETURN n
       """.stripMargin)
   }
@@ -114,7 +114,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n.prop AS prop
         |WITH prop AS prop, length(prop) AS `  FRESHID37` ORDER BY `  FRESHID37`
-        |WITH prop AS prop
+        |_PRAGMA WITHOUT `  FRESHID37`
         |RETURN prop
       """.stripMargin)
   }
@@ -128,7 +128,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n.prop AS prop
         |WITH prop AS prop, length(prop) > 10 AS `  FRESHID49` WHERE `  FRESHID49`
-        |WITH prop AS prop
+        |_PRAGMA WITHOUT `  FRESHID49`
         |RETURN prop
       """.stripMargin)
   }
@@ -142,7 +142,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n AS n, n.prop AS prop
         |WITH prop AS prop, n.foo AS `  FRESHID39` ORDER BY `  FRESHID39` DESC
-        |WITH prop AS prop
+        |_PRAGMA WITHOUT `  FRESHID39`
         |RETURN prop
       """.stripMargin)
   }
@@ -156,7 +156,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n AS n, n.prop AS prop
         |WITH prop AS prop, n.foo > 10 AS `  FRESHID40` WHERE `  FRESHID40`
-        |WITH prop AS prop
+        |_PRAGMA WITHOUT `  FRESHID40`
         |RETURN prop
       """.stripMargin)
   }
@@ -171,7 +171,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n AS n, n.prop
         |WITH n.prop, n.prop AS `  FRESHID31` ORDER BY `  FRESHID31`
-        |WITH n.prop
+        |_PRAGMA WITHOUT `  FRESHID31`
         |RETURN prop
       """.stripMargin,
       "Expression in WITH must be aliased (use AS) (line 2, column 6)"
@@ -188,7 +188,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n AS n, n.prop
         |WITH n.prop, n.prop AS `  FRESHID28` WHERE `  FRESHID28`
-        |WITH n.prop
+        |_PRAGMA WITHOUT `  FRESHID28`
         |RETURN prop
       """.stripMargin,
       "Expression in WITH must be aliased (use AS) (line 2, column 6)"
@@ -246,7 +246,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n AS n
         |WITH n AS n, n.prop AS `  FRESHID26` ORDER BY `  FRESHID26` SKIP 5 LIMIT 2
-        |WITH n AS n
+        |_PRAGMA WITHOUT `  FRESHID26`
         |RETURN n
       """.stripMargin)
   }
@@ -260,7 +260,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n AS n
         |WITH n AS n, n.prop > 10 AS `  FRESHID43` SKIP 5 LIMIT 2 WHERE `  FRESHID43`
-        |WITH n AS n
+        |_PRAGMA WITHOUT `  FRESHID43`
         |RETURN n
       """.stripMargin)
   }
@@ -298,7 +298,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH DISTINCT n.prop AS prop
         |WITH prop AS prop, length(prop) AS `  FRESHID46` ORDER BY `  FRESHID46`
-        |WITH prop AS prop
+        |_PRAGMA WITHOUT `  FRESHID46`
         |RETURN prop
       """.stripMargin)
 
@@ -310,7 +310,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n.prop AS prop, count(*) AS count
         |WITH prop AS prop, count AS count, length(prop) AS `  FRESHID56` ORDER BY `  FRESHID56`
-        |WITH prop AS prop, count AS count
+        |_PRAGMA WITHOUT `  FRESHID56`
         |RETURN prop, count
       """.stripMargin)
   }
@@ -324,7 +324,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH DISTINCT n.prop AS prop
         |WITH prop AS prop, length(prop) AS `  FRESHID43` WHERE `  FRESHID43`
-        |WITH prop AS prop
+        |_PRAGMA WITHOUT `  FRESHID43`
         |RETURN prop
       """.stripMargin)
 
@@ -336,7 +336,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n.prop AS prop, count(*) AS count
         |WITH prop AS prop, count AS count, length(prop) AS `  FRESHID53` WHERE `  FRESHID53`
-        |WITH prop AS prop, count AS count
+        |_PRAGMA WITHOUT `  FRESHID53`
         |RETURN prop, count
       """.stripMargin)
   }
@@ -351,7 +351,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH DISTINCT n.prop AS prop
         |WITH prop AS prop, n.foo AS `  FRESHID48` ORDER BY `  FRESHID48`
-        |WITH prop AS prop
+        |_PRAGMA WITHOUT `  FRESHID48`
         |RETURN prop
       """.stripMargin,
       "n not defined (line 2, column 39)")
@@ -364,7 +364,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n.prop AS prop, collect(n.foo) AS foos
         |WITH prop AS prop, foos AS foos, n.foo AS `  FRESHID63` ORDER BY `  FRESHID63`
-        |WITH prop AS prop, foos AS foos
+        |_PRAGMA WITHOUT `  FRESHID63`
         |RETURN prop, foos
       """.stripMargin,
       "n not defined (line 2, column 54)")
@@ -380,7 +380,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH DISTINCT n.prop AS prop
         |WITH prop AS prop, n.foo AS `  FRESHID45` WHERE `  FRESHID45`
-        |WITH prop AS prop
+        |_PRAGMA WITHOUT `  FRESHID45`
         |RETURN prop
       """.stripMargin,
       "n not defined (line 2, column 36)")
@@ -394,7 +394,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH n
         |WITH n.prop AS prop, collect(n.foo) AS foos
         |WITH prop AS prop, foos AS foos, n.foo AS `  FRESHID60` WHERE `  FRESHID60`
-        |WITH prop AS prop, foos AS foos
+        |_PRAGMA WITHOUT `  FRESHID60`
         |RETURN prop, foos
       """.stripMargin,
       "n not defined (line 2, column 51)")
@@ -421,7 +421,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """MATCH foo
         |WITH {meh} AS x
         |WITH x AS x, x.prop AS `  FRESHID37` ORDER BY `  FRESHID37` DESC LIMIT 4
-        |WITH x AS x
+        |_PRAGMA WITHOUT `  FRESHID37`
         |RETURN x
       """.stripMargin)
   }
@@ -435,7 +435,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """match n
         |with n AS n
         |with n AS n, n.name AS `  FRESHID26` order by `  FRESHID26` ASC skip 2
-        |with n AS n
+        |_PRAGMA WITHOUT `  FRESHID26`
         |return n
       """.stripMargin)
   }
@@ -449,7 +449,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """match x
         |WITH DISTINCT x as otherName
         |WITH otherName AS otherName, otherName.name AS `  FRESHID48` ORDER BY `  FRESHID48`
-        |WITH otherName AS otherName
+        |_PRAGMA WITHOUT `  FRESHID48`
         |RETURN otherName
       """.stripMargin)
   }
@@ -463,7 +463,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
       """match x
         |WITH x as otherName
         |WITH otherName as otherName, otherName.name + otherName.name AS `  FRESHID44` ORDER BY `  FRESHID44`
-        |WITH otherName as otherName
+        |_PRAGMA WITHOUT `  FRESHID44`
         |RETURN otherName
       """.stripMargin)
   }
@@ -498,8 +498,16 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
 
   test("match (a) with a where true return a") {
     assertRewrite(
-      "match (a) with a where true return a",
-      "match (a) with a as a with a as a, true as `  FRESHID23` where `  FRESHID23` with a as a return a"
+      """match (a)
+        |with a where true
+        |return a
+      """.stripMargin,
+      """match (a)
+        |with a as a
+        |with a as a, true as `  FRESHID23` where `  FRESHID23`
+        |_PRAGMA WITHOUT `  FRESHID23`
+        |return a
+      """.stripMargin
     )
   }
 

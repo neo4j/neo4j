@@ -62,28 +62,29 @@ case object normalizeWithClauses extends Rewriter {
     case clause @ With(distinct, returnItemList: ListedReturnItems, orderBy, skip, limit, where) =>
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(returnItemList.items)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
-      val (additionalReturnItems, updatedOrderBy, updatedWhere) = aliasOrderByAndWhere(aliasedReturnItems.map(i => i.expression -> i.alias.get).toMap, orderBy, where)
+      val (introducedReturnItems, updatedOrderBy, updatedWhere) = aliasOrderByAndWhere(aliasedReturnItems.map(i => i.expression -> i.alias.get).toMap, orderBy, where)
 
       if (orderBy == updatedOrderBy && where == updatedWhere) {
         Seq(clause.copy(returnItems = ListedReturnItems(initialReturnItems)(returnItemList.position))(clause.position))
-      } else if (additionalReturnItems.isEmpty) {
+      } else if (introducedReturnItems.isEmpty) {
         Seq(clause.copy(returnItems = ListedReturnItems(initialReturnItems)(returnItemList.position), orderBy = updatedOrderBy, where = updatedWhere)(clause.position))
       } else {
-        val finalProjection = initialReturnItems.map(item =>
+        val introducedIdentifiers = introducedReturnItems.map(_.identifier)
+
+        val secondProjection = initialReturnItems.map(item =>
           item.alias.fold(item)(alias => AliasedReturnItem(alias, alias)(item.position))
-        )
-        val secondProjection = finalProjection ++ additionalReturnItems
+        ) ++ introducedReturnItems
         val firstProjection = if (distinct || returnItemList.containsAggregate) {
           initialReturnItems
         } else {
-          val requiredIdentifiers = additionalReturnItems.map(_.expression.dependencies).flatten.toSet diff initialReturnItems.flatMap(_.alias).toSet
+          val requiredIdentifiers = introducedReturnItems.map(_.expression.dependencies).flatten.toSet diff initialReturnItems.flatMap(_.alias).toSet
           requiredIdentifiers.toVector.map(i => AliasedReturnItem(i, i)(i.position)) ++ initialReturnItems
         }
 
         Seq(
           With(distinct = distinct, returnItems = ListedReturnItems(firstProjection)(returnItemList.position), orderBy = None, skip = None, limit = None, where = None)(clause.position),
           With(distinct = false, returnItems = ListedReturnItems(secondProjection)(returnItemList.position), orderBy = updatedOrderBy, skip = skip, limit = limit, where = updatedWhere)(clause.position),
-          With(distinct = false, returnItems = ListedReturnItems(finalProjection)(returnItemList.position), orderBy = None, skip = None, limit = None, where = None)(clause.position)
+          PragmaWithout(introducedIdentifiers)(clause.position)
         )
       }
 
@@ -106,7 +107,7 @@ case object normalizeWithClauses extends Rewriter {
       }
     }
 
-  private def aliasOrderByAndWhere(existingAliases: Map[Expression, Identifier], orderBy: Option[OrderBy], where: Option[Where]): (Seq[ReturnItem], Option[OrderBy], Option[Where]) = {
+  private def aliasOrderByAndWhere(existingAliases: Map[Expression, Identifier], orderBy: Option[OrderBy], where: Option[Where]): (Seq[AliasedReturnItem], Option[OrderBy], Option[Where]) = {
     val (additionalReturnItemsForOrderBy, updatedOrderBy) = orderBy match {
       case Some(o) =>
         val (returnItems, updatedOrderBy) = aliasOrderBy(existingAliases, o)
@@ -160,7 +161,7 @@ case object normalizeWithClauses extends Rewriter {
     (maybeReturnItem, newSortItem)
   }
 
-  private def aliasWhere(existingAliases: Map[Expression, Identifier], originalWhere: Where): (Option[ReturnItem], Where) = {
+  private def aliasWhere(existingAliases: Map[Expression, Identifier], originalWhere: Where): (Option[AliasedReturnItem], Where) = {
     originalWhere.expression match {
       case _: Identifier =>
         (None, originalWhere)
