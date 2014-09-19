@@ -112,6 +112,7 @@ public abstract class PrimitiveRecordCheck
                 {
                     engine.report().propertyNotFirstInChain( property );
                 }
+                new ChainCheck<RECORD, REPORT>().checkReference( record, property, engine, records );
             }
         }
     }

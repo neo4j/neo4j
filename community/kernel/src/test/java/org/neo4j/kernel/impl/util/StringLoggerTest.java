@@ -23,18 +23,23 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.Predicates.and;
@@ -160,6 +165,27 @@ public class StringLoggerTest
         assertTrue( "Should have contained " + thirdMessage, fileContains( logFile, stringContaining( thirdMessage ) ) );
         assertTrue( "Should have contained stack trace from " + thirdMessage, fileContains( logFile, and(
                 stringContaining( "at " ), stringContaining( testName.getMethodName() ) ) ) );
+    }
+
+    @Test
+    public void cappedLoggerShouldIgnoreSubsequentMessagesWithinTimeInterval()
+    {
+        StringBuffer buffer = new StringBuffer();
+        StringLogger delegate = StringLogger.wrap( buffer );
+        FakeClock fakeClock = new FakeClock();
+        StringLogger cappedLogger = StringLogger.cappedLogger( delegate,
+                CappedOperation.<String>time( fakeClock, 1, TimeUnit.MILLISECONDS ) );
+
+        fakeClock.forward( 1, TimeUnit.MILLISECONDS );
+        cappedLogger.info( "f1rst" );
+        cappedLogger.info( "s3cond" );
+        fakeClock.forward( 1, TimeUnit.MILLISECONDS );
+        cappedLogger.info( "th1rd" );
+
+        String output = buffer.toString();
+        assertThat( output, containsString( "f1rst" ) );
+        assertThat( output, containsString( "th1rd" ) );
+        assertThat( output, not( containsString( "s3cond" ) ) );
     }
 
     private Predicate<String> stringContaining( final String string )

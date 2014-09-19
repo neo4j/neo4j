@@ -79,7 +79,7 @@ public class PersistenceCache
             AutoLoadingCache<NodeImpl> nodeCache,
             AutoLoadingCache<RelationshipImpl> relationshipCache,
             Thunk<GraphPropertiesImpl> graphProperties,
-            NodeManager nodeManager)
+            NodeManager nodeManager )
     {
         this.nodeCache = nodeCache;
         this.relationshipCache = relationshipCache;
@@ -148,51 +148,51 @@ public class PersistenceCache
                                                         CacheLoader<Iterator<DefinedProperty>> cacheLoader )
             throws EntityNotFoundException
     {
-        return getNode( nodeId ).getProperties( cacheLoader, NODE_CACHE_SIZE_LISTENER );
+        return getNode( nodeId ).getProperties( cacheLoader, NODE_CACHE_SIZE_LISTENER, nodeManager.getPropertyChainVerifier() );
     }
 
     public PrimitiveLongIterator nodeGetPropertyKeys( long nodeId,
                                                       CacheLoader<Iterator<DefinedProperty>> cacheLoader )
             throws EntityNotFoundException
     {
-        return getNode( nodeId ).getPropertyKeys( cacheLoader, NODE_CACHE_SIZE_LISTENER );
+        return getNode( nodeId ).getPropertyKeys( cacheLoader, NODE_CACHE_SIZE_LISTENER, nodeManager.getPropertyChainVerifier() );
     }
 
     public Property nodeGetProperty( long nodeId, int propertyKeyId,
                                      CacheLoader<Iterator<DefinedProperty>> cacheLoader )
             throws EntityNotFoundException
     {
-        return getNode( nodeId ).getProperty( cacheLoader, NODE_CACHE_SIZE_LISTENER, propertyKeyId );
+        return getNode( nodeId ).getProperty( cacheLoader, NODE_CACHE_SIZE_LISTENER, propertyKeyId, nodeManager.getPropertyChainVerifier() );
     }
 
     public Iterator<DefinedProperty> relationshipGetProperties( long relationshipId,
                                                                 CacheLoader<Iterator<DefinedProperty>> cacheLoader ) throws EntityNotFoundException
     {
         return getRelationship( relationshipId ).getProperties( cacheLoader,
-                RELATIONSHIP_CACHE_SIZE_LISTENER );
+                RELATIONSHIP_CACHE_SIZE_LISTENER, nodeManager.getPropertyChainVerifier() );
     }
 
     public Property relationshipGetProperty( long relationshipId, int propertyKeyId,
                                              CacheLoader<Iterator<DefinedProperty>> cacheLoader ) throws EntityNotFoundException
     {
         return getRelationship( relationshipId ).getProperty( cacheLoader, RELATIONSHIP_CACHE_SIZE_LISTENER,
-                propertyKeyId );
+                propertyKeyId, nodeManager.getPropertyChainVerifier() );
     }
 
     public Iterator<DefinedProperty> graphGetProperties( CacheLoader<Iterator<DefinedProperty>> cacheLoader )
     {
-        return graphProperties.evaluate().getProperties( cacheLoader, NO_UPDATES );
+        return graphProperties.evaluate().getProperties( cacheLoader, NO_UPDATES, nodeManager.getPropertyChainVerifier() );
     }
 
     public PrimitiveLongIterator graphGetPropertyKeys( CacheLoader<Iterator<DefinedProperty>> cacheLoader )
     {
-        return graphProperties.evaluate().getPropertyKeys( cacheLoader, NO_UPDATES );
+        return graphProperties.evaluate().getPropertyKeys( cacheLoader, NO_UPDATES, nodeManager.getPropertyChainVerifier() );
     }
 
     public Property graphGetProperty( CacheLoader<Iterator<DefinedProperty>> cacheLoader,
                                       int propertyKeyId )
     {
-        return graphProperties.evaluate().getProperty( cacheLoader, NO_UPDATES, propertyKeyId );
+        return graphProperties.evaluate().getProperty( cacheLoader, NO_UPDATES, propertyKeyId, nodeManager.getPropertyChainVerifier() );
     }
 
     public PrimitiveLongIterator nodeGetRelationships( long node, Direction direction, int[] relTypes ) throws EntityNotFoundException

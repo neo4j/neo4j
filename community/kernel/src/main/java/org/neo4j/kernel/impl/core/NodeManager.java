@@ -19,12 +19,18 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static org.neo4j.helpers.collection.Iterables.cast;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,9 +54,9 @@ import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
@@ -62,20 +68,18 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-
-import static org.neo4j.helpers.collection.Iterables.cast;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 
 public class NodeManager implements Lifecycle, EntityFactory
 {
     private final StringLogger logger;
+    private final Logging logging;
     private final GraphDatabaseService graphDbService;
     private final AutoLoadingCache<NodeImpl> nodeCache;
     private final AutoLoadingCache<RelationshipImpl> relCache;
@@ -94,6 +98,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     private final RelationshipProxy.RelationshipLookups relationshipLookups;
 
     private final RelationshipLoader relationshipLoader;
+    private PropertyChainVerifier propertyChainVerifier;
 
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
@@ -130,7 +135,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         }
     };
 
-    public NodeManager( StringLogger logger, GraphDatabaseService graphDb,
+    public NodeManager( Logging logging, GraphDatabaseService graphDb,
                         LockService locks, AbstractTransactionManager transactionManager,
                         PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
                         RelationshipTypeTokenHolder relationshipTypeTokenHolder, CacheProvider cacheProvider,
@@ -139,7 +144,8 @@ public class NodeManager implements Lifecycle, EntityFactory
                         Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache,
                         XaDataSourceManager xaDsm, ThreadToStatementContextBridge statementCtxProvider )
     {
-        this.logger = logger;
+        this.logging = logging;
+        this.logger = logging.getMessagesLog( NodeManager.class );
         this.graphDbService = graphDb;
         this.locks = locks;
         this.transactionManager = transactionManager;
@@ -160,7 +166,11 @@ public class NodeManager implements Lifecycle, EntityFactory
         relationshipPropertyTrackers = new LinkedList<>();
         this.relationshipLoader = new RelationshipLoader( persistenceManager, relCache );
         this.graphProperties = instantiateGraphProperties();
+
+        propertyChainVerifier = new NoDuplicatesPropertyChainVerifier();
     }
+
+
 
     public GraphDatabaseService getGraphDbService()
     {
@@ -195,6 +205,12 @@ public class NodeManager implements Lifecycle, EntityFactory
                 addLabelTokens( labelTokens.getTokens( Integer.MAX_VALUE ) );
             }
         }
+
+        propertyChainVerifier.addObserver( new CappedLoggingDuplicatePropertyObserver(
+                new ConsoleLogger( StringLogger.cappedLogger(
+                        logging.getMessagesLog( NoDuplicatesPropertyChainVerifier.class ),
+                        CappedOperation.<String>time( 2, TimeUnit.HOURS ) ) )
+        ) );
     }
 
     @Override
@@ -928,5 +944,29 @@ public class NodeManager implements Lifecycle, EntityFactory
     public Lock lowLevelNodeReadLock( long nodeId )
     {
         return locks.acquireNodeLock( nodeId, LockService.LockType.READ_LOCK );
+    }
+
+    public PropertyChainVerifier getPropertyChainVerifier()
+    {
+        return propertyChainVerifier;
+    }
+
+    public static class CappedLoggingDuplicatePropertyObserver implements PropertyChainVerifier.Observer
+    {
+        public static final String DUPLICATE_WARNING_MESSAGE = "WARNING: Duplicate property records have been detected in" +
+                " this database store. For further details and resolution please refer to http://neo4j.com/technote/cr73nh";
+
+        private final ConsoleLogger consoleLogger;
+
+        public CappedLoggingDuplicatePropertyObserver( ConsoleLogger consoleLogger )
+        {
+            this.consoleLogger = consoleLogger;
+        }
+
+        @Override
+        public void inconsistencyFound( Primitive owningPrimitive )
+        {
+            consoleLogger.log( DUPLICATE_WARNING_MESSAGE );
+        }
     }
 }
