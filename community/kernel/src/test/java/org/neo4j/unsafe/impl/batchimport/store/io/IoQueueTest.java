@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store.io;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -28,8 +27,6 @@ import java.util.concurrent.Executors;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
@@ -52,34 +49,32 @@ import static org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.
 public class IoQueueTest
 {
     @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    @Rule
     public final CleanupRule cleanupRule = new CleanupRule();
 
-    private static final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final ExecutorService executor = cleanupRule.add( spy( Executors.newFixedThreadPool( 3 ) ) );
+    private final IoQueue queue = new IoQueue( executor, SYNCHRONOUS );
+    private final Monitor monitor = mock( Monitor.class );
+    private final ByteBuffer buffer = ByteBuffer.allocate( 10 );
 
     @SuppressWarnings( "unchecked" )
     @Test
     public void shouldExecuteWriteJob() throws Exception
     {
         // GIVEN
-        ExecutorService executor = cleanupRule.add( spy( Executors.newFixedThreadPool( 3 ) ) );
-        IoQueue queue = new IoQueue( executor, SYNCHRONOUS );
-        File file = new File( directory.directory(), "file" );
-        StoreChannel channel = spy( fs.create( file ) );
-        Monitor monitor = mock( Monitor.class );
-        Writer writer = queue.create( file, channel, monitor );
+        StoreChannel channel = mock( StoreChannel.class );
+        Writer writer = queue.create( channel, monitor );
         SimplePool<ByteBuffer> pool = mock( SimplePool.class );
-        ByteBuffer buffer = ByteBuffer.allocate( 10 );
         int position = 100;
 
         // WHEN
         writer.write( buffer, position, pool );
-        verify( executor, times( 1 ) ).submit( any( Callable.class ) );
 
-        // THEN
         executor.shutdown();
         executor.awaitTermination( 10, SECONDS );
+
+        // THEN
+        verify( executor, times( 1 ) ).submit( any( Callable.class ) );
+
         verify( channel, times( 1 ) ).write( buffer, position );
         verifyNoMoreInteractions( channel );
     }
@@ -89,31 +84,31 @@ public class IoQueueTest
     public void shouldExecuteWriteJobsForMultipleFiles() throws Exception
     {
         // GIVEN
-        ExecutorService executor = cleanupRule.add( spy( Executors.newFixedThreadPool( 3 ) ) );
-        IoQueue queue = new IoQueue( executor, SYNCHRONOUS );
-        File file1 = new File( directory.directory(), "file1" );
-        StoreChannel channel1 = cleanupRule.add( spy( fs.create( file1 ) ) );
-        File file2 = new File( directory.directory(), "file2" );
-        StoreChannel channel2 = cleanupRule.add( spy( fs.create( file2 ) ) );
-        Monitor monitor = mock( Monitor.class );
-        Writer writer1 = queue.create( file1, channel1, monitor );
-        Writer writer2 = queue.create( file2, channel2, monitor );
+        StoreChannel channel1 = mock( StoreChannel.class );
+        StoreChannel channel2 = mock( StoreChannel.class );
+        Writer writer1 = queue.create( channel1, monitor );
+        Writer writer2 = queue.create( channel2, monitor );
         SimplePool<ByteBuffer> pool1 = mock( SimplePool.class );
         SimplePool<ByteBuffer> pool2 = mock( SimplePool.class );
-        ByteBuffer buffer = ByteBuffer.allocate( 10 );
-        int position1 = 100, position2 = position1 + buffer.capacity(), position3 = 50;
+
+        final int position1 = 100;
+        final int position2 = position1 + buffer.capacity();
+        final int position3 = 50;
 
         // WHEN
         writer1.write( buffer, position1, pool1 );
         writer1.write( buffer, position2, pool1 );
         writer2.write( buffer, position3, pool2 );
+
+        executor.shutdown();
+        executor.awaitTermination( 10, SECONDS );
+
+        // THEN
+
         // Depending on race between executor and the job offers, it should be 2-3 invocations
         verify( executor, atLeast( 2 ) ).submit( any( Callable.class ) );
         verify( executor, atMost( 3 ) ).submit( any( Callable.class ) );
 
-        // THEN
-        executor.shutdown();
-        executor.awaitTermination( 10, SECONDS );
         verify( channel1, times( 1 ) ).write( buffer, position1 );
         verify( channel1, times( 1 ) ).write( buffer, position2 );
         verify( channel2, times( 1 ) ).write( buffer, position3 );

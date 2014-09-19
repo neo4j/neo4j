@@ -53,7 +53,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
 
     public interface WriterFactory
     {
-        Writer create( File file, StoreChannel channel, Monitor monitor );
+        Writer create( StoreChannel channel, Monitor monitor );
 
         void awaitEverythingWritten();
 
@@ -71,7 +71,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
     public static final WriterFactory SYNCHRONOUS = new WriterFactory()
     {
         @Override
-        public Writer create( final File file, final StoreChannel channel, final Monitor monitor )
+        public Writer create( final StoreChannel channel, final Monitor monitor )
         {
             return new Writer()
             {
@@ -224,7 +224,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
             this.storageFileName = storageFileName;
             this.recordSize = recordSize;
             this.channel = channel;
-            this.writer = writerFactory.create( storageFileName, channel, monitor );
+            this.writer = writerFactory.create( channel, monitor );
         }
 
         @Override

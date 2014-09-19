@@ -186,11 +186,11 @@ public class ParallelBatchImporterTest
     private static WriterFactory synchronousSlowWriterFactory = new WriterFactory()
     {
         @Override
-        public Writer create( final File file, final StoreChannel channel, final Monitor monitor )
+        public Writer create( final StoreChannel channel, final Monitor monitor )
         {
             return new Writer()
             {
-                final Writer delegate = SYNCHRONOUS.create( file, channel, monitor );
+                final Writer delegate = SYNCHRONOUS.create( channel, monitor );
 
                 @Override
                 public void write( ByteBuffer data, long position, SimplePool<ByteBuffer> pool )

@@ -54,9 +54,9 @@ public class IoQueue implements WriterFactory
     }
 
     @Override
-    public Writer create( File file, StoreChannel channel, Monitor monitor )
+    public Writer create( StoreChannel channel, Monitor monitor )
     {
-        Writer writer = delegateFactory.create( file, channel, monitor );
+        Writer writer = delegateFactory.create( channel, monitor );
         WriteQueue queue = new WriteQueue( executor, jobMonitor);
         return new Funnel( writer, queue );
     }
