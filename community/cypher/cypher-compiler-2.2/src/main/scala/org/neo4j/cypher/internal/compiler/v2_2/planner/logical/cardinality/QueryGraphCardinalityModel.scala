@@ -24,15 +24,37 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.PatternRela
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
+import scala.collection.immutable.IndexedSeq
+
 case class QueryGraphCardinalityModel(statistics: GraphStatistics,
                                       predicateProducer: QueryGraph => Set[Predicate],
                                       predicateGrouper: Set[Predicate] => Set[(PredicateCombination, Selectivity)],
                                       selectivityCombiner: Set[(PredicateCombination, Selectivity)] => (Set[Predicate], Selectivity)) {
 
   def apply(queryGraph: QueryGraph): Cardinality = {
+    findQueryGraphCombinations(queryGraph)
+      .map(cardinalityForQueryGraph)
+      .foldLeft(Cardinality(0))( (acc, curr) => if (curr > acc) curr else acc)
+  }
+
+  /**
+   * Finds all combinations of a querygraph with its optional matches,
+   * e.g. Given QueryGraph QG with optional matches [opt1, opt2, opt3] we get
+   * [QG, QG ++ opt1, QG ++ opt2, QG ++ opt3, QG ++ opt1 ++ opt2, QG ++ opt2 ++ opt3, QG ++ opt1 ++ opt2 ++ opt3]
+   */
+  private def findQueryGraphCombinations(queryGraph: QueryGraph) = {
+    (0 to queryGraph.optionalMatches.length)
+      .map(queryGraph.optionalMatches.combinations)
+      .flatten
+      .map(_.foldLeft(QueryGraph.empty)( _.withOptionalMatches(Seq.empty) ++ _.withOptionalMatches(Seq.empty)))
+      .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
+  }
+
+  private def cardinalityForQueryGraph(queryGraph: QueryGraph): Cardinality = {
     val selectivity = estimateSelectivity(queryGraph)
     val numberOfPatternNodes = queryGraph.patternNodes.size + countImplicitPatternNodes(queryGraph.patternRelationships)
     val numberOfGraphNodes = statistics.nodesWithLabelCardinality(None)
+
     (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
   }
 

@@ -119,6 +119,9 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
               stats.cardinalityByLabelsAndRelationshipType(Some(lId), None, Some(rId)) * lhsSelectivity * rhsSelectivity
             case (Some(lId), Some(rId)) if pattern.dir == Direction.INCOMING =>
               stats.cardinalityByLabelsAndRelationshipType(Some(rId), None, Some(lId)) * lhsSelectivity * rhsSelectivity
+            case (Some(lId), Some(rId)) if pattern.dir == Direction.BOTH =>
+              stats.cardinalityByLabelsAndRelationshipType(Some(lId), None, Some(rId)) * lhsSelectivity * rhsSelectivity +
+                stats.cardinalityByLabelsAndRelationshipType(Some(rId), None, Some(lId)) * lhsSelectivity * rhsSelectivity
             case _ =>
               Cardinality(0)
           }
@@ -130,6 +133,9 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
               stats.cardinalityByLabelsAndRelationshipType(Some(lId), Some(relId), Some(rId)) * lhsSelectivity * rhsSelectivity
             case (Some(lId), Some(relId), Some(rId)) if pattern.dir == Direction.INCOMING =>
               stats.cardinalityByLabelsAndRelationshipType(Some(rId), Some(relId), Some(lId)) * lhsSelectivity * rhsSelectivity
+            case (Some(lId), Some(relId), Some(rId)) if pattern.dir == Direction.BOTH =>
+              stats.cardinalityByLabelsAndRelationshipType(Some(lId), Some(relId), Some(rId)) * lhsSelectivity * rhsSelectivity +
+                stats.cardinalityByLabelsAndRelationshipType(Some(rId), Some(relId), Some(lId)) * lhsSelectivity * rhsSelectivity
             case _ =>
               Cardinality(0)
           }
@@ -174,8 +180,11 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
       lhsLabelId.map { _ =>
         if (dir == Direction.OUTGOING)
           stats.cardinalityByLabelsAndRelationshipType(lhsLabelId, None, None)
-        else
+        else if (dir == Direction.INCOMING)
           stats.cardinalityByLabelsAndRelationshipType(None, None, lhsLabelId)
+        else
+          stats.cardinalityByLabelsAndRelationshipType(lhsLabelId, None, None) +
+            stats.cardinalityByLabelsAndRelationshipType(None, None, lhsLabelId)
       }
     } else {
       val relationshipId: Option[RelTypeId] = pattern.types.map(_.relTypeId).head
@@ -183,8 +192,11 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
         relationshipId.map { _ =>
           if (dir == Direction.OUTGOING)
             stats.cardinalityByLabelsAndRelationshipType(lhsLabelId, relationshipId, None)
-          else
+          else if (dir == Direction.INCOMING)
             stats.cardinalityByLabelsAndRelationshipType(None, relationshipId, lhsLabelId)
+          else
+            stats.cardinalityByLabelsAndRelationshipType(lhsLabelId, relationshipId, None) +
+              stats.cardinalityByLabelsAndRelationshipType(None, relationshipId, lhsLabelId)
         }
       }
     }).getOrElse(Cardinality(0))
