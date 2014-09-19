@@ -20,16 +20,69 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.Hint
 import symbols._
 
 sealed trait UsingHint extends ASTNode with ASTPhrase with SemanticCheckable {
   def identifier: Identifier
 }
 
-case class UsingIndexHint(identifier: Identifier, label: LabelName, property: Identifier)(val position: InputPosition) extends UsingHint {
+// allowed on match
+
+sealed trait RonjaHint extends UsingHint
+
+// allowed on start item
+
+sealed trait LegacyHint extends UsingHint
+  self: StartItem =>
+}
+
+case class UsingIndexHint(identifier: Identifier, label: LabelName, property: Identifier)(val position: InputPosition) extends RonjaHint {
   def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
 }
 
-case class UsingScanHint(identifier: Identifier, label: LabelName)(val position: InputPosition) extends UsingHint {
+case class UsingScanHint(identifier: Identifier, label: LabelName)(val position: InputPosition) extends RonjaHint {
   def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
 }
+
+// start items
+
+sealed trait StartItem extends ASTNode with ASTPhrase with SemanticCheckable {
+  def identifier: Identifier
+  def name = identifier.name
+}
+
+sealed trait NodeStartItem extends StartItem {
+  def semanticCheck = identifier.declare(CTNode)
+}
+
+case class NodeByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression)(val position: InputPosition)
+  extends NodeStartItem with LegacyHint
+
+case class NodeByIndexQuery(identifier: Identifier, index: Identifier, query: Expression)(val position: InputPosition)
+  extends NodeStartItem with LegacyHint
+
+case class NodeByParameter(identifier: Identifier, parameter: Parameter)(val position: InputPosition) extends NodeStartItem
+case class AllNodes(identifier: Identifier)(val position: InputPosition) extends NodeStartItem
+
+sealed trait RelationshipStartItem extends StartItem {
+  def semanticCheck = identifier.declare(CTRelationship)
+}
+
+case class RelationshipByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends RelationshipStartItem
+case class RelationshipByParameter(identifier: Identifier, parameter: Parameter)(val position: InputPosition) extends RelationshipStartItem
+case class AllRelationships(identifier: Identifier)(val position: InputPosition) extends RelationshipStartItem
+case class RelationshipByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression)(val position: InputPosition) extends RelationshipStartItem
+case class RelationshipByIndexQuery(identifier: Identifier, index: Identifier, query: Expression)(val position: InputPosition) extends RelationshipStartItem
+
+// no longer supported non-hint legacy start items
+
+case class NodeByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends NodeStartItem {
+  override def semanticCheck = {
+    val idListString = ids.map(_.stringVal).mkString(", ")
+    val predicateString = if (ids.size == 1) s"id($name) = $idListString" else s"id($name) IN [$idListString]"
+    val msg = s"Using 'START $name = node($idListString)' is no longer supported.  Please instead use 'MATCH $name WHERE $predicateString'"
+    SemanticCheckResult.error(_, SemanticError(msg, position, identifier.position +: ids.map(_.position): _*))
+  }
+}
+

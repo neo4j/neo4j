@@ -1063,7 +1063,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         |WITH r AS `r`, a1 AS `a1` LIMIT UnsignedDecimalIntegerLiteral("1")
         |GIVEN a1, r
         |OPTIONAL
-        |  { 
+        |  {
         |    GIVEN a1, r
         |    MATCH (a2), (b2), (a2)<-[r]-(b2)
         |    WHERE Predicate[a1,a2](Equals(a1, a2))
@@ -1100,6 +1100,26 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tail.graph.patternNodes should equal(Set(IdName("x"), IdName("d")))
 
     tail.graph.optionalMatches should be (empty)
+  }
+
+  test("START n=node:nodes(name = \"A\") RETURN n") {
+    val UnionQuery(query :: Nil, _) =
+      buildPlannerQuery("START n=node:nodes(name = \"A\") RETURN n")
+
+    val hint: LegacyHint = NodeByIdentifiedIndex(ident("n"), ident("nodes"), ident("name"), StringLiteral("A")_)_
+
+    query.graph.hints should equal(Set(hint))
+    query.tail should equal(None)
+  }
+
+  test("START n=node:nodes(\"name:A\") RETURN n") {
+    val UnionQuery(query :: Nil, _) =
+      buildPlannerQuery("START n=node:nodes(\"name:A\") RETURN n")
+
+    val hint: LegacyHint = NodeByIndexQuery(ident("n"), ident("nodes"), StringLiteral("name:A")_)_
+
+    query.graph.hints should equal(Set(hint))
+    query.tail should equal(None)
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)_

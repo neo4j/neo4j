@@ -29,7 +29,8 @@ case class InputPosition(offset: Int, line: Int, column: Int) {
   }
   def canEqual(that: Any): Boolean = that.isInstanceOf[InputPosition]
 
-  override def toString = "line " + line + ", column " + column
+  // override def toString = s"line $line, column $column (offset: $offset)"
+  override def toString = s"line $line, column $column"
 }
 
 object InputPosition {

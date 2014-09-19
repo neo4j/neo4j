@@ -110,7 +110,7 @@ trait Clauses extends Parser
     group(keyword("USING PERIODIC COMMIT") ~~ optional(SignedIntegerLiteral)) ~~>> (ast.PeriodicCommitHint(_))
   )
 
-  private def Hint: Rule1[ast.UsingHint] = rule("USING") (
+  private def Hint: Rule1[ast.RonjaHint] = rule("USING") (
       group(keyword("USING INDEX") ~~ Identifier ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _))
     | group(keyword("USING SCAN") ~~ Identifier ~~ NodeLabel) ~~>> (ast.UsingScanHint(_, _))
   )
