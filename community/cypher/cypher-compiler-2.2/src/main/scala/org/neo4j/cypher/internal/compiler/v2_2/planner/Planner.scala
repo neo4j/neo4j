@@ -94,7 +94,6 @@ object Planner {
       splitInCollectionsToIsolateConstants,
       CNFNormalizer,
       collapseInCollectionsContainingConstants,
-      nameVarLengthRelationships,
       namePatternPredicates,
       nameUpdatingClauses,
       projectNamedPaths,

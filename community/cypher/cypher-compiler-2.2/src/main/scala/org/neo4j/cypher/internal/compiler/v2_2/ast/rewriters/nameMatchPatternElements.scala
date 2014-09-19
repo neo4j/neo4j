@@ -23,91 +23,55 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator
 
-case object nameMatchPatternElements extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(that)
-
-  private val namingRewriter: Rewriter = Rewriter.lift {
+case object namePatternElements {
+  //TODO offset+1 is here for avoiding clashes with legacy stuff in NodePatternConverter
+  val namingRewriter: Rewriter = bottomUp(Rewriter.lift {
     case pattern: NodePattern if !pattern.identifier.isDefined =>
       val syntheticName = UnNamedNameGenerator.name(pattern.position.offset + 1)
       pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
 
-    // TODO: Don't exclude varlength relationships (currently need to be for legacy conversion)
-    case pattern: RelationshipPattern if !pattern.identifier.isDefined && !pattern.length.isDefined =>
-      val syntheticName = UnNamedNameGenerator.name(pattern.position.offset)
+    case pattern: RelationshipPattern if !pattern.identifier.isDefined  =>
+      val syntheticName = UnNamedNameGenerator.name(pattern.position.offset + 1)
       pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
-
-  }
-
-  private val findingRewriter: Rewriter = Rewriter.lift {
-    case m: Match =>
-      val rewrittenPattern = m.pattern.endoRewrite(bottomUp(namingRewriter))
-      m.copy(pattern = rewrittenPattern)(m.position)
-  }
+  })
 }
 
-// TODO: When Ronja is the only planner left, move these to nameMatchPatternElements
-case object nameVarLengthRelationships extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(that)
+case object nameMatchPatternElements extends Rewriter {
+  def apply(that: AnyRef): Option[AnyRef] = findingRewriter.apply(that)
 
-  private val namingRewriter: Rewriter = Rewriter.lift {
-    case pattern: RelationshipPattern if !pattern.identifier.isDefined && pattern.length.isDefined =>
-      val syntheticName = UnNamedNameGenerator.name(pattern.position.offset)
-      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
-  }
-
-  private val findingRewriter: Rewriter = Rewriter.lift {
+  private val findingRewriter: Rewriter = bottomUp(Rewriter.lift {
     case m: Match =>
-      val rewrittenPattern = m.pattern.endoRewrite(bottomUp(namingRewriter))
+      val rewrittenPattern = m.pattern.endoRewrite(namePatternElements.namingRewriter)
       m.copy(pattern = rewrittenPattern)(m.position)
-  }
+  })
 }
 
 // TODO: When Ronja is the only planner left, move these to nameMatchPatternElements
 case object namePatternPredicates extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(that)
 
-  private val namingRewriter: Rewriter = Rewriter.lift {
-    case pattern: NodePattern if !pattern.identifier.isDefined =>
-      val syntheticName = UnNamedNameGenerator.name(pattern.position.offset + 1)
-      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
-
-    case pattern: RelationshipPattern if !pattern.identifier.isDefined =>
-      val syntheticName = UnNamedNameGenerator.name(pattern.position.offset)
-      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
-  }
-
   private val findingRewriter: Rewriter = Rewriter.lift {
     case exp: PatternExpression =>
-      val rewrittenPattern = exp.pattern.endoRewrite(bottomUp(namingRewriter))
+      val rewrittenPattern = exp.pattern.endoRewrite(namePatternElements.namingRewriter)
       exp.copy(pattern = rewrittenPattern)
   }
 }
 
 case object nameUpdatingClauses extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(that)
+  def apply(that: AnyRef): Option[AnyRef] = findingRewriter.apply(that)
 
-  private val namingRewriter: Rewriter = Rewriter.lift {
-    case pattern: NodePattern if !pattern.identifier.isDefined => {
-      val syntheticName = UnNamedNameGenerator.name(pattern.position.offset + 1)
-      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
-    }
-    case pattern: RelationshipPattern if !pattern.identifier.isDefined =>
-      val syntheticName = UnNamedNameGenerator.name(pattern.position.offset)
-      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
-  }
-
-  private val findingRewriter: Rewriter = Rewriter.lift {
+  private val findingRewriter: Rewriter = bottomUp(Rewriter.lift {
     case createUnique@CreateUnique(pattern) => {
-      val rewrittenPattern = pattern.endoRewrite(bottomUp(namingRewriter))
+      val rewrittenPattern = pattern.endoRewrite(namePatternElements.namingRewriter)
       createUnique.copy(pattern = rewrittenPattern)(createUnique.position)
     }
     case create@Create(pattern) => {
-      val rewrittenPattern = pattern.endoRewrite(bottomUp(namingRewriter))
+      val rewrittenPattern = pattern.endoRewrite(namePatternElements.namingRewriter)
       create.copy(pattern = rewrittenPattern)(create.position)
     }
     case merge@Merge(pattern, _) => {
-      val rewrittenPattern = pattern.endoRewrite(bottomUp(namingRewriter))
+      val rewrittenPattern = pattern.endoRewrite(namePatternElements.namingRewriter)
       merge.copy(pattern = rewrittenPattern)(merge.position)
     }
-  }
+  })
 }
