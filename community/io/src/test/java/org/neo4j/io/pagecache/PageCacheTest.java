@@ -42,7 +42,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.adversaries.RandomAdversary;
@@ -3020,7 +3019,6 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         }
     }
 
-    @Ignore( "Ignored because the StandardPageCache doesn't yet pass this test." )
     @Test(timeout = 60000)
     public void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures() throws Exception
     {
