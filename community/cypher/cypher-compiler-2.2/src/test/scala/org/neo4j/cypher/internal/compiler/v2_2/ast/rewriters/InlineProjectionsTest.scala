@@ -56,10 +56,22 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     result should equal(ast("MATCH (a:Start) WITH a LIMIT 1 MATCH (b) WHERE id(b) = a.prop RETURN b, a.prop AS property"))
   }
 
-  test("should inline: MATCH (a) WITH a WHERE TRUE RETURN a") {
-    val result = projectionInlinedAst("MATCH (a) WITH a WHERE TRUE RETURN a")
+  test("should not inline WHERE") {
+    val result = projectionInlinedAst(
+      """MATCH a, b, c
+        |WITH length(c.prop) AS d, b
+        |WITH b, d WHERE b.bar
+        |RETURN d
+      """.stripMargin)
 
-    result should equal(parser.parse("MATCH (a) WITH a AS a WITH a AS a WHERE true WITH a AS a RETURN a AS a"))
+    result should equal(ast(
+      """MATCH a, b, c
+        |WITH c AS c, b AS b
+        |WITH b AS b, c AS c
+        |WITH b AS b, c AS c, b.bar AS `  FRESHID60` WHERE `  FRESHID60`
+        |WITH b AS b, c AS c
+        |RETURN length(c.prop) AS d
+      """.stripMargin))
   }
 
   test("should inline pattern identifiers when possible") {
