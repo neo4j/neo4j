@@ -101,10 +101,6 @@ case object inlineProjections extends Rewriter {
           item.copy(expression = inlineExpressions(item.expression))(item.position)
         )
       }
-      if (newItems.isEmpty) {
-        ReturnAll()(lri.position)
-      } else {
-        lri.copy(items = newItems)(lri.position)
-      }
+      lri.copy(items = newItems)(lri.position)
   }
 }
