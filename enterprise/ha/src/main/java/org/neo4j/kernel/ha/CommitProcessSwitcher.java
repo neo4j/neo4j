@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha;
 
 import java.net.URI;
 
-import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -41,13 +40,12 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
                                   DelegateInvocationHandler<TransactionCommitProcess> delegate,
                                   RequestContextFactory requestContextFactory,
                                   HighAvailabilityMemberStateMachine memberStateMachine,
-                                  TransactionCommittingResponseUnpacker unpacker,
                                   NeoStoreInjectedTransactionValidator validator,
                                   TransactionRepresentationCommitProcess innerCommitProcess )
     {
         super( memberStateMachine, delegate );
         this.masterImpl = new MasterTransactionCommitProcess( innerCommitProcess, pusher, validator );
-        this.slaveImpl = new SlaveTransactionCommitProcess( master, requestContextFactory, unpacker );
+        this.slaveImpl = new SlaveTransactionCommitProcess( master, requestContextFactory );
     }
 
     @Override

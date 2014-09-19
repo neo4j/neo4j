@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 
-import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -37,14 +36,11 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
 {
     private final Master master;
     private final RequestContextFactory requestContextFactory;
-    private final TransactionCommittingResponseUnpacker unpacker;
 
-    public SlaveTransactionCommitProcess( Master master, RequestContextFactory requestContextFactory,
-                                          TransactionCommittingResponseUnpacker unpacker )
+    public SlaveTransactionCommitProcess( Master master, RequestContextFactory requestContextFactory )
     {
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.unpacker = unpacker;
     }
 
     @Override
@@ -52,7 +48,7 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
     {
         try
         {
-            return unpacker.unpackResponse( master.commit( requestContextFactory.newRequestContext(), representation ) );
+            return master.commit( requestContextFactory.newRequestContext(), representation ).response();
         }
         catch ( IOException e )
         {

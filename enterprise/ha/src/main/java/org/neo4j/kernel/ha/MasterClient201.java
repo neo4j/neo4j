@@ -34,6 +34,7 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
@@ -75,12 +76,12 @@ public class MasterClient201 extends Client<Master> implements MasterClient
 
     private final long lockReadTimeout;
 
-    public MasterClient201( String hostNameOrIp, int port, Logging logging, StoreId storeId,
-                           long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize,
-                           ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor)
+    public MasterClient201( String hostNameOrIp, int port, Logging logging, StoreId storeId, long readTimeoutSeconds,
+                            long lockReadTimeout, int maxConcurrentChannels, int chunkSize, ResponseUnpacker unpacker,
+                            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
-                readTimeoutSeconds, maxConcurrentChannels, chunkSize, byteCounterMonitor, requestMonitor );
+        super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION, readTimeoutSeconds,
+                maxConcurrentChannels, chunkSize, unpacker, byteCounterMonitor, requestMonitor );
         this.lockReadTimeout = lockReadTimeout;
     }
 

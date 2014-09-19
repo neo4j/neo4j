@@ -23,6 +23,7 @@ import org.neo4j.com.Protocol;
 import org.neo4j.com.Protocol214;
 import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -33,12 +34,12 @@ public class MasterClient214 extends MasterClient210
 {
     public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 8, INTERNAL_PROTOCOL_VERSION );
 
-    public MasterClient214( String hostNameOrIp, int port, Logging logging, StoreId storeId,
-                            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize,
+    public MasterClient214( String hostNameOrIp, int port, Logging logging, StoreId storeId, long readTimeoutSeconds,
+                            long lockReadTimeout, int maxConcurrentChannels, int chunkSize, ResponseUnpacker unpacker,
                             ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( hostNameOrIp, port, logging, storeId, readTimeoutSeconds, lockReadTimeout,
-                maxConcurrentChannels, chunkSize, PROTOCOL_VERSION, byteCounterMonitor, requestMonitor );
+        super( hostNameOrIp, port, logging, storeId, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels,
+                chunkSize, PROTOCOL_VERSION, unpacker, byteCounterMonitor, requestMonitor );
     }
 
     @Override

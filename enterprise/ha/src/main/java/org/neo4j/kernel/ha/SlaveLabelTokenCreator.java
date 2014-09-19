@@ -21,16 +21,14 @@ package org.neo4j.kernel.ha;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 
 public class SlaveLabelTokenCreator extends AbstractTokenCreator
 {
-    public SlaveLabelTokenCreator( Master master, RequestContextFactory requestContextFactory,
-                                   TransactionCommittingResponseUnpacker committer )
+    public SlaveLabelTokenCreator( Master master, RequestContextFactory requestContextFactory )
     {
-        super( master, requestContextFactory, committer );
+        super( master, requestContextFactory );
     }
 
     @Override

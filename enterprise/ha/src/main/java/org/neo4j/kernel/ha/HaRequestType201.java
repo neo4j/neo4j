@@ -248,7 +248,14 @@ public enum HaRequestType201 implements RequestType<Master>
             return master.copyStore( context, new ToNetworkStoreWriter( target, new Monitors() ) );
         }
 
-    }, VOID_SERIALIZER ),
+    }, VOID_SERIALIZER )
+            {
+                @Override
+                public boolean responseShouldBeUnpacked()
+                {
+                    return false;
+                }
+            },
 
     // ====
     PLACEHOLDER_FOR_COPY_TRANSACTIONS( new TargetCaller<Master, Void>()
@@ -456,6 +463,12 @@ public enum HaRequestType201 implements RequestType<Master>
     public byte id()
     {
         return (byte) ordinal();
+    }
+
+    @Override
+    public boolean responseShouldBeUnpacked()
+    {
+        return true;
     }
 
     public boolean isLock()

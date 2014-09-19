@@ -49,7 +49,7 @@ import org.junit.rules.ExternalResource;
  */
 public class CleanupRule extends ExternalResource
 {
-    private static final String[] COMMON_CLOSE_METHOD_NAMES = { "close", "shutdown", "shutDown" };
+    private static final String[] COMMON_CLOSE_METHOD_NAMES = {"close", "stop", "shutdown", "shutDown"};
     private final LinkedList<AutoCloseable> toCloseAfterwards = new LinkedList<>();
 
     @Override

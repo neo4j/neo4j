@@ -31,8 +31,6 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.RequestContext;
-import org.neo4j.com.Response;
-import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
@@ -67,7 +65,6 @@ public class UpdatePullerTest
     private final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
     private final LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
     private final Master master = mock( Master.class );
-    private final TransactionCommittingResponseUnpacker unpacker = mock( TransactionCommittingResponseUnpacker.class );
     private final StringLogger stringLogger = mock( StringLogger.class );
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
 
@@ -91,8 +88,7 @@ public class UpdatePullerTest
                 lastUpdateTime,
                 config,
                 scheduler,
-                stringLogger,
-                unpacker );
+                stringLogger );
 
         // WHEN
         puller.init();
@@ -101,7 +97,7 @@ public class UpdatePullerTest
         // Asserts the puller set the job
         assertNotNull( scheduler.getJob() );
         scheduler.runJob();
-        verifyZeroInteractions( lastUpdateTime, availabilityGuard, unpacker );
+        verifyZeroInteractions( lastUpdateTime, availabilityGuard );
     }
 
     @Test
@@ -116,8 +112,7 @@ public class UpdatePullerTest
                 lastUpdateTime,
                 config,
                 scheduler,
-                stringLogger,
-                unpacker );
+                stringLogger );
 
         // WHEN
         puller.init();
@@ -131,13 +126,12 @@ public class UpdatePullerTest
 
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( unpacker, times( 1 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
         puller.stop();
         scheduler.runJob();
 
-        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard, unpacker );
+        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard );
     }
 
     @Test
@@ -152,8 +146,7 @@ public class UpdatePullerTest
                 lastUpdateTime,
                 config,
                 scheduler,
-                stringLogger,
-                unpacker );
+                stringLogger );
 
         // WHEN
         puller.init();
@@ -163,14 +156,13 @@ public class UpdatePullerTest
         // THEN
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( unpacker, times( 1 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
         stateMachine.switchInstanceToMaster();
 
         scheduler.runJob();
 
-        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard, unpacker );
+        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard );
     }
 
     @Test
@@ -187,8 +179,7 @@ public class UpdatePullerTest
                 lastUpdateTime,
                 config,
                 scheduler,
-                stringLogger,
-                unpacker );
+                stringLogger );
 
         // WHEN
         puller.init();
@@ -198,7 +189,6 @@ public class UpdatePullerTest
         // THEN
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( unpacker, times( 1 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
         memberStateMachine.switchInstanceToSlave();
@@ -207,7 +197,6 @@ public class UpdatePullerTest
 
         verify( lastUpdateTime, times( 2 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 2 ) ).isAvailable( anyLong() );
-        verify( unpacker, times( 2 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 2 ) ).pullUpdates( Matchers.<RequestContext>any() );
     }
 
@@ -225,8 +214,7 @@ public class UpdatePullerTest
                 lastUpdateTime,
                 config,
                 scheduler,
-                stringLogger,
-                unpacker );
+                stringLogger );
 
         // WHEN
         puller.init();
@@ -236,7 +224,6 @@ public class UpdatePullerTest
         // THEN
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( unpacker, times( 1 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
         memberStateMachine.switchInstanceToMaster();
@@ -249,7 +236,6 @@ public class UpdatePullerTest
 
         verify( lastUpdateTime, times( 2 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 2 ) ).isAvailable( anyLong() );
-        verify( unpacker, times( 2 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 2 ) ).pullUpdates( Matchers.<RequestContext>any() );
     }
 
@@ -266,8 +252,7 @@ public class UpdatePullerTest
                 lastUpdateTime,
                 config,
                 scheduler,
-                stringLogger,
-                unpacker );
+                stringLogger );
 
         puller.init();
         puller.start();
@@ -275,7 +260,6 @@ public class UpdatePullerTest
 
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( unpacker, times( 1 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
         memberStateMachine.switchInstanceToSlave();
@@ -284,12 +268,11 @@ public class UpdatePullerTest
 
         verify( lastUpdateTime, times( 2 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 2 ) ).isAvailable( anyLong() );
-        verify( unpacker, times( 2 ) ).unpackResponse( Matchers.<Response>any() );
         verify( master, times( 2 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
         memberStateMachine.switchInstanceToMaster();
 
-        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard, unpacker );
+        verifyNoMoreInteractions( lastUpdateTime, availabilityGuard );
     }
 
     private static class OnDemandCallScheduler extends LifecycleAdapter implements JobScheduler
@@ -346,9 +329,9 @@ public class UpdatePullerTest
 
         public CapturingHighAvailabilityMemberStateMachine( InstanceId myId )
         {
-            super( mock( HighAvailabilityMemberContext.class ), mock(AvailabilityGuard.class ),
-                    mock(ClusterMembers.class ), mock(ClusterMemberEvents.class ), mock(Election.class ),
-                    mock(StringLogger.class ) );
+            super( mock( HighAvailabilityMemberContext.class ), mock( AvailabilityGuard.class ),
+                    mock( ClusterMembers.class ), mock( ClusterMemberEvents.class ), mock( Election.class ),
+                    mock( StringLogger.class ) );
             this.myId = myId;
             this.uri = URI.create( "ha://me" );
         }
@@ -361,9 +344,9 @@ public class UpdatePullerTest
 
         public void switchInstanceToSlave()
         {
-             listener.slaveIsAvailable(
-                     new HighAvailabilityMemberChangeEvent(
-                             HighAvailabilityMemberState.TO_SLAVE, HighAvailabilityMemberState.SLAVE, myId, uri ) );
+            listener.slaveIsAvailable(
+                    new HighAvailabilityMemberChangeEvent(
+                            HighAvailabilityMemberState.TO_SLAVE, HighAvailabilityMemberState.SLAVE, myId, uri ) );
         }
 
         public void switchInstanceToMaster()

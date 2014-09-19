@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.com.MismatchingVersionHandler;
 import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.ha.MasterClient201;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
@@ -38,6 +39,7 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
 {
     private volatile MasterClientFactory currentFactory;
 
+    private final ResponseUnpacker responseUnpacker;
     private final Map<ProtocolVersion, MasterClientFactory> protocolToFactoryMapping;
 
     @Override
@@ -60,9 +62,10 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         getFor( new ProtocolVersion( received, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ) );
     }
 
-    public MasterClientResolver( Logging logging, int readTimeout, int lockReadTimeout, int channels,
-                                 int chunkSize )
+    public MasterClientResolver( Logging logging, ResponseUnpacker responseUnpacker,
+                                 int readTimeout, int lockReadTimeout, int channels, int chunkSize )
     {
+        this.responseUnpacker = responseUnpacker;
         protocolToFactoryMapping = new HashMap<>();
         protocolToFactoryMapping.put( MasterClient201.PROTOCOL_VERSION, new F201( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
@@ -106,7 +109,7 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         }
     }
 
-    private static final class F201 extends StaticMasterClientFactory
+    private final class F201 extends StaticMasterClientFactory
     {
         public F201( Logging logging, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
                      int chunkSize )
@@ -118,14 +121,14 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors,
                                          StoreId storeId, LifeSupport life )
         {
-            return life.add( new MasterClient201( hostNameOrIp, port, logging, storeId,
-                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize,
-                    monitors.newMonitor( ByteCounterMonitor.class, MasterClient201.class),
-                    monitors.newMonitor( RequestMonitor.class, MasterClient201.class )) );
+            return life.add( new MasterClient201( hostNameOrIp, port, logging, storeId, readTimeoutSeconds,
+                    lockReadTimeout, maxConcurrentChannels, chunkSize, responseUnpacker,
+                    monitors.newMonitor( ByteCounterMonitor.class, MasterClient201.class ),
+                    monitors.newMonitor( RequestMonitor.class, MasterClient201.class ) ) );
         }
     }
 
-    private static final class F210 extends StaticMasterClientFactory
+    private final class F210 extends StaticMasterClientFactory
     {
         public F210( Logging logging, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
                      int chunkSize )
@@ -137,14 +140,14 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors,
                                          StoreId storeId, LifeSupport life )
         {
-            return life.add( new MasterClient210( hostNameOrIp, port, logging, storeId,
-                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize,
+            return life.add( new MasterClient210( hostNameOrIp, port, logging, storeId, readTimeoutSeconds,
+                    lockReadTimeout, maxConcurrentChannels, chunkSize, responseUnpacker,
                     monitors.newMonitor( ByteCounterMonitor.class, MasterClient210.class ),
                     monitors.newMonitor( RequestMonitor.class, MasterClient210.class ) ) );
         }
     }
 
-    private static final class F214 extends StaticMasterClientFactory
+    private final class F214 extends StaticMasterClientFactory
     {
         public F214( Logging logging, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
                      int chunkSize )
@@ -156,8 +159,8 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors,
                                          StoreId storeId, LifeSupport life )
         {
-            return life.add( new MasterClient214( hostNameOrIp, port, logging, storeId,
-                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize,
+            return life.add( new MasterClient214( hostNameOrIp, port, logging, storeId, readTimeoutSeconds,
+                    lockReadTimeout, maxConcurrentChannels, chunkSize, responseUnpacker,
                     monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
                     monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
         }

@@ -19,11 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.TokenCreator;
@@ -32,28 +29,17 @@ public abstract class AbstractTokenCreator implements TokenCreator
 {
     private final Master master;
     private final RequestContextFactory requestContextFactory;
-    private final TransactionCommittingResponseUnpacker unpacker;
 
-    protected AbstractTokenCreator( Master master, RequestContextFactory requestContextFactory,
-                                 TransactionCommittingResponseUnpacker unpacker )
+    protected AbstractTokenCreator( Master master, RequestContextFactory requestContextFactory )
     {
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.unpacker = unpacker;
     }
 
     @Override
     public final int getOrCreate( String name )
     {
-        Response<Integer> response = create( master, requestContextFactory.newRequestContext(), name );
-        try
-        {
-            return unpacker.unpackResponse( response );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return create( master, requestContextFactory.newRequestContext(), name ).response();
     }
 
     protected abstract Response<Integer> create( Master master, RequestContext context, String name );

@@ -30,6 +30,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
@@ -119,10 +120,12 @@ public class SwitchToSlave
     private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
 
-    public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver, HaIdGeneratorFactory
-            idGeneratorFactory, Logging logging, DelegateInvocationHandler<Master> masterDelegateHandler,
-                          ClusterMemberAvailability clusterMemberAvailability, RequestContextFactory
-            requestContextFactory, Iterable<KernelExtensionFactory<?>> kernelExtensions,
+    public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver,
+                          HaIdGeneratorFactory idGeneratorFactory, Logging logging,
+                          DelegateInvocationHandler<Master> masterDelegateHandler,
+                          ClusterMemberAvailability clusterMemberAvailability,
+                          RequestContextFactory requestContextFactory,
+                          Iterable<KernelExtensionFactory<?>> kernelExtensions, ResponseUnpacker responseUnpacker,
                           ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         this.console = console;
@@ -138,7 +141,7 @@ public class SwitchToSlave
         this.msgLog = logging.getMessagesLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
 
-        this.masterClientResolver = new MasterClientResolver( logging,
+        this.masterClientResolver = new MasterClientResolver( logging, responseUnpacker,
                 config.get( HaSettings.read_timeout ).intValue(),
                 config.get( HaSettings.lock_read_timeout ).intValue(),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),
@@ -304,8 +307,8 @@ public class SwitchToSlave
              */
             console.log( "Catching up with master" );
 
-            resolver.resolveDependency( TransactionCommittingResponseUnpacker.class ).
-                    unpackResponse( masterClient.pullUpdates( requestContextFactory.newRequestContext() ) );
+            masterClient.pullUpdates( requestContextFactory.newRequestContext() );
+
             console.log( "Now consistent with master" );
         }
         catch ( NoSuchLogVersionException e )

@@ -21,16 +21,14 @@ package org.neo4j.kernel.ha;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 
 public class SlaveRelationshipTypeCreator extends AbstractTokenCreator
 {
-    public SlaveRelationshipTypeCreator( Master master, RequestContextFactory requestContextFactory,
-                                         TransactionCommittingResponseUnpacker unpacker )
+    public SlaveRelationshipTypeCreator( Master master, RequestContextFactory requestContextFactory )
     {
-        super( master, requestContextFactory, unpacker );
+        super( master, requestContextFactory );
     }
 
     @Override

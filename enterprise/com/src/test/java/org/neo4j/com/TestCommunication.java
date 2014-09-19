@@ -19,10 +19,14 @@
  */
 package org.neo4j.com;
 
+import java.io.IOException;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
+import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -34,6 +38,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
@@ -67,9 +74,7 @@ public class TestCommunication
         MadeUpServerImplementation serverImplementation = new MadeUpServerImplementation( storeIdToUse );
         MadeUpServer server = builder.server( serverImplementation );
         MadeUpClient client = builder.client();
-        life.add( server );
-        life.add( client );
-        life.start();
+        addToLifeAndStart( server, client );
 
         int value1 = 10;
         int value2 = 5;
@@ -83,32 +88,28 @@ public class TestCommunication
     private void waitUntilResponseHasBeenWritten( MadeUpServer server, int maxTime ) throws Exception
     {
         long time = currentTimeMillis();
-        while ( !server.responseHasBeenWritten() && currentTimeMillis()-time < maxTime )
+        while ( !server.responseHasBeenWritten() && currentTimeMillis() - time < maxTime )
         {
             Thread.sleep( 50 );
         }
     }
 
-    @Test( expected = MismatchingStoreIdException.class )
+    @Test(expected = MismatchingStoreIdException.class)
     public void makeSureClientStoreIdsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.storeId( new StoreId( 10, 10, 10, 10 ) ).client();
-        life.add( server );
-        life.add( client );
-        life.start();
+        addToLifeAndStart( server, client );
 
         client.multiply( 1, 2 );
     }
 
-    @Test( expected = MismatchingStoreIdException.class )
+    @Test(expected = MismatchingStoreIdException.class)
     public void makeSureServerStoreIdsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.storeId( new StoreId( 10, 10, 10, 10 ) ).server();
         MadeUpClient client = builder.client();
-        life.add( server );
-        life.add( client );
-        life.start();
+        addToLifeAndStart( server, client );
 
         client.multiply( 1, 2 );
     }
@@ -118,12 +119,10 @@ public class TestCommunication
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
-        life.add( server );
-        life.add( client );
-        life.start();
+        addToLifeAndStart( server, client );
 
 
-        client.fetchDataStream( new ToAssertionWriter(), FRAME_LENGTH*3 );
+        client.fetchDataStream( new ToAssertionWriter(), FRAME_LENGTH * 3 );
     }
 
     @Test
@@ -136,19 +135,16 @@ public class TestCommunication
             public Response<Void> fetchDataStream( MadeUpWriter writer, int dataSize )
             {
                 writer.write( new FailingByteChannel( dataSize, failureMessage ) );
-                return new Response<Void>( null, storeIdToUse,
-                        TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+                return new Response<>( null, storeIdToUse, TransactionStream.EMPTY, ResourceReleaser.NO_OP );
             }
         };
         MadeUpServer server = builder.server( serverImplementation );
         MadeUpClient client = builder.client();
-        life.add( server );
-        life.add( client );
-        life.start();
+        addToLifeAndStart( server, client );
 
         try
         {
-            client.fetchDataStream( new ToAssertionWriter(), FRAME_LENGTH*2 );
+            client.fetchDataStream( new ToAssertionWriter(), FRAME_LENGTH * 2 );
             fail( "Should have thrown " + MadeUpException.class.getSimpleName() );
         }
         catch ( MadeUpException e )
@@ -166,8 +162,8 @@ public class TestCommunication
         life.add( client );
         life.start();
 
-        assertEquals( (Integer)(9*5), client.multiply( 9, 5 ).response() );
-        client.fetchDataStream( new ToAssertionWriter(), 1024*1024*3 );
+        assertEquals( (Integer) (9 * 5), client.multiply( 9, 5 ).response() );
+        client.fetchDataStream( new ToAssertionWriter(), 1024 * 1024 * 3 );
 
         server.shutdown();
     }
@@ -177,9 +173,7 @@ public class TestCommunication
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
-        life.add( server );
-        life.add( client );
-        life.start();
+        addToLifeAndStart( server, client );
 
         String exceptionMessage = "The message";
         try
@@ -196,24 +190,24 @@ public class TestCommunication
     @Test
     public void applicationProtocolVersionsMustMatch() throws Throwable
     {
-        MadeUpServer server = builder.applicationProtocolVersion( (byte) (APPLICATION_PROTOCOL_VERSION+1) ).server();
+        MadeUpServer server = builder.applicationProtocolVersion( (byte) (APPLICATION_PROTOCOL_VERSION + 1) ).server();
         MadeUpClient client = builder.client();
-        life.add( server );
-        life.add( client );
-        life.start();
+        addToLifeAndStart( server, client );
 
         try
         {
             client.multiply( 10, 20 );
             fail( "Shouldn't be able to communicate with different application protocol versions" );
         }
-        catch ( IllegalProtocolVersionException e ) { /* Good */ }
+        catch ( IllegalProtocolVersionException e )
+        { /* Good */ }
     }
 
     @Test
     public void applicationProtocolVersionsMustMatchMultiJvm() throws Throwable
     {
-        ServerInterface server = builder.applicationProtocolVersion( (byte)(APPLICATION_PROTOCOL_VERSION+1) ).serverInOtherJvm();
+        ServerInterface server = builder.applicationProtocolVersion( (byte) (APPLICATION_PROTOCOL_VERSION + 1) )
+                                        .serverInOtherJvm();
         server.awaitStarted();
         MadeUpClient client = builder.port( MadeUpServerProcess.PORT ).client();
         life.add( client );
@@ -224,7 +218,8 @@ public class TestCommunication
             client.multiply( 10, 20 );
             fail( "Shouldn't be able to communicate with different application protocol versions" );
         }
-        catch ( IllegalProtocolVersionException e ) { /* Good */ }
+        catch ( IllegalProtocolVersionException e )
+        { /* Good */ }
 
         server.shutdown();
     }
@@ -234,16 +229,15 @@ public class TestCommunication
     {
         MadeUpServer server = builder.internalProtocolVersion( (byte) 1 ).server();
         MadeUpClient client = builder.internalProtocolVersion( (byte) 2 ).client();
-        life.add( server );
-        life.add( client );
-        life.start();
+        addToLifeAndStart( server, client );
 
         try
         {
             client.multiply( 10, 20 );
             fail( "Shouldn't be able to communicate with different application protocol versions" );
         }
-        catch ( IllegalProtocolVersionException e ) { /* Good */ }
+        catch ( IllegalProtocolVersionException e )
+        { /* Good */ }
     }
 
     @Test
@@ -260,7 +254,8 @@ public class TestCommunication
             client.multiply( 10, 20 );
             fail( "Shouldn't be able to communicate with different application protocol versions" );
         }
-        catch ( IllegalProtocolVersionException e ) { /* Good */ }
+        catch ( IllegalProtocolVersionException e )
+        { /* Good */ }
 
         server.shutdown();
     }
@@ -270,15 +265,13 @@ public class TestCommunication
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
-        life.add( server );
-        life.add( client );
-        life.start();
+        addToLifeAndStart( server, client );
 
-        int failAtSize = FRAME_LENGTH/2;
+        int failAtSize = FRAME_LENGTH / 2;
         ClientCrashingWriter writer = new ClientCrashingWriter( client, failAtSize );
         try
         {
-            client.fetchDataStream( writer, FRAME_LENGTH*10 );
+            client.fetchDataStream( writer, FRAME_LENGTH * 10 );
             assertTrue( writer.getSizeRead() >= failAtSize );
             fail( "Should fail in the middle" );
         }
@@ -287,7 +280,7 @@ public class TestCommunication
         }
         assertTrue( writer.getSizeRead() >= failAtSize );
 
-        long maxWaitUntil = System.currentTimeMillis()+2*1000;
+        long maxWaitUntil = System.currentTimeMillis() + 2 * 1000;
         while ( !server.responseFailureEncountered() && System.currentTimeMillis() < maxWaitUntil )
         {
             yield();
@@ -310,9 +303,7 @@ public class TestCommunication
         };
         MadeUpServer server = builder.verifier( failingVerifier ).server();
         MadeUpClient client = builder.client();
-        life.add( server );
-        life.add( client );
-        life.start();
+        addToLifeAndStart( server, client );
 
         try
         {
@@ -330,40 +321,36 @@ public class TestCommunication
     public void clientCanReadChunkSizeBiggerThanItsOwn() throws Throwable
     {   // Given that frameLength is the same for both client and server.
         int serverChunkSize = 20000;
-        int clientChunkSize = serverChunkSize/10;
+        int clientChunkSize = serverChunkSize / 10;
         MadeUpServer server = builder.chunkSize( serverChunkSize ).server();
         MadeUpClient client = builder.chunkSize( clientChunkSize ).client();
 
-        life.add( server );
-        life.add( client );
-        life.start();
+        addToLifeAndStart( server, client );
 
         // Tell server to stream data occupying roughly two chunks. The chunks
         // from server are 10 times bigger than the clients chunk size.
-        client.fetchDataStream( new ToAssertionWriter(), serverChunkSize*2 );
+        client.fetchDataStream( new ToAssertionWriter(), serverChunkSize * 2 );
     }
 
     @Test
     public void serverCanReadChunkSizeBiggerThanItsOwn() throws Throwable
     {   // Given that frameLength is the same for both client and server.
         int serverChunkSize = 1000;
-        int clientChunkSize = serverChunkSize*10;
+        int clientChunkSize = serverChunkSize * 10;
         MadeUpServer server = builder.chunkSize( serverChunkSize ).server();
         MadeUpClient client = builder.chunkSize( clientChunkSize ).client();
 
-        life.add( server );
-        life.add( client );
-        life.start();
+        addToLifeAndStart( server, client );
 
         // Tell server to stream data occupying roughly two chunks. The chunks
         // from server are 10 times bigger than the clients chunk size.
-        client.sendDataStream( new DataProducer( clientChunkSize*2 ) );
+        client.sendDataStream( new DataProducer( clientChunkSize * 2 ) );
     }
 
     @Test
     public void impossibleToHaveBiggerChunkSizeThanFrameSize() throws Throwable
     {
-        Builder myBuilder = builder.chunkSize( MadeUpServer.FRAME_LENGTH+10 );
+        Builder myBuilder = builder.chunkSize( MadeUpServer.FRAME_LENGTH + 10 );
         try
         {
             myBuilder.server().start();
@@ -383,6 +370,47 @@ public class TestCommunication
         }
     }
 
+    @Test
+    @SuppressWarnings("rawtypes")
+    public void masterResponseShouldBeUnpackedIfRequestTypeRequires() throws IOException
+    {
+        // Given
+        ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );
+        MadeUpClient client = builder.clientWith( responseUnpacker );
+        addToLifeAndStart( builder.server(), client );
+
+        // When
+        client.multiply( 42, 42 );
+
+        // Then
+        ArgumentCaptor<Response> captor = ArgumentCaptor.forClass( Response.class );
+        verify( responseUnpacker ).unpackResponse( captor.capture() );
+        assertEquals( storeIdToUse, captor.getValue().getStoreId() );
+        assertEquals( 42 * 42, captor.getValue().response() );
+    }
+
+    @Test
+    public void masterResponseShouldNotBeUnpackedIfRequestTypeDoesNotRequire() throws IOException
+    {
+        // Given
+        ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );
+        MadeUpClient client = builder.clientWith( responseUnpacker );
+        addToLifeAndStart( builder.server(), client );
+
+        // When
+        client.sendDataStream( new KnownDataByteChannel( 100 ) );
+
+        // Then
+        verifyZeroInteractions( responseUnpacker );
+    }
+
+    private void addToLifeAndStart( MadeUpServer server, MadeUpClient client )
+    {
+        life.add( server );
+        life.add( client );
+        life.start();
+    }
+
     class Builder
     {
         private final int port;
@@ -399,7 +427,7 @@ public class TestCommunication
         }
 
         public Builder( int port, int chunkSize, byte internalProtocolVersion, byte applicationProtocolVersion,
-                TxChecksumVerifier verifier, StoreId storeId )
+                        TxChecksumVerifier verifier, StoreId storeId )
         {
             this.port = port;
             this.chunkSize = chunkSize;
@@ -411,32 +439,38 @@ public class TestCommunication
 
         public Builder port( int port )
         {
-            return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
+            return new Builder(
+                    port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
         public Builder chunkSize( int chunkSize )
         {
-            return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
+            return new Builder(
+                    port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
         public Builder internalProtocolVersion( byte internalProtocolVersion )
         {
-            return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
+            return new Builder(
+                    port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
         public Builder applicationProtocolVersion( byte applicationProtocolVersion )
         {
-            return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
+            return new Builder(
+                    port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
         public Builder verifier( TxChecksumVerifier verifier )
         {
-            return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
+            return new Builder(
+                    port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
         public Builder storeId( StoreId storeId )
         {
-            return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
+            return new Builder(
+                    port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
         public MadeUpServer server()
@@ -447,12 +481,20 @@ public class TestCommunication
 
         public MadeUpServer server( MadeUpCommunicationInterface target )
         {
-            return new MadeUpServer( target, port, internalProtocolVersion, applicationProtocolVersion, verifier, chunkSize );
+            return new MadeUpServer(
+                    target, port, internalProtocolVersion, applicationProtocolVersion, verifier, chunkSize );
         }
 
         public MadeUpClient client()
         {
-            return new MadeUpClient( port, storeId, internalProtocolVersion, applicationProtocolVersion, chunkSize );
+            return new MadeUpClient( port, storeId, internalProtocolVersion, applicationProtocolVersion, chunkSize,
+                    ResponseUnpacker.NO_OP_RESPONSE_UNPACKER );
+        }
+
+        public MadeUpClient clientWith( ResponseUnpacker responseUnpacker )
+        {
+            return new MadeUpClient( port, storeId, internalProtocolVersion, applicationProtocolVersion, chunkSize,
+                    responseUnpacker );
         }
 
         public ServerInterface serverInOtherJvm()

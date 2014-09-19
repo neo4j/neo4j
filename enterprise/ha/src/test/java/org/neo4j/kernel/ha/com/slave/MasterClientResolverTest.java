@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.com.slave;
 
 import org.junit.Test;
 
+import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -30,6 +31,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 import static org.neo4j.kernel.ha.MasterClient210.PROTOCOL_VERSION;
@@ -40,7 +42,8 @@ public class MasterClientResolverTest
     public void shouldResolveMasterClientFactory() throws Exception
     {
         // Given
-        MasterClientResolver resolver = new MasterClientResolver( new DevNullLoggingService(), 1, 1, 1, 1024 );
+        MasterClientResolver resolver =
+                new MasterClientResolver( new DevNullLoggingService(), mock( ResponseUnpacker.class ), 1, 1, 1, 1024 );
 
         LifeSupport life = new LifeSupport();
         try

@@ -28,6 +28,7 @@ import java.nio.channels.ReadableByteChannel;
 import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -42,13 +43,14 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     private final byte internalProtocolVersion;
 
     public MadeUpClient( int port, StoreId storeIdToExpect, byte internalProtocolVersion,
-                         byte applicationProtocolVersion, int chunkSize )
+                         byte applicationProtocolVersion, int chunkSize, ResponseUnpacker responseUnpacker )
     {
         super( localhost(), port, new DevNullLoggingService(), storeIdToExpect, FRAME_LENGTH,
                 new ProtocolVersion( applicationProtocolVersion, internalProtocolVersion ),
                 Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
-                chunkSize, new Monitors().newMonitor( ByteCounterMonitor.class ),
+                chunkSize, responseUnpacker,
+                new Monitors().newMonitor( ByteCounterMonitor.class ),
                 new Monitors().newMonitor( RequestMonitor.class ) );
         this.internalProtocolVersion = internalProtocolVersion;
     }

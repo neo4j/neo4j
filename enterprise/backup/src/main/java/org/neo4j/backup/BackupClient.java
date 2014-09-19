@@ -30,6 +30,7 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -42,13 +43,16 @@ import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
 
 class BackupClient extends Client<TheBackupInterface> implements TheBackupInterface
 {
-    public BackupClient( String hostNameOrIp, int port, Logging logging, StoreId storeId,
+
+    private static final int BIG_READ_TIMEOUT = 40 * 1000;
+
+    public BackupClient( String hostNameOrIp, int port, Logging logging, StoreId storeId, ResponseUnpacker unpacker,
                          ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         super( hostNameOrIp, port, logging, storeId, FRAME_LENGTH,
-                new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ), 40 * 1000,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
-                FRAME_LENGTH, byteCounterMonitor, requestMonitor );
+                new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ), BIG_READ_TIMEOUT,
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH, unpacker,
+                byteCounterMonitor, requestMonitor );
     }
 
     @Override
@@ -123,6 +127,12 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
         public byte id()
         {
             return (byte) ordinal();
+        }
+
+        @Override
+        public boolean responseShouldBeUnpacked()
+        {
+            return false;
         }
     }
 }

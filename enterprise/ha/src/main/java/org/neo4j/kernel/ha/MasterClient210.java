@@ -33,6 +33,7 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
@@ -74,22 +75,23 @@ public class MasterClient210 extends Client<Master> implements MasterClient
 
     private final long lockReadTimeoutMillis;
 
-    public MasterClient210( String hostNameOrIp, int port, Logging logging, StoreId storeId,
-                            long readTimeoutMillis, long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
+    public MasterClient210( String hostNameOrIp, int port, Logging logging, StoreId storeId, long readTimeoutMillis,
+                            long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
+                            ResponseUnpacker responseUnpacker,
                             ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
-                readTimeoutMillis, maxConcurrentChannels, chunkSize, byteCounterMonitor, requestMonitor );
+        super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION, readTimeoutMillis,
+                maxConcurrentChannels, chunkSize, responseUnpacker, byteCounterMonitor, requestMonitor );
         this.lockReadTimeoutMillis = lockReadTimeoutMillis;
     }
 
-    MasterClient210( String hostNameOrIp, int port, Logging logging, StoreId storeId,
-                            long readTimeoutMillis, long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
-                            ProtocolVersion protocolVersion,
-                            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+    MasterClient210( String hostNameOrIp, int port, Logging logging, StoreId storeId, long readTimeoutMillis,
+                     long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
+                     ProtocolVersion protocolVersion, ResponseUnpacker responseUnpacker,
+                     ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, protocolVersion, readTimeoutMillis,
-                maxConcurrentChannels, chunkSize, byteCounterMonitor, requestMonitor );
+                maxConcurrentChannels, chunkSize, responseUnpacker, byteCounterMonitor, requestMonitor );
         this.lockReadTimeoutMillis = lockReadTimeoutMillis;
     }
 

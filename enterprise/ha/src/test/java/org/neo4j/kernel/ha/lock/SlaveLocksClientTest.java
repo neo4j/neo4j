@@ -27,7 +27,6 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
-import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -51,37 +50,34 @@ public class SlaveLocksClientTest
     @Before
     public void setUp() throws Exception
     {
-        Locks localLockManager = mock( Locks.class );
+        Locks lockManager = mock( Locks.class );
 
         master = mock( Master.class );
-        local = mock(Locks.Client.class);
+        local = mock( Locks.Client.class );
 
-        when(local.tryExclusiveLock(any( Locks.ResourceType.class ), any( long.class ) ) ).thenReturn( true );
-        when(local.trySharedLock( any( Locks.ResourceType.class ), any( long.class ) ) ).thenReturn( true );
+        when( local.tryExclusiveLock( any( Locks.ResourceType.class ), any( long.class ) ) ).thenReturn( true );
+        when( local.trySharedLock( any( Locks.ResourceType.class ), any( long.class ) ) ).thenReturn( true );
 
-        when(localLockManager.newClient()).thenReturn( local );
+        when( lockManager.newClient() ).thenReturn( local );
 
         RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
 
-        when( master.acquireSharedLock( Matchers.<RequestContext>any(),
-                Matchers.<Locks.ResourceType>any(), Matchers.<long[]>anyVararg() ) ).thenReturn( new Response
-                <>( new LockResult( LockStatus.OK_LOCKED ), null,
-                TransactionStream.EMPTY, ResourceReleaser.NO_OP ) );
+        when( master.acquireSharedLock(
+                any( RequestContext.class ),
+                any( Locks.ResourceType.class ),
+                Matchers.<long[]>anyVararg() ) ).thenReturn( new Response<>( new LockResult( LockStatus.OK_LOCKED ),
+                null, TransactionStream.EMPTY, ResourceReleaser.NO_OP ) );
 
-        when( master.acquireExclusiveLock( Matchers.<RequestContext>anyObject(),
-                Matchers.<Locks.ResourceType>any(), Matchers.<long[]>anyVararg() ) ).thenReturn( new Response
-                <>( new LockResult( LockStatus.OK_LOCKED ), null,
-                TransactionStream.EMPTY, ResourceReleaser.NO_OP  ));
+        when( master.acquireExclusiveLock(
+                any( RequestContext.class ),
+                any( Locks.ResourceType.class ),
+                Matchers.<long[]>anyVararg() ) ).thenReturn( new Response<>( new LockResult( LockStatus.OK_LOCKED ),
+                null, TransactionStream.EMPTY, ResourceReleaser.NO_OP ) );
         AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
-        when( availabilityGuard.isAvailable( anyLong() )).thenReturn( true );
+        when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
         SlaveLockManager.Configuration config = mock( SlaveLockManager.Configuration.class );
 
-        TransactionCommittingResponseUnpacker unpacker = mock( TransactionCommittingResponseUnpacker.class );
-        when( unpacker.unpackResponse( Matchers.<Response>any() ) ).thenReturn( new LockResult( LockStatus.OK_LOCKED ) );
-
-        client = new SlaveLocksClient(
-                master, local, localLockManager, requestContextFactory, availabilityGuard,
-                unpacker, config );
+        client = new SlaveLocksClient( master, local, lockManager, requestContextFactory, availabilityGuard, config );
     }
 
     @Test
@@ -99,8 +95,8 @@ public class SlaveLocksClientTest
     public void shouldNotTakeSharedLockOnMasterIfWeAreAlreadyHoldingSaidLock_OverlappingBatch()
     {
         // Given the local locks do what they are supposed to do
-        when(local.trySharedLock( NODE, 1, 2 )).thenReturn( true );
-        when(local.trySharedLock( NODE, 2, 3 )).thenReturn( true );
+        when( local.trySharedLock( NODE, 1, 2 ) ).thenReturn( true );
+        when( local.trySharedLock( NODE, 2, 3 ) ).thenReturn( true );
 
         // When taking locks twice
         client.acquireShared( NODE, 1, 2 );
@@ -126,8 +122,8 @@ public class SlaveLocksClientTest
     public void shouldNotTakeExclusiveLockOnMasterIfWeAreAlreadyHoldingSaidLock_OverlappingBatch()
     {
         // Given the local locks do what they are supposed to do
-        when(local.tryExclusiveLock( NODE, 1, 2 )).thenReturn( true );
-        when(local.tryExclusiveLock( NODE, 2, 3 )).thenReturn( true );
+        when( local.tryExclusiveLock( NODE, 1, 2 ) ).thenReturn( true );
+        when( local.tryExclusiveLock( NODE, 2, 3 ) ).thenReturn( true );
 
         // When taking locks twice
         client.acquireExclusive( NODE, 1, 2 );
@@ -150,8 +146,8 @@ public class SlaveLocksClientTest
         client.releaseExclusive( NODE, 1l );
 
         // Then this should cause the local lock manager to hold the lock
-        verify( local, times(2) ).tryExclusiveLock( NODE, 1l);
-        verify( local, times(2) ).releaseExclusive( NODE, 1l);
+        verify( local, times( 2 ) ).tryExclusiveLock( NODE, 1l );
+        verify( local, times( 2 ) ).releaseExclusive( NODE, 1l );
     }
 
     @Test
@@ -166,8 +162,8 @@ public class SlaveLocksClientTest
         client.releaseShared( NODE, 1l );
 
         // Then this should cause the local lock manager to hold the lock
-        verify( local, times(2) ).trySharedLock( NODE, 1l);
-        verify( local, times(2) ).releaseShared( NODE, 1l);
+        verify( local, times( 2 ) ).trySharedLock( NODE, 1l );
+        verify( local, times( 2 ) ).releaseShared( NODE, 1l );
     }
 
     @Test
@@ -181,8 +177,8 @@ public class SlaveLocksClientTest
         client.releaseExclusive( NODE, 1l );
 
         // Then this should cause the local lock manager to hold the lock
-        verify( local, times(1) ).tryExclusiveLock( NODE, 1l);
-        verify( local, times(0) ).releaseExclusive( NODE, 1l);
+        verify( local, times( 1 ) ).tryExclusiveLock( NODE, 1l );
+        verify( local, times( 0 ) ).releaseExclusive( NODE, 1l );
     }
 
     @Test
@@ -196,7 +192,7 @@ public class SlaveLocksClientTest
         client.releaseShared( NODE, 1l );
 
         // Then this should cause the local lock manager to hold the lock
-        verify( local, times(1) ).trySharedLock( NODE, 1l);
-        verify( local, times(0) ).releaseShared( NODE, 1l);
+        verify( local, times( 1 ) ).trySharedLock( NODE, 1l );
+        verify( local, times( 0 ) ).releaseShared( NODE, 1l );
     }
 }

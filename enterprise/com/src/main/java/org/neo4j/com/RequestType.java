@@ -26,4 +26,6 @@ public interface RequestType<M>
     ObjectSerializer getObjectSerializer();
     
     byte id();
+
+    boolean responseShouldBeUnpacked();
 }

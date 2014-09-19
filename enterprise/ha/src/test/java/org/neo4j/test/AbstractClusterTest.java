@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.io.File;
+import java.util.concurrent.Executors;
 
 import org.junit.After;
 import org.junit.Before;
@@ -42,27 +43,26 @@ import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 public abstract class AbstractClusterTest
 {
     public @Rule TestName testName = new TestName();
-    private File dir;
     protected LifeSupport life;
     private final Provider provider;
     protected ClusterManager clusterManager;
     protected ManagedCluster cluster;
-    
+
     protected AbstractClusterTest( ClusterManager.Provider provider )
     {
         this.provider = provider;
     }
-    
+
     protected AbstractClusterTest()
     {
         this( clusterOfSize( 3 ) );
     }
-    
+
     @Before
     public void before() throws Exception
     {
         life = new LifeSupport();
-        dir = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
+        File dir = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
         clusterManager = life.add( new ClusterManager( provider, dir, stringMap( default_timeout.name(), "1s" ) )
         {
             @Override
@@ -71,7 +71,7 @@ public abstract class AbstractClusterTest
                 super.config( builder, clusterName, serverId );
                 configureClusterMember( builder, clusterName, serverId );
             }
-            
+
             @Override
             protected void insertInitialData( GraphDatabaseService db, String name, InstanceId serverId )
             {
@@ -91,10 +91,18 @@ public abstract class AbstractClusterTest
     protected void insertClusterMemberInitialData( GraphDatabaseService db, String name, InstanceId serverId )
     {
     }
-    
+
     @After
     public void after() throws Exception
     {
-        life.shutdown();
+        // Execute shutdown in separate thread to prevent deadlocks
+        Executors.newSingleThreadExecutor().submit( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                life.shutdown();
+            }
+        } ).get();
     }
 }
