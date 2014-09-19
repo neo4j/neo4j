@@ -30,11 +30,6 @@ class MuninnReadPageCursor extends MuninnPageCursor
 {
     private boolean optimisticLock;
 
-    public MuninnReadPageCursor( MuninnCursorFreelist freelist )
-    {
-        super( freelist );
-    }
-
     @Override
     protected void unpinCurrentPage()
     {
