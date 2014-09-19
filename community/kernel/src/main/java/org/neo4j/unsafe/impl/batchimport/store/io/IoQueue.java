@@ -20,8 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.store.io;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -49,7 +47,7 @@ public class IoQueue implements WriterFactory
                 delegateFactory );
     }
 
-    public IoQueue( ExecutorService executor, WriterFactory delegateFactory )
+    IoQueue( ExecutorService executor, WriterFactory delegateFactory )
     {
         this.executor = executor;
         this.delegateFactory = delegateFactory;
@@ -58,8 +56,9 @@ public class IoQueue implements WriterFactory
     @Override
     public Writer create( File file, StoreChannel channel, Monitor monitor )
     {
+        Writer writer = delegateFactory.create( file, channel, monitor );
         WriteQueue queue = new WriteQueue( executor, jobMonitor);
-        return new Funnel( file, channel, monitor, queue );
+        return new Funnel( writer, queue );
     }
 
     @Override
@@ -99,22 +98,4 @@ public class IoQueue implements WriterFactory
         }
     }
 
-    private class Funnel implements Writer
-    {
-        private final Writer writer;
-        private final WriteQueue queue;
-
-        public Funnel( File file, StoreChannel channel, Monitor monitor, WriteQueue queue )
-        {
-            this.writer = delegateFactory.create( file, channel, monitor );
-            this.queue = queue;
-        }
-
-        @Override
-        public void write( ByteBuffer byteBuffer, long position, SimplePool<ByteBuffer> poolToReleaseBufferIn )
-                throws IOException
-        {
-            queue.offer( new WriteJob( writer, byteBuffer, position, poolToReleaseBufferIn ) );
-        }
-    }
 }
