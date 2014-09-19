@@ -385,6 +385,20 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
+  test("START n = node(1) is no longer supported") {
+    expectError(
+      "START n = node(1) RETURN n",
+      "Using 'START n = node(1)' is no longer supported.  Please instead use 'MATCH n WHERE id(n) = 1"
+    )
+  }
+
+  test("START n = node(1, 2) is no longer supported") {
+    expectError(
+      "START n = node(1, 2) RETURN n",
+      "Using 'START n = node(1, 2)' is no longer supported.  Please instead use 'MATCH n WHERE id(n) IN [1, 2]"
+    )
+  }
+
   def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))
