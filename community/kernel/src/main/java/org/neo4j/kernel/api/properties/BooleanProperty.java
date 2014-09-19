@@ -57,19 +57,7 @@ final class BooleanProperty extends DefinedProperty
     @Override
     boolean hasEqualValue( DefinedProperty that )
     {
-        return value == ((BooleanProperty) that).value;
-    }
-
-    @Override
-    public boolean booleanValue()
-    {
-        return value;
-    }
-
-    @Override
-    public boolean booleanValue( boolean defaultValue )
-    {
-        return value;
+        return that instanceof BooleanProperty && value == ((BooleanProperty) that).value;
     }
 
     @Override

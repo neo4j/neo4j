@@ -26,8 +26,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Function;
@@ -137,7 +139,7 @@ public final class TxStateImpl implements TxState
 
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint;
 
-    private Map<IndexDescriptor, Map<Object,DiffSets<Long>>> indexUpdates;
+    private PrimitiveIntObjectMap<Map<DefinedProperty, DiffSets<Long>>> indexUpdates;
 
     private final OldTxStateBridge legacyState;
     private final PersistenceManager persistenceManager; // should go away dammit!
@@ -977,15 +979,15 @@ public final class TxStateImpl implements TxState
     @Override
     public DiffSets<Long> indexUpdates( IndexDescriptor descriptor, Object value )
     {
-        DiffSets<Long> diffs = getIndexUpdates( descriptor, false, value );
+        DiffSets<Long> diffs = getIndexUpdates( descriptor.getLabelId(), false, Property.property( descriptor.getPropertyKeyId(), value ) );
         return diffs == null ? DiffSets.<Long>emptyDiffSets() : diffs;
     }
 
     @Override
-    public void indexUpdateProperty( IndexDescriptor descriptor, long nodeId, Object valueBefore, Object valueAfter )
+    public void indexUpdateProperty( IndexDescriptor descriptor, long nodeId, DefinedProperty propertyBefore, DefinedProperty propertyAfter )
     {
         {
-            DiffSets<Long> before = getIndexUpdates( descriptor, true, valueBefore );
+            DiffSets<Long> before = getIndexUpdates( descriptor.getLabelId(), true, propertyBefore );
             if ( before != null )
             {
                 before.remove( nodeId );
@@ -1003,7 +1005,7 @@ public final class TxStateImpl implements TxState
             }
         }
         {
-            DiffSets<Long> after = getIndexUpdates( descriptor, true, valueAfter );
+            DiffSets<Long> after = getIndexUpdates( descriptor.getLabelId(), true, propertyAfter );
             if ( after != null )
             {
                 after.add( nodeId );
@@ -1022,9 +1024,9 @@ public final class TxStateImpl implements TxState
         }
     }
 
-    private DiffSets<Long> getIndexUpdates( IndexDescriptor index, boolean create, Object value )
+    private DiffSets<Long> getIndexUpdates( int label, boolean create, DefinedProperty property )
     {
-        if ( value == null )
+        if ( property == null )
         {
             return null;
         }
@@ -1034,21 +1036,21 @@ public final class TxStateImpl implements TxState
             {
                 return null;
             }
-            indexUpdates = new HashMap<>();
+            indexUpdates = Primitive.intObjectMap();
         }
-        Map<Object, DiffSets<Long>> updates = indexUpdates.get( index );
+        Map<DefinedProperty, DiffSets<Long>> updates = indexUpdates.get( label );
         if ( updates == null )
         {
             if ( !create )
             {
                 return null;
             }
-            indexUpdates.put( index, updates = new HashMap<>() );
+            indexUpdates.put( label, updates = new HashMap<>() );
         }
-        DiffSets<Long> diffs = updates.get( value );
+        DiffSets<Long> diffs = updates.get( property );
         if ( diffs == null && create )
         {
-            updates.put( value, diffs = new DiffSets<>() );
+            updates.put( property, diffs = new DiffSets<>() );
         }
         return diffs;
     }

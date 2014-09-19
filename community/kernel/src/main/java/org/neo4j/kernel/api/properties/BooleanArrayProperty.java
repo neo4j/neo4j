@@ -43,17 +43,44 @@ class BooleanArrayProperty extends DefinedProperty
     }
 
     @Override
-    public boolean valueEquals( Object value )
+    public boolean valueEquals( Object other )
     {
-        if ( value instanceof boolean[] )
+        return valueEquals( this.value, other );
+    }
+
+    static boolean valueEquals( boolean[] value, Object other )
+    {
+        if ( other instanceof boolean[] )
         {
-            return Arrays.equals( this.value, (boolean[]) value );
+            return Arrays.equals( value, (boolean[]) other );
         }
-        return valueCompare( this.value, value );
+        if ( other instanceof Boolean[] )
+        {
+            Boolean[] that = (Boolean[]) other;
+            int length = value.length;
+            if ( length == that.length )
+            {
+                for ( int i = 0; i < length; i++ )
+                {
+                    Boolean bool = that[i];
+                    if ( bool == null || bool != value[i] )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
     int valueHash()
+    {
+        return hash( value );
+    }
+
+    static int hash( boolean[] value )
     {
         return Arrays.hashCode( value );
     }
@@ -61,7 +88,7 @@ class BooleanArrayProperty extends DefinedProperty
     @Override
     boolean hasEqualValue( DefinedProperty that )
     {
-        return Arrays.equals( this.value, ((BooleanArrayProperty)that).value );
+        return that instanceof BooleanArrayProperty && Arrays.equals( this.value, ((BooleanArrayProperty) that).value );
     }
 
     @Override

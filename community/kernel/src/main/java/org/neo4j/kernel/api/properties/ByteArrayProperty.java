@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import java.util.Arrays;
-
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 
-class ByteArrayProperty extends DefinedProperty
+class ByteArrayProperty extends IntegralArrayProperty
 {
     private final byte[] value;
 
@@ -43,25 +41,15 @@ class ByteArrayProperty extends DefinedProperty
     }
 
     @Override
-    public boolean valueEquals( Object value )
+    public int length()
     {
-        if ( value instanceof byte[] )
-        {
-            return Arrays.equals( this.value, (byte[]) value );
-        }
-        return valueCompare( this.value, value );
+        return value.length;
     }
 
     @Override
-    int valueHash()
+    public long longValue( int index )
     {
-        return Arrays.hashCode( value );
-    }
-
-    @Override
-    boolean hasEqualValue( DefinedProperty that )
-    {
-        return Arrays.equals( this.value, ((ByteArrayProperty)that).value );
+        return value[index];
     }
 
     @Override

@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import java.util.Arrays;
-
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 
-class DoubleArrayProperty extends DefinedProperty
+class DoubleArrayProperty extends FloatingPointArrayProperty
 {
     private final double[] value;
 
@@ -43,26 +41,15 @@ class DoubleArrayProperty extends DefinedProperty
     }
 
     @Override
-    public boolean valueEquals( Object value )
+    public int length()
     {
-        if ( value instanceof double[] )
-        {
-            return Arrays.equals( this.value, (double[]) value );
-        }
-        return valueCompare( this.value, value );
-    }
-
-
-    @Override
-    int valueHash()
-    {
-        return Arrays.hashCode( value );
+        return value.length;
     }
 
     @Override
-    boolean hasEqualValue( DefinedProperty that )
+    public double doubleValue( int index )
     {
-        return Arrays.equals( this.value, ((DoubleArrayProperty)that).value );
+        return value[index];
     }
 
     @Override

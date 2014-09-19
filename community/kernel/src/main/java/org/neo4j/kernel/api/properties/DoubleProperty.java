@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.properties;
 
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
-final class DoubleProperty extends DefinedProperty
+final class DoubleProperty extends FloatingPointNumberProperty
 {
     private final double value;
 
@@ -32,33 +32,15 @@ final class DoubleProperty extends DefinedProperty
     }
 
     @Override
-    @SuppressWarnings("UnnecessaryUnboxing")
-    public boolean valueEquals( Object other )
+    double doubleValue()
     {
-        if ( other instanceof Double )
-        {
-            return value == ((Double) other).doubleValue();
-        }
-        return valueCompare( value, other );
+        return value;
     }
 
     @Override
     public Double value()
     {
         return value;
-    }
-
-    @Override
-    int valueHash()
-    {
-        long temp = Double.doubleToLongBits( value );
-        return (int) (temp ^ (temp >>> 32));
-    }
-
-    @Override
-    boolean hasEqualValue( DefinedProperty that )
-    {
-        return Double.compare( this.value, ((DoubleProperty) that).value ) == 0;
     }
 
     @Override
