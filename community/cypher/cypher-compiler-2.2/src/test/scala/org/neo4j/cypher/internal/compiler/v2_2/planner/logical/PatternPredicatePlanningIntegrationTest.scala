@@ -32,7 +32,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         AllNodesScan("a", Set.empty)(PlannerQuery.empty),
         Expand(
           SingleRow(Set("a"))(PlannerQuery.empty)(),
-          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
+          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED20", SimplePatternLength
         )(PlannerQuery.empty)
       )(PlannerQuery.empty)
     )
@@ -44,7 +44,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         AllNodesScan("a", Set.empty)(PlannerQuery.empty),
         Expand(
           SingleRow(Set("a"))(PlannerQuery.empty)(),
-          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED31", "  UNNAMED23", SimplePatternLength
+          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED31", "  UNNAMED24", SimplePatternLength
         )(PlannerQuery.empty)
       )(PlannerQuery.empty)
     )
@@ -57,12 +57,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           AllNodesScan("a", Set.empty)(PlannerQuery.empty),
           Expand(
             SingleRow(Set("a"))(PlannerQuery.empty)(),
-            "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("Y")_), "  UNNAMED44", "  UNNAMED36", SimplePatternLength
+            "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("Y")_), "  UNNAMED44", "  UNNAMED37", SimplePatternLength
           )(PlannerQuery.empty)
         )(PlannerQuery.empty),
         Expand(
           SingleRow(Set("a"))(PlannerQuery.empty)(),
-          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
+          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED20", SimplePatternLength
         )(PlannerQuery.empty)
       )(PlannerQuery.empty)
     )
@@ -74,7 +74,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         AllNodesScan("a", Set.empty)(PlannerQuery.empty),
         Expand(
           SingleRow(Set("a"))(PlannerQuery.empty)(),
-          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
+          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED20", SimplePatternLength
         )(PlannerQuery.empty),
         GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")_)_, SignedDecimalIntegerLiteral("4")_)_
       )(PlannerQuery.empty)
@@ -87,7 +87,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         AllNodesScan("a", Set.empty)(PlannerQuery.empty),
         Expand(
           SingleRow(Set("a"))(PlannerQuery.empty)(),
-          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED42", "  UNNAMED34", SimplePatternLength
+          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED42", "  UNNAMED35", SimplePatternLength
         )(PlannerQuery.empty),
         Ors(Set(
           In(Property(Identifier("a")_, PropertyKeyName("prop2")_)_, Collection(Seq(SignedDecimalIntegerLiteral("9")_))_)_,
@@ -103,7 +103,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         AllNodesScan("a", Set.empty)(PlannerQuery.empty),
         Expand(
           SingleRow(Set("a"))(PlannerQuery.empty)(),
-          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED45", "  UNNAMED37", SimplePatternLength
+          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED45", "  UNNAMED38", SimplePatternLength
         )(PlannerQuery.empty),
         In(Property(Identifier("a")_, PropertyKeyName("prop")_)_, Collection(Seq(SignedDecimalIntegerLiteral("9")_))_)_
       )(PlannerQuery.empty)
@@ -118,14 +118,14 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
             AllNodesScan("a", Set.empty)(PlannerQuery.empty),
             Expand(
               SingleRow(Set("a"))(PlannerQuery.empty)(),
-              "a", Direction.OUTGOING, Direction.OUTGOING,  Seq(RelTypeName("Y") _), "  UNNAMED41", "  UNNAMED33", SimplePatternLength
+              "a", Direction.OUTGOING, Direction.OUTGOING,  Seq(RelTypeName("Y") _), "  UNNAMED41", "  UNNAMED34", SimplePatternLength
             )(PlannerQuery.empty),
             "  FRESHID30",
             In(Property(Identifier("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9")_))_)_
           )(PlannerQuery.empty),
           Expand(
             SingleRow(Set("a"))(PlannerQuery.empty)(),
-            "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED61", "  UNNAMED53", SimplePatternLength
+            "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED61", "  UNNAMED54", SimplePatternLength
           )(PlannerQuery.empty),
           ident("  FRESHID30")
         )(PlannerQuery.empty),
@@ -142,13 +142,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
             AllNodesScan("a", Set.empty)(PlannerQuery.empty),
             Expand(
               SingleRow(Set("a"))(PlannerQuery.empty)(),
-              "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
+              "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED27", "  UNNAMED20", SimplePatternLength
             )(PlannerQuery.empty),
             "  FRESHID16"
           )(PlannerQuery.empty),
           Expand(
             SingleRow(Set("a"))(PlannerQuery.empty)(),
-            "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED47", "  UNNAMED39", SimplePatternLength
+            "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED47", "  UNNAMED40", SimplePatternLength
           )(PlannerQuery.empty),
           ident("  FRESHID16")
         )(PlannerQuery.empty),
@@ -165,13 +165,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
             AllNodesScan("a", Set.empty)(PlannerQuery.empty),
             Expand(
               SingleRow(Set("a"))(PlannerQuery.empty)(),
-              "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED31", "  UNNAMED23", SimplePatternLength
+              "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED31", "  UNNAMED24", SimplePatternLength
             )(PlannerQuery.empty),
             "  FRESHID20"
           )(PlannerQuery.empty),
           Expand(
             SingleRow(Set("a"))(PlannerQuery.empty)(),
-            "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED51", "  UNNAMED43", SimplePatternLength
+            "a", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED51", "  UNNAMED44", SimplePatternLength
           )(PlannerQuery.empty),
           ident("  FRESHID20")
         )(PlannerQuery.empty),

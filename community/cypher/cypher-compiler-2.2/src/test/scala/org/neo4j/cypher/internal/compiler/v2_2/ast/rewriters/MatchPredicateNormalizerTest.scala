@@ -122,4 +122,16 @@ class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
       "MATCH (n)-[r* {prop: 42, p: 'aaa'}]->(b) RETURN n",
       "MATCH (n)-[r*]->(b) WHERE ALL(`  FRESHID9` in r where `  FRESHID9`.prop = 42 AND `  FRESHID9`.p = 'aaa') RETURN n")
   }
+
+  test("varlength with labels") {
+    assertRewrite(
+      "MATCH (a:Artist)-[r:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *",
+      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND b:Artist AND ALL(`  FRESHID16` in r where `  FRESHID16`.year = 1988)  RETURN *")
+  }
+
+  test("varlength with labels and parameters") {
+    assertRewrite(
+      "MATCH (a:Artist)-[r:WORKED_WITH* { year: {foo} }]->(b:Artist) RETURN *",
+      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND b:Artist AND ALL(`  FRESHID16` in r where `  FRESHID16`.year = {foo})  RETURN *")
+  }
 }

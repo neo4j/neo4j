@@ -416,7 +416,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("match a where (a)-->() return a")
 
     // Then inner pattern query graph
-    val relName = "  UNNAMED17"
+    val relName = "  UNNAMED18"
     val nodeName = "  UNNAMED21"
     val exp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
@@ -475,7 +475,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("match a where a.prop = 42 OR (a)-->() return a")
 
     // Then inner pattern query graph
-    val relName = "  UNNAMED32"
+    val relName = "  UNNAMED33"
     val nodeName = "  UNNAMED36"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
@@ -498,7 +498,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("match a where (a)-->() OR a.prop = 42 return a")
 
     // Then inner pattern query graph
-    val relName = "  UNNAMED17"
+    val relName = "  UNNAMED18"
     val nodeName = "  UNNAMED21"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
@@ -522,7 +522,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("match a where a.prop2 = 21 OR (a)-->() OR a.prop = 42 return a")
 
     // Then inner pattern query graph
-    val relName = "  UNNAMED33"
+    val relName = "  UNNAMED34"
     val nodeName = "  UNNAMED37"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
@@ -874,7 +874,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         |      RelationshipsPattern(
         |        RelationshipChain(
         |          NodePattern(Some(owner), ⬨, None, false),
-        |          RelationshipPattern(Some(`  UNNAMED61`), false, ⬨, None, None, BOTH),
+        |          RelationshipPattern(Some(`  UNNAMED62`), false, ⬨, None, None, BOTH),
         |          NodePattern(Some(`  UNNAMED64`), ⬨, None, false)
         |        )
         |      )
@@ -933,7 +933,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         |      RelationshipsPattern(
         |        RelationshipChain(
         |          NodePattern(Some(owner), ⬨, None, false),
-        |          RelationshipPattern(Some(`  UNNAMED89`), false, ⬨, None, None, BOTH),
+        |          RelationshipPattern(Some(`  UNNAMED90`), false, ⬨, None, None, BOTH),
         |          NodePattern(Some(`  UNNAMED92`), ⬨, None, false)
         |        )
         |      )

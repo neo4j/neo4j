@@ -1543,6 +1543,20 @@ RETURN a.name""")
     ))
   }
 
+  test("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *") {
+    val a = createLabeledNode("Artist")
+    val b = createLabeledNode("Artist")
+    val c = createLabeledNode("Artist")
+
+    relate(a, b, "WORKED_WITH", Map("year" -> 1987))
+    relate(b, c, "WORKED_WITH", Map("year" -> 1988))
+
+    val result = executeWithNewPlanner("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *")
+    result.toList should equal(List(
+      Map("a" -> b, "b" -> c)
+    ))
+  }
+
   private def relsById(in: Seq[Relationship]): Seq[Relationship] = in.sortBy(_.getId)
 
   test("should return shortest paths when only one side is bound") {
