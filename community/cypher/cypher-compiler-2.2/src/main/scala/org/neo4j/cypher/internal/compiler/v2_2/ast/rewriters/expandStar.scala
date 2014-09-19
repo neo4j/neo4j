@@ -32,16 +32,19 @@ case class expandStar(state: SemanticState) extends Rewriter {
     case clause@With(_, _: ReturnAll, _, _, _, _) =>
       clause.copy(returnItems = returnItems(clause))(clause.position)
 
+    case clause: PragmaWithout =>
+      With(distinct = false, returnItems = returnItems(clause, clause.excludedNames), orderBy = None, skip = None, limit = None, where = None)(clause.position)
+
     case clause@Return(_, _: ReturnAll, _, _, _) =>
       clause.copy(returnItems = returnItems(clause))(clause.position)
   }
 
-  private def returnItems(clause: Clause): ListedReturnItems = {
+  private def returnItems(clause: Clause, excludedNames: Set[String] = Set.empty): ListedReturnItems = {
     val scope = state.scope(clause).getOrElse {
       throw new ThisShouldNotHappenError("cleishm", s"${clause.name} should note its Scope in the SemanticState")
     }
 
-    val symbolNames = scope.symbolNames.filter(UnNamedNameGenerator.isNamed)
+    val symbolNames = scope.symbolNames -- excludedNames
     ListedReturnItems(symbolNames.toSeq.sorted.map { id =>
       val expr = Identifier(id)(clause.position)
       val alias = Identifier(id)(clause.position)

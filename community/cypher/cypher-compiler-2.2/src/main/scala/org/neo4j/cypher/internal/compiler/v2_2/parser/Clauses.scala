@@ -98,6 +98,7 @@ trait Clauses extends Parser
   def Pragma: Rule1[ast.Clause] = rule("") {
     keyword("_PRAGMA") ~~ (
         group(keyword("WITH NONE") ~ push(ast.ListedReturnItems(Seq())(_)) ~~ optional(Skip) ~~ optional(Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, None, _, _, _))
+      | group(keyword("WITHOUT") ~~ oneOrMore(Identifier, separator = CommaSep)) ~~>> (ast.PragmaWithout(_))
     )
   }
 

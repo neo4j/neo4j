@@ -294,3 +294,11 @@ case class Return(
           Seq()
     }
 }
+
+case class PragmaWithout(excluded: Seq[Identifier])(val position: InputPosition) extends HorizonClause {
+  def name = "_PRAGMA WITHOUT"
+  val excludedNames = excluded.map(_.name).toSet
+
+  def semanticCheckContinuation(previousScope: Scope): SemanticCheck = s =>
+    SemanticCheckResult.success(s.importScope(previousScope, excludedNames))
+}
