@@ -95,22 +95,8 @@ final class MuninnPagedFile implements PagedFile
         flusher = new PageFlusher( swapper );
         initialiseLastPageId( swapper.getLastPageId() );
 
-        readCursors = new MuninnCursorFreelist()
-        {
-            @Override
-            protected MuninnPageCursor createNewCursor()
-            {
-                return new MuninnReadPageCursor( this );
-            }
-        };
-        writeCursors = new MuninnCursorFreelist()
-        {
-            @Override
-            protected MuninnPageCursor createNewCursor()
-            {
-                return new MuninnWritePageCursor( this );
-            }
-        };
+        readCursors = new MuninnReadCursorFreelist();
+        writeCursors = new MuninnWriteCursorFreelist();
     }
 
     @Override
@@ -136,13 +122,11 @@ final class MuninnPagedFile implements PagedFile
         MuninnPageCursor cursor;
         if ( (pf_flags & PF_SHARED_LOCK) == 0 )
         {
-//            cursor = writeCursors.takeCursor();
-            cursor = new MuninnWritePageCursor( null );
+            cursor = writeCursors.takeCursor();
         }
         else
         {
-//            cursor = readCursors.takeCursor();
-            cursor = new MuninnReadPageCursor( null );
+            cursor = readCursors.takeCursor();
         }
 
         cursor.initialise( this, pageId, pf_flags );
@@ -242,5 +226,23 @@ final class MuninnPagedFile implements PagedFile
     public void unparkEvictor() throws IOException
     {
         pageCache.unparkEvictor();
+    }
+
+    private static class MuninnReadCursorFreelist extends MuninnCursorFreelist
+    {
+        @Override
+        protected MuninnPageCursor createNewCursor()
+        {
+            return new MuninnReadPageCursor();
+        }
+    }
+
+    private static class MuninnWriteCursorFreelist extends MuninnCursorFreelist
+    {
+        @Override
+        protected MuninnPageCursor createNewCursor()
+        {
+            return new MuninnWritePageCursor();
+        }
     }
 }

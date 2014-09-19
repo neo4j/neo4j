@@ -28,7 +28,6 @@ abstract class MuninnPageCursor implements PageCursor
     static final boolean monitorPinUnpin = Boolean.getBoolean(
             "org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.monitorPinUnpin" );
 
-    private final MuninnCursorFreelist freelist;
     public MuninnPageCursor nextFree;
 
     protected MuninnPagedFile pagedFile;
@@ -41,11 +40,6 @@ abstract class MuninnPageCursor implements PageCursor
     protected long lockStamp;
 
     private int offset;
-
-    public MuninnPageCursor( MuninnCursorFreelist freelist )
-    {
-        this.freelist = freelist;
-    }
 
     public void initialise( MuninnPagedFile pagedFile, long pageId, int pf_flags )
     {
@@ -80,10 +74,6 @@ abstract class MuninnPageCursor implements PageCursor
     {
         unpinCurrentPage();
         pagedFile = null;
-        if ( freelist != null )
-        {
-            freelist.returnCursor( this );
-        }
     }
 
     @Override

@@ -29,11 +29,6 @@ import org.neo4j.io.pagecache.PagedFile;
 
 final class MuninnWritePageCursor extends MuninnPageCursor
 {
-    public MuninnWritePageCursor( MuninnCursorFreelist freelist )
-    {
-        super( freelist );
-    }
-
     @Override
     protected void unpinCurrentPage()
     {

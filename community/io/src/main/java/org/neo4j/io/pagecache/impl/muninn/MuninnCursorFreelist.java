@@ -21,56 +21,30 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 abstract class MuninnCursorFreelist
 {
-    private static final int MAX_CURSORS_PER_FREELIST = 1000;
+    private static boolean disableCursorPooling = Boolean.getBoolean(
+            "org.neo4j.io.pagecache.impl.muninn.MuninnCursorFreelist.disableCursorPooling" );
 
-    static class CursorRef
-    {
-        public MuninnPageCursor cursor;
-        // We keep a count of how many cursors are in the freelist, so that the
-        // number of cursors we keep is bounded. We do this to deal with the odd
-        // case where one thread takes cursors off its freelist, and then gives
-        // them to another thread for processing or returning. If we didn't keep
-        // a bound on the freelist size, that other thread would collect cursors
-        // until the process ran out of memory.
-        // Ideally, a cursor should always be taken and returned by the same
-        // thread.
-        public int counter = 0;
-    }
-
-    private static class CursorRefThreadLocal extends ThreadLocal<CursorRef>
-    {
-        @Override
-        protected CursorRef initialValue()
-        {
-            return new CursorRef();
-        }
-    }
-
-    private final ThreadLocal<CursorRef> freelist = new CursorRefThreadLocal();
+    private final ThreadLocal<MuninnPageCursor> cache = new ThreadLocal<>();
 
     public MuninnPageCursor takeCursor()
     {
-        CursorRef ref = freelist.get();
-        MuninnPageCursor cursor = ref.cursor;
-        if ( cursor == null )
+        if ( disableCursorPooling )
         {
             return createNewCursor();
         }
-        ref.cursor = cursor.nextFree;
-        ref.counter--;
+        return takeFromPoolOrCreate();
+    }
+
+    private MuninnPageCursor takeFromPoolOrCreate()
+    {
+        MuninnPageCursor cursor = cache.get();
+        if ( cursor == null )
+        {
+            cursor = createNewCursor();
+            cache.set( cursor );
+        }
         return cursor;
     }
 
     protected abstract MuninnPageCursor createNewCursor();
-
-    public void returnCursor( MuninnPageCursor cursor )
-    {
-        CursorRef ref = freelist.get();
-        if ( ref.counter < MAX_CURSORS_PER_FREELIST )
-        {
-            cursor.nextFree = ref.cursor;
-            ref.cursor = cursor;
-            ref.counter++;
-        }
-    }
 }
