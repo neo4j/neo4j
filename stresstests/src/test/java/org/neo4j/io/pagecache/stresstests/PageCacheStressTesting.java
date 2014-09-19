@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache.stresstests;
 
 import static java.lang.Integer.parseInt;
+import static java.lang.System.getProperty;
 import static java.lang.System.getenv;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.io.pagecache.stress.Conditions.timePeriod;
@@ -54,6 +55,8 @@ public class PageCacheStressTesting
         int cachePagePadding = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_CACHE_PAGE_PADDING", "56" ) );
         int numberOfCachePages = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_NUMBER_OF_CACHE_PAGES", "1000" ) );
 
+        String workingDirectory = fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_WORKING_DIRECTORY", getProperty( "java.io.tmpdir" ) );
+
         PageCacheMonitor monitor = new SimpleMonitor();
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
@@ -63,6 +66,7 @@ public class PageCacheStressTesting
                 .withNumberOfThreads( numberOfThreads )
                 .withCachePagePadding( cachePagePadding )
                 .withNumberOfCachePages( numberOfCachePages )
+                .withWorkingDirectory(workingDirectory)
                 .with( monitor )
                 .build();
 

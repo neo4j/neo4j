@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.stress;
 
+import static java.nio.file.Paths.get;
 import static org.neo4j.io.pagecache.stress.StressTestRecord.SizeOfCounter;
 
 import java.io.File;
@@ -38,16 +39,19 @@ public class PageCacheStresser
     private final int recordsPerPage;
     private final int numberOfThreads;
 
-    public PageCacheStresser( int maxPages, int recordsPerPage, int numberOfThreads )
+    private final String workingDirectory;
+
+    public PageCacheStresser( int maxPages, int recordsPerPage, int numberOfThreads, String workingDirectory )
     {
         this.maxPages = maxPages;
         this.recordsPerPage = recordsPerPage;
         this.numberOfThreads = numberOfThreads;
+        this.workingDirectory = workingDirectory;
     }
 
     public void stress( PageCache pageCache, Condition condition, CountKeeperFactory countKeeperFactory ) throws Exception
     {
-        File file = Files.createTempFile( "pagecacheundertest", ".bin" ).toFile();
+        File file = Files.createTempFile( get( workingDirectory ), "pagecacheundertest", ".bin" ).toFile();
         file.deleteOnExit();
         PagedFile pagedFile = pageCache.map( file, recordsPerPage * (numberOfThreads + 1) * SizeOfCounter );
 

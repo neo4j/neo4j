@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.stress;
 
+import static java.lang.System.getProperty;
+import static java.nio.file.Paths.get;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.number.OrderingComparison.greaterThanOrEqualTo;
 import static org.hamcrest.number.OrderingComparison.lessThan;
@@ -64,6 +66,8 @@ public class PageCacheStressTest
     private final PageCacheMonitor monitor;
     private final Condition condition;
 
+    private final String workingDirectory;
+
     private PageCacheStressTest( Builder builder )
     {
         this.numberOfPages = builder.numberOfPages;
@@ -75,6 +79,8 @@ public class PageCacheStressTest
 
         this.monitor = builder.monitor;
         this.condition = builder.condition;
+
+        this.workingDirectory = builder.workingDirectory;
     }
 
     public void run() throws Exception
@@ -89,12 +95,12 @@ public class PageCacheStressTest
 
         try
         {
-            File file = Files.createTempFile( "pagecachestresstest", ".bin" ).toFile();
+            File file = Files.createTempFile( get( workingDirectory ), "pagecachekeepingcounts", ".bin" ).toFile();
             file.deleteOnExit();
             PagedFile pagedFile = pageCacheKeepingCount.map( file, recordsPerPage * numberOfThreads * SizeOfCounter );
 
             CountKeeperFactory countKeeperFactory = new CountKeeperFactory( pagedFile, recordsPerPage, numberOfThreads );
-            PageCacheStresser pageCacheStresser = new PageCacheStresser( numberOfPages, recordsPerPage, numberOfThreads );
+            PageCacheStresser pageCacheStresser = new PageCacheStresser( numberOfPages, recordsPerPage, numberOfThreads, workingDirectory );
 
             pageCacheStresser.stress( pageCacheUnderTest, condition, countKeeperFactory );
 
@@ -143,6 +149,8 @@ public class PageCacheStressTest
 
         PageCacheMonitor monitor = NULL;
         Condition condition;
+
+        String workingDirectory = getProperty( "java.io.tmpdir" );
 
         public PageCacheStressTest build()
         {
@@ -197,6 +205,12 @@ public class PageCacheStressTest
         public Builder withNumberOfCachePages( int value )
         {
             this.numberOfCachePages = value;
+            return this;
+        }
+
+        public Builder withWorkingDirectory( String workingDirectory )
+        {
+            this.workingDirectory = workingDirectory;
             return this;
         }
     }
