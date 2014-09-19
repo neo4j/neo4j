@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.helpers.Pair;
@@ -87,7 +88,8 @@ public class UpdatePuller implements Lifecycle
     {
         if ( availabilityGuard.isAvailable( 5000 ) )
         {
-            Response<Void> response = master.pullUpdates( requestContextFactory.newRequestContext( -3 ) );
+            RequestContext context = requestContextFactory.newRequestContext( RequestContextFactory.VOID_EVENT_IDENTIFIER );
+            Response<Void> response = master.pullUpdates( context );
 
             unpacker.unpackResponse( response );
             lastUpdateTime.setLastUpdateTime( System.currentTimeMillis() );
