@@ -19,8 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.io.IOException;
-
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.BoundedIterable;
@@ -65,7 +63,7 @@ public class RecordScanner<RECORD> implements StoppableRunnable
             {
                 store.close();
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
                 progress.failed( e );
             }

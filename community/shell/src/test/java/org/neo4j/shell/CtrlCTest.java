@@ -19,14 +19,13 @@
  */
 package org.neo4j.shell;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.Cancelable;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.impl.CollectingOutput;
 
@@ -37,16 +36,16 @@ public class CtrlCTest
 {
     public class StubCtrlCHandler implements CtrlCHandler
     {
-        public volatile boolean installed = false;
+        public volatile boolean installed;
 
         @Override
-        public Closeable install( Runnable action )
+        public Cancelable install( Runnable action )
         {
             installed = true;
-            return new Closeable()
+            return new Cancelable()
             {
                 @Override
-                public void close() throws IOException
+                public void cancel()
                 {
                     installed = false;
                 }

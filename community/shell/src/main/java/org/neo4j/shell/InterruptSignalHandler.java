@@ -19,17 +19,18 @@
  */
 package org.neo4j.shell;
 
-import java.io.Closeable;
-import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
+
+import org.neo4j.helpers.Cancelable;
 
 public class InterruptSignalHandler implements SignalHandler, CtrlCHandler
 {
     private static InterruptSignalHandler INSTANCE = new InterruptSignalHandler();
     private final Signal signal = new Signal( "INT" );
-    private volatile Runnable action;
+    private final AtomicReference<Runnable> actionRef = new AtomicReference<>();
 
     private InterruptSignalHandler()
     {
@@ -41,31 +42,30 @@ public class InterruptSignalHandler implements SignalHandler, CtrlCHandler
     }
 
     @Override
-    public Closeable install( final Runnable action )
+    public Cancelable install( final Runnable action )
     {
-        if ( this.action != null )
+        if ( !actionRef.compareAndSet( null, action ) )
         {
             throw new RuntimeException( "An action has already been registered" );
         }
-        this.action = action;
+
         final SignalHandler oldHandler = Signal.handle( signal, this );
         final InterruptSignalHandler self = this;
-        return new Closeable()
+        return new Cancelable()
         {
             @Override
-            public void close() throws IOException
+            public void cancel()
             {
                 SignalHandler handle = Signal.handle( signal, oldHandler );
                 if ( self != handle )
                 {
-                    throw new RuntimeException( "Error uninstalling ShellSignalHandler: another handler interjected in the " +
-                            "mean time" );
+                    throw new RuntimeException( "Error uninstalling ShellSignalHandler: " +
+                            "another handler interjected in the mean time" );
                 }
-                if ( self.action != action )
+                if ( !self.actionRef.compareAndSet( action, null ) )
                 {
                     throw new RuntimeException( "Popping a action that has not been pushed before" );
                 }
-                self.action = null;
             }
         };
     }
@@ -74,7 +74,7 @@ public class InterruptSignalHandler implements SignalHandler, CtrlCHandler
     {
         try
         {
-            this.action.run();
+            actionRef.get().run();
         }
         catch ( Exception e )
         {

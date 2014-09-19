@@ -19,32 +19,7 @@
  */
 package org.neo4j.kernel.api.direct;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Iterator;
-
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-
-public interface BoundedIterable<RECORD> extends Iterable<RECORD>, Closeable
+public interface BoundedIterable<RECORD> extends Iterable<RECORD>, AutoCloseable
 {
     long maxCount();
-
-    BoundedIterable EMPTY = new BoundedIterable()
-    {
-        @Override
-        public long maxCount()
-        {
-            return 0;
-        }
-
-        @Override public void close() throws IOException
-        {
-        }
-
-        @Override public Iterator<Long> iterator()
-        {
-            return emptyIterator();
-        }
-    };
-
 }

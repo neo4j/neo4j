@@ -19,9 +19,9 @@
  */
 package org.neo4j.shell;
 
-import java.io.Closeable;
+import org.neo4j.helpers.Cancelable;
 
 public interface CtrlCHandler
 {
-    Closeable install( Runnable action );
+    Cancelable install( Runnable action );
 }

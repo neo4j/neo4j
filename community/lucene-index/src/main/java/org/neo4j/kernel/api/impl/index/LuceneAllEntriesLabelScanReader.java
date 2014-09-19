@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -68,7 +67,7 @@ public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReade
     }
 
     @Override
-    public void close() throws IOException
+    public void close() throws Exception
     {
         documents.close();
     }
