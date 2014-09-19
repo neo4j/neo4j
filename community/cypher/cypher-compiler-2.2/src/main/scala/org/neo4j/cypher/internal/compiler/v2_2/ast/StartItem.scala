@@ -26,12 +26,20 @@ sealed trait StartItem extends ASTNode with ASTPhrase with SemanticCheckable {
   def identifier: Identifier
 }
 
-
 sealed trait NodeStartItem extends StartItem {
   def semanticCheck = identifier.declare(CTNode)
 }
 
-case class NodeByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends NodeStartItem
+case class NodeByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends NodeStartItem {
+  override def semanticCheck = {
+    val name = identifier.name
+    val idString = ids.map(_.stringVal).mkString(", ")
+    val predicate = if (ids.size == 1) s"= $idString" else s"IN [$idString]"
+    val msg = s"Using 'START $name = node($idString)' is no longer supported.  Please instead use 'MATCH $name WHERE id($name) $predicate'"
+    SemanticCheckResult.error(_, SemanticError(msg, position, identifier.position +: ids.map(_.position): _*))
+  }
+}
+
 case class NodeByParameter(identifier: Identifier, parameter: Parameter)(val position: InputPosition) extends NodeStartItem
 case class AllNodes(identifier: Identifier)(val position: InputPosition) extends NodeStartItem
 case class NodeByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression)(val position: InputPosition) extends NodeStartItem
