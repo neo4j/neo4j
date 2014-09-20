@@ -22,8 +22,8 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.xa.PropertyCreator;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository;
 
 /**

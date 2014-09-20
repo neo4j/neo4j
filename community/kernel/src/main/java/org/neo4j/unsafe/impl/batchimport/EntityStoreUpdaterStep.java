@@ -21,10 +21,10 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.Collection;
 
-import org.neo4j.kernel.impl.nioneo.store.AbstractRecordStore;
-import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.store.AbstractRecordStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;

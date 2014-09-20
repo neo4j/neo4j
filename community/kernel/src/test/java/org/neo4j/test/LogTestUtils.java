@@ -29,20 +29,20 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles.LogVersionVisitor;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalWritableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReaderFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.IOCursor;
+import org.neo4j.kernel.impl.transaction.log.LogDeserializer;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles.LogVersionVisitor;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 import static javax.transaction.xa.Xid.MAXBQUALSIZE;
 import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
@@ -51,10 +51,10 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.writeLogHeader;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.

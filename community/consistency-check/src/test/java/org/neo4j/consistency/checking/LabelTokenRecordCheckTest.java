@@ -22,8 +22,8 @@ package org.neo4j.consistency.checking;
 import org.junit.Test;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;

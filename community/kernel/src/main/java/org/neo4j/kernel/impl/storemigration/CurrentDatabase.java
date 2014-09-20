@@ -24,16 +24,16 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
-import org.neo4j.kernel.impl.nioneo.store.DynamicStringStore;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
+import org.neo4j.kernel.impl.store.DynamicArrayStore;
+import org.neo4j.kernel.impl.store.DynamicStringStore;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 
 public class CurrentDatabase
 {

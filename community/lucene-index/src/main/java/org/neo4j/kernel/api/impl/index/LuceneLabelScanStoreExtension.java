@@ -28,7 +28,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;

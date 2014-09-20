@@ -26,16 +26,16 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PreAllocatedRecords;
+import org.neo4j.kernel.impl.store.PreAllocatedRecords;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static org.mockito.Mockito.verify;
 
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
-import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
+import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
+import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 
 public class NodeDynamicLabelOrphanChainStartCheckTest
         extends RecordCheckTestBase<DynamicRecord, DynamicLabelConsistencyReport, NodeDynamicLabelOrphanChainStartCheck>

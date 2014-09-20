@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.BufferingLogging;
@@ -30,6 +31,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
 import static org.neo4j.graphdb.event.ErrorState.TX_MANAGER_NOT_OK;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 

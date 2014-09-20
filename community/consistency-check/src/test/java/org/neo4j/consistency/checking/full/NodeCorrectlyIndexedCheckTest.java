@@ -40,10 +40,10 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
+import org.neo4j.kernel.impl.store.NodeLabelsField;
+import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 
 import static java.util.Arrays.asList;
 
@@ -55,8 +55,8 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
-import static org.neo4j.kernel.impl.nioneo.store.IndexRule.constraintIndexRule;
-import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
+import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
+import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
 public class NodeCorrectlyIndexedCheckTest
 {

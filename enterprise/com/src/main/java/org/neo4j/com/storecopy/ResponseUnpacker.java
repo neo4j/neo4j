@@ -22,7 +22,7 @@ package org.neo4j.com.storecopy;
 import java.io.IOException;
 
 import org.neo4j.com.Response;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
 public interface ResponseUnpacker
 {

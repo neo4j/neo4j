@@ -21,7 +21,7 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 
 /**
  * This API can be used to get access to services.

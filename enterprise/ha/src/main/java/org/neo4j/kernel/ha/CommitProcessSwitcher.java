@@ -29,7 +29,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 
 public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommitProcess>
 {

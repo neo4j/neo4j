@@ -29,8 +29,8 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 /**
  * Represents the master-side of the HA communication between master and slave.

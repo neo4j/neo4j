@@ -20,9 +20,9 @@
 package org.neo4j.consistency;
 
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
-import org.neo4j.kernel.impl.nioneo.store.DataInconsistencyError;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.store.DataInconsistencyError;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
 public class ConsistencyCheckingError extends DataInconsistencyError
 {

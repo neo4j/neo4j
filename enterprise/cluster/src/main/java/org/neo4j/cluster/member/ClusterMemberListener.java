@@ -22,7 +22,7 @@ package org.neo4j.cluster.member;
 import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 
 /**
  * A HighAvailabilityListener is listening for events from elections and availability state.

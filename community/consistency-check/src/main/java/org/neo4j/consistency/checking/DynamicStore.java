@@ -23,7 +23,7 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 public enum DynamicStore
 {

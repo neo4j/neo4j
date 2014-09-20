@@ -23,10 +23,10 @@ import java.io.IOException;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
+import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class RequestContextFactory extends LifecycleAdapter
@@ -50,8 +50,8 @@ public class RequestContextFactory extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        this.txStore = resolver.resolveDependency( NeoStoreXaDataSource.class ).getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
-        this.txIdStore = resolver.resolveDependency( NeoStoreXaDataSource.class ).getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        this.txStore = resolver.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
+        this.txIdStore = resolver.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver().resolveDependency( TransactionIdStore.class );
     }
 
     @Override

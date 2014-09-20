@@ -23,7 +23,7 @@ import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 
 public class DefaultPropertyTokenCreator extends IsolatedTransactionTokenCreator
 {

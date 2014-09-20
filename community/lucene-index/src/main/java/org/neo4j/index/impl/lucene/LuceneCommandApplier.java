@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
 public class LuceneCommandApplier extends NeoCommandHandler.Adapter
 {

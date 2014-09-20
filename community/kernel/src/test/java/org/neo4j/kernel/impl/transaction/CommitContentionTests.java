@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.cache_type;
 import static org.neo4j.test.TargetDirectory.forTest;
@@ -34,14 +35,13 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.NoCacheProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.test.TargetDirectory;
 
 // TODO 2.2-future rewrite this

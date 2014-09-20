@@ -26,9 +26,9 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-import static org.neo4j.kernel.impl.nioneo.store.IndexRule.constraintIndexRule;
-import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
-import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
+import static org.neo4j.kernel.impl.store.UniquenessConstraintRule.uniquenessConstraintRule;
+import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
+import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
 public class SchemaRuleContentTest
 {

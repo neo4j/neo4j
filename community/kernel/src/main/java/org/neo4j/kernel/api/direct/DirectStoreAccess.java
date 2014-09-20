@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public class DirectStoreAccess implements Closeable

@@ -28,10 +28,10 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
-import org.neo4j.kernel.impl.transaction.xaframework.LogRecoveryCheck;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
+import org.neo4j.kernel.impl.transaction.log.LogRecoveryCheck;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.logging.Logging;
 
 /**

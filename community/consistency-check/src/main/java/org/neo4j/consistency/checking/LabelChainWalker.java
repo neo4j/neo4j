@@ -25,14 +25,14 @@ import java.util.List;
 
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
-import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray;
+import org.neo4j.kernel.impl.store.LabelIdArray;
+import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 
-import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
+import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
+import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 
 public class LabelChainWalker<RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> implements
         ComparativeRecordChecker<RECORD, DynamicRecord, REPORT>

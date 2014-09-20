@@ -32,7 +32,7 @@ import org.neo4j.com.TargetCaller;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;

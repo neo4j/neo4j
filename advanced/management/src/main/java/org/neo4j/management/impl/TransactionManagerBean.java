@@ -25,9 +25,9 @@ import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionCounters;
+import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.management.TransactionManager;
 
 @Service.Implementation(ManagementBeanProvider.class)
@@ -89,7 +89,7 @@ public final class TransactionManagerBean extends ManagementBeanProvider
         @Override
         public long getLastCommittedTxId()
         {
-            NeoStoreXaDataSource neoStoreDataSource = xadsm.getDataSource();
+            NeoStoreDataSource neoStoreDataSource = xadsm.getDataSource();
             if ( neoStoreDataSource == null )
             {
                 return -1;

@@ -38,19 +38,19 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.nioneo.store.ReadOnlyTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
-import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadOnlyLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionLogWriter;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.CommandWriter;
+import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
+import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
@@ -58,8 +58,8 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Format.bytes;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogHeaderParser.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
 
 /**
  * Client-side store copier. Deals with issuing a request to a source of a database, which will

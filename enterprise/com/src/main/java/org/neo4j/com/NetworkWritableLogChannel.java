@@ -23,8 +23,8 @@ import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 
 public class NetworkWritableLogChannel implements WritableLogChannel
 {

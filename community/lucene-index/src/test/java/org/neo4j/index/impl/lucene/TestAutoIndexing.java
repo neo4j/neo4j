@@ -35,7 +35,7 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -663,8 +663,8 @@ public class TestAutoIndexing
         newTransaction();
 
         // clear the caches
-        NeoStoreXaDataSource dataSource =
-                graphDb.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        NeoStoreDataSource dataSource =
+                graphDb.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
         dataSource.getNodeCache().clear();
         dataSource.getRelationshipCache().clear();
 

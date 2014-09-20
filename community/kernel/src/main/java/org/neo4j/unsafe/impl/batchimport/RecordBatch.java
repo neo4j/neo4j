@@ -21,8 +21,8 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.List;
 
-import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
 /**
  * Batch of created records, i.e. entity records with their property records and friends.

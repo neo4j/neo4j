@@ -25,9 +25,9 @@ import java.util.TreeMap;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.function.Factory;
-import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.AbstractRecordStore;
-import org.neo4j.kernel.impl.nioneo.xa.RecordAccess;
+import org.neo4j.kernel.impl.store.AbstractRecordStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 
 /**
  * Provides direct access to records in a store. Changes are batched up and written whenever {@link #commit()}

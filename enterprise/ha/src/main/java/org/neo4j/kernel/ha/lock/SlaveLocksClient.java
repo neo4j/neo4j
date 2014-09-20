@@ -32,12 +32,12 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.transaction.LockManager;
 
-import static org.neo4j.kernel.impl.transaction.LockType.READ;
-import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
+import static org.neo4j.kernel.impl.locking.LockType.READ;
+import static org.neo4j.kernel.impl.locking.LockType.WRITE;
 
 /**
  * The slave locks client is responsible for managing locks on behalf of some actor on a slave machine. An actor

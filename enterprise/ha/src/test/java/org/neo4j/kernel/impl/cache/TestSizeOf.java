@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.cache;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
@@ -37,6 +38,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -45,11 +47,11 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestSizeOf
@@ -81,12 +83,12 @@ public class TestSizeOf
     @SuppressWarnings( "unchecked" )
     private Cache<NodeImpl> getNodeCache()
     {
-        return db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class ).getNodeCache();
+        return db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class ).getNodeCache();
     }
 
     private Cache<RelationshipImpl> getRelationshipCache()
     {
-        return db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class ).getRelationshipCache();
+        return db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class ).getRelationshipCache();
     }
 
     private Node createNodeAndLoadFresh( Map<String, Object> properties, int nrOfRelationships, int nrOfTypes )

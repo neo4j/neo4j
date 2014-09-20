@@ -28,15 +28,15 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
-import org.neo4j.kernel.impl.nioneo.xa.command.HighIdTracker;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionIndexApplier;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
-import org.neo4j.kernel.impl.nioneo.xa.command.RecoveredHighIdTracker;
-import org.neo4j.kernel.impl.transaction.xaframework.IdOrderingQueue;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.command.HighIdTracker;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.NeoTransactionIndexApplier;
+import org.neo4j.kernel.impl.transaction.command.NeoTransactionStoreApplier;
+import org.neo4j.kernel.impl.transaction.command.RecoveredHighIdTracker;
+import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
+import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 /**
  * Holistic application of {@link TransactionRepresentation transactions} onto the store. Includes application

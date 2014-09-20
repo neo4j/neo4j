@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.nioneo.xa.RecordAccess;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 
 /**
  * {@link RecordAccess} optimized for batching and an access pattern where records are created sequentially.

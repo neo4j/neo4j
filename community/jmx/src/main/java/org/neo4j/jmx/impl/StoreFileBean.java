@@ -21,13 +21,14 @@ package org.neo4j.jmx.impl;
 
 import java.io.File;
 import java.io.IOException;
+
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.StoreFile;
-import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
+import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 @Service.Implementation(ManagementBeanProvider.class)
 public final class StoreFileBean extends ManagementBeanProvider
@@ -61,20 +62,20 @@ public final class StoreFileBean extends ManagementBeanProvider
             dataSourceManager.addListener( new DataSourceManager.Listener()
             {
                 @Override
-                public void registered( NeoStoreXaDataSource ds )
+                public void registered( NeoStoreDataSource ds )
                 {
                     logFile = ds.getDependencyResolver().resolveDependency( LogFile.class );
                     storePath = resolvePath( ds );
                 }
 
                 @Override
-                public void unregistered( NeoStoreXaDataSource ds )
+                public void unregistered( NeoStoreDataSource ds )
                 {
                     logFile = null;
                     storePath = null;
                 }
 
-                private File resolvePath( NeoStoreXaDataSource ds )
+                private File resolvePath( NeoStoreDataSource ds )
                 {
                     try
                     {

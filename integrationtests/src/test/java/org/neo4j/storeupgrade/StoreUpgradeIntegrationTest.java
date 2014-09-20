@@ -39,9 +39,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
@@ -56,7 +57,6 @@ import static org.junit.Assert.fail;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
@@ -274,7 +274,7 @@ public class StoreUpgradeIntegrationTest
 
             // check last committed tx
             long lastCommittedTxId = db.getDependencyResolver()
-                    .resolveDependency( NeoStoreXaDataSource.class )
+                    .resolveDependency( NeoStoreDataSource.class )
                     .getNeoStore()
                     .getLastCommittedTransactionId();
 

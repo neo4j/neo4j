@@ -28,9 +28,9 @@ import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
 import org.neo4j.kernel.api.impl.index.NodeRangeDocumentLabelScanStorageStrategy;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
-import org.neo4j.kernel.impl.nioneo.xa.SimpleNeoStoreProvider;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.SimpleNeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
 

@@ -32,7 +32,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.index.ProviderMeta.Record;
 import org.neo4j.kernel.api.index.ProviderMeta.Snapshot;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;

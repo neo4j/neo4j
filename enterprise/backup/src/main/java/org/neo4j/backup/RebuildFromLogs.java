@@ -33,38 +33,38 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
-import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableVersionableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.ReaderLogVersionBridge;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReaderFactory;
+import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.IOCursor;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.String.format;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.openForVersion;
-import static org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
+import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 
 class RebuildFromLogs
 {
     private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
 
     private final StoreAccess stores;
-    private final NeoStoreXaDataSource dataSource;
+    private final NeoStoreDataSource dataSource;
     private final TransactionRepresentationStoreApplier storeApplier;
 
     RebuildFromLogs( GraphDatabaseAPI graphdb )

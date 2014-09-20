@@ -27,8 +27,8 @@ import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.FilteringRecordAccess;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.StoreAccess;
 
 public enum MultiPassStore
 {

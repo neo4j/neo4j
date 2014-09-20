@@ -32,7 +32,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.MasterServer;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 

@@ -23,7 +23,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 public interface LegacyNodeStoreReader extends Closeable
 {

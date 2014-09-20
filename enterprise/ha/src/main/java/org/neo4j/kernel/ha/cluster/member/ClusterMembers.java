@@ -33,7 +33,7 @@ import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 /**

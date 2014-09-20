@@ -47,7 +47,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
+import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 
 import static java.util.Arrays.sort;
 

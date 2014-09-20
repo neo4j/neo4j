@@ -21,12 +21,12 @@ package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
-import static org.neo4j.kernel.impl.nioneo.store.NodeStore.readOwnerFromDynamicLabelsRecord;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.fieldDynamicLabelRecordId;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldDynamicLabelRecordId;
+import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 
 /**
  * Used by {@link org.neo4j.consistency.checking.full.FullCheck} to verify orphanage for node dynamic label records.

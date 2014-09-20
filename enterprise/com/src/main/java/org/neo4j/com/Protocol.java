@@ -33,19 +33,19 @@ import org.jboss.netty.handler.queue.BlockingReadHandler;
 
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryReaderFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.CommandWriter;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.Cursors;
 
 /**
@@ -243,7 +243,7 @@ public abstract class Protocol
         {
             NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
 
-            writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            writeString( buffer, NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME );
             channel.putInt( tx.getAuthorId() );
             channel.putInt( tx.getMasterId() );
             channel.putLong( tx.getLatestCommittedTxWhenStarted() );

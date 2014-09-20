@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertArrayEquals;

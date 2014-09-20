@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
-import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
-import org.neo4j.kernel.impl.nioneo.store.IdSequence;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdSequence;
 
 /**
  * {@link IdSequence} w/o any synchronization, purely a long incrementing.

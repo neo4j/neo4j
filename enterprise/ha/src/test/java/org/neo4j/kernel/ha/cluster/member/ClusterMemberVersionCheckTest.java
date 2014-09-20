@@ -42,7 +42,7 @@ import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck.Outcome;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;

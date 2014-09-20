@@ -24,7 +24,7 @@ import java.util.Iterator;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
+import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 
 public class RelationshipImpl extends ArrayBasedPrimitive
 {

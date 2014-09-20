@@ -28,8 +28,8 @@ import javax.management.ObjectName;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 public class KernelBean extends Neo4jMBean implements Kernel
 {
@@ -115,7 +115,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
             implements DataSourceManager.Listener
     {
         @Override
-        public void registered( NeoStoreXaDataSource ds )
+        public void registered( NeoStoreDataSource ds )
         {
             storeCreationDate = ds.getCreationTime();
             storeLogVersion = ds.getCurrentLogVersion();
@@ -133,7 +133,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
         }
 
         @Override
-        public void unregistered( NeoStoreXaDataSource ds )
+        public void unregistered( NeoStoreDataSource ds )
         {
             storeCreationDate = -1;
             storeLogVersion = -1;

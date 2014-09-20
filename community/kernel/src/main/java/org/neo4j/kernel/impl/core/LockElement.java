@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.Lock;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.locking.LockManager;
+import org.neo4j.kernel.impl.locking.LockType;
 
 public class LockElement implements Lock
 {

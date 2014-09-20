@@ -29,8 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 
 public abstract class IoPrimitiveUtils
 {

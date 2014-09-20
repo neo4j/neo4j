@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 
 public class ClusterMemberVersionCheck
 {

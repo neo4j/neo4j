@@ -25,7 +25,7 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 

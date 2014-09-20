@@ -20,7 +20,7 @@
 package org.neo4j.kernel.ha.com.master;
 
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 
 public interface SlaveFactory
 {

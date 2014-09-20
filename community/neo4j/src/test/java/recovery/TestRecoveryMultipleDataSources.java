@@ -29,9 +29,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Runtime.getRuntime;
@@ -86,7 +86,7 @@ public class TestRecoveryMultipleDataSources
         tx.success();
         tx.close();
 
-        NeoStoreXaDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class );
+        NeoStoreDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
         DependencyResolver dependencyResolver = dataSource.getDependencyResolver();
         PhysicalLogFile physicalLogFile = dependencyResolver.resolveDependency( PhysicalLogFile.class );
         physicalLogFile.forceRotate();

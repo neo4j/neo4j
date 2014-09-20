@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.nioneo.xa.RecordAccessSet;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.transaction.state.RecordAccessSet;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 
 /**
@@ -42,8 +42,8 @@ public class DirectTokenCreator implements TokenCreator
     {
         RecordAccessSet recordAccess = new DirectRecordAccessSet( neoStore );
         int id = (int) neoStore.getRelationshipTypeTokenStore().nextId();
-        org.neo4j.kernel.impl.nioneo.xa.TokenCreator<RelationshipTypeTokenRecord> creator =
-                new org.neo4j.kernel.impl.nioneo.xa.TokenCreator<>( neoStore.getRelationshipTypeTokenStore() );
+        org.neo4j.kernel.impl.transaction.state.TokenCreator<RelationshipTypeTokenRecord> creator =
+                new org.neo4j.kernel.impl.transaction.state.TokenCreator<>( neoStore.getRelationshipTypeTokenStore() );
         creator.createToken( name, id, recordAccess.getRelationshipTypeTokenChanges() );
         recordAccess.close();
         return id;

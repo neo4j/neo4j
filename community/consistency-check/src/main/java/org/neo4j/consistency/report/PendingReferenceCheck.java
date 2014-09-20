@@ -22,7 +22,7 @@ package org.neo4j.consistency.report;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class PendingReferenceCheck<REFERENCED extends AbstractBaseRecord>
 {

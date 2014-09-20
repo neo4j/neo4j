@@ -27,7 +27,7 @@ import java.util.List;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
+import org.neo4j.kernel.impl.transaction.log.IOCursor;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;

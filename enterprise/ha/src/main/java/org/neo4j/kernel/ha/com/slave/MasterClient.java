@@ -38,7 +38,7 @@ import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static java.lang.String.format;

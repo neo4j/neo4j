@@ -26,7 +26,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
+import org.neo4j.kernel.impl.transaction.log.IOCursor;
 
 public class Cursors
 {

@@ -22,7 +22,7 @@ package org.neo4j.metrics;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 

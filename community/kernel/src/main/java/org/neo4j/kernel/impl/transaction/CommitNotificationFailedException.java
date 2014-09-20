@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 
 /**
  * Thrown when

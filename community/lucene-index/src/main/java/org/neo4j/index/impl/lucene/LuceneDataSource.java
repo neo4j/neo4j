@@ -65,15 +65,15 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
+import static org.neo4j.kernel.impl.store.NeoStore.versionStringToLong;
 
 /**
  * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
@@ -90,7 +90,7 @@ public class LuceneDataSource implements Lifecycle
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
         public static final Setting<Boolean> allow_store_upgrade = GraphDatabaseSettings.allow_store_upgrade;
         public static final Setting<Boolean> ephemeral = InternalAbstractGraphDatabase.Configuration.ephemeral;
-        public static final Setting<File> store_dir = NeoStoreXaDataSource.Configuration.store_dir;
+        public static final Setting<File> store_dir = NeoStoreDataSource.Configuration.store_dir;
     }
 
     public static final Version LUCENE_VERSION = Version.LUCENE_36;

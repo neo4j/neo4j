@@ -34,6 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
@@ -43,15 +44,14 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 class DefaultMasterImplSPI implements MasterImpl.SPI
 {
@@ -126,7 +126,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         try ( LockGroup locks = new LockGroup() )
         {
             TransactionCommitProcess txCommitProcess = dependencyResolver
-                    .resolveDependency( NeoStoreXaDataSource.class )
+                    .resolveDependency( NeoStoreDataSource.class )
                     .getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
             return txCommitProcess.commit( preparedTransaction, locks );
         }
@@ -148,7 +148,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
-        NeoStoreXaDataSource dataSource = graphDb.getDependencyResolver().resolveDependency(
+        NeoStoreDataSource dataSource = graphDb.getDependencyResolver().resolveDependency(
                 DataSourceManager.class ).getDataSource();
         StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource, fileSystem, storeDir );
         return streamer.flushStoresAndStreamStoreFiles( writer );

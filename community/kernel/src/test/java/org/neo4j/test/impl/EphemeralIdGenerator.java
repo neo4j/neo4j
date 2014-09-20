@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
-import org.neo4j.kernel.impl.nioneo.store.IdRange;
+import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdRange;
 
 public class EphemeralIdGenerator implements IdGenerator
 {

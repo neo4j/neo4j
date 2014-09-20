@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 

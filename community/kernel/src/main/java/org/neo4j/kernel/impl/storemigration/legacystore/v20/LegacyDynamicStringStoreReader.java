@@ -25,8 +25,8 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.io.fs.StoreChannel;
 
 import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.getUnsignedInt;

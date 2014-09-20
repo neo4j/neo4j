@@ -23,10 +23,10 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.direct.BoundedIterable;
-import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-import static org.neo4j.kernel.impl.nioneo.store.RecordStore.IN_USE;
+import static org.neo4j.kernel.impl.store.RecordStore.IN_USE;
 
 public class IterableStore<RECORD extends AbstractBaseRecord> implements BoundedIterable<RECORD>
 {

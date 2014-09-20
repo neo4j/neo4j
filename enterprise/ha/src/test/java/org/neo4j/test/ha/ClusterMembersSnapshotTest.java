@@ -41,7 +41,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
-import static org.neo4j.kernel.impl.nioneo.store.StoreId.DEFAULT;
+import static org.neo4j.kernel.impl.store.StoreId.DEFAULT;
 
 public class ClusterMembersSnapshotTest
 {

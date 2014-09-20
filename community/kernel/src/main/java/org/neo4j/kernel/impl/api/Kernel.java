@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.heuristics.StatisticsData;
-import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**

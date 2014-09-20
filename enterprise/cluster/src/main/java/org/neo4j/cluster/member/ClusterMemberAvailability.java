@@ -21,7 +21,7 @@ package org.neo4j.cluster.member;
 
 import java.net.URI;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreId;
 
 /**
  * This can be used to signal that a cluster member can now actively

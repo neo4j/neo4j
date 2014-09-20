@@ -29,11 +29,11 @@ import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccessStub;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
-import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PreAllocatedRecords;
-import org.neo4j.kernel.impl.nioneo.store.labels.InlineNodeLabels;
+import org.neo4j.kernel.impl.store.DynamicArrayStore;
+import org.neo4j.kernel.impl.store.InlineNodeLabels;
+import org.neo4j.kernel.impl.store.PreAllocatedRecords;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -42,8 +42,8 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
-import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
-import static org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray.prependNodeId;
+import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
+import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 
 public class NodeInUseWithCorrectLabelsCheckTest
 {

@@ -23,9 +23,9 @@ import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadPastEndException;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.log.ReadPastEndException;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
 public class NetworkReadableLogChannel implements ReadableLogChannel
 {

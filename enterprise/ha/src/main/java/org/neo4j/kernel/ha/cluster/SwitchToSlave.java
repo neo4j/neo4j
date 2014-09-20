@@ -38,6 +38,7 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -62,17 +63,16 @@ import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
-import org.neo4j.kernel.impl.nioneo.store.InconsistentlyUpgradedClusterException;
-import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.nioneo.store.UnableToCopyStoreFromOldMasterException;
-import org.neo4j.kernel.impl.nioneo.store.UnavailableMembersException;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
-import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
+import org.neo4j.kernel.impl.store.InconsistentlyUpgradedClusterException;
+import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.UnableToCopyStoreFromOldMasterException;
+import org.neo4j.kernel.impl.store.UnavailableMembersException;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
+import org.neo4j.kernel.impl.transaction.log.NoSuchLogVersionException;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -89,8 +89,8 @@ import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
 import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-import static org.neo4j.kernel.impl.nioneo.store.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.kernel.impl.store.NeoStore.isStorePresent;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class SwitchToSlave
 {
@@ -98,7 +98,7 @@ public class SwitchToSlave
     @SuppressWarnings("unchecked")
     private static final Class<? extends Lifecycle>[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[]{
             StoreLockerLifecycleAdapter.class,
-            NeoStoreXaDataSource.class,
+            NeoStoreDataSource.class,
             RequestContextFactory.class,
             TransactionCommittingResponseUnpacker.class,
     };
@@ -185,7 +185,7 @@ public class SwitchToSlave
          * start the ds or we already had a store, so we have already started the ds. Either way,
          * make sure it's there.
          */
-        NeoStoreXaDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreXaDataSource.class );
+        NeoStoreDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreDataSource.class );
         nioneoDataSource.afterModeSwitch();
         StoreId myStoreId = nioneoDataSource.getStoreId();
 
@@ -238,7 +238,7 @@ public class SwitchToSlave
         }
     }
 
-    private boolean executeConsistencyChecks( InstanceId myId, URI masterUri, NeoStoreXaDataSource nioneoDataSource,
+    private boolean executeConsistencyChecks( InstanceId myId, URI masterUri, NeoStoreDataSource nioneoDataSource,
                                               CancellationRequest cancellationRequest ) throws Throwable
     {
         LifeSupport consistencyCheckLife = new LifeSupport();
@@ -285,7 +285,7 @@ public class SwitchToSlave
     }
 
     private void checkDataConsistency( MasterClient masterClient, RequestContextFactory requestContextFactory,
-                                       NeoStoreXaDataSource nioneoDataSource, URI masterUri, boolean masterIsOld )
+                                       NeoStoreDataSource nioneoDataSource, URI masterUri, boolean masterIsOld )
             throws Throwable
     {
         TransactionIdStore txIdStore = nioneoDataSource.getDependencyResolver().resolveDependency( TransactionIdStore.class );
@@ -354,7 +354,7 @@ public class SwitchToSlave
         }
     }
 
-    private void checkMyStoreIdAndMastersStoreId( NeoStoreXaDataSource nioneoDataSource, boolean masterIsOld )
+    private void checkMyStoreIdAndMastersStoreId( NeoStoreDataSource nioneoDataSource, boolean masterIsOld )
     {
         if ( !masterIsOld )
         {
@@ -376,7 +376,7 @@ public class SwitchToSlave
         }
     }
 
-    private URI startHaCommunication( LifeSupport haCommunicationLife, NeoStoreXaDataSource nioneoDataSource,
+    private URI startHaCommunication( LifeSupport haCommunicationLife, NeoStoreDataSource nioneoDataSource,
                                       URI me, URI masterUri, StoreId storeId )
     {
         MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), haCommunicationLife );
@@ -494,7 +494,7 @@ public class SwitchToSlave
     }
 
     private void checkDataConsistencyWithMaster( URI availableMasterId, Master master,
-                                                 NeoStoreXaDataSource nioneoDataSource,
+                                                 NeoStoreDataSource nioneoDataSource,
                                                  TransactionIdStore transactionIdStore )
             throws IOException
     {

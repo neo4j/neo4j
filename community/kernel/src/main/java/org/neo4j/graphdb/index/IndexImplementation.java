@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
 /**
  * An index provider which can create and give access to index transaction state and means of applying

@@ -26,11 +26,11 @@ import java.util.Random;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NotCurrentStoreVersionException;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
+import static org.neo4j.kernel.impl.store.NeoStore.versionLongToString;
 
 public class IndexProviderStore
 {

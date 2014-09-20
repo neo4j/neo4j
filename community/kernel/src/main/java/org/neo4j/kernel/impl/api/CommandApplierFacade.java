@@ -28,17 +28,17 @@ import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.LabelTokenCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.NeoStoreCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyKeyTokenCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipGroupCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.NeoStoreCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 
 public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command, IOException>
 {

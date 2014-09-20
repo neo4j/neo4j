@@ -26,13 +26,13 @@ import java.util.Collection;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -56,7 +56,7 @@ public class ProtocolTest
 
         // THEN deserializing the same transaction should yield the same data.
         // ... remember that this deserializer doesn't read the data source name string. Read it manually here
-        assertEquals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME, Protocol.readString( buffer ) );
+        assertEquals( NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME, Protocol.readString( buffer ) );
         TransactionRepresentation readTransaction = Protocol.TRANSACTION_REPRESENTATION_DESERIALIZER.read(
                 buffer, ByteBuffer.allocate( 1000 ) );
         assertArrayEquals( additionalHeader, readTransaction.additionalHeader() );

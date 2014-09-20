@@ -20,7 +20,7 @@
 package org.neo4j.consistency.report;
 
 import org.neo4j.consistency.RecordType;
-import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class InconsistencyReport implements InconsistencyLogger
 {

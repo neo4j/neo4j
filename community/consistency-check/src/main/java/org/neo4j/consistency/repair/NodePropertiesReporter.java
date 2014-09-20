@@ -27,7 +27,7 @@ import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 public class NodePropertiesReporter
 {

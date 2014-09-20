@@ -27,7 +27,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import org.neo4j.consistency.RecordType;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
+import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.junit.Assert.assertThat;

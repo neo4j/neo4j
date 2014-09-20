@@ -31,7 +31,7 @@ import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
 public class LuceneIndexImplementation implements IndexImplementation
 {

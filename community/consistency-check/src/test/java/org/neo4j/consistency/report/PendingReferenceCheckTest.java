@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;

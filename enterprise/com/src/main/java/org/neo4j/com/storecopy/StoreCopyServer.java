@@ -33,8 +33,8 @@ import org.neo4j.com.ServerFailureException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 /**
  * Is able to feed store files in a consistent way to a {@link Response} to be picked up by a
@@ -45,12 +45,12 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 public class StoreCopyServer
 {
     private final TransactionIdStore transactionIdStore;
-    private final NeoStoreXaDataSource dataSource;
+    private final NeoStoreDataSource dataSource;
     private final FileSystemAbstraction fileSystem;
     private final File storeDirectory;
 
     public StoreCopyServer( TransactionIdStore transactionIdStore,
-            NeoStoreXaDataSource dataSource, FileSystemAbstraction fileSystem, File storeDirectory )
+            NeoStoreDataSource dataSource, FileSystemAbstraction fileSystem, File storeDirectory )
     {
         this.transactionIdStore = transactionIdStore;
         this.dataSource = dataSource;

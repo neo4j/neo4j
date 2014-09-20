@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;

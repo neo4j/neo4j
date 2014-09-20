@@ -38,7 +38,7 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 
-import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 public class PerformUpgradeIfNecessary implements PreflightTask
 {

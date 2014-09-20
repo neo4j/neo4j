@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.command.Command;
 
 import static java.util.Objects.requireNonNull;
 
@@ -65,6 +65,7 @@ public class CountsState implements CountsVisitor.Visitable
         updateCountsForRelationship( startLabelId, typeId, endLabelId, -1 );
     }
 
+    @Override
     public void accept( CountsVisitor visitor )
     {
         for ( Map.Entry<CountsKey, Count> entry : counts.entrySet() )
