@@ -159,17 +159,16 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
 
     public T getRecord( int id )
     {
+        T record;
+
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
             if ( cursor.next() )
             {
-                T record;
                 do
                 {
                     record = getRecord( id, cursor, false );
                 } while ( cursor.shouldRetry() );
-                record.addNameRecords( nameStore.getLightRecords( record.getNameId() ) );
-                return record;
             }
             else
             {
@@ -180,6 +179,9 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         {
             throw new UnderlyingStorageException( e );
         }
+
+        record.addNameRecords( nameStore.getLightRecords( record.getNameId() ) );
+        return record;
     }
 
     @Override

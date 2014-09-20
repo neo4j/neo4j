@@ -100,6 +100,7 @@ public class MuninnPageCache implements RunnablePageCache
 
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
+    private final MuninnCursorPool cursorPool;
     private final PageCacheMonitor monitor;
     final MuninnPage[] pages;
 
@@ -136,6 +137,7 @@ public class MuninnPageCache implements RunnablePageCache
 
         this.swapperFactory = swapperFactory;
         this.cachePageSize = cachePageSize;
+        this.cursorPool = new MuninnCursorPool();
         this.monitor = monitor;
         this.pages = new MuninnPage[maxPages];
 
@@ -224,6 +226,7 @@ public class MuninnPageCache implements RunnablePageCache
                 filePageSize,
                 swapperFactory,
                 freelist,
+                cursorPool,
                 monitor );
         pagedFile.incrementRefCount();
         current = new FileMapping( file, pagedFile );

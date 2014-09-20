@@ -28,8 +28,6 @@ abstract class MuninnPageCursor implements PageCursor
     static final boolean monitorPinUnpin = Boolean.getBoolean(
             "org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.monitorPinUnpin" );
 
-    public MuninnPageCursor nextFree;
-
     protected MuninnPagedFile pagedFile;
     protected MuninnPage page;
     protected long pageId;
@@ -39,45 +37,62 @@ abstract class MuninnPageCursor implements PageCursor
     protected long lastPageId;
     protected long lockStamp;
 
+    private boolean claimed;
     private int offset;
 
-    public void initialise( MuninnPagedFile pagedFile, long pageId, int pf_flags )
+    public final void initialise( MuninnPagedFile pagedFile, long pageId, int pf_flags )
     {
         this.pagedFile = pagedFile;
         this.pageId = pageId;
         this.pf_flags = pf_flags;
     }
 
+    public final void markAsClaimed()
+    {
+        claimed = true;
+    }
+
+    public final void assertUnclaimed()
+    {
+        if ( claimed )
+        {
+            throw new IllegalStateException(
+                    "Cannot operate on more than one PageCursor at a time," +
+                            " because it is prone to deadlocks" );
+        }
+    }
+
     @Override
-    public void rewind() throws IOException
+    public final void rewind()
     {
         nextPageId = pageId;
         currentPageId = UNBOUND_PAGE_ID;
         lastPageId = pagedFile.getLastPageId();
     }
 
-    public void reset( MuninnPage page )
+    public final void reset( MuninnPage page )
     {
         this.page = page;
         this.offset = 0;
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
+    public final boolean next( long pageId ) throws IOException
     {
         nextPageId = pageId;
         return next();
     }
 
     @Override
-    public void close()
+    public final void close()
     {
         unpinCurrentPage();
         pagedFile = null;
+        claimed = false;
     }
 
     @Override
-    public long getCurrentPageId()
+    public final long getCurrentPageId()
     {
         return currentPageId;
     }
@@ -87,7 +102,7 @@ abstract class MuninnPageCursor implements PageCursor
     // --- IO methods:
 
     @Override
-    public byte getByte()
+    public final byte getByte()
     {
         byte b = page.getByte( offset );
         offset++;
@@ -102,7 +117,7 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
-    public long getLong()
+    public final long getLong()
     {
         long l = page.getLong( offset );
         offset += 8;
@@ -117,7 +132,7 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
-    public int getInt()
+    public final int getInt()
     {
         int i = page.getInt( offset );
         offset += 4;
@@ -132,13 +147,13 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
-    public long getUnsignedInt()
+    public final long getUnsignedInt()
     {
         return getInt() & 0xFFFFFFFFL;
     }
 
     @Override
-    public void getBytes( byte[] data )
+    public final void getBytes( byte[] data )
     {
         page.getBytes( data, offset );
         offset += data.length;
@@ -152,7 +167,7 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
-    public short getShort()
+    public final short getShort()
     {
         short s = page.getShort( offset );
         offset += 2;
@@ -167,7 +182,7 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
-    public void setOffset( int offset )
+    public final void setOffset( int offset )
     {
         if ( offset < 0 )
         {
@@ -177,7 +192,7 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
-    public int getOffset()
+    public final int getOffset()
     {
         return offset;
     }

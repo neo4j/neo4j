@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-class MemoryReleaser
+final class MemoryReleaser
 {
     private final long[] rawPointers;
 

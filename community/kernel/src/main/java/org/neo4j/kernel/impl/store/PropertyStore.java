@@ -201,6 +201,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         {
             throw new UnderlyingStorageException( e );
         }
+        updatePropertyBlocks( record );
     }
 
     @Override
@@ -239,17 +240,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
                 }
 
                 longsAppended += propBlockValues.length;
-                /*
-                 * For each block we need to update its dynamic record chain if
-                 * it is just created. Deleted dynamic records are in the property
-                 * record and dynamic records are never modified. Also, they are
-                 * assigned as a whole, so just checking the first should be enough.
-                 */
-                if ( !block.isLight()
-                     && block.getValueRecords().get( 0 ).isCreated() )
-                {
-                    updateDynamicRecords( block.getValueRecords() );
-                }
             }
             if ( longsAppended < PropertyType.getPayloadSizeLongs() )
             {
@@ -265,6 +255,28 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             // skip over the record header, nothing useful there
             cursor.setOffset( cursor.getOffset() + 9 );
             cursor.putLong( 0 );
+        }
+    }
+
+    private void updatePropertyBlocks( PropertyRecord record )
+    {
+        if ( record.inUse() )
+        {
+            // Go through the blocks
+            for ( PropertyBlock block : record.getPropertyBlocks() )
+            {
+                /*
+                 * For each block we need to update its dynamic record chain if
+                 * it is just created. Deleted dynamic records are in the property
+                 * record and dynamic records are never modified. Also, they are
+                 * assigned as a whole, so just checking the first should be enough.
+                 */
+                if ( !block.isLight()
+                        && block.getValueRecords().get( 0 ).isCreated() )
+                {
+                    updateDynamicRecords( block.getValueRecords() );
+                }
+            }
         }
         updateDynamicRecords( record.getDeletedRecords() );
     }

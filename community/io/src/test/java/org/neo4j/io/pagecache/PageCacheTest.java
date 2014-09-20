@@ -57,9 +57,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -1590,7 +1588,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
     }
 
     @Test( timeout = 1000, expected = IllegalArgumentException.class )
-    public void mappingFileSecondTimeWithGreaterPageSizeMutThrow() throws Exception
+    public void mappingFileSecondTimeWithGreaterPageSizeMustThrow() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         pageCache.map( file, filePageSize );
@@ -1601,6 +1599,124 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         finally
         {
             pageCache.unmap( file );
+        }
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void mustThrowWhenClaimingExclusivelyMoreThanOneCursorFromSamePagedFile() throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pf = pageCache.map( file, filePageSize );
+
+        try ( PageCursor a = pf.io( 0, PF_EXCLUSIVE_LOCK );
+              PageCursor b = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            fail( "The second io() call should have thrown" );
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void mustThrowWhenClaimingExclusivelyMoreThanOneCursorFromSamePageCacheButDifferentPagedFiles() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        File fileA = new File( "a" );
+        File fileB = new File( "b" );
+        PagedFile pfA = pageCache.map( fileA, filePageSize );
+        PagedFile pfB = pageCache.map( fileB, filePageSize );
+
+        try ( PageCursor a = pfA.io( 0, PF_EXCLUSIVE_LOCK );
+              PageCursor b = pfB.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            fail( "The second io() call should have thrown" );
+        }
+        finally
+        {
+            pageCache.unmap( fileA );
+            pageCache.unmap( fileB );
+        }
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void mustThrowWhenClaimingSharinglyMoreThanOneCursorFromSamePagedFile() throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pf = pageCache.map( file, filePageSize );
+
+        try ( PageCursor a = pf.io( 0, PF_SHARED_LOCK );
+              PageCursor b = pf.io( 0, PF_SHARED_LOCK ) )
+        {
+            fail( "The second io() call should have thrown" );
+        }
+        finally
+        {
+            pageCache.unmap( file );
+        }
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void mustThrowWhenClaimingSharinglyMoreThanOneCursorFromSamePageCacheButDifferentPagedFiles() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        File fileA = new File( "a" );
+        File fileB = new File( "b" );
+        PagedFile pfA = pageCache.map( fileA, filePageSize );
+        PagedFile pfB = pageCache.map( fileB, filePageSize );
+
+        try ( PageCursor a = pfA.io( 0, PF_SHARED_LOCK );
+              PageCursor b = pfB.io( 0, PF_SHARED_LOCK ) )
+        {
+            fail( "The second io() call should have thrown" );
+        }
+        finally
+        {
+            pageCache.unmap( fileA );
+            pageCache.unmap( fileB );
+        }
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void mustThrowWhenClaimingReadCursorWhileHavingWriteCursor() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        File fileA = new File( "a" );
+        File fileB = new File( "b" );
+        PagedFile pfA = pageCache.map( fileA, filePageSize );
+        PagedFile pfB = pageCache.map( fileB, filePageSize );
+
+        try ( PageCursor a = pfA.io( 0, PF_EXCLUSIVE_LOCK );
+              PageCursor b = pfB.io( 0, PF_SHARED_LOCK ) )
+        {
+            fail( "The second io() call should have thrown" );
+        }
+        finally
+        {
+            pageCache.unmap( fileA );
+            pageCache.unmap( fileB );
+        }
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void mustThrowWhenClaimingWriteCursorWhileHavingReadCursor() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        File fileA = new File( "a" );
+        File fileB = new File( "b" );
+        PagedFile pfA = pageCache.map( fileA, filePageSize );
+        PagedFile pfB = pageCache.map( fileB, filePageSize );
+
+        try ( PageCursor a = pfA.io( 0, PF_SHARED_LOCK );
+              PageCursor b = pfB.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            fail( "The second io() call should have thrown" );
+        }
+        finally
+        {
+            pageCache.unmap( fileA );
+            pageCache.unmap( fileB );
         }
     }
 
@@ -1697,34 +1813,42 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         PagedFile pagedFile1 = pageCache.map( file, filePageSize );
         PagedFile pagedFile2 = pageCache.map( file2, filePageSize2 );
 
-        try ( PageCursor cursor1 = pagedFile1.io( 0, PF_EXCLUSIVE_LOCK );
-              PageCursor cursor2 = pagedFile2.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
-        {
-            assertThat( cursor1, not( sameInstance( cursor2 ) ) );
-            boolean moreWorkToDo;
-            do {
-                boolean cursorReady1 = cursor1.getCurrentPageId() < maxPageIdCursor1 && cursor1.next();
-                boolean cursorReady2 = cursor2.next();
-                moreWorkToDo = cursorReady1 || cursorReady2;
+        long pageId1 = 0;
+        long pageId2 = 0;
+        boolean moreWorkToDo;
+        do {
+            boolean cursorReady1;
+            boolean cursorReady2;
 
+            try ( PageCursor cursor = pagedFile1.io( pageId1, PF_EXCLUSIVE_LOCK ) )
+            {
+                cursorReady1 = cursor.next() && cursor.getCurrentPageId() < maxPageIdCursor1;
                 if ( cursorReady1 )
                 {
-                    writeRecords( cursor1 );
+                    writeRecords( cursor );
+                    pageId1++;
                 }
+            }
 
+            try ( PageCursor cursor = pagedFile2.io( pageId2, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            {
+                cursorReady2 = cursor.next();
                 if ( cursorReady2 )
                 {
                     do {
                         for ( int i = 0; i < filePageSize2; i++ )
                         {
-                            cursor2.putByte( (byte) 'b' );
+                            cursor.putByte( (byte) 'b' );
                         }
                     }
-                    while ( cursor2.shouldRetry() );
+                    while ( cursor.shouldRetry() );
                 }
+                pageId2++;
             }
-            while ( moreWorkToDo );
+
+            moreWorkToDo = cursorReady1 || cursorReady2;
         }
+        while ( moreWorkToDo );
 
         pageCache.unmap( file );
         pageCache.unmap( file2 );
@@ -2459,7 +2583,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = pageCache.map( file, filePageSize );
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
             cursor.next();
             for ( int i = 0; i < 100000; i++ )
@@ -2490,9 +2614,8 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         }
     }
 
-    // TODO future change: we don't want out of space errors to kill the sweeper thread -- change this to throw and Error instead
     @Test( timeout = 1000, expected = IOException.class )
-    public void pageFaultForWriteMustThrowIfSweeperThreadIsDead() throws IOException
+    public void pageFaultForWriteMustThrowIfOutOfStorageSpace() throws IOException
     {
         final AtomicInteger writeCounter = new AtomicInteger();
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
@@ -2535,9 +2658,8 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         }
     }
 
-    // TODO future change: we don't want out of space errors to kill the sweeper thread -- change this to throw and Error instead
     @Test( timeout = 1000, expected = IOException.class )
-    public void pageFaultForReadMustThrowIfSweeperThreadIsDead() throws IOException
+    public void pageFaultForReadMustThrowIfOutOfStorageSpace() throws IOException
     {
         generateFileWithRecords( file, recordCount, recordSize );
 
@@ -2592,8 +2714,57 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
             pageCache = null;
         }
     }
-    // TODO if the storage devise runs out of space, eviction must stop and faulting must throw, until more space becomes available
-    // TODO page faulting with a terminated eviction thread must throw (still important even if running out of space is not enough to kill the sweeper thread)
+
+    @Test( timeout = 1000 )
+    public void mustRecoverFromFullDriveWhenMoreStorageBecomesAvailable() throws IOException
+    {
+
+        final AtomicBoolean hasSpace = new AtomicBoolean();
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
+        {
+            @Override
+            public StoreChannel open( File fileName, String mode ) throws IOException
+            {
+                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                {
+                    @Override
+                    public void writeAll( ByteBuffer src, long position ) throws IOException
+                    {
+                        if ( !hasSpace.get() )
+                        {
+                            throw new IOException( "No space left on device" );
+                        }
+                        super.writeAll( src, position );
+                    }
+                };
+            }
+        };
+
+        fs.create( file ).close();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = pageCache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            for (;;) // Keep writing until we get an exception! (when the cache starts evicting stuff)
+            {
+                assertTrue( cursor.next() );
+                writeRecords( cursor );
+            }
+        }
+        catch ( IOException ignore )
+        {
+            // We're not out of space! Salty tears...
+        }
+
+        // Fix the situation:
+        hasSpace.set( true );
+
+        // Unmapping a file implies a flush, and it mustn't throw:
+        pageCache.unmap( file );
+
+    }
 
     @Test( timeout = 1000 )
     public void dataFromDifferentFilesMustNotBleedIntoEachOther() throws IOException
@@ -2924,7 +3095,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         pageCache.unmap( file );
     }
 
-    @Test
+    @Test( timeout = 20000 )
     public void evictionThreadMustGracefullyShutDown() throws Exception
     {
         int iterations = 1000;

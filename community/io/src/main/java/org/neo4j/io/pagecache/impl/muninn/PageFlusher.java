@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.io.pagecache.PageSwapper;
 
-public class PageFlusher implements PrimitiveLongObjectVisitor<MuninnPage>
+final class PageFlusher implements PrimitiveLongObjectVisitor<MuninnPage>
 {
     private final PageSwapper swapper;
 
