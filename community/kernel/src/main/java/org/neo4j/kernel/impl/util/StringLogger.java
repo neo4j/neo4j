@@ -247,6 +247,78 @@ public abstract class StringLogger
         };
     }
 
+    public static StringLogger cappedLogger(
+            final StringLogger delegate,
+            final CappedOperation.Switch<String> capSwitch )
+    {
+        return new StringLogger()
+        {
+            @Override
+            public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
+            {
+                if ( capSwitch.accept( msg ) )
+                {
+                    delegate.logLongMessage( msg, source, flush );
+                }
+            }
+
+            @Override
+            public void logMessage( String msg, boolean flush )
+            {
+                if ( capSwitch.accept( msg ) )
+                {
+                    delegate.logMessage( msg, flush );
+                    capSwitch.reset();
+                }
+            }
+
+            @Override
+            public void logMessage( String msg, LogMarker marker )
+            {
+                if ( capSwitch.accept( msg ) )
+                {
+                    delegate.logMessage( msg, marker );
+                }
+            }
+
+            @Override
+            public void logMessage( String msg, Throwable cause, boolean flush )
+            {
+                if ( capSwitch.accept( msg ) )
+                {
+                    delegate.logMessage( msg, cause, flush );
+                }
+            }
+
+            @Override
+            public void addRotationListener( Runnable listener )
+            {
+                delegate.addRotationListener( listener );
+            }
+
+            @Override
+            public void flush()
+            {
+                delegate.flush();
+            }
+
+            @Override
+            public void close()
+            {
+                delegate.close();
+            }
+
+            @Override
+            protected void logLine( String line )
+            {
+                if ( capSwitch.accept( line ) )
+                {
+                    delegate.logLine( line );
+                }
+            }
+        };
+    }
+
     /**
      * Create a StringLogger that only creates a file on the first attempt to write something to the log.
      */

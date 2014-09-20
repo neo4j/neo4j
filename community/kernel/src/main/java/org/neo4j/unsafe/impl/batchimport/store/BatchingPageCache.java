@@ -47,7 +47,7 @@ public class BatchingPageCache implements PageCache
 {
     public interface WriterFactory
     {
-        Writer create( File file, StoreChannel channel, Monitor monitor );
+        Writer create( StoreChannel channel, Monitor monitor );
 
         void awaitEverythingWritten();
 
@@ -65,7 +65,7 @@ public class BatchingPageCache implements PageCache
     public static final WriterFactory SYNCHRONOUS = new WriterFactory()
     {
         @Override
-        public Writer create( final File file, final StoreChannel channel, final Monitor monitor )
+        public Writer create( final StoreChannel channel, final Monitor monitor )
         {
             return new Writer()
             {
@@ -146,7 +146,7 @@ public class BatchingPageCache implements PageCache
     {
         StoreChannel channel = fs.open( file, "rw" );
         BatchingPagedFile pageFile = new BatchingPagedFile( channel,
-                writerFactory.create( file, channel, monitor ), pageSize );
+                writerFactory.create( channel, monitor ), pageSize );
         pagedFiles.put( file, pageFile );
         return pageFile;
     }

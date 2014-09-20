@@ -19,14 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store.io;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
@@ -49,17 +45,18 @@ public class IoQueue implements WriterFactory
                 delegateFactory );
     }
 
-    public IoQueue( ExecutorService executor, WriterFactory delegateFactory )
+    IoQueue( ExecutorService executor, WriterFactory delegateFactory )
     {
         this.executor = executor;
         this.delegateFactory = delegateFactory;
     }
 
     @Override
-    public Writer create( File file, StoreChannel channel, Monitor monitor )
+    public Writer create( StoreChannel channel, Monitor monitor )
     {
+        Writer writer = delegateFactory.create( channel, monitor );
         WriteQueue queue = new WriteQueue( executor, jobMonitor);
-        return new Funnel( file, channel, monitor, queue );
+        return new Funnel( writer, queue );
     }
 
     @Override
@@ -96,25 +93,6 @@ public class IoQueue implements WriterFactory
         catch ( InterruptedException e )
         {
             throw new RuntimeException( e );
-        }
-    }
-
-    private class Funnel implements Writer
-    {
-        private final Writer writer;
-        private final WriteQueue queue;
-
-        public Funnel( File file, StoreChannel channel, Monitor monitor, WriteQueue queue )
-        {
-            this.writer = delegateFactory.create( file, channel, monitor );
-            this.queue = queue;
-        }
-
-        @Override
-        public void write( ByteBuffer byteBuffer, long position, Pool<ByteBuffer> poolToReleaseBufferIn )
-                throws IOException
-        {
-            queue.offer( new WriteJob( writer, byteBuffer, position, poolToReleaseBufferIn ) );
         }
     }
 }

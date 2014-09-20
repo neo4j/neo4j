@@ -90,20 +90,23 @@ public class ConsistencyCheckService
         File reportFile = chooseReportPath( tuningConfiguration );
         StringLogger report = StringLogger.lazyLogger( reportFile );
 
-        NeoStore neoStore = factory.newNeoStore( false );
-        try
+
+        try ( NeoStore neoStore = factory.newNeoStore( false ); )
         {
             neoStore.makeStoreOk();
             StoreAccess store = new StoreAccess( neoStore );
             LabelScanStore labelScanStore = null;
-            try {
+            try
+            {
 
-                labelScanStore =
-                    new LuceneLabelScanStoreBuilder( storeDir, store.getRawNeoStore(), fileSystem, logger ).build();
-                SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
+                labelScanStore = new LuceneLabelScanStoreBuilder(
+                        storeDir, store.getRawNeoStore(), fileSystem, logger ).build();
+                SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
+                        DirectoryFactory.PERSISTENT,
+                        tuningConfiguration );
                 DirectStoreAccess stores = new DirectStoreAccess( store, labelScanStore, indexes );
-                summary = new FullCheck( tuningConfiguration, progressFactory )
-                        .execute( stores, StringLogger.tee( logger, report ) );
+                FullCheck check = new FullCheck( tuningConfiguration, progressFactory );
+                summary = check.execute( stores, StringLogger.tee( logger, report ) );
             }
             finally
             {
@@ -123,7 +126,6 @@ public class ConsistencyCheckService
         finally
         {
             report.close();
-            neoStore.close();
             try
             {
                 pageCache.stop();

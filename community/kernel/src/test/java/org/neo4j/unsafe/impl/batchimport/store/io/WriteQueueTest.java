@@ -19,70 +19,97 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store.io;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
 import org.junit.Test;
-import static org.junit.Assert.assertArrayEquals;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class WriteQueueTest
 {
-    @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldSubmitToExecutorOnFirstOffer() throws Exception
+    public void shouldExecuteTheJobImmediately() throws Exception
     {
         // GIVEN
-        ExecutorService executor = mock( ExecutorService.class );
-        JobMonitor jobMonitor = new JobMonitor();
-        WriteQueue queue = new WriteQueue( executor, jobMonitor );
         assertFalse( jobMonitor.hasActiveJobs() );
 
-        // WHEN/THEN
-        WriteJob job1 = mock( WriteJob.class );
-        queue.offer( job1 );
-        verify( executor, times( 1 ) ).submit( any( Callable.class ) );
-        assertTrue( jobMonitor.hasActiveJobs() );
+        // WHEN
+        queue.offer( JOB1 );
 
-        // WHEN/THEN
-        WriteJob job2 = mock( WriteJob.class );
-        queue.offer( job2 );
-        verifyNoMoreInteractions( executor );
+        // THEN
         assertTrue( jobMonitor.hasActiveJobs() );
+        verify( executor, times( 1 ) ).submit( queue );
+        queue.call(); // call it manually after verification
+        verify( JOB1, times( 1 ) ).execute();
+
+        assertFalse( jobMonitor.hasActiveJobs() );
     }
 
-    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldSubmitToExecutorOnlyIfTheQueueWasEmpty() throws Exception
+    {
+        // GIVEN
+        assertFalse( jobMonitor.hasActiveJobs() );
+
+        // make queue non-empty
+        queue.offer( JOB1 );
+        reset( executor ); // forget call to execute for job1
+
+        // WHEN
+        queue.offer( JOB2 );
+
+        // THEN
+        assertTrue( jobMonitor.hasActiveJobs() );
+        verify( executor, never() ).submit( queue );
+    }
+
     @Test
     public void shouldDrainAllOfferedAtOnce() throws Exception
     {
         // GIVEN
-        ExecutorService executor = mock( ExecutorService.class );
-        JobMonitor jobMonitor = new JobMonitor();
-        WriteQueue queue = new WriteQueue( executor, jobMonitor );
         assertFalse( jobMonitor.hasActiveJobs() );
 
-        // WHEN/THEN
-        WriteJob job1 = mock( WriteJob.class );
-        WriteJob job2 = mock( WriteJob.class );
-        queue.offer( job1 );
-        queue.offer( job2 );
-        assertArrayEquals( new WriteJob[] {job1, job2}, queue.drain() );
-        verify( executor, times( 1 ) ).submit( any( Callable.class ) );
-        reset( executor );
-        assertTrue( jobMonitor.hasActiveJobs() );
+        // WHEN
+        queue.offer( JOB1 );
+        queue.offer( JOB2 );
 
-        // WHEN/THEN
-        WriteJob job3 = mock( WriteJob.class );
-        queue.offer( job3 );
-        assertArrayEquals( new WriteJob[] {job3}, queue.drain() );
-        verify( executor, times( 1 ) ).submit( any( Callable.class ) );
+        // THEN
         assertTrue( jobMonitor.hasActiveJobs() );
+        verify( executor, times( 1 ) ).submit( queue );
+        queue.call(); // call it manually after verification
+        verify( JOB1, times( 1 ) ).execute();
+        verify( JOB2, times( 1 ) ).execute();
+        verify( JOB3, never() ).execute();
+
+        assertFalse( jobMonitor.hasActiveJobs() );
+
+        reset( executor, JOB1, JOB2, JOB3 );
+
+        // WHEN
+        queue.offer( JOB3 );
+
+        // THEN
+        assertTrue( jobMonitor.hasActiveJobs() );
+        verify( executor, times( 1 ) ).submit( queue );
+        queue.call(); // call it manually after verification
+        verify( JOB1, never() ).execute();
+        verify( JOB2, never() ).execute();
+        verify( JOB3, times( 1 ) ).execute();
+
+        assertFalse( jobMonitor.hasActiveJobs() );
     }
+
+    private final ExecutorService executor = mock( ExecutorService.class );
+    private final JobMonitor jobMonitor = new JobMonitor();
+    private final WriteQueue queue = new WriteQueue( executor, jobMonitor );
+
+    private final WriteJob JOB1 = mock( WriteJob.class );
+    private final WriteJob JOB2 = mock( WriteJob.class );
+    private final WriteJob JOB3 = mock( WriteJob.class );
 }

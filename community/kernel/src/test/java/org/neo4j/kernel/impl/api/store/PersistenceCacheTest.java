@@ -101,6 +101,6 @@ public class PersistenceCacheTest
         GraphPropertiesImpl graphProperties = mock( GraphPropertiesImpl.class );
         when( entityFactory.newGraphProperties() ).thenReturn( graphProperties );
         persistenceCache = new PersistenceCache( nodeCache, relCache, entityFactory,
-                mock( RelationshipLoader.class ), null, null, null );
+                mock( RelationshipLoader.class ), null, null, null, null );
     }
 }
