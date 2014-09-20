@@ -19,6 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+/**
+ * Calculates how much heap and off-heap memory there are left to allocate in the JVM.
+ * It uses stats from {@link Runtime} and OS JMX bean.
+ */
 public interface AvailableMemoryCalculator
 {
     long availableHeapMemory();

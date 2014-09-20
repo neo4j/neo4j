@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 import java.util.Arrays;
 
 /**
- * Dynaically growing {@link LongArray}. Is given a chunk size and chunks are added as higher and higher
+ * Dynamically growing {@link LongArray}. Is given a chunk size and chunks are added as higher and higher
  * items are requested.
  */
 public class DynamicLongArray implements LongArray
@@ -38,6 +38,9 @@ public class DynamicLongArray implements LongArray
         this.chunkSize = chunkSize;
     }
 
+    /**
+     * @return the current length of this dynamically growing array.
+     */
     @Override
     public long length()
     {
@@ -65,6 +68,21 @@ public class DynamicLongArray implements LongArray
         }
 
         chunk( index ).set( index( index ), value );
+    }
+
+    @Override
+    public long highestSetIndex()
+    {
+        for ( int i = chunks.length-1; i >= 0; i-- )
+        {
+            LongArray chunk = chunks[i];
+            long highestSetInChunk = chunk.highestSetIndex();
+            if ( highestSetInChunk > -1 )
+            {
+                return i*chunkSize + highestSetInChunk;
+            }
+        }
+        return -1;
     }
 
     private long index( long index )
@@ -112,6 +130,15 @@ public class DynamicLongArray implements LongArray
             long intermediary = get( fromIndex+i );
             set( fromIndex+i, get( toIndex+i ) );
             set( toIndex+i, intermediary );
+        }
+    }
+
+    @Override
+    public void visitMemoryStats( MemoryStatsVisitor visitor )
+    {
+        for ( LongArray chunk : chunks )
+        {
+            chunk.visitMemoryStats( visitor );
         }
     }
 }

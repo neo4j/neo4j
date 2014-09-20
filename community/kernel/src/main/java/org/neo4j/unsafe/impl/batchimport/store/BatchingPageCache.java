@@ -95,6 +95,12 @@ public class BatchingPageCache implements PageCache
         public void shutdown()
         {   // no-op
         }
+
+        @Override
+        public String toString()
+        {
+            return "SYNCHRONOUS";
+        }
     };
 
     public static enum Mode

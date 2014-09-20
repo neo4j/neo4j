@@ -26,7 +26,8 @@ import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
 /**
- * Imports graph data, nodes with their properties and labels separated from relationship with their properties.
+ * Imports graph data accepting node data separated from relationship data and an {@link IdMapping}
+ * specifying how the node ids specified by the input relates to actual node ids in the resulting store.
  */
 public interface BatchImporter
 {

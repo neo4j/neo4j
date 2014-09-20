@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
+import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
@@ -58,4 +59,6 @@ public interface IdMapper
      * @return the actual node id previously specified by {@link #put(Object, long)}.
      */
     long get( Object inputId );
+
+    void visitMemoryStats( MemoryStatsVisitor visitor );
 }

@@ -19,15 +19,40 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import static org.neo4j.helpers.Format.bytes;
+
 /**
- * Abstraction of a {@code long[]} so that different implementations can be plugged in, for example
- * off-heap, dynamically growing, or other implementations.
+ * {@link MemoryStatsVisitor} that can gather stats from multiple sources and give a total.
  */
-public interface LongArray extends NumberArray
+public class GatheringMemoryStatsVisitor implements MemoryStatsVisitor
 {
-    long get( long index );
+    private long heapUsage, offHeapUsage;
 
-    void set( long index, long value );
+    @Override
+    public void heapUsage( long bytes )
+    {
+        heapUsage += bytes;
+    }
 
-    void setAll( long value );
+    @Override
+    public void offHeapUsage( long bytes )
+    {
+        offHeapUsage += bytes;
+    }
+
+    public long getHeapUsage()
+    {
+        return heapUsage;
+    }
+
+    public long getOffHeapUsage()
+    {
+        return offHeapUsage;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Memory usage[heap:" + bytes( heapUsage ) + ", off-heap:" + bytes( offHeapUsage ) + "]";
+    }
 }

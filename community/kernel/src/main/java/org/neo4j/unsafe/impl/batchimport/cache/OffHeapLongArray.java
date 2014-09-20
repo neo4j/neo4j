@@ -31,6 +31,7 @@ public class OffHeapLongArray implements LongArray
 {
     private final long address;
     private final long length;
+    private long highestSetIndex = -1;
 
     public OffHeapLongArray( long length )
     {
@@ -63,6 +64,16 @@ public class OffHeapLongArray implements LongArray
     public void set( long index, long value )
     {
         unsafe.putLong( addressOf( index ), value );
+        if ( index > highestSetIndex )
+        {
+            highestSetIndex = index;
+        }
+    }
+
+    @Override
+    public long highestSetIndex()
+    {
+        return highestSetIndex;
     }
 
     @Override
@@ -112,6 +123,12 @@ public class OffHeapLongArray implements LongArray
             unsafe.putLong( fromAddress, toValue );
             unsafe.putLong( toAddress, fromValue );
         }
+    }
+
+    @Override
+    public void visitMemoryStats( MemoryStatsVisitor visitor )
+    {
+        visitor.offHeapUsage( length*8 );
     }
 
     private static final Unsafe unsafe = getUnsafe();

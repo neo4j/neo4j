@@ -25,6 +25,9 @@ import java.nio.ByteBuffer;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 
+/**
+ * Represents one write job, i.e. a chunk of data to be written to a {@link Writer} at a specific position.
+ */
 class WriteJob
 {
     private final ByteBuffer byteBuffer;

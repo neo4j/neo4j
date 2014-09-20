@@ -19,8 +19,18 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
+import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+
+/**
+ * Common {@link IdGenerator} implementations.
+ */
 public class IdGenerators
 {
+    /**
+     * @return an {@link IdGenerator} assuming that the input ids are {@link Long} objects and casts to
+     * primitive longs. This is for when the {@link InputNode#id()} contains an actual record id, in the
+     * form of a {@link Long}.
+     */
     public static IdGenerator fromInput()
     {
         return new FromInput();
@@ -45,5 +55,23 @@ public class IdGenerators
 
             return inputLongId;
         }
+    }
+
+    /**
+     * @param startingId the first id returned. The next one will be this value + 1, then + 2 a.s.o.
+     * @return an {@link IdGenerator} that returns ids incrementally, starting from the given id.
+     */
+    public static IdGenerator startingFrom( final long startingId )
+    {
+        return new IdGenerator()
+        {
+            private long id = startingId;
+
+            @Override
+            public long generate( Object inputId )
+            {
+                return id++;
+            }
+        };
     }
 }

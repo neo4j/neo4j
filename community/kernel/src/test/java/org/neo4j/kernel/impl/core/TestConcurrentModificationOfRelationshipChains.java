@@ -37,7 +37,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.lang.String.format;
@@ -46,7 +45,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 /**
  * Tests a specific case of cache poisoning that involves the relationship chain of a node, the index the node has on it
