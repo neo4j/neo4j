@@ -171,7 +171,8 @@ public class NodeCommitAndReadRaceTest
         RelationshipLoader relationshipLoader = new RelationshipLoader(
                 LockService.NO_LOCK_SERVICE, new NoCache<RelationshipImpl>( getClass().getSimpleName() ), relationshipChainLoader );
         PersistenceCache cache = /*spy( */new PersistenceCache( nodeCache, mock( AutoLoadingCache.class ),
-                entityFactory, relationshipLoader, propertyKeyTokenHolder, relationshipTokenHolder, labelTokenHolder ) /*)*/;
+                entityFactory, relationshipLoader, propertyKeyTokenHolder, relationshipTokenHolder, labelTokenHolder,
+                null) /*)*/;
         // Just an assertion that this apply method isn't called.
 //        doThrow( new IllegalStateException( "This method should not be called" ) )
 //                .when( cache ).apply( any( TxState.class ) );

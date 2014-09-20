@@ -618,7 +618,8 @@ public abstract class InternalAbstractGraphDatabase
         return new NodeManager(
                 nodeLookup,
                 relationshipLookup,
-                threadToTransactionBridge );
+                threadToTransactionBridge,
+                logging );
     }
 
     @Override

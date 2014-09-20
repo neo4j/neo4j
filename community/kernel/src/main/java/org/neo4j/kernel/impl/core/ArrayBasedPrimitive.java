@@ -82,7 +82,9 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
         properties = NO_PROPERTIES;
     }
 
-    private DefinedProperty[] toPropertyArray( Collection<DefinedProperty> loadedProperties )
+    private DefinedProperty[] toPropertyArray(
+            Collection<DefinedProperty> loadedProperties,
+            PropertyChainVerifier chainVerifier )
     {
         if ( loadedProperties == null || loadedProperties.size() == 0 )
         {
@@ -96,6 +98,7 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
             result[i++] = property;
         }
         sort( result );
+        chainVerifier.verifySortedPropertyChain( result, this );
         return result;
     }
 
@@ -104,7 +107,7 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
         Arrays.sort( array, PROPERTY_DATA_COMPARATOR_FOR_SORTING );
     }
 
-    private static final Comparator<Property> PROPERTY_DATA_COMPARATOR_FOR_SORTING = new Comparator<Property>()
+    static final Comparator<Property> PROPERTY_DATA_COMPARATOR_FOR_SORTING = new Comparator<Property>()
     {
         @Override
         public int compare( Property o1, Property o2 )
@@ -181,9 +184,9 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
     protected abstract Property noProperty( int key );
 
     @Override
-    protected void setProperties( Iterator<DefinedProperty> properties )
+    protected void setProperties( Iterator<DefinedProperty> properties, PropertyChainVerifier chainVerifier )
     {
-        this.properties = toPropertyArray( asCollection( properties ) );
+        this.properties = toPropertyArray( asCollection( properties ), chainVerifier );
     }
 
     @Override

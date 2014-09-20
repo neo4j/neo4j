@@ -39,12 +39,12 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
-import org.neo4j.kernel.impl.core.DenseNodeImpl;
 import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeImplReservation;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Primitive;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
@@ -96,6 +96,7 @@ public class PersistenceCache
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
     private final EntityFactory entityFactory;
+    private final NodeManager nodeManager;
 
     public PersistenceCache(
             AutoLoadingCache<NodeImpl> nodeCache,
@@ -103,11 +104,13 @@ public class PersistenceCache
             EntityFactory entityFactory, RelationshipLoader relationshipLoader,
             PropertyKeyTokenHolder propertyKeyTokenHolder,
             RelationshipTypeTokenHolder relationshipTypeTokenHolder,
-            LabelTokenHolder labelTokenHolder )
+            LabelTokenHolder labelTokenHolder,
+            NodeManager nodeManager)
     {
         this.nodeCache = nodeCache;
         this.relationshipCache = relationshipCache;
         this.entityFactory = entityFactory;
+        this.nodeManager = nodeManager;
         this.graphProperties = entityFactory.newGraphProperties();
         this.relationshipLoader = relationshipLoader;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
@@ -173,7 +176,7 @@ public class PersistenceCache
                     nodeCache.put( node = new NodeImpl( id ), true );
                 }
             }
-            
+
             @Override
             public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
                     Iterator<DefinedProperty> changed, Iterator<Integer> removed )
@@ -368,51 +371,51 @@ public class PersistenceCache
                                                         CacheLoader<Iterator<DefinedProperty>> cacheLoader )
             throws EntityNotFoundException
     {
-        return getNode( nodeId ).getProperties( cacheLoader, NODE_CACHE_SIZE_LISTENER );
+        return getNode( nodeId ).getProperties( cacheLoader, NODE_CACHE_SIZE_LISTENER, nodeManager.getPropertyChainVerifier() );
     }
 
     public PrimitiveLongIterator nodeGetPropertyKeys( long nodeId,
                                                       CacheLoader<Iterator<DefinedProperty>> cacheLoader )
             throws EntityNotFoundException
     {
-        return getNode( nodeId ).getPropertyKeys( cacheLoader, NODE_CACHE_SIZE_LISTENER );
+        return getNode( nodeId ).getPropertyKeys( cacheLoader, NODE_CACHE_SIZE_LISTENER, nodeManager.getPropertyChainVerifier() );
     }
 
     public Property nodeGetProperty( long nodeId, int propertyKeyId,
                                      CacheLoader<Iterator<DefinedProperty>> cacheLoader )
             throws EntityNotFoundException
     {
-        return getNode( nodeId ).getProperty( cacheLoader, NODE_CACHE_SIZE_LISTENER, propertyKeyId );
+        return getNode( nodeId ).getProperty( cacheLoader, NODE_CACHE_SIZE_LISTENER, propertyKeyId, nodeManager.getPropertyChainVerifier() );
     }
 
     public Iterator<DefinedProperty> relationshipGetProperties( long relationshipId,
                                                                 CacheLoader<Iterator<DefinedProperty>> cacheLoader ) throws EntityNotFoundException
     {
         return getRelationship( relationshipId ).getProperties( cacheLoader,
-                RELATIONSHIP_CACHE_SIZE_LISTENER );
+                RELATIONSHIP_CACHE_SIZE_LISTENER, nodeManager.getPropertyChainVerifier() );
     }
 
     public Property relationshipGetProperty( long relationshipId, int propertyKeyId,
                                              CacheLoader<Iterator<DefinedProperty>> cacheLoader ) throws EntityNotFoundException
     {
         return getRelationship( relationshipId ).getProperty( cacheLoader, RELATIONSHIP_CACHE_SIZE_LISTENER,
-                propertyKeyId );
+                propertyKeyId, nodeManager.getPropertyChainVerifier() );
     }
 
     public Iterator<DefinedProperty> graphGetProperties( CacheLoader<Iterator<DefinedProperty>> cacheLoader )
     {
-        return graphProperties.getProperties( cacheLoader, NO_UPDATES );
+        return graphProperties.getProperties( cacheLoader, NO_UPDATES, nodeManager.getPropertyChainVerifier() );
     }
 
     public PrimitiveLongIterator graphGetPropertyKeys( CacheLoader<Iterator<DefinedProperty>> cacheLoader )
     {
-        return graphProperties.getPropertyKeys( cacheLoader, NO_UPDATES );
+        return graphProperties.getPropertyKeys( cacheLoader, NO_UPDATES, nodeManager.getPropertyChainVerifier() );
     }
 
     public Property graphGetProperty( CacheLoader<Iterator<DefinedProperty>> cacheLoader,
                                       int propertyKeyId )
     {
-        return graphProperties.getProperty( cacheLoader, NO_UPDATES, propertyKeyId );
+        return graphProperties.getProperty( cacheLoader, NO_UPDATES, propertyKeyId, nodeManager.getPropertyChainVerifier() );
     }
 
     public PrimitiveLongIterator nodeGetRelationships( long node,

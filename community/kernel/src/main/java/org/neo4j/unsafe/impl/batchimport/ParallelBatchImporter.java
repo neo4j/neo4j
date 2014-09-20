@@ -46,7 +46,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageExecution;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
-import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -90,7 +89,11 @@ public class ParallelBatchImporter implements BatchImporter
                                   Configuration config, Logging logging, ExecutionMonitor executionMonitor )
     {
         this( storeDir, fileSystem, config, logging, executionMonitor,
-                new IoQueue( config.numberOfIoThreads(), SYNCHRONOUS ) );
+                // FIXME: Temporarily disabled I/O parallellization since there's an issue with it that sometimes
+                // gets exposed. It's purely an optimization anyway.
+//                new IoQueue( config.numberOfIoThreads(), SYNCHRONOUS )
+                SYNCHRONOUS
+        );
     }
 
     @Override
@@ -104,17 +107,17 @@ public class ParallelBatchImporter implements BatchImporter
                 writeMonitor, logging, monitors, writerFactory ) )
         {
             // Some temporary caches and indexes in the import
-            IdMapper idMapper = idMapping.idMapper();
-            IdGenerator idGenerator = idMapping.idGenerator();
-            NodeRelationshipLink nodeRelationshipLink = new NodeRelationshipLinkImpl(
-                    LongArrayFactory.AUTO, config.denseNodeThreshold() );
+            final IdMapper idMapper = idMapping.idMapper();
+            final IdGenerator idGenerator = idMapping.idGenerator();
+            final NodeRelationshipLink nodeRelationshipLink =
+                    new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, config.denseNodeThreshold() );
 
             // Stage 1 -- nodes, properties, labels
-            NodeStage nodeStage = new NodeStage( nodes.iterator(), idMapper, idGenerator, neoStore );
+            final NodeStage nodeStage = new NodeStage( nodes.iterator(), idMapper, idGenerator, neoStore );
 
             // Stage 2 -- calculate dense node threshold
-            CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage(
-                    relationships.iterator(), nodeRelationshipLink, idMapper );
+            final CalculateDenseNodesStage calculateDenseNodesStage =
+                    new CalculateDenseNodesStage( relationships.iterator(), nodeRelationshipLink, idMapper );
 
             // Execute stages 1 and 2 in parallel or sequentially?
             if ( idMapper.needsPreparation() )
@@ -131,19 +134,31 @@ public class ParallelBatchImporter implements BatchImporter
             }
 
             // Stage 3 -- relationships, properties
-            executeStages( new RelationshipStage( relationships.iterator(), idMapper,
-                    neoStore, nodeRelationshipLink ) );
+            final RelationshipStage relationshipStage =
+                    new RelationshipStage( relationships.iterator(), idMapper, neoStore, nodeRelationshipLink );
+
+            // execute stage 3
+            executeStages( relationshipStage );
 
             // Switch to reverse updating mode
             writerFactory.awaitEverythingWritten();
             neoStore.switchToUpdateMode();
 
             // Stage 4 -- set node nextRel fields
-            executeStages( new NodeFirstRelationshipStage( neoStore, nodeRelationshipLink ) );
+            final NodeFirstRelationshipStage nodeFirstRelationshipStage =
+                    new NodeFirstRelationshipStage( neoStore, nodeRelationshipLink );
+
+            // execute stage 4
+            executeStages( nodeFirstRelationshipStage );
+
+            nodeRelationshipLink.clearRelationships();
 
             // Stage 5 -- link relationship chains together
-            nodeRelationshipLink.clearRelationships();
-            executeStages( new RelationshipLinkbackStage( neoStore, nodeRelationshipLink ) );
+            final RelationshipLinkbackStage relationshipLinkbackStage =
+                    new RelationshipLinkbackStage( neoStore, nodeRelationshipLink );
+
+            // execute stage 5
+            executeStages( relationshipLinkbackStage );
 
             executionMonitor.done( currentTimeMillis() - startTime );
         }

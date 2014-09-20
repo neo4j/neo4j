@@ -212,7 +212,7 @@ public class TestNeoStore
         when(locks.newClient()).thenReturn( lockClient );
         DefaultCaches caches = new DefaultCaches( StringLogger.DEV_NULL, new Monitors() );
         caches.configure( new NoCacheProvider(), config );
-        NodeManager nodeManager = new NodeManager( null, null, new ThreadToStatementContextBridge() );
+        NodeManager nodeManager = new NodeManager( null, null, new ThreadToStatementContextBridge(), null );
         ds = new NeoStoreXaDataSource(config, sf, StringLogger.DEV_NULL,
                 null, DevNullLoggingService.DEV_NULL,
                 new KernelSchemaStateStore(),
