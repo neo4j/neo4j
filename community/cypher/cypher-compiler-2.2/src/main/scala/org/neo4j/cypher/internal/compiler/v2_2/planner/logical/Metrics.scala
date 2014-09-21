@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.{combinePredicates, Predicate}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.groupPredicates.EstimatedPredicateCombination
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{TokenContext, GraphStatistics}
@@ -37,10 +39,10 @@ object Metrics {
 
   // This metric estimates the selectivity of an expression
   // (e.g. by algebraic analysis or using statistics)
-  type SelectivityModel = Expression => Selectivity
+  type PredicateSelectivityCombiner = Set[EstimatedPredicateCombination] => (Set[Predicate], Selectivity)
 }
 
-case class Metrics(cost: CostModel, cardinality: CardinalityModel, selectivity: SelectivityModel)
+case class Metrics(cost: CostModel, cardinality: CardinalityModel, selectivity: PredicateSelectivityCombiner)
 
 case class Cost(gummyBears: Double) extends Ordered[Cost] {
   def +(other: Cost): Cost = Cost(other.gummyBears + gummyBears)
@@ -90,12 +92,12 @@ object Selectivity {
 }
 
 trait MetricsFactory {
-  def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable): SelectivityModel
-  def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable): CardinalityModel
+  def newCardinalityEstimator(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable): CardinalityModel
   def newCostModel(cardinality: CardinalityModel): CostModel
 
-  def newMetrics(statistics: GraphStatistics, semanticTable: SemanticTable) = {
-    val selectivity = newSelectivityEstimator(statistics, semanticTable)
+  def newMetrics(statistics: GraphStatistics,
+                 semanticTable: SemanticTable,
+                 selectivity: PredicateSelectivityCombiner = combinePredicates.default) = {
     val cardinality = newCardinalityEstimator(statistics, selectivity, semanticTable)
     val cost = newCostModel(cardinality)
     Metrics(cost, cardinality, selectivity)

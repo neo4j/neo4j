@@ -19,15 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.{HardcodedGraphStatistics, ast, RelTypeId}
+import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality._
-import org.neo4j.cypher.internal.compiler.v2_2.{RelTypeId, ast}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{TokenContext, GraphStatistics}
-import org.neo4j.graphdb.Direction
 
 object GuessingEstimation {
   val LABEL_NOT_FOUND_SELECTIVITY = Selectivity(0.0)
@@ -38,13 +34,13 @@ object GuessingEstimation {
 }
 
 class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
-                                       selectivity: Metrics.SelectivityModel)
+                                       selectivity: Metrics.PredicateSelectivityCombiner)
                                       (implicit semanticTable: SemanticTable) extends Metrics.CardinalityModel {
   private val queryGraphCardinalityModel = QueryGraphCardinalityModel(
     statistics,
     producePredicates,
     groupPredicates(estimateSelectivity(statistics, semanticTable)),
-    combinePredicates.assumeIndependence
+    selectivity
   )
 
   def apply(plan: LogicalPlan): Cardinality = plan match {
@@ -122,9 +118,4 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
   }
 
   private def cardinality(plan: LogicalPlan) = apply(plan)
-}
-
-class StatisticsBasedSelectivityModel(statistics: GraphStatistics)
-                                     (implicit semanticTable: SemanticTable) extends Metrics.SelectivityModel {
-  def apply(predicate: ast.Expression): Selectivity = ???
 }
