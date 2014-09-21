@@ -72,6 +72,24 @@ public class Utils
         return (int) value;
     }
 
+    public static short safeCastLongToShort( long value )
+    {
+        if ( value > Short.MAX_VALUE )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m" );
+        }
+        return (short) value;
+    }
+
+    public static byte safeCastLongToByte( long value )
+    {
+        if ( value > Byte.MAX_VALUE )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m" );
+        }
+        return (byte) value;
+    }
+
     public enum CompareType
     {
         EQ, GT, GE, LT, LE, NE

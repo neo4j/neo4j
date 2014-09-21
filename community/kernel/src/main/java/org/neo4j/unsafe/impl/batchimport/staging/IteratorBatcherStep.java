@@ -19,16 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.util.Iterator;
+import org.neo4j.graphdb.ResourceIterator;
 
 /**
  * Takes an Iterator and chops it up into batches downstream.
  */
 public class IteratorBatcherStep<T> extends ProducerStep<T>
 {
-    private final Iterator<T> data;
+    private final ResourceIterator<T> data;
 
-    public IteratorBatcherStep( StageControl control, String name, int batchSize, Iterator<T> data )
+    public IteratorBatcherStep( StageControl control, String name, int batchSize, ResourceIterator<T> data )
     {
         super( control, name, batchSize );
         this.data = data;
@@ -38,5 +38,11 @@ public class IteratorBatcherStep<T> extends ProducerStep<T>
     protected T nextOrNull()
     {
         return data.hasNext() ? data.next() : null;
+    }
+
+    @Override
+    public void close()
+    {
+        data.close();
     }
 }

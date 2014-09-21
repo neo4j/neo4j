@@ -123,9 +123,9 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     protected abstract Object process( long ticket, T batch );
 
     @Override
-    protected void done()
+    public void close()
     {
+        super.close();
         executor.shutdown();
-        super.done();
     }
 }

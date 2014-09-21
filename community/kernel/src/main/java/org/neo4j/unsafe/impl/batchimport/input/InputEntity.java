@@ -32,6 +32,9 @@ import static java.lang.String.format;
  */
 public abstract class InputEntity
 {
+    public static final Object[] NO_PROPERTIES = new Object[0];
+    public static final String[] NO_LABELS = new String[0];
+
     private final Object[] properties;
     private final Long firstPropertyId;
 

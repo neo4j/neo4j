@@ -17,19 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
+package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import java.io.IOException;
-
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.csv.reader.CharSeeker;
 
 /**
- * Imports graph data accepting node data separated from relationship data and an {@link IdMapping}
- * specifying how the node ids specified by the input relates to actual node ids in the resulting store.
+ * Factory for the data provided by an {@link Input}. Produces a {@link CharSeeker} that can seek
+ * out values from a csv/tsv style data stream.
  */
-public interface BatchImporter
+public interface DataFactory
 {
-    void doImport( Input input )
-            throws IOException;
+    CharSeeker create( Configuration config );
 }
