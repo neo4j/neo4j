@@ -43,7 +43,7 @@ public class DynamicStringStore extends AbstractDynamicStore
         super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
     }
-    
+
     @Override
     public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record ) throws FAILURE
     {

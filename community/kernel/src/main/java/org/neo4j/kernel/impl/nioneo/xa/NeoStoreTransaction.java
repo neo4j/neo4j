@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -97,7 +96,6 @@ import static java.util.Arrays.copyOf;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.locking.LockService.LockType.READ_LOCK;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.CREATE;
