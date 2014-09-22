@@ -209,7 +209,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
         statistics,
         producePredicates,
         groupPredicates(estimateSelectivity(statistics, semanticTable)),
-        combinePredicates
+        combinePredicates.default
       )
       val result = cardinalityModel(queryGraph)
       result should equal(Cardinality(number))
