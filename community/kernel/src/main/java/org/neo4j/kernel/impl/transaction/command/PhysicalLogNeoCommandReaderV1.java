@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.DynamicRecordAdder;
+import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
@@ -169,7 +170,9 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
         }
         default:
         {
-            throw new IOException( "Unknown command type[" + commandType + "]" );
+            LogPositionMarker position = new LogPositionMarker();
+            channel.getCurrentPosition( position );
+            throw new IOException( "Unknown command type[" + commandType + "] near " + position.newPosition() );
         }
         }
         if ( command != null && !command.handle( reader ) )
@@ -739,7 +742,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
                 throw new RuntimeException( "Unknown value type " + valueType );
             }
         }
-        
+
         @Override
         public void apply()
         {   // Nothing to apply
