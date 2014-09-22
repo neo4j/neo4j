@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest.web;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.rest.domain.TraverserReturnType;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 /**
  * A convenient class for testing RestfulGraphDatabase: just wraps every "web call" in a transaction like the
@@ -45,13 +45,13 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response addToNodeIndex( ForceMode force, String indexName, String unique, String uniqueness,
+    public Response addToNodeIndex( String indexName, String unique, String uniqueness,
                                     String postBody )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.addToNodeIndex( force, indexName, unique, uniqueness,
+            Response response = restfulGraphDatabase.addToNodeIndex( indexName, unique, uniqueness,
                     postBody );
             if ( response.getStatus() < 300 )
             {
@@ -66,12 +66,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response createRelationship( ForceMode force, long startNodeId, String body )
+    public Response createRelationship( long startNodeId, String body )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.createRelationship( force, startNodeId, body );
+            Response response = restfulGraphDatabase.createRelationship( startNodeId, body );
             if ( response.getStatus() < 300 )
             {
                 transaction.success();
@@ -85,12 +85,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response deleteNodeIndex( ForceMode force, String indexName )
+    public Response deleteNodeIndex( String indexName )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.deleteNodeIndex( force, indexName );
+            Response response = restfulGraphDatabase.deleteNodeIndex( indexName );
             transaction.success();
             return response;
         }
@@ -117,12 +117,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response deleteAllNodeProperties( ForceMode force, long nodeId )
+    public Response deleteAllNodeProperties( long nodeId )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.deleteAllNodeProperties( force, nodeId );
+            Response response = restfulGraphDatabase.deleteAllNodeProperties( nodeId );
             transaction.success();
             return response;
         }
@@ -163,12 +163,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response createNode( ForceMode force, String body )
+    public Response createNode( String body )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.createNode( force, body );
+            Response response = restfulGraphDatabase.createNode( body );
             if ( response.getStatus() < 300 )
             {
                 transaction.success();
@@ -182,12 +182,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response deleteAllRelationshipProperties( ForceMode force, long relationshipId )
+    public Response deleteAllRelationshipProperties( long relationshipId )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.deleteAllRelationshipProperties( force, relationshipId );
+            Response response = restfulGraphDatabase.deleteAllRelationshipProperties( relationshipId );
             transaction.success();
             return response;
         }
@@ -198,13 +198,13 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response addToRelationshipIndex( ForceMode force, String indexName, String unique, String uniqueness,
+    public Response addToRelationshipIndex( String indexName, String unique, String uniqueness,
                                             String postBody )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.addToRelationshipIndex( force, indexName, unique, uniqueness,
+            Response response = restfulGraphDatabase.addToRelationshipIndex( indexName, unique, uniqueness,
                     postBody );
             if ( response.getStatus() < 300 )
             {
@@ -249,12 +249,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response setRelationshipProperty( ForceMode force, long relationshipId, String key, String body )
+    public Response setRelationshipProperty( long relationshipId, String key, String body )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.setRelationshipProperty( force, relationshipId, key, body );
+            Response response = restfulGraphDatabase.setRelationshipProperty( relationshipId, key, body );
             transaction.success();
             return response;
         }
@@ -407,26 +407,24 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response deleteFromRelationshipIndex( ForceMode force,
-                                                 String indexName, long id )
+    public Response deleteFromRelationshipIndex( String indexName, long id )
     {
         throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
-    public Response deleteFromRelationshipIndexNoValue( ForceMode force, String indexName, String key, long id )
+    public Response deleteFromRelationshipIndexNoValue( String indexName, String key, long id )
     {
         throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
-    public Response deleteFromRelationshipIndex( ForceMode force,
-                                                 String indexName, String key, String value, long id )
+    public Response deleteFromRelationshipIndex( String indexName, String key, String value, long id )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.deleteFromRelationshipIndex( force, indexName, key, value, id );
+            Response response = restfulGraphDatabase.deleteFromRelationshipIndex( indexName, key, value, id );
             if ( response.getStatus() < 300 )
             {
                 transaction.success();
@@ -440,25 +438,24 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response deleteFromNodeIndexNoKeyValue( ForceMode force, String indexName, long id )
+    public Response deleteFromNodeIndexNoKeyValue( String indexName, long id )
     {
         throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
-    public Response deleteFromNodeIndexNoValue( ForceMode force, String indexName, String key, long id )
+    public Response deleteFromNodeIndexNoValue( String indexName, String key, long id )
     {
         throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
-    public Response deleteFromNodeIndex( ForceMode force,
-                                         String indexName, String key, String value, long id )
+    public Response deleteFromNodeIndex( String indexName, String key, String value, long id )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.deleteFromNodeIndex( force, indexName, key, value, id );
+            Response response = restfulGraphDatabase.deleteFromNodeIndex( indexName, key, value, id );
             if ( response.getStatus() < 300 )
             {
                 transaction.success();
@@ -642,12 +639,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response deleteRelationshipIndex( ForceMode force, String indexName )
+    public Response deleteRelationshipIndex( String indexName )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.deleteRelationshipIndex( force, indexName );
+            Response response = restfulGraphDatabase.deleteRelationshipIndex( indexName );
             transaction.success();
             return response;
         }
@@ -679,12 +676,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response jsonCreateRelationshipIndex( ForceMode force, String json )
+    public Response jsonCreateRelationshipIndex( String json )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.jsonCreateRelationshipIndex( force, json );
+            Response response = restfulGraphDatabase.jsonCreateRelationshipIndex( json );
             transaction.success();
             return response;
         }
@@ -695,12 +692,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response jsonCreateNodeIndex( ForceMode force, String json )
+    public Response jsonCreateNodeIndex( String json )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.jsonCreateNodeIndex( force, json );
+            Response response = restfulGraphDatabase.jsonCreateNodeIndex( json );
             transaction.success();
             return response;
         }
@@ -725,12 +722,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response deleteRelationshipProperty( ForceMode force, long relationshipId, String key )
+    public Response deleteRelationshipProperty( long relationshipId, String key )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.deleteRelationshipProperty( force, relationshipId, key );
+            Response response = restfulGraphDatabase.deleteRelationshipProperty( relationshipId, key );
             if ( response.getStatus() < 300 )
             {
                 transaction.success();
@@ -744,13 +741,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response setAllRelationshipProperties( ForceMode force,
-                                                  long relationshipId, String body )
+    public Response setAllRelationshipProperties( long relationshipId, String body )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.setAllRelationshipProperties( force, relationshipId, body );
+            Response response = restfulGraphDatabase.setAllRelationshipProperties( relationshipId, body );
             transaction.success();
             return response;
         }
@@ -796,12 +792,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response deleteRelationship( ForceMode force, long relationshipId )
+    public Response deleteRelationship( long relationshipId )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.deleteRelationship( force, relationshipId );
+            Response response = restfulGraphDatabase.deleteRelationship( relationshipId );
             transaction.success();
             return response;
         }
@@ -838,33 +834,33 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response getNodeLabels( ForceMode force, long nodeId )
+    public Response getNodeLabels( long nodeId )
     {
         try ( Transaction ignored = graph.beginTx() )
         {
-            return restfulGraphDatabase.getNodeLabels( force, nodeId );
+            return restfulGraphDatabase.getNodeLabels( nodeId );
         }
     }
 
     @Override
-    public Response removeNodeLabel( ForceMode force, long
+    public Response removeNodeLabel( long
             nodeId, String labelName )
     {
         throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
-    public Response setNodeLabels( ForceMode force, long nodeId, String body )
+    public Response setNodeLabels( long nodeId, String body )
     {
         throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
-    public Response addNodeLabel( ForceMode force, long nodeId, String body )
+    public Response addNodeLabel( long nodeId, String body )
     {
         try ( Transaction transaction = graph.beginTx() )
         {
-            Response response = restfulGraphDatabase.addNodeLabel( force, nodeId, body );
+            Response response = restfulGraphDatabase.addNodeLabel( nodeId, body );
             if ( response.getStatus() < 300 )
             {
                 transaction.success();
@@ -874,12 +870,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response deleteNodeProperty( ForceMode force, long nodeId, String key )
+    public Response deleteNodeProperty( long nodeId, String key )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.deleteNodeProperty( force, nodeId, key );
+            Response response = restfulGraphDatabase.deleteNodeProperty( nodeId, key );
             if ( response.getStatus() < 300 )
             {
                 transaction.success();
@@ -893,13 +889,13 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response getNodeProperty( ForceMode force, long
+    public Response getNodeProperty( long
             nodeId, String key )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            return restfulGraphDatabase.getNodeProperty( force, nodeId, key );
+            return restfulGraphDatabase.getNodeProperty( nodeId, key );
         }
         finally
         {
@@ -908,12 +904,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response setNodeProperty( ForceMode force, long
+    public Response setNodeProperty( long
             nodeId, String key, String body )
     {
         try (Transaction transaction = graph.beginTx())
         {
-            Response response = restfulGraphDatabase.setNodeProperty( force, nodeId, key, body );
+            Response response = restfulGraphDatabase.setNodeProperty( nodeId, key, body );
             if (response.getStatus() < 300)
             {
                 transaction.success();
@@ -923,12 +919,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response setAllNodeProperties( ForceMode force, long nodeId, String body )
+    public Response setAllNodeProperties( long nodeId, String body )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.setAllNodeProperties( force, nodeId, body );
+            Response response = restfulGraphDatabase.setAllNodeProperties( nodeId, body );
             if ( response.getStatus() < 300 )
             {
                 transaction.success();
@@ -942,12 +938,12 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response deleteNode( ForceMode force, long nodeId )
+    public Response deleteNode( long nodeId )
     {
         Transaction transaction = graph.beginTx();
         try
         {
-            Response response = restfulGraphDatabase.deleteNode( force, nodeId );
+            Response response = restfulGraphDatabase.deleteNode( nodeId );
             if ( response.getStatus() < 300 )
             {
                 transaction.success();

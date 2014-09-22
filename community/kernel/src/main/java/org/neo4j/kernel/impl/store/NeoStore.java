@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
@@ -46,9 +41,13 @@ import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
+
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.util.CappedOperation.time;
@@ -854,13 +853,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         lastCommittedTx.offer( transactionId );
         if ( transactionId > previous )
         {
-            /*
-             * TODO 2.2-future
-             * In order to make pull updates to work I need to write this record everytime it is updated.
-             * Probably there are better ways to handle this, not sut though since it looks like slaves never
-             * flush the store so this record is never written to disk causing problem in sync when the old master
-             * becomes available again. In particular all the changes committed on the slaves are lost.
-             */
             setRecord( LATEST_TX_POSITION, lastCommittedTx.get() );
         }
     }
@@ -884,13 +876,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId )
     {
-        /*
-         * TODO 2.2-future
-         * In order to make pull updates to work I need to write this record everytime it is updated.
-         * Probably there are better ways to handle this, not sut though since it looks like slaves never
-         * flush the store so this record is never written to disk causing problem in sync when the old master
-         * becomes available again. In particular all the changes committed on the slaves are lost.
-         */
         setRecord( LATEST_TX_POSITION, transactionId );
         checkInitialized( lastCommittingTxField.get() );
         lastCommittingTxField.set( transactionId );

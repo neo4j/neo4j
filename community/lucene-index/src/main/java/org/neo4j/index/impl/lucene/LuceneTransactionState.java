@@ -19,17 +19,16 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.neo4j.index.lucene.QueryContext;
+
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-
-import org.neo4j.index.lucene.QueryContext;
 
 class LuceneTransactionState implements Closeable
 {
@@ -182,27 +181,6 @@ class LuceneTransactionState implements Closeable
         }
         this.txData.clear();
     }
-
-    // TODO 2.2-future move this somewhere else?
-//    private void addAbandonedEntitiesToTheTx()
-//    {
-//        for ( Map.Entry<IndexIdentifier, TxDataBoth> entry : txData.entrySet() )
-//        {
-//            Collection<Long> abandonedIds = entry.getValue().index.abandonedIds;
-//            if ( !abandonedIds.isEmpty() )
-//            {
-//                CommandList commands = commandMap.get( entry.getKey() );
-//                for ( Long id : abandonedIds )
-//                {
-//                    RemoveCommand command = new RemoveCommand();
-//                    command.init( definitions().getOrAssignIndexNameId( entry.getKey().indexName ),
-//                            entry.getKey().entityType.id(), id, (byte)-1, null );
-//                    commands.add( command );
-//                }
-//                abandonedIds.clear();
-//            }
-//        }
-//    }
 
     // Bad name
     private class TxDataBoth

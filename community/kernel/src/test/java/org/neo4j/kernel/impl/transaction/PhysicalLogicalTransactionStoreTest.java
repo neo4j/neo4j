@@ -19,16 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -54,11 +47,18 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
@@ -239,8 +239,8 @@ public class PhysicalLogicalTransactionStoreTest
         {
             positionCache.clear();
 
-            // TODO 2.2-future make this into a proper test
-            System.out.println( store.getMetadataFor( transactionIdStore.getLastCommittedTransactionId() ) );
+            assertThat( store.getMetadataFor( transactionIdStore.getLastCommittedTransactionId() ).toString(),
+                    equalTo("TransactionMetadata[masterId=-1, authorId=-1, startPosition=LogPosition{logVersion=0, byteOffset=16}, checksum=0]") );
         }
         finally
         {

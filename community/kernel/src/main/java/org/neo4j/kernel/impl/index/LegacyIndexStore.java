@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -42,6 +34,10 @@ import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelExce
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 
@@ -196,55 +192,30 @@ public class LegacyIndexStore
                 }
 
                 // We were the first one here, let's create this config
-                ExecutorService executorService = Executors.newSingleThreadExecutor();
-                try
+                try ( KernelTransaction transaction = kernel.instance().newTransaction();
+                      Statement statement = transaction.acquireStatement() )
                 {
-                    executorService.submit( new IndexCreatorJob( entityType, indexName, result.first() ) ).get();
+                    switch (entityType)
+                    {
+                        case Node:
+                            statement.dataWriteOperations().nodeLegacyIndexCreate( indexName, result.first() );
+                            break;
+
+                        case Relationship:
+                            statement.dataWriteOperations().relationshipLegacyIndexCreate( indexName, result.first() );
+                            break;
+                    }
+
+                    transaction.success();
                     createdNow = true;
-                }
-                catch ( ExecutionException ex )
+                } catch (Exception ex)
                 {
                     throw new TransactionFailureException( "Index creation failed for " + indexName +
-                            ", " + result.first(), ex.getCause() );
-                }
-                catch ( InterruptedException ex )
-                {
-                    Thread.interrupted();
-                }
-                finally
-                {
-                    executorService.shutdownNow();
+                            ", " + result.first(), ex );
                 }
             }
         }
         return Pair.of( result.first(), createdNow );
-    }
-
-    private class IndexCreatorJob implements Callable
-    {
-        private final IndexEntityType entityType;
-        private final String indexName;
-        private final Map<String, String> config;
-
-        IndexCreatorJob( IndexEntityType entityType, String indexName, Map<String, String> config )
-        {
-            this.entityType = entityType;
-            this.indexName = indexName;
-            this.config = config;
-        }
-
-        @Override
-        public Object call()
-                throws Exception
-        {
-            try ( KernelTransaction transaction = kernel.instance().newTransaction();
-                    Statement statement = transaction.acquireStatement() )
-            {
-                transaction.getLegacyIndexTransactionState().createIndex( entityType, indexName, config );
-                transaction.success();
-            }
-            return null;
-        }
     }
 
     public String setNodeIndexConfiguration( String indexName, String key, String value )

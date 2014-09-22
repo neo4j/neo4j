@@ -60,7 +60,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
 
     LuceneLabelScanStoreExtension( int priority, Monitor monitor )
     {
-        super( "lucene");
+        super( "lucene-scan-store");
         this.priority = priority;
         this.monitor = monitor;
     }

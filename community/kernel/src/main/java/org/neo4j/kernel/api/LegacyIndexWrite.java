@@ -19,16 +19,46 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.Map;
-
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 
+import java.util.Map;
+
 public interface LegacyIndexWrite
 {
+    /**
+     * This access the index if it exists, and creates one in a separate
+     * transaction if not yet available.
+     *
+     * @param indexName
+     * @param customConfig
+     */
     void nodeLegacyIndexCreateLazily( String indexName, Map<String, String> customConfig );
 
+    /**
+     * This is used by the above to explicitly create the index if necessary.
+     *
+     * @param indexName
+     * @param customConfig
+     */
+    void nodeLegacyIndexCreate( String indexName, Map<String, String> customConfig );
+
+    /**
+     * This access the index if it exists, and creates one in a separate
+     * transaction if not yet available.
+     *
+     * @param indexName
+     * @param customConfig
+     */
     void relationshipLegacyIndexCreateLazily( String indexName, Map<String, String> customConfig );
+
+    /**
+     * This is used by the above to explicitly create the index if necessary.
+     *
+     * @param indexName
+     * @param customConfig
+     */
+    void relationshipLegacyIndexCreate( String indexName, Map<String, String> customConfig );
 
     String nodeLegacyIndexSetConfiguration( String indexName, String key, String value )
             throws LegacyIndexNotFoundKernelException;

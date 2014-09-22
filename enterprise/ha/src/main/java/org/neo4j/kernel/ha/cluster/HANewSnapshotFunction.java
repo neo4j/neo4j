@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import java.io.Serializable;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.helpers.Function2;
 import org.neo4j.helpers.collection.Iterables;
+
+import java.io.Serializable;
+import java.util.LinkedList;
+import java.util.List;
 
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
@@ -50,11 +50,7 @@ public class HANewSnapshotFunction
             for ( MemberIsAvailable existing : previousSnapshot )
             {
                 if ( ( isSlave( existing ) && sameIds( newMessage, existing ) )
-                        || isMaster( existing )
-                        // TODO 2.2-future is this necessary?
-                        // TODO 2.2-future please refer back here once we have a decision for the future of HA backup
-//                      || existing.getRole().equals( OnlineBackupKernelExtension.BACKUP )
-                        )
+                        || isMaster( existing ))
                 {
                     continue;
                 }

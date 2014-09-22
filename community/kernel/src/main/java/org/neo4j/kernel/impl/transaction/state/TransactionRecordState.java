@@ -413,10 +413,10 @@ public class TransactionRecordState
      * Creates a new RelationshipType record with the given id that has the
      * given name.
      *
-     * @param id The id of the new relationship type record.
      * @param name The name of the relationship type.
+     * @param id The id of the new relationship type record.
      */
-    public void createRelationshipTypeToken( int id, String name )
+    public void createRelationshipTypeToken( String name, int id )
     {
         context.createRelationshipTypeToken( name, id );
     }

@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.Iterator;
-import java.util.Set;
-
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
@@ -35,6 +32,10 @@ import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
 import org.neo4j.kernel.impl.util.DiffSets;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Kernel transaction state, please see {@link org.neo4j.kernel.impl.api.state.TxStateImpl} for details.
@@ -136,6 +137,16 @@ public interface TxState
         void visitAddedConstraint( UniquenessConstraint element );
 
         void visitRemovedConstraint( UniquenessConstraint element );
+
+        void visitCreatedLabelToken( String name, int id);
+
+        void visitCreatedPropertyKeyToken( String name, int id);
+
+        void visitCreatedRelationshipTypeToken( String name, int id);
+
+        void visitCreatedNodeLegacyIndex( String name, Map<String, String> config );
+
+        void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config );
     }
 
     public static class VisitorAdapter implements Visitor
@@ -207,6 +218,33 @@ public interface TxState
         @Override
         public void visitRemovedConstraint( UniquenessConstraint element )
         {   // Ignore
+        }
+
+        @Override
+        public void visitCreatedLabelToken( String name, int id )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitCreatedPropertyKeyToken( String name, int id )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitCreatedRelationshipTypeToken( String name, int id )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitCreatedNodeLegacyIndex( String name, Map<String, String> config )
+        {   // Ignore
+
+        }
+
+        @Override
+        public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
+        {   // Ignore
+
         }
     }
 
@@ -290,6 +328,12 @@ public interface TxState
 
     void nodeDoRemoveLabel( int labelId, long nodeId );
 
+    void labelCreateForName( String labelName, int id );
+
+    void propertyKeyCreateForName( String propertyKeyName, int id );
+
+    void relationshipTypeCreateForName( String relationshipTypeName, int id );
+
     PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, PrimitiveLongIterator stored );
 
     PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, int[] relTypes,
@@ -353,6 +397,10 @@ public interface TxState
             long relId, RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION;
 
     // <Legacy index>
+    void nodeLegacyIndexDoCreate( String indexName, Map<String, String> customConfig );
+
+    void relationshipLegacyIndexDoCreate( String indexName, Map<String, String> customConfig );
+
     LegacyIndex getNodeLegacyIndexChanges( String indexName ) throws LegacyIndexNotFoundKernelException;
 
     LegacyIndex getRelationshipLegacyIndexChanges( String indexName ) throws LegacyIndexNotFoundKernelException;

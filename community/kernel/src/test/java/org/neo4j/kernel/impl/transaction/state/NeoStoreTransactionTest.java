@@ -687,7 +687,7 @@ public class NeoStoreTransactionTest
 
         // WHEN
         tx.nodeCreate( nodeId );
-        tx.createRelationshipTypeToken( relationshipType, "type" );
+        tx.createRelationshipTypeToken( "type", relationshipType );
         tx.relCreate( relId, 0, nodeId, nodeId );
         tx.relAddProperty( relId, propertyKeyId,
                 new long[] {1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60} );
@@ -936,15 +936,15 @@ public class NeoStoreTransactionTest
         long nodeId = nextId( NODE );
         int typeA = 0, typeB = 1, typeC = 2;
         tx.nodeCreate( nodeId );
-        tx.createRelationshipTypeToken( typeA, "A" );
+        tx.createRelationshipTypeToken( "A", typeA );
         createRelationships( tx, nodeId, typeA, OUTGOING, 6 );
         createRelationships( tx, nodeId, typeA, INCOMING, 7 );
 
-        tx.createRelationshipTypeToken( typeB, "B" );
+        tx.createRelationshipTypeToken( "B", typeB );
         createRelationships( tx, nodeId, typeB, OUTGOING, 8 );
         createRelationships( tx, nodeId, typeB, INCOMING, 9 );
 
-        tx.createRelationshipTypeToken( typeC, "C" );
+        tx.createRelationshipTypeToken( "C", typeC );
         createRelationships( tx, nodeId, typeC, OUTGOING, 10 );
         createRelationships( tx, nodeId, typeC, INCOMING, 10 );
         // here we're at the edge
@@ -974,7 +974,7 @@ public class NeoStoreTransactionTest
         long nodeId = nextId( NODE );
         int typeA = 0;
         tx.nodeCreate( nodeId );
-        tx.createRelationshipTypeToken( typeA, "A" );
+        tx.createRelationshipTypeToken( "A", typeA );
         createRelationships( tx, nodeId, typeA, OUTGOING, 24 );
         createRelationships( tx, nodeId, typeA, INCOMING, 25 );
 
@@ -1003,7 +1003,7 @@ public class NeoStoreTransactionTest
         long nodeId = nextId( NODE );
         int typeA = 0;
         tx.nodeCreate( nodeId );
-        tx.createRelationshipTypeToken( typeA, "A" );
+        tx.createRelationshipTypeToken( "A", typeA );
         createRelationships( tx, nodeId, typeA, OUTGOING, 8 );
 
         // here we're at the edge
@@ -1029,7 +1029,7 @@ public class NeoStoreTransactionTest
         NeoStoreTransactionContext txCtx = transactionContextPair.other();
         int nodeId = (int) nextId( NODE ), typeA = 0;
         tx.nodeCreate( nodeId );
-        tx.createRelationshipTypeToken( typeA, "A" );
+        tx.createRelationshipTypeToken( "A", typeA );
         long[] relationshipsCreated = createRelationships( tx, nodeId, typeA, INCOMING, 15 );
 
         //WHEN
@@ -1052,15 +1052,15 @@ public class NeoStoreTransactionTest
         long nodeId = nextId( NODE );
         int typeA = 0, typeB = 12, typeC = 600;
         tx.nodeCreate( nodeId );
-        tx.createRelationshipTypeToken( typeA, "A" );
+        tx.createRelationshipTypeToken( "A", typeA );
         long[] relationshipsCreatedAIncoming = createRelationships( tx, nodeId, typeA, INCOMING, 1 );
         long[] relationshipsCreatedAOutgoing = createRelationships( tx, nodeId, typeA, OUTGOING, 1 );
 
-        tx.createRelationshipTypeToken( typeB, "B" );
+        tx.createRelationshipTypeToken( "B", typeB );
         long[] relationshipsCreatedBIncoming = createRelationships( tx, nodeId, typeB, INCOMING, 1 );
         long[] relationshipsCreatedBOutgoing = createRelationships( tx, nodeId, typeB, OUTGOING, 1 );
 
-        tx.createRelationshipTypeToken( typeC, "C" );
+        tx.createRelationshipTypeToken( "C", typeC );
         long[] relationshipsCreatedCIncoming = createRelationships( tx, nodeId, typeC, INCOMING, 1 );
         long[] relationshipsCreatedCOutgoing = createRelationships( tx, nodeId, typeC, OUTGOING, 1 );
 
@@ -1125,7 +1125,7 @@ public class NeoStoreTransactionTest
         writeTransaction.nodeCreate( nodeId );
 
         int typeA = (int) neoStore.getRelationshipTypeTokenStore().nextId();
-        writeTransaction.createRelationshipTypeToken( typeA, "A" );
+        writeTransaction.createRelationshipTypeToken( "A", typeA );
         createRelationships( writeTransaction, nodeId, typeA, INCOMING, 20 );
 
         try ( LockGroup locks = new LockGroup() )
@@ -1135,7 +1135,7 @@ public class NeoStoreTransactionTest
         writeTransaction = newWriteTransaction().first();
 
         int typeB = 1;
-        writeTransaction.createRelationshipTypeToken( typeB, "B" );
+        writeTransaction.createRelationshipTypeToken( "B", typeB );
 
 
         // WHEN
@@ -1191,9 +1191,9 @@ public class NeoStoreTransactionTest
         {
             TransactionRecordState tx = newWriteTransaction().first();
             neoStore.getRelationshipTypeTokenStore().setHighId( 16 );
-            tx.createRelationshipTypeToken( type5, "5" );
-            tx.createRelationshipTypeToken( type10, "10" );
-            tx.createRelationshipTypeToken( type15, "15" );
+            tx.createRelationshipTypeToken( "5", type5 );
+            tx.createRelationshipTypeToken( "10", type10 );
+            tx.createRelationshipTypeToken( "15", type15 );
             commitProcess().commit( transactionRepresentationOf( tx ), locks );
         }
         long nodeId = neoStore.getNodeStore().nextId();

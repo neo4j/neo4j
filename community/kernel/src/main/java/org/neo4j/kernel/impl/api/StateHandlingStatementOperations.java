@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -79,6 +73,12 @@ import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.util.register.NeoRegister;
 import org.neo4j.register.Register;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -1195,6 +1195,26 @@ public class StateHandlingStatementOperations implements
         return storeLayer.relationshipTypeGetOrCreateForName( relationshipTypeName );
     }
 
+    @Override
+    public void labelCreateForName( KernelStatement state, String labelName,
+                                    int id ) throws IllegalTokenNameException, TooManyLabelsException
+    {
+        state.txState().labelCreateForName(labelName, id);
+    }
+
+    @Override
+    public void propertyKeyCreateForName( KernelStatement state, String propertyKeyName, int id ) throws IllegalTokenNameException
+    {
+        state.txState().propertyKeyCreateForName( propertyKeyName, id );
+
+    }
+
+    @Override
+    public void relationshipTypeCreateForName( KernelStatement state, String relationshipTypeName, int id ) throws IllegalTokenNameException
+    {
+        state.txState().relationshipTypeCreateForName( relationshipTypeName, id );
+    }
+
     private static int[] deduplicate( int[] types )
     {
         int unique = 0;
@@ -1318,10 +1338,22 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public void nodeLegacyIndexCreate( KernelStatement statement, String indexName, Map<String, String> customConfig )
+    {
+        statement.txState().nodeLegacyIndexDoCreate(indexName, customConfig);
+    }
+
+    @Override
     public void relationshipLegacyIndexCreateLazily( KernelStatement statement, String indexName,
             Map<String, String> customConfig )
     {
         legacyIndexStore.getOrCreateRelationshipIndexConfig( indexName, customConfig );
+    }
+
+    @Override
+    public void relationshipLegacyIndexCreate( KernelStatement statement, String indexName, Map<String, String> customConfig )
+    {
+        statement.txState().relationshipLegacyIndexDoCreate(indexName, customConfig);
     }
 
     @Override

@@ -30,10 +30,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
  * itself, a Start and Commit entry. This is the thing that {@link LogicalTransactionStore} returns when
  * asked for a transaction via a cursor.
  */
-
-// TODO 2.2-future This class should not be used for transferring transactions around. HA communication should
-// TODO 2.2-future happen via channel.transferTo() calls. This class should be used only for local iteration
-// TODO 2.2-future over the log, which theoretically should be only recovery and LogPosition discovery
 public class CommittedTransactionRepresentation
 {
     private final LogEntryStart startEntry;

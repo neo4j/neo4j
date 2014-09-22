@@ -19,12 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.lang.reflect.Proxy;
-import java.net.URI;
-import java.util.Map;
-
 import org.jboss.netty.logging.InternalLoggerFactory;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -109,6 +104,10 @@ import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
+import java.lang.reflect.Proxy;
+import java.net.URI;
+import java.util.Map;
+
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
@@ -180,9 +179,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         life.add( requestContextFactory );
 
         life.add( responseUnpacker );
-
-        kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( availabilityGuard, logging,
-                masterDelegateInvocationHandler ) );
 
         dependencies.satisfyDependency( life.add( new UpdatePuller( memberStateMachine, master, requestContextFactory,
                 availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog ) ) );

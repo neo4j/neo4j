@@ -259,12 +259,11 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         private void translateNodeCreation( Command.NodeCommand command )
         {
             NodeRecord created = recordChangeSet.getNodeRecords().create( command.getKey(), null ).forChangingData();
-            // TODO 2.2-future fix this
-//            created.copyFrom( command.getAfter() );
+            created.copyFrom( command.getAfter() );
             created.setNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             created.setInUse( true );
-//            recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null )
-//                    .forChangingData().setNextProp( command.getAfter().getNextProp() );
+            recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null )
+                    .forChangingData().setNextProp( command.getAfter().getNextProp() );
         }
 
         @Override

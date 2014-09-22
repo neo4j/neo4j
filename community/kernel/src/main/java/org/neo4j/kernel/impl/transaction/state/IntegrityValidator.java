@@ -49,7 +49,6 @@ public class IntegrityValidator
     {
         if ( !record.inUse() && record.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            // TODO 2.2-future tx manager checks INTEGRITY XA code specifically
             throw new TransactionFailureException( Status.Transaction.ValidationFailed,
                     "Node record " + record + " still has relationships" );
         }

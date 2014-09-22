@@ -44,8 +44,6 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.NoCacheProvider;
 import org.neo4j.test.TargetDirectory;
 
-// TODO 2.2-future rewrite this
-@Ignore("Needs to be rewritten for 2.2")    
 public class CommitContentionTests
 {
     private static final TargetDirectory target = forTest( CommitContentionTests.class );
@@ -53,34 +51,6 @@ public class CommitContentionTests
     final Semaphore semaphore1 = new Semaphore( 1 );
     final Semaphore semaphore2 = new Semaphore( 1 );
     final AtomicReference<Exception> reference = new AtomicReference<>();
-
-    final TxIdGenerator txIdGenerator = new TxIdGenerator()
-    {
-        public boolean skip;
-
-        @Override
-        public long generate( TransactionRepresentation tx )
-        {
-            // TODO 2.2-future rewrite this 
-//            return dataSource.getLastCommittedTxId() + 1;
-            return 0;
-        }
-
-//        @Override
-//        public void committed(  )
-//        {
-//            // skip signal and waiting for second transaction
-//            if ( skip == true )
-//            {
-//                return;
-//            }
-//            skip = true;
-//
-//            signalFirstTransactionStartedPushing();
-//
-//            waitForSecondTransactionToFinish();
-//        }
-    };
 
     @Rule
     public TargetDirectory.TestDirectory storeLocation = target.testDirectory();
@@ -92,7 +62,7 @@ public class CommitContentionTests
     {
         semaphore1.acquire();
         semaphore2.acquire();
-        db = createDb( txIdGenerator );
+        db = createDb();
     }
 
     @After
@@ -132,7 +102,7 @@ public class CommitContentionTests
 
     private void createNode()
     {
-        try ( Transaction transaction = db.beginTx() )
+        try (Transaction transaction = db.beginTx())
         {
             db.createNode();
             transaction.success();
@@ -158,7 +128,7 @@ public class CommitContentionTests
         return thread;
     }
 
-    private GraphDatabaseService createDb( final TxIdGenerator idGenerator )
+    private GraphDatabaseService createDb()
     {
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
         state.setCacheProviders( asList( (CacheProvider) new NoCacheProvider() ) );
@@ -167,9 +137,33 @@ public class CommitContentionTests
                 NoCacheProvider.NAME ), state.databaseDependencies() )
         {
             @Override
-            protected TxIdGenerator createTxIdGenerator()
+            protected TransactionCounters createTransactionCounters()
             {
-                return idGenerator;
+                return new TransactionCounters()
+                {
+                    public boolean skip;
+
+                    @Override
+                    public void transactionFinished( boolean successful )
+                    {
+                        super.transactionFinished( successful );
+
+
+                        if ( successful )
+                        {
+                            // skip signal and waiting for second transaction
+                            if ( skip )
+                            {
+                                return;
+                            }
+                            skip = true;
+
+                            signalFirstTransactionStartedPushing();
+
+                            waitForSecondTransactionToFinish();
+                        }
+                    }
+                };
             }
         };
     }
@@ -202,8 +196,7 @@ public class CommitContentionTests
             {
                 reference.set( new IllegalStateException( "Second transaction never finished" ) );
             }
-        }
-        catch ( InterruptedException e )
+        } catch ( InterruptedException e )
         {
             reference.set( e );
         }

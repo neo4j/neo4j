@@ -23,7 +23,10 @@ import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 
 /**
  * Creates a key within its own transaction, such that the command(s) for creating the key
@@ -46,11 +49,14 @@ public abstract class IsolatedTransactionTokenCreator implements TokenCreator
     public synchronized int getOrCreate( String name )
     {
         KernelAPI kernel = kernelProvider.instance();
-        try ( KernelTransaction transaction = kernel.newTransaction() )
+        try ( KernelTransaction transaction = kernel.newTransaction())
         {
-            int id = createKey( transaction.getTransactionRecordState(), name );
-            transaction.success();
-            return id;
+            try (Statement statement = transaction.acquireStatement())
+            {
+                int id = createKey( statement, name );
+                transaction.success();
+                return id;
+            }
         }
         catch ( Exception e )
         {
@@ -59,5 +65,6 @@ public abstract class IsolatedTransactionTokenCreator implements TokenCreator
         }
     }
 
-    protected abstract int createKey( TransactionRecordState transactionRecordState, String name );
+    protected abstract int createKey( Statement statement, String name )
+            throws ReadOnlyDatabaseKernelException, IllegalTokenNameException, TooManyLabelsException;
 }
