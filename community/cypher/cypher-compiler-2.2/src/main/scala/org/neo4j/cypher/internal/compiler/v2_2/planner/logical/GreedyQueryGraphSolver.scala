@@ -52,9 +52,10 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
 
     val leaves: PlanTable = generateLeafPlanTable()
     val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leaves)
-    val afterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(afterExpandOrJoin)
-    val afterCartesianProduct = iterateUntilConverged(findBestPlan(cartesianProduct))(afterOptionalApplies)
 
+    val solveOptionalMatches = findBestPlan(optionalMatches)
+    val solveCartesianProducts = findBestPlan(cartesianProduct)
+    val afterCartesianProduct = iterateUntilConverged(solveOptionalMatches andThen solveCartesianProducts)(afterExpandOrJoin)
     afterCartesianProduct.uniquePlan
   }
 }
