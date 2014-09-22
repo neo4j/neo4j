@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -38,7 +36,6 @@ public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRec
     public static abstract class Configuration
         extends AbstractNameStore.Configuration
     {
-
     }
 
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
@@ -77,62 +74,6 @@ public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRec
         Buffer buffer = window.getOffsettedBuffer( id );
         buffer.put( Record.IN_USE.byteValue() ).putInt(
             Record.RESERVED.intValue() );
-    }
-
-    @Override
-    protected void rebuildIdGenerator()
-    {
-        stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName()
-            + "] ..." );
-        closeIdGenerator();
-        if ( fileSystemAbstraction.fileExists( new File( getStorageFileName().getPath() + ".id" )) )
-        {
-            boolean success = fileSystemAbstraction.deleteFile( new File( getStorageFileName().getPath() + ".id" ));
-            assert success;
-        }
-        createIdGenerator( new File( getStorageFileName().getPath() + ".id" ));
-        openIdGenerator( false );
-        StoreChannel fileChannel = getFileChannel();
-        long highId = -1;
-        int recordSize = getRecordSize();
-        try
-        {
-            long fileSize = fileChannel.size();
-            ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[recordSize] );
-            for ( int i = 0; i * recordSize < fileSize; i++ )
-            {
-                fileChannel.read( byteBuffer, i * recordSize );
-                byteBuffer.flip();
-                byte inUse = byteBuffer.get();
-                byteBuffer.flip();
-                if ( inUse != Record.IN_USE.byteValue() )
-                {
-                    // hole found, marking as reserved
-                    byteBuffer.clear();
-                    byteBuffer.put( Record.IN_USE.byteValue() ).putInt(
-                        Record.RESERVED.intValue() );
-                    byteBuffer.flip();
-                    fileChannel.write( byteBuffer, i * recordSize );
-                    byteBuffer.clear();
-                }
-                else
-                {
-                    highId = i;
-                }
-                // nextId();
-            }
-            highId++;
-            fileChannel.truncate( highId * recordSize );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException(
-                "Unable to rebuild id generator " + getStorageFileName(), e );
-        }
-        setHighId( highId );
-        stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId() );
-        closeIdGenerator();
-        openIdGenerator( false );
     }
 
     @Override
