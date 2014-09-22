@@ -489,15 +489,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         super.makeStoreOk();
     }
 
-    @Override
-    public void rebuildIdGenerators()
-    {
-        propertyKeyTokenStore.rebuildIdGenerators();
-        stringPropertyStore.rebuildIdGenerators();
-        arrayPropertyStore.rebuildIdGenerators();
-        super.rebuildIdGenerators();
-    }
-
     public static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars,
             DynamicRecordAllocator allocator )
     {
@@ -696,5 +687,15 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             long[] nodeLabelsAfter )
     {
         physicalToLogicalConverter.apply( target, changes, nodeLabelsBefore, nodeLabelsAfter );
+    }
+
+    /**
+     * For property records there's no "inUse" byte and we need to read the whole record to
+     * see if there are any PropertyBlocks in use in it.
+     */
+    @Override
+    protected boolean isRecordInUse( PageCursor cursor )
+    {
+        return getRecordFromBuffer( 0 /*id doesn't matter here*/, cursor ).inUse();
     }
 }

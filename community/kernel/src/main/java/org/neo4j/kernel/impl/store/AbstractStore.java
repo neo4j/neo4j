@@ -60,19 +60,6 @@ public abstract class AbstractStore extends CommonAbstractStore
      */
     public abstract int getRecordSize();
 
-    @Override
-    protected long figureOutHighestIdInUse()
-    {
-        try
-        {
-            return getFileChannel().size() / getRecordSize();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
     public AbstractStore(
             File fileName,
             Config conf,
@@ -123,17 +110,5 @@ public abstract class AbstractStore extends CommonAbstractStore
     protected boolean isInUse( byte inUseByte )
     {
         return (inUseByte & 0x1) == Record.IN_USE.intValue();
-    }
-
-    @Override
-    protected boolean useFastIdGeneratorRebuilding()
-    {
-        return conf.get( Configuration.rebuild_idgenerators_fast );
-    }
-
-    @Override
-    protected boolean firstRecordIsHeader()
-    {
-        return false;
     }
 }

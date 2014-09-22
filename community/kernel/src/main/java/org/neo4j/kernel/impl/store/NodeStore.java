@@ -51,7 +51,6 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  */
 public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 {
-
     public static Long readOwnerFromDynamicLabelsRecord( DynamicRecord record )
     {
         byte[] data = record.getData();
@@ -418,12 +417,5 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     {
         dynamicLabelStore.makeStoreOk();
         super.makeStoreOk();
-    }
-
-    @Override
-    public void rebuildIdGenerators()
-    {
-        dynamicLabelStore.rebuildIdGenerators();
-        super.rebuildIdGenerators();
     }
 }

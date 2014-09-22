@@ -117,10 +117,10 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.RelationshipLocker;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -230,7 +230,6 @@ public class BatchInserterImpl implements BatchInserter
         LifecycledPageCache pageCache = life.add( new LifecycledPageCache(
                 swapperFactory, jobScheduler, config, monitors.newMonitor( PageCacheMonitor.class ) ) );
 
-
         msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );
         logging = new SingleLoggingService( msgLog );
         storeLocker = new StoreLocker( fileSystem );
@@ -252,6 +251,7 @@ public class BatchInserterImpl implements BatchInserter
             dumpConfiguration( params );
         }
         msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
+        life.start();
         neoStore = sf.newNeoStore( true );
         if ( !neoStore.isStoreOk() )
         {
@@ -269,8 +269,6 @@ public class BatchInserterImpl implements BatchInserter
         KernelExtensions extensions = life
                 .add( new KernelExtensions( kernelExtensions, config, new DependencyResolverImpl(),
                                             UnsatisfiedDependencyStrategies.ignore() ) );
-
-        life.start();
 
         SchemaIndexProvider provider = extensions.resolveDependency( SchemaIndexProvider.class,
                 SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );

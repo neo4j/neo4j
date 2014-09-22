@@ -754,19 +754,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         super.makeStoreOk();
     }
 
-    @Override
-    public void rebuildIdGenerators()
-    {
-        relTypeStore.rebuildIdGenerators();
-        labelTokenStore.rebuildIdGenerators();
-        propStore.rebuildIdGenerators();
-        relStore.rebuildIdGenerators();
-        nodeStore.rebuildIdGenerators();
-        schemaStore.rebuildIdGenerators();
-        relGroupStore.rebuildIdGenerators();
-        super.rebuildIdGenerators();
-    }
-
     public int getRelationshipGrabSize()
     {
         return relGrabSize;

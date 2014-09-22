@@ -103,13 +103,6 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         super.makeStoreOk();
     }
 
-    @Override
-    public void rebuildIdGenerators()
-    {
-        nameStore.rebuildIdGenerators();
-        super.rebuildIdGenerators();
-    }
-
     public void freeId( int id )
     {
         nameStore.freeId( id );
@@ -123,6 +116,18 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
             nameStore.close();
             nameStore = null;
         }
+    }
+
+    @Override
+    protected boolean doFastIdGeneratorRebuild()
+    {
+        return false;
+    }
+
+    @Override
+    protected boolean reserveIdsDuringRebuild()
+    {
+        return true;
     }
 
     public Token[] getTokens( int maxCount )

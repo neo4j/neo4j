@@ -44,7 +44,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
-
 public class IoQueueTest
 {
     @Rule
@@ -121,5 +120,4 @@ public class IoQueueTest
         verifyNoMoreInteractions( channel1 );
         verifyNoMoreInteractions( channel2 );
     }
-
 }
