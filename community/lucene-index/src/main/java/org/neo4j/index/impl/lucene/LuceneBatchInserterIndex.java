@@ -347,7 +347,6 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             {
                 primitiveHits = new DocToIdIterator( result, Collections.<Long>emptyList(), null )
                 {
-                    // TODO 2.2-future primitive longs instead
                     private final Collection<Long> ids = new ArrayList<>();
 
                     @Override

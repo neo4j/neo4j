@@ -54,8 +54,9 @@ public class SchemaLoggingIT
 
         // then
         logging.getMessagesLog( IndexPopulationJob.class ).assertExactly(
-                info( "Index population started: [:User(name) [provider: {key=in-memory, version=1.0}]]" ),
-                info( "Index population completed. Index is now online: [:User(name) [provider: {key=in-memory, version=1.0}]]" )
+                info( "Index population started: [:User(name) [provider: {key=in-memory-index, version=1.0}]]" ),
+                info( "Index population completed. Index is now online: [:User(name) [provider: {key=in-memory-index," +
+                        " version=1.0}]]" )
         );
     }
 

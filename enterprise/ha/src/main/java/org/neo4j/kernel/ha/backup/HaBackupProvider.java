@@ -140,16 +140,6 @@ public final class HaBackupProvider //extends BackupExtensionService
             @Override
             public void memberIsAvailable( String role, InstanceId clusterUri, URI roleUri, StoreId storeId )
             {
-                // TODO 2.2-future is this extension even necessary?
-                // TODO 2.2-future reevaluate need for having support for HA backup before 2.2 goes out, please
-//                if ( OnlineBackupKernelExtension.BACKUP.equals( role ) )
-//                {
-//                    backupUris.put( clusterUri, roleUri );
-//                }
-//                else if ( HighAvailabilityModeSwitcher.MASTER.equals( role ) )
-//                {
-//                    master = clusterUri;
-//                }
 
                 if ( master != null && backupUris.containsKey( master ) )
                 {

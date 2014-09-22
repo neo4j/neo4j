@@ -19,17 +19,12 @@
  */
 package org.neo4j.kernel.extension;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Function;
@@ -40,16 +35,17 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
 
 public class KernelExtensions extends DependencyResolver.Adapter implements Lifecycle
 {
     private final List<KernelExtensionFactory<?>> kernelExtensionFactories;
     private final DependencyResolver dependencyResolver;
     private final LifeSupport life = new LifeSupport();
-    private final Map<Iterable<String>, Lifecycle> extensions = new HashMap<>();
     private Iterable<KernelExtensionListener> listeners = Listeners.newListeners();
     private final UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy;
 
@@ -95,14 +91,14 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     @Override
     public void init() throws Throwable
     {
+
         for ( KernelExtensionFactory kernelExtensionFactory : kernelExtensionFactories )
         {
             Object configuration = getKernelExtensionDependencies( kernelExtensionFactory );
 
             try
             {
-                extensions.put( kernelExtensionFactory.getKeys(),
-                        life.add( kernelExtensionFactory.newKernelExtension( configuration ) ) );
+                life.add( kernelExtensionFactory.newKernelExtension( configuration) );
             }
             catch ( UnsatisfiedDependencyException e )
             {
@@ -141,42 +137,6 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
             }
         }
         return false;
-    }
-
-    public synchronized void addKernelExtension( KernelExtensionFactory kernelExtensionFactory )
-    {
-        // Check that it is not already registered
-        if ( kernelExtensionFactories.contains( kernelExtensionFactory ) )
-        {
-            return;
-        }
-
-        Lifecycle extension = null;
-        try
-        {
-            extension = kernelExtensionFactory.newKernelExtension( getKernelExtensionDependencies(
-                    kernelExtensionFactory ) );
-            extensions.put( kernelExtensionFactory.getKeys(), extension );
-
-            // Add to list of current factories
-            kernelExtensionFactories.add( kernelExtensionFactory );
-        }
-        catch ( Throwable throwable )
-        {
-            throw new LifecycleException( extension, LifecycleStatus.NONE, LifecycleStatus.INITIALIZING, throwable );
-        }
-
-        life.add( extension );
-    }
-
-    public synchronized void removeKernelExtension( KernelExtensionFactory kernelExtensionFactory )
-    {
-        Lifecycle extension = extensions.remove( kernelExtensionFactory.getKeys() );
-        if ( extension != null )
-        {
-            kernelExtensionFactories.remove( kernelExtensionFactory );
-            life.remove( extension );
-        }
     }
 
     public void addKernelExtensionListener( KernelExtensionListener listener )

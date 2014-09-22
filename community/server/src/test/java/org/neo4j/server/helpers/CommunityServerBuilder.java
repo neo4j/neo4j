@@ -19,17 +19,6 @@
  */
 package org.neo4j.server.helpers;
 
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-import static org.neo4j.server.ServerTestUtils.asOneLine;
-import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
-import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
-import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
-import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
-import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
-import static org.neo4j.server.helpers.LoggingFactory.given;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -63,8 +52,19 @@ import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightTask;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.server.rest.web.ForceMode;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.server.ServerTestUtils.asOneLine;
+import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
+import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
+import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
+import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
+import static org.neo4j.server.helpers.LoggingFactory.given;
 
 public class CommunityServerBuilder
 {
@@ -460,7 +460,6 @@ public class CommunityServerBuilder
 
         return new DatabaseActions(
                 new LeaseManager( clockToUse ),
-                ForceMode.forced,
                 configurator.configuration().getBoolean(
                         Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
                         Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );

@@ -33,9 +33,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;
@@ -110,7 +110,6 @@ public class TestPerformRecoveryIfNecessary {
 		assertThat("Recovery task should run successfully.", task.run(), is(true));
 		assertThat("Database should exist.", new File( storeDirectory ).exists(), is(true));
 		assertThat("Recovery should print status message.", outputStream.toString(), is("Detected incorrectly shut down database, performing recovery.." + LINEBREAK));
-        // TODO 2.2-future null will not do at all
 		assertThat("Store should be recovered", recoverer.recoveryNeededAt( new File( storeDirectory )), is(false));
 	}
 
@@ -122,7 +121,6 @@ public class TestPerformRecoveryIfNecessary {
         new File( storeDirectory, "unrelated_file").createNewFile();
 
         // When
-        // TODO 2.2-future null will not do at all
         boolean actual = new StoreRecoverer().recoveryNeededAt( new File( storeDirectory ), 0 );
 
         // Then

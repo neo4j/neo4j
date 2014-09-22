@@ -26,7 +26,6 @@ import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -111,11 +110,5 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
     {
         TopLevelTransaction tx = getTopLevelTransactionBoundToThisThread( strict );
         return tx != null ? tx.getTransaction() : null;
-    }
-
-    public TransactionRecordState getTransactionRecordStateBoundToThisThread( boolean strict )
-    {
-        KernelTransaction tx = getKernelTransactionBoundToThisThread( strict );
-        return tx != null ? tx.getTransactionRecordState() : null;
     }
 }

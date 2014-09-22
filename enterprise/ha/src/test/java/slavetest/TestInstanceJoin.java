@@ -19,23 +19,27 @@
  */
 package slavetest;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 /*
  * This test case ensures that instances with the same store id but very old txids
@@ -66,9 +70,8 @@ public class TestInstanceJoin
             long nodeId = createNode( master, key, value );
             createNode( master, "something", "unimportant" );
             // Rotating, moving the above transactions away so they are removed on shutdown.
-            // TODO 2.2-future find a way to properly remove logs from the master
-//            rotateLogs( getXaDataSourceManager( master ), getKernelPanicGenerator( master ),
-//                    master.getDependencyResolver().resolveDependency( StringLogger.class ) );
+            master.getDependencyResolver().resolveDependency(NeoStoreDataSource.class).getDependencyResolver().resolveDependency(PhysicalLogFile.class).forceRotate();
+
 
             /*
              * We need to shutdown - rotating is not enough. The problem is that log positions are cached and they
@@ -80,6 +83,11 @@ public class TestInstanceJoin
             master.shutdown();
             master = start( dir.existingDirectory( "master" ).getAbsolutePath(), 0, stringMap( keep_logical_logs.name(),
                     "1 files", ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
+
+            /**
+             * The new log on master needs to have at least one transaction, so here we go.
+             */
+            createNode(master, key, value);
 
             slave = start( dir.existingDirectory( "slave" ).getAbsolutePath(), 1,
                     stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );

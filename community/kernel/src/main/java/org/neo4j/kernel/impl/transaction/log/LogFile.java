@@ -22,12 +22,10 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.lifecycle.Lifecycle;
-
 /**
  * Sees a log file as bytes, including taking care of rotation of the file into optimal chunks.
  */
-public interface LogFile extends Lifecycle
+public interface LogFile
 {
     public interface LogFileVisitor
     {

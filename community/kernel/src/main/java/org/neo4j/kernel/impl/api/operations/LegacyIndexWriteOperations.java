@@ -29,7 +29,12 @@ public interface LegacyIndexWriteOperations
 {
     void nodeLegacyIndexCreateLazily( KernelStatement statement, String indexName, Map<String, String> customConfig );
 
+    void nodeLegacyIndexCreate( KernelStatement statement, String indexName, Map<String, String> customConfig );
+
     void relationshipLegacyIndexCreateLazily( KernelStatement statement, String indexName,
+            Map<String, String> customConfig );
+
+    void relationshipLegacyIndexCreate( KernelStatement statement, String indexName,
             Map<String, String> customConfig );
 
     String nodeLegacyIndexSetConfiguration( KernelStatement statement, String indexName, String key, String value )

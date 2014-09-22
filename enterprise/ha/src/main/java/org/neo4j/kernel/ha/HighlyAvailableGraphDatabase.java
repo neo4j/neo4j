@@ -180,9 +180,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         life.add( responseUnpacker );
 
-        kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( availabilityGuard, logging,
-                masterDelegateInvocationHandler ) );
-
         dependencies.satisfyDependency( life.add( new UpdatePuller( memberStateMachine, master, requestContextFactory,
                 availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog ) ) );
 

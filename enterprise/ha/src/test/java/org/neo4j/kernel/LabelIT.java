@@ -19,20 +19,13 @@
  */
 package org.neo4j.kernel;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.cluster.ClusterSettings.default_timeout;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -42,7 +35,15 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
-// TODO 2.2-future this needs to be rewritten without relying on suspend/resume
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.cluster.ClusterSettings.default_timeout;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+
 public class LabelIT
 {
     @Test
@@ -115,7 +116,9 @@ public class LabelIT
     public void after() throws Throwable
     {
         if ( clusterManager != null )
+        {
             clusterManager.stop();
+        }
     }
 
     private static class TransactionContinuation

@@ -93,6 +93,10 @@ public final class TxStateImpl implements TxState
     private Map<Long/*Relationship ID*/, RelationshipState> relationshipStatesMap;
     private Map<Long/*Label ID*/, LabelState> labelStatesMap;
 
+    private Map<Integer/*Token ID*/,String> createdLabelTokens;
+    private Map<Integer/*Token ID*/,String> createdPropertyKeyTokens;
+    private Map<Integer/*Token ID*/,String> createdRelationshipTypeTokens;
+
     private GraphState graphState;
     private DiffSets<IndexDescriptor> indexChanges;
     private DiffSets<IndexDescriptor> constraintIndexChanges;
@@ -113,6 +117,9 @@ public final class TxStateImpl implements TxState
     private final Set<Long> relsCreatedAndDeletedInTx = new HashSet<>();
 
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint;
+
+    private Map<String, Map<String, String>> createdNodeLegacyIndexes;
+    private Map<String, Map<String, String>> createdRelationshipLegacyIndexes;
 
     private final LegacyIndexTransactionState legacyChangesIndexProvider;
     private Map<String, LegacyIndex> nodeLegacyIndexChanges;
@@ -234,6 +241,46 @@ public final class TxStateImpl implements TxState
                     visitor.visitRemovedConstraint( element );
                 }
             } );
+        }
+
+        if (createdLabelTokens != null)
+        {
+            for ( Map.Entry<Integer, String> entry : createdLabelTokens.entrySet() )
+            {
+                visitor.visitCreatedLabelToken( entry.getValue(), entry.getKey() );
+            }
+        }
+
+        if (createdPropertyKeyTokens != null)
+        {
+            for ( Map.Entry<Integer, String> entry : createdPropertyKeyTokens.entrySet() )
+            {
+                visitor.visitCreatedPropertyKeyToken( entry.getValue(), entry.getKey() );
+            }
+        }
+
+        if (createdRelationshipTypeTokens != null)
+        {
+            for ( Map.Entry<Integer, String> entry : createdRelationshipTypeTokens.entrySet() )
+            {
+                visitor.visitCreatedRelationshipTypeToken( entry.getValue(), entry.getKey() );
+            }
+        }
+
+        if (createdNodeLegacyIndexes != null)
+        {
+            for ( Map.Entry<String, Map<String, String>> entry : createdNodeLegacyIndexes.entrySet() )
+            {
+                visitor.visitCreatedNodeLegacyIndex(entry.getKey(), entry.getValue());
+            }
+        }
+
+        if (createdRelationshipLegacyIndexes != null)
+        {
+            for ( Map.Entry<String, Map<String, String>> entry : createdRelationshipLegacyIndexes.entrySet() )
+            {
+                visitor.visitCreatedRelationshipLegacyIndex(entry.getKey(), entry.getValue());
+            }
         }
     }
 
@@ -591,6 +638,45 @@ public final class TxStateImpl implements TxState
     {
         labelStateNodeDiffSets( labelId ).remove( nodeId );
         nodeStateLabelDiffSets( nodeId ).remove( labelId );
+        hasChanges = true;
+    }
+
+    @Override
+    public void labelCreateForName( String labelName, int id )
+    {
+        if (createdLabelTokens == null)
+        {
+            createdLabelTokens = new HashMap<>();
+        }
+
+        createdLabelTokens.put( id, labelName );
+
+        hasChanges = true;
+    }
+
+    @Override
+    public void propertyKeyCreateForName( String propertyKeyName, int id )
+    {
+        if (createdPropertyKeyTokens == null)
+        {
+            createdPropertyKeyTokens = new HashMap<>();
+        }
+
+        createdPropertyKeyTokens.put( id, propertyKeyName );
+
+        hasChanges = true;
+    }
+
+    @Override
+    public void relationshipTypeCreateForName( String labelName, int id )
+    {
+        if (createdRelationshipTypeTokens == null)
+        {
+            createdRelationshipTypeTokens = new HashMap<>();
+        }
+
+        createdRelationshipTypeTokens.put( id, labelName );
+
         hasChanges = true;
     }
 
@@ -1190,6 +1276,36 @@ public final class TxStateImpl implements TxState
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void nodeLegacyIndexDoCreate( String indexName, Map<String, String> customConfig )
+    {
+        assert customConfig != null;
+
+        if ( createdNodeLegacyIndexes == null)
+        {
+            createdNodeLegacyIndexes = new HashMap<>(  );
+        }
+
+        createdNodeLegacyIndexes.put(indexName, customConfig);
+
+        hasChanges = true;
+    }
+
+    @Override
+    public void relationshipLegacyIndexDoCreate( String indexName, Map<String, String> customConfig )
+    {
+        assert customConfig != null;
+
+        if ( createdRelationshipLegacyIndexes == null)
+        {
+            createdRelationshipLegacyIndexes = new HashMap<>(  );
+        }
+
+        createdRelationshipLegacyIndexes.put(indexName, customConfig);
+
+        hasChanges = true;
     }
 
     @Override

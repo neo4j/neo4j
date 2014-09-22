@@ -50,11 +50,7 @@ public class HANewSnapshotFunction
             for ( MemberIsAvailable existing : previousSnapshot )
             {
                 if ( ( isSlave( existing ) && sameIds( newMessage, existing ) )
-                        || isMaster( existing )
-                        // TODO 2.2-future is this necessary?
-                        // TODO 2.2-future please refer back here once we have a decision for the future of HA backup
-//                      || existing.getRole().equals( OnlineBackupKernelExtension.BACKUP )
-                        )
+                        || isMaster( existing ))
                 {
                     continue;
                 }

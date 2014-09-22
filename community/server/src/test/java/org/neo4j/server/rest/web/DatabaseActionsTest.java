@@ -19,25 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.first;
-import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.server.rest.repr.RepresentationTestAccess.nodeUriToId;
-import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,13 +32,14 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -84,6 +66,27 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.util.Arrays.asList;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.nodeUriToId;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
+
 public class DatabaseActionsTest
 {
     private static final Label LABEL = DynamicLabel.label( "Label" );
@@ -98,8 +101,7 @@ public class DatabaseActionsTest
         graph = (InternalAbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase( graph );
         graphdbHelper = new GraphDbHelper( database );
-        actions = new TransactionWrappedDatabaseActions( new LeaseManager( new FakeClock() ), ForceMode.forced,
-                database.getGraph() );
+        actions = new TransactionWrappedDatabaseActions( new LeaseManager( new FakeClock() ), database.getGraph() );
     }
 
     @AfterClass

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,6 +34,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.LogFile.LogFileVisitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
@@ -42,6 +44,7 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -173,6 +176,46 @@ public class PhysicalLogFileTest
         {
             life.shutdown();
         }
+    }
+
+    @Test
+    public void shouldVisitLogFile() throws Exception
+    {
+        // GIVEN
+        String name = "log";
+        LogRotationControl logRotationControl = mock( LogRotationControl.class );
+        LifeSupport life = new LifeSupport();
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategyFactory.NO_PRUNING,
+                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
+                new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
+        life.start();
+        WritableLogChannel writer = logFile.getWriter();
+        LogPositionMarker mark = new LogPositionMarker();
+        writer.getCurrentPosition( mark );
+        for ( int i = 0; i < 5; i++ )
+        {
+            writer.put( (byte)i );
+        }
+        writer.emptyBufferIntoChannelAndClearIt();
+
+        // WHEN/THEN
+        final AtomicBoolean called = new AtomicBoolean();
+        logFile.accept( new LogFileVisitor()
+        {
+            @Override
+            public boolean visit( LogPosition position, ReadableVersionableLogChannel channel ) throws IOException
+            {
+                for ( int i = 0; i < 5; i++ )
+                {
+                    assertEquals( (byte)i, channel.get() );
+                }
+                called.set( true );
+                return true;
+            }
+        }, mark.newPosition() );
+        assertTrue( called.get() );
+        life.shutdown();
     }
 
     @Test

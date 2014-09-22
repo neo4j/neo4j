@@ -38,6 +38,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import org.neo4j.backup.OnlineBackup;
+import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -130,10 +133,9 @@ public class RollingUpgradeIT
         }
     }
 
-    // TODO 2.2-future waiting for consistency checker to compile
-    private void shutdownAndDoConsistencyChecks()// throws ConsistencyCheckIncompleteException
+    private void shutdownAndDoConsistencyChecks() throws ConsistencyCheckIncompleteException
     {
-        /*
+/*
         Collection<String> storeDirs = new ArrayList<>( newDbs.length );
         for ( GraphDatabaseAPI item : newDbs )
         {
@@ -148,9 +150,9 @@ public class RollingUpgradeIT
         for ( String storeDir : storeDirs )
         {
             service.runFullConsistencyCheck( storeDir, new Config(),
-                    ProgressMonitorFactory.textual( System.out ), StringLogger.SYSTEM );
+                    ProgressMonitorFactory.textual(System.out), StringLogger.SYSTEM );
         }
-        */
+*/
     }
 
     private void debug( String message )
@@ -247,8 +249,7 @@ public class RollingUpgradeIT
                 cluster_server.name(), localhost + ":" + (5000 + serverId),
                 ha_server.name(), localhost + ":" + (6000 + serverId),
                 GraphDatabaseSettings.allow_store_upgrade.name(), "true",
-                // TODO 2.2-future waiting for backup to compile
-//                OnlineBackupSettings.online_backup_server.name(), localhost + ":" + backupPort( serverId ),
+                OnlineBackupSettings.online_backup_server.name(), localhost + ":" + backupPort( serverId ),
                 initial_hosts.name(), localhost + ":" + 5000 + "," + localhost + ":" + 5001 + "," + localhost + ":" + 5002 );
         return result;
     }
@@ -378,9 +379,8 @@ public class RollingUpgradeIT
 
     private void backup( int sourceServerId, File targetDir ) throws UnknownHostException
     {
-        // TODO 2.2-future waiting for backup to complile
-//        OnlineBackup backup = OnlineBackup.from( localhost(), backupPort( sourceServerId ) ).backup( targetDir.getPath() );
-//        assertTrue( "Something wrong with the backup", backup.isConsistent() );
+        OnlineBackup backup = OnlineBackup.from(localhost(), backupPort(sourceServerId)).backup( targetDir.getPath() );
+        assertTrue( "Something wrong with the backup", backup.isConsistent() );
     }
 
     public void doComplexLoad( GraphDatabaseAPI db, long center )

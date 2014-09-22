@@ -23,7 +23,10 @@ import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 
 public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator
 {
@@ -33,10 +36,10 @@ public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator
     }
 
     @Override
-    protected int createKey( TransactionRecordState transactionRecordState, String name )
+    protected int createKey( Statement statement, String name ) throws ReadOnlyDatabaseKernelException, IllegalTokenNameException, TooManyLabelsException
     {
         int id = (int) idGeneratorFactory.get( IdType.LABEL_TOKEN ).nextId();
-        transactionRecordState.createLabelToken( name, id );
+        statement.tokenWriteOperations().labelCreateForName( name, id );
         return id;
     }
 }

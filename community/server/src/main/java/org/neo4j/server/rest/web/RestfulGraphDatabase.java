@@ -19,18 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import static java.lang.String.format;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.helpers.collection.MapUtil.toMap;
-import static org.neo4j.server.rest.web.Surface.PATH_LABELS;
-import static org.neo4j.server.rest.web.Surface.PATH_NODES;
-import static org.neo4j.server.rest.web.Surface.PATH_NODE_INDEX;
-import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
-import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
-import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
-import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -45,7 +33,6 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -74,6 +61,19 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
+
+import static java.lang.String.format;
+
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.MapUtil.toMap;
+import static org.neo4j.server.rest.web.Surface.PATH_LABELS;
+import static org.neo4j.server.rest.web.Surface.PATH_NODES;
+import static org.neo4j.server.rest.web.Surface.PATH_NODE_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
+import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
+import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
 
 @Path( "/" )
 public class RestfulGraphDatabase
@@ -230,11 +230,11 @@ public class RestfulGraphDatabase
 
     @POST
     @Path(PATH_NODES)
-    public Response createNode( @HeaderParam(HEADER_TRANSACTION) ForceMode force, String body )
+    public Response createNode( String body )
     {
         try
         {
-            return output.created( actions( force ).createNode( input.readMap( body ) ) );
+            return output.created( actions.createNode( input.readMap( body ) ) );
         }
         catch ( ArrayStoreException ase )
         {
@@ -271,11 +271,11 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_NODE)
-    public Response deleteNode( @HeaderParam(HEADER_TRANSACTION) ForceMode force, @PathParam("nodeId") long nodeId )
+    public Response deleteNode(  @PathParam("nodeId") long nodeId )
     {
         try
         {
-            actions( force ).deleteNode( nodeId );
+            actions.deleteNode( nodeId );
             return nothing();
         }
         catch ( NodeNotFoundException e )
@@ -292,12 +292,12 @@ public class RestfulGraphDatabase
 
     @PUT
     @Path(PATH_NODE_PROPERTIES)
-    public Response setAllNodeProperties( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response setAllNodeProperties(
                                           @PathParam("nodeId") long nodeId, String body )
     {
         try
         {
-            actions( force ).setAllNodeProperties( nodeId, input.readMap( body ) );
+            actions.setAllNodeProperties( nodeId, input.readMap( body ) );
         }
         catch ( BadInputException e )
         {
@@ -342,12 +342,12 @@ public class RestfulGraphDatabase
 
     @PUT
     @Path(PATH_NODE_PROPERTY)
-    public Response setNodeProperty( @HeaderParam(HEADER_TRANSACTION) ForceMode force, @PathParam("nodeId") long nodeId,
+    public Response setNodeProperty(  @PathParam("nodeId") long nodeId,
                                      @PathParam("key") String key, String body )
     {
         try
         {
-            actions( force ).setNodeProperty( nodeId, key, input.readValue( body ) );
+            actions.setNodeProperty( nodeId, key, input.readValue( body ) );
         }
         catch ( BadInputException e )
         {
@@ -370,12 +370,12 @@ public class RestfulGraphDatabase
 
     @GET
     @Path(PATH_NODE_PROPERTY)
-    public Response getNodeProperty( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response getNodeProperty(
                                      @PathParam("nodeId") long nodeId, @PathParam("key") String key )
     {
         try
         {
-            Representation representation = actions( force ).getNodeProperty( nodeId, key );
+            Representation representation = actions.getNodeProperty( nodeId, key );
             return output.ok( representation );
         }
         catch ( NodeNotFoundException e )
@@ -390,12 +390,12 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_NODE_PROPERTY)
-    public Response deleteNodeProperty( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteNodeProperty(
                                         @PathParam("nodeId") long nodeId, @PathParam("key") String key )
     {
         try
         {
-            actions( force ).removeNodeProperty( nodeId, key );
+            actions.removeNodeProperty( nodeId, key );
         }
         catch ( NodeNotFoundException e )
         {
@@ -410,12 +410,12 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_NODE_PROPERTIES)
-    public Response deleteAllNodeProperties( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteAllNodeProperties(
                                              @PathParam("nodeId") long nodeId )
     {
         try
         {
-            actions( force ).removeAllNodeProperties( nodeId );
+            actions.removeAllNodeProperties( nodeId );
         }
         catch ( NodeNotFoundException e )
         {
@@ -432,7 +432,7 @@ public class RestfulGraphDatabase
 
     @POST
     @Path( PATH_NODE_LABELS )
-    public Response addNodeLabel( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+    public Response addNodeLabel(
                                   @PathParam( "nodeId" ) long nodeId,
                                   String body )
     {
@@ -443,11 +443,11 @@ public class RestfulGraphDatabase
             {
                 ArrayList<String> s = new ArrayList<>();
                 s.add((String) rawInput);
-                actions( force ).addLabelToNode( nodeId, s );
+                actions.addLabelToNode( nodeId, s );
             }
             else if(rawInput instanceof Collection)
             {
-                actions( force ).addLabelToNode( nodeId, (Collection<String>) rawInput );
+                actions.addLabelToNode( nodeId, (Collection<String>) rawInput );
             }
             else
             {
@@ -471,7 +471,7 @@ public class RestfulGraphDatabase
 
     @PUT
     @Path( PATH_NODE_LABELS )
-    public Response setNodeLabels( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+    public Response setNodeLabels(
                                   @PathParam( "nodeId" ) long nodeId,
                                   String body )
     {
@@ -484,7 +484,7 @@ public class RestfulGraphDatabase
             }
             else
             {
-                actions( force ).setLabelsOnNode( nodeId, (Collection<String>) rawInput );
+                actions.setLabelsOnNode( nodeId, (Collection<String>) rawInput );
             }
         }
         catch ( BadInputException e )
@@ -501,15 +501,15 @@ public class RestfulGraphDatabase
         }
         return nothing();
     }
-    
+
     @DELETE
     @Path( PATH_NODE_LABEL )
-    public Response removeNodeLabel( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+    public Response removeNodeLabel(
                                   @PathParam( "nodeId" ) long nodeId, @PathParam( "label" ) String labelName )
     {
         try
         {
-            actions( force ).removeLabelFromNode( nodeId, labelName );
+            actions.removeLabelFromNode( nodeId, labelName );
         }
         catch ( NodeNotFoundException e )
         {
@@ -517,15 +517,15 @@ public class RestfulGraphDatabase
         }
         return nothing();
     }
-    
+
     @GET
     @Path( PATH_NODE_LABELS )
-    public Response getNodeLabels( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+    public Response getNodeLabels(
             @PathParam( "nodeId" ) long nodeId )
     {
         try
         {
-            return output.ok( actions( force ).getNodeLabels( nodeId ) );
+            return output.ok( actions.getNodeLabels( nodeId ) );
         }
         catch ( NodeNotFoundException e )
         {
@@ -540,7 +540,9 @@ public class RestfulGraphDatabase
         try
         {
             if ( labelName.isEmpty() )
+            {
                 throw new BadInputException( "Empty label name" );
+            }
 
             Map<String, Object> properties = toMap( map( queryParamsToProperties, uriInfo.getQueryParameters().entrySet()));
 
@@ -573,7 +575,7 @@ public class RestfulGraphDatabase
     @SuppressWarnings("unchecked")
     @POST
     @Path(PATH_NODE_RELATIONSHIPS)
-    public Response createRelationship( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response createRelationship(
                                         @PathParam("nodeId") long startNodeId, String body )
     {
         final Map<String, Object> data;
@@ -597,7 +599,7 @@ public class RestfulGraphDatabase
         }
         try
         {
-            return output.created( actions( force ).createRelationship( startNodeId, endNodeId, type, properties ) );
+            return output.created( actions.createRelationship( startNodeId, endNodeId, type, properties ) );
         }
         catch ( StartNodeNotFoundException e )
         {
@@ -633,12 +635,12 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_RELATIONSHIP)
-    public Response deleteRelationship( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteRelationship(
                                         @PathParam("relationshipId") long relationshipId )
     {
         try
         {
-            actions( force ).deleteRelationship( relationshipId );
+            actions.deleteRelationship( relationshipId );
         }
         catch ( RelationshipNotFoundException e )
         {
@@ -725,12 +727,12 @@ public class RestfulGraphDatabase
     @PUT
     @Path(PATH_RELATIONSHIP_PROPERTIES)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response setAllRelationshipProperties( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response setAllRelationshipProperties(
                                                   @PathParam("relationshipId") long relationshipId, String body )
     {
         try
         {
-            actions( force ).setAllRelationshipProperties( relationshipId, input.readMap( body ) );
+            actions.setAllRelationshipProperties( relationshipId, input.readMap( body ) );
         }
         catch ( BadInputException e )
         {
@@ -746,13 +748,13 @@ public class RestfulGraphDatabase
     @PUT
     @Path(PATH_RELATIONSHIP_PROPERTY)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response setRelationshipProperty( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response setRelationshipProperty(
                                              @PathParam("relationshipId") long relationshipId,
                                              @PathParam("key") String key, String body )
     {
         try
         {
-            actions( force ).setRelationshipProperty( relationshipId, key, input.readValue( body ) );
+            actions.setRelationshipProperty( relationshipId, key, input.readValue( body ) );
         }
         catch ( BadInputException e )
         {
@@ -767,12 +769,12 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_RELATIONSHIP_PROPERTIES)
-    public Response deleteAllRelationshipProperties( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteAllRelationshipProperties(
                                                      @PathParam("relationshipId") long relationshipId )
     {
         try
         {
-            actions( force ).removeAllRelationshipProperties( relationshipId );
+            actions.removeAllRelationshipProperties( relationshipId );
         }
         catch ( RelationshipNotFoundException e )
         {
@@ -787,13 +789,13 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_RELATIONSHIP_PROPERTY)
-    public Response deleteRelationshipProperty( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteRelationshipProperty(
                                                 @PathParam("relationshipId") long relationshipId,
                                                 @PathParam("key") String key )
     {
         try
         {
-            actions( force ).removeRelationshipProperty( relationshipId, key );
+            actions.removeRelationshipProperty( relationshipId, key );
         }
         catch ( RelationshipNotFoundException e )
         {
@@ -822,11 +824,11 @@ public class RestfulGraphDatabase
     @POST
     @Path(PATH_NODE_INDEX)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response jsonCreateNodeIndex( @HeaderParam(HEADER_TRANSACTION) ForceMode force, String json )
+    public Response jsonCreateNodeIndex(  String json )
     {
         try
         {
-            return output.created( actions( force ).createNodeIndex( input.readMap( json ) ) );
+            return output.created( actions.createNodeIndex( input.readMap( json ) ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -852,11 +854,11 @@ public class RestfulGraphDatabase
     @POST
     @Path(PATH_RELATIONSHIP_INDEX)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response jsonCreateRelationshipIndex( @HeaderParam(HEADER_TRANSACTION) ForceMode force, String json )
+    public Response jsonCreateRelationshipIndex(  String json )
     {
         try
         {
-            return output.created( actions( force ).createRelationshipIndex( input.readMap( json ) ) );
+            return output.created( actions.createRelationshipIndex( input.readMap( json ) ) );
         }
         catch ( BadInputException e )
         {
@@ -926,12 +928,12 @@ public class RestfulGraphDatabase
     @DELETE
     @Path(PATH_NAMED_NODE_INDEX)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response deleteNodeIndex( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteNodeIndex(
                                      @PathParam("indexName") String indexName )
     {
         try
         {
-            actions( force ).removeNodeIndex( indexName );
+            actions.removeNodeIndex( indexName );
             return output.noContent();
         }
         catch ( NotFoundException nfe )
@@ -947,12 +949,12 @@ public class RestfulGraphDatabase
     @DELETE
     @Path(PATH_NAMED_RELATIONSHIP_INDEX)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response deleteRelationshipIndex( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteRelationshipIndex(
                                              @PathParam("indexName") String indexName )
     {
         try
         {
-            actions( force ).removeRelationshipIndex( indexName );
+            actions.removeRelationshipIndex( indexName );
             return output.noContent();
         }
         catch ( NotFoundException nfe )
@@ -968,7 +970,7 @@ public class RestfulGraphDatabase
     @POST
     @Path(PATH_NAMED_NODE_INDEX)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response addToNodeIndex( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response addToNodeIndex(
                                     @PathParam("indexName") String indexName, @QueryParam("unique") String unique,
                                     @QueryParam("uniqueness") String uniqueness, String postBody )
     {
@@ -981,7 +983,7 @@ public class RestfulGraphDatabase
             {
                 case GetOrCreate:
                     entityBody = input.readMap( postBody, "key", "value" );
-                    result = actions( force ).getOrCreateIndexedNode( indexName,
+                    result = actions.getOrCreateIndexedNode( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
                             String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull(
                             entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
@@ -990,7 +992,7 @@ public class RestfulGraphDatabase
 
                 case CreateOrFail:
                     entityBody = input.readMap( postBody, "key", "value" );
-                    result = actions( force ).getOrCreateIndexedNode( indexName,
+                    result = actions.getOrCreateIndexedNode( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
                             String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull(
                             entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
@@ -1018,7 +1020,7 @@ public class RestfulGraphDatabase
 
                 default:
                     entityBody = input.readMap( postBody, "key", "value", "uri" );
-                    return output.created( actions( force ).addToNodeIndex( indexName,
+                    return output.created( actions.addToNodeIndex( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
                             String.valueOf( entityBody.get( "value" ) ), extractNodeId( entityBody.get( "uri" )
                             .toString() ) ) );
@@ -1043,14 +1045,9 @@ public class RestfulGraphDatabase
         }
     }
 
-    private DatabaseActions actions( ForceMode forceMode )
-    {
-        return actions.forceMode( forceMode );
-    }
-
     @POST
     @Path(PATH_NAMED_RELATIONSHIP_INDEX)
-    public Response addToRelationshipIndex( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response addToRelationshipIndex(
                                             @PathParam("indexName") String indexName,
                                             @QueryParam("unique") String unique, @QueryParam("uniqueness") String
             uniqueness, String postBody )
@@ -1064,7 +1061,7 @@ public class RestfulGraphDatabase
             {
                 case GetOrCreate:
                     entityBody = input.readMap( postBody, "key", "value" );
-                    result = actions( force ).getOrCreateIndexedRelationship( indexName,
+                    result = actions.getOrCreateIndexedRelationship( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
                             String.valueOf( entityBody.get( "value" ) ), extractRelationshipIdOrNull( getStringOrNull
                             ( entityBody, "uri" ) ),
@@ -1076,7 +1073,7 @@ public class RestfulGraphDatabase
 
                 case CreateOrFail:
                     entityBody = input.readMap( postBody, "key", "value" );
-                    result = actions( force ).getOrCreateIndexedRelationship( indexName,
+                    result = actions.getOrCreateIndexedRelationship( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
                             String.valueOf( entityBody.get( "value" ) ), extractRelationshipIdOrNull( getStringOrNull
                             ( entityBody, "uri" ) ),
@@ -1108,7 +1105,7 @@ public class RestfulGraphDatabase
 
                 default:
                     entityBody = input.readMap( postBody, "key", "value", "uri" );
-                    return output.created( actions( force ).addToRelationshipIndex( indexName,
+                    return output.created( actions.addToRelationshipIndex( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
                             String.valueOf( entityBody.get( "value" ) ), extractRelationshipId( entityBody.get( "uri"
                     ).toString() ) ) );
@@ -1393,14 +1390,14 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_NODE_INDEX_ID)
-    public Response deleteFromNodeIndex( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteFromNodeIndex(
                                          @PathParam("indexName") String indexName,
                                          @PathParam("key") String key, @PathParam("value") String value,
                                          @PathParam("id") long id )
     {
         try
         {
-            actions( force ).removeFromNodeIndex( indexName, key, value, id );
+            actions.removeFromNodeIndex( indexName, key, value, id );
             return nothing();
         }
         catch ( UnsupportedOperationException e )
@@ -1419,13 +1416,13 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_NODE_INDEX_REMOVE_KEY)
-    public Response deleteFromNodeIndexNoValue( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteFromNodeIndexNoValue(
                                                 @PathParam("indexName") String indexName,
                                                 @PathParam("key") String key, @PathParam("id") long id )
     {
         try
         {
-            actions( force ).removeFromNodeIndexNoValue( indexName, key, id );
+            actions.removeFromNodeIndexNoValue( indexName, key, id );
             return nothing();
         }
         catch ( UnsupportedOperationException e )
@@ -1444,12 +1441,12 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_NODE_INDEX_REMOVE)
-    public Response deleteFromNodeIndexNoKeyValue( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteFromNodeIndexNoKeyValue(
                                                    @PathParam("indexName") String indexName, @PathParam("id") long id )
     {
         try
         {
-            actions( force ).removeFromNodeIndexNoKeyValue( indexName, id );
+            actions.removeFromNodeIndexNoKeyValue( indexName, id );
             return nothing();
         }
         catch ( UnsupportedOperationException e )
@@ -1468,14 +1465,14 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_RELATIONSHIP_INDEX_ID)
-    public Response deleteFromRelationshipIndex( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteFromRelationshipIndex(
                                                  @PathParam("indexName") String indexName,
                                                  @PathParam("key") String key, @PathParam("value") String value,
                                                  @PathParam("id") long id )
     {
         try
         {
-            actions( force ).removeFromRelationshipIndex( indexName, key, value, id );
+            actions.removeFromRelationshipIndex( indexName, key, value, id );
             return nothing();
         }
         catch ( UnsupportedOperationException e )
@@ -1494,13 +1491,13 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_RELATIONSHIP_INDEX_REMOVE_KEY)
-    public Response deleteFromRelationshipIndexNoValue( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteFromRelationshipIndexNoValue(
                                                         @PathParam("indexName") String indexName,
                                                         @PathParam("key") String key, @PathParam("id") long id )
     {
         try
         {
-            actions( force ).removeFromRelationshipIndexNoValue( indexName, key, id );
+            actions.removeFromRelationshipIndexNoValue( indexName, key, id );
             return nothing();
         }
         catch ( UnsupportedOperationException e )
@@ -1519,13 +1516,13 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_RELATIONSHIP_INDEX_REMOVE)
-    public Response deleteFromRelationshipIndex( @HeaderParam(HEADER_TRANSACTION) ForceMode force,
+    public Response deleteFromRelationshipIndex(
                                                  @PathParam("indexName") String indexName,
                                                  @PathParam("id") long id )
     {
         try
         {
-            actions( force ).removeFromRelationshipIndexNoKeyValue( indexName, id );
+            actions.removeFromRelationshipIndexNoKeyValue( indexName, id );
             return nothing();
         }
         catch ( UnsupportedOperationException e )
@@ -1740,12 +1737,16 @@ public class RestfulGraphDatabase
         Object propertyKeys = data.get( key );
         Iterable<String> singlePropertyKey = null;
         if ( propertyKeys instanceof List )
+        {
             singlePropertyKey = (List<String>) propertyKeys;
+        }
         else if ( propertyKeys instanceof String )
+        {
             singlePropertyKey = Arrays.asList((String)propertyKeys);
+        }
         return singlePropertyKey;
     }
-    
+
     @DELETE
     @Path( PATH_SCHEMA_INDEX_LABEL_PROPERTY )
     public Response dropSchemaIndex( @PathParam( "label" ) String labelName,
@@ -1756,21 +1757,25 @@ public class RestfulGraphDatabase
         {
             return output.badRequest( new IllegalArgumentException( "Single property key assumed" ) );
         }
-        
+
         String property = single( properties );
         try
         {
             if ( actions.dropSchemaIndex( labelName, property ) )
+            {
                 return nothing();
+            }
             else
+            {
                 return output.notFound();
+            }
         }
         catch ( ConstraintViolationException e )
         {
             return output.conflict( e );
         }
     }
-    
+
     @GET
     @Path( PATH_SCHEMA_INDEX )
     public Response getSchemaIndexes()
@@ -1784,7 +1789,7 @@ public class RestfulGraphDatabase
     {
         return output.ok( actions.getSchemaIndexes( labelName ) );
     }
-    
+
     @POST
     @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS )
     public Response createPropertyUniquenessConstraint( @PathParam( "label" ) String labelName, String body )
@@ -1813,7 +1818,7 @@ public class RestfulGraphDatabase
             return output.conflict( e );
         }
     }
-    
+
     @DELETE
     @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
     public Response dropPropertyUniquenessConstraint( @PathParam( "label" ) String labelName,
@@ -1822,16 +1827,20 @@ public class RestfulGraphDatabase
         try
         {
             if ( actions.dropPropertyUniquenessConstraint( labelName, properties ) )
+            {
                 return nothing();
+            }
             else
+            {
                 return output.notFound();
+            }
         }
         catch ( ConstraintViolationException e )
         {
             return output.conflict( e );
         }
     }
-    
+
     @GET
     @Path(PATH_SCHEMA_CONSTRAINT)
     public Response getSchemaConstraints()
@@ -1845,14 +1854,14 @@ public class RestfulGraphDatabase
     {
         return output.ok( actions.getLabelConstraints( labelName ) );
     }
-    
+
     @GET
     @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS )
     public Response getSchemaConstraintsForLabelAndUniqueness( @PathParam( "label" ) String labelName )
     {
         return output.ok( actions.getLabelUniquenessConstraints( labelName ) );
     }
-    
+
     @GET
     @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
     public Response getSchemaConstraintsForLabelAndPropertyUniqueness( @PathParam( "label" ) String labelName,

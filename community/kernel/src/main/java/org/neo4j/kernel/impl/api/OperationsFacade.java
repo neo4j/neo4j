@@ -509,7 +509,8 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
         statement.assertOpen();
-        return tokenWrite().propertyKeyGetOrCreateForName( statement, propertyKeyName );
+        return tokenWrite().propertyKeyGetOrCreateForName( statement,
+                propertyKeyName );
     }
 
     @Override
@@ -518,6 +519,35 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         return tokenWrite().relationshipTypeGetOrCreateForName( statement, relationshipTypeName );
     }
+
+    @Override
+    public void labelCreateForName( String labelName, int id ) throws
+            IllegalTokenNameException, TooManyLabelsException
+    {
+        statement.assertOpen();
+        tokenWrite().labelCreateForName( statement, labelName, id );
+    }
+
+    @Override
+    public void propertyKeyCreateForName( String propertyKeyName,
+                                          int id ) throws
+            IllegalTokenNameException
+    {
+        statement.assertOpen();
+        tokenWrite().propertyKeyCreateForName( statement, propertyKeyName, id );
+    }
+
+    @Override
+    public void relationshipTypeCreateForName( String relationshipTypeName,
+                                               int id ) throws
+            IllegalTokenNameException
+    {
+        statement.assertOpen();
+        tokenWrite().relationshipTypeCreateForName( statement,
+                relationshipTypeName, id );
+    }
+
+
     // </TokenWrite>
 
     // <SchemaState>
@@ -745,10 +775,26 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public void nodeLegacyIndexCreate( String indexName, Map<String, String> customConfig )
+    {
+        statement.assertOpen();
+
+        legacyIndexWrite().nodeLegacyIndexCreate( statement, indexName, customConfig );
+    }
+
+    @Override
     public void relationshipLegacyIndexCreateLazily( String indexName, Map<String, String> customConfig )
     {
         statement.assertOpen();
         legacyIndexWrite().relationshipLegacyIndexCreateLazily( statement, indexName, customConfig );
+    }
+
+    @Override
+    public void relationshipLegacyIndexCreate( String indexName, Map<String, String> customConfig )
+    {
+        statement.assertOpen();
+
+        legacyIndexWrite().relationshipLegacyIndexCreate( statement, indexName, customConfig );
     }
 
     @Override

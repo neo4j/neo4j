@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -50,6 +51,7 @@ import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -189,18 +191,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
     private KernelStatement currentStatement;
-
-    @Override
-    public TransactionRecordState getTransactionRecordState()
-    {
-        return recordState;
-    }
-
-    @Override
-    public LegacyIndexTransactionState getLegacyIndexTransactionState()
-    {
-        return legacyIndexTransactionState;
-    }
 
     @Override
     public boolean isOpen()
@@ -588,6 +578,36 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     // Remove the index for the constraint as well
                     visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKeyId() ), true );
                 }
+
+                @Override
+                public void visitCreatedLabelToken( String name, int id )
+                {
+                    recordState.createLabelToken( name, id );
+                }
+
+                @Override
+                public void visitCreatedPropertyKeyToken( String name, int id )
+                {
+                    recordState.createPropertyKeyToken( name, id );
+                }
+
+                @Override
+                public void visitCreatedRelationshipTypeToken( String name, int id )
+                {
+                    recordState.createRelationshipTypeToken( name, id );
+                }
+
+                @Override
+                public void visitCreatedNodeLegacyIndex( String name, Map<String, String> config )
+                {
+                    legacyIndexTransactionState.createIndex( IndexEntityType.Node, name, config );
+                }
+
+                @Override
+                public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
+                {
+                    legacyIndexTransactionState.createIndex( IndexEntityType.Relationship, name, config );
+                }
             } );
             if ( clearState.get() )
             {
@@ -608,6 +628,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         return !hasTxStateWithChanges() && recordState.isReadOnly() &&
                 legacyIndexTransactionState.isReadOnly();
+    }
+
+    public TransactionRecordState getTransactionRecordState()
+    {
+        return recordState;
     }
 
     private enum TransactionType

@@ -34,10 +34,10 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
@@ -80,6 +80,24 @@ public class DataIntegrityValidatingStatementOperations implements
     {
         // KISS - but refactor into a general purpose constraint checker later on
         return keyWriteDelegate.labelGetOrCreateForName( state, checkValidTokenName( label ) );
+    }
+
+    @Override
+    public void labelCreateForName( KernelStatement state, String labelName, int id ) throws IllegalTokenNameException, TooManyLabelsException
+    {
+        keyWriteDelegate.labelCreateForName( state, labelName, id );
+    }
+
+    @Override
+    public void propertyKeyCreateForName( KernelStatement state, String propertyKeyName, int id ) throws IllegalTokenNameException
+    {
+        keyWriteDelegate.propertyKeyCreateForName( state, propertyKeyName, id );
+    }
+
+    @Override
+    public void relationshipTypeCreateForName( KernelStatement state, String relationshipTypeName, int id ) throws IllegalTokenNameException
+    {
+        keyWriteDelegate.relationshipTypeCreateForName( state, relationshipTypeName, id );
     }
 
     @Override

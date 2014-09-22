@@ -286,7 +286,7 @@ public abstract class InternalAbstractGraphDatabase
     protected JobScheduler jobScheduler;
     protected UpdateableSchemaState updateableSchemaState;
     protected Monitors monitors;
-    protected TransactionCounters transactionMonitor = new TransactionCounters();
+    protected TransactionCounters transactionMonitor;
     protected CountingPageCacheMonitor pageCacheMonitor = new CountingPageCacheMonitor();
     protected final LifeSupport life = new LifeSupport();
     private final Map<String, CacheProvider> cacheProviders;
@@ -327,8 +327,6 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void run()
     {
-        // TODO 2.2-future for the love of some divine concept, make sure this shutdown on error works AND prints the
-        // TODO 2.2-future error in a useful manner. Can't be that hard, can it?
         create();
         boolean failed = false;
         try
@@ -353,10 +351,15 @@ public abstract class InternalAbstractGraphDatabase
         }
     }
 
+    protected TransactionCounters createTransactionCounters()
+    {
+        return new TransactionCounters();
+    }
+
     protected void createDatabaseAvailability()
     {
         // This is how we lock the entire database to avoid threads using it during lifecycle events
-        life.add( new DatabaseAvailability( availabilityGuard, transactionMonitor ) );
+        life.add( new DatabaseAvailability( availabilityGuard, transactionMonitor) );
     }
 
     private void enableAvailabilityLogging()
@@ -423,7 +426,11 @@ public abstract class InternalAbstractGraphDatabase
 
         // Component monitoring
         if (this.monitors == null)
+        {
             this.monitors = createMonitors();
+        }
+
+        transactionMonitor = createTransactionCounters();
 
         storeMigrationProcess = new StoreUpgrader( createUpgradeConfiguration(), fileSystem,
                 monitors.newMonitor( StoreUpgrader.Monitor.class ), logging );
@@ -484,7 +491,7 @@ public abstract class InternalAbstractGraphDatabase
 
         kernelHealth = new KernelHealth( kernelPanicEventGenerator, logging );
 
-        // TODO 2.2-future please fix the bad dependencies instead of doing this. Before the removal of JTA
+        // TODO please fix the bad dependencies instead of doing this. Before the removal of JTA
         // this was the place of the XaDataSourceManager. NeoStoreXaDataSource is create further down than
         // (specifically) KernelExtensions, which creates an interesting out-of-order issue with #doAfterRecovery().
         // Anyways please fix this.
@@ -694,7 +701,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected TxIdGenerator createTxIdGenerator()
     {
-        // TODO 2.2-future move to after neostore data source is created
+        // TODO move to after neostore data source is created
         return new DefaultTxIdGenerator( new Provider<TransactionIdStore>()
         {
             @Override

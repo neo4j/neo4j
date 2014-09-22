@@ -41,6 +41,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.impl.index.LuceneLabelScanStoreExtension;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -233,7 +234,8 @@ public class UniqueIndexRecoveryTests
     {
         List<KernelExtensionFactory<?>> extensionFactories = new ArrayList<>();
         extensionFactories.add( kernelExtensionFactory );
-        factory.addKernelExtensions( extensionFactories );
+        extensionFactories.add(new LuceneLabelScanStoreExtension());
+        factory.setKernelExtensions( extensionFactories );
         db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( storeDir.absolutePath() );
     }
 
