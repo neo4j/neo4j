@@ -13,7 +13,7 @@
   <name>Neo4j Cypher Reference Card</name>
   <description>Reference Card for the Neo4j Cypher Query Language.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
 
   <properties>
     <neo4j.version>2.2-SNAPSHOT</neo4j.version>
@@ -135,38 +135,6 @@
               </arguments>
             </configuration>
           </execution>
-          <execution>
-            <id>create-refcard-dir</id>
-            <phase>deploy</phase>
-            <goals><goal>exec</goal></goals>
-            <configuration>
-              <executable>ssh</executable>
-              <arguments>
-                <argument>-i</argument>
-                <argument>${env.HOME}/.ssh/neo_at_docs_neo4j_org</argument>
-                <argument>${docs.server}</argument>
-                <argument>mkdir</argument>
-                <argument>-p</argument>
-                <argument>${docs.rootpath}/refcard/${refcard.version}</argument>
-              </arguments>
-            </configuration>
-          </execution>
-          <execution>
-            <id>upload-refcard</id>
-            <phase>deploy</phase>
-            <goals><goal>exec</goal></goals>
-            <configuration>
-              <executable>rsync</executable>
-              <arguments>
-                <argument>-e</argument>
-                <argument>ssh -i ${env.HOME}/.ssh/neo_at_docs_neo4j_org</argument>
-                <argument>-r</argument>
-                <argument>--delete</argument>
-                <argument>${project.build.directory}/html5/</argument>
-                <argument>${docs.server}:${docs.rootpath}/refcard/${refcard.version}/</argument>
-              </arguments>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -174,6 +142,7 @@
         <artifactId>license-maven-plugin</artifactId>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
@@ -183,6 +152,12 @@
           <execution>
             <id>attach-test-jar</id>
             <phase>none</phase>
+          </execution>
+          <execution>
+            <id>default-jar</id>
+            <configuration>
+              <classesDirectory>${project.build.directory}/html5/</classesDirectory>
+            </configuration>
           </execution>
         </executions>
       </plugin>

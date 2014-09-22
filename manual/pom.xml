@@ -20,6 +20,7 @@
     <short-name>manual</short-name>
     <docs.sources>${project.build.directory}/docs</docs.sources>
     <docs.javadocs>${project.build.directory}/javadoc</docs.javadocs>
+    <docs.refcard>${project.build.directory}/refcard</docs.refcard>
     <docs.sourcecode>${project.build.directory}/sources</docs.sourcecode>
     <docs.test-sources>${project.build.directory}/test-sources</docs.test-sources>
     <docs.images>${project.build.outputDirectory}/images</docs.images>
@@ -31,6 +32,7 @@
 
   <modules>
     <module>javadocs</module>
+    <module>refcard</module>
   </modules>
 
   <scm>
@@ -202,6 +204,12 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-cypher-refcard</artifactId>
+      <version>${neo4j.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.neo4j.build.plugins</groupId>
       <artifactId>neo4j-doctools</artifactId>
       <version>${doctools.version}</version>
@@ -334,6 +342,22 @@
               <excludes>META-INF,META-INF/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.javadocs}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-refcard</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeArtifactIds>neo4j-cypher-refcard</includeArtifactIds>
+              <excludeTransitive>true</excludeTransitive>
+              <useSubDirectoryPerArtifact>false</useSubDirectoryPerArtifact>
+              <stripVersion>true</stripVersion>
+              <excludes>META-INF,META-INF/**</excludes>
+              <type>jar</type>
+              <outputDirectory>${docs.refcard}</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -584,6 +608,9 @@
                 </copy>
                 <copy todir="${project.build.directory}/docbkx/webhelp/javadocs" overwrite="true">
                   <fileset dir="${docs.javadocs}"/>
+                </copy>
+                <copy todir="${project.build.directory}/docbkx/webhelp/cypher-refcard" overwrite="true">
+                  <fileset dir="${docs.refcard}"/>
                 </copy>
                 <!-- source code used by the manual.
                 <copy todir="${project.build.directory}/docbkx/webhelp/code" overwrite="true">
