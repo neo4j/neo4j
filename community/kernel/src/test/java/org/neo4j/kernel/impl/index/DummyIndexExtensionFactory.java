@@ -19,30 +19,18 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import java.io.File;
-import java.util.Map;
-
-import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.index.IndexCommandFactory;
-import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProviders;
-import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.api.LegacyIndex;
-import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class DummyIndexExtensionFactory extends
-        KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies> implements IndexImplementation, Lifecycle
+        KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies>
 {
     public static final String IDENTIFIER = "test-dummy-neo-index";
     public static final String KEY_FAIL_ON_MUTATE = "fail_on_mutate";
     private InternalAbstractGraphDatabase db;
-    private IndexProviders indexProviders;
 
     public DummyIndexExtensionFactory()
     {
@@ -60,208 +48,39 @@ public class DummyIndexExtensionFactory extends
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
         db = dependencies.getDatabase();
-        indexProviders = dependencies.getIndexProviders();
-        return this;
+        IndexProviders indexProviders = dependencies.getIndexProviders();
+        return new Extension( indexProviders );
     }
 
-    @Override
-    public void init() throws Throwable
+    private static class Extension extends LifecycleAdapter
     {
-    }
+        private final IndexProviders indexProviders;
 
-    @Override
-    public void start() throws Throwable
-    {
-        indexProviders.registerIndexProvider( IDENTIFIER, this );
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-        indexProviders.unregisterIndexProvider( IDENTIFIER );
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
-    }
-
-    private boolean failing( Map<String, String> config )
-    {
-        return Boolean.parseBoolean( config.get( KEY_FAIL_ON_MUTATE ) );
-    }
-
-    @Override
-    public Map<String, String> fillInDefaults( Map<String, String> config )
-    {
-        return config;
-    }
-
-    @Override
-    public boolean configMatches( Map<String, String> storedConfig, Map<String, String> suppliedConfig )
-    {
-        return true;
-    }
-
-    private static class EmptyHits extends PrimitiveLongBaseIterator implements LegacyIndexHits
-    {
-        @Override
-        public void close()
-        {   // Nothing to close
+        public Extension( IndexProviders indexProviders )
+        {
+            this.indexProviders = indexProviders;
         }
 
         @Override
-        public int size()
+        public void init() throws Throwable
         {
-            return 0;
+            indexProviders.registerIndexProvider( IDENTIFIER, new DummyIndexImplementation() );
         }
 
         @Override
-        public float currentScore()
+        public void start() throws Throwable
         {
-            return 0;
         }
 
         @Override
-        protected boolean fetchNext()
+        public void stop() throws Throwable
         {
-            return false;
-        }
-    }
-
-    private static final LegacyIndexHits NO_HITS = new EmptyHits();
-
-    private static class EmptyLegacyIndex implements LegacyIndex
-    {
-
-        private final boolean failing;
-
-        private EmptyLegacyIndex( boolean failing )
-        {
-            this.failing = failing;
         }
 
         @Override
-        public void remove( long entity )
+        public void shutdown() throws Throwable
         {
-            mutate();
+            indexProviders.unregisterIndexProvider( IDENTIFIER );
         }
-
-        @Override
-        public void remove( long entity, String key )
-        {
-            mutate();
-        }
-
-        @Override
-        public void remove( long entity, String key, Object value )
-        {
-            mutate();
-        }
-
-        @Override
-        public LegacyIndexHits query( Object queryOrQueryObject, long startNode, long endNode )
-        {
-            return NO_HITS;
-        }
-
-        @Override
-        public LegacyIndexHits query( String key, Object queryOrQueryObject, long startNode, long endNode )
-        {
-            return NO_HITS;
-        }
-
-        @Override
-        public LegacyIndexHits query( Object queryOrQueryObject )
-        {
-            return NO_HITS;
-        }
-
-        @Override
-        public LegacyIndexHits query( String key, Object queryOrQueryObject )
-        {
-            return NO_HITS;
-        }
-
-        @Override
-        public LegacyIndexHits get( String key, Object value, long startNode, long endNode )
-        {
-            return NO_HITS;
-        }
-
-        @Override
-        public LegacyIndexHits get( String key, Object value )
-        {
-            return NO_HITS;
-        }
-
-        @Override
-        public void drop()
-        {
-            mutate();
-        }
-
-        @Override
-        public void addRelationship( long entity, String key, Object value, long startNode, long endNode )
-        {
-            mutate();
-        }
-
-        @Override
-        public void addNode( long entity, String key, Object value )
-        {
-            mutate();
-        }
-
-        private void mutate()
-        {
-            if ( failing )
-            {
-                throw new UnsupportedOperationException();
-            }
-        }
-    }
-
-    @Override
-    public LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory )
-    {
-        return new LegacyIndexProviderTransaction()
-        {
-            @Override
-            public LegacyIndex relationshipIndex( String indexName, Map<String, String> configuration )
-            {
-                return new EmptyLegacyIndex( failing( configuration ) );
-            }
-
-            @Override
-            public LegacyIndex nodeIndex( String indexName, Map<String, String> configuration )
-            {
-                return new EmptyLegacyIndex( failing( configuration ) );
-            }
-
-            @Override
-            public void close()
-            {
-            }
-        };
-    }
-
-    private static final NeoCommandHandler NO_APPLIER = new NeoCommandHandler.Adapter();
-
-    @Override
-    public NeoCommandHandler newApplier( boolean recovery )
-    {
-        return NO_APPLIER;
-    }
-
-    @Override
-    public void force()
-    {
-    }
-
-    @Override
-    public ResourceIterator<File> listStoreFiles()
-    {
-        return IteratorUtil.emptyIterator();
     }
 }

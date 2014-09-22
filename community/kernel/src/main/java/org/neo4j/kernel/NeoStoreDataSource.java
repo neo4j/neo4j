@@ -803,9 +803,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
     @Override
     public void registerIndexProvider( String name, IndexImplementation index )
     {
-        // TODO 2.2-future why did i need to remove the next line to get HA working? It said it doubled registered
-        // TODO 2.2-future the dummy index extension, which i am not sure is true
-//        assert !indexProviders.containsKey( name );
+        assert !indexProviders.containsKey( name );
         indexProviders.put( name, index );
     }
 
