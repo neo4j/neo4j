@@ -57,19 +57,14 @@ angular.module('neo4jApp.controllers')
         _codeMirror = _editor
         _codeMirror.focus()
 
-        # Hack for initializing cursor properly in IE
-        _codeMirror.setValue(' ')
-        _codeMirror.setCursor(1, 1)
-        _codeMirror.setValue('')
-
         _codeMirror.on "change", (cm) ->
           $scope.editorChanged(cm)
 
         _codeMirror.on 'keyup', (cm, e) ->
-          return unless e.keyCode is 27 #esc
-          $timeout(->
-            cm.refresh()
-          , 0)
+          if e.keyCode is 27 #esc
+            $timeout(->
+              cm.refresh()
+            , 0)
 
         _codeMirror.on "focus", (cm) ->
           $scope.editorChanged(cm)
@@ -118,20 +113,9 @@ angular.module('neo4jApp.controllers')
 
       $scope.globalKey = (e) ->
         resizeStream()
-
         return if $scope.isPopupShown and e.keyCode != 191
 
-        # ABK: kinda weird as a global key.
-        if (e.metaKey or e.ctrlKey) and e.keyCode is 13 # Cmd-Enter
-          e.preventDefault()
-          Editor.execCurrent()
-        else if e.ctrlKey and e.keyCode is 38 # Ctrl-Up
-          e.preventDefault()
-          Editor.historyPrev()
-        else if e.ctrlKey and e.keyCode is 40 # Ctrl-Down
-          e.preventDefault()
-          Editor.historyNext()
-        else if e.keyCode is 27 # Esc
+        if e.keyCode is 27 # Esc
           if $scope.isPopupShown
             $scope.togglePopup()
           else
@@ -140,8 +124,7 @@ angular.module('neo4jApp.controllers')
           unless $scope.isEditorFocused()
             e.preventDefault()
             $scope.focusEditor()
-        # else
-        #   console.debug(e)
+
 
       resizeStream = Utils.debounce((ignored) ->
         unless $scope.editor.maximized

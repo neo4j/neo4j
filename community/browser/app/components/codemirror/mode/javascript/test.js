@@ -1,3 +1,6 @@
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
 (function() {
   var mode = CodeMirror.getMode({indentUnit: 2}, "javascript");
   function MT(name) { test.mode(name, mode, Array.prototype.slice.call(arguments, 1)); }
@@ -14,9 +17,17 @@
      "  [[[variable-2 c], [variable y] ]] [operator =] [variable-2 c];",
      "})();");
 
+  MT("class_body",
+     "[keyword class] [variable Foo] {",
+     "  [property constructor]() {}",
+     "  [property sayName]() {",
+     "    [keyword return] [string-2 `foo${][variable foo][string-2 }oo`];",
+     "  }",
+     "}");
+
   MT("class",
      "[keyword class] [variable Point] [keyword extends] [variable SuperThing] {",
-     "  [[ [string-2 /expr/] ]]: [number 24],",
+     "  [property get] [property prop]() { [keyword return] [number 24]; }",
      "  [property constructor]([def x], [def y]) {",
      "    [keyword super]([string 'something']);",
      "    [keyword this].[property x] [operator =] [variable-2 x];",
@@ -116,6 +127,12 @@
      "      [number 2];",
      "  [keyword else]",
      "    [number 3];");
+
+  MT("indent_funarg",
+     "[variable foo]([number 10000],",
+     "    [keyword function]([def a]) {",
+     "  [keyword debugger];",
+     "};");
 
   MT("indent_below_if",
      "[keyword for] (;;)",

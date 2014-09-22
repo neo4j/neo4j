@@ -1,3 +1,6 @@
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
 (function() {
   var mode = CodeMirror.getMode({tabSize: 4, indentUnit: 2}, "haml");
   function MT(name) { test.mode(name, mode, Array.prototype.slice.call(arguments, 1)); }
@@ -50,9 +53,9 @@
       "  [comment -# this is a comment]",
       "     [comment and this is a comment too]",
       "  Date/Time",
-      "  [operator -] [variable now] [operator =] [tag DateTime][operator .][variable now]",
+      "  [operator -] [variable now] [operator =] [tag DateTime][operator .][property now]",
       "  [tag %strong=] [variable now]",
-      "  [operator -] [keyword if] [variable now] [operator >] [tag DateTime][operator .][variable parse]([string \"December 31, 2006\"])",
+      "  [operator -] [keyword if] [variable now] [operator >] [tag DateTime][operator .][property parse]([string \"December 31, 2006\"])",
       "     [operator =][string \"Happy\"]",
       "     [operator =][string \"Belated\"]",
       "     [operator =][string \"Birthday\"]");

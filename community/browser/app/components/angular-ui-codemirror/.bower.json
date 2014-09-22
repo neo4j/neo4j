@@ -1,19 +1,19 @@
 {
   "name": "angular-ui-codemirror",
-  "version": "0.1.0",
+  "version": "0.1.6",
   "main": "./ui-codemirror.js",
   "dependencies": {
-    "angular": ">=1.0.x",
-    "codemirror": "~3.19.0"
+    "angular": "^1",
+    "codemirror": "3 || 4"
   },
   "homepage": "https://github.com/angular-ui/ui-codemirror",
-  "_release": "0.1.0",
+  "_release": "0.1.6",
   "_resolution": {
     "type": "version",
-    "tag": "v0.1.0",
-    "commit": "317e04412bfc63ceb4bc40a39819684936ca320f"
+    "tag": "v0.1.6",
+    "commit": "8dbe7d0c1f9f32856d137a8d65c93c47151dbdcc"
   },
   "_source": "git://github.com/angular-ui/ui-codemirror.git",
-  "_target": "0.1.0",
+  "_target": "0.1.6",
   "_originalSource": "angular-ui-codemirror"
 }
