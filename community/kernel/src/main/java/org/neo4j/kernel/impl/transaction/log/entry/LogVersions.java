@@ -39,5 +39,6 @@ public class LogVersions
     public static final byte CURRENT_LOG_VERSION = LOG_VERSION_2_2;
     public static final byte OLDEST_STILL_SUPPORTED_LOG_VERSION = LOG_VERSION_1_9;
 
-
+    // on disk current format version
+    static final short CURRENT_FORMAT_VERSION = CURRENT_LOG_VERSION & 0xFF;
 }

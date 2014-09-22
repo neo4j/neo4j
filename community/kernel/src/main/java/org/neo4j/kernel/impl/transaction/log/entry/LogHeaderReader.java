@@ -28,16 +28,15 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.OLDEST_STILL_SUPPORTED_LOG_VERSION;
 
-public class LogHeaderParser
+public class LogHeaderReader
 {
     private static final short CURRENT_FORMAT_VERSION = CURRENT_LOG_VERSION & 0xFF;
     private static final short OLDEST_STILL_SUPPORTED__FORMAT_VERSION = OLDEST_STILL_SUPPORTED_LOG_VERSION & 0xFF;
-    public static final int LOG_HEADER_SIZE = 16;
 
     public static LogHeader readLogHeader( ReadableLogChannel channel ) throws IOException
     {
@@ -56,9 +55,6 @@ public class LogHeaderParser
         }
     }
 
-    /**
-     * @return long[] {logVersion, lastCommittedTxIdOfPreviousLog, logFormatVersion}
-     */
     public static LogHeader readLogHeader( ByteBuffer buffer, ReadableByteChannel channel, boolean strict )
             throws IOException
     {
@@ -82,38 +78,6 @@ public class LogHeaderParser
         return new LogHeader( logFormatVersion, logVersion, previousCommittedTx );
     }
 
-    public static void writeLogHeader( WritableLogChannel channel, long logVersion, long previousCommittedTxId )
-            throws IOException
-    {
-        channel.putLong( encodeLogVersion( logVersion ) );
-        channel.putLong( previousCommittedTxId );
-    }
-
-    public static ByteBuffer writeLogHeader( ByteBuffer buffer, long logVersion, long previousCommittedTxId )
-    {
-        buffer.clear();
-        buffer.putLong( encodeLogVersion( logVersion ) );
-        buffer.putLong( previousCommittedTxId );
-        buffer.flip();
-        return buffer;
-    }
-
-    public static void writeLogHeader( FileSystemAbstraction fileSystem, File file, long logVersion,
-                                       long previousLastCommittedTxId ) throws IOException
-    {
-        try ( StoreChannel channel = fileSystem.open( file, "rw" ) )
-        {
-            ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
-            writeLogHeader( buffer, logVersion, previousLastCommittedTxId );
-            channel.write( buffer );
-        }
-    }
-
-    public static long encodeLogVersion( long logVersion )
-    {
-        return logVersion | (((long) CURRENT_FORMAT_VERSION) << 56);
-    }
-
     public static long decodeLogVersion( byte logFormatVersion, long encLogVersion, boolean strict )
             throws IllegalLogFormatException
     {
@@ -128,6 +92,7 @@ public class LogHeaderParser
     {
         return (byte) ((encLogVersion >> 56) & 0xFF);
     }
+
 
     private static boolean isSupportLogFormat( byte logFormatVersion )
     {
