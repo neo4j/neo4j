@@ -42,58 +42,17 @@ case object projectFreshSortExpressions extends Rewriter {
     case clause @ With(_, _, None, _, _, None) =>
       Seq(clause)
 
-    case clause @ With(_, returnItemList: ListedReturnItems, _, _, _, _) =>
-      val duplicateProjection = returnItemList.items.map(item =>
+    case clause @ With(_, ri, _, _, _, _) =>
+      val duplicateProjection = ri.items.map(item =>
         item.alias.fold(item)(alias => AliasedReturnItem(alias, alias)(item.position))
       )
-
       Seq(
         clause.copy(orderBy = None, skip = None, limit = None, where = None)(clause.position),
-        clause.copy(distinct = false, returnItems = ListedReturnItems(duplicateProjection)(returnItemList.position))(clause.position)
-      )
-
-    case r@Return(distinct, lri@ListedReturnItems(_), Some(orderBy), skip, limit) =>
-      val (firstProjection, secondProjection, identifierItems, newOrderBy) = splitupClosingClause(lri, orderBy)
-      Seq(
-        With(distinct = false, returnItems = ListedReturnItems(firstProjection)(lri.position), orderBy = None, skip = None, limit = None, where = None)(r.position),
-        With(distinct = false, returnItems = ListedReturnItems(secondProjection)(lri.position), orderBy = None, skip = None, limit = None, where = None)(r.position),
-        Return(distinct, returnItems = ListedReturnItems(identifierItems)(lri.position), orderBy = Some(newOrderBy), skip = skip, limit = limit)(r.position)
+        clause.copy(distinct = false, returnItems = ri.copy(items = duplicateProjection)(ri.position))(clause.position)
       )
 
     case clause =>
       Seq(clause)
-  }
-
-  private def splitupClosingClause(returnItems: ListedReturnItems, orderBy: OrderBy): (Seq[ReturnItem], Seq[ReturnItem], Seq[ReturnItem], OrderBy) = {
-    val aliases = returnItems.items
-
-    val (aliasDependencies, nonAliasDependencies) = orderBy.treeFold(Seq.empty[Identifier]) {
-      case id: Identifier => (acc, children) => children(acc :+ id)
-    }.partition(id => aliases.exists(_.name == id.name))
-
-    val sortExpressionMap = orderBy.sortItems.map(_.expression).map {
-      case id: Identifier => id -> id
-      case expr: Expression => expr -> Identifier(FreshIdNameGenerator.name(expr.position))(expr.position)
-    }.toMap
-
-    val sortExpressions = sortExpressionMap.map {
-      case (expr, id) => AliasedReturnItem(expr, id)(expr.position)
-    }.toSeq
-
-    val first = nonAliasDependencies.map {
-      id => AliasedReturnItem(id.copy()(id.position), id)(id.position)
-    }.toSeq ++ returnItems.items
-    val second = aliases.map {
-      item => AliasedReturnItem(
-        Identifier(item.name)(item.position),
-        Identifier(item.name)(item.position)
-      )(item.position)
-    }
-
-    val newOrderBy = orderBy.endoRewrite(topDown(Rewriter.lift {
-      case expr: Expression => sortExpressionMap(expr)
-    }))
-    (first.distinct, (second ++ sortExpressions).distinct, second.distinct, newOrderBy)
   }
 
   private val instance: Rewriter = Rewriter.lift {

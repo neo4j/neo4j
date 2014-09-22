@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.{TreeZipper, TreeElem}
+import ast.ASTAnnotationMap
+import helpers.{TreeZipper, TreeElem}
 import symbols._
 import scala.collection.immutable.HashMap
 
@@ -56,8 +57,10 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
 
   def symbolNames: Set[String] = symbolTable.keySet
 
-  def importScope(other: Scope) =
-    copy(symbolTable = symbolTable ++ other.symbolTable)
+  def importScope(other: Scope, exclude: Set[String] = Set.empty) = {
+    val otherSymbols = other.symbolTable -- exclude
+    copy(symbolTable = symbolTable ++ otherSymbols)
+  }
 
   def updateIdentifier(identifier: String, types: TypeSpec, positions: Set[InputPosition]) =
     copy(symbolTable = symbolTable.updated(identifier, Symbol(identifier, positions, types)))
@@ -66,7 +69,7 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
 
 object SemanticState {
   implicit object ScopeZipper extends TreeZipper[Scope]
-  val clean = SemanticState(Scope.empty.location, IdentityMap.empty)
+  val clean = SemanticState(Scope.empty.location, ASTAnnotationMap.empty, ASTAnnotationMap.empty)
 
   implicit class ScopeLocation(val location: ScopeZipper.Location) extends AnyVal {
     def scope: Scope = location.elem
@@ -83,7 +86,7 @@ object SemanticState {
 
     def symbolNames: Set[String] = scope.symbolNames
 
-    def importScope(other: Scope): ScopeLocation = location.replace(scope.importScope(other))
+    def importScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation = location.replace(scope.importScope(other, exclude))
 
     def updateIdentifier(identifier: String, types: TypeSpec, positions: Set[InputPosition]): ScopeLocation =
       location.replace(scope.updateIdentifier(identifier, types, positions))
@@ -91,7 +94,7 @@ object SemanticState {
 }
 import SemanticState.ScopeLocation
 
-case class SemanticState(currentScope: ScopeLocation, typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo]) {
+case class SemanticState(currentScope: ScopeLocation, typeTable: ASTAnnotationMap[ast.Expression, ExpressionTypeInfo], recordedScopes: ASTAnnotationMap[ast.ASTNode, Scope]) {
   def scopeTree = currentScope.rootScope
 
   def newChildScope = copy(currentScope = currentScope.newChildScope)
@@ -101,7 +104,7 @@ case class SemanticState(currentScope: ScopeLocation, typeTable: IdentityMap[ast
   def symbol(name: String): Option[Symbol] = currentScope.symbol(name)
   def symbolTypes(name: String) = symbol(name).map(_.types).getOrElse(TypeSpec.all)
 
-  def importScope(scope: Scope) = copy(currentScope = currentScope.importScope(scope))
+  def importScope(scope: Scope, exclude: Set[String] = Set.empty) = copy(currentScope = currentScope.importScope(scope, exclude))
 
   def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(identifier.name) match {
@@ -157,4 +160,10 @@ case class SemanticState(currentScope: ScopeLocation, typeTable: IdentityMap[ast
       currentScope = currentScope.updateIdentifier(identifier.name, types, locations),
       typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types))
     )
+
+  def noteCurrentScope(astNode: ast.ASTNode): SemanticState =
+    copy(recordedScopes = recordedScopes.updated(astNode, currentScope.scope))
+
+  def scope(astNode: ast.ASTNode): Option[Scope] =
+    recordedScopes.get(astNode)
 }

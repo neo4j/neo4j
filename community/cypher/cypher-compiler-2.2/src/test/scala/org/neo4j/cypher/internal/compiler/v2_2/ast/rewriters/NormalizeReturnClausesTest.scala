@@ -46,6 +46,28 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest {
       """.stripMargin)
   }
 
+  test("introduce WITH clause for ORDER BY where returning all IDs") {
+    assertRewrite(
+      """MATCH n
+        |RETURN * ORDER BY n.foo SKIP 2 LIMIT 5
+      """.stripMargin,
+      """MATCH n
+        |WITH * ORDER BY n.foo SKIP 2 LIMIT 5
+        |RETURN *
+      """.stripMargin)
+  }
+
+  test("introduce WITH clause for ORDER BY where returning all IDs and additional columns") {
+    assertRewrite(
+      """MATCH n
+        |RETURN *, n.foo AS bar ORDER BY n.foo SKIP 2 LIMIT 5
+      """.stripMargin,
+      """MATCH n
+        |WITH *, n.foo AS bar ORDER BY n.foo SKIP 2 LIMIT 5
+        |RETURN *, bar AS bar
+      """.stripMargin)
+  }
+
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)

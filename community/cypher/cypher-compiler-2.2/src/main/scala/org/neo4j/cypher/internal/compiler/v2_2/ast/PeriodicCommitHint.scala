@@ -17,24 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner
+package org.neo4j.cypher.internal.compiler.v2_2.ast
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTAnnotationMap, Expression}
-import org.neo4j.cypher.internal.compiler.v2_2.ExpressionTypeInfo
+import org.neo4j.cypher.internal.compiler.v2_2._
 
-object SemanticTableBuilder {
-  def apply() = new SemanticTableBuilder
-}
+case class PeriodicCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable {
+  def name = s"USING PERIODIC COMMIT $size"
 
-class SemanticTableBuilder {
-  val typeBuilder = Seq.newBuilder[(Expression, ExpressionTypeInfo)]
-
-  def withTyping(typing: (Expression, ExpressionTypeInfo)): SemanticTableBuilder = {
-    typeBuilder += typing
-    this
+  override def semanticCheck: SemanticCheck = size match {
+    case Some(integer) if integer.value <= 0 =>
+      SemanticError(s"Commit size error - expected positive value larger than zero, got ${integer.value}", integer.position)
+    case _ =>
+      SemanticCheckResult.success
   }
-
-  def result() = SemanticTable(types = ASTAnnotationMap(typeBuilder.result(): _*))
 }
-
-

@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.SemanticState
 
-class ListedReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
+class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should forbid aliased projections collisions, e.g., projecting more than one value to the same id") {
     val item1 = AliasedReturnItem(StringLiteral("a")_, ident("n"))_
     val item2 = AliasedReturnItem(StringLiteral("b")_, ident("n"))_
 
-    val items = ListedReturnItems(Seq(item1, item2))_
+    val items = ReturnItems(includeExisting = false, Seq(item1, item2))_
 
     val result = items.semanticCheck(SemanticState.clean)
 
@@ -40,7 +40,7 @@ class ListedReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppo
     val item1 = AliasedReturnItem(StringLiteral("a")_, ident("b"))_
     val item2 = UnaliasedReturnItem(StringLiteral("b")_, "b")_
 
-    val items = ListedReturnItems(Seq(item1, item2))_
+    val items = ReturnItems(includeExisting = false, Seq(item1, item2))_
 
     val result = items.semanticCheck(SemanticState.clean)
 
@@ -51,7 +51,7 @@ class ListedReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppo
   test("should forbid unaliased projections collisions, e.g., projecting more than one value to the same id") {
     val item = UnaliasedReturnItem(StringLiteral("b")_, "b")_
 
-    val items = ListedReturnItems(Seq(item, item))_
+    val items = ReturnItems(includeExisting = false, Seq(item, item))_
 
     val result = items.semanticCheck(SemanticState.clean)
 

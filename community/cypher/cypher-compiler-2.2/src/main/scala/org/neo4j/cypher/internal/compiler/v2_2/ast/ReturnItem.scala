@@ -21,18 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 
-sealed trait ReturnItems extends ASTNode with ASTPhrase with SemanticCheckable {
-  def declareIdentifiers(previousScope: Scope): SemanticCheck
-  def containsAggregate: Boolean
-}
-
-case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition) extends ReturnItems {
+case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
   def semanticCheck =
     items.semanticCheck chain
     ensureProjectedToUniqueIds
 
   def declareIdentifiers(previousScope: Scope) =
-    items.foldSemanticCheck(item => item.alias match {
+    when (includeExisting) {
+      s => SemanticCheckResult.success(s.importScope(previousScope))
+    } chain items.foldSemanticCheck(item => item.alias match {
       case Some(identifier) if item.expression == identifier =>
         val positions = previousScope.symbol(identifier.name).fold(Set.empty[InputPosition])(_.positions)
         identifier.declare(item.expression.types, positions)
@@ -50,23 +47,6 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition
   }
 
   def containsAggregate = items.exists(_.expression.containsAggregate)
-}
-
-case class ReturnAll()(val position: InputPosition) extends ReturnItems {
-  var seenIdentifiers: Option[Set[String]] = None
-
-  def semanticCheck =
-    updateSeenIdentifiers
-
-  private def updateSeenIdentifiers = (s: SemanticState) => {
-    seenIdentifiers = Some(s.currentScope.symbolNames)
-    SemanticCheckResult.success(s)
-  }
-
-  def declareIdentifiers(previousScope: Scope) = s =>
-    SemanticCheckResult.success(s.importScope(previousScope))
-
-  def containsAggregate = false
 }
 
 sealed trait ReturnItem extends ASTNode with ASTPhrase with SemanticCheckable {

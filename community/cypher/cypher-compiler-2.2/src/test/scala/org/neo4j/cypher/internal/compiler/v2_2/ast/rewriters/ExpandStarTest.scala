@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-
 import org.neo4j.cypher.internal.compiler.v2_2._
 
-class ExpandStarTest extends CypherFunSuite with RewriteTest {
-  val rewriterUnderTest: Rewriter = expandStar
+class ExpandStarTest extends CypherFunSuite {
+  import parser.ParserFixture.parser
 
   test("rewrites * in return") {
     assertRewrite(
@@ -88,6 +87,27 @@ class ExpandStarTest extends CypherFunSuite with RewriteTest {
       "match a,x,y with a match b return a, b")
   }
 
-  override protected def parseForRewriting(queryText: String) =
-    super.parseForRewriting(queryText).endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+  test("expands _PRAGMA WITHOUT") {
+    assertRewrite(
+      "MATCH a,x,y _PRAGMA WITHOUT a MATCH b RETURN *",
+      "MATCH a,x,y WITH x, y MATCH b RETURN b, x, y")
+  }
+
+  test("keeps listed items during expand") {
+    assertRewrite(
+      "MATCH (n) WITH *, 1 AS b RETURN *",
+      "MATCH (n) WITH n, 1 AS b RETURN b, n"
+    )
+  }
+
+  private def assertRewrite(originalQuery: String, expectedQuery: String) {
+    val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+    val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+
+    val checkResult = original.semanticCheck(SemanticState.clean)
+    val rewriter = expandStar(checkResult.state)
+
+    val result = original.rewrite(rewriter)
+    assert(result === expected)
+  }
 }

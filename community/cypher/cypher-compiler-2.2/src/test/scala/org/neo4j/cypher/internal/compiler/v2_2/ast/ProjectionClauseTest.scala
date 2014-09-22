@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, SemanticState}
+import org.neo4j.cypher.internal.compiler.v2_2.SemanticState
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
-class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
+class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should introduce identifiers into scope") {
     // GIVEN WITH "a" as n
     val returnItem = AliasedReturnItem(StringLiteral("a")_, ident("n"))_
-    val listedReturnItems = ListedReturnItems(Seq(returnItem))_
+    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem))_
     val withObj = With(distinct = false, listedReturnItems, None, None, None, None)_
 
     // WHEN
@@ -44,7 +44,7 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
   test("should remove identifiers from scope") {
     // GIVEN n WITH "a" as X
     val returnItem = AliasedReturnItem(StringLiteral("a")_, ident("X"))_
-    val listedReturnItems = ListedReturnItems(Seq(returnItem))_
+    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem))_
     val withObj = With(distinct = false, listedReturnItems, None, None, None, None)_
 
     val beforeState = SemanticState.clean.newChildScope.declareIdentifier(ident("n"), CTNode).right.get
@@ -67,7 +67,7 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     ))_
 
     val returnItem = AliasedReturnItem(ident("n"), ident("X"))_
-    val listedReturnItems = ListedReturnItems(Seq(returnItem))_
+    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem))_
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
     // WHEN
@@ -88,7 +88,7 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     ))_
 
     val returnItem = AliasedReturnItem(Property(ident("n"), PropertyKeyName("prop")_)_, ident("n"))_
-    val listedReturnItems = ListedReturnItems(Seq(returnItem))_
+    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem))_
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
     // WHEN
@@ -108,7 +108,7 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     ))_
 
     val returnItem = AliasedReturnItem(ident("n"), ident("n"))_
-    val listedReturnItems = ListedReturnItems(Seq(returnItem))_
+    val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem))_
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
     // WHEN
@@ -122,7 +122,7 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("WITH * allowed when no identifiers in scope") {
     // GIVEN CREATE () WITH * CREATE ()
-    val withObj = With(distinct = false, ReturnAll()_, None, None, None, None)_
+    val withObj = With(distinct = false, ReturnItems(includeExisting = true, Seq())_, None, None, None, None)_
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope
@@ -135,7 +135,7 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("RETURN * not allowed when no identifiers in scope") {
     // GIVEN CREATE () WITH * CREATE ()
-    val withObj = Return(distinct = false, ReturnAll()_, None, None, None)_
+    val withObj = Return(distinct = false, ReturnItems(includeExisting = true, Seq())_, None, None, None)_
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope
@@ -155,7 +155,7 @@ class ClosingClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       AliasedReturnItem(Property(ident("n"), PropertyKeyName("prop")_)_, ident("x"))_,
       AliasedReturnItem(CountStar()_, ident("count"))_
     )
-    val listedReturnItems = ListedReturnItems(returnItems)_
+    val listedReturnItems = ReturnItems(includeExisting = false, returnItems)_
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
     // WHEN

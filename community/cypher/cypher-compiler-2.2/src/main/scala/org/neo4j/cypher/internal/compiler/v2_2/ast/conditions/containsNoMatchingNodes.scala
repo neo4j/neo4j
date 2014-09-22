@@ -17,21 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast
+package org.neo4j.cypher.internal.compiler.v2_2.ast.conditions
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.InputPosition
+import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
 
-sealed trait Hint extends ASTNode with ASTPhrase with SemanticCheckable {
-  def identifier: Identifier
-}
+case class containsNoMatchingNodes(matcher: PartialFunction[ASTNode, String]) extends (Any => Seq[String]) {
+  import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 
-case class UsingIndexHint(identifier: Identifier, label: LabelName, property: Identifier)(val position: InputPosition) extends Hint {
-  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
-}
-
-case class UsingScanHint(identifier: Identifier, label: LabelName)(val position: InputPosition) extends Hint {
-  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
+  def apply(that: Any): Seq[String] = {
+    that.fold(Seq.empty[(String, InputPosition)]) {
+      case node: ASTNode if matcher.isDefinedAt(node) =>
+        (acc) => acc :+ ((matcher(node), node.position))
+    }.map{ case (name, position) => s"Expected none but found $name at position $position" }
+  }
 }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.conditions.containsNoNodesOfType
+import org.neo4j.cypher.internal.compiler.v2_2.ast.conditions.{containsNoReturnAll, containsNoNodesOfType}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{ReturnAll, Statement, UnaliasedReturnItem}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Statement, UnaliasedReturnItem}
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterStepSequencer}
 
 class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters: Boolean = true) {
@@ -37,8 +37,9 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       (Rewriter.lift(PartialFunction.empty), Map.empty[String, Any])
 
     val rewriter = RewriterStepSequencer.newDefault("ASTRewriter")(
+      ApplyRewriter("expandStar", expandStar(semanticState)),
+      enableCondition(containsNoReturnAll()),
       enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),
-
       foldConstants,
       ApplyRewriter("extractParameters", extractParameters),
       nameMatchPatternElements,
@@ -46,10 +47,6 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       normalizeNotEquals,
       normalizeEqualsArgumentOrder,
       addUniquenessPredicates,
-      expandStar,
-
-      enableCondition(containsNoNodesOfType[ReturnAll]),
-
       isolateAggregation
     )
 

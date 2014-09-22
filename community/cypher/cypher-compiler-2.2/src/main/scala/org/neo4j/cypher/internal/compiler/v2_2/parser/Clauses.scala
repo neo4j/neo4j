@@ -95,15 +95,22 @@ trait Clauses extends Parser
     | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
 
-  def PeriodicCommitHint: Rule1[ast.PeriodicCommitHint] = rule("USING PERIODIC COMMIT") (
-    group(keyword("USING PERIODIC COMMIT") ~~ optional(SignedIntegerLiteral)) ~~>> (ast.PeriodicCommitHint(_))
-  )
+  def Pragma: Rule1[ast.Clause] = rule("") {
+    keyword("_PRAGMA") ~~ (
+        group(keyword("WITH NONE") ~ push(ast.ReturnItems(includeExisting = false, Seq())(_)) ~~ optional(Skip) ~~ optional(Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, None, _, _, _))
+      | group(keyword("WITHOUT") ~~ oneOrMore(Identifier, separator = CommaSep)) ~~>> (ast.PragmaWithout(_))
+    )
+  }
 
   private def Where: Rule1[ast.Where] = rule("WHERE") {
     group(keyword("WHERE") ~~ Expression) ~~>> (ast.Where(_))
   }
 
-  private def Hint: Rule1[ast.Hint] = rule("USING") (
+  def PeriodicCommitHint: Rule1[ast.PeriodicCommitHint] = rule("USING PERIODIC COMMIT") (
+    group(keyword("USING PERIODIC COMMIT") ~~ optional(SignedIntegerLiteral)) ~~>> (ast.PeriodicCommitHint(_))
+  )
+
+  private def Hint: Rule1[ast.UsingHint] = rule("USING") (
       group(keyword("USING INDEX") ~~ Identifier ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _))
     | group(keyword("USING SCAN") ~~ Identifier ~~ NodeLabel) ~~>> (ast.UsingScanHint(_, _))
   )
@@ -133,8 +140,8 @@ trait Clauses extends Parser
   }
 
   private def ReturnItems: Rule1[ast.ReturnItems] = rule("'*', an expression") (
-      "*" ~ push(ast.ReturnAll()(_))
-    | oneOrMore(ReturnItem, separator = CommaSep) ~~>> (ast.ListedReturnItems(_))
+      "*" ~ zeroOrMore(CommaSep ~ ReturnItem) ~~>> (ast.ReturnItems(includeExisting = true, _))
+    | oneOrMore(ReturnItem, separator = CommaSep) ~~>> (ast.ReturnItems(includeExisting = false, _))
   )
 
   private def ReturnItem: Rule1[ast.ReturnItem] = rule (

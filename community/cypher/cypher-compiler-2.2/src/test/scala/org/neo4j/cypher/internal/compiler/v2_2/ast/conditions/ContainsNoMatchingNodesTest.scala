@@ -22,19 +22,21 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.conditions
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 
-class ContainsNoNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport {
+class ContainsNoMatchingNodesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val condition: (Any => Seq[String]) = containsNoNodesOfType[UnaliasedReturnItem]()
+  val condition: (Any => Seq[String]) = containsNoMatchingNodes({
+    case ri: ReturnItems if ri.includeExisting => "ReturnItems(includeExisting = true, ...)"
+  })
 
-  test("Happy when not finding UnaliasedReturnItem") {
-    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(None, Seq(), None, naked = true)_)))_, Seq(), None)_
+  test("Happy when not finding ReturnItems(includeExisting = true, ...)") {
+    val ast: ASTNode = Return(false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(Identifier("foo")_, "foo")_))_, None, None, None)_
 
     condition(ast) should equal(Seq())
   }
 
-  test("Fails when finding UnaliasedReturnItem") {
-    val ast: ASTNode = Return(false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(Identifier("foo")_, "foo")_))_, None, None, None)_
+  test("Fails when finding ReturnItems(includeExisting = true, ...)") {
+    val ast: ASTNode = Return(false, ReturnItems(includeExisting = true, Seq(UnaliasedReturnItem(Identifier("foo")_, "foo")_))_, None, None, None)_
 
-    condition(ast) should equal(Seq("Expected none but found UnaliasedReturnItem at position line 1, column 0"))
+    condition(ast) should equal(Seq("Expected none but found ReturnItems(includeExisting = true, ...) at position line 1, column 0"))
   }
 }

@@ -17,24 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner
+package org.neo4j.cypher.internal.compiler.v2_2.ast
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTAnnotationMap, Expression}
-import org.neo4j.cypher.internal.compiler.v2_2.ExpressionTypeInfo
+import org.neo4j.cypher.internal.compiler.v2_2._
+import symbols._
 
-object SemanticTableBuilder {
-  def apply() = new SemanticTableBuilder
+sealed trait UsingHint extends ASTNode with ASTPhrase with SemanticCheckable {
+  def identifier: Identifier
 }
 
-class SemanticTableBuilder {
-  val typeBuilder = Seq.newBuilder[(Expression, ExpressionTypeInfo)]
-
-  def withTyping(typing: (Expression, ExpressionTypeInfo)): SemanticTableBuilder = {
-    typeBuilder += typing
-    this
-  }
-
-  def result() = SemanticTable(types = ASTAnnotationMap(typeBuilder.result(): _*))
+case class UsingIndexHint(identifier: Identifier, label: LabelName, property: Identifier)(val position: InputPosition) extends UsingHint {
+  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
 }
 
-
+case class UsingScanHint(identifier: Identifier, label: LabelName)(val position: InputPosition) extends UsingHint {
+  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
+}

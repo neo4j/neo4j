@@ -43,8 +43,8 @@ case object normalizeReturnClauses extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
-    case clause @ Return(_, returnItemList: ListedReturnItems, None, _, _) =>
-      val aliasedItems = returnItemList.items.map({
+    case clause @ Return(_, ri, None, _, _) =>
+      val aliasedItems = ri.items.map({
         case i: AliasedReturnItem =>
           i
         case i =>
@@ -52,11 +52,11 @@ case object normalizeReturnClauses extends Rewriter {
           AliasedReturnItem(i.expression, Identifier(i.name)(newPosition))(i.position)
       })
       Seq(
-        clause.copy(returnItems = ListedReturnItems(aliasedItems)(returnItemList.position))(clause.position)
+        clause.copy(returnItems = ri.copy(items = aliasedItems)(ri.position))(clause.position)
       )
 
-    case clause @ Return(distinct, returnItemList: ListedReturnItems, orderBy, skip, limit) =>
-      val (aliasProjection, finalProjection) = returnItemList.items.map(i => {
+    case clause @ Return(distinct, ri, orderBy, skip, limit) =>
+      val (aliasProjection, finalProjection) = ri.items.map(i => {
         val newPosition = i.expression.position.copy(offset = i.expression.position.offset + 1)
         if (i.alias.isDefined) {
           (i, AliasedReturnItem(i.alias.get, i.alias.get.copy()(newPosition))(i.position))
@@ -67,8 +67,8 @@ case object normalizeReturnClauses extends Rewriter {
       }).unzip
 
       Seq(
-        With(distinct = distinct, returnItems = ListedReturnItems(aliasProjection)(returnItemList.position), orderBy = orderBy, skip = skip, limit = limit, where = None)(clause.position),
-        Return(distinct = false, returnItems = ListedReturnItems(finalProjection)(returnItemList.position), orderBy = None, skip = None, limit = None)(clause.position)
+        With(distinct = distinct, returnItems = ri.copy(items = aliasProjection)(ri.position), orderBy = orderBy, skip = skip, limit = limit, where = None)(clause.position),
+        Return(distinct = false, returnItems = ri.copy(items = finalProjection)(ri.position), orderBy = None, skip = None, limit = None)(clause.position)
       )
 
     case clause =>
