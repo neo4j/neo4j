@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
 
 class NoDuplicatesPropertyChainVerifier implements PropertyChainVerifier
 {

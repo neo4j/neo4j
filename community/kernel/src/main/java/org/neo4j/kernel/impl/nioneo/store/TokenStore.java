@@ -117,6 +117,18 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     }
 
     @Override
+    protected boolean doFastIdGeneratorRebuild()
+    {
+        return false;
+    }
+
+    @Override
+    protected boolean reserveIdsDuringRebuild()
+    {
+        return true;
+    }
+
+    @Override
     public void flushAll()
     {
         nameStore.flushAll();

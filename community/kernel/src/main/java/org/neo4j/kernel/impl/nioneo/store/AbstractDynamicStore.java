@@ -27,8 +27,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -62,7 +60,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     public static abstract class Configuration
         extends CommonAbstractStore.Configuration
     {
-        public static final Setting<Boolean> rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 
     public static final byte[] NO_DATA = new byte[0];
@@ -125,6 +122,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         return BLOCK_HEADER_SIZE;
     }
 
+    /**
+     * We reserve the first record, record 0, to contain an integer saying how big the record size of
+     * this store is. Record size of a dynamic store can be specified at creation time, and will be
+     * put here and read every time the store is loaded.
+     */
     @Override
     public int getNumberOfReservedLowIds()
     {
@@ -157,7 +159,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         if ( blockSize <= 0 )
         {
             throw new InvalidRecordException( "Illegal block size: " +
-            blockSize + " in " + getStorageFileName() );
+                    blockSize + " in " + getStorageFileName() );
         }
     }
 
@@ -520,30 +522,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         return buffer;
     }
 
-    private long findHighIdBackwards() throws IOException
-    {
-        StoreChannel fileChannel = getFileChannel();
-        int recordSize = getBlockSize();
-        long fileSize = fileChannel.size();
-        long highId = fileSize / recordSize;
-        ByteBuffer byteBuffer = ByteBuffer.allocate( 1 );
-        for ( long i = highId; i > 0; i-- )
-        {
-            fileChannel.position( i * recordSize );
-            if ( fileChannel.read( byteBuffer ) > 0 )
-            {
-                byteBuffer.flip();
-                boolean isInUse = isRecordInUse( byteBuffer );
-                byteBuffer.clear();
-                if ( isInUse )
-                {
-                    return i;
-                }
-            }
-        }
-        return 0;
-    }
-
     /**
      * Rebuilds the internal id generator keeping track of what blocks are free
      * or taken.
@@ -620,19 +598,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 " defragged count=" + defraggedCount, true );
         closeIdGenerator();
         openIdGenerator();
-    }
-
-    @Override
-    protected long figureOutHighestIdInUse()
-    {
-        try
-        {
-            return getFileChannel().size()/getBlockSize();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     @Override

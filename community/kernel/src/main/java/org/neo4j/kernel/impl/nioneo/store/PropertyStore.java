@@ -696,6 +696,12 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     }
 
     @Override
+    protected int bytesRequiredToDetermineInUse()
+    {
+        return getRecordSize();
+    }
+
+    @Override
     public void logVersions(StringLogger.LineLogger logger )
     {
         super.logVersions( logger );

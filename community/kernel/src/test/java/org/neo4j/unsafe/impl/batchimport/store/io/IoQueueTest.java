@@ -29,8 +29,6 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.test.CleanupRule;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingWindowPoolFactory.Writer;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
