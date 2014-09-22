@@ -154,7 +154,8 @@ public abstract class AbstractNeoServer implements NeoServer
         this.dbConfig = new Config();
         this.log = dependencies.logging().getConsoleLog( getClass() );
 
-        this.database = dbFactory.newDatabase( dbConfig, dependencies);
+        this.database = dependencyResolver.satisfyDependency(dbFactory.newDatabase( dbConfig,
+                dependencies));
 
         this.preFlight = dependencyResolver.satisfyDependency(createPreflightTasks());
         this.webServer = createWebServer();
