@@ -27,6 +27,9 @@
 // Based on backported StampedLock revision 1.38: http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/jsr166e/StampedLock.java?revision=1.38&view=markup
 package org.neo4j.io.pagecache.impl.muninn.jsr166e;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -512,8 +515,23 @@ public class StampedLock implements java.io.Serializable {
      * since issuance of the given stamp; else false
      */
     public boolean validate(long stamp) {
-        // See above about current use of getLongVolatile here
-        return (stamp & SBITS) == (U.getLongVolatile(this, STATE) & SBITS);
+        if ( MH_loadFence == null )
+        {
+            // See above about current use of getLongVolatile here
+            return (stamp & SBITS) == (U.getLongVolatile(this, STATE) & SBITS);
+        }
+        else
+        {
+            try
+            {
+                MH_loadFence.invokeExact( U );
+                return (stamp & SBITS) == (state & SBITS);
+            }
+            catch ( Throwable throwable )
+            {
+                throw new AssertionError( throwable );
+            }
+        }
     }
 
     /**
@@ -1265,10 +1283,12 @@ public class StampedLock implements java.io.Serializable {
     private static final long WSTATUS;
     private static final long WCOWAIT;
     private static final long PARKBLOCKER;
+    private static final MethodHandle MH_loadFence;
 
     static {
         try {
             U = getUnsafe();
+            MH_loadFence = getLoadFenceMethodHandle();
             Class<?> k = StampedLock.class;
             Class<?> wk = WNode.class;
             STATE = U.objectFieldOffset
@@ -1319,6 +1339,20 @@ public class StampedLock implements java.io.Serializable {
         } catch (java.security.PrivilegedActionException e) {
             throw new RuntimeException("Could not initialize intrinsics",
                                        e.getCause());
+        }
+    }
+
+    private static MethodHandle getLoadFenceMethodHandle()
+    {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodType type = MethodType.methodType( void.class );
+        try
+        {
+            return lookup.findVirtual( sun.misc.Unsafe.class, "loadFence", type );
+        }
+        catch ( Exception e )
+        {
+            return null;
         }
     }
 }
