@@ -51,12 +51,12 @@ public class CypherLoggingTest
 
         // when
         engine.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );
-        engine.execute( "START n=node(*) RETURN n" );
+        engine.execute( "MATCH n RETURN n" );
 
         // then
         assertEquals(
                 "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" + LINE_SEPARATOR +
-                        "START n=node(*) RETURN n" + LINE_SEPARATOR,
+                        "MATCH n RETURN n" + LINE_SEPARATOR,
                 logger.toString() );
     }
 
@@ -68,7 +68,7 @@ public class CypherLoggingTest
 
         // when
         engine.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );
-        engine.execute( "START n=node(*) RETURN n" );
+        engine.execute( "MATCH n RETURN n" );
 
         // then
         assertEquals("", logger.toString() );

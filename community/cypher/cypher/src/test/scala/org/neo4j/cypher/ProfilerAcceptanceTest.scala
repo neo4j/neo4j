@@ -76,7 +76,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("unfinished profiler complains") {
     //GIVEN
     createNode("foo" -> "bar")
-    val result: ExecutionResult = eengine.profile("START n=node(0) RETURN n")
+    val result: ExecutionResult = eengine.profile("match (n) where id(n) = 0 RETURN n")
 
     //WHEN THEN
     intercept[ProfilerStatisticsNotReadyException](result.executionPlanDescription())
@@ -86,7 +86,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("tracks number of rows") {
     //GIVEN
     createNode("foo" -> "bar")
-    val result = profile("START n = node(0) RETURN n")
+    val result = profile("match (n) where id(n) = 0 RETURN n")
 
     //WHEN THEN
     assertRows(1)(result)("NodeById")
@@ -96,7 +96,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("tracks number of graph accesses") {
     //GIVEN
     createNode("foo" -> "bar")
-    val result = profile("START n = node(0) RETURN n.foo")
+    val result = profile("match (n) where id(n) = 0 RETURN n.foo")
 
     //WHEN THEN
     assertRows(1)(result)("ColumnFilter", "Extract", "NodeById")
@@ -118,7 +118,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
 
     //GIVEN
-    val result = profile("START n=node(*) RETURN n.foo")
+    val result = profile("MATCH n RETURN n.foo")
 
     //WHEN THEN
     assertRows(1)(result)("ColumnFilter")
@@ -135,7 +135,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("tracks optional matches") {
     //GIVEN
     createNode()
-    val result = profile("start n=node(*) optional match (n)-->(x) return x")
+    val result = profile("MATCH n optional match (n)-->(x) return x")
 
     //WHEN THEN
     assertDbHits(0)(result)("ColumnFilter", "NullableMatch")
@@ -155,7 +155,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
     createNode()
     createNode()
-    val result = profile("""START n=node(*) RETURN n LIMIT 1""")
+    val result = profile("""MATCH n RETURN n LIMIT 1""")
 
     // WHEN
     result.toList

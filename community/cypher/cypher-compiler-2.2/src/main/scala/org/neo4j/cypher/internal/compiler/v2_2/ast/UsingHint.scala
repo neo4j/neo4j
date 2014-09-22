@@ -71,8 +71,8 @@ sealed trait RelationshipStartItem extends StartItem {
 case class RelationshipByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends RelationshipStartItem
 case class RelationshipByParameter(identifier: Identifier, parameter: Parameter)(val position: InputPosition) extends RelationshipStartItem
 case class AllRelationships(identifier: Identifier)(val position: InputPosition) extends RelationshipStartItem
-case class RelationshipByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression)(val position: InputPosition) extends RelationshipStartItem
-case class RelationshipByIndexQuery(identifier: Identifier, index: Identifier, query: Expression)(val position: InputPosition) extends RelationshipStartItem
+case class RelationshipByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression)(val position: InputPosition) extends RelationshipStartItem with LegacyIndexHint
+case class RelationshipByIndexQuery(identifier: Identifier, index: Identifier, query: Expression)(val position: InputPosition) extends RelationshipStartItem with LegacyIndexHint
 
 // no longer supported non-hint legacy start items
 

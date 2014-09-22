@@ -54,36 +54,36 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
 
   test("shouldRaiseErrorWhenMissingReturnColumns") {
     test(
-      "start s = node(0) return",
-      "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 25)"
+      "match (s) where id(s) = 0 return",
+      "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 33)"
     )
   }
 
   test("shouldRaiseErrorWhenMissingReturn") {
     test(
-      "start s = node(0)",
-      "Query cannot conclude with START (must be RETURN or an update clause) (line 1, column 1)"
+      "match (s) where id(s) = 0",
+      "Query cannot conclude with MATCH (must be RETURN or an update clause) (line 1, column 1)"
     )
   }
 
   test("shouldComplainAboutWholeNumbers") {
     test(
-      "start s=node(0) return s limit -1",
-      "Invalid input '-': expected whitespace, comment, an unsigned integer or a parameter (line 1, column 32)"
+      "match (s) where id(s) = 0 return s limit -1",
+      "Invalid input '-': expected whitespace, comment, an unsigned integer or a parameter (line 1, column 42)"
     )
   }
 
   test("matchWithoutIdentifierHasToHaveParenthesis") {
     test(
-      "start a = node(0) match a--b, --> a return a",
-      "Invalid input '-': expected whitespace, comment or a pattern (line 1, column 31)"
+      "match (a) where id(a) = 0 match a--b, --> a return a",
+      "Invalid input '-': expected whitespace, comment or a pattern (line 1, column 39)"
     )
   }
 
   test("matchWithoutIdentifierHasToHaveParenthesis2") {
     test(
-      "start a = node(0) match (a) -->, a-->b return a",
-      "Invalid input ',': expected whitespace or a node pattern (line 1, column 32)"
+      "match (a) where id(a) = 0 match (a) -->, a-->b return a",
+      "Invalid input ',': expected whitespace or a node pattern (line 1, column 40)"
     )
   }
 
@@ -96,15 +96,15 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
 
   test("shortestPathCanNotHaveMinimumDepth") {
     test(
-      "start a=node(0), b=node(1) match p=shortestPath(a-[*2..3]->b) return p",
-      "shortestPath(...) does not support a minimal length (line 1, column 36)"
+      "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath(a-[*2..3]->b) return p",
+      "shortestPath(...) does not support a minimal length (line 1, column 54)"
     )
   }
 
   test("shortestPathCanNotHaveMultipleLinksInIt") {
     test(
-      "start a=node(0), b=node(1) match p=shortestPath(a-->()-->b) return p",
-      "shortestPath(...) requires a pattern containing a single relationship (line 1, column 36)"
+      "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath(a-->()-->b) return p",
+      "shortestPath(...) requires a pattern containing a single relationship (line 1, column 54)"
     )
   }
 
@@ -152,21 +152,21 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
 
   test("forgetByInOrderBy") {
     test(
-      "start a=node(0) return a order a.name",
-      "Invalid input 'a': expected whitespace, comment or BY (line 1, column 32)"
+      "match (a) where id(a) = 0 return a order a.name",
+      "Invalid input 'a': expected whitespace, comment or BY (line 1, column 42)"
     )
   }
 
   test("unknownFunction") {
     test(
-      "start a=node(0) return foo(a)",
-      "Unknown function 'foo' (line 1, column 24)"
+      "match (a) where id(a) = 0 return foo(a)",
+      "Unknown function 'foo' (line 1, column 34)"
     )
   }
 
   test("usingRandomFunctionInAggregate") {
     test(
-      "start a=node(0) return count(rand())",
+      "match (a) where id(a) = 0 return count(rand())",
       "Can't use non-deterministic (random) functions inside of aggregate functions."
     )
   }
