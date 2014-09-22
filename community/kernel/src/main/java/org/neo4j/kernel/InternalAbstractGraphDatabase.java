@@ -248,6 +248,8 @@ public abstract class InternalAbstractGraphDatabase
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
 
+    protected final Dependencies dependencies;
+
     protected KernelExtensions kernelExtensions;
 
     protected final DependencyResolver dependencyResolver;
@@ -305,6 +307,7 @@ public abstract class InternalAbstractGraphDatabase
         params.put( Configuration.store_dir.name(), storeDir );
 
         this.dependencyResolver = new DependencyResolverImpl();
+        this.dependencies = dependencies;
 
         // SPI - provided services
         this.cacheProviders = mapCacheProviders( dependencies.cacheProviders() );
@@ -313,11 +316,6 @@ public abstract class InternalAbstractGraphDatabase
         this.logging = dependencies.logging();
         this.monitors = dependencies.monitors();
 
-        this.kernelExtensions = new KernelExtensions(
-                dependencies.kernelExtensions(),
-                config,
-                getDependencyResolver(),
-                fail() );
         this.storeDir = config.get( Configuration.store_dir );
         accessTimeout = 1_000; // TODO make configurable
     }
@@ -411,6 +409,12 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void create()
     {
+        this.kernelExtensions = new KernelExtensions(
+                dependencies.kernelExtensions(),
+                config,
+                getDependencyResolver(),
+                fail() );
+
         availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK );
 
         fileSystem = createFileSystemAbstraction();
