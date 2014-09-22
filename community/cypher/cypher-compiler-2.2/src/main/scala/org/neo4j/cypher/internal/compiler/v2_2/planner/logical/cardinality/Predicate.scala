@@ -20,12 +20,24 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Ors, LabelName, PropertyKeyName}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.PatternRelationship
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, Ors, PropertyKeyName}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship}
 
-sealed trait Predicate
-case class ExpressionPredicate(e: ast.Expression) extends Predicate
-case class PatternPredicate(p: PatternRelationship) extends Predicate
+sealed trait Predicate {
+  def dependencies: Set[IdName]
+}
+
+case class ExpressionPredicate(e: ast.Expression) extends Predicate {
+  def dependencies = e.dependencies.map(id => IdName(id.name))
+}
+
+case class PatternPredicate(p: PatternRelationship) extends Predicate {
+  def dependencies = Set(p.left, p.right)
+}
+
+case class ExistsPredicate(idName: IdName) extends Predicate {
+  def dependencies = Set(idName)
+}
 
 trait PredicateCombination {
   def containedPredicates: Set[Predicate]
@@ -42,6 +54,10 @@ case class RelationshipWithLabels(lhs: Option[LabelName],
 
 case class SingleExpression(inner: ast.Expression) extends PredicateCombination {
   def containedPredicates = Set(ExpressionPredicate(inner))
+}
+
+case class ExistsCombination(idName: IdName) extends PredicateCombination {
+  def containedPredicates = Set(ExistsPredicate(idName))
 }
 
 trait PropertyAndLabelPredicate {

@@ -50,9 +50,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   class SpyableMetricsFactory extends MetricsFactory {
-    def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable) =
-      SimpleMetricsFactory.newSelectivityEstimator(statistics, semanticTable)
-    def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable) =
+    def newCardinalityEstimator(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable) =
       SimpleMetricsFactory.newCardinalityEstimator(statistics, selectivity, semanticTable)
     def newCostModel(cardinality: CardinalityModel) =
       SimpleMetricsFactory.newCostModel(cardinality)

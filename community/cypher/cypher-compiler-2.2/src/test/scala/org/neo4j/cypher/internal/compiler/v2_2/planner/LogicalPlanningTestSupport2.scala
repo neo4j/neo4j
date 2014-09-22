@@ -72,8 +72,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val realConfig = new RealLogicalPlanningConfiguration
 
   trait LogicalPlanningConfiguration {
-    def selectivityModel(statistics: GraphStatistics, semanticTable: SemanticTable): PartialFunction[Expression, Selectivity]
-    def cardinalityModel(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable): PartialFunction[LogicalPlan, Cardinality]
+    def cardinalityModel(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable): PartialFunction[LogicalPlan, Cardinality]
     def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost]
     def graphStatistics: GraphStatistics
     def indexes: Set[(String, String)]
@@ -98,16 +97,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   }
 
   case class RealLogicalPlanningConfiguration() extends LogicalPlanningConfiguration {
-    def cardinalityModel(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable) = {
+    def cardinalityModel(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable) = {
       val model = new StatisticsBackedCardinalityModel(statistics, selectivity)(semanticTable)
       ({
         case (plan: LogicalPlan) => model(plan)
-      })
-    }
-    def selectivityModel(statistics: GraphStatistics, semanticTable: SemanticTable) = {
-      val model = new StatisticsBasedSelectivityModel(statistics)(semanticTable)
-      ({
-        case (expr: Expression) => model(expr)
       })
     }
     def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost] = {
@@ -146,7 +139,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def costModel(cardinality: Metrics.CardinalityModel) =
       cost.orElse(parent.costModel(cardinality))
 
-    def cardinalityModel(statistics: GraphStatistics, selectivity: Metrics.SelectivityModel, semanticTable: SemanticTable) = {
+    def cardinalityModel(statistics: GraphStatistics, selectivity: Metrics.PredicateSelectivityCombiner, semanticTable: SemanticTable) = {
       val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
         case (name: String, cardinality: Cardinality) =>
           semanticTable.resolvedLabelIds(name) -> cardinality
@@ -160,23 +153,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         .orElse(cardinality)
         .orElse(parent.cardinalityModel(statistics, selectivity, semanticTable))
     }
-    def selectivityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
-      selectivity.orElse(parent.selectivityModel(statistics, semanticTable))
     def graphStatistics: GraphStatistics =
       Option(statistics).getOrElse(parent.graphStatistics)
   }
 
   case class LogicalPlanningEnvironment(config: LogicalPlanningConfiguration) {
-    private val planner: Planner = new Planner(
-      monitors,
-      metricsFactory,
-      monitor,
-      tokenResolver,
-      None,
-      strategy,
-      queryGraphSolver
-    )
-
     lazy val semanticTable: SemanticTable = {
       val table = SemanticTable()
       def addLabelIfUnknown(labelName: String) =
@@ -197,11 +178,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def metricsFactory = new MetricsFactory {
-      def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable) =
-        config.selectivityModel(statistics, semanticTable)
       def newCostModel(cardinality: Metrics.CardinalityModel) =
         config.costModel(cardinality)
-      def newCardinalityEstimator(statistics: GraphStatistics, selectivity: Metrics.SelectivityModel, semanticTable: SemanticTable) =
+      def newCardinalityEstimator(statistics: GraphStatistics, selectivity: Metrics.PredicateSelectivityCombiner, semanticTable: SemanticTable) =
         config.cardinalityModel(statistics, selectivity, semanticTable)
     }
 

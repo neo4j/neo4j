@@ -75,6 +75,9 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
     case OrCombination(_, inner) =>
       apply(inner)
 
+    case ExistsCombination(_) =>
+      Selectivity(1)
+
     case _ =>
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
   }

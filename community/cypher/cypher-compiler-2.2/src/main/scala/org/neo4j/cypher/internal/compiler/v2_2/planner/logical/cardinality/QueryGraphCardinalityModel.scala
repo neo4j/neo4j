@@ -20,21 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.PatternRelationship
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-
-import scala.collection.immutable.IndexedSeq
 
 case class QueryGraphCardinalityModel(statistics: GraphStatistics,
                                       predicateProducer: QueryGraph => Set[Predicate],
                                       predicateGrouper: Set[Predicate] => Set[(PredicateCombination, Selectivity)],
                                       selectivityCombiner: Set[(PredicateCombination, Selectivity)] => (Set[Predicate], Selectivity)) {
-
   def apply(queryGraph: QueryGraph): Cardinality = {
     findQueryGraphCombinations(queryGraph)
       .map(cardinalityForQueryGraph)
-      .foldLeft(Cardinality(0))( (acc, curr) => if (curr > acc) curr else acc)
+      .foldLeft(Cardinality(0))((acc, curr) => if (curr > acc) curr else acc)
   }
 
   /**
@@ -46,25 +42,21 @@ case class QueryGraphCardinalityModel(statistics: GraphStatistics,
     (0 to queryGraph.optionalMatches.length)
       .map(queryGraph.optionalMatches.combinations)
       .flatten
-      .map(_.foldLeft(QueryGraph.empty)( _.withOptionalMatches(Seq.empty) ++ _.withOptionalMatches(Seq.empty)))
+      .map(_.foldLeft(QueryGraph.empty)(_.withOptionalMatches(Seq.empty) ++ _.withOptionalMatches(Seq.empty)))
       .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
   }
 
   private def cardinalityForQueryGraph(queryGraph: QueryGraph): Cardinality = {
-    val selectivity = estimateSelectivity(queryGraph)
-    val numberOfPatternNodes = queryGraph.patternNodes.size + countImplicitPatternNodes(queryGraph.patternRelationships)
+    val (predicates, selectivity) = estimateSelectivity(queryGraph)
+    val numberOfPatternNodes = predicates.flatMap(_.dependencies).count(queryGraph.patternNodes.contains)
     val numberOfGraphNodes = statistics.nodesWithLabelCardinality(None)
 
     (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
   }
 
-  private def countImplicitPatternNodes(rels: Set[PatternRelationship]): Int =
-    rels.map(_.length.implicitPatternNodeCount).sum
-
-  private def estimateSelectivity(queryGraph: QueryGraph): Selectivity = {
+  private def estimateSelectivity(queryGraph: QueryGraph): (Set[Predicate], Selectivity) = {
     val predicates = predicateProducer(queryGraph)
     val predicatesWithSelectivity = predicateGrouper(predicates)
-    val (_, combinedSelectivity) = selectivityCombiner(predicatesWithSelectivity)
-    combinedSelectivity
+    selectivityCombiner(predicatesWithSelectivity)
   }
 }
