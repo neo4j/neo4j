@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.store;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 
@@ -39,7 +39,7 @@ public class ProduceUncleanStore
         GraphDatabaseService db = new EmbeddedGraphDatabase(
                 storeDir,
                 stringMap(),
-                new DefaultGraphDatabaseDependencies( DevNullLoggingService.DEV_NULL ) );
+                GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL ) );
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();

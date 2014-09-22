@@ -81,7 +81,7 @@ public class StoreUpgraderInterruptionTestIT
         File workingDirectory = directory.directory();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, workingDirectory );
 
-        StoreMigrator failingStoreMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem )
+        StoreMigrator failingStoreMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DevNullLoggingService.DEV_NULL )
         {
             @Override
             public void migrate( FileSystemAbstraction fileSystem, File sourceStoreDir, File targetStoreDir,
@@ -106,7 +106,7 @@ public class StoreUpgraderInterruptionTestIT
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
 
-        newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
+        newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DevNullLoggingService.DEV_NULL ) )
                 .migrateIfNeeded( workingDirectory );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );

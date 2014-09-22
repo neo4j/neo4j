@@ -49,6 +49,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
@@ -335,7 +336,8 @@ public class BackupTool
             LogbackService logbackService = life.add(
                     new LogbackService(
                             config,
-                            (LoggerContext) getSingleton().getLoggerFactory(), "neo4j-backup-logback.xml" ) );
+                            (LoggerContext) getSingleton().getLoggerFactory()
+                            , "neo4j-backup-logback.xml", new Monitors() ) );
             life.start();
             logging = logbackService;
         }

@@ -67,7 +67,8 @@ public class StoreMigratorFrom20IT
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // WHEN
-        upgrader( new StoreMigrator( monitor, fs ) ).migrateIfNeeded(
+        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) )
+                .migrateIfNeeded(
                 find20FormatStoreDirectory( storeDir.directory() )
         );
 
@@ -104,7 +105,7 @@ public class StoreMigratorFrom20IT
         File legacyStoreDir = find20FormatStoreDirectory( storeDir.directory() );
 
         // When
-        upgrader( new StoreMigrator( monitor, fs ) ).migrateIfNeeded( legacyStoreDir );
+        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) ).migrateIfNeeded( legacyStoreDir );
         ClusterManager.ManagedCluster cluster =
                 cleanup.add( buildClusterWithMasterDirIn( fs, legacyStoreDir, cleanup ) );
         cluster.await( allSeesAllAsAvailable() );

@@ -245,7 +245,7 @@ public class StoreMigratorFrom19IT
     {
         DevNullLoggingService logging = new DevNullLoggingService();
         StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, logging );
-        upgrader.addParticipant( new StoreMigrator( monitor, fs ) );
+        upgrader.addParticipant( new StoreMigrator( monitor, fs, logging ) );
         return upgrader;
     }
 

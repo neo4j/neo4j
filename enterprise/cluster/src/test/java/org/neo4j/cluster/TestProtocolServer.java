@@ -37,6 +37,7 @@ import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.logging.DefaultLogging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * TODO
@@ -60,7 +61,7 @@ public class TestProtocolServer
         this.sender = new TestMessageSender();
 
         stateMachineExecutor = new DelayedDirectExecutor(
-                DefaultLogging.createDefaultLogging( Collections.<String, String>emptyMap() ) );
+                DefaultLogging.createDefaultLogging( Collections.<String, String>emptyMap(), new Monitors() ) );
 
         server = factory.newProtocolServer( instanceId, timeoutStrategy, receiver, sender, acceptorInstanceStore,
                 electionCredentialsProvider, stateMachineExecutor, new ObjectStreamFactory(), new ObjectStreamFactory() );

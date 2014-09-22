@@ -341,7 +341,9 @@ public class StoreUpgraderTest
         fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_42" ) );
 
         // When
-        StoreMigrator migrator = spy( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) );
+        StoreMigrator migrator = spy( new StoreMigrator( new
+                SilentMigrationProgressMonitor(), fileSystem,
+                DevNullLoggingService.DEV_NULL ) );
         when( migrator.needsMigration( fileSystem, dbDirectory ) ).thenReturn( false );
 
         newUpgrader( ALLOW_UPGRADE, migrator, StoreUpgrader.NO_MONITOR ).migrateIfNeeded( dbDirectory );
@@ -398,13 +400,17 @@ public class StoreUpgraderTest
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration upgradeConfig )
     {
-        StoreMigrator defaultMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem );
+        StoreMigrator defaultMigrator = new StoreMigrator( new
+                SilentMigrationProgressMonitor(), fileSystem,
+                DevNullLoggingService.DEV_NULL );
         return newUpgrader( upgradeConfig, defaultMigrator, StoreUpgrader.NO_MONITOR );
     }
 
     private StoreUpgrader newUpgrader( Monitor monitor )
     {
-        StoreMigrator defaultMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem );
+        StoreMigrator defaultMigrator = new StoreMigrator( new
+                SilentMigrationProgressMonitor(), fileSystem,
+                DevNullLoggingService.DEV_NULL );
         return newUpgrader( ALLOW_UPGRADE, defaultMigrator, monitor );
     }
 

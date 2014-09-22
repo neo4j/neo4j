@@ -19,27 +19,38 @@
  */
 package org.neo4j.kernel.logging;
 
-import java.util.Map;
-
-import org.neo4j.kernel.configuration.Config;
+import ch.qos.logback.core.rolling.RollingFileAppender;
+import ch.qos.logback.core.rolling.RollingPolicy;
+import ch.qos.logback.core.rolling.RolloverFailure;
+import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-
-public final class DefaultLogging
+/**
+ * Allows the roll-over event to be monitored. We need this to be able to output diagnostics at the beginning of every log.
+ */
+public class MonitoredRollingPolicy
+    extends TimeBasedRollingPolicy
 {
-    public static Logging createDefaultLogging( Map<String, String> config, Monitors monitors )
+    private static Monitors monitors;
+
+    public static void setMonitorsInstance(Monitors monitorsInstance)
     {
-        return createDefaultLogging( new Config( config ), monitors );
+        monitors = monitorsInstance;
     }
 
-    public static Logging createDefaultLogging( Config config, Monitors monitors )
+    private RollingLogMonitor monitor;
+
+    public MonitoredRollingPolicy()
     {
-        return LogbackWeakDependency.tryLoadLogbackService( config, DEFAULT_TO_CLASSIC, monitors );
+        if (monitors != null)
+            monitor = monitors.newMonitor(RollingLogMonitor.class);
     }
 
-    private DefaultLogging()
+    @Override
+    public void rollover() throws RolloverFailure
     {
-        throw new AssertionError( "Not for instantiation!" );
+        super.rollover();
+
+        monitor.rolledOver();
     }
 }

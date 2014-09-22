@@ -20,7 +20,9 @@
 package org.neo4j.kernel.logging;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration;
@@ -80,16 +82,15 @@ public final class LogbackWeakDependency
     {
         throw new AssertionError( "Not for instantiation!" );
     }
-
-    public static Logging tryLoadLogbackService( Config config,
-                                                 Function<Config, Object> loggerContextGetter,
-                                                 Function<Config, Logging> otherwiseDefaultTo )
+    
+    public static Logging tryLoadLogbackService( Config config, Function<Config, Object> loggerContextGetter,
+            Function<Config, Logging> otherwiseDefaultTo, Monitors monitors )
     {
         try
         {
             if ( logbackIsOnClasspath() )
             {
-                return newLogbackService( config, loggerContextGetter.apply( config ) );
+                return newLogbackService( config, loggerContextGetter.apply( config ), monitors );
             }
         }
         catch ( Exception e )
@@ -98,21 +99,22 @@ public final class LogbackWeakDependency
         return otherwiseDefaultTo.apply( config );
     }
 
-    public static Logging tryLoadLogbackService( Config config, Function<Config, Logging> otherwiseDefaultTo )
+    public static Logging tryLoadLogbackService( Config config, Function<Config, Logging> otherwiseDefaultTo, Monitors monitors )
     {
-        return tryLoadLogbackService( config, STATIC_LOGGER_CONTEXT, otherwiseDefaultTo );
+        return tryLoadLogbackService( config, STATIC_LOGGER_CONTEXT, otherwiseDefaultTo, monitors );
     }
 
     /**
      * To work around the problem where we have an object that is actually a LoggerContext, but we
      * cannot refer to it as such since that class may not exist at runtime.
      */
-    private static Logging newLogbackService( Config config, Object loggerContext ) throws Exception
+    private static Logging newLogbackService( Config config, Object loggerContext, Monitors monitors ) throws Exception
     {
         Class<?> loggerContextClass = Class.forName( LOGGER_CONTEXT_CLASS_NAME );
         return LogbackService.class
-                .getConstructor( Config.class, loggerContextClass, String.class )
-                .newInstance( config, loggerContext, config.get( Configuration.log_configuration_file ) );
+                .getConstructor( Config.class, loggerContextClass, String.class, Monitors.class )
+                .newInstance( config, loggerContext, config.get( InternalAbstractGraphDatabase.Configuration
+                        .log_configuration_file ), monitors );
     }
 
     private static boolean logbackIsOnClasspath()

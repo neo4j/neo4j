@@ -21,15 +21,17 @@ package org.neo4j.server.database;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public interface Database extends Lifecycle
 {
     interface Factory
     {
-        Database newDatabase( Config config, Logging logging );
+        Database newDatabase(Config config, InternalAbstractGraphDatabase.Dependencies dependencies);
     }
 
     public String getLocation();
