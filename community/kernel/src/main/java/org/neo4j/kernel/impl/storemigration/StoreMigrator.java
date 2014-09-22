@@ -30,7 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -50,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
@@ -57,7 +57,6 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
@@ -76,9 +75,6 @@ import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.allLegacyLogFilesFilter;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.getLegacyLogVersion;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilenames.versionedLegacyLogFilesFilter;
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
@@ -90,7 +86,7 @@ import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyLogFilename
  *
  * @see StoreUpgrader
  */
-public class StoreMigrator extends StoreMigrationParticipant.Adapter
+public class StoreMigrator implements StoreMigrationParticipant
 {
     private static final Object[] NO_PROPERTIES = new Object[0];
 
@@ -99,31 +95,34 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     // complete upgrades in a reasonable time period.
 
     private final MigrationProgressMonitor progressMonitor;
+    private final FileSystemAbstraction fileSystem;
     private final UpgradableDatabase upgradableDatabase;
     private final Config config;
     private final Logging logging;
+    private final LegacyLogs legacyLogs;
     private String versionToUpgradeFrom;
-    private LegacyStore legacyStore;
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem )
     {
-        this( progressMonitor, new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ),
+        this( progressMonitor, fileSystem, new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ),
                 new Config(), new SystemOutLogging() );
     }
 
-    public StoreMigrator( MigrationProgressMonitor progressMonitor, UpgradableDatabase upgradableDatabase,
-                          Config config, Logging logging )
+    public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem,
+                          UpgradableDatabase upgradableDatabase, Config config, Logging logging )
     {
         this.progressMonitor = progressMonitor;
+        this.fileSystem = fileSystem;
         this.upgradableDatabase = upgradableDatabase;
         this.config = config;
         this.logging = logging;
+        this.legacyLogs = new LegacyLogs( fileSystem, logging );
     }
 
     @Override
-    public boolean needsMigration( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
+    public boolean needsMigration( File storeDir ) throws IOException
     {
         NeoStoreUtil neoStoreUtil = new NeoStoreUtil( storeDir, fileSystem );
         String versionAsString = NeoStore.versionLongToString( neoStoreUtil.getStoreVersion() );
@@ -136,8 +135,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     }
 
     @Override
-    public void migrate( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
-                         DependencyResolver dependencyResolver ) throws IOException
+    public void migrate( File storeDir, File migrationDir ) throws IOException
     {
         versionToUpgradeFrom = upgradableDatabase.checkUpgradeable( storeDir );
 
@@ -148,13 +146,17 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         }
         else
         {
-            migrateWithBatchImporter( fileSystem, storeDir, migrationDir, dependencyResolver );
+            // migrate stores
+            migrateWithBatchImporter( storeDir, migrationDir );
         }
+
+        // migrate logs
+        legacyLogs.migrateLogs( storeDir, migrationDir );
+
         progressMonitor.finished();
     }
 
-    private void migrateWithBatchImporter( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
-                                           DependencyResolver dependencyResolver )
+    private void migrateWithBatchImporter( File storeDir, File migrationDir )
             throws IOException
     {
         LegacyStore legacyStore;
@@ -195,7 +197,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
             LifeSupport life = new LifeSupport();
             life.start();
             PageCache pageCache = createPageCache( fileSystem, "migrator-dedup-properties", life );
-            PropertyStore propertyStore = storeFactory( fileSystem, pageCache, migrationDir ).newPropertyStore();
+            PropertyStore propertyStore = storeFactory( pageCache, migrationDir ).newPropertyStore();
             try
             {
                 migratePropertyKeys( legacy19Store, propertyStore );
@@ -210,7 +212,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         legacyStore.close();
     }
 
-    private StoreFactory storeFactory( FileSystemAbstraction fileSystem, PageCache pageCache, File migrationDir )
+    private StoreFactory storeFactory( PageCache pageCache, File migrationDir )
     {
         return new StoreFactory(
                 StoreFactory.configForStoreDir( config, migrationDir ),
@@ -357,7 +359,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     }
 
     @Override
-    public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir, File storeDir ) throws IOException
+    public void moveMigratedFiles( File migrationDir, File storeDir ) throws IOException
     {
         // The batch importer will create a whole store. so
         // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
@@ -411,42 +413,30 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         // ensure the store version is correct
         StoreFile.ensureStoreVersion( fileSystem, storeDir, StoreFile.currentStoreFiles() );
         // update or add upgrade id and time
-        updateOrAddUpgradeIdAndUpgradeTime( fileSystem, storeDir );
+        updateOrAddUpgradeIdAndUpgradeTime( storeDir );
 
-        renameLogFiles( fileSystem, storeDir );
+        // move logs
+        legacyLogs.moveLogs( migrationDir, storeDir );
+        legacyLogs.renameLogFiles( storeDir );
     }
 
 
-    private void updateOrAddUpgradeIdAndUpgradeTime( FileSystemAbstraction fileSystem, File storeDirectory )
+    private void updateOrAddUpgradeIdAndUpgradeTime( File storeDirectory )
     {
         final File neostore = new File( storeDirectory, NeoStore.DEFAULT_NAME );
         NeoStore.setOrAddUpgradeIdOnMigration( fileSystem, neostore, new SecureRandom().nextLong() );
         NeoStore.setOrAddUpgradeTimeOnMigration( fileSystem, neostore, System.currentTimeMillis() );
     }
 
-    private void renameLogFiles( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
+    @Override
+    public void cleanup( File migrationDir ) throws IOException
     {
-        // rename files
-        for ( File file : fileSystem.listFiles( storeDir, versionedLegacyLogFilesFilter ) )
-        {
-            final String oldName = file.getName();
-            final long version = getLegacyLogVersion( oldName );
-            final String newName = PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + version;
-            fileSystem.renameFile( file, new File( file.getParent(), newName ) );
-        }
-        StoreFile.ensureStoreVersion( fileSystem, storeDir, StoreFile.currentStoreFiles() );
-
-        // delete old an unused log files
-        for ( File file : fileSystem.listFiles( storeDir, allLegacyLogFilesFilter ) )
-        {
-            fileSystem.deleteFile( file );
-        }
+        fileSystem.deleteRecursively( migrationDir );
     }
 
     @Override
-    public void cleanup( FileSystemAbstraction fileSystem, File migrationDir ) throws IOException
-    {
-        fileSystem.deleteRecursively( migrationDir );
+    public void close()
+    { // nothing to do
     }
 
     @Override

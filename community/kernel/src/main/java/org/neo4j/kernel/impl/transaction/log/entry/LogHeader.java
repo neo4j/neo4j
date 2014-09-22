@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 public class LogHeader
 {
+    public static final int LOG_HEADER_SIZE = 16;
+
     public final byte logFormatVersion;
     public final long logVersion;
     public final long lastCommittedTxId;

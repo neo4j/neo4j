@@ -53,8 +53,8 @@ import static org.junit.Assert.fail;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.

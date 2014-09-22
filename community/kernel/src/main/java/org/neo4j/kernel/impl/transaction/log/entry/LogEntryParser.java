@@ -25,10 +25,10 @@ import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
-public interface LogEntryParser
+public interface LogEntryParser<T extends LogEntry>
 {
-    LogEntry parse( byte version, ReadableLogChannel channel,
-                    LogPositionMarker marker, CommandReaderFactory commandReaderFactory ) throws IOException;
+    T parse( byte version, ReadableLogChannel channel,
+             LogPositionMarker marker, CommandReaderFactory commandReaderFactory ) throws IOException;
 
     byte byteCode();
 

@@ -23,7 +23,7 @@ import java.util.TimeZone;
 
 import org.neo4j.helpers.Format;
 
-public abstract class LogEntryCommit extends LogEntry
+public abstract class LogEntryCommit extends AbstractLogEntry
 {
     private final long txId;
     private final long timeWritten;
