@@ -30,6 +30,7 @@ import java.util.Map;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
@@ -54,6 +55,7 @@ import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -145,7 +147,10 @@ class BackupService
                 public Response<?> copyStore( StoreWriter writer )
                 {
                     Monitors monitors = new Monitors();
-                    client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(), null, monitors.newMonitor( ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ) );
+                    client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
+                            StoreId.DEFAULT, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER,
+                            monitors.newMonitor( ByteCounterMonitor.class ),
+                            monitors.newMonitor( RequestMonitor.class ) );
                     client.start();
                     return client.fullBackup( writer );
                 }
@@ -292,34 +297,39 @@ class BackupService
      * of the target db) a set of transactions starting at the desired txId and
      * spanning up to the latest of the master
      *
-     * @param targetDb           The database that contains a previous full copy
-     * @param context            The context, containing transaction id to start streaming transaction from
+     * @param targetDb The database that contains a previous full copy
+     * @param context  The context, containing transaction id to start streaming transaction from
      * @return A backup context, ready to perform
      */
-    private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort,
-            GraphDatabaseAPI targetDb, RequestContext context ) throws IncrementalBackupNotPossibleException
+    private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
+                                                  RequestContext context ) throws IncrementalBackupNotPossibleException
     {
         DependencyResolver resolver = targetDb.getDependencyResolver();
+
+        ProgressTxHandler handler = new ProgressTxHandler();
+        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver, handler );
+
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort,
-                resolver.resolveDependency( Logging.class ), targetDb.storeId(),
-                monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ), monitors.newMonitor( RequestMonitor.class, BackupClient.class ) );
-        client.start();
+                resolver.resolveDependency( Logging.class ), targetDb.storeId(), unpacker,
+                monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ),
+                monitors.newMonitor( RequestMonitor.class, BackupClient.class ) );
+
         boolean consistent = false;
-        ProgressTxHandler handler = new ProgressTxHandler();
         try
         {
-            Response<Void> response = client.incrementalBackup( context );
-            TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver );
+            client.start();
             unpacker.start();
-            unpacker.unpackResponse( response, handler );
+
+            unpacker.unpackResponse( client.incrementalBackup( context ) );
+
             consistent = true;
         }
         catch ( MismatchingStoreIdException e )
         {
             throw new RuntimeException( DIFFERENT_STORE, e );
         }
-        catch ( RuntimeException e )
+        catch ( RuntimeException | IOException e )
         {
             if ( e.getCause() != null && e.getCause() instanceof MissingLogDataException )
             {
@@ -327,30 +337,20 @@ class BackupService
             }
             throw new RuntimeException( "Failed to perform incremental backup.", e );
         }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Failed to perform incremental backup.", e );
-        }
         catch ( Throwable throwable )
         {
-            throw new RuntimeException( throwable );
+            throw new RuntimeException( "Unexpected error", throwable );
         }
         finally
         {
             try
             {
                 client.stop();
+                unpacker.stop();
             }
             catch ( Throwable throwable )
             {
-                if ( consistent )
-                {
-                    logger.warn( "Unable to stop backup client", throwable );
-                }
-                else
-                {
-                    throw new RuntimeException( "Unable to stop backup client", throwable );
-                }
+                logger.warn( "Unable to stop backup client", throwable );
             }
         }
         return new BackupOutcome( handler.getLastSeenTransactionId(), consistent );
@@ -385,7 +385,7 @@ class BackupService
     private List<KernelExtensionFactory<?>> loadKernelExtensions()
     {
         List<KernelExtensionFactory<?>> kernelExtensions = new ArrayList<>();
-        for ( KernelExtensionFactory factory : Service.load( KernelExtensionFactory.class ) )
+        for ( KernelExtensionFactory<?> factory : Service.load( KernelExtensionFactory.class ) )
         {
             kernelExtensions.add( factory );
         }

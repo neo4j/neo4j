@@ -26,18 +26,15 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
 public interface ResponseUnpacker
 {
-    <T> T unpackResponse( Response<T> response ) throws IOException;
+    void unpackResponse( Response<?> response ) throws IOException;
 
-    <T> T unpackResponse( Response<T> response, TxHandler handler ) throws IOException;
-
-    public static abstract class Adapter implements ResponseUnpacker
+    public static final ResponseUnpacker NO_OP_RESPONSE_UNPACKER = new ResponseUnpacker()
     {
         @Override
-        public <T> T unpackResponse( Response<T> response ) throws IOException
+        public void unpackResponse( Response<?> response ) throws IOException
         {
-            return unpackResponse( response, NO_ACTION );
         }
-    }
+    };
 
     public interface TxHandler
     {
@@ -46,7 +43,7 @@ public interface ResponseUnpacker
         void done();
     }
 
-    public static final TxHandler NO_ACTION = new TxHandler()
+    public static final TxHandler NO_OP_TX_HANDLER = new TxHandler()
     {
         @Override
         public void accept( CommittedTransactionRepresentation tx )

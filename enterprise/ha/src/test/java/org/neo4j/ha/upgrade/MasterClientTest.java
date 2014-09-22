@@ -19,32 +19,66 @@
  */
 package org.neo4j.ha.upgrade;
 
+import java.io.IOException;
+import java.util.Random;
+
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.com.RequestContext;
+import org.neo4j.com.ResourceReleaser;
+import org.neo4j.com.Response;
 import org.neo4j.com.Server;
+import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.ResponseUnpacker;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 
+import static java.util.Arrays.asList;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
+import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
 
@@ -55,6 +89,8 @@ public class MasterClientTest
     private static final int CHUNK_SIZE = 1024;
     private static final int TIMEOUT = 2000;
 
+    private static final int TX_LOG_COUNT = 10;
+
     @Rule
     public final CleanupRule cleanupRule = new CleanupRule();
     private final Monitors monitors = new Monitors();
@@ -63,40 +99,134 @@ public class MasterClientTest
     public void newClientsShouldNotIgnoreStoreIdDifferences() throws Throwable
     {
         // Given
-        MasterImpl.SPI masterImplSPI = mock( MasterImpl.SPI.class );
-        when( masterImplSPI.storeId() ).thenReturn( new StoreId( 1, 2, 3, 4 ) );
+        MasterImpl.SPI masterImplSPI = mockMasterImplSpiWith( new StoreId( 1, 2, 3, 4 ) );
         when( masterImplSPI.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 5L ) );
 
-        MasterServer masterServer = cleanupRule.add( newMasterServer( masterImplSPI ) );
-        masterServer.init();
-        masterServer.start();
+        cleanupRule.add( newMasterServer( masterImplSPI ) );
 
         StoreId storeId = new StoreId( 5, 6, 7, 8 );
         MasterClient214 masterClient214 = cleanupRule.add( newMasterClient214( storeId ) );
-        masterClient214.init();
-        masterClient214.start();
 
         // When
         masterClient214.handshake( 1, storeId );
     }
 
-    private MasterServer newMasterServer( MasterImpl.SPI masterImplSPI )
+    @Test
+    public void clientShouldReadAndApplyTransactionLogsOnNewLockSessionRequest() throws Throwable
     {
-        MasterImpl master = new MasterImpl( masterImplSPI, mock( Monitor.class ),
-                mock( Logging.class ), masterConfig() );
+        // Given
+        MasterImpl master = spy( newMasterImpl( mockMasterImplSpiWith( StoreId.DEFAULT ) ) );
+        doReturn( voidResponseWithTransactionLogs() ).when( master ).newLockSession( any( RequestContext.class ) );
 
-        return new MasterServer( master, mock( Logging.class, RETURNS_MOCKS ), masterServerConfiguration(),
-                mock( TxChecksumVerifier.class ),
-                monitors.newMonitor( ByteCounterMonitor.class, MasterClient.class ),
-                monitors.newMonitor( RequestMonitor.class, MasterClient.class ) );
+        cleanupRule.add( newMasterServer( master ) );
+
+        DependencyResolver resolver = mock( DependencyResolver.class );
+        LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );
+        TransactionRepresentationStoreApplier txApplier = mock( TransactionRepresentationStoreApplier.class );
+        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
+        TransactionAppender txAppender = mock( TransactionAppender.class );
+
+        when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( txStore );
+        when( resolver.resolveDependency( TransactionRepresentationStoreApplier.class ) ).thenReturn( txApplier );
+        when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
+        when( txAppender.append( any( CommittedTransactionRepresentation.class ) ) ).thenReturn( true );
+        when( txStore.getAppender() ).thenReturn( txAppender );
+
+        ResponseUnpacker unpacker =
+                initAndStart( new TransactionCommittingResponseUnpacker( resolver, NO_OP_TX_HANDLER ) );
+
+        MasterClient masterClient = cleanupRule.add( newMasterClient214( StoreId.DEFAULT, unpacker ) );
+
+        // When
+        masterClient.newLockSession( new RequestContext( 1, 2, 3, 4, 5, 6 ) );
+
+        // Then
+        verify( txAppender, times( TX_LOG_COUNT ) ).append( any( CommittedTransactionRepresentation.class ) );
+        verify( txIdStore, times( TX_LOG_COUNT ) ).transactionCommitted( anyLong() );
+        verify( txApplier, times( TX_LOG_COUNT ) )
+                .apply( any( TransactionRepresentation.class ), any( LockGroup.class ), anyLong(), anyBoolean() );
+        verify( txIdStore, times( TX_LOG_COUNT ) ).transactionClosed( anyLong() );
     }
 
-    private MasterClient214 newMasterClient214( StoreId storeId )
+    private static MasterImpl.SPI mockMasterImplSpiWith( StoreId storeId )
     {
-        return new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, mock( Logging.class, RETURNS_MOCKS ),
-                storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE,
+        return when( mock( MasterImpl.SPI.class ).storeId() ).thenReturn( storeId ).getMock();
+    }
+
+    private MasterServer newMasterServer( MasterImpl.SPI masterImplSPI ) throws Throwable
+    {
+        MasterImpl masterImpl = new MasterImpl( masterImplSPI, mock( Monitor.class ),
+                new DevNullLoggingService(), masterConfig() );
+
+        return newMasterServer( masterImpl );
+    }
+
+    private static MasterImpl newMasterImpl( MasterImpl.SPI masterImplSPI )
+    {
+        return new MasterImpl( masterImplSPI, mock( Monitor.class ), new DevNullLoggingService(), masterConfig() );
+    }
+
+    private MasterServer newMasterServer( MasterImpl masterImpl ) throws Throwable
+    {
+        return initAndStart( new MasterServer( masterImpl, new DevNullLoggingService(),
+                masterServerConfiguration(),
+                mock( TxChecksumVerifier.class ),
+                monitors.newMonitor( ByteCounterMonitor.class, MasterClient.class ),
+                monitors.newMonitor( RequestMonitor.class, MasterClient.class ) ) );
+    }
+
+    private MasterClient214 newMasterClient214( StoreId storeId ) throws Throwable
+    {
+        return initAndStart( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, new DevNullLoggingService(),
+                storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, NO_OP_RESPONSE_UNPACKER,
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
-                monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) );
+                monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
+    }
+
+    private MasterClient214 newMasterClient214( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
+    {
+        return initAndStart( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, new DevNullLoggingService(),
+                storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,
+                monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
+                monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
+    }
+
+    private static Response<Void> voidResponseWithTransactionLogs()
+    {
+        return new Response<>( null, StoreId.DEFAULT, new TransactionStream()
+        {
+            @Override
+            public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
+            {
+                for ( int i = 1; i <= TX_LOG_COUNT; i++ )
+                {
+                    visitor.visit( committedTransactionRepresentation( i ) );
+                }
+            }
+        }, ResourceReleaser.NO_OP );
+    }
+
+    private static CommittedTransactionRepresentation committedTransactionRepresentation( int id )
+    {
+        return new CommittedTransactionRepresentation(
+                new LogEntryStart( id, id, id, id - 1, new byte[]{}, LogPosition.UNSPECIFIED ),
+                new PhysicalTransactionRepresentation( asList( nodeCommand() ) ),
+                new OnePhaseCommit( id, id ) );
+    }
+
+    private static Command nodeCommand()
+    {
+        int nodeId = new Random().nextInt();
+        NodeRecord before = new NodeRecord( nodeId, false, -1, -1, false );
+        NodeRecord after = new NodeRecord( nodeId, false, -1, -1, true );
+        return new Command.NodeCommand().init( before, after );
+    }
+
+    private static <T extends Lifecycle> T initAndStart( T element ) throws Throwable
+    {
+        element.init();
+        element.start();
+        return element;
     }
 
     private static Config masterConfig()

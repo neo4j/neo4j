@@ -54,7 +54,6 @@ class SlaveLocksClient implements Locks.Client
     private final Locks localLockManager;
     private final RequestContextFactory requestContextFactory;
     private final AvailabilityGuard availabilityGuard;
-    private final TransactionCommittingResponseUnpacker unpacker;
     private final SlaveLockManager.Configuration config;
 
     // Using atomic ints to avoid creating garbage through boxing.
@@ -68,14 +67,13 @@ class SlaveLocksClient implements Locks.Client
             Locks localLockManager,
             RequestContextFactory requestContextFactory,
             AvailabilityGuard availabilityGuard,
-            TransactionCommittingResponseUnpacker unpacker, SlaveLockManager.Configuration config )
+            SlaveLockManager.Configuration config )
     {
         this.master = master;
         this.client = local;
         this.localLockManager = localLockManager;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
-        this.unpacker = unpacker;
         this.config = config;
         sharedLocks = new HashMap<>();
         exclusiveLocks = new HashMap<>();
@@ -288,15 +286,7 @@ class SlaveLocksClient implements Locks.Client
 
     private boolean receiveLockResponse( Response<LockResult> response )
     {
-        LockResult result = null;
-        try
-        {
-            result = unpacker.unpackResponse( response );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        LockResult result = response.response();
 
         switch ( result.getStatus() )
         {

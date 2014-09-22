@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
-import org.neo4j.kernel.impl.util.Cursors;
 
 /**
  * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
@@ -103,12 +102,11 @@ public abstract class Protocol
                 {
                     while (cursor.next() && visitor.visit( cursor.get() ))
                     {
-                        ;
                     }
                 }
             }
         };
-        return new Response<PAYLOAD>( response, storeId, transactions, channelReleaser );
+        return new Response<>( response, storeId, transactions, channelReleaser );
     }
 
     protected abstract StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer );
@@ -122,34 +120,6 @@ public abstract class Protocol
         targetBuffer.writeLong( tx );
         targetBuffer.writeInt( context.getMasterId() );
         targetBuffer.writeLong( context.getChecksum() );
-    }
-
-    private Iterable<CommittedTransactionRepresentation> readTransactionStreams( final ChannelBuffer buffer )
-            throws IOException
-    {
-        return COMMITTED_TRANSACTION_DESERIALIZER.read( buffer, null );
-    }
-
-    private static void makeSureNextTransactionIsFullyFetched( ChannelBuffer buffer )
-    {
-        buffer.markReaderIndex();
-        try
-        {
-            if ( buffer.readUnsignedByte() > 0 /* datasource id */ )
-            {
-                buffer.skipBytes( 8 ); // tx id
-                int blockSize = 0;
-                while ( (blockSize = buffer.readUnsignedByte()) == 0 )
-                {
-                    buffer.skipBytes( BlockLogBuffer.DATA_SIZE );
-                }
-                buffer.skipBytes( blockSize );
-            }
-        }
-        finally
-        {
-            buffer.resetReaderIndex();
-        }
     }
 
     /* ========================
@@ -287,19 +257,6 @@ public abstract class Protocol
             toReturn.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
                     timeCommitted );
             return toReturn;
-        }
-    };
-
-    public static final Deserializer<Iterable<CommittedTransactionRepresentation>> COMMITTED_TRANSACTION_DESERIALIZER =
-            new Deserializer<Iterable<CommittedTransactionRepresentation>>()
-    {
-        @Override
-        public Iterable<CommittedTransactionRepresentation> read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
-                throws IOException
-        {
-            LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
-            NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
-            return Cursors.iterable( new PhysicalTransactionCursor<>( channel, reader ) );
         }
     };
 

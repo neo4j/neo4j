@@ -164,7 +164,14 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
                     }
                 }
             }
-        }, Protocol.VOID_SERIALIZER ),
+        }, Protocol.VOID_SERIALIZER )
+                {
+                    @Override
+                    public boolean responseShouldBeUnpacked()
+                    {
+                        return false;
+                    }
+                },
 
         THROW_EXCEPTION( new TargetCaller<MadeUpCommunicationInterface, Integer>()
         {
@@ -212,6 +219,12 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         public byte id()
         {
             return (byte) ordinal();
+        }
+
+        @Override
+        public boolean responseShouldBeUnpacked()
+        {
+            return true;
         }
     }
 }

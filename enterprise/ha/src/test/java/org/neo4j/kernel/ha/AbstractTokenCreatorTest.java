@@ -26,38 +26,39 @@ import org.junit.Test;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 public class AbstractTokenCreatorTest
 {
     private final Master master = mock( Master.class );
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
-    private final TransactionCommittingResponseUnpacker unpacker = mock( TransactionCommittingResponseUnpacker.class );
 
     private final RequestContext context = new RequestContext( 1, 2, 3, 4, 5, 6 );
 
     private final String label = "A";
     private final Response<Integer> response = new Response<>( 42, null, null, null );
 
-    private final AbstractTokenCreator creator =
-            new AbstractTokenCreator( master, requestContextFactory, unpacker )
-            {
-                @Override
-                protected Response<Integer> create( Master master, RequestContext context, String name )
-                {
-                    assertEquals( AbstractTokenCreatorTest.this.master, master );
-                    assertEquals( AbstractTokenCreatorTest.this.context, context );
-                    assertEquals( AbstractTokenCreatorTest.this.label, name );
-                    return response;
-                }
-            };
+    private final AbstractTokenCreator creator = new AbstractTokenCreator( master, requestContextFactory )
+    {
+        @Override
+        protected Response<Integer> create( Master master, RequestContext context, String name )
+        {
+            assertEquals( AbstractTokenCreatorTest.this.master, master );
+            assertEquals( AbstractTokenCreatorTest.this.context, context );
+            assertEquals( AbstractTokenCreatorTest.this.label, name );
+            return response;
+        }
+    };
 
     @Before
     public void setup()
@@ -70,7 +71,6 @@ public class AbstractTokenCreatorTest
     {
         // GIVEN
         int responseValue = response.response();
-        when( unpacker.unpackResponse( response ) ).thenReturn( responseValue );
 
         // WHEN
         int result = creator.getOrCreate( label );
@@ -80,22 +80,23 @@ public class AbstractTokenCreatorTest
     }
 
     @Test
-    public void shouldThrowIfCommitterThrowsAnException() throws IOException
+    public void shouldThrowIfCreateThrowsAnException() throws IOException
     {
         // GIVEN
-        final IOException ioex = new IOException( "IO" );
-        when( unpacker.unpackResponse( response ) ).thenThrow( ioex );
+        RuntimeException re = new RuntimeException( "IO" );
+        AbstractTokenCreator throwingCreator = spy( creator );
+        doThrow( re ).when( throwingCreator ).create( any( Master.class ), any( RequestContext.class ), anyString() );
 
         try
         {
             // WHEN
-            creator.getOrCreate( "A" );
+            throwingCreator.getOrCreate( "A" );
             fail( "Should have thrown" );
         }
-        catch ( RuntimeException e )
+        catch ( Exception e )
         {
             // THEN
-            assertEquals( ioex, e.getCause() );
+            assertEquals( re, e );
         }
     }
 }

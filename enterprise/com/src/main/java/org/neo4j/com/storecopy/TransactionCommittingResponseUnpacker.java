@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adapter implements Lifecycle
+public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, Lifecycle
 {
     private final DependencyResolver resolver;
 
@@ -40,13 +40,16 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
     private TransactionRepresentationStoreApplier storeApplier;
     private TransactionIdStore transactionIdStore;
 
-    public TransactionCommittingResponseUnpacker( DependencyResolver resolver)
+    private final TxHandler txHandler;
+
+    public TransactionCommittingResponseUnpacker( DependencyResolver resolver, TxHandler txHandler )
     {
         this.resolver = resolver;
+        this.txHandler = txHandler;
     }
 
     @Override
-    public <T> T unpackResponse( Response<T> response, final TxHandler handler ) throws IOException
+    public void unpackResponse( Response<?> response ) throws IOException
     {
         response.accept( new Visitor<CommittedTransactionRepresentation, IOException>()
         {
@@ -68,7 +71,7 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
                                 // TODO recovery=true needed?
                                 storeApplier.apply( transaction.getTransactionRepresentation(), locks,
                                                     transactionId, true );
-                                handler.accept( transaction );
+                                txHandler.accept( transaction );
                             }
                         }
                         finally
@@ -80,7 +83,6 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
                 return true;
             }
         } );
-        return response.response();
     }
 
     @Override

@@ -25,9 +25,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
-import org.neo4j.com.RequestContext;
-import org.neo4j.com.Response;
-import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -41,6 +38,8 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
+import static org.neo4j.kernel.ha.com.RequestContextFactory.VOID_EVENT_IDENTIFIER;
+
 public class UpdatePuller implements Lifecycle
 {
     private final HighAvailabilityMemberStateMachine memberStateMachine;
@@ -52,14 +51,12 @@ public class UpdatePuller implements Lifecycle
     private final JobScheduler scheduler;
     private final StringLogger logger;
     private final CappedOperation<Pair<String, ? extends Exception>> cappedLogger;
-    private final TransactionCommittingResponseUnpacker unpacker;
     private volatile boolean pullUpdates = false;
     private final UpdatePullerHighAvailabilityMemberListener listener;
 
     public UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine, Master master,
                          RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
-                         LastUpdateTime lastUpdateTime, Config config, JobScheduler scheduler,
-                         final StringLogger logger, TransactionCommittingResponseUnpacker unpacker )
+                         LastUpdateTime lastUpdateTime, Config config, JobScheduler scheduler, final StringLogger log )
     {
         this.memberStateMachine = memberStateMachine;
         this.master = master;
@@ -68,8 +65,7 @@ public class UpdatePuller implements Lifecycle
         this.lastUpdateTime = lastUpdateTime;
         this.config = config;
         this.scheduler = scheduler;
-        this.logger = logger;
-        this.unpacker = unpacker;
+        this.logger = log;
         this.cappedLogger = new CappedOperation<Pair<String, ? extends Exception>>(
                 CappedOperation.count( 10 ) )
         {
@@ -88,10 +84,7 @@ public class UpdatePuller implements Lifecycle
     {
         if ( availabilityGuard.isAvailable( 5000 ) )
         {
-            RequestContext context = requestContextFactory.newRequestContext( RequestContextFactory.VOID_EVENT_IDENTIFIER );
-            Response<Void> response = master.pullUpdates( context );
-
-            unpacker.unpackResponse( response );
+            master.pullUpdates( requestContextFactory.newRequestContext( VOID_EVENT_IDENTIFIER ) );
             lastUpdateTime.setLastUpdateTime( System.currentTimeMillis() );
         }
     }

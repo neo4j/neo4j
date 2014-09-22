@@ -43,7 +43,7 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
         {
             return delegate.readByte();
         }
-        catch( IndexOutOfBoundsException e )
+        catch ( IndexOutOfBoundsException e )
         {
             throw ReadPastEndException.INSTANCE;
         }
@@ -56,7 +56,7 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
         {
             return delegate.readShort();
         }
-        catch( IndexOutOfBoundsException e )
+        catch ( IndexOutOfBoundsException e )
         {
             throw ReadPastEndException.INSTANCE;
         }
@@ -69,7 +69,7 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
         {
             return delegate.readInt();
         }
-        catch( IndexOutOfBoundsException e )
+        catch ( IndexOutOfBoundsException e )
         {
             throw ReadPastEndException.INSTANCE;
         }
@@ -82,7 +82,7 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
         {
             return delegate.readLong();
         }
-        catch( IndexOutOfBoundsException e )
+        catch ( IndexOutOfBoundsException e )
         {
             throw ReadPastEndException.INSTANCE;
         }
@@ -95,7 +95,7 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
         {
             return delegate.readFloat();
         }
-        catch( IndexOutOfBoundsException e )
+        catch ( IndexOutOfBoundsException e )
         {
             throw ReadPastEndException.INSTANCE;
         }
@@ -108,7 +108,7 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
         {
             return delegate.readDouble();
         }
-        catch( IndexOutOfBoundsException e )
+        catch ( IndexOutOfBoundsException e )
         {
             throw ReadPastEndException.INSTANCE;
         }
@@ -121,7 +121,7 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
         {
             delegate.readBytes( bytes, 0, length );
         }
-        catch( IndexOutOfBoundsException e )
+        catch ( IndexOutOfBoundsException e )
         {
             throw ReadPastEndException.INSTANCE;
         }
