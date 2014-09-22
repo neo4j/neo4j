@@ -61,7 +61,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("start_with_a_node_and_create_a_new_node_with_the_same_properties") {
     createNode("age" -> 15)
 
-    val result = execute("start a = node(0) with a create (b {age : a.age * 2}) return b")
+    val result = execute("match (a) where id(a) = 0 with a create (b {age : a.age * 2}) return b")
 
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
 
@@ -91,8 +91,8 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("deletes_single_node") {
     val a = createNode().getId
 
-    val result = execute("start a = node(0) delete a")
-    assertStats(result, nodesDeleted = 1    )
+    val result = execute("match (a) where id(a) = 0 delete a")
+    assertStats(result, nodesDeleted = 1)
 
     result.toList shouldBe empty
     intercept[NotFoundException](graph.inTx(graph.getNodeById(a)))
@@ -101,7 +101,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("multiple_deletes_should_not_break_anything") {
     (1 to 4).foreach(i => createNode())
 
-    val result = execute("start a = node(0),b=node(1,2,3) delete a")
+    val result = execute("match (a), (b) where id(a) = 0 AND id(b) IN [1, 2, 3] delete a")
     assertStats(result, nodesDeleted = 1)
 
     result.toList shouldBe empty
@@ -117,7 +117,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(a, c)
     relate(a, d)
 
-    val result = execute("start a = node(0) match a-[r]->() delete r")
+    val result = execute("match (a) where id(a) = 0 match a-[r]->() delete r")
     assertStats( result, relationshipsDeleted = 3  )
 
     graph.inTx {
@@ -130,7 +130,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     val b = createNode()
     val c = createNode()
 
-    val result = execute("create n with n start x = node(0,1,2) create n-[:REL]->x")
+    val result = execute("create n with n MATCH x WHERE id(x) IN [0, 1, 2] create n-[:REL]->x")
     assertStats(result,
       nodesCreated = 1,
       relationshipsCreated = 3
@@ -148,7 +148,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     createNode("Michael")
     createNode("Peter")
 
-    val result = execute("start n=node(0,1,2) with collect(n.name) as names create ({name : names})")
+    val result = execute("MATCH n WHERE id(n) IN [0, 1, 2] with collect(n.name) as names create ({name : names})")
     assertStats(result,
       propertiesSet = 1,
       nodesCreated = 1
@@ -162,7 +162,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("set_a_property_to_an_empty_collection") {
     createNode("Andres")
 
-    val result = execute("start n = node(0) with filter(x in collect(n.name) WHERE x = 12) as names create ({x : names})")
+    val result = execute("match (n) where id(n) = 0 with filter(x in collect(n.name) WHERE x = 12) as names create ({x : names})")
     assertStats(result,
       propertiesSet = 1,
       nodesCreated = 1
@@ -187,7 +187,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     createNode()
     createNode()
 
-    val r = execute("start a = node(0), b = node(1) create a-[r:REL {param}]->b return r", "param" -> Map("name" -> "Andres", "age" -> 66)).
+    val r = execute("match (a), (b) where id(a) = 0 AND id(b) = 1 create a-[r:REL {param}]->b return r", "param" -> Map("name" -> "Andres", "age" -> 66)).
       toList.head("r").asInstanceOf[Relationship]
     graph.inTx {
       r.getProperty("name") should equal("Andres")
@@ -202,13 +202,13 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(a, b, "HATES")
     relate(a, b, "LOVES")
 
-    intercept[NodeStillHasRelationshipsException](execute("start n = node(0) match n-[r:HATES]->() delete n,r"))
+    intercept[NodeStillHasRelationshipsException](execute("match (n) where id(n) = 0 match n-[r:HATES]->() delete n,r"))
   }
 
   test("delete_and_return") {
     val a = createNode()
 
-    val result = execute("start n = node(0) delete n return n").toList
+    val result = execute("match (n) where id(n) = 0 delete n return n").toList
 
     result should equal(List(Map("n" -> a)))
   }
@@ -261,9 +261,9 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(root, b)
     relate(root, c)
 
-    execute("start root=node(0) match root-->other create (new {name:other.name}), root-[:REL]->new")
+    execute("match (root) where id(root) = 0 match root-->other create (new {name:other.name}), root-[:REL]->new")
 
-    val result = execute("start root=node(0) match root-->other return other.name order by other.name").columnAs[String]("other.name").toList
+    val result = execute("match (root) where id(root) = 0 match root-->other return other.name order by other.name").columnAs[String]("other.name").toList
     result should equal(List("Alfa", "Alfa", "Beta", "Beta", "Gamma", "Gamma"))
   }
 
@@ -294,7 +294,7 @@ return distinct center""")
     val b = createNode()
     relate(a,b)
 
-    execute("""start n = node(0) match p=n-->() delete p""")
+    execute("""match (n) where id(n) = 0 match p=n-->() delete p""")
 
     graph.inTx {
       GlobalGraphOperations.at(graph).getAllNodes.asScala shouldBe empty
@@ -323,7 +323,7 @@ return distinct center""")
   }
 
   test("failed_query_should_not_leave_dangling_transactions") {
-    intercept[EntityNotFoundException](execute("START left=node(1), right=node(3,4) CREATE UNIQUE left-[r:KNOWS]->right RETURN r"))
+    intercept[RuntimeException](execute("RETURN 1 / 0"))
 
     val contextBridge : ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
     contextBridge.getTopLevelTransactionBoundToThisThread( false ) should be(null)
@@ -337,8 +337,8 @@ return distinct center""")
     val map2 = new HashMap[String, Any]()
     map2.put("name", "Anders")
 
-    val r1 = executeScalar[Relationship]("start a=node(0), b=node(1) create unique a-[r:FOO {param}]->b return r", "param" -> map1)
-    val r2 = executeScalar[Relationship]("start a=node(0), b=node(1) create unique a-[r:FOO {param}]->b return r", "param" -> map2)
+    val r1 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique a-[r:FOO {param}]->b return r", "param" -> map1)
+    val r2 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique a-[r:FOO {param}]->b return r", "param" -> map2)
 
     r1 should equal(r2)
   }
@@ -346,7 +346,7 @@ return distinct center""")
     createNode()
     createNode()
 
-    val r1 = executeScalar[Relationship]("start a=node(0), b=node(1) create unique a-[r:FOO]->b set r.foo = 'bar' return r")
+    val r1 = executeScalar[Relationship]("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique a-[r:FOO]->b set r.foo = 'bar' return r")
 
     graph.inTx {
       r1.getProperty("foo") should equal("bar")
@@ -357,8 +357,8 @@ return distinct center""")
     createNode()
     createNode()
 
-    execute("start a=node(0) create unique a-[:X]->({foo:[1,2,3]})")
-    val result = execute("start a=node(0) create unique a-[:X]->({foo:[1,2,3]})")
+    execute("match (a) where id(a) = 0 create unique a-[:X]->({foo:[1,2,3]})")
+    val result = execute("match (a) where id(a) = 0 create unique a-[:X]->({foo:[1,2,3]})")
 
     result.queryStatistics().containsUpdates should be(false)
   }
@@ -366,14 +366,14 @@ return distinct center""")
   test("full_path_in_one_create") {
     createNode()
     createNode()
-    val result = execute("start a=node(0), b=node(1) create a-[:KNOWS]->()-[:LOVES]->b")
+    val result = execute("match (a), (b) where id(a) = 0 AND id(b) = 1 create a-[:KNOWS]->()-[:LOVES]->b")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
   }
 
   test("delete_and_delete_again") {
     createNode()
-    val result = execute("start a=node(0) delete a foreach( x in [1] | delete a)")
+    val result = execute("match (a) where id(a) = 0 delete a foreach( x in [1] | delete a)")
 
     assertStats(result, nodesDeleted = 1)
   }
@@ -381,7 +381,7 @@ return distinct center""")
   test("created_paths_honor_directions") {
     val a = createNode()
     val b = createNode()
-    val result = execute("start a=node(0), b=node(1) create p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
+    val result = execute("match (a), (b) where id(a) = 0 AND id(b) = 1 create p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
 
     result.startNode() should equal(a)
     result.endNode() should equal(b)
@@ -390,7 +390,7 @@ return distinct center""")
   test("create_unique_paths_honor_directions") {
     val a = createNode()
     val b = createNode()
-    val result = execute("start a=node(0), b=node(1) create unique p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
+    val result = execute("match (a), (b) where id(a) = 0 AND id(b) = 1 create unique p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
 
     result.startNode() should equal(a)
     result.endNode() should equal(b)
@@ -403,7 +403,7 @@ return distinct center""")
   test("failure_only_fails_inner_transaction") {
     val tx = graph.beginTx()
     try {
-      execute("start a=node({id}) set a.foo = 'bar' return a","id"->"0")
+      execute("match a where id(a) = {id} set a.foo = 'bar' return a","id"->"0")
     } catch {
       case _: Throwable => tx.failure()
     }
@@ -426,14 +426,14 @@ return distinct center""")
 
   test("can_create_anonymous_nodes_inside_foreach") {
     createNode()
-    val result = execute("start me=node(0) foreach (i in range(1,10) | create me-[:FRIEND]->())")
+    val result = execute("match (me) where id(me) = 0 foreach (i in range(1,10) | create me-[:FRIEND]->())")
 
     result.toList shouldBe empty
   }
 
   test("should_be_able_to_use_external_identifiers_inside_foreach") {
     createNode()
-    val result = execute("start a=node(0), b=node(0) foreach(x in [b] | create x-[:FOO]->a) ")
+    val result = execute("match a, b where id(a) = 0 AND id(b) = 0 foreach(x in [b] | create x-[:FOO]->a) ")
 
     result.toList shouldBe empty
   }

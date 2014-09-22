@@ -28,7 +28,8 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
     columns.foreach(createNode)
 
-    val q="start zero=node(0), one=node(1), two=node(2), three=node(3), four=node(4), five=node(5), six=node(6), seven=node(7), eight=node(8), nine=node(9)" +
+    val q="match zero, one, two, three, four, five, six, seven, eight, nine " +
+      "where id(zero) = 0 AND id(one) = 1 AND id(two) = 2 AND id(three) = 3 AND id(four) = 4 AND id(five) = 5 AND id(six) = 6 AND id(seven) = 7 AND id(eight) = 8 AND id(nine) = 9 " +
       "return zero, one, two, three, four, five, six, seven, eight, nine"
 
     val result = execute(q)
@@ -50,7 +51,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctLabelStatisticsForAdd") {
     val n      = createNode()
-    val result = execute(s"start n=node(${n.getId}) set n:foo:bar")
+    val result = execute(s"match (n) where id(n) = ${n.getId} set n:foo:bar")
     val stats  = result.queryStatistics()
 
     assert(stats.labelsAdded === 2)
@@ -59,8 +60,8 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctLabelStatisticsForRemove") {
     val n      = createNode()
-    execute(s"start n=node(${n.getId}) set n:foo:bar")
-    val result = execute(s"start n=node(${n.getId}) remove n:foo:bar")
+    execute(s"match (n) where id(n) = ${n.getId} set n:foo:bar")
+    val result = execute(s"match (n) where id(n) = ${n.getId} remove n:foo:bar")
     val stats  = result.queryStatistics()
 
     assert(stats.labelsAdded === 0)
@@ -69,7 +70,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctLabelStatisticsForAddAndRemove") {
     val n      = createLabeledNode("foo", "bar")
-    val result = execute(s"start n=node(${n.getId}) set n:baz remove n:foo:bar")
+    val result = execute(s"match (n) where id(n) = ${n.getId} set n:baz remove n:foo:bar")
     val stats  = result.queryStatistics()
 
     assert(stats.labelsAdded === 1)
@@ -79,7 +80,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctLabelStatisticsForLabelAddedTwice") {
     val n      = createLabeledNode("foo", "bar")
-    val result = execute(s"start n=node(${n.getId}) set n:bar:baz")
+    val result = execute(s"match (n) where id(n) = ${n.getId} set n:bar:baz")
     val stats  = result.queryStatistics()
 
     assert(stats.labelsAdded === 1)
@@ -88,7 +89,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctLabelStatisticsForRemovalOfUnsetLabel") {
     val n      = createLabeledNode("foo", "bar")
-    val result = execute(s"start n=node(${n.getId}) remove n:baz:foo")
+    val result = execute(s"match (n) where id(n) = ${n.getId} remove n:baz:foo")
     val stats  = result.queryStatistics()
 
     assert(stats.labelsAdded === 0)

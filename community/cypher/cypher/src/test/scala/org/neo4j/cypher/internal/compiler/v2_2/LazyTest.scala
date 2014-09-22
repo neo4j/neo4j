@@ -111,7 +111,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter: ExecutionResult = engine.execute("start n=node({foo}) match n-->x return x", Map("foo" -> monitoredNode))
+    val iter: ExecutionResult = engine.execute("match n-->x where n = {foo} return x", Map("foo" -> monitoredNode))
 
     //Then:
     assert(limiter.count === 0)
@@ -136,7 +136,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter = engine.execute("start n=node({foo}) return distinct n.name", Map("foo" -> Seq(a, b, c)))
+    val iter = engine.execute("match n where n IN {foo} return distinct n.name", Map("foo" -> Seq(a, b, c)))
 
     //Then, no Runtime exception is thrown
     iter.next()
@@ -156,7 +156,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter = engine.execute("start n=node({a}) return n.name UNION ALL start n=node({b}) return n.name", Map("a" -> a, "b" -> Seq(b, c)))
+    val iter = engine.execute("match n where n = {a} return n.name UNION ALL match n where n IN {b} return n.name", Map("a" -> a, "b" -> Seq(b, c)))
 
     //Then, no Runtime exception is thrown
     iter.next()
@@ -217,7 +217,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     //When:
     graph.inTx {
       counter.source = GlobalGraphOperations.at(graph).getAllNodes.iterator()
-      engine.execute("start n=node(*) return n limit 5", Map.empty[String,Any]).toList
+      engine.execute("match n return n limit 5", Map.empty[String,Any]).toList
     }
 
     //Then:

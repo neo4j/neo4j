@@ -70,8 +70,8 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
   test("should get stuff in the middle") {
     val nodes = createNodes("A", "B", "C", "D", "E")
 
-    val result = execute(
-      s"start n=node(${nodeIds.mkString(",")}) return n order by n.name ASC skip 2 limit 2"
+    val result = executeWithNewPlanner(
+      s"match (n) where id(n) in [${nodeIds.mkString(",")}] return n order by n.name ASC skip 2 limit 2"
     )
 
     result.columnAs[Node]("n").toList should equal(nodes.slice(2, 4).toList)
@@ -80,8 +80,8 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
   test("should get stuff in the middle by param") {
     val nodes = createNodes("A", "B", "C", "D", "E")
 
-    val query = s"start n=node(${nodeIds.mkString(",")}) return n order by n.name ASC skip {s} limit {l}"
-    val result = execute(query, "l" -> 2, "s" -> 2)
+    val query = s"match (n) where id(n) in [${nodeIds.mkString(",")}] return n order by n.name ASC skip {s} limit {l}"
+    val result = executeWithNewPlanner(query, "l" -> 2, "s" -> 2)
 
     result.columnAs[Node]("n").toList should equal(nodes.slice(2, 4).toList)
   }
@@ -107,8 +107,8 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
     val b = createNode("B")
     val c = createNode("C")
 
-    val result = execute( """
-start a  = node(0,1,2,0)
+    val result = executeWithNewPlanner( """
+match (a) where id(a) in [0,1,2,0]
 return distinct a
 order by a.name""")
 
@@ -118,7 +118,7 @@ order by a.name""")
   test("should support column renaming") {
     val a = createNode(Map("name" -> "Andreas"))
 
-    val result = execute("start a = node(0) return a as OneLove")
+    val result = executeWithNewPlanner("match (a) where id(a) = 0 return a as OneLove")
 
     result.columnAs[Node]("OneLove").toList should equal(List(a))
   }
@@ -126,8 +126,8 @@ order by a.name""")
   test("should support column renaming for aggregates as well") {
     createNode(Map("name" -> "Andreas"))
 
-    val result = execute( """
-start a  = node(0)
+    val result = executeWithNewPlanner( """
+match (a) where id(a) = 0
 return count(*) as OneLove""")
 
     result.columnAs[Node]("OneLove").toList should equal(List(1))
@@ -138,8 +138,8 @@ return count(*) as OneLove""")
     createNode("name" -> "B", "age" -> 12)
     createNode("name" -> "C", "age" -> 11)
 
-    intercept[SyntaxException](execute( """
-start a  = node(1,2,3,1)
+    intercept[SyntaxException](executeWithNewPlanner( """
+match (a) where id(a) in [1,2,3,1]
 return distinct a.name
 order by a.age""").toList)
 
@@ -153,9 +153,9 @@ order by a.age""").toList)
     relate(a, b)
     relate(a, c)
 
-    val result = execute( """
-start a  = node(0)
+    val result = executeWithNewPlanner( """
 match a-->b
+where id(a) = 0
 return distinct b
 order by b.name""")
 
@@ -165,8 +165,8 @@ order by b.name""")
   test("should be able to run coalesce") {
     createNode("name" -> "A")
 
-    val result = execute( """
-start a  = node(0)
+    val result = executeWithNewPlanner( """
+match (a) where id(a) = 0
 return coalesce(a.title, a.name)""")
 
     result.toList should equal(List(Map("coalesce(a.title, a.name)" -> "A")))
@@ -175,7 +175,7 @@ return coalesce(a.title, a.name)""")
   test("should allow ordering on aggregate function") {
     createNode()
 
-    val result = execute("start n = node(0) match (n)-[:KNOWS]-(c) return n, count(c) as cnt order by cnt")
+    val result = executeWithNewPlanner("match (n)-[:KNOWS]-(c) where id(n) = 0 return n, count(c) as cnt order by cnt")
     result shouldBe 'isEmpty
   }
 
@@ -183,7 +183,7 @@ return coalesce(a.title, a.name)""")
     createNode()
     createNode()
 
-    intercept[SyntaxException](execute("start n = node(0,1) return n order by n").toList)
+    intercept[SyntaxException](executeWithNewPlanner("match (n) where id(n) in [0,1] return n order by n").toList)
   }
 
   test("arithmetics precedence test") {
@@ -199,26 +199,26 @@ return coalesce(a.title, a.name)""")
   test("should allow addition") {
     createNode("age" -> 36)
 
-    val result = execute("start a=node(0) return a.age + 5 as newAge")
+    val result = executeWithNewPlanner("match (a) where id(a) = 0 return a.age + 5 as newAge")
     result.toList should equal(List(Map("newAge" -> 41)))
   }
 
   test("abs Function") {
     createNode()
-    val result = execute("start a=node(0) return abs(-1)")
+    val result = executeWithNewPlanner("match (a) where id(a) = 0 return abs(-1)")
     result.toList should equal(List(Map("abs(-1)" -> 1)))
   }
 
   test("exposes Issue 198") {
     createNode()
 
-    execute("start a=node(*) return a, count(*) order by COUNT(*)").toList
+    executeWithNewPlanner("match (a) return a, count(*) order by COUNT(*)").toList
   }
 
   test("functions should return null if they get path containing unbound") {
     createNode()
 
-    val result = execute("start a=node(0) optional match p=a-[r]->() return length(nodes(p)), id(r), type(r), nodes(p), rels(p)").toList
+    val result = executeWithNewPlanner("match (a) where id(a) = 0 optional match p=a-[r]->() return length(nodes(p)), id(r), type(r), nodes(p), rels(p)").toList
 
     result should equal(List(Map("length(nodes(p))" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)))
   }
@@ -317,9 +317,10 @@ return coalesce(a.title, a.name)""")
     relate(peter, bread, "ATE", Map("times" -> 7))
     relate(peter, meat, "ATE", Map("times" -> 4))
 
-    execute(
-      """    start me=node(1)
+    executeWithNewPlanner(
+      """
     match me-[r1:ATE]->food<-[r2:ATE]-you
+    where id(me) = 1
 
     with me,count(distinct r1) as H1,count(distinct r2) as H2,you
     match me-[r1:ATE]->food<-[r2:ATE]-you
@@ -335,7 +336,7 @@ return coalesce(a.title, a.name)""")
     relate(a, b)
     relate(b, c)
 
-    val result = eengine.execute("cypher 1.9 start a=node(0), c=node(2) return shortestPath(a-[*]->c)").columnAs[List[Path]]("shortestPath(a-[*]->c)").toList.head.head
+    val result = eengine.execute("match a, c where id(a) = 0 and id(c) = 2 return shortestPath(a-[*]->c)").columnAs[Path]("shortestPath(a-[*]->c)").toList.head
     result.endNode() should equal(c)
     result.startNode() should equal(a)
     result.length() should equal(2)
@@ -416,8 +417,8 @@ return coalesce(a.title, a.name)""")
     createNode()
 
     //WHEN
-    val result = execute(
-      """START n=node(*)
+    val result = executeWithNewPlanner(
+      """MATCH (n)
         RETURN distinct ID(n) as id
         ORDER BY id DESC""")
 
