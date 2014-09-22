@@ -26,14 +26,9 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
-class MuninnReadPageCursor extends MuninnPageCursor
+final class MuninnReadPageCursor extends MuninnPageCursor
 {
     private boolean optimisticLock;
-
-    public MuninnReadPageCursor( MuninnCursorFreelist freelist )
-    {
-        super( freelist );
-    }
 
     @Override
     protected void unpinCurrentPage()
@@ -276,9 +271,43 @@ class MuninnReadPageCursor extends MuninnPageCursor
                 // lock during the faulting, and then a read lock once the
                 // fault itself is over.
                 page.unlockRead( lockStamp );
+                // Forget about this page in case pin() throws and the cursor
+                // is closed; we don't want unpinCurrentPage() to try unlocking
+                // this page.
+                page = null;
                 pin( currentPageId );
             }
         }
         return needsRetry;
+    }
+
+    @Override
+    public void putByte( byte value )
+    {
+        throw new IllegalStateException( "Cannot write to read-locked page" );
+    }
+
+    @Override
+    public void putLong( long value )
+    {
+        throw new IllegalStateException( "Cannot write to read-locked page" );
+    }
+
+    @Override
+    public void putInt( int value )
+    {
+        throw new IllegalStateException( "Cannot write to read-locked page" );
+    }
+
+    @Override
+    public void putBytes( byte[] data )
+    {
+        throw new IllegalStateException( "Cannot write to read-locked page" );
+    }
+
+    @Override
+    public void putShort( short value )
+    {
+        throw new IllegalStateException( "Cannot write to read-locked page" );
     }
 }

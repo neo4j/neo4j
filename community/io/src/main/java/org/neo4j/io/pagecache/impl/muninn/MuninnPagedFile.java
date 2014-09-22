@@ -57,8 +57,7 @@ final class MuninnPagedFile implements PagedFile
 
     final PageSwapper swapper;
     final PageFlusher flusher;
-    private final MuninnCursorFreelist readCursors;
-    private final MuninnCursorFreelist writeCursors;
+    private final MuninnCursorPool cursorPool;
 
     // Accessed via Unsafe
     private volatile int referenceCounter;
@@ -69,12 +68,14 @@ final class MuninnPagedFile implements PagedFile
             MuninnPageCache pageCache,
             int pageSize,
             PageSwapperFactory swapperFactory,
-            AtomicReference<MuninnPage> freelist,
+            AtomicReference<MuninnPage> pageFreelist,
+            MuninnCursorPool cursorPool,
             PageCacheMonitor monitor ) throws IOException
     {
         this.pageCache = pageCache;
         this.pageSize = pageSize;
-        this.freelist = freelist;
+        this.freelist = pageFreelist;
+        this.cursorPool = cursorPool;
         this.monitor = monitor;
 
         // The translation table and its locks are striped to reduce lock
@@ -94,27 +95,10 @@ final class MuninnPagedFile implements PagedFile
         swapper = new MonitoredPageSwapper( swapperFactory.createPageSwapper( file, pageSize, onEviction ), monitor );
         flusher = new PageFlusher( swapper );
         initialiseLastPageId( swapper.getLastPageId() );
-
-        readCursors = new MuninnCursorFreelist()
-        {
-            @Override
-            protected MuninnPageCursor createNewCursor()
-            {
-                return new MuninnReadPageCursor( this );
-            }
-        };
-        writeCursors = new MuninnCursorFreelist()
-        {
-            @Override
-            protected MuninnPageCursor createNewCursor()
-            {
-                return new MuninnWritePageCursor( this );
-            }
-        };
     }
 
     @Override
-    public PageCursor io( long pageId, int pf_flags ) throws IOException
+    public PageCursor io( long pageId, int pf_flags )
     {
         if ( getRefCount() == 0 )
         {
@@ -136,13 +120,11 @@ final class MuninnPagedFile implements PagedFile
         MuninnPageCursor cursor;
         if ( (pf_flags & PF_SHARED_LOCK) == 0 )
         {
-//            cursor = writeCursors.takeCursor();
-            cursor = new MuninnWritePageCursor( null );
+            cursor = cursorPool.takeWriteCursor();
         }
         else
         {
-//            cursor = readCursors.takeCursor();
-            cursor = new MuninnReadPageCursor( null );
+            cursor = cursorPool.takeReadCursor();
         }
 
         cursor.initialise( this, pageId, pf_flags );
@@ -190,7 +172,7 @@ final class MuninnPagedFile implements PagedFile
     }
 
     @Override
-    public long getLastPageId() throws IOException
+    public long getLastPageId()
     {
         return lastPageId;
     }
