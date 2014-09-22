@@ -61,10 +61,10 @@ class LabelsAcceptanceTest extends ExecutionEngineFunSuite
 
   test("Using_labels_in_RETURN_clauses") {
     createNode()
-    assertThat("START n=node(0) RETURN labels(n)", List())
+    assertThat("match (n) where id(n) = 0 RETURN labels(n)", List())
 
     createNode()
-    assertThat("START n=node(0) SET n :FOO RETURN labels(n)", List("FOO"))
+    assertThat("match (n) where id(n) = 0 SET n :FOO RETURN labels(n)", List("FOO"))
   }
 
 

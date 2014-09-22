@@ -91,6 +91,9 @@ trait NewPlannerTestSupport extends CypherTestSupport {
       case ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, _) => RewindableExecutionResult(inner)
     }
 
+  def executeWithOlderPlanner(queryText: String, params: (String, Any)*): ExecutionResult =
+    eengine.execute("cypher 2.1 " + queryText, params.toMap)
+
   override def execute(queryText: String, params: (String, Any)*) =
     monitoringNewPlanner(innerExecute(queryText, params: _*)) { trace =>
       trace.collectFirst {
