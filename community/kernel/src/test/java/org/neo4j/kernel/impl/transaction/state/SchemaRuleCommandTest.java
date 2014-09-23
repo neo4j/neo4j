@@ -24,20 +24,25 @@ import java.util.Collection;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoTransactionStoreApplier;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV1;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV1;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
@@ -49,7 +54,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.DEFAULT_HIGH_ID_TRACKING;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.UniquenessConstraintRule.uniquenessConstraintRule;
 
@@ -68,10 +72,28 @@ public class SchemaRuleCommandTest
         command.init( beforeRecords, afterRecords, rule );
 
         // WHEN
-        executor.visitSchemaRuleCommand( command );
+        storeApplier.visitSchemaRuleCommand( command );
 
         // THEN
         verify( store ).updateRecord( first( afterRecords ) );
+    }
+
+    @Test
+    public void shouldCreateIndexForCreatedSchemaRule() throws Exception
+    {
+        // GIVEN
+        Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
+        Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
+
+        when( neoStore.getSchemaStore() ).thenReturn( store );
+
+        SchemaRuleCommand command = new SchemaRuleCommand();
+        command.init( beforeRecords, afterRecords, rule );
+
+        // WHEN
+        indexApplier.visitSchemaRuleCommand( command );
+
+        // THEN
         verify( indexes ).createIndex( rule );
     }
 
@@ -88,7 +110,7 @@ public class SchemaRuleCommandTest
         command.init( beforeRecords, afterRecords, uniquenessConstraintRule( id, labelId, propertyKey, 0 )  );
 
         // WHEN
-        executor.visitSchemaRuleCommand( command );
+        storeApplier.visitSchemaRuleCommand( command );
 
         // THEN
         verify( store ).updateRecord( first( afterRecords ) );
@@ -108,10 +130,28 @@ public class SchemaRuleCommandTest
         command.init( beforeRecords, afterRecords, rule );
 
         // WHEN
-        executor.visitSchemaRuleCommand( command );
+        storeApplier.visitSchemaRuleCommand( command );
 
         // THEN
         verify( store ).updateRecord( first( afterRecords ) );
+    }
+
+    @Test
+    public void shouldDropSchemaRuleFromIndex() throws Exception
+    {
+        // GIVEN
+        Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
+        Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
+
+        when( neoStore.getSchemaStore() ).thenReturn( store );
+
+        SchemaRuleCommand command = new SchemaRuleCommand();
+        command.init( beforeRecords, afterRecords, rule );
+
+        // WHEN
+        indexApplier.visitSchemaRuleCommand( command );
+
+        // THEN
         verify( indexes ).dropIndex( rule );
     }
 
@@ -167,9 +207,12 @@ public class SchemaRuleCommandTest
     private final NeoStore neoStore = mock( NeoStore.class );
     private final SchemaStore store = mock( SchemaStore.class );
     private final IndexingService indexes = mock( IndexingService.class );
-    private final NeoTransactionStoreApplier executor = new NeoTransactionStoreApplier( neoStore, indexes,
-            mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup(),
-            txId, DEFAULT_HIGH_ID_TRACKING, false );
+    private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
+    private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStore,
+            mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup(), txId );
+    private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
+            labelScanStore, mock( NodeStore.class ), mock( PropertyStore.class ), mock( CacheAccessBackDoor.class ),
+            mock( PropertyLoader.class ), TransactionApplicationMode.INTERNAL );
     private final PhysicalLogNeoCommandReaderV1 reader = new PhysicalLogNeoCommandReaderV1();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 

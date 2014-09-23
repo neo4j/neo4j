@@ -38,19 +38,20 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoTransactionIndexApplier;
 import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 
 public class NeoTransactionIndexApplierTest
 {
@@ -68,8 +69,8 @@ public class NeoTransactionIndexApplierTest
     public void shouldUpdateIndexesOnNodeCommands() throws IOException
     {
         // given
-        final NeoTransactionIndexApplier applier = new NeoTransactionIndexApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
+                nodeStore, propertyStore, cacheAccess, propertyLoader, EXTERNAL );
 
         final NodeRecord before = new NodeRecord( 11 );
         final NodeRecord after = new NodeRecord( 12 );
@@ -87,15 +88,15 @@ public class NeoTransactionIndexApplierTest
         final LazyIndexUpdates expectedUpdates = new LazyIndexUpdates(
                 nodeStore, propertyStore, emptyPropCommands, nodeCommands, propertyLoader );
 
-        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ) );
+        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ), eq( false ) );
     }
 
     @Test
     public void shouldUpdateLabelStoreScanOnNodeCommands() throws IOException
     {
         // given
-        final NeoTransactionIndexApplier applier = new NeoTransactionIndexApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
+                nodeStore, propertyStore, cacheAccess, propertyLoader, EXTERNAL );
 
         final NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 17, Collections.<DynamicRecord>emptySet() );
@@ -122,15 +123,15 @@ public class NeoTransactionIndexApplierTest
         final LazyIndexUpdates expectedUpdates = new LazyIndexUpdates(
                 nodeStore, propertyStore, emptyPropCommands, nodeCommands, propertyLoader );
 
-        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ) );
+        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ), eq( false ) );
     }
 
     @Test
     public void shouldUpdateIndexesOnPropertyCommandsWhenThePropertyIsOnANode() throws IOException
     {
         // given
-        final NeoTransactionIndexApplier applier = new NeoTransactionIndexApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
+                nodeStore, propertyStore, cacheAccess, propertyLoader, EXTERNAL );
 
         final PropertyRecord before = new PropertyRecord( 11 );
         final PropertyRecord after = new PropertyRecord( 12 );
@@ -151,15 +152,15 @@ public class NeoTransactionIndexApplierTest
         final LazyIndexUpdates expectedUpdates = new LazyIndexUpdates(
                 nodeStore, propertyStore, propCommands, emptyNodeCommands, propertyLoader );
 
-        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ) );
+        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ), eq( false ) );
     }
 
     @Test
     public void shouldNotUpdateIndexesOnPropertyCommandsWhenThePropertyIsNotOnANode() throws IOException
     {
         // given
-        final NeoTransactionIndexApplier applier = new NeoTransactionIndexApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
+                nodeStore, propertyStore, cacheAccess, propertyLoader, EXTERNAL );
 
         final PropertyRecord before = new PropertyRecord( 11 );
         final PropertyRecord after = new PropertyRecord( 12 );
@@ -171,6 +172,6 @@ public class NeoTransactionIndexApplierTest
 
         // then
         assertTrue( result );
-        verify( indexingService, never() ).updateIndexes( Matchers.<LazyIndexUpdates>any() );
+        verify( indexingService, never() ).updateIndexes( Matchers.<LazyIndexUpdates>any(), anyBoolean() );
     }
 }

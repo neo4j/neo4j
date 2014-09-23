@@ -29,18 +29,20 @@ import org.mockito.Matchers;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.HighIdTrackerFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.store.CountsStore;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.HighIdTracker;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
@@ -49,19 +51,17 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.DEFAULT_HIGH_ID_TRACKING;
-import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
-
 public class TransactionRepresentationStoreApplierTest
 {
     private final IndexingService indexService = mock( IndexingService.class );
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private final NeoStore neoStore = mock( NeoStore.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
-    private final LockService lockService = mock( LockService.class );
+    private final LockService lockService = new ReentrantLockService();
     private final LegacyIndexApplier.ProviderLookup legacyIndexProviderLookup =
             mock( LegacyIndexApplier.ProviderLookup.class );
     private final IndexConfigStore indexConfigStore = mock( IndexConfigStore.class );
+    private final IdOrderingQueue queue = mock( IdOrderingQueue.class );
     private final int transactionId = 12;
 
     {
@@ -72,38 +72,50 @@ public class TransactionRepresentationStoreApplierTest
     public void transactionRepresentationShouldAcceptApplierVisitor() throws IOException
     {
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier( indexService,
-                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
-                DEFAULT_HIGH_ID_TRACKING, BYPASS );
+                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup,
+                indexConfigStore, queue );
 
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
 
         try ( LockGroup locks = new LockGroup() )
         {
-            applier.apply( transaction, locks, transactionId, false );
+            applier.apply( transaction, locks, transactionId, TransactionApplicationMode.INTERNAL );
         }
 
         verify( transaction, times( 1 ) ).accept( Matchers.<Visitor<Command, IOException>>any() );
     }
 
     @Test
-    public void shouldUpdateIdGeneratorsWhenOnRecovery() throws IOException
+    public void shouldUpdateIdGeneratorsOnExternalCommit() throws IOException
     {
-        HighIdTracker tracker = mock( HighIdTracker.class );
-        HighIdTrackerFactory highIdTrackerFactory = mock( HighIdTrackerFactory.class );
-        when( highIdTrackerFactory.create( true ) ).thenReturn( tracker );
+        // GIVEN
+        NodeStore nodeStore = mock( NodeStore.class );
+        when( neoStore.getNodeStore() ).thenReturn( nodeStore );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier( indexService,
-                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
-                highIdTrackerFactory, BYPASS );
+                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore, queue );
+        long nodeId = 5L;
+        TransactionRepresentation transaction = createNodeTransaction( nodeId );
 
-        TransactionRepresentation transaction = mock( TransactionRepresentation.class );
-
+        // WHEN
         try ( LockGroup locks = new LockGroup() )
         {
-            applier.apply( transaction, locks, transactionId, true );
+            applier.apply( transaction, locks, transactionId, TransactionApplicationMode.EXTERNAL );
         }
+        verify( nodeStore, times( 1 ) ).setHighestPossibleIdInUse( nodeId );
+    }
 
-        verify( transaction, times( 1 ) ).accept( Matchers.<Visitor<Command, IOException>>any() );
-        verify( tracker, times( 1 ) ).apply();
+    private TransactionRepresentation createNodeTransaction( long nodeId )
+    {
+        return new PhysicalTransactionRepresentation( Arrays.asList( createNodeCommand( nodeId ) ) );
+    }
+
+    private Command createNodeCommand( long nodeId )
+    {
+        NodeCommand command = new NodeCommand();
+        NodeRecord after = new NodeRecord( nodeId );
+        after.setInUse( true );
+        command.init( new NodeRecord( nodeId ), after );
+        return command;
     }
 
     @Test
@@ -113,13 +125,13 @@ public class TransactionRepresentationStoreApplierTest
         IdOrderingQueue queue = mock( IdOrderingQueue.class );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier( indexService,
                 labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
-                DEFAULT_HIGH_ID_TRACKING, queue );
+                queue );
         TransactionRepresentation transaction = new PhysicalTransactionRepresentation( indexTransaction() );
 
         // WHEN
         try ( LockGroup locks = new LockGroup() )
         {
-            applier.apply( transaction, locks, transactionId, false );
+            applier.apply( transaction, locks, transactionId, TransactionApplicationMode.INTERNAL );
         }
 
         // THEN

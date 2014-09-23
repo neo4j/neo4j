@@ -286,10 +286,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         else
         {
             cursor.putByte( Record.NOT_IN_USE.byteValue() );
-            if ( !isInRecoveryMode() )
-            {
-                freeId( id );
-            }
+            freeId( id );
         }
     }
 

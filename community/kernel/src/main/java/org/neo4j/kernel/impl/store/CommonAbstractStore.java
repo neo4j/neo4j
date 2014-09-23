@@ -537,7 +537,11 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      */
     public void freeId( long id )
     {
-        idGenerator.freeId( id );
+        if ( idGenerator != null )
+        {
+            idGenerator.freeId( id );
+        }
+        // else we're deleting records as part of applying transactions during recovery, and that's fine
     }
 
     /**
@@ -610,29 +614,12 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     protected void assertIdExists( long position )
     {
-        if ( !isInRecoveryMode() && (position > getHighId() || !storeOk) )
+        if ( (position > getHighId() || !storeOk) )
         {
             throw new InvalidRecordException(
-                    "Position[" + position + "] requested for high id[" + getHighId() + "], store is ok[" + storeOk +
-                    "] recovery[" + isInRecoveryMode() + "]", causeOfStoreNotOk );
+                    "Position[" + position + "] requested for high id[" + getHighId() +
+                    "], store is ok[" + storeOk + "]", causeOfStoreNotOk );
         }
-    }
-
-    private boolean isRecovered = false;
-
-    public boolean isInRecoveryMode()
-    {
-        return isRecovered;
-    }
-
-    public void setRecovered()
-    {
-        isRecovered = true;
-    }
-
-    public void unsetRecovered()
-    {
-        isRecovered = false;
     }
 
     /**

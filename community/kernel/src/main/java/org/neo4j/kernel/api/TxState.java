@@ -113,7 +113,7 @@ public interface TxState
 
         void visitCreatedRelationship( long id, int type, long startNode, long endNode );
 
-        void visitDeletedRelationship( long id );
+        void visitDeletedRelationship( long id, int type, long startNode, long endNode );
 
         void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
                                        Iterator<Integer> removed );
@@ -156,7 +156,7 @@ public interface TxState
         }
 
         @Override
-        public void visitDeletedRelationship( long id )
+        public void visitDeletedRelationship( long id, int type, long startNode, long endNode )
         {   // Ignore
         }
 

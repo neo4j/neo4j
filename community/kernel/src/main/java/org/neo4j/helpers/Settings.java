@@ -29,6 +29,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileUtils;
@@ -904,7 +905,7 @@ public final class Settings
             }
             catch ( IllegalArgumentException e )
             {
-                throw new IllegalArgumentException( String.format( "Bad value '%s' for setting '%s': %s", value, name(), e.getMessage() ) );
+                throw new InvalidSettingException( name(), value, e.getMessage() );
             }
 
 

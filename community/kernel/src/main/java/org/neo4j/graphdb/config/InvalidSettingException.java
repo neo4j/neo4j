@@ -17,16 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.graphdb.config;
 
-import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
-
-public interface CommitProcessFactory
+/**
+ * Thrown when a configuration setting is, for one reason or another, invalid.
+ */
+public class InvalidSettingException extends RuntimeException
 {
-    TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore, KernelHealth kernelHealth,
-                                     NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-                                     NeoStoreInjectedTransactionValidator validator, TransactionApplicationMode mode );
+    private final String name;
+
+    public InvalidSettingException( String name, String value, String message )
+    {
+        super(String.format( "Bad value '%s' for setting '%s': %s", value, name, message ));
+        this.name = name;
+    }
+
+    public InvalidSettingException( String name, String message )
+    {
+        super(message);
+        this.name = name;
+    }
+
+    public String settingName()
+    {
+        return name;
+    }
+
 }

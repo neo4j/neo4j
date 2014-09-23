@@ -230,7 +230,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     public void updateRecord( NodeRecord record )
     {
         writeRecord( record, false );
-        if ( !record.inUse() && !isInRecoveryMode() )
+        if ( !record.inUse() )
         {
             freeId( record.getId() );
         }
@@ -396,20 +396,6 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         {
             dynamicLabelStore.updateRecord( record );
         }
-    }
-
-    @Override
-    public void setRecovered()
-    {
-        dynamicLabelStore.setRecovered();
-        super.setRecovered();
-    }
-
-    @Override
-    public void unsetRecovered()
-    {
-        dynamicLabelStore.unsetRecovered();
-        super.unsetRecovered();
     }
 
     @Override

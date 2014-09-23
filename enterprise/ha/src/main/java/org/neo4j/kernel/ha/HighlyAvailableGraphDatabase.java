@@ -89,6 +89,7 @@ import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -418,12 +419,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         return new CommitProcessFactory()
         {
             @Override
-            public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore, KernelHealth
-                    kernelHealth, NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier, NeoStoreInjectedTransactionValidator validator, boolean recovery )
+            public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
+                    KernelHealth kernelHealth, NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
+                    NeoStoreInjectedTransactionValidator validator, TransactionApplicationMode mode )
             {
                 TransactionRepresentationCommitProcess inner = (TransactionRepresentationCommitProcess)
                         defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
-                                storeApplier, validator, recovery );
+                                storeApplier, validator, mode );
                 new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
                         memberStateMachine, validator, inner );
 

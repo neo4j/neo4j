@@ -249,7 +249,7 @@ public class CommandWriter implements NeoCommandHandler
     @Override
     public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
     {
-        channel.put(  NeoCommandType.INDEX_DEFINE_COMMAND );
+        channel.put( NeoCommandType.INDEX_DEFINE_COMMAND );
         byte zero = 0;
         writeIndexCommandHeader( zero, zero, zero, zero, zero, zero, zero );
         writeMap( command.getIndexNameIdRange() );
@@ -260,15 +260,11 @@ public class CommandWriter implements NeoCommandHandler
     @Override
     public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
     {
-        long delta = command.delta();
-        if ( delta != 0 )
-        { // only write commands that will make a difference
-            channel.put( NeoCommandType.UPDATE_COUNTS_COMMAND )
-                   .putInt( command.startLabelId() )
-                   .putInt( command.typeId() )
-                   .putInt( command.endLabelId() )
-                   .putLong( delta );
-        }
+        channel.put( NeoCommandType.UPDATE_COUNTS_COMMAND );
+        channel.putInt( command.startLabelId() )
+               .putInt( command.typeId() )
+               .putInt( command.endLabelId() )
+               .putLong( command.delta() );
         return true;
     }
 

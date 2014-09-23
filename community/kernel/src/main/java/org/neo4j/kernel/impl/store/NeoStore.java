@@ -408,32 +408,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         }
     }
 
-    public void setRecoveredStatus( boolean status )
-    {
-        if ( status )
-        {
-            setRecovered();
-            nodeStore.setRecovered();
-            propStore.setRecovered();
-            relStore.setRecovered();
-            relTypeStore.setRecovered();
-            labelTokenStore.setRecovered();
-            schemaStore.setRecovered();
-            relGroupStore.setRecovered();
-        }
-        else
-        {
-            unsetRecovered();
-            nodeStore.unsetRecovered();
-            propStore.unsetRecovered();
-            relStore.unsetRecovered();
-            relTypeStore.unsetRecovered();
-            labelTokenStore.unsetRecovered();
-            schemaStore.unsetRecovered();
-            relGroupStore.unsetRecovered();
-        }
-    }
-
     public StoreId getStoreId()
     {
         return new StoreId( getCreationTime(), getRandomNumber(), getUpgradeTime(), getUpgradeId() );

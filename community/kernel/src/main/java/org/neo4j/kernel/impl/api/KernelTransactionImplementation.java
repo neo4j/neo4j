@@ -380,7 +380,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 }
 
                 @Override
-                public void visitDeletedRelationship( long id )
+                public void visitDeletedRelationship( long id, int type, long startNode, long endNode )
                 {
                     try
                     {
@@ -778,6 +778,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 throw new TransactionFailureException( Status.Transaction.CouldNotRollback, e,
                         "Could not drop created constraint indexes" );
+            }
+
+            // Free any acquired id's
+            if (txState != null)
+            {
+                txState.accept( new TxState.VisitorAdapter()
+                {
+                    @Override
+                    public void visitCreatedNode( long id )
+                    {
+                        storeLayer.releaseNode(id);
+                    }
+
+                    @Override
+                    public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+                    {
+                        storeLayer.releaseRelationship( id );
+                    }
+                } );
             }
 
             if ( hasTxStateWithChanges() )

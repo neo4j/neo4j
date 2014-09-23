@@ -17,16 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.util.function;
 
-import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
-
-public interface CommitProcessFactory
+/**
+ * Represents a value that may or may not exist.
+ */
+public interface Optional<TYPE>
 {
-    TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore, KernelHealth kernelHealth,
-                                     NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-                                     NeoStoreInjectedTransactionValidator validator, TransactionApplicationMode mode );
+    TYPE get();
+    boolean isPresent();
+
+    Optional<TYPE> or(Optional<TYPE> secondChoice);
+    Optional<TYPE> or(TYPE secondChoice);
 }
+

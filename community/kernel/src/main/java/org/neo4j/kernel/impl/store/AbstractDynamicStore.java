@@ -260,10 +260,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         else
         {
             cursor.putByte( Record.NOT_IN_USE.byteValue() );
-            if ( !isInRecoveryMode() )
-            {
-                freeId( recordId );
-            }
+            freeId( recordId );
         }
     }
 

@@ -178,6 +178,20 @@ public class PersistenceCache
             }
 
             @Override
+            public void visitDeletedNode( long id )
+            {
+                evictNode( id );
+            }
+
+            @Override
+            public void visitDeletedRelationship( long id, int type, long startNode, long endNode )
+            {
+                evictRelationship( id );
+                // TODO We would like to do the patch rel chain position here as well, but we just don't have all the
+                // required information here
+            }
+
+            @Override
             public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
                     Iterator<DefinedProperty> changed, Iterator<Integer> removed )
             {
@@ -261,12 +275,12 @@ public class PersistenceCache
                 {
                     int type = types.next();
                     Iterator<Long> loopsChanges = added.loopsChanges( type );
-                    RelIdArray idArray = loopsChanges == null ? new RelIdArray( type ) :
+                    RelIdArray ids = loopsChanges == null ? new RelIdArray( type ) :
                         new RelIdArrayWithLoops( type );
-                    addIds( idArray, added.outgoingChanges( type ), DirectionWrapper.OUTGOING );
-                    addIds( idArray, added.incomingChanges( type ), DirectionWrapper.INCOMING );
-                    addIds( idArray, loopsChanges, DirectionWrapper.BOTH );
-                    result.put( type, idArray );
+                    addIds( ids, added.outgoingChanges( type ), DirectionWrapper.OUTGOING );
+                    addIds( ids, added.incomingChanges( type ), DirectionWrapper.INCOMING );
+                    addIds( ids, loopsChanges, DirectionWrapper.BOTH );
+                    result.put( type, ids );
                 }
                 return result;
             }
@@ -300,6 +314,7 @@ public class PersistenceCache
                     addIds( ids, removed.outgoingChanges( type ) );
                     addIds( ids, removed.incomingChanges( type ) );
                     addIds( ids, removed.loopsChanges( type ) );
+                    result.put( type, ids );
                 }
                 return result;
             }
@@ -494,6 +509,11 @@ public class PersistenceCache
     public void reserveNode( long nodeId )
     {
         nodeCache.put( new NodeImplReservation( nodeId ) );
+    }
+
+    public void releaseNode(long nodeId)
+    {
+        nodeCache.remove( nodeId );
     }
 
     /**

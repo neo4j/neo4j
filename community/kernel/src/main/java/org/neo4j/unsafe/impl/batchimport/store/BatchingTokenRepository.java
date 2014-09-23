@@ -94,21 +94,13 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
         }
 
         // Store them
-        store.setRecovered();
-        try
+        int highestId = (int) store.getHighestPossibleIdInUse();
+        for ( T record : recordAccess.records() )
         {
-            int highestId = (int) store.getHighestPossibleIdInUse();
-            for ( T record : recordAccess.records() )
-            {
-                store.updateRecord( record );
-                highestId = max( highestId, record.getId() );
-            }
-            store.setHighestPossibleIdInUse( highestId );
+            store.updateRecord( record );
+            highestId = max( highestId, record.getId() );
         }
-        finally
-        {
-            store.unsetRecovered();
-        }
+        store.setHighestPossibleIdInUse( highestId );
     }
 
     private Iterable<Map.Entry<Integer,String>> sortCreatedTokensById()

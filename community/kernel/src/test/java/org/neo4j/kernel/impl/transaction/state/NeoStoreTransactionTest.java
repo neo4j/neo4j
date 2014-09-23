@@ -55,13 +55,15 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CommandApplierFacade;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -81,23 +83,15 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
-import org.neo4j.kernel.impl.transaction.command.NeoTransactionIndexApplier;
-import org.neo4j.kernel.impl.transaction.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
-import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
@@ -114,6 +108,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -135,7 +130,7 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
-import static org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.DEFAULT_HIGH_ID_TRACKING;
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 import static org.neo4j.kernel.impl.store.UniquenessConstraintRule.uniquenessConstraintRule;
@@ -384,7 +379,6 @@ public class NeoStoreTransactionTest
         // GIVEN
         TransactionRecordState writeTransaction = newWriteTransaction().first();
         int nodeId = 1;
-//        writeTransaction.setCommitTxId( nodeId );
         writeTransaction.nodeCreate( nodeId );
         int propertyKey = 1;
         Object value = 5;
@@ -685,7 +679,7 @@ public class NeoStoreTransactionTest
     }
 
     @Test
-    public void shouldUpdateHighIdsOnRecoveredTransaction() throws Exception
+    public void shouldUpdateHighIdsOnExternalTransaction() throws Exception
     {
         // GIVEN
         TransactionRecordState tx = newWriteTransaction().first();
@@ -710,7 +704,7 @@ public class NeoStoreTransactionTest
         RecoveryCreatingCopyingNeoCommandHandler recoverer = new RecoveryCreatingCopyingNeoCommandHandler();
         toCommit.accept( recoverer );
 
-        commitRecovered( recoverer.getAsRecovered(), 3 );
+        commit( recoverer.getAsRecovered(), 3, TransactionApplicationMode.EXTERNAL );
 
         // THEN
         assertEquals( "NodeStore", nodeId+1, neoStore.getNodeStore().getHighId() );
@@ -839,7 +833,7 @@ public class NeoStoreTransactionTest
 
         // -- and a tx creating a node with that label and property key
         IteratorCollector<NodePropertyUpdate> indexUpdates = new IteratorCollector<>( 0 );
-        doAnswer( indexUpdates ).when( mockIndexing ).updateIndexes( any( IndexUpdates.class ) );
+        doAnswer( indexUpdates ).when( mockIndexing ).updateIndexes( any( IndexUpdates.class ), anyBoolean() );
         tx = newWriteTransaction().first();
         tx.nodeCreate( nodeId );
         tx.addLabelToNode( labelId, nodeId );
@@ -851,17 +845,17 @@ public class NeoStoreTransactionTest
         {
             commitProcess().commit( representation, locks );
         }
-        verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
+        verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ), anyBoolean() );
         indexUpdates.assertContent( expectedUpdate );
 
         reset( mockIndexing );
         indexUpdates = new IteratorCollector<>( 0 );
-        doAnswer( indexUpdates ).when( mockIndexing ).updateIndexes( any( IndexUpdates.class ) );
+        doAnswer( indexUpdates ).when( mockIndexing ).updateIndexes( any( IndexUpdates.class ), anyBoolean() );
 
         // WHEN
         // -- later recovering that tx, there should be only one update
-        commitRecovered( recoverer.getAsRecovered(), 2 );
-        verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
+        commit( recoverer.getAsRecovered(), 2, TransactionApplicationMode.RECOVERY );
+        verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ), anyBoolean() );
         indexUpdates.assertContent( expectedUpdate );
     }
 
@@ -1415,33 +1409,32 @@ public class NeoStoreTransactionTest
 
         cacheAccessBackDoor = mock( CacheAccessBackDoor.class );
         mockIndexing = mock( IndexingService.class );
-	}
+    }
 
     private TransactionRepresentationCommitProcess commitProcess() throws InterruptedException, ExecutionException, IOException
     {
-    	return commitProcess( mockIndexing );
+        return commitProcess( mockIndexing );
     }
 
     private long nextTxId = BASE_TX_ID + 1;
 
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws InterruptedException, ExecutionException, IOException
     {
-    	TransactionAppender appenderMock = mock( TransactionAppender.class );
+        TransactionAppender appenderMock = mock( TransactionAppender.class );
         when( appenderMock.append( Matchers.<TransactionRepresentation>any()) ).thenReturn( nextTxId++ );
         LogicalTransactionStore txStoreMock = mock ( LogicalTransactionStore.class );
         when( txStoreMock.getAppender() ).thenReturn(appenderMock);
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
         when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
-                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null,
-                DEFAULT_HIGH_ID_TRACKING, null );
+                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null, null );
 
         // Call this just to make sure the counters have been initialized.
         // This is only a problem in a mocked environment like this.
         neoStore.nextCommittingTransactionId();
 
         return new TransactionRepresentationCommitProcess( txStoreMock, mock( KernelHealth.class ),
-                neoStore, applier, false );
+                neoStore, applier, INTERNAL );
     }
 
     @After
@@ -1496,7 +1489,7 @@ public class NeoStoreTransactionTest
         }
 
         @Override
-        public void updateIndexes( IndexUpdates updates )
+        public void updateIndexes( IndexUpdates updates, boolean forceIdempotency )
         {
             this.updates.addAll( asCollection( updates ) );
         }
@@ -1504,22 +1497,19 @@ public class NeoStoreTransactionTest
 
     private static final long[] none = new long[0];
 
-    private void commitRecovered( TransactionRepresentation recoveredTx, long txId ) throws Exception
+    private void commit( TransactionRepresentation recoveredTx, long txId, TransactionApplicationMode mode )
+            throws Exception
     {
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
         when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );
-        NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( mockIndexing,
-                labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(),
-                cacheAccessBackDoor, propertyLoader );
-        try ( LockGroup lockGroup = new LockGroup() )
+
+        TransactionRepresentationStoreApplier storeApplier = new TransactionRepresentationStoreApplier(
+              mockIndexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, mock( ProviderLookup.class ),
+              mock( IndexConfigStore.class ), IdOrderingQueue.BYPASS );
+
+        try ( LockGroup locks = new LockGroup() )
         {
-            NeoTransactionStoreApplier storeApplier = new NeoTransactionStoreApplier(
-                    neoStore, mockIndexing, cacheAccessBackDoor, locks, lockGroup,
-                    txId, DEFAULT_HIGH_ID_TRACKING, true );
-            try ( CommandApplierFacade applier = new CommandApplierFacade( storeApplier, indexApplier ) )
-            {
-                recoveredTx.accept( applier );
-            }
+            storeApplier.apply( recoveredTx, locks, txId, mode );
         }
     }
 

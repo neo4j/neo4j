@@ -19,46 +19,36 @@
  */
 package org.neo4j.server.database;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.helpers.Functions;
+import org.neo4j.function.Functions;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.TestLogging;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
 public class DatabaseRegistryTest
 {
-    private static final String EMBEDDED = "embedded";
-    private final Database northwind = mock(Database.class);
-
-    @Rule
-    public OtherThreadRule<Object> threadOne = new OtherThreadRule<>();
-
-    @Rule
-    public OtherThreadRule<Object> threadTwo = new OtherThreadRule<>();
-
     @Test
     public void shouldAllowCreatingAndVisitingDatabase() throws Throwable
     {
         // Given
-        DatabaseRegistry registry = newRegistryWithEmbeddedProvider();
-        final AtomicReference<Database> dbProvidedToVisitor = new AtomicReference<>(  );
-        registry.create( new DatabaseDefinition( "northwind", EMBEDDED, DatabaseHosting.Mode.EXTERNAL, new Config() ));
+        final AtomicReference<Database> dbProvidedToVisitor = new AtomicReference<>();
 
         // When
         registry.visit( "northwind", new DatabaseRegistry.Visitor()
@@ -71,26 +61,22 @@ public class DatabaseRegistryTest
         } );
 
         // Then
-        assertThat(dbProvidedToVisitor.get(), equalTo(northwind));
-        verify( northwind ).init();
-        verify( northwind ).start();
+        assertThat( dbProvidedToVisitor.get(), equalTo( database ) );
+        verify( database ).init();
+        verify( database ).start();
     }
 
     @Test
     public void shouldShutdownDatabaseOnDrop() throws Throwable
     {
-        // Given
-        DatabaseRegistry registry = newRegistryWithEmbeddedProvider();
-        registry.create( new DatabaseDefinition( "northwind", EMBEDDED, DatabaseHosting.Mode.EXTERNAL, new Config()) );
-
         // When
-        registry.drop( "northwind" );
+        registry.drop( NORTH_WIND );
 
         // Then
-        verify( northwind ).init();
-        verify( northwind ).start();
-        verify( northwind ).stop();
-        verify( northwind ).shutdown();
+        verify( database ).init();
+        verify( database ).start();
+        verify( database ).stop();
+        verify( database ).shutdown();
     }
 
     @Ignore("Saw this fail in the assertion at line 109. This component is unused and JH will remove it")
@@ -98,27 +84,26 @@ public class DatabaseRegistryTest
     public void shouldAwaitRunningQueriesBeforeDropping() throws Throwable
     {
         // Given
-        DatabaseRegistry registry = newRegistryWithEmbeddedProvider();
-        registry.create( new DatabaseDefinition("northwind", EMBEDDED, DatabaseHosting.Mode.EXTERNAL, new Config()) );
-
-        CountDownLatch visitingDbLatch = new CountDownLatch( 1 );
-        threadOne.execute( visitAndAwaitLatch( "northwind", registry, visitingDbLatch ) );
+        final CountDownLatch visitingDbLatch = new CountDownLatch( 1 );
+        final CountDownLatch doneVisitingLatch = new CountDownLatch( 1 );
+        threadOne.execute( visitAndAwaitLatch( NORTH_WIND, registry, visitingDbLatch, doneVisitingLatch ) );
 
         // When
-        Future<Object> threadTwoCompletion = threadTwo.execute( drop( "northwind", registry ) );
+        visitingDbLatch.await();
+        Future<Object> threadTwoCompletion = threadTwo.execute( drop( NORTH_WIND, registry ) );
 
         // Then, even if I wait a while, the database should not be shut down
         Thread.sleep( 100 );
-        verify( northwind, never() ).stop();
-        verify( northwind, never() ).shutdown();
+        verify( database, never() ).stop();
+        verify( database, never() ).shutdown();
 
         // But when
-        visitingDbLatch.countDown();
+        doneVisitingLatch.countDown();
         threadTwoCompletion.get( 10, TimeUnit.SECONDS );
 
         // Then
-        verify(northwind).stop();
-        verify(northwind).shutdown();
+        verify( database ).stop();
+        verify( database ).shutdown();
     }
 
     private OtherThreadExecutor.WorkerCommand<Object, Object> drop( final String dbKey, final DatabaseRegistry registry )
@@ -136,6 +121,7 @@ public class DatabaseRegistryTest
 
     private OtherThreadExecutor.WorkerCommand<Object, Object> visitAndAwaitLatch( final String dbKey,
                                                                                   final DatabaseRegistry registry,
+                                                                                  final CountDownLatch latchToUse,
                                                                                   final CountDownLatch latchToAwait )
     {
         return new OtherThreadExecutor.WorkerCommand<Object, Object>()
@@ -148,6 +134,7 @@ public class DatabaseRegistryTest
                     @Override
                     public void visit( Database db )
                     {
+                        latchToUse.countDown();
                         try
                         {
                             latchToAwait.await( 10, TimeUnit.SECONDS );
@@ -163,13 +150,27 @@ public class DatabaseRegistryTest
         };
     }
 
-    private DatabaseRegistry newRegistryWithEmbeddedProvider()
+
+    private static final String EMBEDDED = "embedded";
+    private static final String NORTH_WIND = "northwind";
+    private final Database database = mock( Database.class );
+    private DatabaseRegistry registry;
+
+    @Rule
+    public OtherThreadRule<Object> threadOne = new OtherThreadRule<>();
+
+    @Rule
+    public OtherThreadRule<Object> threadTwo = new OtherThreadRule<>();
+
+    @Before
+    public void setUp() throws NoSuchDatabaseProviderException
     {
-        DatabaseRegistry registry = new DatabaseRegistry( Functions.<Config, InternalAbstractGraphDatabase.Dependencies>constant(GraphDatabaseDependencies.newDependencies().logging(new TestLogging() ) ));
-        registry.addProvider( EMBEDDED, singletonDatabase( northwind ) );
+        registry = new DatabaseRegistry( Functions.<Config, InternalAbstractGraphDatabase.Dependencies>constant( GraphDatabaseDependencies.newDependencies().logging( new TestLogging() ) ));
+        registry.addProvider( EMBEDDED, singletonDatabase( database ) );
         registry.init();
         registry.start();
-        return registry;
+
+        registry.create( new DatabaseDefinition( NORTH_WIND, EMBEDDED, DatabaseHosting.Mode.EXTERNAL, new Config() ) );
     }
 
     public static Database.Factory singletonDatabase( final Database db )

@@ -89,6 +89,7 @@ import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -870,10 +871,10 @@ public abstract class InternalAbstractGraphDatabase
                                                 KernelHealth kernelHealth, NeoStore neoStore,
                                                 TransactionRepresentationStoreApplier storeApplier,
                                                 NeoStoreInjectedTransactionValidator validator,
-                                                boolean recovery )
+                                                TransactionApplicationMode mode )
         {
             return new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
-                    neoStore, storeApplier, recovery );
+                    neoStore, storeApplier, mode );
         }
     } ;
 

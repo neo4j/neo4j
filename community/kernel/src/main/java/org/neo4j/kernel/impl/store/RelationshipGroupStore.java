@@ -166,26 +166,13 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
                 do
                 {
                     updateRecord( record, cursor, false );
-                } while ( cursor.shouldRetry() );
+                }
+                while ( cursor.shouldRetry() );
             }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-    }
-
-    public void updateRecord( RelationshipGroupRecord record, boolean recovered )
-    {
-        assert recovered;
-        setRecovered();
-        try
-        {
-            updateRecord( record );
-        }
-        finally
-        {
-            unsetRecovered();
         }
     }
 
@@ -220,10 +207,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         else
         {
             cursor.putByte( Record.NOT_IN_USE.byteValue() );
-            if ( !isInRecoveryMode() )
-            {
-                freeId( id );
-            }
+            freeId( id );
         }
     }
 

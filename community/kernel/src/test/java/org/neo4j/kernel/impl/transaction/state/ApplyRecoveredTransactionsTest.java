@@ -31,7 +31,6 @@ import org.junit.Test;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandApplierFacade;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -41,10 +40,10 @@ import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
-import org.neo4j.kernel.impl.transaction.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -53,28 +52,27 @@ import org.neo4j.test.PageCacheRule;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
-import static org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.DEFAULT_HIGH_ID_TRACKING;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class ApplyRecoveredTransactionsTest
 {
     @Test
-    public void shouldSetCorrectHighIdWhenApplyingRecoveredTransactions() throws Exception
+    public void shouldSetCorrectHighIdWhenApplyingExternalTransactions() throws Exception
     {
         // WHEN recovering a transaction that creates some data
         long nodeId = neoStore.getNodeStore().nextId();
         long relationshipId = neoStore.getRelationshipStore().nextId();
         int type = 1;
-        applyRecoveredTransaction( 1,
+        applyExternalTransaction( 1,
                 nodeCommand( node( nodeId ), inUse( created( node( nodeId ) ) ) ),
                 relationshipCommand( inUse( created( with( relationship( relationshipId ), nodeId, nodeId, type ) ) ) ) );
-        
+
         // and when, later on, recovering a transaction deleting some of those
-        applyRecoveredTransaction( 2,
+        applyExternalTransaction( 2,
                 nodeCommand( inUse( created( node( nodeId ) ) ), node( nodeId ) ),
                 relationshipCommand( relationship( relationshipId ) ) );
-        
+
         // THEN that should be possible and the high ids should be correct, i.e. highest applied + 1
         assertEquals( nodeId+1, neoStore.getNodeStore().getHighId() );
         assertEquals( relationshipId+1, neoStore.getRelationshipStore().getHighId() );
@@ -100,20 +98,19 @@ public class ApplyRecoveredTransactionsTest
         return new RelationshipRecord( relationshipId );
     }
 
-    private void applyRecoveredTransaction( long transactionId, Command...commands ) throws IOException
+    private void applyExternalTransaction( long transactionId, Command...commands ) throws IOException
     {
-        NeoTransactionStoreApplier applier = new NeoTransactionStoreApplier( neoStore, mock( IndexingService.class ),
-                mock( CacheAccessBackDoor.class ), mock( LockService.class ), new LockGroup(), transactionId,
-                DEFAULT_HIGH_ID_TRACKING, true );
+        NeoStoreTransactionApplier applier = new NeoStoreTransactionApplier( neoStore,
+                mock( CacheAccessBackDoor.class ), mock( LockService.class ), new LockGroup(), transactionId );
         CommandApplierFacade applierFacade = new CommandApplierFacade( applier,
                 mock( NeoCommandHandler.class ), mock( NeoCommandHandler.class ), mock( NeoCommandHandler.class ) );
         new PhysicalTransactionRepresentation( Arrays.asList( commands ) ).accept( applierFacade );
     }
-    
+
     public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
     public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
     private NeoStore neoStore;
-    
+
     @Before
     public void before()
     {

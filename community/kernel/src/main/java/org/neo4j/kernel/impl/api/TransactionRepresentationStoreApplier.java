@@ -30,11 +30,11 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.HighIdTracker;
+import org.neo4j.kernel.impl.transaction.command.CacheInvalidationTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.HighIdTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
-import org.neo4j.kernel.impl.transaction.command.NeoTransactionIndexApplier;
-import org.neo4j.kernel.impl.transaction.command.NeoTransactionStoreApplier;
-import org.neo4j.kernel.impl.transaction.command.RecoveredHighIdTracker;
+import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
@@ -53,14 +53,12 @@ public class TransactionRepresentationStoreApplier
     private final IndexConfigStore indexConfigStore;
     private final ProviderLookup legacyIndexProviderLookup;
     private final PropertyLoader propertyLoader;
-    private final HighIdTrackerFactory highIdTrackerFactory;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
     public TransactionRepresentationStoreApplier(
             IndexingService indexingService, LabelScanStore labelScanStore, NeoStore neoStore,
             CacheAccessBackDoor cacheAccess, LockService lockService, ProviderLookup legacyIndexProviderLookup,
-            IndexConfigStore indexConfigStore, HighIdTrackerFactory highIdTrackerFactory,
-            IdOrderingQueue legacyIndexTransactionOrdering )
+            IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering )
     {
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
@@ -69,42 +67,41 @@ public class TransactionRepresentationStoreApplier
         this.lockService = lockService;
         this.legacyIndexProviderLookup = legacyIndexProviderLookup;
         this.indexConfigStore = indexConfigStore;
-        this.highIdTrackerFactory = highIdTrackerFactory;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.propertyLoader = new PropertyLoader( neoStore );
     }
 
     public void apply( TransactionRepresentation representation, LockGroup locks,
-                       long transactionId, boolean applyRecovered )
+                       long transactionId, TransactionApplicationMode mode )
             throws IOException
     {
-        NeoCommandHandler storeApplier = new NeoTransactionStoreApplier(
-                neoStore, indexingService, cacheAccess, lockService, locks, transactionId,
-                highIdTrackerFactory, applyRecovered );
+        // Graph store application. The order of the decorated store appliers is irrelevant
+        NeoCommandHandler storeApplier = new NeoStoreTransactionApplier(
+                neoStore, cacheAccess, lockService, locks, transactionId );
+        if ( mode.needsIdTracking() )
+        {
+            storeApplier = new HighIdTransactionApplier( storeApplier, neoStore );
+        }
+        if ( mode.needsCacheInvalidationOnUpdates() )
+        {
+            storeApplier = new CacheInvalidationTransactionApplier( storeApplier, neoStore, cacheAccess );
+        }
         NeoCommandHandler countStoreApplier = new CountStoreApplier( neoStore.getCountsStore(), neoStore.getNodeStore() );
-        NeoCommandHandler indexApplier = new NeoTransactionIndexApplier( indexingService,
-                labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess, propertyLoader );
-        NeoCommandHandler legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,
-                legacyIndexProviderLookup, legacyIndexTransactionOrdering, transactionId, applyRecovered );
 
+        // Schema index application
+        IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexingService,
+                labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess,
+                propertyLoader, mode );
+
+        // Legacy index application
+        LegacyIndexApplier legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,
+                legacyIndexProviderLookup, legacyIndexTransactionOrdering, transactionId, mode );
+
+        // Perform the application
         try ( CommandApplierFacade applier = new CommandApplierFacade(
                 storeApplier, countStoreApplier, indexApplier, legacyIndexApplier ) )
         {
             representation.accept( applier );
         }
     }
-    
-    public interface HighIdTrackerFactory
-    {
-        HighIdTracker create( boolean recovery );
-    }
-    
-    public static final HighIdTrackerFactory DEFAULT_HIGH_ID_TRACKING = new HighIdTrackerFactory()
-    {
-        @Override
-        public HighIdTracker create( boolean recovery )
-        {
-            return recovery ? new RecoveredHighIdTracker() : HighIdTracker.NO_TRACKING;
-        }
-    };
 }

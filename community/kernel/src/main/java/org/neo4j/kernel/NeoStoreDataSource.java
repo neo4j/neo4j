@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -141,11 +142,9 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
-import static org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier.DEFAULT_HIGH_ID_TRACKING;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.state.CacheLoaders.nodeLoader;
 import static org.neo4j.kernel.impl.transaction.state.CacheLoaders.relationshipLoader;
-import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
@@ -482,13 +481,13 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                     new TransactionRepresentationStoreApplier(
                             indexingService, labelScanStore, neoStore,
                             cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
-                            DEFAULT_HIGH_ID_TRACKING, legacyIndexTransactionOrdering ) );
+                            legacyIndexTransactionOrdering ) );
 
             LoggingLogFileMonitor logMonitor = new LoggingLogFileMonitor( logging.getMessagesLog( getClass() ) );
             final TransactionRepresentationStoreApplier storeRecoverer =
                     new TransactionRepresentationStoreApplier(
                             indexingService, labelScanStore, neoStore, cacheAccess, lockService,
-                            legacyIndexProviderLookup, indexConfigStore, DEFAULT_HIGH_ID_TRACKING, BYPASS );
+                            legacyIndexProviderLookup, indexConfigStore, IdOrderingQueue.BYPASS );
 
             RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer,
                     recoveredCount, logMonitor );
@@ -505,10 +504,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                             config.get( GraphDatabaseSettings.batched_writes ) ) );
 
             TransactionCommitProcess transactionCommitProcess = dependencies.satisfyDependency(
-                                        commitProcessFactory.create( logicalTransactionStore, kernelHealth,
-                                                neoStore, storeApplier,
-                                                new NeoStoreInjectedTransactionValidator( integrityValidator ), false ));
-
+                    commitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore, storeApplier,
+                            new NeoStoreInjectedTransactionValidator( integrityValidator ),
+                            TransactionApplicationMode.INTERNAL ) );
             /*
              * This is used by legacy indexes and constraint indexes whenever a transaction is to be spawned
              * from within an existing transaction. It smells, and we should look over alternatives when time permits.
@@ -562,15 +560,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
             life.add( labelScanStore );
 
             kernel.registerTransactionHook( transactionEventHandlers );
-            neoStore.setRecoveredStatus( true );
-            try
-            {
-                life.start();
-            }
-            finally
-            {
-                neoStore.setRecoveredStatus( false );
-            }
+            life.start();
 
             propertyKeyTokenHolder.addTokens( neoStore.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
             relationshipTypeTokens.addTokens( neoStore.getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
@@ -704,13 +694,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
     public KernelAPI getKernel()
     {
         return kernel;
-    }
-
-    public boolean setRecovered( boolean recovered )
-    {
-        boolean currentValue = neoStore.isInRecoveryMode();
-        neoStore.setRecoveredStatus( true );
-        return currentValue;
     }
 
     public ResourceIterator<File> listStoreFiles() throws IOException

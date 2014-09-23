@@ -39,20 +39,14 @@ public class HighPerformanceCacheProvider extends CacheProvider
     @Override
     public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config, Monitors monitors )
     {
-        Long node = config.get( HighPerformanceCacheSettings.node_cache_size );
-        if ( node == null )
+        HPCMemoryConfig mem = config.get( HighPerformanceCacheSettings.cache_memory );
+        if(mem.source() == HPCMemoryConfig.Source.SPECIFIC_OVERRIDING_RATIO)
         {
-            node = Runtime.getRuntime().maxMemory() / 4;
+            logger.warn( "Explicit cache memory ratio configuration is ignored, because advanced cache memory " +
+                    "configuration has been specified. Please specify either only the ratio configuration, or only " +
+                    "the advanced configuration." );
         }
-
-        Long rel = config.get( HighPerformanceCacheSettings.relationship_cache_size );
-        if ( rel == null )
-        {
-            rel = Runtime.getRuntime().maxMemory() / 4;
-        }
-
-        checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
-        return new HighPerformanceCache<>( node, config.get( HighPerformanceCacheSettings.node_cache_array_fraction ),
+        return new HighPerformanceCache<>( mem.nodeCacheSize(), mem.nodeLookupTableFraction(),
                 config.get( HighPerformanceCacheSettings.log_interval ),
                 NODE_CACHE_NAME, logger, monitors.newMonitor( HighPerformanceCache.Monitor.class ) );
     }
@@ -60,47 +54,10 @@ public class HighPerformanceCacheProvider extends CacheProvider
     @Override
     public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config, Monitors monitors )
     {
-        Long node = config.get( HighPerformanceCacheSettings.node_cache_size );
-        if ( node == null )
-        {
-            node = Runtime.getRuntime().maxMemory() / 4;
-        }
-
-        Long rel = config.get( HighPerformanceCacheSettings.relationship_cache_size );
-        if ( rel == null )
-        {
-            rel = Runtime.getRuntime().maxMemory() / 4;
-        }
-
-        checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
-        return new HighPerformanceCache<>( rel, config.get( HighPerformanceCacheSettings
-                .relationship_cache_array_fraction ), config.get( HighPerformanceCacheSettings.log_interval ),
+        HPCMemoryConfig mem = config.get( HighPerformanceCacheSettings.cache_memory );
+        return new HighPerformanceCache<>( mem.relCacheSize(), mem.relLookupTableFraction(),
+                config.get( HighPerformanceCacheSettings.log_interval ),
                 RELATIONSHIP_CACHE_NAME, logger, monitors.newMonitor( HighPerformanceCache.Monitor.class ) );
-    }
-
-    // TODO: Move into validation method of config setting?
-    @SuppressWarnings("boxing")
-    private void checkMemToUse( StringLogger logger, long node, long rel, long available )
-    {
-        long advicedMax = available / 2;
-        long total = 0;
-        node = Math.max( HighPerformanceCache.MIN_SIZE, node );
-        total += node;
-        rel = Math.max( HighPerformanceCache.MIN_SIZE, rel );
-        total += rel;
-        if ( total > available )
-        {
-            throw new IllegalArgumentException(
-                    String.format( "Configured cache memory limits (node=%s, relationship=%s, " +
-                            "total=%s) exceeds available heap space (%s)",
-                            node, rel, total, available ) );
-        }
-        if ( total > advicedMax )
-        {
-            logger.logMessage( String.format( "Configured cache memory limits(node=%s, relationship=%s, " +
-                    "total=%s) exceeds recommended limit (%s)",
-                    node, rel, total, advicedMax ) );
-        }
     }
 
     @Override

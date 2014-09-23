@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Settings;
 
@@ -99,7 +100,7 @@ public class TestConfig
 
             fail( "Expected validation to fail." );
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
         }
     }
@@ -113,7 +114,7 @@ public class TestConfig
 
             fail( "Expected validation to fail." );
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
         }
     }

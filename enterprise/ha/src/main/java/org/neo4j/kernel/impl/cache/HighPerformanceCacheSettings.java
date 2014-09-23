@@ -20,8 +20,9 @@
 package org.neo4j.kernel.impl.cache;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Settings;
+import org.neo4j.graphdb.factory.Description;
 
+import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.FLOAT;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
@@ -34,9 +35,9 @@ import static org.neo4j.helpers.Settings.setting;
  */
 public class HighPerformanceCacheSettings
 {
-    public static final Setting<Long> node_cache_size = setting( "node_cache_size", Settings.BYTES, NO_DEFAULT );
-    public static final Setting<Long> relationship_cache_size =
-            setting( "relationship_cache_size", Settings.BYTES,NO_DEFAULT );
+
+    public static final Setting<Long> node_cache_size = setting( "node_cache_size", BYTES, NO_DEFAULT );
+    public static final Setting<Long> relationship_cache_size = setting( "relationship_cache_size", BYTES,NO_DEFAULT );
 
     @SuppressWarnings("unchecked")
     public static final Setting<Float> node_cache_array_fraction =
@@ -46,5 +47,16 @@ public class HighPerformanceCacheSettings
     public static final Setting<Float> relationship_cache_array_fraction =
             setting("relationship_cache_array_fraction", FLOAT, "1.0", range( 1.0f, 10.0f ) );
 
+    @Description("Set the amount of usable memory to allocate to the high-level object cache, a value between " +
+            "0 and 100. It is recommended to not have this value exceed 70. This cannot be used in conjunction with " +
+            "other object cache size settings.")
+    @SuppressWarnings("unchecked")
+    public static final Setting<HPCMemoryConfig> cache_memory =
+            setting( "cache.memory_ratio", HPCSettingFunctions.CACHE_MEMORY_RATIO, HPCSettingFunctions.DEFAULT,
+                    HPCSettingFunctions.OTHER_CACHE_SETTINGS_OVERRIDE, HPCSettingFunctions.TOTAL_NOT_ALLOWED_ABOVE_HEAP );
+
     public static final Setting<Long> log_interval = setting( "high_performance_cache_min_log_interval", DURATION, "60s" );
+
+
+
 }
