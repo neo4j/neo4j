@@ -50,13 +50,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.subprocess.BreakPoint;
-import org.neo4j.test.subprocess.BreakpointHandler;
 import org.neo4j.test.subprocess.BreakpointTrigger;
-import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.EnabledBreakpoints;
-import org.neo4j.test.subprocess.ForeignBreakpoints;
-import org.neo4j.test.subprocess.SubProcessTestRunner;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
@@ -65,8 +60,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 @RunWith(Suite.class)
-@SuiteClasses({IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class,
-        IdGeneratorRebuildFailureEmulationTest.FailureDuringRebuild.class})
+@SuiteClasses({IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class})
 public class IdGeneratorRebuildFailureEmulationTest
 {
     @RunWith(JUnit4.class)
@@ -77,36 +71,6 @@ public class IdGeneratorRebuildFailureEmulationTest
         {
             // emulate a failure during rebuild by not issuing this call:
             // neostore.makeStoreOk();
-        }
-    }
-
-    @RunWith(SubProcessTestRunner.class)
-    @ForeignBreakpoints(@ForeignBreakpoints.BreakpointDef(
-            type = "org.neo4j.kernel.impl.store.id.IdGeneratorImpl", method = "setHighId"))
-    public static final class FailureDuringRebuild extends IdGeneratorRebuildFailureEmulationTest
-    {
-        @Override
-        protected void emulateFailureOnRebuildOf( NeoStore neostore )
-        {
-            // emulate a failure (Id capacity exceeded) during rebuild by breakpoints in this method:
-            neostore.makeStoreOk();
-            fail( "makeStoreOk should have thrown UnderlyingStorageException" );
-        }
-
-        @BreakpointHandler("performTest")
-        public static void bootstrapTest( @BreakpointHandler("setHighId") BreakPoint setHighId )
-        {
-            setHighId.enable();
-        }
-
-        @SuppressWarnings("boxing")
-        @BreakpointHandler("setHighId")
-        public static void on_setHighId( DebugInterface di, BreakPoint setHighId )
-        {
-            setHighId.disable();
-            // emulate a failure in recovery by changing the id parameter to setHighId(id) to an invalid value,
-            // causing an exception to be thrown.
-            di.setLocalVariable( "id", -1 );
         }
     }
 

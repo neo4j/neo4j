@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
@@ -912,5 +913,29 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             transactionCloseWaitLogger.event( null );
         }
         return onPar;
+    }
+
+    /**
+     * Visits this store, and any other store managed by this store.
+     * TODO this could, and probably should, replace all override-and-do-the-same-thing-to-all-my-managed-stores
+     * methods like:
+     * {@link #makeStoreOk()},
+     * {@link #closeStorage()} (where that method could be deleted all together and do a visit in {@link #close()}),
+     * {@link #logIdUsage(org.neo4j.kernel.impl.util.StringLogger.LineLogger)},
+     * {@link #logVersions(org.neo4j.kernel.impl.util.StringLogger.LineLogger)},
+     * {@link #isStoreOk()},
+     * For a good samaritan to pick up later.
+     */
+    @Override
+    public void visitStore( Visitor<CommonAbstractStore,RuntimeException> visitor )
+    {
+        nodeStore.visitStore( visitor );
+        relStore.visitStore( visitor );
+        relGroupStore.visitStore( visitor );
+        relTypeStore.visitStore( visitor );
+        labelTokenStore.visitStore( visitor );
+        propStore.visitStore( visitor );
+        schemaStore.visitStore( visitor );
+        visitor.visit( this );
     }
 }

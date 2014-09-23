@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -403,5 +404,12 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     {
         dynamicLabelStore.makeStoreOk();
         super.makeStoreOk();
+    }
+
+    @Override
+    public void visitStore( Visitor<CommonAbstractStore, RuntimeException> visitor )
+    {
+        dynamicLabelStore.visitStore( visitor );
+        visitor.visit( this );
     }
 }

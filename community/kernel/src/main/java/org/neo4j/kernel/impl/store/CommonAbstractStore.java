@@ -27,6 +27,7 @@ import java.nio.channels.OverlappingFileLockException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils.FileOperation;
@@ -374,34 +375,21 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
         createIdGenerator( idFile );
         openIdGenerator();
-        setHighId( getNumberOfReservedLowIds() );
 
-        int filePageSize = storeFile.pageSize();
-        int recordsPerPage = recordsPerPage();
         long defraggedCount = 0;
         boolean fastRebuild = doFastIdGeneratorRebuild();
 
         try
         {
-            PagedFile pagedFile = pageCache.map( storageFileName, filePageSize );
-            try
+            long foundHighId = findHighIdBackwards();
+            setHighId( foundHighId );
+            if ( !fastRebuild )
             {
-                if ( fastRebuild )
+                try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK | PF_READ_AHEAD ) )
                 {
-                    setHighId( findHighIdBackwards( pagedFile ) );
+                    defraggedCount = rebuildIdGeneratorSlow( cursor, recordsPerPage(), blockSize,
+                            reserveIdsDuringRebuild(), foundHighId );
                 }
-                else
-                {
-                    try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK | PF_READ_AHEAD ) )
-                    {
-                        defraggedCount = rebuildIdGeneratorSlow( cursor, recordsPerPage, blockSize,
-                                reserveIdsDuringRebuild() );
-                    }
-                }
-            }
-            finally
-            {
-                pageCache.unmap( storageFileName );
             }
         }
         catch ( IOException e )
@@ -422,7 +410,8 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
-    private long rebuildIdGeneratorSlow( PageCursor cursor, int recordsPerPage, int blockSize, boolean justReserveIds )
+    private long rebuildIdGeneratorSlow( PageCursor cursor, int recordsPerPage, int blockSize,
+            boolean justReserveIds, long foundHighId  )
             throws IOException
     {
         long defragCount = 0;
@@ -430,17 +419,25 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         int startingId = getNumberOfReservedLowIds();
         int defragged;
 
-        while ( cursor.next() )
+        boolean done = false;
+        while ( !done && cursor.next() )
         {
             long idPageOffset = (cursor.getCurrentPageId() * recordsPerPage);
 
             do
             {
                 defragged = 0;
+                done = false;
                 for ( int i = startingId; i < recordsPerPage; i++ )
                 {
                     cursor.setOffset( i * blockSize );
                     long recordId = idPageOffset + i;
+                    if ( recordId >= foundHighId )
+                    {   // We don't have to go further than the high id we found earlier
+                        done = true;
+                        break;
+                    }
+
                     if ( !isRecordInUse( cursor ) )
                     {
                         freedBatch[defragged] = recordId;
@@ -450,7 +447,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             }
             while ( cursor.shouldRetry() );
 
-            setHighId( idPageOffset + recordsPerPage );
             for ( int i = 0; i < defragged; i++ )
             {
                 long freedId = freedBatch[i];
@@ -655,28 +651,23 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      */
     protected IdGenerator openIdGenerator( File fileName, int grabSize )
     {
-        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize,
-                getIdType(), findHighIdBackwards() );
-    }
-
-    protected long findHighIdBackwards()
-    {
         try
         {
-            return findHighIdBackwards( storeFile );
+            return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize,
+                    getIdType(), findHighIdBackwards() );
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException(
-                    "Unable to find high id by scanning backwards " + getStorageFileName(), e );
+                  "Unable to find high id by scanning backwards " + getStorageFileName(), e );
         }
     }
 
-    protected long findHighIdBackwards( PagedFile pagedFile ) throws IOException
+    protected long findHighIdBackwards() throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK ) )
         {
-            long lastPageId = pagedFile.getLastPageId();
+            long lastPageId = storeFile.getLastPageId();
             long nextPageId = lastPageId;
             int recordsPerPage = recordsPerPage();
             int recordSize = getRecordSize();
@@ -689,10 +680,11 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
                     while ( currentRecord --> 0 )
                     {
                         cursor.setOffset( currentRecord * recordSize );
+                        long recordId = (cursor.getCurrentPageId() * recordsPerPage) + currentRecord;
                         if ( isRecordInUse( cursor ) )
                         {
-                            // We've found the highest id that is in use
-                            return (cursor.getCurrentPageId() * recordsPerPage) + currentRecord + 1 /*+1 since we return the high id*/;
+                            // We've found the highest id in use
+                            return recordId + 1 /*+1 since we return the high id*/;
                         }
                     }
                 }
@@ -910,6 +902,21 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     {
         lineLogger.logLine( String.format( "  %s: used=%s high=%s",
                                            getTypeDescriptor(), getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
+    }
+
+    /**
+     * Visits this store, and any other store managed by this store.
+     * TODO this could, and probably should, replace all override-and-do-the-same-thing-to-all-my-managed-stores
+     * methods like:
+     * {@link #makeStoreOk()},
+     * {@link #closeStorage()} (where that method could be deleted all together and do a visit in {@link #close()}),
+     * {@link #logIdUsage(org.neo4j.kernel.impl.util.StringLogger.LineLogger)},
+     * {@link #logVersions(org.neo4j.kernel.impl.util.StringLogger.LineLogger)}
+     * For a good samaritan to pick up later.
+     */
+    public void visitStore( Visitor<CommonAbstractStore,RuntimeException> visitor )
+    {
+        visitor.visit( this );
     }
 
     @Override

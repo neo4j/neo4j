@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.core;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,9 +36,14 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -52,8 +59,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 
 /**
- * Test for making sure that slow id generator rebuild is exercised and also a problem
- * @author Mattias Persson
+ * Test for making sure that slow id generator rebuild is exercised
  */
 public class TestCrashWithRebuildSlow
 {
@@ -66,6 +72,7 @@ public class TestCrashWithRebuildSlow
         final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
+        Map<IdType, Long> highIdsBeforeCrash = getHighIds( db );
         EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDb( db ) );
 
         // Recover with rebuild_idgenerators_fast=false
@@ -74,6 +81,7 @@ public class TestCrashWithRebuildSlow
                 .newImpermanentDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, Settings.FALSE )
                 .newGraphDatabase();
+        assertEquals( highIdsBeforeCrash, getHighIds( newDb ) );
 
         try ( Transaction tx = newDb.beginTx() )
         {
@@ -103,6 +111,23 @@ public class TestCrashWithRebuildSlow
         {
             newDb.shutdown();
         }
+    }
+
+    private Map<IdType,Long> getHighIds( GraphDatabaseAPI db )
+    {
+        final Map<IdType,Long> highIds = new HashMap<>();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency(
+                DataSourceManager.class ).getDataSource().getNeoStore();
+        neoStore.visitStore( new Visitor<CommonAbstractStore, RuntimeException>()
+        {
+            @Override
+            public boolean visit( CommonAbstractStore store ) throws RuntimeException
+            {
+                highIds.put( store.getIdType(), store.getHighId() );
+                return true;
+            }
+        } );
+        return highIds;
     }
 
     private void assertNumberOfFreeIdsEquals( String storeDir, FileSystemAbstraction fs, long numberOfFreeIds )
