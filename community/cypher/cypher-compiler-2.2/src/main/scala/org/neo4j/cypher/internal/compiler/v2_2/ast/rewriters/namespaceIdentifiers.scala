@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{AliasedReturnItem, ReturnItems, Return, Identifier}
 
 import scala.collection.mutable
 
@@ -29,11 +29,22 @@ case class namespaceIdentifiers(scopeTree: Scope) extends Rewriter {
 
   val identifierNames = namespacedIdentifierNames(scopeTree)
 
-  def apply(in: AnyRef): Option[AnyRef] = bottomUp(instance).apply(in)
+  def apply(in: AnyRef): Option[AnyRef] = bottomUp(getRewriter(in)).apply(in)
 
-  private val instance: Rewriter = Rewriter.lift {
-    case i: Identifier =>
-      identifierNames.get((i.name, i.position)).fold(i)(Identifier(_)(i.position))
+  import Foldable._
+  private def findReturnIdentifiers(any: AnyRef): Seq[Identifier] = {
+    any.treeFold(Seq.empty[Identifier]) {
+      case Return(_, ReturnItems(_, items), _, _, _) =>
+        (acc, children) => children(acc ++ items.map(_.alias.get))
+    }
+  }
+
+  private def getRewriter(any: AnyRef): Rewriter = {
+    val blacklisted = findReturnIdentifiers(any)
+    Rewriter.lift {
+      case i: Identifier if !blacklisted.exists(_ eq i) =>
+        identifierNames.get((i.name, i.position)).fold(i)(Identifier(_)(i.position))
+    }
   }
 
   private def findAllSymbols(scope: Scope): Seq[Symbol] =

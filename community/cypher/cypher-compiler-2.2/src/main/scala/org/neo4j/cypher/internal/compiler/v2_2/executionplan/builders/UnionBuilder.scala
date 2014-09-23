@@ -33,8 +33,6 @@ trait GraphQueryBuilder {
 
 class UnionBuilder(queryBuilder: GraphQueryBuilder) {
   def buildUnionQuery(union: Union, context:PlanContext)(implicit pipeMonitor: PipeMonitor): PipeInfo = {
-    checkQueriesHaveSameColumns(union)
-
     val combined = union.queries.map( q => queryBuilder.buildQuery(q, context))
 
     val pipes = combined.map(_.pipe)
@@ -49,15 +47,5 @@ class UnionBuilder(queryBuilder: GraphQueryBuilder) {
     }
 
     PipeInfo(pipe, updating, version = CypherVersion.v2_2_rule)
-  }
-
-  private def checkQueriesHaveSameColumns(union: Union) {
-    val allColumns: Seq[List[String]] = union.queries.map(_.columns)
-    val first = allColumns.head
-    val allTheSame = allColumns.forall(x => x == first)
-
-    if (!allTheSame) {
-      throw new SyntaxException("All sub queries in an UNION must have the same column names")
-    }
   }
 }
