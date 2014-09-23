@@ -1,3 +1,21 @@
+2.1.5
+-----
+o Solves an issue where discrete remove+add operations on an existing property
+  is not properly translated to a change operation, but rather is translated to
+  an add operation
+o Adds a property chain verification mechanism that detects duplicate property
+  names for a given node/relationship as properties are loaded. It logs the
+  state to the console, capped to 1 message every two hours
+o Solves an issue where relationship removal from a node would lead to iteration
+  over the relationships of that node to continue beyond the available relationship
+  set
+o Improves performance for index lookups during transactions by removing some
+  exception handling
+o Fixes issue with high id calculation that could lead to store file sizes being
+  larger than required
+o Fixes issue with property value equality definition in index state. It is now
+  the same as for reading from indexes on disk
+
 2.1.4
 -----
 o Fixes issue with label and property changes, triggered with multiple adds and removes
