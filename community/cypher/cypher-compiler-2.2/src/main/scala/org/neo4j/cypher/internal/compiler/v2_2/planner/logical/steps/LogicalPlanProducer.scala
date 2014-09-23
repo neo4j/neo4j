@@ -144,8 +144,8 @@ object LogicalPlanProducer {
     )
   }
 
-  def planNodeHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan) =
-    NodeHashJoin(node, left, right)(
+  def planNodeHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan) =
+    NodeHashJoin(nodes, left, right)(
       left.solved ++ right.solved
     )
 
