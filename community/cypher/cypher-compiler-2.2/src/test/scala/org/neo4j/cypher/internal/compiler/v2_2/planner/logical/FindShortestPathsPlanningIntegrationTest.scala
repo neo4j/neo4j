@@ -84,7 +84,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
         planShortestPaths(
           planSelection(
             Vector(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
-            planNodeHashJoin("b",
+            planNodeHashJoin(Set(IdName("b")),
               planExpand(planAllNodesScan("a", Set.empty), "a", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength, r1),
               planExpand(planAllNodesScan("c", Set.empty), "c", Direction.INCOMING, Direction.OUTGOING, Seq(), "b", "r2", SimplePatternLength, r2)
             )

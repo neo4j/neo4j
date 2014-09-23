@@ -1087,13 +1087,22 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       )
     ))
 
-    val optionalMatch1 :: optionalMatch2 :: Nil = query.graph.optionalMatches
-    optionalMatch1.argumentIds should equal (Set(IdName("a")))
-    optionalMatch1.patternNodes should equal (Set(IdName("a"), IdName("b")))
+    val optionalMatch1 :: optionalMatch2 :: Nil = query.graph.optionalMatches.toList
 
+    optionalMatch1.patternNodes match {
+      case patternNodes if patternNodes == Set(IdName("a"), IdName("b")) =>
+        optionalMatch1.argumentIds should equal(Set(IdName("a")))
+        optionalMatch2.argumentIds should equal(Set(IdName("a")))
+        optionalMatch2.patternNodes should equal(Set(IdName("a"), IdName("c")))
 
-    optionalMatch2.argumentIds should equal (Set(IdName("a")))
-    optionalMatch2.patternNodes should equal (Set(IdName("a"), IdName("c")))
+      case patternNodes if patternNodes == Set(IdName("a"), IdName("c")) =>
+        optionalMatch1.argumentIds should equal(Set(IdName("a")))
+        optionalMatch2.argumentIds should equal(Set(IdName("a")))
+        optionalMatch2.patternNodes should equal(Set(IdName("a"), IdName("b")))
+
+      case _ => fail("didn't expect that " + query.graph.optionalMatches)
+
+    }
 
     val tail = query.tail.get
     tail.graph.argumentIds should equal(Set(IdName("x")))

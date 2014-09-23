@@ -128,8 +128,8 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
           OptionalExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name), predicate)()
 
-        case NodeHashJoin(node, left, right) =>
-          NodeHashJoinPipe(node.name, buildPipe(left), buildPipe(right))()
+        case NodeHashJoin(nodes, left, right) =>
+          NodeHashJoinPipe(nodes.map(_.name), buildPipe(left), buildPipe(right))()
 
         case OuterHashJoin(node, left, right) =>
           NodeOuterHashJoinPipe(node.name, buildPipe(left), buildPipe(right), (right.availableSymbols -- left.availableSymbols).map(_.name))()
