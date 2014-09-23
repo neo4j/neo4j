@@ -23,12 +23,11 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
-import static org.neo4j.server.rest.repr.RepresentationTestBase.NODE_URI_PATTERN;
-import static org.neo4j.server.rest.repr.RepresentationTestBase.RELATIONSHIP_URI_PATTERN;
-import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.*;
 import static org.neo4j.test.mocking.GraphMock.node;
 import static org.neo4j.test.mocking.GraphMock.relationship;
 import static org.neo4j.test.mocking.Properties.properties;
@@ -98,5 +97,9 @@ public class RelationshipRepresentationTest
                 .toString() );
         assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}", (String) relrep.get( "property" ) );
         assertNotNull( relrep.get( "data" ) );
+        assertNotNull( relrep.get( "metadata" ) );
+        Map metadata = (Map) relrep.get( "metadata" );
+        assertNotNull( metadata.get("type") );
+        assertRegexpMatches( "\\d+", (String) metadata.get( "id" ) );
     }
 }

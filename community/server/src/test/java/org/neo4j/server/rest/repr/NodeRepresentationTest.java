@@ -19,13 +19,18 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.assertRegexpMatches;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.uriPattern;
 import static org.neo4j.test.mocking.GraphMock.node;
@@ -118,7 +123,7 @@ public class NodeRepresentationTest
 
     private NodeRepresentation noderep( long id )
     {
-        return new NodeRepresentation( node( id, properties() ) );
+        return new NodeRepresentation( node( id, properties(), "Label" ) );
     }
 
     public static void verifySerialisation( Map<String, Object> noderep )
@@ -145,5 +150,9 @@ public class NodeRepresentationTest
         assertUriMatches( uriPattern( "/traverse/\\{returnType\\}" ), (String) noderep.get( "traverse" ) );
         assertUriMatches( uriPattern( "/labels" ), (String) noderep.get( "labels" ) );
         assertNotNull( noderep.get( "data" ) );
+        Map metadata = (Map) noderep.get( "metadata" );
+        List labels = (List) metadata.get( "labels" );
+        assertTrue( labels.isEmpty() || labels.equals( asList( "Label" ) ) );
+        assertRegexpMatches( "\\d+", (String) metadata.get( "id" ) );
     }
 }

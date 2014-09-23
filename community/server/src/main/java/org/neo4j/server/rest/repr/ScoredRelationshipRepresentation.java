@@ -64,4 +64,10 @@ public final class ScoredRelationshipRepresentation extends
     {
         return getDelegate().propertyUriTemplate();
     }
+
+    @Mapping( "metadata" )
+    public MapRepresentation metadata()
+    {
+        return getDelegate().metadata();
+    }
 }
