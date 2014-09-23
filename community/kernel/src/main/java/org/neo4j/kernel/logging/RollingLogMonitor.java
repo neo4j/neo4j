@@ -17,20 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
-
-import java.io.IOException;
-
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+package org.neo4j.kernel.logging;
 
 /**
- * Imports graph data accepting node data separated from relationship data and an {@link IdMapping}
- * specifying how the node ids specified by the input relates to actual node ids in the resulting store.
+ * TODO
  */
-public interface BatchImporter
+public interface RollingLogMonitor
 {
-    void doImport( Iterable<InputNode> nodes, Iterable<InputRelationship> relationships, IdMapping idMapping )
-            throws IOException;
+    void rolledOver();
 }

@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
@@ -154,7 +155,7 @@ public class VersionAndEditionServiceTest
     {
         public FakeAdvancedNeoServer( Configurator configurator, Database.Factory dbFactory )
         {
-            super( configurator, dbFactory, DevNullLoggingService.DEV_NULL );
+            super( configurator, dbFactory, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL ));
         }
 
         @Override

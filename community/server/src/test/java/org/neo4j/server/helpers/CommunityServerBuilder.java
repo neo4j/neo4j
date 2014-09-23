@@ -44,11 +44,13 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.logging.BufferingConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
@@ -123,14 +125,15 @@ public class CommunityServerBuilder
         BufferingConsoleLogger console = new BufferingConsoleLogger();
         Validator validator = new Validator( new DatabaseLocationMustBeSpecifiedRule() );
         Configurator configurator = new PropertyFileConfigurator( validator, configFile, console );
-        Logging logging = loggingFactory().create( configurator );
+        Monitors monitors = new Monitors();
+        Logging logging = loggingFactory().create( configurator, monitors );
         console.replayInto( logging.getConsoleLog( getClass() ) );
-        return build( configFile, configurator, logging );
+        return build( configFile, configurator, GraphDatabaseDependencies.newDependencies().logging(logging).monitors(monitors) );
     }
 
-    protected CommunityNeoServer build( File configFile, Configurator configurator, Logging logging )
+    protected CommunityNeoServer build( File configFile, Configurator configurator, Dependencies dependencies )
     {
-        return new TestCommunityNeoServer( configurator, configFile, logging );
+        return new TestCommunityNeoServer( configurator, configFile, dependencies );
     }
 
     public File createPropertiesFiles() throws IOException
@@ -485,9 +488,9 @@ public class CommunityServerBuilder
     {
         private final File configFile;
 
-        private TestCommunityNeoServer( Configurator propertyFileConfigurator, File configFile, Logging logging )
+        private TestCommunityNeoServer( Configurator propertyFileConfigurator, File configFile, Dependencies dependencies )
         {
-            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ), logging );
+            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ), dependencies );
             this.configFile = configFile;
         }
 

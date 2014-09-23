@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.database;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -28,19 +34,13 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.function.Functions;
+import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.TestLogging;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 public class DatabaseRegistryTest
 {
@@ -165,7 +165,7 @@ public class DatabaseRegistryTest
     @Before
     public void setUp() throws NoSuchDatabaseProviderException
     {
-        registry = new DatabaseRegistry( Functions.<Config, Logging>constant( new TestLogging() ) );
+        registry = new DatabaseRegistry( Functions.<Config, InternalAbstractGraphDatabase.Dependencies>constant( GraphDatabaseDependencies.newDependencies().logging( new TestLogging() ) ));
         registry.addProvider( EMBEDDED, singletonDatabase( database ) );
         registry.init();
         registry.start();
@@ -178,7 +178,7 @@ public class DatabaseRegistryTest
         return new Database.Factory()
         {
             @Override
-            public Database newDatabase( Config config, Logging logging )
+            public Database newDatabase(Config config, InternalAbstractGraphDatabase.Dependencies dependencies)
             {
                 return db;
             }

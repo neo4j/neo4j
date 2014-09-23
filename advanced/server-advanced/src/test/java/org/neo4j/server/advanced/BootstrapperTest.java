@@ -24,6 +24,7 @@ import java.io.File;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
@@ -57,8 +58,7 @@ public class BootstrapperTest
 
         config.configuration().setProperty( "org.neo4j.server.properties", irrelevant.getAbsolutePath());
 
-        AdvancedNeoServer server = new AdvancedNeoServer( config,
-                new SingleLoggingService( StringLogger.SYSTEM ) );
+        AdvancedNeoServer server = new AdvancedNeoServer( config, GraphDatabaseDependencies.newDependencies().logging(new SingleLoggingService( StringLogger.SYSTEM )));
 
         server.start( );
 

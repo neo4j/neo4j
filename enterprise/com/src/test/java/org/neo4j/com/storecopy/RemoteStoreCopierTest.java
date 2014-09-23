@@ -56,6 +56,7 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -223,7 +224,7 @@ public class RemoteStoreCopierTest
         Config config = new Config( stringMap( store_dir.name(), dir ) );
         ConsoleLogger console = new ConsoleLogger( StringLogger.SYSTEM );
 
-        Logging logging = LogbackWeakDependency.tryLoadLogbackService( config, null );
+        Logging logging = LogbackWeakDependency.tryLoadLogbackService( config, null, new Monitors() );
 
         StoreCopyClient copier = spy( new StoreCopyClient( config, loadKernelExtensions(), console, logging, fs ) );
         when( copier.logConfigFileName() ).thenReturn( "neo4j-logback.xml" );
