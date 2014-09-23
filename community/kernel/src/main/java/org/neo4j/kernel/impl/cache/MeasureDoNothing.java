@@ -19,55 +19,48 @@
  */
 package org.neo4j.kernel.impl.cache;
 
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.util.Arrays.asList;
 
 public class MeasureDoNothing extends Thread
 {
     private volatile boolean measure = true;
     
-    private volatile long timeBlocked = 0;
-    
     private final long TIME_TO_WAIT;
-    private final long TIME_BEFORE_BLOCK;
+    private final long NOTIFICATION_THRESHOLD;
     private final StringLogger logger;
     
-    public MeasureDoNothing( String threadName, StringLogger logger )
+    public MeasureDoNothing( String threadName, StringLogger logger, long timeToWait, long pauseNotificationThreshold )
     {
         super( threadName );
         if ( logger == null )
         {
             throw new IllegalArgumentException( "Null message log" );
-        }
-        this.logger = logger;
-        this.TIME_TO_WAIT = 100;
-        this.TIME_BEFORE_BLOCK = 200;
-        setDaemon( true );
-    }
-    
-    public MeasureDoNothing( String threadName, StringLogger logger, long timeToWait, long acceptableWaitTime )
-    {
-        super( threadName );
-        if ( logger == null )
-        {
-            throw new IllegalArgumentException( "Null message log" );
-        }
-        if ( timeToWait >= acceptableWaitTime )
-        {
-            throw new IllegalArgumentException( "timeToWait[" + timeToWait + "] should be less than acceptableWaitTime[" + acceptableWaitTime + "]" );
         }
         this.logger = logger;
         this.TIME_TO_WAIT = timeToWait;
-        this.TIME_BEFORE_BLOCK = acceptableWaitTime;
+        this.NOTIFICATION_THRESHOLD = pauseNotificationThreshold + timeToWait;
         setDaemon( true );
     }
     
     @Override
     public synchronized void run()
     {
-        logger.info( "GC Monitor started. " );
+        logger.debug( "GC Monitor started. " );
         while ( measure )
         {
-            long start = System.currentTimeMillis();
+            long start = System.nanoTime();
             try
             {
                 this.wait( TIME_TO_WAIT );
@@ -76,26 +69,19 @@ public class MeasureDoNothing extends Thread
             {
                 Thread.interrupted();
             }
-            long time = System.currentTimeMillis() - start;
-            if ( time > TIME_BEFORE_BLOCK )
+            long time = (System.nanoTime() - start) / 1_000_000;
+            if ( time > NOTIFICATION_THRESHOLD )
             {
                 long blockTime = time - TIME_TO_WAIT;
-                timeBlocked += blockTime;
-                logger.warn( "GC Monitor: Application threads blocked for an additional " + blockTime +
-                        "ms [total block time: " + (timeBlocked / 1000.0f) + "s]" );
+                logger.warn( String.format( "GC Monitor: Application threads blocked for %dms.", blockTime ) );
             }
         }
-        logger.info( "GC Monitor stopped. " );
+        logger.debug( "GC Monitor stopped. " );
     }
     
     public synchronized void stopMeasuring()
     {
         measure = false;
         this.interrupt();
-    }
-    
-    public long getTimeInBlock()
-    {
-        return timeBlocked;
     }
 }
