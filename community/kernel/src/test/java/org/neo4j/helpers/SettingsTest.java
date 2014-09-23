@@ -308,7 +308,7 @@ public class SettingsTest
             memUse.apply( Functions.<String, String>constant( "bala%" ) );
             fail("Should've thrown.");
         }
-        catch(IllegalArgumentException e)
+        catch(InvalidSettingException e)
         {
             assertThat(e.getMessage(), equalTo("Bad value 'bala%' for setting 'mySetting': Invalid memory fraction, expected a value between 0.0% and 100.0%." ));
         }
@@ -318,7 +318,7 @@ public class SettingsTest
             memUse.apply( Functions.<String, String>constant( "110.14%" ) );
             fail("Should've thrown.");
         }
-        catch(IllegalArgumentException e)
+        catch(InvalidSettingException e)
         {
             assertThat(e.getMessage(), equalTo("Bad value '110.14%' for setting 'mySetting': Invalid memory fraction, expected a value between 0.0% and 100.0%." ));
         }
