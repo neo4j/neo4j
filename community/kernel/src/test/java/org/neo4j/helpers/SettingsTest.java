@@ -23,12 +23,17 @@ import java.io.File;
 import java.util.List;
 
 import org.junit.Test;
+
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.Functions.map;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -62,7 +67,7 @@ public class SettingsTest
             setting.apply( map( stringMap( "foo", "bar" ) ) );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
             // Ok
         }
@@ -95,7 +100,7 @@ public class SettingsTest
             setting.apply( map( stringMap( "foo", "1" ) ) );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
             // Ok
         }
@@ -116,7 +121,7 @@ public class SettingsTest
             setting.apply( map( stringMap( "foo", "7" ) ) );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
             // Ok
         }
@@ -136,7 +141,7 @@ public class SettingsTest
             setting.apply( map( stringMap( "foo", "1" ) ) );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
             // Ok
         }
@@ -146,7 +151,7 @@ public class SettingsTest
             setting.apply( map( stringMap( "foo", "6" ) ) );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
             // Ok
         }
@@ -166,13 +171,13 @@ public class SettingsTest
             setting.apply( map( stringMap( "foo", "cba" ) ) );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidSettingException e )
         {
             // Ok
         }
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test( expected = InvalidSettingException.class )
     public void testDurationWithBrokenDefault()
     {
         // Notice that the default value is less that the minimum
@@ -180,7 +185,7 @@ public class SettingsTest
         setting.apply( map( stringMap() ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test( expected = InvalidSettingException.class )
     public void testDurationWithValueNotWithinConstraint()
     {
         Setting<Long> setting = setting( "foo.bar", DURATION, "3s", min( DURATION.apply( "3s" ) ) );
@@ -269,7 +274,7 @@ public class SettingsTest
 
         y.apply( Functions.<String, String>nullFunction() );
     }
-    
+
     @Test
     public void testLogicalLogRotationThreshold() throws Exception
     {
@@ -279,7 +284,7 @@ public class SettingsTest
         long kiloValue = setting.apply( map( stringMap( setting.name(), "10k" ) ) );
         long megaValue = setting.apply( map( stringMap( setting.name(), "10M" ) ) );
         long gigaValue = setting.apply( map( stringMap( setting.name(), "10g" ) ) );
-        
+
         // THEN
         assertThat( defaultValue, greaterThan( 0L ) );
         assertEquals( 10 * 1024, kiloValue );
