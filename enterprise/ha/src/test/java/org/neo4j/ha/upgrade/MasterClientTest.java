@@ -42,8 +42,10 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
+import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -68,7 +70,6 @@ import org.neo4j.test.CleanupRule;
 import static java.util.Arrays.asList;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -80,7 +81,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
 
 public class MasterClientTest
 {
@@ -144,7 +144,8 @@ public class MasterClientTest
         verify( txAppender, times( TX_LOG_COUNT ) ).append( any( CommittedTransactionRepresentation.class ) );
         verify( txIdStore, times( TX_LOG_COUNT ) ).transactionCommitted( anyLong() );
         verify( txApplier, times( TX_LOG_COUNT ) )
-                .apply( any( TransactionRepresentation.class ), any( LockGroup.class ), anyLong(), anyBoolean() );
+                .apply( any( TransactionRepresentation.class ), any( LockGroup.class ), anyLong(),
+                        any( TransactionApplicationMode.class ) );
         verify( txIdStore, times( TX_LOG_COUNT ) ).transactionClosed( anyLong() );
     }
 

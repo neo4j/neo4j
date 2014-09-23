@@ -117,24 +117,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     }
 
     @Override
-    public void setRecovered()
-    {
-        super.setRecovered();
-        stringPropertyStore.setRecovered();
-        propertyKeyTokenStore.setRecovered();
-        arrayPropertyStore.setRecovered();
-    }
-
-    @Override
-    public void unsetRecovered()
-    {
-        super.unsetRecovered();
-        stringPropertyStore.unsetRecovered();
-        propertyKeyTokenStore.unsetRecovered();
-        arrayPropertyStore.unsetRecovered();
-    }
-
-    @Override
     protected void closeStorage()
     {
         if ( stringPropertyStore != null )
@@ -248,10 +230,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         }
         else
         {
-            if ( !isInRecoveryMode() )
-            {
-                freeId( id );
-            }
+            freeId( id );
             // skip over the record header, nothing useful there
             cursor.setOffset( cursor.getOffset() + 9 );
             cursor.putLong( 0 );

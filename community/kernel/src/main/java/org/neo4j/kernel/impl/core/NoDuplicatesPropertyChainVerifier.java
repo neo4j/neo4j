@@ -40,6 +40,7 @@ class NoDuplicatesPropertyChainVerifier implements PropertyChainVerifier
         }
     }
 
+    @Override
     public void addObserver( Observer o )
     {
         observers.add( o );

@@ -27,18 +27,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
@@ -49,7 +56,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * Gather node and property changes, converting them into logical updates to the indexes.
  * {@link #close()} will actually apply to the indexes.
  */
-public class NeoTransactionIndexApplier extends NeoCommandHandler.Adapter
+public class IndexTransactionApplier extends NeoCommandHandler.Adapter
 {
     private static final Comparator<NodeLabelUpdate> nodeLabelUpdateComparator = new Comparator<NodeLabelUpdate>()
     {
@@ -70,10 +77,11 @@ public class NeoTransactionIndexApplier extends NeoCommandHandler.Adapter
     private final LabelScanStore labelScanStore;
     private final CacheAccessBackDoor cacheAccess;
     private final PropertyLoader propertyLoader;
+    private final TransactionApplicationMode mode;
 
-    public NeoTransactionIndexApplier( IndexingService indexingService, LabelScanStore labelScanStore,
+    public IndexTransactionApplier( IndexingService indexingService, LabelScanStore labelScanStore,
             NodeStore nodeStore, PropertyStore propertyStore, CacheAccessBackDoor cacheAccess,
-            PropertyLoader propertyLoader )
+            PropertyLoader propertyLoader, TransactionApplicationMode mode )
     {
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
@@ -81,6 +89,7 @@ public class NeoTransactionIndexApplier extends NeoCommandHandler.Adapter
         this.propertyStore = propertyStore;
         this.cacheAccess = cacheAccess;
         this.propertyLoader = propertyLoader;
+        this.mode = mode;
     }
 
     @Override
@@ -102,18 +111,18 @@ public class NeoTransactionIndexApplier extends NeoCommandHandler.Adapter
     {
         LazyIndexUpdates updates = new LazyIndexUpdates(
                 nodeStore, propertyStore, propertyCommands, nodeCommands, propertyLoader );
-        
+
         // We only allow a single writer at the time to update the schema index stores
         synchronized ( indexingService )
         {
-            indexingService.updateIndexes( updates );
+            indexingService.updateIndexes( updates, mode.needsIdempotencyChecks() );
         }
     }
 
     private void updateLabelScanStore()
     {
         Collections.sort( labelUpdates, nodeLabelUpdateComparator );
-        
+
         // We only allow a single writer at the time to update the label scan store
         synchronized ( labelScanStore )
         {
@@ -170,6 +179,42 @@ public class NeoTransactionIndexApplier extends NeoCommandHandler.Adapter
                 propertyCommands.put( nodeId, group = new ArrayList<>() );
             }
             group.add( command );
+        }
+        return true;
+    }
+
+    @Override
+    public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
+    {
+        if ( command.getSchemaRule() instanceof IndexRule )
+        {
+            switch ( command.getMode() )
+            {
+                case UPDATE:
+                    // Shouldn't we be more clear about that we are waiting for an index to come online here?
+                    // right now we just assume that an update to index records means wait for it to be online.
+                    if ( ((IndexRule) command.getSchemaRule()).isConstraintIndex() )
+                    {
+                        try
+                        {
+                            indexingService.activateIndex( command.getSchemaRule().getId() );
+                        }
+                        catch ( IndexNotFoundKernelException | IndexActivationFailedKernelException |
+                                IndexPopulationFailedKernelException e )
+                        {
+                            throw new IllegalStateException( "Unable to enable constraint, backing index is not online.", e );
+                        }
+                    }
+                    break;
+                case CREATE:
+                    indexingService.createIndex( (IndexRule) command.getSchemaRule() );
+                    break;
+                case DELETE:
+                    indexingService.dropIndex( (IndexRule) command.getSchemaRule() );
+                    break;
+                default:
+                    throw new IllegalStateException( command.getMode().name() );
+            }
         }
         return true;
     }

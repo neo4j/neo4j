@@ -239,7 +239,6 @@ public class SchemaImpl implements Schema
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
-            e.printStackTrace();
             throw new NotFoundException( format( "No index for label %s on property %s",
                     index.getLabel().name(), propertyKey ) );
         }

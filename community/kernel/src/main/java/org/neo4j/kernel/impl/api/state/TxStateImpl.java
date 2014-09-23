@@ -165,7 +165,9 @@ public final class TxStateImpl implements TxState
                 @Override
                 public void visitRemoved( Long element )
                 {
-                    visitor.visitDeletedRelationship( element.longValue() );
+                    RelationshipState relationshipState = getOrCreateRelationshipState( element.longValue() );
+                    visitor.visitDeletedRelationship( element.longValue(), relationshipState.type(),
+                            relationshipState.startNode(), relationshipState.endNode() );
                 }
             } );
         }

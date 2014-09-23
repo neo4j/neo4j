@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +36,8 @@ import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
+import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
+
 public class LegacyIndexApplier extends NeoCommandHandler.Adapter
 {
     public interface ProviderLookup
@@ -51,18 +51,18 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     private final ProviderLookup providerLookup;
     private final Map<String, NeoCommandHandler> providerAppliers = new HashMap<>();
     private final IndexConfigStore indexConfigStore;
-    private final boolean recovery;
     private final IdOrderingQueue transactionOrdering;
     private final long transactionId;
+    private final TransactionApplicationMode mode;
 
     public LegacyIndexApplier( IndexConfigStore indexConfigStore, ProviderLookup providerLookup,
-            IdOrderingQueue transactionOrdering, long transactionId, boolean recovery )
+            IdOrderingQueue transactionOrdering, long transactionId, TransactionApplicationMode mode )
     {
         this.indexConfigStore = indexConfigStore;
         this.providerLookup = providerLookup;
         this.transactionOrdering = transactionOrdering;
         this.transactionId = transactionId;
-        this.recovery = recovery;
+        this.mode = mode;
     }
 
     private NeoCommandHandler applier( IndexCommand command ) throws IOException
@@ -79,7 +79,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
                 throw new IllegalStateException( "Unknown " + entityType.name() + " index '" + indexName + "'" );
             }
             String providerName = config.get( PROVIDER );
-            applier = providerLookup.lookup( providerName ).newApplier( recovery );
+            applier = providerLookup.lookup( providerName ).newApplier( mode.needsIdempotencyChecks() );
             applier.visitIndexDefineCommand( defineCommand );
             providerAppliers.put( indexName, applier );
         }
@@ -133,7 +133,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
             applier.apply();
         }
     }
-    
+
     @Override
     public void close()
     {

@@ -28,5 +28,5 @@ public interface CommitProcessFactory
 {
     TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore, KernelHealth kernelHealth,
                                      NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-                                     NeoStoreInjectedTransactionValidator validator, boolean recovery );
+                                     NeoStoreInjectedTransactionValidator validator, TransactionApplicationMode mode );
 }

@@ -558,7 +558,7 @@ public class RelIdArray implements SizeOfObject
         @Override
         protected long get( int index )
         {
-            assert index >= 0 && index < length();
+            assert index >= 0 && index < length() : "Tried to get an item at index " + index + ", but only allowed indexes are 0-" + length() + "(excl)";
             return ids[index+1]&0xFFFFFFFFL;
         }
 

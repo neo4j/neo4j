@@ -45,6 +45,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.Exceptions.contains;
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 
 public class TransactionRepresentationCommitProcessTest
 {
@@ -62,7 +63,7 @@ public class TransactionRepresentationCommitProcessTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
-                logicalTransactionStore, kernelHealth, transactionIdStore, storeApplier, false );
+                logicalTransactionStore, kernelHealth, transactionIdStore, storeApplier, INTERNAL );
 
         // WHEN
         try ( LockGroup locks = new LockGroup() )
@@ -93,9 +94,9 @@ public class TransactionRepresentationCommitProcessTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
         doThrow( new IOException( rootCause ) ).when( storeApplier ).apply(
-                any( TransactionRepresentation.class ), any( LockGroup.class ), eq( txId ), eq( false ) );
+                any( TransactionRepresentation.class ), any( LockGroup.class ), eq( txId ), eq( INTERNAL ) );
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
-                logicalTransactionStore, kernelHealth, transactionIdStore, storeApplier, false );
+                logicalTransactionStore, kernelHealth, transactionIdStore, storeApplier, INTERNAL );
 
         // WHEN
         try ( LockGroup locks = new LockGroup() )

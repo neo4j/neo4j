@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 
+import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
 
 import static junit.framework.TestCase.assertNull;
@@ -155,7 +156,7 @@ public class LogTruncationTest
                 {
                     commands.addAll( asList( permutations.get( cmd ) ) );
                 }
-                else
+                else if ( !isAbstract( cmd.getModifiers() ) )
                 {
                     throw new AssertionError( "Unknown command type: " + cmd + ", please add missing instantiation to "
                             + "test serialization of this command." );
@@ -170,7 +171,7 @@ public class LogTruncationTest
                 {
                     commands.addAll( asList( permutations.get( cmd ) ) );
                 }
-                else
+                else if ( !isAbstract( cmd.getModifiers() ) )
                 {
                     throw new AssertionError( "Unknown command type: " + cmd + ", please add missing instantiation to "
                             + "test serialization of this command." );

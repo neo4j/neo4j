@@ -329,11 +329,12 @@ public class IndexingService extends LifecycleAdapter
         return String.format( "%s [provider: %s]", userDescription, providerDescriptor.toString() );
     }
 
-    public void updateIndexes( IndexUpdates updates )
+    public void updateIndexes( IndexUpdates updates, boolean forceIdempotency )
     {
         if ( state == State.RUNNING )
         {
-            try ( IndexUpdaterMap updaterMap = indexMapReference.getIndexUpdaterMap( IndexUpdateMode.ONLINE ) )
+            try ( IndexUpdaterMap updaterMap = indexMapReference.getIndexUpdaterMap(
+                    forceIdempotency ? IndexUpdateMode.RECOVERY : IndexUpdateMode.ONLINE ) )
             {
                 applyUpdates( updates, updaterMap );
             }

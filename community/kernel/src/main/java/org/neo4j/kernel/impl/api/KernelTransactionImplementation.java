@@ -380,7 +380,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 }
 
                 @Override
-                public void visitDeletedRelationship( long id )
+                public void visitDeletedRelationship( long id, int type, long startNode, long endNode )
                 {
                     try
                     {
