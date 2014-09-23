@@ -281,9 +281,6 @@ case class Return(
 
   override def semanticCheck = super.semanticCheck chain checkIdentifiersInScope
 
-  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck =
-    checkSkip chain checkLimit
-
   protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = s =>
     if (returnItems.includeExisting && s.currentScope.isEmpty)
       Seq(SemanticError("RETURN * is not allowed when there are no identifiers in scope", position))
