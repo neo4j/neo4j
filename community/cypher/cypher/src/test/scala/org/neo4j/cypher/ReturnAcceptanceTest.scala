@@ -336,7 +336,7 @@ return coalesce(a.title, a.name)""")
     relate(a, b)
     relate(b, c)
 
-    val result = eengine.execute("match a, c where id(a) = 0 and id(c) = 2 return shortestPath(a-[*]->c)").columnAs[List[Path]]("shortestPath(a-[*]->c)").toList.head.head
+    val result = eengine.execute("match a, c where id(a) = 0 and id(c) = 2 return shortestPath(a-[*]->c)").columnAs[Path]("shortestPath(a-[*]->c)").toList.head
     result.endNode() should equal(c)
     result.startNode() should equal(a)
     result.length() should equal(2)
