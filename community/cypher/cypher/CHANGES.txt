@@ -2,6 +2,11 @@
 -----
 o Adds EXPLAIN and PROFILE to Cypher
 
+2.1.5
+-----
+o Solves shortest path end points when they are missing
+o Removes eager loading of data for OPTIONAL MATCH
+
 2.1.4
 -----
 o Reduces memory usage for updating queries, in situations where eager loading of data is not necessary

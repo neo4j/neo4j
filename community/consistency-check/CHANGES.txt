@@ -1,3 +1,8 @@
+2.1.5
+-----
+o Added a consistency check for duplicate property names in a given
+  node/relationship's property chain
+
 2.1.4
 -----
 o Consistency checker package is now part of the community bundle
