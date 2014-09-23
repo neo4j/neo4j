@@ -34,6 +34,9 @@ import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -64,10 +67,9 @@ import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
 import static org.neo4j.kernel.ha.HaSettings.ha_server;
 
 @Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
+@RunWith(Parameterized.class)
 public class RollingUpgradeIT
 {
-    private static final String OLD_VERSION = "2.1.2";
-
     private static final int CLUSTER_SIZE = 3;
 
     public static final RelationshipType type1 = DynamicRelationshipType.withName( "type1" );
@@ -79,6 +81,21 @@ public class RollingUpgradeIT
     private LegacyDatabase[] legacyDbs;
     private GraphDatabaseAPI[] newDbs;
     private long centralNode;
+
+    private final String oldVersion;
+
+    public RollingUpgradeIT( String oldVersion )
+    {
+        this.oldVersion = oldVersion;
+    }
+
+    @Parameters
+    public static Iterable<Object[]> oldVersions()
+    {
+        return Arrays.asList( new Object[][]{
+                {"2.1.2"}
+        } );
+    }
 
     @Test
     public void doRollingUpgradeFromPreviousVersionWithMasterLast() throws Throwable
@@ -100,10 +117,6 @@ public class RollingUpgradeIT
          * 3.3 Restart one slave
          * 3.4 Take down the instances and do consistency check */
 
-        /*
-         *
-         */
-
         try
         {
             startOldVersionCluster();
@@ -124,8 +137,11 @@ public class RollingUpgradeIT
         Collection<String> storeDirs = new ArrayList<>( newDbs.length );
         for ( GraphDatabaseAPI item : newDbs )
         {
-            storeDirs.add( item.getStoreDir() );
-            item.shutdown();
+            if ( item != null )
+            {
+                storeDirs.add( item.getStoreDir() );
+                item.shutdown();
+            }
         }
 
         ConsistencyCheckService service = new ConsistencyCheckService();
@@ -170,19 +186,22 @@ public class RollingUpgradeIT
         {
             for ( GraphDatabaseService db : newDbs )
             {
-                db.shutdown();
+                if ( db != null )
+                {
+                    db.shutdown();
+                }
             }
         }
     }
 
     private void startOldVersionCluster() throws Exception
     {
-        debug( "Downloading " + OLD_VERSION + " package" );
+        debug( "Downloading " + oldVersion + " package" );
         File oldVersionPackage = downloadAndUnpack(
-                "http://neo4j.com/customer/download/neo4j-enterprise-" + OLD_VERSION + "-windows.zip",
-                DIR.cacheDirectory( "download" ), OLD_VERSION + "-enterprise" );
+                "http://neo4j.com/customer/download/neo4j-enterprise-" + oldVersion + "-windows.zip",
+                DIR.cacheDirectory( "download" ), oldVersion + "-enterprise" );
         String classpath = assembleClassPathFromPackage( oldVersionPackage );
-        debug( "Starting " + OLD_VERSION + " cluster in separate jvms" );
+        debug( "Starting " + oldVersion + " cluster in separate jvms" );
         List<Future<LegacyDatabase>> legacyDbFutures = new ArrayList<>( CLUSTER_SIZE );
         for ( int i = 0; i < CLUSTER_SIZE; i++ )
         {
@@ -210,7 +229,7 @@ public class RollingUpgradeIT
                 db.verifyNodeExists( node );
             }
         }
-        debug( OLD_VERSION + " cluster fully operational" );
+        debug( oldVersion + " cluster fully operational" );
 
         centralNode = legacyDbs[0].initialize();
     }
@@ -277,7 +296,6 @@ public class RollingUpgradeIT
             storeDir += "new";
         }
         stop( i );
-        Thread.sleep( 30000 );
 
         File storeDirFile = new File( storeDir );
         debug( "Starting " + i + " as current version" );
