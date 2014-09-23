@@ -19,19 +19,7 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.util.Arrays.asList;
 
 public class MeasureDoNothing extends Thread
 {
