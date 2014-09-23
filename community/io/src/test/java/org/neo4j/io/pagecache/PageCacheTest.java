@@ -2658,7 +2658,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         }
     }
 
-    @Test( timeout = 1000, expected = IOException.class )
+    @Test( timeout = 20000, expected = IOException.class )
     public void pageFaultForReadMustThrowIfOutOfStorageSpace() throws IOException
     {
         generateFileWithRecords( file, recordCount, recordSize );
