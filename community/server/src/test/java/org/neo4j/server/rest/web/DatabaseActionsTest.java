@@ -37,6 +37,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -85,6 +87,7 @@ import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
 public class DatabaseActionsTest
 {
+    private static final Label LABEL = DynamicLabel.label( "Label" );
     private static GraphDbHelper graphdbHelper;
     private static Database database;
     private static AbstractGraphDatabase graph;
@@ -119,7 +122,7 @@ public class DatabaseActionsTest
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.getGraph().createNode();
+            Node node = database.getGraph().createNode( LABEL );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 node.setProperty( entry.getKey(), entry.getValue() );
@@ -766,7 +769,7 @@ public class DatabaseActionsTest
         String key = "mykey3";
         String value = "value";
 
-        long nodeId = graphdbHelper.createNode();
+        long nodeId = graphdbHelper.createNode( LABEL );
         String indexName = "node";
         graphdbHelper.addNodeToIndex( indexName, key, value, nodeId );
         int counter = 0;
@@ -868,16 +871,16 @@ public class DatabaseActionsTest
         // / / \
         // (Emil) (Peter) (Tobias)
 
-        long startNode = graphdbHelper.createNode( MapUtil.map( "name", "Root" ) );
-        long child1_l1 = graphdbHelper.createNode( MapUtil.map( "name", "Mattias" ) );
+        long startNode = graphdbHelper.createNode( MapUtil.map( "name", "Root" ), LABEL );
+        long child1_l1 = graphdbHelper.createNode( MapUtil.map( "name", "Mattias" ), LABEL  );
         graphdbHelper.createRelationship( "knows", startNode, child1_l1 );
-        long child2_l1 = graphdbHelper.createNode( MapUtil.map( "name", "Johan" ) );
+        long child2_l1 = graphdbHelper.createNode( MapUtil.map( "name", "Johan" ), LABEL  );
         graphdbHelper.createRelationship( "knows", startNode, child2_l1 );
-        long child1_l2 = graphdbHelper.createNode( MapUtil.map( "name", "Emil" ) );
+        long child1_l2 = graphdbHelper.createNode( MapUtil.map( "name", "Emil" ), LABEL  );
         graphdbHelper.createRelationship( "knows", child2_l1, child1_l2 );
-        long child1_l3 = graphdbHelper.createNode( MapUtil.map( "name", "Peter" ) );
+        long child1_l3 = graphdbHelper.createNode( MapUtil.map( "name", "Peter" ), LABEL  );
         graphdbHelper.createRelationship( "knows", child1_l2, child1_l3 );
-        long child2_l3 = graphdbHelper.createNode( MapUtil.map( "name", "Tobias" ) );
+        long child2_l3 = graphdbHelper.createNode( MapUtil.map( "name", "Tobias" ), LABEL  );
         graphdbHelper.createRelationship( "loves", child1_l2, child2_l3 );
         return startNode;
     }

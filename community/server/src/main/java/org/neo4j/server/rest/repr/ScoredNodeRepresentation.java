@@ -99,4 +99,10 @@ public final class ScoredNodeRepresentation extends
     {
         return getDelegate().pagedTraverseUriTemplate();
     }
+
+    @Mapping( "metadata" )
+    public MapRepresentation metadata()
+    {
+        return getDelegate().metadata();
+    }
 }

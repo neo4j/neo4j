@@ -44,6 +44,11 @@ class RepresentationTestBase
         assertTrue( "expected <" + expectedRegex + "> got <" + actualUri + ">", actualUri.matches( expectedRegex ) );
     }
 
+    static void assertRegexpMatches( String expectedRegex, String actual )
+    {
+        assertTrue( "expected <" + expectedRegex + "> got <" + actual + ">", actual.matches( expectedRegex ) );
+    }
+
     static String uriPattern( String subPath )
     {
         return "http://.*/[0-9]+" + subPath;
