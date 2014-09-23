@@ -574,6 +574,7 @@ public abstract class Command
                     "CountsCommand should only be used for composite counts. " +
                     "The key may contain at most one wildcard label. startLabelId=%s, typeId=%s, endLabelId=%s",
                     startLabelId, typeId, endLabelId );
+            assert delta != 0 : "Tried to create a CountsCommand for something that didn't change any count";
             this.startLabelId = startLabelId;
             this.typeId = typeId;
             this.endLabelId = endLabelId;

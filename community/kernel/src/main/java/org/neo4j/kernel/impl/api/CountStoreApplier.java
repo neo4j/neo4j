@@ -109,11 +109,8 @@ public class CountStoreApplier extends NeoCommandHandler.Adapter
     public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
     {
         long delta = command.delta();
-        if ( delta != 0 )
-        { // only apply commands that will make a difference
-            countsStore.updateCountsForRelationship(
-                    command.startLabelId(), command.typeId(), command.endLabelId(), delta );
-        }
+        countsStore.updateCountsForRelationship(
+                command.startLabelId(), command.typeId(), command.endLabelId(), delta );
         return true;
     }
 

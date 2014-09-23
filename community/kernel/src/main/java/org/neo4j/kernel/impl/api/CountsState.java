@@ -179,7 +179,10 @@ public class CountsState implements CountsVisitor.Visitable
         @Override
         public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
         {
-            commands.add( new Command.CountsCommand().init( startLabelId, typeId, endLabelId, count ) );
+            if ( count != 0 )
+            {   // Only add commands for counts that actually change
+                commands.add( new Command.CountsCommand().init( startLabelId, typeId, endLabelId, count ) );
+            }
         }
 
         @Override
