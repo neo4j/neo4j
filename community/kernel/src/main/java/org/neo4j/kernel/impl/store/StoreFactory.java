@@ -33,6 +33,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -296,9 +297,9 @@ public class StoreFactory
                 fileSystemAbstraction, stringLogger, dynamicLabelStore, versionMismatchHandler, monitors );
     }
 
-    private CountsStore newCountsStore()
+    private CountsTracker newCountsStore()
     {
-        return new CountsStore();
+        return new CountsTracker( fileSystemAbstraction, pageCache, storeFileName( COUNTS_STORE ) );
     }
 
     public NeoStore createNeoStore()
@@ -462,8 +463,8 @@ public class StoreFactory
 
     private void createCountsStore()
     {
-        CountsStore.createEmptyCountsStore( fileSystemAbstraction, storeFileName( COUNTS_STORE ),
-                                            CommonAbstractStore.ALL_STORES_VERSION );
+        CountsTracker.createEmptyCountsStore( pageCache, storeFileName( COUNTS_STORE ),
+                                              buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
     }
 
     /**

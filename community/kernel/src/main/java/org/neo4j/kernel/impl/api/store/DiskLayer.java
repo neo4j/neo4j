@@ -61,7 +61,7 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.store.CountsStore;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -84,6 +84,7 @@ import org.neo4j.register.Register;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
+import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -116,7 +117,7 @@ public class DiskLayer implements StoreReadLayer
     private final PropertyStore propertyStore;
     private final SchemaStorage schemaStorage;
     private final Provider<PropertyStore> propertyStoreProvider;
-    private final CountsStore countsStore;
+    private final CountsTracker counts;
 
     private static class PropertyStoreProvider implements Provider<PropertyStore>
     {
@@ -155,7 +156,7 @@ public class DiskLayer implements StoreReadLayer
         this.relationshipStore = this.neoStore.getRelationshipStore();
         this.propertyStore = this.neoStore.getPropertyStore();
         this.propertyStoreProvider = new PropertyStoreProvider( neoStoreProvider );
-        this.countsStore = neoStore.getCountsStore();
+        this.counts = neoStore.getCounts();
     }
 
     @Override
@@ -806,12 +807,16 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public long countsForNode( int labelId )
     {
-        return countsStore.countsForNode( labelId );
+        return counts.countsForNode( labelId );
     }
 
     @Override
     public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
     {
-        return countsStore.countsForRelationship( startLabelId, typeId, endLabelId );
+        if ( !(startLabelId == ANY_LABEL || endLabelId == ANY_LABEL) )
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+        return counts.countsForRelationship( startLabelId, typeId, endLabelId );
     }
 }

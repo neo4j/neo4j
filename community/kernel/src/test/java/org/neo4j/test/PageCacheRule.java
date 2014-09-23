@@ -21,8 +21,6 @@ package org.neo4j.test;
 
 import java.io.IOException;
 
-import org.junit.rules.ExternalResource;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheMonitor;

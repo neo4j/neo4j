@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ReadOperations;
 
-public abstract class CountsKey
+public abstract class CountsKey implements Comparable<CountsKey>
 {
     public static NodeKey nodeKey( int labelId )
     {
@@ -85,6 +85,20 @@ public abstract class CountsKey
         public int hashCode()
         {
             return labelId;
+        }
+
+        @Override
+        public int compareTo( CountsKey o )
+        {
+            if ( o instanceof NodeKey )
+            {
+                NodeKey that = (NodeKey) o;
+                return this.labelId - that.labelId;
+            }
+            else
+            {
+                return -1;
+            }
         }
     }
 
@@ -151,6 +165,28 @@ public abstract class CountsKey
             result = 31 * result + typeId;
             result = 31 * result + endLabelId;
             return result;
+        }
+
+        @Override
+        public int compareTo( CountsKey o )
+        {
+            if ( o instanceof RelationshipKey )
+            {
+                RelationshipKey that = (RelationshipKey) o;
+                if ( this.typeId != that.typeId )
+                {
+                    return this.typeId - that.typeId;
+                }
+                if ( this.startLabelId != that.startLabelId )
+                {
+                    return this.startLabelId - that.startLabelId;
+                }
+                return this.endLabelId - that.endLabelId;
+            }
+            else
+            {
+                return 1;
+            }
         }
     }
 

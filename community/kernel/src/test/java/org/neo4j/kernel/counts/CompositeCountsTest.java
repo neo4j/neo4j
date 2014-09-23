@@ -349,7 +349,7 @@ public class CompositeCountsTest
     private void verifyAllCounts()
     {
         NeoStore stores = db.resolveDependency( NeoStoreProvider.class ).evaluate();
-        List<CountsState.Difference> differences = computeCounts( stores ).verify( stores.getCountsStore() );
+        List<CountsState.Difference> differences = computeCounts( stores ).verify( stores.getCounts() );
         if ( !differences.isEmpty() )
         {
             StringBuilder error = new StringBuilder();

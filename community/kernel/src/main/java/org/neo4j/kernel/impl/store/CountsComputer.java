@@ -60,11 +60,7 @@ public class CountsComputer
             NodeRecord record = nodes.forceGetRecord( id );
             if ( record.inUse() )
             {
-                target.increment( ANY_LABEL );
-                for ( long label : labels( record ) )
-                {
-                    target.increment( (int) label );
-                }
+                target.addNode( labels( record ) );
             }
         }
         // count relationships
@@ -73,24 +69,9 @@ public class CountsComputer
             RelationshipRecord record = relationships.forceGetRecord( id );
             if ( record.inUse() )
             {
-                target.increment( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
-                target.increment( ANY_LABEL, record.getType(), ANY_LABEL );
                 long[] startLabels = labels( nodes.getRecord( record.getFirstNode() ) );
                 long[] endLabels = labels( nodes.getRecord( record.getSecondNode() ) );
-                for ( long startLabelId : startLabels )
-                {
-                    target.increment( (int) startLabelId, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
-                    target.increment( (int) startLabelId, record.getType(), ANY_LABEL );
-                    for ( long endLabelId : endLabels )
-                    {
-                        target.increment( (int) startLabelId, record.getType(), (int) endLabelId );
-                    }
-                }
-                for ( long endLabelId : endLabels )
-                {
-                    target.increment( ANY_LABEL, ANY_RELATIONSHIP_TYPE, (int) endLabelId );
-                    target.increment( ANY_LABEL, record.getType(), (int) endLabelId );
-                }
+                target.addRelationship( startLabels, record.getType(), endLabels );
             }
         }
     }
