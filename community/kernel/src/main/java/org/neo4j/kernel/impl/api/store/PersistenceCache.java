@@ -496,6 +496,11 @@ public class PersistenceCache
         nodeCache.put( new NodeImplReservation( nodeId ) );
     }
 
+    public void releaseNode(long nodeId)
+    {
+        nodeCache.remove( nodeId );
+    }
+
     /**
      * Used when rolling back a transaction. Node reservations are put in cache up front, so those have
      * to be removed when rolling back.
