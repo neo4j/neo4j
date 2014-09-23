@@ -33,7 +33,7 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
 }
 
 sealed trait QueryPart extends ASTNode with ASTPhrase with SemanticCheckable {
-  def containsUpdates:Boolean
+  def containsUpdates: Boolean
 }
 
 case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart {
@@ -114,7 +114,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   }
 }
 
-sealed trait Union extends QueryPart {
+sealed trait Union extends QueryPart with SemanticChecking {
   def part: QueryPart
   def query: SingleQuery
 
@@ -122,8 +122,30 @@ sealed trait Union extends QueryPart {
 
   def semanticCheck: SemanticCheck =
     checkUnionAggregation chain
-    part.semanticCheck chain
-    query.semanticCheck
+    withScopedState(part.semanticCheck) chain
+    withScopedState(query.semanticCheck) chain
+    checkColumnNamesAgree
+
+  private def checkColumnNamesAgree: SemanticCheck = (state: SemanticState) => {
+    val rootScope: Scope = state.currentScope.scope
+
+    // UNION queries form a chain in the shape of a reversed linked list.
+    // Therefore, the second scope is always a shallow scope, where the last one corresponds to the RETURN clause.
+    // The first one may either be another UNION query part or a single query.
+    val first :: second :: Nil = rootScope.children
+    val newFirst = part match {
+      case _: Union => // Union query parts always have two child scopes.
+        val _ :: newFirst :: Nil = first.children
+        newFirst
+      case _ => first
+    }
+    val errors = if (newFirst.children.last.symbolNames == second.children.last.symbolNames) {
+      Seq.empty
+    } else {
+      Seq(SemanticError("All sub queries in an UNION must have the same column names", position))
+    }
+    SemanticCheckResult(state, errors)
+  }
 
   private def checkUnionAggregation: SemanticCheck = (part, this) match {
     case (_: SingleQuery, _)                  => None
