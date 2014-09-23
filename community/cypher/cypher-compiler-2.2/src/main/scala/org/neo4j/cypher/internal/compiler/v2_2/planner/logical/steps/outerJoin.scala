@@ -37,7 +37,7 @@ object outerJoin extends CandidateGenerator[PlanTable] {
       planOuterHashJoin(joinNode, lhs, rhs)
     }
 
-    CandidateList(outerJoinPlans)
+    CandidateList(outerJoinPlans.toSeq)
   }
 
   private def applicable(joinNode: IdName, outerPlan: LogicalPlan, optionalQG: QueryGraph) = {
