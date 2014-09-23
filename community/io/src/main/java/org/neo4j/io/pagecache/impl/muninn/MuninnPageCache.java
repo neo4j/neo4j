@@ -330,7 +330,7 @@ public class MuninnPageCache implements RunnablePageCache
         IOException exception = evictorException;
         if ( exception != null )
         {
-            throw new IOException( "The page eviction thread is dead.", exception );
+            throw new IOException( "Exception in the page eviction thread", exception );
         }
     }
 
