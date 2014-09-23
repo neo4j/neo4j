@@ -29,6 +29,12 @@ OSX users need to have http://brew.sh/[Homebrew] installed.
 
   brew install graphviz libtool maven node.js
 
+Node.js and npm are required to build the neo4j browser. In addition, on some machines it was necessary to install grunt-cli:
+
+  npm install grunt-cli
+
+If you don't plan to build the browser (for example by using -DskipBrowser), then don't worry about this step.
+
 === With apt-get on Ubuntu ===
 
   sudo apt-get install graphviz maven nodejs make
@@ -37,6 +43,10 @@ Due to a file naming collision, the http://packages.debian.org/nodejs[nodejs] pa
 
   cd ~/bin
   ln -s /usr/bin/nodejs node
+
+On Ubuntu 14.04 it seems the nodejs package does not include npm, so you should install that too:
+
+  sudo apt-get install graphviz maven nodejs npm make
 
 == Building Neo4j ==
 
