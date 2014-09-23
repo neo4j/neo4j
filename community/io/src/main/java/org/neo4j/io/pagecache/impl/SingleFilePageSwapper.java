@@ -22,36 +22,61 @@ package org.neo4j.io.pagecache.impl;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.impl.muninn.UnsafeUtil;
 
 public class SingleFilePageSwapper implements PageSwapper
 {
+    private static final long fileSizeOffset =
+            UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
+
     private final File file;
     private final StoreChannel channel;
     private final int filePageSize;
     private final PageEvictionCallback onEviction;
 
+    // Accessed through unsafe
+    private volatile long fileSize;
+
     public SingleFilePageSwapper(
             File file,
-            StoreChannel channel,
+            FileSystemAbstraction fs,
             int filePageSize,
-            PageEvictionCallback onEviction )
+            PageEvictionCallback onEviction ) throws IOException
     {
         this.file = file;
-        this.channel = channel;
+        this.channel = fs.open( file, "rw" );
         this.filePageSize = filePageSize;
         this.onEviction = onEviction;
+        increaseFileSizeTo( channel.size() );
+    }
+
+    private void increaseFileSizeTo( long newFileSize )
+    {
+        long currentFileSize;
+        do
+        {
+            currentFileSize = getCurrentFileSize();
+        }
+        while ( currentFileSize < newFileSize && !UnsafeUtil.compareAndSwapLong(
+                this, fileSizeOffset, currentFileSize, newFileSize ) );
+    }
+
+    private long getCurrentFileSize()
+    {
+        return UnsafeUtil.getLongVolatile( this, fileSizeOffset );
     }
 
     @Override
     public void read( long filePageId, Page page ) throws IOException
     {
         long offset = pageIdToPosition( filePageId );
-        if ( offset < channel.size() )
+        if ( offset < getCurrentFileSize() )
         {
             page.swapIn( channel, offset, filePageSize );
         }
@@ -62,6 +87,7 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         long offset = pageIdToPosition( filePageId );
         page.swapOut( channel, offset, filePageSize );
+        increaseFileSizeTo( offset + filePageSize );
     }
 
     @Override
@@ -119,7 +145,7 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long getLastPageId() throws IOException
     {
-        long channelSize = channel.size();
+        long channelSize = getCurrentFileSize();
         if ( channelSize == 0 )
         {
             return PageCursor.UNBOUND_PAGE_ID;
