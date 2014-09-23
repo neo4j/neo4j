@@ -156,8 +156,31 @@ The available cache types are:
 
 === High-Performance Cache ===
 
-Since the High-Performance Cache operates with a maximum size in the JVM it may be configured per use case for optimal performance.
-There are two aspects of the cache size.
+How much memory to allocate to the High Performance Cache can be fine tuned to suit your use case.
+There are two ways to configure memory usage for it.
+
+*Standard configuration*
+
+For most use cases, simply specifying a percentage of the memory available for caching to use is enough to tune the High-Performance Cache.
+
+Allocating more memory to the cache gives faster querying speed, but takes memory away from other components and may put strain on the JVM garbage collector.
+
+The max amount of memory available for caching depends on which garbage collector you are using.
+For CMS and G1 collectors (CMS is the Neo4j default), it will be equal to the max size of the old generation. How big
+the old generation is is platform-dependent, but can for CMS and G1 be configured using the "NewRatio" JVM configuration
+option.
+For other collectors, it will be half of the total heap size.
+
+[options="header",cols="<25m,<65,<10m"]
+|==========================================
+| `configuration option`   | Description (what it controls)                                                           | Example value
+| cache.memory_ratio       | Percentage, 0-100, of memory available for caching to use for caching. Default is 50%.   | 50.0
+|==========================================
+
+*Advanced configuration*
+
+The advanced configuration gives more fine-grained control of how much memory to allocate specific parts of the cache.
+There are two aspects to this configuration.
 
 One is the size of the array referencing the objects that are put in the cache.
 It is specified as a fraction of the heap, for example specifying +5+ will let that array itself take up 5% out of the entire heap.
