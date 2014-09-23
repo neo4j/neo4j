@@ -57,4 +57,20 @@ class OptionalBehaviourAcceptanceTest extends ExecutionEngineFunSuite with NewPl
 
     assert(result.toList === List(Map("a" -> nodeA, "b" -> nodeB)))
   }
+
+  test("should support named paths inside of optional matches") {
+    val nodeA = createLabeledNode("A")
+    val result = executeWithNewPlanner("match (a:A) optional match p = a-[:X]->b return p")
+
+    assert(result.toList === List(Map("p" -> null)))
+  }
+
+  test("should support names paths inside of option matches with node predicates") {
+    val nodeA = createLabeledNode("A")
+    val nodeB = createLabeledNode("B")
+    relate(nodeA, nodeB)
+    val result = executeWithNewPlanner("match (a:A), (b:B) optional match p = a-[:X]->b return p")
+
+    assert(result.toList === List(Map("p" -> null)))
+  }
 }
