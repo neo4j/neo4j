@@ -345,7 +345,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
 
     protected boolean isRecordInUse( ByteBuffer buffer )
     {
-        return ( ( buffer.get() & (byte) 0xF0 ) >> 4 ) == Record.IN_USE.byteValue();
+        return ( buffer.get() & (byte) 0x10 ) >> 4 == Record.IN_USE.byteValue();
     }
 
     private DynamicRecord getRecord( long blockId, PersistenceWindow window, RecordLoad load )
