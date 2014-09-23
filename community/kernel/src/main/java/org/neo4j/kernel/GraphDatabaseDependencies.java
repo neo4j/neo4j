@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.neo4j.helpers.collection.Iterables.addAll;
-import static org.neo4j.helpers.collection.Iterables.cache;
 
 public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.Dependencies
 {

@@ -561,7 +561,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     @Override
     protected boolean isInUse( byte inUseByte )
     {
-        return ( ( inUseByte & (byte) 0xF0 ) >> 4 ) == Record.IN_USE.byteValue();
+        return ( ( inUseByte & (byte) 0x10 ) >> 4 ) == Record.IN_USE.byteValue();
     }
 
     @Override

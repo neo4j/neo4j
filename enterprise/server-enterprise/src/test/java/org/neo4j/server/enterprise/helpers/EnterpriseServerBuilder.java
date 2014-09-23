@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;

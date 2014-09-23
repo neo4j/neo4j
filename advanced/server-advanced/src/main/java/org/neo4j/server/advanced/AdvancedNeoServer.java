@@ -23,7 +23,6 @@ import java.util.Arrays;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.advanced.modules.JMXManagementModule;
 import org.neo4j.server.configuration.Configurator;

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.logging;
 
-import ch.qos.logback.core.rolling.RollingFileAppender;
-import ch.qos.logback.core.rolling.RollingPolicy;
 import ch.qos.logback.core.rolling.RolloverFailure;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import org.neo4j.kernel.monitoring.Monitors;

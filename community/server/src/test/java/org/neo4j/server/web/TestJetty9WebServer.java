@@ -27,7 +27,6 @@ import javax.ws.rs.core.Response.Status;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.WrappingNeoServer;

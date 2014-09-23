@@ -25,7 +25,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration;
 
 /**
  * This class is here since kernel has a weak dependency on logback, i.e. it will be used if available,
