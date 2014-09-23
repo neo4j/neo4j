@@ -39,11 +39,11 @@ case class QueryGraphCardinalityModel(statistics: GraphStatistics,
    * [QG, QG ++ opt1, QG ++ opt2, QG ++ opt3, QG ++ opt1 ++ opt2, QG ++ opt2 ++ opt3, QG ++ opt1 ++ opt2 ++ opt3]
    */
   private def findQueryGraphCombinations(queryGraph: QueryGraph) = {
-    (0 to queryGraph.optionalMatches.length)
-      .map(queryGraph.optionalMatches.combinations)
+    (0 to queryGraph.optionalMatches.size)
+      .map(queryGraph.optionalMatches.toSeq.combinations)
       .flatten
-      .map(_.foldLeft(QueryGraph.empty)(_.withOptionalMatches(Seq.empty) ++ _.withOptionalMatches(Seq.empty)))
-      .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
+      .map(_.foldLeft(QueryGraph.empty)(_.withOptionalMatches(Set.empty) ++ _.withOptionalMatches(Set.empty)))
+      .map(queryGraph.withOptionalMatches(Set.empty) ++ _)
   }
 
   private def cardinalityForQueryGraph(queryGraph: QueryGraph): Cardinality = {

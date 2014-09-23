@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.cartesianProduct
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
@@ -43,11 +43,32 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
 
     def findBestPlan(planGenerator: CandidateGenerator[PlanTable]): PlanTable => PlanTable = {
       (planTable: PlanTable) =>
-        val step = planGenerator +||+ findShortestPaths
-        val generated = step(planTable, queryGraph).plans
-        val selected = generated.map(select(_, queryGraph))
-        val best = pickBest(CandidateList(selected))
-        best.fold(planTable)(planTable + _)
+        val step: CandidateGenerator[PlanTable] = planGenerator +||+ findShortestPaths
+        val generated: Seq[LogicalPlan] = step(planTable, queryGraph).plans
+
+        if (generated.nonEmpty) {
+          val selected: Seq[LogicalPlan] = generated.map(select(_, queryGraph))
+//          println("Building on top of " + planTable.plans.map(_.availableSymbols).mkString(" | "))
+//          println("Produced: " + selected.map(_.availableSymbols).mkString(" | "))
+
+          // We want to keep the best plan per set of covered ids.
+          val candidatesPerIds: Map[Set[IdName], CandidateList] =
+            selected.foldLeft(Map.empty[Set[IdName], CandidateList]) {
+              case (acc, plan) =>
+                val ids = plan.availableSymbols.filterNot(idName => idName.name.endsWith("$$$_") || idName.name.endsWith("$$$"))
+                val candidates = acc.getOrElse(ids, CandidateList()) + plan
+                acc + (ids -> candidates)
+            }
+
+          val best: Iterable[LogicalPlan] = candidatesPerIds.values.map(pickBest).flatten
+
+//          println(s"best: ${best.map(_.availableSymbols)}")
+          val result = best.foldLeft(planTable)(_ + _)
+
+//          println(s"result: ${result.plans.map(_.availableSymbols).toList}")
+//          println("*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+")
+          result
+        } else planTable
     }
 
     val leaves: PlanTable = generateLeafPlanTable()

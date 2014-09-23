@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.mockito.Mockito
-import org.neo4j.graphdb.Node
-import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.graphdb.Node
 
 class NodeHashJoinPipeTest extends CypherFunSuite {
 
   implicit val monitor = mock[PipeMonitor]
-  import Mockito.when
+  import org.mockito.Mockito.when
 
   test("should support simple hash join over nodes") {
     // given
@@ -44,10 +44,45 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> node2), row("b" -> node3)))
 
     // when
-    val result = NodeHashJoinPipe("b", left, right)().createResults(queryState)
+    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
 
     // then
     result.map(_("b")).toList should equal(List(node2))
+  }
+
+  test("should support joining on two different identifiers") {
+    // given
+    val node0 = newMockedNode(0)
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    when(left.createResults(queryState)).thenReturn(
+      Iterator(
+        row("a" -> node0, "b" -> node1, "c" -> 1),
+        row("a" -> node0, "b" -> node2, "c" -> 2),
+        row("a" -> node0, "b" -> node2, "c" -> 3),
+        row("a" -> node1, "b" -> node2, "c" -> 4),
+        row("a" -> node0, "b" -> null,  "c" -> 5)))
+
+    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    when(right.createResults(queryState)).thenReturn(
+      Iterator(
+        row("a" -> node0, "b" -> node1, "d" -> 1),
+        row("a" -> node0, "b" -> node2, "d" -> 2),
+        row("a" -> node2, "b" -> node2, "d" -> 3),
+        row("a" -> null,  "b" -> node2,  "d" -> 4)))
+
+    // when
+    val result = NodeHashJoinPipe(Set("a", "b"), left, right)().createResults(queryState).toList
+
+    // then
+    result should equal(List(
+      Map("a"->node0, "b"->node1, "c" -> 1, "d" -> 1),
+      Map("a"->node0, "b"->node2, "c" -> 2, "d" -> 2),
+      Map("a"->node0, "b"->node2, "c" -> 3, "d" -> 2)
+    ))
   }
 
   test("should work when the inner pipe produces multiple rows with the same join key") {
@@ -63,7 +98,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> node2, "c" -> 30), row("b" -> node2, "c" -> 40)))
 
     // when
-    val result = NodeHashJoinPipe("b", left, right)().createResults(queryState)
+    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -85,7 +120,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> node2, "c" -> 30), row("b" -> node1, "c" -> 40)))
 
     // when
-    val result = NodeHashJoinPipe("b", left, right)().createResults(queryState)
+    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -106,7 +141,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> null, "c" -> 30), row("b" -> node2, "c" -> 40)))
 
     // when
-    val result = NodeHashJoinPipe("b", left, right)().createResults(queryState)
+    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -120,6 +155,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
   private def newMockedNode(id: Int) = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
+    when(node.toString).thenReturn("node - " + id.toString)
     node
   }
 

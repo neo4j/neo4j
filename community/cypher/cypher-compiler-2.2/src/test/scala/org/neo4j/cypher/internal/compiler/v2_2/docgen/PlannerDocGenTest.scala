@@ -255,7 +255,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
     test("renders optional query graphs") {
       pprintToString(QueryGraph(
-        optionalMatches = Seq(
+        optionalMatches = Set(
           QueryGraph(patternNodes = Set(IdName("a")))
         )
       ))  should equal("GIVEN * OPTIONAL { GIVEN * MATCH (a) }")
@@ -263,7 +263,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
     test("renders multiple optional query graphs") {
       pprintToString(QueryGraph(
-        optionalMatches = Seq(
+        optionalMatches = Set(
           QueryGraph(patternNodes = Set(IdName("a"))),
           QueryGraph(patternNodes = Set(IdName("b")))
         )
