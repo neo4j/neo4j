@@ -52,7 +52,7 @@ class CreateUniqueTest extends RefcardTest with QueryStatisticsTestSupport {
   def text = """
 ###assertion=create parameters=aname
 //
-START n=node(%A%)
+MATCH n WHERE id(n) = %A%
 
 CREATE UNIQUE
     (n)-[:KNOWS]->(m {property: {value}})

@@ -58,10 +58,11 @@ class PatternsTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=related
-START n=node(%A%), m=node(%B%)
 MATCH
 
 (n)-->(m)
+
+WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN n,m###
 
@@ -105,60 +106,66 @@ RETURN n,m###
 Node `n` labeled `Person` has a relationship to `m`.
 
 ###assertion=related
-START n=node(%A%), m=node(%B%)
 MATCH
 
 (n)--(m)
+
+WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN n,m###
 
 A relationship in any direction between `n` and `m`.
 
 ###assertion=related
-START n=node(%A%), m=node(%B%)
 MATCH
 
 (m)<-[:KNOWS]-(n)
+
+WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN n,m###
 
 A relationship from `n` to `m` of type `KNOWS` exists.
 
 ###assertion=related
-START n=node(%A%), m=node(%B%)
 MATCH
 
 (n)-[:KNOWS|LOVES]->(m)
+
+WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN n,m###
 
 A relationship from `n` to `m` of type `KNOWS` or `LOVES` exists.
 
 ###assertion=related
-START n=node(%A%), m=node(%B%)
 MATCH
 
 (n)-[r]->(m)
+
+WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN r###
 
 Bind an identifier to the relationship.
 
 ###assertion=related
-START n=node(%A%), m=node(%B%)
 MATCH
 
 (n)-[*1..5]->(m)
+
+WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN n,m###
 
 Variable length paths.
 
 ###assertion=related
-START n=node(%A%), m=node(%B%)
 MATCH
 
 (n)-[*]->(m)
+
+WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN n,m###
 
@@ -166,7 +173,8 @@ Any depth.
 See the performance tips.
 
 ###assertion=create parameters=aname
-START n=node(%A%)
+MATCH n WHERE id(n) = %A%
+
 CREATE UNIQUE
 
 (n)-[:KNOWS]->(m {property: {value}})

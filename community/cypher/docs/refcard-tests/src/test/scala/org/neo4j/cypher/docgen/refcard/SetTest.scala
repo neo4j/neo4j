@@ -54,7 +54,7 @@ class SetTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=set parameters=set
-START n = node(%A%)
+MATCH n WHERE id(n) = %A%
 
 SET n.property = {value},
     n.property2 = {value2}
