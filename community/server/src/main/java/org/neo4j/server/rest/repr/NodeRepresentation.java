@@ -19,9 +19,15 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import java.util.Collection;
+
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public final class NodeRepresentation extends ObjectRepresentation implements ExtensibleRepresentation,
         EntityRepresentation
@@ -132,6 +138,20 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
     public ValueRepresentation pagedTraverseUriTemplate()
     {
         return ValueRepresentation.template( path( "/paged/traverse/{returnType}{?pageSize,leaseTime}" ) );
+    }
+
+    @Mapping( "metadata" )
+    public MapRepresentation metadata()
+    {
+        Collection<String> labels = IteratorUtil.asCollection( new IterableWrapper<String, Label>( node.getLabels() )
+        {
+            @Override
+            protected String underlyingObjectToObject( Label label )
+            {
+                return label.name();
+            }
+        });
+        return new MapRepresentation( map( "id", String.valueOf( node.getId() ), "labels" , labels ) );
     }
 
     @Override
