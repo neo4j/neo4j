@@ -65,7 +65,31 @@ public class CountsOracle
 
     public void verify( final CountsTracker tracker )
     {
-        List<CountsState.Difference> differences = state.verify( tracker );
+        List<CountsState.Difference> differences = state.verify( new CountsVisitor.Visitable()
+        {
+            @Override
+            public void accept( final CountsVisitor verifier )
+            {
+                tracker.accept( new CountsVisitor()
+                {
+                    @Override
+                    public void visitNodeCount( int labelId, long count )
+                    {
+                        assertEquals( "Should be able to read visited state.",
+                                      tracker.countsForNode( labelId ), count );
+                        verifier.visitNodeCount( labelId, count );
+                    }
+
+                    @Override
+                    public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
+                    {
+                        assertEquals( "Should be able to read visited state.",
+                                      tracker.countsForRelationship( startLabelId, typeId, endLabelId ), count );
+                        verifier.visitRelationshipCount( startLabelId, typeId, endLabelId, count );
+                    }
+                } );
+            }
+        } );
         if ( !differences.isEmpty() )
         {
             StringBuilder errors = new StringBuilder()

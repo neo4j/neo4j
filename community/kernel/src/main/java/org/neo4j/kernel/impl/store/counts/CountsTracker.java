@@ -82,8 +82,8 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             boolean hasAlpha = fs.fileExists( alpha ), hasBeta = fs.fileExists( beta );
             if ( hasAlpha && hasBeta )
             {
-                CountsStore alphaStore = CountsStore.open( pageCache, alpha );
-                CountsStore betaStore = CountsStore.open( pageCache, beta );
+                CountsStore alphaStore = CountsStore.open( fs, pageCache, alpha );
+                CountsStore betaStore = CountsStore.open( fs, pageCache, beta );
                 long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();
                 if ( alphaTxId > betaTxId )  // TODO: compare to what the txIdProvider says...
                 {
@@ -98,11 +98,11 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             }
             else if ( hasAlpha )
             {
-                return CountsStore.open( pageCache, alpha );
+                return CountsStore.open( fs, pageCache, alpha );
             }
             else if ( hasBeta )
             {
-                return CountsStore.open( pageCache, beta );
+                return CountsStore.open( fs, pageCache, beta );
             }
             else
             {

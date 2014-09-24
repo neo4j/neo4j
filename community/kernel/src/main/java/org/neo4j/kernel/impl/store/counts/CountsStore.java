@@ -22,7 +22,10 @@ package org.neo4j.kernel.impl.store.counts;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -33,8 +36,6 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
-import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
@@ -47,14 +48,17 @@ class CountsStore implements Closeable
     }
 
     static final int RECORD_SIZE = (3 * 4) + 8/*bytes*/;
+    private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final File file;
     private final PagedFile pages;
     private final CountsStoreHeader header;
     private final int totalRecords;
 
-    private CountsStore( PageCache pageCache, File file, PagedFile pages, CountsStoreHeader header )
+    private CountsStore( FileSystemAbstraction fs, PageCache pageCache, File file, PagedFile pages,
+                         CountsStoreHeader header )
     {
+        this.fs = fs;
         this.pageCache = pageCache;
         this.file = file;
         this.pages = pages;
@@ -88,11 +92,11 @@ class CountsStore implements Closeable
         }
     }
 
-    static CountsStore open( PageCache pageCache, File storeFile ) throws IOException
+    static CountsStore open( FileSystemAbstraction fs, PageCache pageCache, File storeFile ) throws IOException
     {
         PagedFile pages = mapCountsStore( pageCache, storeFile );
         CountsStoreHeader header = CountsStoreHeader.read( pages );
-        return new CountsStore( pageCache, storeFile, pages, header );
+        return new CountsStore( fs, pageCache, storeFile, pages, header );
     }
 
     private static PagedFile mapCountsStore( PageCache pageCache, File storeFile ) throws IOException
@@ -184,20 +188,25 @@ class CountsStore implements Closeable
 
     public void accept( RecordVisitor visitor )
     {
-        try ( PageCursor cursor = pages.io( 0, PF_SHARED_LOCK | PF_NO_GROW | PF_READ_AHEAD ) )
+        try ( InputStream in = fs.openAsInputStream( file ) )
         {
-            int record = 0;
-            while ( cursor.next() )
+            // skip the header
+            for ( long bytes = header.headerRecords() * RECORD_SIZE; bytes != 0; )
             {
-                for ( int offset = (cursor.getCurrentPageId() == 0 ? header.headerRecords() : 0) * RECORD_SIZE;
-                      offset < pages.pageSize(); offset += RECORD_SIZE )
+                bytes -= in.skip( bytes );
+            }
+            byte[] record = new byte[RECORD_SIZE];
+            ByteBuffer buffer = ByteBuffer.wrap( record );
+            for ( int read, offset = 0; (read = in.read( record, offset, record.length - offset )) != -1; )
+            {
+                if ( read != record.length )
                 {
-                    if ( record++ >= totalRecords )
-                    {
-                        return;
-                    }
-                    visitRecord( cursor, offset, visitor );
+                    offset = read;
+                    continue;
                 }
+                buffer.position( 0 );
+                visitRecord( buffer, visitor );
+                offset = 0;
             }
         }
         catch ( IOException e )
@@ -206,28 +215,24 @@ class CountsStore implements Closeable
         }
     }
 
-    private void visitRecord( PageCursor page, int offset, RecordVisitor visitor ) throws IOException
+    private void visitRecord( ByteBuffer buffer, RecordVisitor visitor )
     {
         CountsKey key;
         long value;
-        do
+        int startLabelId = buffer.getInt();
+        int typeId = buffer.getInt();
+        int endLabelId = buffer.getInt();
+        long count = buffer.getLong();
+        if ( count < 0 )
         {
-            page.setOffset( offset );
-            int startLabelId = page.getInt();
-            int typeId = page.getInt();
-            int endLabelId = page.getInt();
-            long count = page.getLong();
-            if ( count < 0 )
-            {
-                value = -count;
-                key = nodeKey( typeId );
-            }
-            else
-            {
-                value = count;
-                key = relationshipKey( startLabelId, typeId, endLabelId );
-            }
-        } while ( page.shouldRetry() );
+            value = -count;
+            key = nodeKey( typeId );
+        }
+        else
+        {
+            value = count;
+            key = relationshipKey( startLabelId, typeId, endLabelId );
+        }
         visitor.visit( key, value );
     }
 
@@ -316,7 +321,7 @@ class CountsStore implements Closeable
         @Override
         public CountsStore openForReading() throws IOException
         {
-            return new CountsStore( pageCache, targetFile, pagedFile, newHeader() );
+            return new CountsStore( fs, pageCache, targetFile, pagedFile, newHeader() );
         }
 
         @Override

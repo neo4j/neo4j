@@ -42,12 +42,6 @@ import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescripto
 
 public class CountsTrackerTest
 {
-    static // hack to make these tests work with multiple cursors...
-    {
-        CountsTrackerTest.class.getClassLoader()
-                               .setClassAssertionStatus( "org.neo4j.io.pagecache.impl.muninn.MuninnCursorPool", false );
-    }
-
     private static final String VERSION = buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR );
     public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     public final @Rule TestName testName = new TestName();
