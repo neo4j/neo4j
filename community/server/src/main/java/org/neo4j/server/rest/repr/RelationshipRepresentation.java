@@ -22,6 +22,8 @@ package org.neo4j.server.rest.repr;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IterableWrapper;
 
+import static org.neo4j.helpers.collection.MapUtil.map;
+
 public final class RelationshipRepresentation extends ObjectRepresentation implements ExtensibleRepresentation,
         EntityRepresentation
 {
@@ -88,6 +90,12 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
     public ValueRepresentation propertyUriTemplate()
     {
         return ValueRepresentation.template( path( "/properties/{key}" ) );
+    }
+
+    @Mapping( "metadata" )
+    public MapRepresentation metadata()
+    {
+        return new MapRepresentation( map( "id", String.valueOf( rel.getId() ), "type", rel.getType().name() ) );
     }
 
     @Override

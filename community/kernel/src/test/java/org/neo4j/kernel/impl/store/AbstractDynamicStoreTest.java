@@ -84,7 +84,7 @@ public class AbstractDynamicStoreTest
             public void accept( Processor processor, DynamicRecord record )
             {   // Ignore
             }
-            
+
             @Override
             public String getTypeDescriptor()
             {
@@ -92,10 +92,10 @@ public class AbstractDynamicStoreTest
             }
         };
     }
-    
+
     public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
     private final File fileName = new File( "store" );
-    
+
     @Before
     public void before() throws IOException
     {
