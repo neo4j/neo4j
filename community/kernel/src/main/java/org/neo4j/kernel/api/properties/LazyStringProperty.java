@@ -31,7 +31,7 @@ class LazyStringProperty extends LazyProperty<String>
     @Override
     public boolean valueEquals( Object value )
     {
-        return value().equals( value );
+        return StringProperty.valueEquals( value(), value );
     }
 
     @Override

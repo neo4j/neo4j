@@ -379,7 +379,8 @@ public class PropertyIT extends KernelIntegrationTest
             // THEN
             assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "LazyArrayProperty" ) );
             assertArrayEquals( value, (int[]) statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
-            assertEquals( Arrays.hashCode( value ), statement.nodeGetProperty( nodeId, propertyKeyId ).hashCode() );
+            assertEquals( Property.intArrayProperty( propertyKeyId, value ).hashCode(),
+                          statement.nodeGetProperty( nodeId, propertyKeyId ).hashCode() );
             assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).valueEquals( value ) );
         }
     }

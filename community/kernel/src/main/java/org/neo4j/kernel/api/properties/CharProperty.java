@@ -27,7 +27,7 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
  */
 final class CharProperty extends DefinedProperty
 {
-    private final char value;
+    final char value;
 
     CharProperty( int propertyKeyId, char value )
     {
@@ -43,7 +43,12 @@ final class CharProperty extends DefinedProperty
         {
             return value == ((Character) other).charValue();
         }
-        return valueCompare( value, other );
+        if ( other instanceof String )
+        {
+            String that = (String) other;
+            return that.length() == 1 && that.charAt( 0 ) == value;
+        }
+        return false;
     }
 
     @Override
@@ -61,7 +66,19 @@ final class CharProperty extends DefinedProperty
     @Override
     boolean hasEqualValue( DefinedProperty that )
     {
-        return value == ((CharProperty) that).value;
+        if ( that instanceof CharProperty )
+        {
+            return value == ((CharProperty) that).value;
+        }
+        else if ( that instanceof StringProperty )
+        {
+            String str = ((StringProperty) that).value();
+            return str.length() == 1 && value == str.charAt( 0 );
+        }
+        else
+        {
+            return false;
+        }
     }
 
     @Override
