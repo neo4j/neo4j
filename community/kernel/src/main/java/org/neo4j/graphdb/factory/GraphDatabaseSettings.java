@@ -180,13 +180,13 @@ public abstract class GraphDatabaseSettings
     @Description("Target size for pages of mapped memory.")
     public static final Setting<Long> mapped_memory_page_size = setting("mapped_memory_page_size", BYTES, "8192" );
 
-    @Description("The amount of memory to use for mapping the store files, either in bytes or\n" +
-            " as a percentage of available memory. This will be clipped at the amount of\n" +
-            " free memory observed when the database starts, and automatically be rounded\n" +
-            " down to the nearest whole page. For example, if \"500MB\" is configured, but\n" +
-            " only 450MB of memory is free when the database starts, then the database will\n" +
-            " map at most 450MB. If \"50%\" is configured, and the system has a capacity of\n" +
-            " 4GB, then at most 2GB of memory will be mapped, unless the database observes\n" +
+    @Description("The amount of memory to use for mapping the store files, either in bytes or" +
+            " as a percentage of available memory. This will be clipped at the amount of" +
+            " free memory observed when the database starts, and automatically be rounded" +
+            " down to the nearest whole page. For example, if \"500MB\" is configured, but" +
+            " only 450MB of memory is free when the database starts, then the database will" +
+            " map at most 450MB. If \"50%\" is configured, and the system has a capacity of" +
+            " 4GB, then at most 2GB of memory will be mapped, unless the database observes" +
             " that less than 2GB of memory is free when it starts.")
     public static final Setting<Long> mapped_memory_total_size = setting("mapped_memory_total_size", directMemoryUsage(), "50%" );
 
