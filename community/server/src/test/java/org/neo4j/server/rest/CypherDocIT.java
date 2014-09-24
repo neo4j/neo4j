@@ -124,7 +124,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                     @REL( start = "I", end = "him", type = "know", properties = { } ),
                     @REL( start = "I", end = "you", type = "know", properties = { } ) } )
     public void testDataColumnOrder() throws UnsupportedEncodingException {
-        String script = createScript( "START x  = node(%I%) MATCH (x)-[r]->(n) RETURN type(r), n.name, n.age" );
+        String script = createScript( "MATCH (x)-[r]->(n) WHERE id(x) = %I% RETURN type(r), n.name, n.age" );
 
         String response = cypherRestCall( script, Status.OK );
 
@@ -269,7 +269,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                     @PROP( key = "prop", value = "World", type = GraphDescription.PropType.STRING ) } ) } )
     public void nodes_are_represented_as_nodes() throws Exception {
         data.get();
-        String script = "START n = node(%I%) MATCH (n)-[r]->() RETURN n, r";
+        String script = "MATCH (n)-[r]->() WHERE id(n) = %I% RETURN n, r";
 
         String response = cypherRestCall( script, Status.OK );
 
@@ -334,7 +334,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                     @REL( start = "I", end = "him", type = "know", properties = { } ),
                     @REL( start = "I", end = "you", type = "know", properties = { } ) } )
     public void testProfiling() throws Exception {
-        String script = createScript( "START x = node(%I%) MATCH (x)-[r]->(n) RETURN type(r), n.name, n.age" );
+        String script = createScript( "MATCH (x)-[r]->(n) WHERE id(x) = %I% RETURN type(r), n.name, n.age" );
 
         // WHEN
         String response = doCypherRestCall( cypherUri() + "?profile=true", script, Status.OK );
@@ -357,7 +357,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         setProperty("I", "array1", new int[] { 1, 2, 3 } );
         setProperty("I", "array2", new String[] { "a", "b", "c" } );
 
-        String script = "START n = node(%I%) RETURN n.array1, n.array2";
+        String script = "MATCH n WHERE id(n) = %I% RETURN n.array1, n.array2";
         String response = cypherRestCall( script, Status.OK );
 
         assertThat( response, anyOf( containsString( "[ 1, 2, 3 ]" ), containsString( "[1,2,3]" )) );

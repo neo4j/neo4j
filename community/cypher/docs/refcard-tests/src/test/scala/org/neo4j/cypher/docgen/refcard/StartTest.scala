@@ -78,7 +78,7 @@ class StartTest extends RefcardTest with QueryStatisticsTestSupport {
 ###assertion=all-nodes
 //
 
-START n=node(*)
+MATCH n
 
 RETURN n###
 
@@ -87,7 +87,7 @@ Start from all nodes.
 ### assertion=multiple-nodes-by-id parameters=multiple
 //
 
-START n=node({ids})
+MATCH n WHERE id(n) IN {ids}
 
 RETURN n###
 
@@ -96,7 +96,8 @@ Start from one or more nodes specified by id.
 ### assertion=multiple-start-nodes-by-id parameters=ids
 //
 
-START n=node({id1}), m=node({id2})
+MATCH n, m
+WHERE id(n) = {id1} AND id(m) = {id2}
 
 RETURN n,m###
 

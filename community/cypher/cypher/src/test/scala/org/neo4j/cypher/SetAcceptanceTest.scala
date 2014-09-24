@@ -51,7 +51,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("name" -> "Andres")
 
     // when
-    val result = execute("start n = node(0) set n.name = 'Michael'")
+    val result = execute("match (n) where n.name = 'Andres' set n.name = 'Michael'")
 
     // then
     assertStats(result, propertiesSet = 1)
@@ -63,7 +63,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("name" -> "Andres")
 
     // when
-    val result = execute("start n = node(0) set n.name = n.name + ' was here'")
+    val result = execute("match (n) where n.name = 'Andres' set n.name = n.name + ' was here'")
 
     // then
     assertStats(result, propertiesSet = 1)
@@ -75,9 +75,10 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val n = createNode("name" -> "Michael")
 
     // when
-    execute("start n = node(0) set n.name = null return n")
+    val result = execute("match (n) where n.name = 'Michael' set n.name = null return n")
 
     // then
+    assertStats(result, propertiesSet = 1)
     n should not(haveProperty("name"))
   }
 
@@ -91,8 +92,8 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
 
     // when
     val q = """
-start a = node(0), c = node(2)
 match p=a-->b-->c
+where id(a) = 0 and id(c) = 2
 with p
 foreach(n in nodes(p) |
   set n.marked = true
@@ -112,7 +113,7 @@ foreach(n in nodes(p) |
     createNode()
 
     // when
-    val result = execute("start n=node(0) set n:FOO return n")
+    val result = execute("match (n) where id(n) = 0 set n:FOO return n")
 
     // then
     val createdNode = result.columnAs[Node]("n").next()
@@ -125,7 +126,7 @@ foreach(n in nodes(p) |
     createNode()
 
     // when
-    val result = execute( """start n=node(0) set n.x=[1,2,3] return extract (i in n.x | i/2.0) as x""")
+    val result = execute( "match (n) where id(n) = 0 set n.x=[1,2,3] return extract (i in n.x | i/2.0) as x")
 
     // then
     result.toList should equal(List(Map("x" -> List(0.5, 1.0, 1.5))))

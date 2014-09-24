@@ -49,7 +49,8 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       _: Expand | _: OuterHashJoin | _: OptionalExpand | _: FindShortestPaths | _: Selection | _: Apply |
       _: SemiApply | _: LetSemiApply | _: LetAntiSemiApply | _: SelectOrSemiApply | _: LetSelectOrSemiApply |
       _: SelectOrAntiSemiApply | _: LetSelectOrAntiSemiApply | _: DirectedRelationshipByIdSeek |
-      _: UndirectedRelationshipByIdSeek | _: DirectedRelationshipByIdSeek | _: Optional | _: NodeIndexSeek  | _: AntiSemiApply =>
+      _: UndirectedRelationshipByIdSeek | _: DirectedRelationshipByIdSeek | _: Optional | _: NodeIndexSeek  |
+      _: AntiSemiApply | _: LegacyIndexSeek =>
 
       queryGraphCardinalityModel(plan.solved.lastQueryGraph)
 

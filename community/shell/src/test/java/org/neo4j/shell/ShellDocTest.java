@@ -135,7 +135,7 @@ public class ShellDocTest
         doc.add( "mknode --cd", "", "Create a node");
         doc.add( "pwd", "", "where are we?" );
         doc.add( "set name \"Jon\"", "", "On the current node, set the key \"name\" to value \"Jon\"" );
-        doc.add( "start n=node(0) return n;", "Jon", "send a cypher query" );
+        doc.add( "match n where id(n) = 0 return n;", "Jon", "send a cypher query" );
         doc.add( "mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "make an incoming relationship of type " +
                 "LIKES, create the end node with the node properties specified." );
         doc.add( "ls", "1", "where are we?" );
@@ -167,7 +167,7 @@ public class ShellDocTest
             Documenter doc = new Documenter( "simple cypher result dump", server );
             doc.add( "mknode --cd --np \"{'name':'Neo'}\"", "", "create a new node and go to it" );
             doc.add( "mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "create a relationship" );
-            doc.add( "dump START n=node({self}) MATCH (n)-[r]-(m) return n,r,m;",
+            doc.add( "dump MATCH (n)-[r]-(m) WHERE n = {self} return n,r,m;",
                     "create (_0 {`name`:\"Neo\"})", "Export the cypher statement results" );
             doc.run();
         }

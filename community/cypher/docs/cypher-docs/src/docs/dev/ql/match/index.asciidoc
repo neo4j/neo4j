@@ -101,4 +101,15 @@ include::all-shortest-paths.asciidoc[]
 
 :leveloffset: 2
 
+== Get node or relationship by id ==
+
+:leveloffset: 3
+
+include::node-by-id.asciidoc[]
+
+include::relationship-by-id.asciidoc[]
+
+include::multiple-nodes-by-id.asciidoc[]
+
+:leveloffset: 2
 

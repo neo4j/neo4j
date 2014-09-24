@@ -54,8 +54,8 @@ class RelationshipFunctionsTest extends RefcardTest with QueryStatisticsTestSupp
 
   def text = """
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
 MATCH (n)-[a_relationship]->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 RETURN
 
 type(a_relationship)###
@@ -63,8 +63,8 @@ type(a_relationship)###
 String representation of the relationship type.
 
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
 MATCH (n)-[a_relationship]->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 RETURN
 
 startNode(a_relationship)###
@@ -72,8 +72,8 @@ startNode(a_relationship)###
 Start node of the relationship.
 
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
 MATCH (n)-[a_relationship]->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 RETURN
 
 endNode(a_relationship)###
@@ -81,8 +81,8 @@ endNode(a_relationship)###
 End node of the relationship.
 
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
 MATCH (n)-[a_relationship]->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 RETURN
 
 id(a_relationship)###

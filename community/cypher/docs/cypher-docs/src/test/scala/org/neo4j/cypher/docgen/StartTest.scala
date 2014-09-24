@@ -33,68 +33,6 @@ class StartTest extends DocumentingTestBase {
 
   def section: String = "Start"
 
-  @Test def nodes_by_id() {
-    testQuery(
-      title = "Node by id",
-      text = """
-Binding a node as a starting point is done with the `node(*)` function.
-
-[NOTE]
-Neo4j reuses its internal ids when nodes and relationships are deleted,
-which means it's bad practice to refer to them in this way.
-Instead, use application generated ids.
-
-[TIP]
-The preferred way to do this is to use the `id` function (see <<functions-id>>) together with `MATCH`.
-""",
-      queryText = "start n=node(%A%) return n",
-      optionalResultExplanation = "The corresponding node is returned.",
-      (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(node("A"))))
-  }
-
-  @Test def relationships_by_id() {
-    testQuery(
-      title = "Relationship by id",
-      text = """
-Binding a relationship as a starting point is done with the `relationship(*)` function, which can also be abbreviated `rel(*)`.
-See <<start-node-by-id>> for more information on Neo4j ids.
-
-[TIP]
-The preferred way to do this is to use the `id` function (see <<functions-id>>) together with `MATCH`.
-""",
-      queryText = "start r=relationship(0) return r",
-      optionalResultExplanation = "The relationship with id +0+ is returned.",
-      (p) => assertThat(p.columnAs[Relationship]("r").toList.asJava, hasItem(rel(0))))
-  }
-
-  @Test def multiple_nodes_by_id() {
-    testQuery(
-      title = "Multiple nodes by id",
-      text = """
-Multiple nodes are selected by listing them separated by commas.
-
-[TIP]
-The preferred way to do this is to use the `id` function (see <<functions-id>>) together with `MATCH` and the `IN` operator (see <<query-operators-collection>>).
-""",
-      queryText = "start n=node(%A%, %B%, %C%) return n",
-      optionalResultExplanation = "This returns the nodes listed in the `START` statement.",
-      (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
-  }
-
-  @Test def all_the_nodes() {
-    testQuery(
-      title = "All nodes",
-      text = """
-To get all the nodes, use an asterisk.
-This can be done with relationships as well.
-
-TIP: The preferred way to do this is to use a `MATCH` clause, see <<match-get-all-nodes>> in <<query-match>> for how to do that.
-""",
-      queryText = "start n=node(*) return n",
-      optionalResultExplanation = "This query returns all the nodes in the graph.",
-      (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
-  }
-
   @Test def nodes_by_index() {
     generateConsole = false
     testQuery(
@@ -136,12 +74,4 @@ TIP: The preferred way to do this is to use a `MATCH` clause, see <<match-get-al
       (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
   }
 
-  @Test def start_with_multiple_nodes() {
-    testQuery(
-      title = "Multiple starting points",
-      text = "Sometimes you want to bind multiple starting points. Just list them separated by commas.",
-      queryText = """start a=node(%A%), b=node(%B%) return a,b""",
-      optionalResultExplanation = """Both the nodes +A+ and the +B+  are returned.""",
-      p => assertEquals(List(Map("a" -> node("A"), "b" -> node("B"))), p.toList))
-  }
 }

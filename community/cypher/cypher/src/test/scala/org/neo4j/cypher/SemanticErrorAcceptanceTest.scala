@@ -24,50 +24,50 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("return node that's not there") {
     executeAndEnsureError(
-      "start x=node(0) return bar",
-      "bar not defined (line 1, column 24)"
+      "match (n) where id(n) = 0 return bar",
+      "bar not defined (line 1, column 34)"
     )
   }
 
   test("define node and treat it as a relationship") {
     executeAndEnsureError(
-      "start r=node(0) match a-[r]->b return r",
-      "Type mismatch: r already defined with conflicting type Node (expected Relationship) (line 1, column 26)"
+      "match (r) where id(r) = 0 match a-[r]->b return r",
+      "Type mismatch: r already defined with conflicting type Node (expected Relationship) (line 1, column 36)"
     )
   }
 
   test("redefine symbol in match") {
     executeAndEnsureError(
-      "start a=node(0) match a-[r]->b-->r return r",
-      "Type mismatch: r already defined with conflicting type Relationship (expected Node) (line 1, column 34)"
+      "match a-[r]->b-->r where id(a) = 0 return r",
+      "Type mismatch: r already defined with conflicting type Relationship (expected Node) (line 1, column 18)"
     )
   }
 
   test("cant use TYPE on nodes") {
     executeAndEnsureError(
-      "start r=node(0) return type(r)",
-      "Type mismatch: expected Relationship but was Node (line 1, column 29)"
+      "match (r) where id(r) = 0 return type(r)",
+      "Type mismatch: expected Relationship but was Node (line 1, column 39)"
     )
   }
 
   test("cant use LENGTH on nodes") {
     executeAndEnsureError(
-      "start n=node(0) return length(n)",
-      "Type mismatch: expected Path, String or Collection<T> but was Node (line 1, column 31)"
+      "match (n) where id(n) = 0 return length(n)",
+      "Type mismatch: expected Path, String or Collection<T> but was Node (line 1, column 41)"
     )
   }
 
   test("cant re-use relationship identifier") {
     executeAndEnsureError(
-      "start a=node(0) match a-[r]->b-[r]->a return r",
-      "Cannot use the same relationship identifier 'r' for multiple patterns (line 1, column 33)"
+      "match a-[r]->b-[r]->a where id(a) = 0 return r",
+      "Cannot use the same relationship identifier 'r' for multiple patterns (line 1, column 17)"
     )
   }
 
   test("should know not to compare strings and numbers") {
     executeAndEnsureError(
-      "start a=node(0) where a.age =~ 13 return a",
-      "Type mismatch: expected String but was Integer (line 1, column 32)"
+      "match (a) where a.age =~ 13 return a",
+      "Type mismatch: expected String but was Integer (line 1, column 26)"
     )
   }
 
@@ -80,8 +80,8 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should complain about unknown identifier") {
     executeAndEnsureError(
-      "start s = node(0) where s.name = Name and s.age = 10 return s",
-      "Name not defined (line 1, column 34)"
+      "match (s) where s.name = Name and s.age = 10 return s",
+      "Name not defined (line 1, column 26)"
     )
   }
 
@@ -137,23 +137,23 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should complain if shortest path has multiple relationships") {
     executeAndEnsureError(
-      "start a=node(0), b=node(1) match p=shortestPath(a--()--b) return p",
-      "shortestPath(...) requires a pattern containing a single relationship (line 1, column 36)"
+      "match p=shortestPath(a--()--b) where id(a) = 0 and id(b) = 1 return p",
+      "shortestPath(...) requires a pattern containing a single relationship (line 1, column 9)"
     )
     executeAndEnsureError(
-      "start a=node(0), b=node(1) match p=allShortestPaths(a--()--b) return p",
-      "allShortestPaths(...) requires a pattern containing a single relationship (line 1, column 36)"
+      "match p=allShortestPaths(a--()--b) where id(a) = 0 and id(b) = 1 return p",
+      "allShortestPaths(...) requires a pattern containing a single relationship (line 1, column 9)"
     )
   }
 
   test("should complain if shortest path has a minimal length") {
     executeAndEnsureError(
-      "start a=node(0), b=node(1) match p=shortestPath(a-[*1..2]->b) return p",
-      "shortestPath(...) does not support a minimal length (line 1, column 36)"
+      "match p=shortestPath(a-[*1..2]->b) where id(a) = 0 and id(b) = 1 return p",
+      "shortestPath(...) does not support a minimal length (line 1, column 9)"
     )
     executeAndEnsureError(
-      "start a=node(0), b=node(1) match p=allShortestPaths(a-[*1..2]->b) return p",
-      "allShortestPaths(...) does not support a minimal length (line 1, column 36)"
+      "match p=allShortestPaths(a-[*1..2]->b) where id(a) = 0 and id(b) = 1 return p",
+      "allShortestPaths(...) does not support a minimal length (line 1, column 9)"
     )
   }
 
@@ -186,37 +186,38 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should fail type check when deleting") {
+    //TODO: Why does the error message claim an error at column 36, but it looks like it should be column 34?
     executeAndEnsureError(
-      "start a=node(0) delete 1 + 1",
-      "Type mismatch: expected Node, Path or Relationship but was Integer (line 1, column 26)"
+      "match (a) where id(a) = 0 delete 1 + 1",
+      "Type mismatch: expected Node, Path or Relationship but was Integer (line 1, column 36)"
     )
   }
 
   test("should not allow identifier to be overwritten by create") {
     executeAndEnsureError(
-      "start a=node(0) create (a)",
-      "a already declared (line 1, column 25)"
+      "match (a) where id(a) = 0 create (a)",
+      "a already declared (line 1, column 35)"
     )
   }
 
   test("should not allow identifier to be overwritten by merge") {
     executeAndEnsureError(
-      "start a=node(0) merge (a)",
-      "a already declared (line 1, column 24)"
+      "match (a) where id(a) = 0 merge (a)",
+      "a already declared (line 1, column 34)"
     )
   }
 
   test("should not allow identifier to be overwritten by create relationship") {
     executeAndEnsureError(
-      "start a=node(0), r=rel(1) create (a)-[r:TYP]->()",
-      "r already declared (line 1, column 39)"
+      "match (a), ()-[r]-() where id(a) = 0 and id(r) = 1 create (a)-[r:TYP]->()",
+      "r already declared (line 1, column 64)"
     )
   }
 
   test("should not allow identifier to be overwritten by merge relationship") {
     executeAndEnsureError(
-      "start a=node(0), r=rel(1) merge (a)-[r:TYP]->()",
-      "r already declared (line 1, column 38)"
+      "match (a), ()-[r]-() where id(a) = 0 and id(r) = 1 merge (a)-[r:TYP]->()",
+      "r already declared (line 1, column 63)"
     )
   }
 
@@ -267,8 +268,8 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should fail when reduce used with wrong separator") {
     executeAndEnsureError("""
-        |START s=node(1), e=node(2)
         |MATCH topRoute = (s)<-[:CONNECTED_TO*1..3]-(e)
+        |WHERE id(s) = 1 AND id(e) = 2
         |RETURN reduce(weight=0, r in relationships(topRoute) : weight+r.cost) AS score
         |ORDER BY score ASC LIMIT 1
       """.stripMargin,
@@ -278,38 +279,38 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should fail if old iterable separator") {
     executeAndEnsureError(
-      "start a=node(0) return filter(x in a.collection : x.prop = 1)",
-      "filter(...) requires a WHERE predicate (line 1, column 24)"
+      "match (a) where id(a) = 0 return filter(x in a.collection : x.prop = 1)",
+      "filter(...) requires a WHERE predicate (line 1, column 34)"
     )
 
     executeAndEnsureError(
-      "start a=node(0) return extract(x in a.collection : x.prop)",
-      "extract(...) requires '| expression' (an extract expression) (line 1, column 24)"
+      "match (a) where id(a) = 0 return extract(x in a.collection : x.prop)",
+      "extract(...) requires '| expression' (an extract expression) (line 1, column 34)"
     )
 
     executeAndEnsureError(
-      "start a=node(0) return reduce(i = 0, x in a.collection : i + x.prop)",
-      "reduce(...) requires '| expression' (an accumulation expression) (line 1, column 24)"
+      "match (a) where id(a) = 0 return reduce(i = 0, x in a.collection : i + x.prop)",
+      "reduce(...) requires '| expression' (an accumulation expression) (line 1, column 34)"
     )
 
     executeAndEnsureError(
-      "start a=node(0) return any(x in a.collection : x.prop = 1)",
-      "any(...) requires a WHERE predicate (line 1, column 24)"
+      "match (a) where id(a) = 0 return any(x in a.collection : x.prop = 1)",
+      "any(...) requires a WHERE predicate (line 1, column 34)"
     )
 
     executeAndEnsureError(
-      "start a=node(0) return all(x in a.collection : x.prop = 1)",
-      "all(...) requires a WHERE predicate (line 1, column 24)"
+      "match (a) where id(a) = 0 return all(x in a.collection : x.prop = 1)",
+      "all(...) requires a WHERE predicate (line 1, column 34)"
     )
 
     executeAndEnsureError(
-      "start a=node(0) return single(x in a.collection : x.prop = 1)",
-      "single(...) requires a WHERE predicate (line 1, column 24)"
+      "match (a) where id(a) = 0 return single(x in a.collection : x.prop = 1)",
+      "single(...) requires a WHERE predicate (line 1, column 34)"
     )
 
     executeAndEnsureError(
-      "start a=node(0) return none(x in a.collection : x.prop = 1)",
-      "none(...) requires a WHERE predicate (line 1, column 24)"
+      "match (a) where id(a) = 0 return none(x in a.collection : x.prop = 1)",
+      "none(...) requires a WHERE predicate (line 1, column 34)"
     )
   }
 
@@ -343,22 +344,22 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should fail if using legacy optionals match") {
     executeAndEnsureError(
-      "start n = node(0) match (n)-[?]->(m) return n",
-      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 28)"
+      "match (n)-[?]->(m) where id(n) = 0 return n",
+      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 10)"
     )
   }
 
   test("should fail if using legacy optionals match2") {
     executeAndEnsureError(
-      "start n = node(0) match (n)-[?*]->(m) return n",
-      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 28)"
+      "match (n)-[?*]->(m) where id(n) = 0 return n",
+      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 10)"
     )
   }
 
   test("should fail if using legacy optionals match3") {
     executeAndEnsureError(
-      "start n = node(0) match shortestPath((n)-[?*]->(m)) return n",
-      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 41)"
+      "match shortestPath((n)-[?*]->(m)) where id(n) = 0 return n",
+      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 23)"
     )
   }
 
@@ -366,13 +367,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     executeAndEnsureError(
       "OPTIONAL MATCH (a)-->(b) MATCH (c)-->(d) return d",
       "MATCH cannot follow OPTIONAL MATCH (perhaps use a WITH clause between them) (line 1, column 26)"
-    )
-  }
-
-  test("should require with before start") {
-    executeAndEnsureError(
-      "MATCH (a)-->(b) START c=node(0) return c",
-      "WITH is required between MATCH and START (line 1, column 1)"
     )
   }
 

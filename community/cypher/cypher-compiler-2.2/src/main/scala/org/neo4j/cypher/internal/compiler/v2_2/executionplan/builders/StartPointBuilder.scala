@@ -72,11 +72,11 @@ class StartPointBuilder extends PlanBuilder {
     val result: PartialFunction[(PlanContext, QueryToken[StartItem]), (Pipe => Pipe)] = {
       case (planContext, Unsolved(item)) if nodeStart.isDefinedAt((planContext, item)) =>
         (p: Pipe) =>
-          new NodeStartPipe(p, item.identifierName, nodeStart.apply((planContext, item)))
+          new NodeStartPipe(p, item.identifierName, nodeStart.apply((planContext, item)))()
 
       case (planContext, Unsolved(item)) if relationshipStart.isDefinedAt((planContext, item)) =>
         (p: Pipe) =>
-          new RelationshipStartPipe(p, item.identifierName, relationshipStart.apply((planContext, item)))
+          new RelationshipStartPipe(p, item.identifierName, relationshipStart.apply((planContext, item)))()
     }
     result
   }

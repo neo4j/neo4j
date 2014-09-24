@@ -46,8 +46,8 @@ class CollectionPredicatesTest extends RefcardTest with QueryStatisticsTestSuppo
 
   def text = """
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 WITH nodes(path) as coll, n, m
 WHERE
 
@@ -58,8 +58,8 @@ RETURN n,m###
 Returns `true` if the predicate is `TRUE` for all elements of the collection.
 
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 WITH nodes(path) as coll, n, m
 WHERE
 
@@ -70,8 +70,8 @@ RETURN n,m###
 Returns `true` if the predicate is `TRUE` for at least one element of the collection.
 
 ###assertion=returns-none
-START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 WITH nodes(path) as coll, n, m
 WHERE
 
@@ -82,8 +82,8 @@ RETURN n,m###
 Returns `TRUE` if the predicate is `FALSE` for all elements of the collection.
 
 ###assertion=returns-none
-START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 WITH nodes(path) as coll, n, m
 WHERE
 

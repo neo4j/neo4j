@@ -56,8 +56,8 @@ class AggregationTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 RETURN NODES(path),
 
 count(*)
@@ -66,8 +66,8 @@ count(*)
 The number of matching rows.
 
 ###assertion=returns-one
-START identifier=node(%A%), m=node(%B%)
 MATCH path=(identifier)-->(m)
+WHERE id(identifier) = %A% AND id(m) = %B%
 RETURN NODES(path),
 
 count(identifier)
@@ -76,8 +76,8 @@ count(identifier)
 The number of non-++NULL++ values.
 
 ###assertion=returns-one
-START identifier=node(%A%), m=node(%B%)
 MATCH path=(identifier)-->(m)
+WHERE id(identifier) = %A% AND id(m) = %B%
 RETURN NODES(path),
 
 count(DISTINCT identifier)
@@ -87,7 +87,7 @@ All aggregation functions also take the `DISTINCT` modifier,
 which removes duplicates from the values.
 
 ###assertion=returns-one
-START n=node(%A%, %B%, %C%)
+MATCH n WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
 collect(n.property)
@@ -96,7 +96,7 @@ collect(n.property)
 Collection from the values, ignores `NULL`.
 
 ###assertion=returns-one
-START n=node(%A%, %B%, %C%)
+MATCH n WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
 sum(n.property)
@@ -107,7 +107,7 @@ sum(n.property)
 Sum numerical values. Similar functions are +avg+, +min+, +max+.
 
 ###assertion=returns-one parameters=percentile
-START n=node(%A%, %B%, %C%)
+MATCH n WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
 percentileDisc(n.property, {percentile})
@@ -119,7 +119,7 @@ Discrete percentile. Continuous percentile is +percentileCont+.
 The `percentile` argument is from `0.0` to `1.0`.
 
 ###assertion=returns-one parameters=percentile
-START n=node(%A%, %B%, %C%)
+MATCH n WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
 stdev(n.property)

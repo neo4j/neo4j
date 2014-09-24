@@ -31,6 +31,7 @@ object condense extends (Seq[PrintCommand] => Seq[PrintCommand]) {
   private def apply(builder: PrintingConverter[Seq[PrintCommand]],
                     commands: Seq[PrintCommand]): PrintingConverter[Seq[PrintCommand]]= commands match {
     case PrintText(lhs) +: PrintText(rhs) +: tail => apply(builder, PrintText(lhs ++ rhs) +: tail)
+    case (head: PrintText) +: tail                => apply(builder += head.withoutTrailingSpace, tail)
     case head +: tail                             => apply(builder += head, tail)
     case _                                        => builder
   }

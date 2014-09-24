@@ -69,9 +69,9 @@ class PredicatesTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=returns-one parameters=aname
-START n=node(%A%), m=node(%B%)
 MATCH (n)-->(m)
-WHERE
+WHERE id(n) = %A% AND id(m) = %B%
+AND
 
 n.property <> {value}
 
@@ -80,7 +80,7 @@ RETURN n,m###
 Use comparison operators.
 
 ###assertion=returns-three
-START n=node(*)
+MATCH n
 WHERE
 
 has(n.property)
@@ -90,9 +90,8 @@ RETURN n###
 Use functions.
 
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
 MATCH (n)-->(m)
-WHERE
+WHERE id(n) = %A% AND id(m) = %B% AND
 
 n.number >= 1 AND n.number <= 10
 
@@ -111,7 +110,8 @@ RETURN n###
 Check for node labels.
 
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
+MATCH (n), (m)
+WHERE id(n) = %A% AND id(m) = %B%
 OPTIONAL MATCH (n)-[identifier]->(m)
 WHERE
 
@@ -122,7 +122,7 @@ RETURN n,m###
 Check if something is `NULL`.
 
 ###assertion=returns-one parameters=aname
-START n=node(*)
+MATCH n
 WHERE
 
 NOT has(n.property) OR n.property = {value}
@@ -132,7 +132,7 @@ RETURN n###
 Either property does not exist or predicate is +TRUE+.
 
 ###assertion=returns-none parameters=aname
-START n=node(*)
+MATCH n
 WHERE
 
 n.property = {value}
@@ -142,7 +142,7 @@ RETURN n###
 Non-existing property returns `NULL`, which is not equal to anything.
 
 ###assertion=returns-one parameters=regex
-START n=node(*)
+MATCH n
 WHERE HAS(n.property) AND
 
 n.property =~ "Tob.*"
@@ -152,7 +152,7 @@ RETURN n###
 Regular expression.
 
 ###assertion=returns-four
-START n=node(*), m=node(*)
+MATCH n, m
 WHERE
 
 (n)-[:KNOWS]->(m)
@@ -162,8 +162,8 @@ RETURN n###
 Make sure the pattern has at least one match.
 
 ###assertion=returns-none
-START n=node(%A%), m=node(%B%)
-WHERE
+MATCH n, m
+WHERE id(n) = %A% AND id(m) = %B% AND
 
 NOT (n)-[:KNOWS]->(m)
 
@@ -172,7 +172,7 @@ RETURN n###
 Exclude matches to `(n)-[:KNOWS]->(m)` from the result.
 
 ###assertion=returns-one parameters=names
-START n=node(*)
+MATCH n
 WHERE has(n.property) AND
 
 n.property IN [{value1}, {value2}]
