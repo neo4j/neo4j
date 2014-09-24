@@ -93,4 +93,10 @@ public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRec
     {
         return TYPE_DESCRIPTOR;
     }
+
+    @Override
+    protected boolean reserveIdsDuringRebuild()
+    {
+        return true;
+    }
 }

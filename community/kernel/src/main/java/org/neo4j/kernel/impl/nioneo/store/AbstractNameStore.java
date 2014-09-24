@@ -120,12 +120,6 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
     }
 
     @Override
-    protected boolean reserveIdsDuringRebuild()
-    {
-        return true;
-    }
-
-    @Override
     public void flushAll()
     {
         nameStore.flushAll();
