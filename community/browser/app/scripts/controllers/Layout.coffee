@@ -31,7 +31,8 @@ angular.module('neo4jApp.controllers')
     'Frame'
     'GraphStyle'
     'Utils'
-    ($scope, $timeout, $modal, Editor, Frame, GraphStyle, Utils) ->
+    'Settings'
+    ($scope, $timeout, $modal, Editor, Frame, GraphStyle, Utils, Settings) ->
 
       _codeMirror = null
       dialog = null
@@ -126,6 +127,10 @@ angular.module('neo4jApp.controllers')
             e.preventDefault()
             $scope.focusEditor()
 
+      $scope.$on 'visualization:stats', (event, stats) ->
+        $scope.showVizDiagnostics = Settings.showVizDiagnostics
+        if Settings.showVizDiagnostics
+          $scope.visualizationStats = stats
 
       resizeStream = Utils.debounce((ignored) ->
         unless $scope.editor.maximized

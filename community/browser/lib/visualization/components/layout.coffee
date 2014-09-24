@@ -13,6 +13,19 @@ neo.layout = do ->
       .linkDistance(linkDistance)
       .charge(-1000)
 
+      newStatsBucket = ->
+        bucket =
+          layoutTime: 0
+          layoutSteps: 0
+        bucket
+
+      currentStats = newStatsBucket()
+
+      forceLayout.collectStats = ->
+        latestStats = currentStats
+        currentStats = newStatsBucket()
+        latestStats
+
       accelerateLayout = ->
         maxStepsPerTick = 100
         maxAnimationFramesPerSecond = 60
@@ -25,13 +38,16 @@ neo.layout = do ->
             Date.now()
 
         d3Tick = d3force.tick
-        d3force.tick = () =>
+        d3force.tick = ->
           startTick = now()
           step = maxStepsPerTick
           while step-- and now() - startTick < maxComputeTime
+            startCalcs = now()
+            currentStats.layoutSteps++
             if d3Tick()
               maxStepsPerTick = 2
               return true
+            currentStats.layoutTime += now() - startCalcs
           render()
           false
 
