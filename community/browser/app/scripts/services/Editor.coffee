@@ -25,18 +25,14 @@ angular.module('neo4jApp.services')
     'Document'
     'Frame'
     'Settings'
-    'localStorageService'
+    'HistoryService'
     'motdService'
     '$timeout'
-    (Document, Frame, Settings, localStorageService, motdService, $timeout) ->
-      storageKey = 'history'
+    (Document, Frame, Settings, HistoryService, motdService, $timeout) ->
       class Editor
         constructor: ->
-          @history = localStorageService.get(storageKey)
-          @history = [] unless angular.isArray(@history)
+          @history = HistoryService
           @content = ''
-          @current = ''
-          @cursor = -1
           @document = null
           # @setMessage("#{motdService.quote.text}.")
 
@@ -50,14 +46,6 @@ angular.module('neo4jApp.services')
             @addToHistory(input) unless (Settings.filemode and @document?.id)
             @maximize(no)
 
-        addToHistory: (input) ->
-          @current = ''
-          if input?.length > 0 and @history[0] isnt input
-            @history.unshift(input)
-            @history.pop() until @history.length <= Settings.maxHistory
-            localStorageService.add(storageKey, JSON.stringify(@history))
-          @historySet(-1)
-
         execCurrent: ->
           @execScript(@content)
 
@@ -69,29 +57,22 @@ angular.module('neo4jApp.services')
           @document?.content and @document.content isnt @content
 
         historyNext: ->
-          idx = @cursor
-          idx ?= @history.length
-          idx--
-          @historySet(idx)
+          @history.setBuffer(@content)
+          item = @history.next()
+          @setContent(item)
 
         historyPrev: ->
-          idx = @cursor
-          idx ?= -1
-          idx++
-          @historySet(idx)
+          @history.setBuffer(@content)
+          item = @history.prev()
+          @setContent(item)
 
         historySet: (idx) ->
-          # cache unsaved changes if moving away from the temporary buffer
-          @current = @content if @cursor == -1 and idx != -1
+          item = @history.get(idx)
+          @setContent(item)
 
-          idx = -1 if idx < 0
-          idx = @history.length - 1 if idx >= @history.length
-          @cursor = idx
-          item = @history[idx] or @current
-          $timeout(=>
-            @content = item
-          , 0)
-          @document = null
+        addToHistory: (input) ->
+          item = @history.add(input)
+          @content = item
 
         loadDocument: (id) ->
           doc = Document.get(id)
@@ -123,7 +104,9 @@ angular.module('neo4jApp.services')
           @createDocument(@content, folder)
 
         setContent: (content = '') ->
-          @content = content
+          $timeout(=>
+            @content = content
+          ,0)
           @focusEditor()
           @document = null
 
