@@ -22,9 +22,7 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 
 public interface StoreMigrationParticipant extends Resource

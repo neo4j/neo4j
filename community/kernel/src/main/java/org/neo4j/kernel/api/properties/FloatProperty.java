@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import static java.lang.Float.floatToIntBits;
-
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
 final class FloatProperty extends FloatingPointNumberProperty

@@ -29,7 +29,6 @@ import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;

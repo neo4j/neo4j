@@ -110,12 +110,6 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         return false;
     }
 
-    @Override
-    protected boolean reserveIdsDuringRebuild()
-    {
-        return true;
-    }
-
     public Token[] getTokens( int maxCount )
     {
         LinkedList<Token> recordList = new LinkedList<>();

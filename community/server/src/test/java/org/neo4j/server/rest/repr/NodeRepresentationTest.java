@@ -25,7 +25,6 @@ import java.util.Map;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import static org.junit.Assert.assertTrue;
