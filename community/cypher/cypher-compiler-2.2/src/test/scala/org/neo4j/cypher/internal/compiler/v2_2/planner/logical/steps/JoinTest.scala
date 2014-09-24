@@ -58,27 +58,8 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val qg = createQuery(r1Rel, r2Rel)
 
     join(planTable, qg) should equal(Candidates(
-      planNodeHashJoin(Set(bNode), left, right),
-      planNodeHashJoin(Set(bNode), right, left)
-    ))
-  }
-
-  test("finds a single join that overlaps two identifiers") {
-    implicit val context = newMockedLogicalPlanningContext(
-      planContext = newMockedPlanContext
-    )
-    val left = newMockedLogicalPlan(Set(aNode, bNode, cNode))
-    val right = newMockedLogicalPlan(Set(bNode, cNode, dNode))
-    val planTable = PlanTable(Map(
-      Set(aNode, bNode, cNode) -> left,
-      Set(bNode, cNode, dNode) -> right
-    ))
-
-    val qg = createQuery(r1Rel, r2Rel)
-
-    join(planTable, qg) should equal(Candidates(
-      planNodeHashJoin(Set(bNode, cNode), left, right),
-      planNodeHashJoin(Set(bNode, cNode), right, left)
+      planNodeHashJoin(IdName("b"), left, right),
+      planNodeHashJoin(IdName("b"), right, left)
     ))
   }
 
@@ -98,10 +79,10 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val qg = createQuery(r1Rel, r2Rel, r3Rel)
 
     join(planTable, qg) should equal(Candidates(
-      planNodeHashJoin(Set(bNode), left, middle),
-      planNodeHashJoin(Set(bNode), middle, left),
-      planNodeHashJoin(Set(cNode), middle, right),
-      planNodeHashJoin(Set(cNode), right, middle)
+      planNodeHashJoin(IdName("b"), left, middle),
+      planNodeHashJoin(IdName("b"), middle, left),
+      planNodeHashJoin(IdName("c"), middle, right),
+      planNodeHashJoin(IdName("c"), right, middle)
     ))
   }
 

@@ -35,7 +35,7 @@ object applyOptional extends CandidateGenerator[PlanTable] {
         planApply(lhs, planOptional(rhs))
       }
 
-    CandidateList(applyCandidates.toSeq)
+    CandidateList(applyCandidates)
   }
 
   private def applicable(outerPlan: LogicalPlan, optionalQG: QueryGraph) = {

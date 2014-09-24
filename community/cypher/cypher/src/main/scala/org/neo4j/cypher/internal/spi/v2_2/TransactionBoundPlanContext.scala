@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.spi.v2_2
 
 import org.neo4j.cypher.MissingIndexException
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{QueriedGraphStatistics, GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException

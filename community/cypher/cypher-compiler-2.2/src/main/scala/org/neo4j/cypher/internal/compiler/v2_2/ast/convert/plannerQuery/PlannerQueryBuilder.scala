@@ -51,11 +51,11 @@ case class PlannerQueryBuilder(private val q: PlannerQuery)
 
     def fixArgumentIdsOnOptionalMatch(plannerQuery: PlannerQuery): PlannerQuery = {
       val optionalMatches = plannerQuery.graph.optionalMatches
-      val (_, newOptionalMatches) = optionalMatches.toSeq.foldMap(plannerQuery.graph.coveredIds) { case (args, qg) =>
+      val (_, newOptionalMatches) = optionalMatches.foldMap(plannerQuery.graph.coveredIds) { case (args, qg) =>
         (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.allCoveredIds))
       }
       plannerQuery
-        .updateGraph(_.withOptionalMatches(newOptionalMatches.toSet))
+        .updateGraph(_.withOptionalMatches(newOptionalMatches))
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 

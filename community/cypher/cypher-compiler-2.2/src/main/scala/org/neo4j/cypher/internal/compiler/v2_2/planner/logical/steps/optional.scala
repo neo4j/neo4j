@@ -38,6 +38,6 @@ object optional extends CandidateGenerator[PlanTable] {
         planOptional(rhs)
       }
 
-    CandidateList(optionalCandidates.toSeq)
+    CandidateList(optionalCandidates)
   }
 }

@@ -29,7 +29,7 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
 
   def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
 
-    val outerJoinPlans = for {
+    val outerJoinPlans: Seq[LogicalPlan] = for {
       optionalQG <- queryGraph.optionalMatches
       lhs <- planTable.plans
       patternRel <- findSinglePatternRelationship(lhs, optionalQG)
@@ -41,7 +41,7 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
       planOptionalExpand(lhs, argumentId, dir, patternRel.types, otherSide, patternRel.name, patternRel.length, optionalQG.selections.flatPredicates, optionalQG)
     }
 
-    CandidateList(outerJoinPlans.toSeq)
+    CandidateList(outerJoinPlans)
   }
 
   private def canSolveAllPredicates(selections:Selections, ids:Set[IdName]) = selections.predicatesGiven(ids) == selections.flatPredicates

@@ -28,24 +28,34 @@ import org.neo4j.graphdb.Node
 
 import scala.collection.mutable
 
-case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pipe)
+case class NodeHashJoinPipe(nodeIdentifier: String, left: Pipe, right: Pipe)
                            (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
 
-  val identifiers = nodeIdentifiers.toIndexedSeq
-
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    val table = new mutable.HashMap[Long, mutable.MutableList[ExecutionContext]]
+    input.foreach { context =>
+      context(nodeIdentifier) match {
+        case n: Node =>
+          val joinKey = n.getId
+          val seq = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
+          seq += context
 
-    val table = buildProbeTable(input)
-
-    val result = for {context: ExecutionContext <- right.createResults(state)
-                      joinKey <- computeKey(context)}
-    yield {
-      val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
-      seq.map(context ++ _)
+        case null =>
+      }
     }
 
-    result.flatten
+    right.createResults(state).flatMap { context =>
+      context(nodeIdentifier) match {
+        case n: Node =>
+          val joinKey = n.getId
+          val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
+          seq.map(context ++ _)
+
+        case null =>
+          Iterator.empty
+      }
+    }
   }
 
   def planDescription: PlanDescription =
@@ -53,10 +63,10 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
       pipe = this,
       name = "NodeHashJoin",
       children = TwoChildren(left.planDescription, right.planDescription),
-      _arguments = Seq(KeyNames(nodeIdentifiers.toSeq))
+      _arguments = Seq(KeyNames(Seq(nodeIdentifier)))
     )
 
-  def symbols: SymbolTable = left.symbols.add(right.symbols.identifiers)
+  def symbols: SymbolTable = left.symbols.add(right.symbols.identifiers).add(nodeIdentifier, CTNode)
 
   override val sources = Seq(left, right)
 
@@ -68,29 +78,4 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
   override def localEffects = Effects.NONE
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
-
-  private def buildProbeTable(input: Iterator[ExecutionContext]): mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]] = {
-    val table = new mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]]
-
-    for {context <- input
-         joinKey <- computeKey(context)} {
-      val seq = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
-      seq += context
-    }
-
-    table
-  }
-
-  private def computeKey(context: ExecutionContext): Option[Vector[Long]] = {
-    val key = new Array[Long](identifiers.length)
-
-    for (idx <- 0 until identifiers.length) {
-      key(idx) = context(identifiers(idx)) match {
-        case n: Node => n.getId
-        case _ => return None
-      }
-    }
-    Some(key.toVector)
-  }
-
 }

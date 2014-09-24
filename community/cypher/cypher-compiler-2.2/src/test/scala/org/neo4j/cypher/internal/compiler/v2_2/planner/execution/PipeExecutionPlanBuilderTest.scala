@@ -155,14 +155,14 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   test("simple hash join") {
     val logicalPlan =
       NodeHashJoin(
-        Set(IdName("b")),
+        "b",
         Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength)(solved),
         Expand(AllNodesScan("c", Set.empty)(solved), "c", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)(solved)
       )_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(NodeHashJoinPipe(
-      Set("b"),
+      "b",
       ExpandPipe( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq() )(),
       ExpandPipe( AllNodesScanPipe("c")(), "c", "r2", "b", Direction.INCOMING, Seq() )()
     )())

@@ -31,7 +31,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       patternNodes: Set[IdName] = Set.empty,
                       argumentIds: Set[IdName] = Set.empty,
                       selections: Selections = Selections(),
-                      optionalMatches: Set[QueryGraph] = Set.empty,
+                      optionalMatches: Seq[QueryGraph] = Seq.empty,
                       hints: Set[UsingHint] = Set.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty)
   extends InternalDocHandler.ToString[QueryGraph] with PageDocFormatting {
@@ -73,10 +73,10 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
     val argumentIds = allCoveredIds intersect optionalMatch.allCoveredIds
-    copy(optionalMatches = optionalMatches + optionalMatch.addArgumentId(argumentIds.toSeq))
+    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentId(argumentIds.toSeq))
   }
 
-  def withOptionalMatches(optionalMatches: Set[QueryGraph]): QueryGraph = {
+  def withOptionalMatches(optionalMatches: Seq[QueryGraph]): QueryGraph = {
     copy(optionalMatches = optionalMatches)
   }
 
@@ -137,7 +137,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                    patternNodes: Set[IdName] = patternNodes,
                    argumentIds: Set[IdName] = argumentIds,
                    selections: Selections = selections,
-                   optionalMatches: Set[QueryGraph] = optionalMatches,
+                   optionalMatches: Seq[QueryGraph] = optionalMatches,
                    hints: Set[UsingHint] = hints,
                    shortestPathPatterns: Set[ShortestPathPattern] = shortestPathPatterns) =
   QueryGraph(patternRelationships, patternNodes, argumentIds, selections, optionalMatches, hints, shortestPathPatterns)
