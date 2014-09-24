@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.cartesianProduct
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{cartesianProduct, solveOptionalMatches}
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
@@ -50,12 +50,15 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
         best.fold(planTable)(planTable + _)
     }
 
+    def solveOptionalAndCartesianProducts: PlanTable => PlanTable = { incoming: PlanTable =>
+        val solvedOptionalMatches = solveOptionalMatches(incoming, queryGraph)
+        findBestPlan(cartesianProduct)(solvedOptionalMatches)
+    }
+
     val leaves: PlanTable = generateLeafPlanTable()
     val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leaves)
 
-    val solveOptionalMatches = findBestPlan(optionalMatches)
-    val solveCartesianProducts = findBestPlan(cartesianProduct)
-    val afterCartesianProduct = iterateUntilConverged(solveOptionalMatches andThen solveCartesianProducts)(afterExpandOrJoin)
+    val afterCartesianProduct = iterateUntilConverged(solveOptionalAndCartesianProducts)(afterExpandOrJoin)
     afterCartesianProduct.uniquePlan
   }
 }

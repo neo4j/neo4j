@@ -126,7 +126,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedLogicalPlan(ids: String*): LogicalPlan =
     newMockedLogicalPlan(ids.map(IdName).toSet)
 
-  def newMockedLogicalPlan2(ids: Set[IdName], solved: PlannerQuery): LogicalPlan =
+  def newMockedLogicalPlanWithSolved(ids: Set[IdName], solved: PlannerQuery): LogicalPlan =
     FakePlan(ids)(solved)
 
   def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)
