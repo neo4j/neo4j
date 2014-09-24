@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 import org.neo4j.kernel.impl.cache.SizeOfs;

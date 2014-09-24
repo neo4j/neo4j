@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
