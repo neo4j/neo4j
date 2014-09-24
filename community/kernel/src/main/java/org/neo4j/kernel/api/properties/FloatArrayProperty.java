@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import java.util.Arrays;
-
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 
-class FloatArrayProperty extends DefinedProperty
+class FloatArrayProperty extends FloatingPointArrayProperty
 {
     private final float[] value;
 
@@ -37,31 +35,21 @@ class FloatArrayProperty extends DefinedProperty
     }
 
     @Override
+    public int length()
+    {
+        return value.length;
+    }
+
+    @Override
+    public double doubleValue( int index )
+    {
+        return value[index];
+    }
+
+    @Override
     public float[] value()
     {
         return value.clone();
-    }
-
-    @Override
-    public boolean valueEquals( Object value )
-    {
-        if ( value instanceof float[] )
-        {
-            return Arrays.equals( this.value, (float[]) value );
-        }
-        return valueCompare( this.value, value );
-    }
-
-    @Override
-    int valueHash()
-    {
-        return Arrays.hashCode( value );
-    }
-
-    @Override
-    boolean hasEqualValue( DefinedProperty that )
-    {
-        return Arrays.equals( this.value, ((FloatArrayProperty)that).value );
     }
 
     @Override

@@ -82,73 +82,13 @@ final class NoProperty extends Property
     }
 
     @Override
-    public String stringValue( String defaultValue )
-    {
-        return defaultValue;
-    }
-
-    @Override
     public String valueAsString() throws PropertyNotFoundException
     {
         throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
     }
 
     @Override
-    public Number numberValue( Number defaultValue )
-    {
-        return defaultValue;
-    }
-
-    @Override
-    public int intValue( int defaultValue )
-    {
-        return defaultValue;
-    }
-
-    @Override
-    public long longValue( long defaultValue )
-    {
-        return defaultValue;
-    }
-
-    @Override
-    public boolean booleanValue( boolean defaultValue )
-    {
-        return defaultValue;
-    }
-
-    @Override
     public Object value() throws PropertyNotFoundException
-    {
-        throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
-    }
-
-    @Override
-    public String stringValue() throws PropertyNotFoundException
-    {
-        throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
-    }
-
-    @Override
-    public boolean booleanValue() throws PropertyNotFoundException
-    {
-        throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
-    }
-
-    @Override
-    public Number numberValue() throws PropertyNotFoundException
-    {
-        throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
-    }
-
-    @Override
-    public int intValue() throws PropertyNotFoundException
-    {
-        throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
-    }
-
-    @Override
-    public long longValue() throws PropertyNotFoundException
     {
         throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
     }

@@ -69,27 +69,7 @@ public abstract class Property
 
     public abstract Object value( Object defaultValue );
 
-    public abstract String stringValue() throws PropertyNotFoundException;
-
-    public abstract String stringValue( String defaultValue );
-
     public abstract String valueAsString() throws PropertyNotFoundException;
-
-    public abstract Number numberValue() throws PropertyNotFoundException;
-
-    public abstract Number numberValue( Number defaultValue );
-
-    public abstract int intValue() throws PropertyNotFoundException;
-
-    public abstract int intValue( int defaultValue );
-
-    public abstract long longValue() throws PropertyNotFoundException;
-
-    public abstract long longValue( long defaultValue );
-
-    public abstract boolean booleanValue() throws PropertyNotFoundException;
-
-    public abstract boolean booleanValue( boolean defaultValue );
 
     @Override
     public abstract boolean equals( Object obj );

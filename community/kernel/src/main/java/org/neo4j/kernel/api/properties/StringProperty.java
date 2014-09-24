@@ -37,12 +37,21 @@ final class StringProperty extends DefinedProperty
     @Override
     public boolean valueEquals( Object other )
     {
+        return valueEquals( value, other );
+    }
+
+    static boolean valueEquals( String value, Object other )
+    {
         if ( other instanceof String )
         {
             return value.equals( other );
         }
-
-        return valueCompare( value, other );
+        if ( other instanceof Character )
+        {
+            Character that = (Character) other;
+            return value.length() == 1 && value.charAt( 0 ) == that;
+        }
+        return false;
     }
 
     @Override
@@ -58,9 +67,19 @@ final class StringProperty extends DefinedProperty
     }
 
     @Override
-    boolean hasEqualValue( DefinedProperty that )
+    boolean hasEqualValue( DefinedProperty other )
     {
-        return value.equals( ((StringProperty) that).value );
+        if ( other instanceof StringProperty )
+        {
+            StringProperty that = (StringProperty) other;
+            return value.equals( that.value );
+        }
+        if ( other instanceof CharProperty )
+        {
+            CharProperty that = (CharProperty) other;
+            return value.length() == 1 && that.value == value.charAt( 0 );
+        }
+        return false;
     }
 
     @Override

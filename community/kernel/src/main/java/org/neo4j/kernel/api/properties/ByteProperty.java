@@ -25,7 +25,7 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
  * we don't extend a class that has fields.
  */
-final class ByteProperty extends DefinedProperty
+final class ByteProperty extends IntegralNumberProperty
 {
     private final byte value;
 
@@ -36,42 +36,13 @@ final class ByteProperty extends DefinedProperty
     }
 
     @Override
-    @SuppressWarnings("UnnecessaryUnboxing")
-    public boolean valueEquals( Object other )
-    {
-        if ( other instanceof Byte )
-        {
-            return ((Byte)other).byteValue() == value;
-        }
-        return valueCompare( value, other );
-    }
-
-    @Override
-    boolean hasEqualValue( DefinedProperty that )
-    {
-        return value == ((ByteProperty) that).value;
-    }
-
-    @Override
     public Byte value()
     {
         return value;
     }
 
     @Override
-    int valueHash()
-    {
-        return value;
-    }
-
-    @Override
-    public int intValue()
-    {
-        return value;
-    }
-
-    @Override
-    public long longValue()
+    long longValue()
     {
         return value;
     }

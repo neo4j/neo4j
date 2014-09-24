@@ -302,7 +302,7 @@ public class StateHandlingStatementOperations implements
         for ( Iterator<DefinedProperty> properties = nodeGetAllProperties( state, nodeId ); properties.hasNext(); )
         {
             DefinedProperty property = properties.next();
-            indexUpdateProperty( state, nodeId, labelId, property.propertyKeyId(), null, property.value() );
+            indexUpdateProperty( state, nodeId, labelId, property.propertyKeyId(), null, property );
         }
         return true;
     }
@@ -320,7 +320,7 @@ public class StateHandlingStatementOperations implements
         for ( Iterator<DefinedProperty> properties = nodeGetAllProperties( state, nodeId ); properties.hasNext(); )
         {
             DefinedProperty property = properties.next();
-            indexUpdateProperty( state, nodeId, labelId, property.propertyKeyId(), property.value(), null );
+            indexUpdateProperty( state, nodeId, labelId, property.propertyKeyId(), property, null );
         }
         return true;
     }
@@ -686,8 +686,9 @@ public class StateHandlingStatementOperations implements
             legacyPropertyTrackers.nodeChangeStoreProperty( nodeId, (DefinedProperty) existingProperty, property );
         }
         state.txState().nodeDoReplaceProperty( nodeId, existingProperty, property );
-        indexesUpdateProperty( state, nodeId, property.propertyKeyId(), existingProperty.value( null ),
-                property.value() );
+        indexesUpdateProperty( state, nodeId, property.propertyKeyId(),
+                               existingProperty instanceof DefinedProperty ? (DefinedProperty) existingProperty : null,
+                               property );
         return existingProperty;
     }
 
@@ -726,7 +727,7 @@ public class StateHandlingStatementOperations implements
         {
             legacyPropertyTrackers.nodeRemoveStoreProperty( nodeId, (DefinedProperty) existingProperty );
             state.txState().nodeDoRemoveProperty( nodeId, (DefinedProperty)existingProperty );
-            indexesUpdateProperty( state, nodeId, propertyKeyId, ((DefinedProperty) existingProperty).value(), null );
+            indexesUpdateProperty( state, nodeId, propertyKeyId, (DefinedProperty) existingProperty, null );
         }
         return existingProperty;
     }
@@ -757,21 +758,21 @@ public class StateHandlingStatementOperations implements
     }
 
     private void indexesUpdateProperty( KernelStatement state, long nodeId, int propertyKey,
-                                        Object valueBefore, Object valueAfter ) throws EntityNotFoundException
+                                        DefinedProperty before, DefinedProperty after ) throws EntityNotFoundException
     {
         for ( PrimitiveIntIterator labels = nodeGetLabels( state, nodeId ); labels.hasNext(); )
         {
-            indexUpdateProperty( state, nodeId, labels.next(), propertyKey, valueBefore, valueAfter );
+            indexUpdateProperty( state, nodeId, labels.next(), propertyKey, before, after );
         }
     }
 
     private void indexUpdateProperty( KernelStatement state, long nodeId, int labelId, int propertyKey,
-                                      Object valueBefore, Object valueAfter )
+                                      DefinedProperty before, DefinedProperty after )
     {
         IndexDescriptor descriptor = indexesGetForLabelAndPropertyKey( state, labelId, propertyKey );
         if ( descriptor != null )
         {
-            state.txState().indexUpdateProperty( descriptor, nodeId, valueBefore, valueAfter );
+            state.txState().indexUpdateProperty( descriptor, nodeId, before, after );
         }
     }
 

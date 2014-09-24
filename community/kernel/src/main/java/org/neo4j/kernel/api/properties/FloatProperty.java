@@ -23,7 +23,7 @@ import static java.lang.Float.floatToIntBits;
 
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
-final class FloatProperty extends DefinedProperty
+final class FloatProperty extends FloatingPointNumberProperty
 {
     private final float value;
 
@@ -34,32 +34,15 @@ final class FloatProperty extends DefinedProperty
     }
 
     @Override
-    @SuppressWarnings("UnnecessaryUnboxing")
-    public boolean valueEquals( Object other )
-    {
-        if ( other instanceof Float )
-        {
-            return value == ((Float) other).floatValue();
-        }
-        return valueCompare( value, other );
-    }
-
-    @Override
-    boolean hasEqualValue( DefinedProperty that )
-    {
-        return value == ((FloatProperty) that).value;
-    }
-
-    @Override
-    public Number value()
+    double doubleValue()
     {
         return value;
     }
 
     @Override
-    int valueHash()
+    public Float value()
     {
-        return floatToIntBits( value );
+        return value;
     }
 
     @Override

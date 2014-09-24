@@ -88,19 +88,19 @@ class LazyArrayProperty extends LazyProperty<Object>
             @Override
             int hashCode( Object array )
             {
-                return Arrays.hashCode( (int[]) array );
+                return IntegralArrayProperty.hash( new ArrayValue.IntArray( (int[]) array ) );
             }
 
             @Override
-            boolean equals( Object array1, Object array2 )
+            boolean equals( Object value, Object other )
             {
-                return array2 instanceof int[] && Arrays.equals( (int[]) array1, (int[]) array2 );
+                return IntegralArrayProperty.valueEquals( new ArrayValue.IntArray( (int[]) value ), other );
             }
 
             @Override
             Object clone( Object array )
             {
-                return ((int[])array).clone();
+                return ((int[]) array).clone();
             }
         },
         LONG
@@ -108,19 +108,19 @@ class LazyArrayProperty extends LazyProperty<Object>
             @Override
             int hashCode( Object array )
             {
-                return Arrays.hashCode( (long[]) array );
+                return IntegralArrayProperty.hash( new ArrayValue.LongArray( (long[]) array ) );
             }
 
             @Override
-            boolean equals( Object array1, Object array2 )
+            boolean equals( Object value, Object other )
             {
-                return array2 instanceof long[] && Arrays.equals( (long[]) array1, (long[]) array2 );
+                return IntegralArrayProperty.valueEquals( new ArrayValue.LongArray( (long[]) value ), other );
             }
 
             @Override
             Object clone( Object array )
             {
-                return ((long[])array).clone();
+                return ((long[]) array).clone();
             }
         },
         BOOLEAN
@@ -128,19 +128,19 @@ class LazyArrayProperty extends LazyProperty<Object>
             @Override
             int hashCode( Object array )
             {
-                return Arrays.hashCode( (boolean[]) array );
+                return BooleanArrayProperty.hash( (boolean[]) array );
             }
 
             @Override
-            boolean equals( Object array1, Object array2 )
+            boolean equals( Object value, Object other )
             {
-                return array2 instanceof boolean[] && Arrays.equals( (boolean[]) array1, (boolean[]) array2 );
+                return BooleanArrayProperty.valueEquals( (boolean[]) value, other );
             }
 
             @Override
             Object clone( Object array )
             {
-                return ((boolean[])array).clone();
+                return ((boolean[]) array).clone();
             }
         },
         BYTE
@@ -148,19 +148,19 @@ class LazyArrayProperty extends LazyProperty<Object>
             @Override
             int hashCode( Object array )
             {
-                return Arrays.hashCode( (byte[]) array );
+                return IntegralArrayProperty.hash( new ArrayValue.ByteArray( (byte[]) array ) );
             }
 
             @Override
-            boolean equals( Object array1, Object array2 )
+            boolean equals( Object value, Object other )
             {
-                return array2 instanceof byte[] && Arrays.equals( (byte[]) array1, (byte[]) array2 );
+                return IntegralArrayProperty.valueEquals( new ArrayValue.ByteArray( (byte[]) value ), other );
             }
 
             @Override
             Object clone( Object array )
             {
-                return ((byte[])array).clone();
+                return ((byte[]) array).clone();
             }
         },
         DOUBLE
@@ -168,19 +168,19 @@ class LazyArrayProperty extends LazyProperty<Object>
             @Override
             int hashCode( Object array )
             {
-                return Arrays.hashCode( (double[]) array );
+                return FloatingPointArrayProperty.hash( new ArrayValue.DoubleArray( (double[]) array ) );
             }
 
             @Override
-            boolean equals( Object array1, Object array2 )
+            boolean equals( Object value, Object other )
             {
-                return array2 instanceof double[] && Arrays.equals( (double[]) array1, (double[]) array2 );
+                return FloatingPointArrayProperty.valueEquals( new ArrayValue.DoubleArray( (double[]) value ), other );
             }
 
             @Override
             Object clone( Object array )
             {
-                return ((double[])array).clone();
+                return ((double[]) array).clone();
             }
         },
         STRING
@@ -188,19 +188,19 @@ class LazyArrayProperty extends LazyProperty<Object>
             @Override
             int hashCode( Object array )
             {
-                return Arrays.hashCode( (String[]) array );
+                return StringArrayProperty.hash( (String[]) array );
             }
 
             @Override
-            boolean equals( Object array1, Object array2 )
+            boolean equals( Object value, Object other )
             {
-                return array2 instanceof String[] && Arrays.equals( (String[]) array1, (String[]) array2 );
+                return StringArrayProperty.valueEquals( (String[]) value, other );
             }
 
             @Override
             Object clone( Object array )
             {
-                return ((String[])array).clone();
+                return ((String[]) array).clone();
             }
         },
         SHORT
@@ -208,19 +208,19 @@ class LazyArrayProperty extends LazyProperty<Object>
             @Override
             int hashCode( Object array )
             {
-                return Arrays.hashCode( (short[]) array );
+                return IntegralArrayProperty.hash( new ArrayValue.ShortArray( (short[]) array ) );
             }
 
             @Override
-            boolean equals( Object array1, Object array2 )
+            boolean equals( Object value, Object other )
             {
-                return array2 instanceof short[] && Arrays.equals( (short[]) array1, (short[]) array2 );
+                return IntegralArrayProperty.valueEquals( new ArrayValue.ShortArray( (short[]) value ), other );
             }
 
             @Override
             Object clone( Object array )
             {
-                return ((short[])array).clone();
+                return ((short[]) array).clone();
             }
         },
         CHAR
@@ -228,19 +228,19 @@ class LazyArrayProperty extends LazyProperty<Object>
             @Override
             int hashCode( Object array )
             {
-                return Arrays.hashCode( (char[]) array );
+                return CharArrayProperty.hash( (char[]) array );
             }
 
             @Override
-            boolean equals( Object array1, Object array2 )
+            boolean equals( Object value, Object other )
             {
-                return array2 instanceof char[] && Arrays.equals( (char[]) array1, (char[]) array2 );
+                return CharArrayProperty.valueEquals( (char[]) value, other );
             }
 
             @Override
             Object clone( Object array )
             {
-                return ((char[])array).clone();
+                return ((char[]) array).clone();
             }
         },
         FLOAT
@@ -248,25 +248,25 @@ class LazyArrayProperty extends LazyProperty<Object>
             @Override
             int hashCode( Object array )
             {
-                return Arrays.hashCode( (float[]) array );
+                return FloatingPointArrayProperty.hash( new ArrayValue.FloatArray( (float[]) array ) );
             }
 
             @Override
-            boolean equals( Object array1, Object array2 )
+            boolean equals( Object value, Object other )
             {
-                return array2 instanceof float[] && Arrays.equals( (float[]) array1, (float[]) array2 );
+                return FloatingPointArrayProperty.valueEquals( new ArrayValue.FloatArray( (float[]) value ), other );
             }
 
             @Override
             Object clone( Object array )
             {
-                return ((float[])array).clone();
+                return ((float[]) array).clone();
             }
         };
 
         abstract int hashCode( Object array );
 
-        abstract boolean equals( Object array1, Object array2 );
+        abstract boolean equals( Object value, Object other );
 
         abstract Object clone( Object array );
 
