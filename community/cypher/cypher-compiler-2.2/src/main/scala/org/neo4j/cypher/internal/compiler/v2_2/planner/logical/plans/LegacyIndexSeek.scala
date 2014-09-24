@@ -17,27 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-case class InputPosition(offset: Int, line: Int, column: Int) {
-  override def hashCode = 41 * offset
-  override def equals(that: Any): Boolean = that match {
-    case that: InputPosition =>
-      (that canEqual this) && offset == that.offset
-    case _ =>
-      false
-  }
-  def canEqual(that: Any): Boolean = that.isInstanceOf[InputPosition]
+import org.neo4j.cypher.internal.compiler.v2_2.ast.LegacyIndexHint
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
-  // override def toString = s"line $line, column $column (offset: $offset)"
-  override def toString = s"line $line, column $column"
-}
-
-object InputPosition {
-  implicit object InputPositionOrdering extends Ordering[InputPosition] {
-    def compare(p1: InputPosition, p2: InputPosition) =
-      p1.offset.compare(p2.offset)
-  }
-
-  val NONE = null
+case class LegacyIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])(val solved: PlannerQuery) extends LogicalLeafPlan {
+  def availableSymbols = argumentIds + idName
 }

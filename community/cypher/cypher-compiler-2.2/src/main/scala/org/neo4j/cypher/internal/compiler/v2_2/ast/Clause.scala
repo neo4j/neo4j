@@ -62,8 +62,7 @@ case class Start(items: Seq[StartItem], where: Option[Where])(val position: Inpu
   def semanticCheck = items.semanticCheck chain where.semanticCheck
 }
 
-
-case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], where: Option[Where])(val position: InputPosition) extends Clause with SemanticChecking {
+case class Match(optional: Boolean, pattern: Pattern, hints: Seq[RonjaHint], where: Option[Where])(val position: InputPosition) extends Clause with SemanticChecking {
   def name = "MATCH"
 
   def semanticCheck =
@@ -281,9 +280,6 @@ case class Return(
   def name = "RETURN"
 
   override def semanticCheck = super.semanticCheck chain checkIdentifiersInScope
-
-  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck =
-    checkSkip chain checkLimit
 
   protected def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = s =>
     if (returnItems.includeExisting && s.currentScope.isEmpty)

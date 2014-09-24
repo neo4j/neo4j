@@ -72,6 +72,7 @@ object ClauseConverters {
       case c: Match => c.addMatchToLogicalPlanInput(acc)
       case c: With => c.addWithToLogicalPlanInput(acc)
       case c: Unwind => c.addUnwindToLogicalPlanInput(acc)
+      case c: Start => c.addStartToLogicalPlanInput(acc)
       case x         => throw new CantHandleQueryException//(x.toString)
     }
   }
@@ -204,5 +205,26 @@ object ClauseConverters {
             exp = clause.expression)
         ).
         withTail(PlannerQuery.empty)
+  }
+
+  implicit class StartConverter(val clause: Start) extends AnyVal {
+    def addStartToLogicalPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder = {
+        builder.updateGraph { qg =>
+          val items = clause.items.map {
+            case hints: LegacyIndexHint => Right(hints)
+            case item              => Left(item)
+          }
+
+          val hints = items.collect { case Right(hint) => hint }
+          val nonHints = items.collect { case Left(item) => item }
+
+          if (nonHints.nonEmpty) {
+            val itemString = items.mkString(", ")
+            throw new InternalException(s"Unsupported start items encountered: $itemString")
+          }
+
+          qg.addHints(hints)
+        }
+    }
   }
 }

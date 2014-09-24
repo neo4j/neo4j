@@ -144,6 +144,15 @@ object LogicalPlanProducer {
     )
   }
 
+  def planLegacyHintSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName]) = {
+    LegacyIndexSeek(idName, hint, argumentIds)(
+      PlannerQuery(graph = QueryGraph.empty
+        .addHints(Some(hint))
+        .addArgumentId(argumentIds.toSeq)
+      )
+    )
+  }
+
   def planNodeHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan) =
     NodeHashJoin(node, left, right)(
       left.solved ++ right.solved
