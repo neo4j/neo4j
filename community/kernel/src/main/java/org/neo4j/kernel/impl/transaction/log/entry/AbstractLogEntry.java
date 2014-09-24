@@ -19,24 +19,42 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.TimeZone;
 
-public class LogEntryParserDispatcher<T extends LogEntryParser<? extends LogEntry>>
+import org.neo4j.helpers.Format;
+
+public abstract class AbstractLogEntry implements LogEntry
 {
-    private final Map<Byte, T> parsers;
+    private final byte type;
+    private final byte version;
 
-    public LogEntryParserDispatcher( T[] parsers )
+    AbstractLogEntry( byte type, byte version )
     {
-        this.parsers = new HashMap<>( parsers.length * 2 );
-        for ( T parser : parsers )
-        {
-            this.parsers.put( parser.byteCode(), parser );
-        }
+        this.type = type;
+        this.version = version;
     }
 
-    public T dispatch( byte type )
+    @Override
+    public byte getType()
     {
-        return parsers.get( type );
+        return type;
+    }
+
+    @Override
+    public byte getVersion()
+    {
+        return version;
+    }
+
+    @Override
+    public String toString( TimeZone timeZone )
+    {
+        return toString();
+    }
+
+    @Override
+    public String timestamp( long timeWritten, TimeZone timeZone )
+    {
+        return Format.date( timeWritten, timeZone ) + "/" + timeWritten;
     }
 }

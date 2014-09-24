@@ -28,8 +28,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.pruning.Threshold;
-import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdBasedPruneStrategy;
 
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -37,7 +35,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 public class ThresholdBasedPruneStrategyTest
 {

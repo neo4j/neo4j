@@ -504,7 +504,7 @@ public abstract class InternalAbstractGraphDatabase
 
         storeMigrationProcess.addParticipant( new StoreMigrator(
                 new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrator.class ), System.out ),
-                new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), config, logging ) );
+                fileSystem, new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), config, logging ) );
 
         propertyKeyTokenHolder = life.add( new PropertyKeyTokenHolder( createPropertyKeyCreator() ) );
         labelTokenHolder = life.add( new LabelTokenHolder( createLabelIdCreator() ) );

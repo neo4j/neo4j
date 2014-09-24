@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -32,108 +31,22 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.decodeLogFormatVersion;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.decodeLogVersion;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.encodeLogVersion;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encodeLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
-public class LogHeaderParserTest
+public class LogHeaderReaderTest
 {
-    private final long expectedLogVersion = 1;
+    private final long expectedLogVersion = CURRENT_LOG_VERSION;
     private final long expectedTxId = 42;
-
-    @Test
-    public void shouldWriteALogHeaderInTheGivenChannel() throws IOException
-    {
-        // given
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
-
-        // when
-        writeLogHeader( channel, expectedLogVersion, expectedTxId );
-
-        // then
-        long encodedLogVersions = channel.getLong();
-        assertEquals( encodeLogVersion( expectedLogVersion ), encodedLogVersions );
-
-        byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
-        assertEquals( CURRENT_LOG_VERSION, logFormatVersion );
-
-        long logVersion = decodeLogVersion( logFormatVersion, encodedLogVersions, true );
-        assertEquals( expectedLogVersion, logVersion );
-
-        long txId = channel.getLong();
-        assertEquals( expectedTxId, txId );
-    }
-
-    @Test
-    public void shouldWriteALogHeaderInTheGivenBuffer() throws IllegalLogFormatException
-    {
-        // given
-        final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
-
-        // when
-        final ByteBuffer result = writeLogHeader( buffer, expectedLogVersion, expectedTxId );
-
-        // then
-        assertSame( buffer, result );
-
-        long encodedLogVersions = result.getLong();
-        assertEquals( encodeLogVersion( expectedLogVersion ), encodedLogVersions );
-
-        byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
-        assertEquals( CURRENT_LOG_VERSION, logFormatVersion );
-
-        long logVersion = decodeLogVersion( logFormatVersion, encodedLogVersions, true );
-        assertEquals( expectedLogVersion, logVersion );
-
-        long txId = result.getLong();
-        assertEquals( expectedTxId, txId );
-    }
-
-    @Test
-    public void shouldWriteALogHeaderInAFile() throws IOException
-    {
-        // given
-        final File file = File.createTempFile( "WriteLogHeader", getClass().getSimpleName() );
-        final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-
-        // when
-        writeLogHeader( fs, file, expectedLogVersion, expectedTxId );
-
-        // then
-        final byte[] array = new byte[LOG_HEADER_SIZE];
-        try ( InputStream stream = fs.openAsInputStream( file ) )
-        {
-            int read = stream.read( array );
-            assertEquals( LOG_HEADER_SIZE, read );
-        }
-        final ByteBuffer result = ByteBuffer.wrap( array );
-
-        long encodedLogVersions = result.getLong();
-        assertEquals( encodeLogVersion( expectedLogVersion ), encodedLogVersions );
-
-        byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
-        assertEquals( CURRENT_LOG_VERSION, logFormatVersion );
-
-        long logVersion = decodeLogVersion( logFormatVersion, encodedLogVersions, true );
-        assertEquals( expectedLogVersion, logVersion );
-
-        long txId = result.getLong();
-        assertEquals( expectedTxId, txId );
-    }
 
     @Test
     public void shouldReadALogHeaderFromALogChannel() throws IOException

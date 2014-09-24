@@ -183,9 +183,11 @@ public class CommandWriter implements NeoCommandHandler
     @Override
     public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
     {
+        Collection<DynamicRecord> recordsBefore = command.getRecordsBefore();
         Collection<DynamicRecord> recordsAfter = command.getRecordsAfter();
+
         channel.put( NeoCommandType.SCHEMA_RULE_COMMAND );
-        writeDynamicRecords( command.getRecordsBefore() );
+        writeDynamicRecords( recordsBefore );
         writeDynamicRecords( recordsAfter );
         channel.put( first( recordsAfter ).isCreated() ? (byte) 1 : 0 );
         return true;

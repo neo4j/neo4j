@@ -30,7 +30,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
@@ -84,10 +83,9 @@ public class StoreUpgraderInterruptionTestIT
         StoreMigrator failingStoreMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DevNullLoggingService.DEV_NULL )
         {
             @Override
-            public void migrate( FileSystemAbstraction fileSystem, File sourceStoreDir, File targetStoreDir,
-                    DependencyResolver dependencyResolver ) throws IOException
+            public void migrate( File sourceStoreDir, File targetStoreDir ) throws IOException
             {
-                super.migrate( fileSystem, sourceStoreDir, targetStoreDir, dependencyResolver );
+                super.migrate( sourceStoreDir, targetStoreDir );
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };

@@ -134,14 +134,13 @@ public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
         {
             long id = channel.getLong();
 
-
-            NodeRecord after = readNodeRecord( id );
-            if ( after == null )
+            NodeRecord record = readNodeRecord( id );
+            if ( record == null )
             {
                 return false;
             }
 
-            command.init( null, after );
+            command.init( record, record );
             return true;
         }
 
@@ -185,14 +184,13 @@ public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
             // ID
             long id = channel.getLong(); // 8
 
-            // AFTER
-            PropertyRecord after = readPropertyRecord( id );
-            if ( after == null )
+            PropertyRecord record = readPropertyRecord( id );
+            if ( record == null )
             {
                 return false;
             }
 
-            command.init( null, after );
+            command.init( record, record );
             return true;
         }
 
@@ -476,21 +474,9 @@ public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
                 record.addPropertyBlock( block );
             }
 
-            int deletedRecords = readDynamicRecords( record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER );
-            if ( deletedRecords == -1 )
+            if ( readDynamicRecords( record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER ) == -1 )
             {
                 return null;
-            }
-
-            assert deletedRecords >= 0;
-            while ( deletedRecords-- > 0 )
-            {
-                DynamicRecord read = readDynamicRecord();
-                if ( read == null )
-                {
-                    return null;
-                }
-                record.addDeletedRecord( read );
             }
 
             if ( (inUse && !record.inUse()) || (!inUse && record.inUse()) )

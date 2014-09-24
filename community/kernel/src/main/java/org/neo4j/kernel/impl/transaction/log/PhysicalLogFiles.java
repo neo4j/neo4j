@@ -30,8 +30,8 @@ import static java.lang.Math.max;
 
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_VERSION_SUFFIX;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.REGEX_DEFAULT_VERSION_SUFFIX;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderParser.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 /**
  * Used to figure out what logical log file to open when the database

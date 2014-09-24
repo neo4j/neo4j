@@ -22,39 +22,19 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.io.IOException;
 import java.util.TimeZone;
 
-import org.neo4j.helpers.Format;
 import org.neo4j.kernel.impl.transaction.command.LogHandler;
 
-public abstract class LogEntry
+public interface LogEntry
 {
-    private final byte type;
-    private final byte version;
+    void accept( LogHandler handler ) throws IOException;
 
-    LogEntry( byte type, byte version )
-    {
-        this.type = type;
-        this.version = version;
-    }
+    byte getType();
 
-    public abstract void accept( LogHandler handler ) throws IOException;
+    byte getVersion();
 
-    public byte getType()
-    {
-        return type;
-    }
+    String toString( TimeZone timeZone );
 
-    public byte getVersion()
-    {
-        return version;
-    }
+    String timestamp( long timeWritten, TimeZone timeZone );
 
-    public String toString( TimeZone timeZone )
-    {
-        return toString();
-    }
-
-    public String timestamp( long timeWritten, TimeZone timeZone )
-    {
-        return Format.date( timeWritten, timeZone ) + "/" + timeWritten;
-    }
+    <T extends LogEntry> T as();
 }
