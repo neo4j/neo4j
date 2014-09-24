@@ -20,20 +20,33 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
+import org.neo4j.kernel.impl.transaction.state.RecordChanges;
+import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -46,48 +59,30 @@ public class KernelTransactionsTest
     public void shouldListActiveTransactions() throws Exception
     {
         // Given
-        LifeSupport life = new LifeSupport();
-        life.start();
-
-        Locks locks = mock( Locks.class );
-        when(locks.newClient()).thenReturn( mock( Locks.Client.class ) );
-
-        KernelTransactions registry = new KernelTransactions(
-                new MockContextSupplier(), mock(NeoStore.class), locks, null, null, null, null, null, null,
-                null, null, TransactionHeaderInformationFactory.DEFAULT, null, null,  mock(TransactionCommitProcess.class), null, null,
-                new TransactionHooks(), mock( TransactionMonitor.class ), life, false );
+        KernelTransactions registry = newKernelTransactions();
 
         // When
-        KernelTransaction first  = registry.newInstance();
+        KernelTransaction first = registry.newInstance();
         KernelTransaction second = registry.newInstance();
-        KernelTransaction third  = registry.newInstance();
+        KernelTransaction third = registry.newInstance();
 
         first.close();
 
         // Then
-        assertThat( asUniqueSet(registry.activeTransactions()), equalTo(asSet( second, third )) );
+        assertThat( asUniqueSet( registry.activeTransactions() ), equalTo( asSet( second, third ) ) );
     }
 
     @Test
     public void shouldDisposeTransactionsWhenAsked() throws Exception
     {
         // Given
-        LifeSupport life = new LifeSupport();
-        life.start();
-
-        Locks locks = mock( Locks.class );
-        when(locks.newClient()).thenReturn( mock( Locks.Client.class ) );
-
-        KernelTransactions registry = new KernelTransactions(
-                new MockContextSupplier(), mock(NeoStore.class), locks, null, null, null, null, null, null,
-                null, null, TransactionHeaderInformationFactory.DEFAULT, null, null,  mock(TransactionCommitProcess.class), null, null,
-                new TransactionHooks(), mock( TransactionMonitor.class ), life, false );
+        KernelTransactions registry = newKernelTransactions();
 
         registry.disposeAll();
 
-        KernelTransaction first  = registry.newInstance();
-        KernelTransaction second  = registry.newInstance();
-        KernelTransaction leftOpen  = registry.newInstance();
+        KernelTransaction first = registry.newInstance();
+        KernelTransaction second = registry.newInstance();
+        KernelTransaction leftOpen = registry.newInstance();
         first.close();
         second.close();
 
@@ -99,7 +94,91 @@ public class KernelTransactionsTest
         assertThat( postDispose, not( equalTo( first ) ) );
         assertThat( postDispose, not( equalTo( second ) ) );
 
-        assertTrue(leftOpen.shouldBeTerminated());
+        assertTrue( leftOpen.shouldBeTerminated() );
+    }
+
+    @Test
+    public void shouldIncludeRandomBytesInAdditionalHeader() throws TransactionFailureException
+    {
+        // Given
+        TransactionRepresentation[] transactionRepresentation = new TransactionRepresentation[1];
+
+        KernelTransactions registry = newKernelTransactions(
+                newRememberingCommitProcess( transactionRepresentation ), newMockContextSupplierWithChanges() );
+
+        // When
+        KernelTransaction transaction = registry.newInstance();
+        transaction.success();
+        transaction.close();
+
+        // Then
+        byte[] additionalHeader = transactionRepresentation[0].additionalHeader();
+        assertNotNull( additionalHeader );
+        assertTrue( additionalHeader.length > 0 );
+    }
+
+    private static KernelTransactions newKernelTransactions()
+    {
+        return newKernelTransactions( mock( TransactionCommitProcess.class ), new MockContextSupplier() );
+    }
+
+    private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess,
+                                                             NeoStoreTransactionContextSupplier contextSupplier )
+    {
+        LifeSupport life = new LifeSupport();
+        life.start();
+
+        Locks locks = mock( Locks.class );
+        when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
+
+        return new KernelTransactions( contextSupplier, mock( NeoStore.class ), locks,
+                mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
+                TransactionHeaderInformationFactory.DEFAULT, null, null, commitProcess, null,
+                null, new TransactionHooks(), mock( TransactionMonitor.class ), life, false );
+    }
+
+    private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
+            throws TransactionFailureException
+
+    {
+        TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
+
+        when( commitProcess.commit( any( TransactionRepresentation.class ), any( LockGroup.class ) ) )
+                .then( new Answer<Long>()
+                {
+                    @Override
+                    public Long answer( InvocationOnMock invocation ) throws Throwable
+                    {
+                        slot[0] = ((TransactionRepresentation) invocation.getArguments()[0]);
+                        return 1L;
+                    }
+                } );
+
+        return commitProcess;
+    }
+
+    private static NeoStoreTransactionContextSupplier newMockContextSupplierWithChanges()
+    {
+        return new MockContextSupplier()
+        {
+            @Override
+            @SuppressWarnings("unchecked")
+            protected NeoStoreTransactionContext create()
+            {
+                NeoStoreTransactionContext context = super.create();
+
+                RecordChanges<Long, NodeRecord, Void> recordChanges = mock( RecordChanges.class );
+                when( recordChanges.changeSize() ).thenReturn( 1 );
+
+                RecordChange<Long, NodeRecord, Void> recordChange = mock( RecordChange.class );
+                when( recordChange.forReadingLinkage() ).thenReturn( new NodeRecord( 1, false, 1, 1 ) );
+
+                when( recordChanges.changes() ).thenReturn( Iterables.option( recordChange ) );
+                when( context.getNodeRecords() ).thenReturn( recordChanges );
+
+                return context;
+            }
+        };
     }
 
     private static class MockContextSupplier extends NeoStoreTransactionContextSupplier
@@ -112,7 +191,7 @@ public class KernelTransactionsTest
         @Override
         protected NeoStoreTransactionContext create()
         {
-            return mock(NeoStoreTransactionContext.class);
+            return mock( NeoStoreTransactionContext.class, RETURNS_MOCKS );
         }
     }
 }

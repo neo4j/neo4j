@@ -19,22 +19,43 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 
 public interface TransactionHeaderInformationFactory
 {
     TransactionHeaderInformation create();
 
-    public static final TransactionHeaderInformationFactory DEFAULT =
-            new TransactionHeaderInformationFactory()
-            {
-                private final TransactionHeaderInformation defaultHeader
-                        = new TransactionHeaderInformation( -1, -1, new byte[0] );
+    static final TransactionHeaderInformationFactory DEFAULT = new TransactionHeaderInformationFactory.WithRandomBytes()
+    {
+        private static final int NO_ID = -1;
 
-                @Override
-                public TransactionHeaderInformation create()
-                {
-                    return defaultHeader;
-                }
-            };
+        @Override
+        protected TransactionHeaderInformation createUsing( byte[] additionalHeader )
+        {
+            return new TransactionHeaderInformation( NO_ID, NO_ID, additionalHeader );
+        }
+    };
+
+    static abstract class WithRandomBytes implements TransactionHeaderInformationFactory
+    {
+        private static final int ADDITIONAL_HEADER_SIZE = 8;
+
+        @Override
+        public TransactionHeaderInformation create()
+        {
+            byte[] additionalHeader = generateAdditionalHeader();
+            return createUsing( additionalHeader );
+        }
+
+        protected abstract TransactionHeaderInformation createUsing( byte[] additionalHeader );
+
+        private byte[] generateAdditionalHeader()
+        {
+            byte[] header = new byte[ADDITIONAL_HEADER_SIZE];
+            ThreadLocalRandom.current().nextBytes( header );
+            return header;
+        }
+    }
 }

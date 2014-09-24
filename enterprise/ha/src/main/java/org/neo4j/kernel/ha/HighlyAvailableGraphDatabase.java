@@ -386,13 +386,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()
     {
-        return new TransactionHeaderInformationFactory()
+        return new TransactionHeaderInformationFactory.WithRandomBytes()
         {
             @Override
-            public TransactionHeaderInformation create()
+            protected TransactionHeaderInformation createUsing( byte[] additionalHeader )
             {
                 return new TransactionHeaderInformation( memberContext.getElectedMasterId().toIntegerIndex(),
-                        memberContext.getMyId().toIntegerIndex(), new byte[0] );
+                        memberContext.getMyId().toIntegerIndex(), additionalHeader );
             }
         };
     }
