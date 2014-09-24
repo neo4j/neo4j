@@ -36,10 +36,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.store.DynamicStringStore;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -51,6 +47,7 @@ import org.neo4j.test.PageCacheRule;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class TestIdGeneratorRebuilding
 {
@@ -89,6 +86,7 @@ public class TestIdGeneratorRebuilding
         fs.create( storeFile );
         IdGeneratorImpl.createGenerator( fs, file( "nodes.id" ) );
 
+        DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore(
                 storeFile,
                 config,
@@ -96,9 +94,10 @@ public class TestIdGeneratorRebuilding
                 pageCacheRule.getPageCache( fs, config ),
                 fs,
                 StringLogger.DEV_NULL,
-                null,
+                labelStore,
                 null,
                 new Monitors() );
+        store.makeStoreOk();
 
         // ... that contain a number of records ...
         NodeRecord record = new NodeRecord( 0 );
@@ -208,6 +207,7 @@ public class TestIdGeneratorRebuilding
         fs.create( storeFile );
         IdGeneratorImpl.createGenerator( fs, file( "nodes.id" ) );
 
+        DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore(
                 storeFile,
                 config,
@@ -215,9 +215,10 @@ public class TestIdGeneratorRebuilding
                 pageCacheRule.getPageCache( fs, config ),
                 fs,
                 StringLogger.DEV_NULL,
-                null,
+                labelStore,
                 null,
                 new Monitors() );
+        store.makeStoreOk();
 
         // ... that contain enough records to fill several file pages ...
         int recordsPerPage = store.recordsPerPage();

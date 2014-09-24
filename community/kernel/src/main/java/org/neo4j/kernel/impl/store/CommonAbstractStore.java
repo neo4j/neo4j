@@ -284,7 +284,12 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         {
             if ( !isReadOnly() )
             {
-                openIdGenerator();
+                if ( storeOk )
+                {
+                    openIdGenerator();
+                }
+                // else we will rebuild the id generator after recovery, and we don't want to have the id generator
+                // picking up calls to freeId during recovery.
             }
             else
             {
@@ -507,6 +512,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
         storeOk = false;
         causeOfStoreNotOk = cause;
+        idGenerator = null; // since we will rebuild it later
     }
 
     /**
