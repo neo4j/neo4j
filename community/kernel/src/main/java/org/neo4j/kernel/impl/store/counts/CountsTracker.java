@@ -175,6 +175,10 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         try
         {
+            if ( state.hasChanges() )
+            {
+                throw new IllegalStateException( "Cannot close with memory-state!" );
+            }
             state.close();
         }
         catch ( IOException e )

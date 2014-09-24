@@ -245,8 +245,16 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         }
         if ( counts != null )
         {
-            counts.close();
-            counts = null;
+            try
+            {
+                counts.rotate( getLastCommittedTransactionId() );
+                counts.close();
+                counts = null;
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( e );
+            }
         }
     }
 
@@ -255,6 +263,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     {
         try
         {
+            counts.rotate( getLastCommittedTransactionId() );
             pageCache.flush();
         }
         catch ( IOException e )
