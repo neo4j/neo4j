@@ -27,7 +27,7 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 
 class CharArrayProperty extends DefinedProperty
 {
-    private final char[] value;
+    final char[] value;
 
     CharArrayProperty( int propertyKeyId, char[] value )
     {
@@ -43,30 +43,88 @@ class CharArrayProperty extends DefinedProperty
     }
 
     @Override
-    public boolean valueEquals( Object value )
+    public boolean valueEquals( Object other )
     {
-        if ( value instanceof char[] )
+        return valueEquals( this.value, other );
+    }
+
+    static boolean valueEquals( char[] value, Object other )
+    {
+        if ( other instanceof char[] )
         {
-            return Arrays.equals( this.value, (char[]) value );
+            return Arrays.equals( value, (char[]) other );
         }
-        return valueCompare( this.value, value );
+        if ( other instanceof Character[] )
+        {
+            Character[] that = (Character[]) other;
+            if ( value.length == that.length )
+            {
+                for ( int i = 0; i < that.length; i++ )
+                {
+                    Character character = that[i];
+                    if ( character == null || character != value[i] )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        else if ( other instanceof String[] )
+        {
+            return eq( (String[]) other, value );
+        }
+        // else if ( other instanceof String ) // should we perhaps support this?
+        return false;
     }
 
     @Override
     int valueHash()
     {
+        return hash( value );
+    }
+
+    static int hash( char[] value )
+    {
         return Arrays.hashCode( value );
     }
 
     @Override
-    boolean hasEqualValue( DefinedProperty that )
+    boolean hasEqualValue( DefinedProperty other )
     {
-        return Arrays.equals( this.value, ((CharArrayProperty)that).value );
+        if ( other instanceof CharArrayProperty )
+        {
+            CharArrayProperty that = (CharArrayProperty) other;
+            return Arrays.equals( this.value, that.value );
+        }
+        if ( other instanceof StringArrayProperty )
+        {
+            StringArrayProperty that = (StringArrayProperty) other;
+            return eq( that.value, this.value );
+        }
+        return false;
     }
 
     @Override
     public int sizeOfObjectInBytesIncludingOverhead()
     {
         return withObjectOverhead( withReference( sizeOfArray( value ) ) );
+    }
+
+    static boolean eq( String[] strings, char[] chars )
+    {
+        if ( strings.length == chars.length )
+        {
+            for ( int i = 0; i < strings.length; i++ )
+            {
+                String str = strings[i];
+                if ( str == null || str.length() != 1 || str.charAt( 0 ) != chars[i] )
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 }

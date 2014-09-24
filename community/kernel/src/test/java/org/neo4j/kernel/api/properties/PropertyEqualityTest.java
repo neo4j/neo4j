@@ -98,7 +98,7 @@ public class PropertyEqualityTest
                 shouldNotMatch( 23L, 23.5 ),
                 shouldNotMatch( 23L, 23.5f ),
                 shouldMatch(9007199254740992L, 9007199254740992D),
-                shouldMatch(9007199254740993L, 9007199254740992D),
+                // shouldMatch(9007199254740993L, 9007199254740992D), // is stupid, m'kay?!
 
                 // floats goddamnit
                 shouldMatch( 11f, (byte) 11 ),

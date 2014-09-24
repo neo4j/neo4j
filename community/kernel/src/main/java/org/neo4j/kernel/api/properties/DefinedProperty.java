@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.properties;
 
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.ArrayUtil.ArrayEquality;
 import org.neo4j.kernel.impl.cache.SizeOfObject;
 
 /**
@@ -71,10 +70,20 @@ public abstract class DefinedProperty extends Property implements SizeOfObject
         {
             return true;
         }
-        if ( o != null && getClass() == o.getClass() )
+        if ( o instanceof DefinedProperty )
         {
             DefinedProperty that = (DefinedProperty) o;
-            return this.propertyKeyId == that.propertyKeyId && hasEqualValue( that );
+            if ( this.propertyKeyId == that.propertyKeyId )
+            {
+                if ( o instanceof LazyProperty )
+                { // the cost of boxing is small compared to what LazyProperty does
+                    return that.valueEquals( value() );
+                }
+                else
+                {
+                    return hasEqualValue( that );
+                }
+            }
         }
         return false;
     }
@@ -87,6 +96,7 @@ public abstract class DefinedProperty extends Property implements SizeOfObject
 
     abstract int valueHash();
 
+    /** We never pass {@link LazyProperty} to this method, since we check for it in {@link #equals(Object)}. */
     abstract boolean hasEqualValue( DefinedProperty that );
 
     @Override
@@ -100,150 +110,102 @@ public abstract class DefinedProperty extends Property implements SizeOfObject
         return value.toString();
     }
 
-    @Override
-    public String stringValue()
-    {
-        Object value = value();
-        throw new ClassCastException(
-                String.format( "[%s:%s] is not a String", value, value.getClass().getSimpleName() ) );
-    }
-
-    @Override
-    public String stringValue( String defaultValue )
-    {
-        return stringValue();
-    }
-
-    @Override
-    public Number numberValue()
-    {
-        Object value = value();
-        throw new ClassCastException(
-                String.format( "[%s:%s] is not a Number", value, value.getClass().getSimpleName() ) );
-    }
-
-    @Override
-    public Number numberValue( Number defaultValue )
-    {
-        return numberValue();
-    }
-
-    @Override
-    public int intValue()
-    {
-        Object value = value();
-        throw new ClassCastException(
-                String.format( "[%s:%s] is not an int", value, value.getClass().getSimpleName() ) );
-    }
-
-    @Override
-    public int intValue( int defaultValue )
-    {
-        return intValue();
-    }
-
-    @Override
-    public long longValue()
-    {
-        Object value = value();
-        throw new ClassCastException(
-                String.format( "[%s:%s] is not a long", value, value.getClass().getSimpleName() ) );
-    }
-
-    @Override
-    public long longValue( long defaultValue )
-    {
-        return longValue();
-    }
-
-    @Override
-    public boolean booleanValue()
-    {
-        Object value = value();
-        throw new ClassCastException(
-                String.format( "[%s:%s] is not a boolean", value, value.getClass().getSimpleName() ) );
-    }
-
-    @Override
-    public boolean booleanValue( boolean defaultValue )
-    {
-        return booleanValue();
-    }
-
     DefinedProperty( int propertyKeyId )
     {
         super( propertyKeyId );
     }
 
-    protected boolean valueCompare( Object lhs, Object rhs )
+    private static final long NON_DOUBLE_LONG = 0xFFE0_0000_0000_0000L; // doubles are exact integers up to 53 bits
+
+    static boolean numbersEqual( double fpn, long in )
     {
-        return compareValues( lhs, rhs );
-    }
-
-    private static boolean compareValues( Object lhs, Object rhs )
-    {
-        // COMPARE NUMBERS
-        if ( lhs instanceof Number && rhs instanceof Number )
+        if ( in < 0 )
         {
-            return compareNumbers( (Number) lhs, (Number) rhs );
+            if ( fpn < 0.0 )
+            {
+                if ( (NON_DOUBLE_LONG & in) == NON_DOUBLE_LONG ) // the high order bits are only sign bits
+                { // no loss of precision if converting the long to a double, so it's safe to compare as double
+                    return fpn == (double) in;
+                }
+                else if ( fpn < (double) Long.MIN_VALUE )
+                { // the double is too big to fit in a long, they cannot be equal
+                    return false;
+                }
+                else if ( (fpn == Math.floor( fpn )) && !Double.isInfinite( fpn ) ) // no decimals
+                { // safe to compare as long
+                    return in == (long) fpn;
+                }
+            }
         }
-
-        // COMPARE STRINGS
-        if ( (lhs instanceof String || lhs instanceof Character) &&
-                (rhs instanceof String || rhs instanceof Character) )
+        else
         {
-            return lhs.toString().equals( rhs.toString() );
+            if ( !(fpn < 0.0) )
+            {
+                if ( (NON_DOUBLE_LONG & in) == 0 ) // the high order bits are only sign bits
+                { // no loss of precision if converting the long to a double, so it's safe to compare as double
+                    return fpn == (double) in;
+                }
+                else if ( fpn > (double) Long.MAX_VALUE )
+                { // the double is too big to fit in a long, they cannot be equal
+                    return false;
+                }
+                else if ( (fpn == Math.floor( fpn )) && !Double.isInfinite( fpn ) )  // no decimals
+                { // safe to compare as long
+                    return in == (long) fpn;
+                }
+            }
         }
-
-        // COMPARE BOOLEANS
-        if ( lhs instanceof Boolean && rhs instanceof Boolean )
-        {
-            return compareBooleans( (Boolean) lhs, (Boolean) rhs );
-        }
-
-        // COMPARE ARRAYS
-        if ( lhs.getClass().isArray() && rhs.getClass().isArray() )
-        {
-            return ArrayUtil.equals( lhs, rhs, PROPERTY_EQUALITY );
-        }
-
         return false;
     }
 
-    private static boolean compareBooleans( Boolean lhs, Boolean rhs )
+    static boolean numbersEqual( ArrayValue.IntegralArray lhs, ArrayValue.IntegralArray rhs )
     {
-        return lhs.equals( rhs );
+        int length = lhs.length();
+        if ( length != rhs.length() )
+        {
+            return false;
+        }
+        for ( int i = 0; i < length; i++ )
+        {
+            if ( lhs.longValue( i ) != rhs.longValue( i ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
-    private static boolean compareNumbers( Number aNumber, Number bNumber )
+    static boolean numbersEqual( ArrayValue.FloatingPointArray lhs, ArrayValue.FloatingPointArray rhs )
     {
-        // If any of the two are non-integers
-        if ( aNumber instanceof Float
-                || bNumber instanceof Float
-                || aNumber instanceof Double
-                || bNumber instanceof Double )
+        int length = lhs.length();
+        if ( length != rhs.length() )
         {
-            double b = bNumber.doubleValue();
-            double a = aNumber.doubleValue();
-            return a == b;
+            return false;
         }
-
-        return aNumber.longValue() == bNumber.longValue();
+        for ( int i = 0; i < length; i++ )
+        {
+            if ( lhs.doubleValue( i ) != rhs.doubleValue( i ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
-    private static final ArrayEquality PROPERTY_EQUALITY = new ArrayEquality()
+    static boolean numbersEqual( ArrayValue.FloatingPointArray fps, ArrayValue.IntegralArray ins )
     {
-        @Override
-        public boolean typeEquals( Class<?> firstType, Class<?> otherType )
-        {   // Not always true, but we won't let type differences affect the outcome at this stage,
-            // since many types are compatible in this property comparison.
-            return true;
-        }
-
-        @Override
-        public boolean itemEquals( Object lhs, Object rhs )
+        int length = ins.length();
+        if ( length != fps.length() )
         {
-            return compareValues( lhs, rhs );
+            return false;
         }
-    };
+        for ( int i = 0; i < length; i++ )
+        {
+            if ( !numbersEqual( fps.doubleValue( i ), ins.longValue( i ) ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 }

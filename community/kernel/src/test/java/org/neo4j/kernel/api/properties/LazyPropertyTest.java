@@ -31,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 
 public class LazyPropertyTest
 {
+
     @Test
     public void shouldLoadLazyStringProperty() throws Exception
     {
@@ -53,56 +54,60 @@ public class LazyPropertyTest
     @Test
     public void shouldExhibitCorrectEqualityForBooleanArray() throws Exception
     {
-        verifyCorrectValueEqualityForLazyArrayProperty( new boolean[] {} );
+        verifyCorrectValueEqualityForLazyArrayProperty( new boolean[]{} );
     }
 
     @Test
     public void shouldExhibitCorrectEqualityForByteArray() throws Exception
     {
-        verifyCorrectValueEqualityForLazyArrayProperty( new byte[] {} );
+        verifyCorrectValueEqualityForLazyArrayProperty( new byte[]{} );
     }
 
     @Test
     public void shouldExhibitCorrectEqualityForShortArray() throws Exception
     {
-        verifyCorrectValueEqualityForLazyArrayProperty( new short[] {} );
+        verifyCorrectValueEqualityForLazyArrayProperty( new short[]{} );
     }
 
     @Test
     public void shouldExhibitCorrectEqualityForCharArray() throws Exception
     {
-        verifyCorrectValueEqualityForLazyArrayProperty( new char[] {} );
+        verifyCorrectValueEqualityForLazyArrayProperty( new char[]{} );
     }
 
     @Test
     public void shouldExhibitCorrectEqualityForIntArray() throws Exception
     {
-        verifyCorrectValueEqualityForLazyArrayProperty( new int[] {} );
+        verifyCorrectValueEqualityForLazyArrayProperty( new int[]{} );
     }
 
     @Test
     public void shouldExhibitCorrectEqualityForLongArray() throws Exception
     {
-        verifyCorrectValueEqualityForLazyArrayProperty( new long[] {} );
+        verifyCorrectValueEqualityForLazyArrayProperty( new long[]{} );
     }
 
     @Test
     public void shouldExhibitCorrectEqualityForFloatArray() throws Exception
     {
-        verifyCorrectValueEqualityForLazyArrayProperty( new float[] {} );
+        verifyCorrectValueEqualityForLazyArrayProperty( new float[]{} );
     }
 
     @Test
     public void shouldExhibitCorrectEqualityForDoubleArray() throws Exception
     {
-        verifyCorrectValueEqualityForLazyArrayProperty( new double[] {} );
+        verifyCorrectValueEqualityForLazyArrayProperty( new double[]{} );
     }
 
     @Test
     public void shouldExhibitCorrectEqualityForStringArray() throws Exception
     {
-        verifyCorrectValueEqualityForLazyArrayProperty( new String[] {} );
+        verifyCorrectValueEqualityForLazyArrayProperty( new String[]{} );
     }
+
+    public static final Object[] ENPTY_ARRAYS = new Object[]{
+            new boolean[]{}, new char[]{}, new String[]{}, new float[]{}, new double[]{},
+            new byte[]{}, new short[]{}, new int[]{}, new long[]{},};
 
     private static void verifyCorrectValueEqualityForLazyArrayProperty( Object array )
     {
@@ -111,15 +116,52 @@ public class LazyPropertyTest
         // when/then
         assertTrue( "value should be reported equal with same type", property.valueEquals( array ) );
         // when
-        for ( Object value : new Object[] { new boolean[] {}, new byte[] {}, new short[] {}, new char[] {},
-                new int[] {}, new long[] {}, new float[] {}, new double[] {}, new String[] {}, } )
+        for ( Object value : ENPTY_ARRAYS )
         {
-            if ( value.getClass() == array.getClass() )
+            if ( coercible( value.getClass(), array.getClass() ) )
             {
                 continue;
             }
             // then
             assertFalse( "value should be reported inequal with different type", property.valueEquals( value ) );
+        }
+    }
+
+    private static boolean coercible( Class<?> lhs, Class<?> rhs )
+    {
+        if ( lhs == rhs )
+        {
+            return true;
+        }
+        if ( lhs.isArray() && rhs.isArray() )
+        {
+            return coercible( lhs.getComponentType(), rhs.getComponentType() );
+        }
+        if ( lhs.isArray() || rhs.isArray() )
+        {
+            return false;
+        }
+        switch ( lhs.getName() )
+        {
+        case "boolean":
+            return rhs == boolean.class;
+        case "char":
+        case "java.lang.String":
+            return rhs == char.class || rhs == String.class;
+        case "float":
+        case "double":
+        case "byte":
+        case "short":
+        case "int":
+        case "long":
+            return rhs == float.class ||
+                   rhs == double.class ||
+                   rhs == byte.class ||
+                   rhs == short.class ||
+                   rhs == int.class ||
+                   rhs == long.class;
+        default:
+            return false;
         }
     }
 
