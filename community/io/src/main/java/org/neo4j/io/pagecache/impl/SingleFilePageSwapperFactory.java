@@ -23,12 +23,15 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapper;
 
+/**
+ * A factory for SingleFilePageSwapper instances.
+ *
+ * @see org.neo4j.io.pagecache.impl.SingleFilePageSwapper
+ */
 public class SingleFilePageSwapperFactory implements PageSwapperFactory
 {
     private final FileSystemAbstraction fs;

@@ -179,7 +179,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         writeInitialDataTo( file );
         RecordingPageCacheMonitor monitor = new RecordingPageCacheMonitor();
 
-        MuninnPageCache pageCache = new MuninnPageCache( fs, 2, 8, monitor );
+        MuninnPageCache pageCache = new MuninnPageCache( fs, 10, 8, monitor );
         PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )

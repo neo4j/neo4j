@@ -20,8 +20,11 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageSwapper;
 
 abstract class MuninnPageCursor implements PageCursor
 {
@@ -97,7 +100,64 @@ abstract class MuninnPageCursor implements PageCursor
         return currentPageId;
     }
 
+    /**
+     * NOTE: Must be called while holding the right translationTableLock.writeLock
+     * for the given translationTable!!!
+     */
+    void pageFault(
+            long filePageId,
+            PrimitiveLongObjectMap<MuninnPage> translationTable,
+            AtomicReference<MuninnPage> freelist,
+            PageSwapper swapper ) throws IOException
+    {
+        MuninnPage page;
+        int iterationCount = 0;
+        for (;;)
+        {
+            iterationCount++;
+            page = freelist.get();
+            if ( page == null )
+            {
+                page = pagedFile.unparkEvictor( iterationCount );
+                if ( page != null )
+                {
+                    break;
+                }
+                continue;
+            }
+            if ( freelist.compareAndSet( page, page.nextFree ) )
+            {
+                break;
+            }
+        }
+
+        // We got a free page, and we know that we have race-free access to it.
+        // Well, it's not entirely race free, because other paged files might have
+        // it in their translation tables, and try to pin it.
+        // However, they will all fail because when they try to pin, the page will
+        // either be 1) free, 2) bound to our file, or 3) the page is write locked.
+        long stamp = page.writeLock();
+        try
+        {
+            page.initBuffer();
+            page.fault( swapper, filePageId );
+        }
+        catch ( Throwable throwable )
+        {
+            page.unlockWrite( stamp );
+            throw throwable;
+        }
+        convertPageFaultLock( page, stamp );
+        translationTable.put( filePageId, page );
+        pinCursorToPage( page, filePageId, swapper );
+        pagedFile.monitor.pageFaulted(filePageId, swapper);
+    }
+
     protected abstract void unpinCurrentPage();
+
+    protected abstract void convertPageFaultLock( MuninnPage page, long stamp );
+
+    protected abstract void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper );
 
     // --- IO methods:
 

@@ -30,6 +30,13 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.UnsafeUtil;
 
+/**
+ * A simple PageSwapper implementation that directs all page swapping to a
+ * single file on the file system.
+ *
+ * It additionally tracks the file size precisely, to avoid calling into the
+ * file system whenever the size of the given file is queried.
+ */
 public class SingleFilePageSwapper implements PageSwapper
 {
     private static final long fileSizeOffset =
@@ -86,8 +93,8 @@ public class SingleFilePageSwapper implements PageSwapper
     public void write( long filePageId, Page page ) throws IOException
     {
         long offset = pageIdToPosition( filePageId );
-        page.swapOut( channel, offset, filePageSize );
         increaseFileSizeTo( offset + filePageSize );
+        page.swapOut( channel, offset, filePageSize );
     }
 
     @Override

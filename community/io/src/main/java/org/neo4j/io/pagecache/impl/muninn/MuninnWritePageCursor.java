@@ -183,7 +183,8 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         }
     }
 
-    private void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper )
+    @Override
+    protected void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper )
     {
         reset( page );
         page.incrementUsage();
@@ -194,51 +195,10 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         page.markAsDirty();
     }
 
-    /**
-     * NOTE: Must be called while holding the right translationTableLock.writeLock
-     * for the given translationTable!!!
-     */
-    void pageFault(
-            long filePageId,
-            PrimitiveLongObjectMap<MuninnPage> translationTable,
-            AtomicReference<MuninnPage> freelist,
-            PageSwapper swapper ) throws IOException
+    @Override
+    protected void convertPageFaultLock( MuninnPage page, long stamp )
     {
-        MuninnPage page;
-        for (;;)
-        {
-            page = freelist.get();
-            if ( page == null )
-            {
-                pagedFile.unparkEvictor();
-                continue;
-            }
-            if ( freelist.compareAndSet( page, page.nextFree ) )
-            {
-                break;
-            }
-        }
-
-        // We got a free page, and we know that we have race-free access to it.
-        // Well, it's not entirely race free, because other paged files might have
-        // it in their translation tables, and try to pin it.
-        // However, they will all fail because when they try to pin, the page will
-        // either be 1) free, 2) bound to our file, or 3) the page is write locked.
-        long stamp = page.writeLock();
-        try
-        {
-            page.initBuffer();
-            page.fault( swapper, filePageId );
-        }
-        catch ( Throwable throwable )
-        {
-            page.unlockWrite( stamp );
-            throw throwable;
-        }
         lockStamp = stamp;
-        translationTable.put( filePageId, page );
-        pinCursorToPage( page, filePageId, swapper );
-        pagedFile.monitor.pageFaulted(filePageId, swapper);
     }
 
     @Override

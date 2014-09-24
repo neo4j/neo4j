@@ -19,6 +19,9 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 
 import sun.misc.Unsafe;
@@ -26,6 +29,7 @@ import sun.misc.Unsafe;
 public final class UnsafeUtil
 {
     private static final Unsafe unsafe;
+    private static final MethodHandle getAndAddInt;
     private static final Object nullSentinelBase;
     private static final long nullSentinelOffset;
     private static Object nullSentinel; // see the retainReference() method
@@ -52,6 +56,22 @@ public final class UnsafeUtil
         unsafe = theUnsafe;
         nullSentinelBase = sentinelBase;
         nullSentinelOffset = sentinelOffset;
+        getAndAddInt = getGetAndAddIntMethodHandle();
+    }
+
+    private static MethodHandle getGetAndAddIntMethodHandle()
+    {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        // int getAndAddInt(Object o, long offset, int delta)
+        MethodType type = MethodType.methodType( Integer.TYPE, Object.class, Long.TYPE, Integer.TYPE );
+        try
+        {
+            return lookup.findVirtual( Unsafe.class, "getAndAddInt", type );
+        }
+        catch ( Exception e )
+        {
+            return null;
+        }
     }
 
     public static long getFieldOffset( Class<?> type, String field )
@@ -69,7 +89,17 @@ public final class UnsafeUtil
     public static int getAndAddInt( Object obj, long offset, int delta )
     {
         // The Java 8 specific version:
-//        return unsafe.getAndAddInt( obj, offset, delta );
+        if ( getAndAddInt != null )
+        {
+            try
+            {
+                return (int) getAndAddInt.invokeExact( unsafe, obj, offset, delta );
+            }
+            catch ( Throwable throwable )
+            {
+                throw new AssertionError( "unexpected", throwable );
+            }
+        }
 
         // The Java 7 version:
         int x;
