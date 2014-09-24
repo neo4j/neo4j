@@ -23,39 +23,22 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.IntroducedIdentifier
+import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 
-case class ExpandPipe(source: Pipe, from: String, relName: String, to: String, dir: Direction, types: Seq[String])
+case class ExpandPipe(source: Pipe, fromNode: String, relName: String, toNode: String, dir: Direction, types: Seq[String])
                      (val estimatedCardinality: Option[Long] = None)
                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.flatMap {
-      row =>
-        getFromNode(row) match {
-          case n: Node =>
-            val relationships: Iterator[Relationship] = state.query.getRelationshipsFor(n, dir, types)
-            relationships.map {
-              case r =>
-                row.newWith2(relName, r, to, r.getOtherNode(n))
-            }
-
-          case null => None
-
-          case value => throw new InternalException(s"Expected to find a node at $from but found $value instead")
-        }
-    }
-  }
-
-  def getFromNode(row: ExecutionContext): Any =
-    row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    new ExpandIterator(input, state.query)
 
   def planDescription = {
-    val arguments = Seq(IntroducedIdentifier(relName), IntroducedIdentifier(to))
+    val arguments = Seq(IntroducedIdentifier(relName), IntroducedIdentifier(toNode))
     source.planDescription.andThen(this, "Expand", arguments:_*)
   }
 
-  val symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
+  val symbols = source.symbols.add(toNode, CTNode).add(relName, CTRelationship)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
@@ -65,4 +48,42 @@ case class ExpandPipe(source: Pipe, from: String, relName: String, to: String, d
   override def localEffects = Effects.READS_ENTITIES
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+
+
+  class ExpandIterator(input: Iterator[ExecutionContext], query: QueryContext) extends Iterator[ExecutionContext] {
+    var row: ExecutionContext = null
+    var node: Node = null
+    var relationships: Iterator[Relationship] = Iterator.empty
+
+    computeNextRelationships()
+
+    def hasNext: Boolean = relationships.hasNext
+
+    def next(): ExecutionContext = {
+      val r = relationships.next()
+      val result = row.newWith2(relName, r, toNode, r.getOtherNode(node))
+      if (!relationships.hasNext)
+        computeNextRelationships()
+      result
+    }
+
+    def computeNextRelationships(): Unit = {
+      while (input.hasNext) {
+        row = input.next()
+        val value = row(fromNode)
+        if (value != null) {
+          value match {
+            case aNode: Node =>
+              node = aNode
+              relationships = query.getRelationshipsFor(node, dir, types)
+              if (relationships.hasNext)
+                return
+            case _ =>
+              throw new InternalException(s"Expected to find a node at $fromNode but found $value instead")
+          }
+        }
+      }
+      relationships = Iterator.empty
+    }
+  }
 }

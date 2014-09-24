@@ -34,6 +34,8 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
                             mutationCommands: Queue[UpdateAction] = Queue.empty)
   extends MutableMap[String, Any] {
 
+  override def apply(key: String) = m(key)
+
   def get(key: String): Option[Any] = m.get(key)
 
   def iterator: Iterator[(String, Any)] = m.iterator
