@@ -52,6 +52,7 @@ import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -249,8 +250,26 @@ public class MasterImpl extends LifecycleAdapter implements Master
             throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException
     {
         assertCorrectEpoch( context );
-        long txId = spi.applyPreparedTransaction( preparedTransaction );
-        return packResponse( context, txId );
+
+        // We need to hold a shared schema lock during slave commit, because otherwise the schema may change while we're
+        // committing. However, we don't have access to the slaves lock context (indeed, the slave may not be holding any
+        // locks for this transaction), so we use a temporary one here instead. That's dangerous, because it impedes
+        // deadlock detection. To mitigate that, we use tryLock(), and if that fails we know the schema is being changed
+        // and we fail the transaction. If it succeeds, we know the schema will remain stable during our commit.
+        try(Locks.Client locks = spi.acquireClient())
+        {
+            if(locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ))
+            {
+                long txId = spi.applyPreparedTransaction( preparedTransaction );
+                return packResponse( context, txId );
+            }
+            else
+            {
+                throw new TransactionFailureException( "Failed to commit, because another transaction is making " +
+                        "schema changes. Slave commits are disallowed while schema changes are being committed. " +
+                        "Retrying the transaction should yield a successful result." );
+            }
+        }
     }
 
     @Override
