@@ -149,7 +149,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
           new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(out))
           out.toString
         }
-      } else "start n=node(*) match n-[r?]->() delete n, r;"
+      } else "match n-[r?]->() delete n, r;"
       """[console]
 ----
 %s

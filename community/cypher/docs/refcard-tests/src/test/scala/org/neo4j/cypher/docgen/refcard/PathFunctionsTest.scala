@@ -62,8 +62,8 @@ class PathFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 RETURN
 
 length(path)
@@ -72,8 +72,8 @@ length(path)
 The length of the path.
 
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 RETURN
 
 nodes(path)
@@ -82,8 +82,8 @@ nodes(path)
 The nodes in the path as a collection.
 
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 RETURN
 
 relationships(path)
@@ -92,18 +92,16 @@ relationships(path)
 The relationships in the path as a collection.
 
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
-
 MATCH path=(n)-->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 RETURN extract(x IN nodes(path) | x.prop)
 ###
 
 Assign a path and process its nodes.
 
 ###assertion=friends
-START begin = node(%A%), end = node(%B%)
-
 MATCH path = (begin) -[*]-> (end)
+WHERE id(begin) = %A% AND id(end) = %B%
 FOREACH
   (n IN rels(path) | SET n.marked = TRUE)
 ###

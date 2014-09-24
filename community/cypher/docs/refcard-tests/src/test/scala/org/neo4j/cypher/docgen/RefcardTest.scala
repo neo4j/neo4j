@@ -196,7 +196,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
           val rest = query.split("\n").tail.mkString("\n")
           val q = rest.replaceAll("#", "")
           val parts = q.split("\n\n")
-          val publishPart = parts(1)
+          val publishPart = if (parts.length > 1) parts(1) else parts(0)
           producedText = producedText.replace(query, expandQuery(q, publishPart, dir, asserts, parameterChoice))
         }
     }

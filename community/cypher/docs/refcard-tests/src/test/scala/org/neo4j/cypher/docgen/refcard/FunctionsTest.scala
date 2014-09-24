@@ -62,7 +62,7 @@ class FunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=returns-one parameters=default
-START n=node(%A%)
+MATCH n WHERE id(n) = %A%
 RETURN
 
 coalesce(n.property, {defaultValue})###
@@ -77,8 +77,8 @@ timestamp()###
 Milliseconds since midnight, January 1, 1970 UTC.
 
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
 MATCH (n)-[node_or_relationship]->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 RETURN
 
 id(node_or_relationship)###
