@@ -73,4 +73,10 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     {
         return TYPE_DESCRIPTOR;
     }
+
+    @Override
+    protected boolean reserveIdsDuringRebuild()
+    {
+        return true;
+    }
 }
