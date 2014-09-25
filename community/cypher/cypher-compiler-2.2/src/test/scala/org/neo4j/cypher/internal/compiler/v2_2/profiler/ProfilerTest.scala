@@ -110,11 +110,4 @@ case class ProfilerPipe(source: Pipe, name: String, rows: Int, dbAccess: Int)
   }
 
   def symbols: SymbolTable = SymbolTable()
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-
-    copy(source = source)
-  }
-
 }

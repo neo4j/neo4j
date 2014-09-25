@@ -30,7 +30,7 @@ case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.filter {
       (outerContext) =>
-        val innerState = state.copy(initialContext = Some(outerContext))
+        val innerState = state.copy(initialContext = Some(outerContext.clone()))
         val innerResults = inner.createResults(innerState)
         if (negated) innerResults.isEmpty else innerResults.nonEmpty
     }
@@ -43,11 +43,6 @@ case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
   def symbols: SymbolTable = source.symbols
 
   override val sources = Seq(source, inner)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: inner :: Nil) = sources
-    copy(source = source, inner = inner)(estimatedCardinality)
-  }
 
   override def localEffects = Effects.NONE
 

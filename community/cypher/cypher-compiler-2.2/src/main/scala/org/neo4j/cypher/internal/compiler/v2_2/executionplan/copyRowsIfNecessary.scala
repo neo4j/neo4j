@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EagerPipe, Pipe}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes._
+import org.neo4j.cypher.internal.compiler.v2_2.{MappedRewriter, Rewriter, bottomUp, topDownUntilMatching}
 
-case object addEagernessIfNecessary extends MappedRewriter(bottomUp) {
+case object copyRowsIfNecessary extends MappedRewriter(bottomUp) {
 
   val rewriter = Rewriter.lift {
-    case eagerPipe: EagerPipe =>
-      eagerPipe
-
     case toPipe: Pipe =>
       val oldChildren = toPipe.children.toList
       val innerRewriter = topDownUntilMatching(childRewriter(toPipe))
@@ -38,17 +35,23 @@ case object addEagernessIfNecessary extends MappedRewriter(bottomUp) {
       toPipe.dup(newChildren)
   }
 
+
+  override def apply(v: AnyRef): Option[AnyRef] = {
+    val rewritten = super.apply(v)
+    val result = rewritten match {
+      case Some(pipe: Pipe with RonjaPipe) if QueryLifetime.needsCopy(pipe.providedRowLifetime) =>
+        Some(CopyRowPipe(pipe)(pipe.estimatedCardinality)(pipe.monitor))
+      case other =>
+        other
+    }
+    result
+  }
+
   def childRewriter(toPipe: Pipe) = {
     val sources = toPipe.sources
     Rewriter.lift {
-      case fromPipe: Pipe if sources.contains(fromPipe) && wouldInterfere(fromPipe.effects, toPipe.effects) =>
-        new EagerPipe(fromPipe)(fromPipe.monitor)
+      case fromPipe: Pipe with RonjaPipe if sources.contains(fromPipe) && toPipe.requiredRowLifetime.needsCopy(fromPipe.providedRowLifetime) =>
+        CopyRowPipe(fromPipe)(fromPipe.estimatedCardinality)(fromPipe.monitor)
     }
-  }
-
-  def wouldInterfere(from: Effects, to: Effects): Boolean = {
-    val nodesInterfere = from.contains(Effects.READS_NODES) && to.contains(Effects.WRITES_NODES)
-    val relsInterfere = from.contains(Effects.READS_RELATIONSHIPS) && to.contains(Effects.WRITES_RELATIONSHIPS)
-    nodesInterfere || relsInterfere
   }
 }

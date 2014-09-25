@@ -56,10 +56,5 @@ case class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem])
 
   def dependencies = Seq()
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)
-  }
-
   override def localEffects = returnItems.effects
 }

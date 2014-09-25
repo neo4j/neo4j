@@ -22,36 +22,36 @@ package org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters
 import org.neo4j.cypher.internal.compiler.v2_2._
 
 object RewriterStepSequencer {
-  def newDefault(sequenceName: String) = newValidating(sequenceName)
 
-  def newPlain(sequenceName: String) =
+  def newDefault(sequenceName: String): RewriterStepSequencer = newValidating(sequenceName)
+
+  def newPlain(sequenceName: String): PlainRewriterStepSequencer =
     PlainRewriterStepSequencer(sequenceName, DefaultRewriterTaskProcessor(sequenceName))
 
-  def newValidating(sequenceName: String) =
+  def newValidating(sequenceName: String): ValidatingRewriterStepSequencer =
     ValidatingRewriterStepSequencer(sequenceName, DefaultRewriterTaskProcessor(sequenceName))
 
-  def newTracing(sequenceName: String, onlyIfChanged: Boolean = true) =
+  def newTracing(sequenceName: String, onlyIfChanged: Boolean = true): ValidatingRewriterStepSequencer =
     ValidatingRewriterStepSequencer(sequenceName, TracingRewriterTaskProcessor(sequenceName, onlyIfChanged))
 }
 
-case class PlainRewriterStepSequencer(sequenceName: String, taskProcessor: RewriterTaskProcessor) {
+trait RewriterStepSequencer {
+  def fromStepSeq(steps: Seq[RewriterStep]): Seq[Rewriter]
 
-  def apply(steps: RewriterStep*): Rewriter =
-    inSequence(apply(steps): _*)
+  def fromSteps(steps: RewriterStep*): Rewriter =
+    inSequence(fromStepSeq(steps): _*)
+}
 
-  def apply(steps: Seq[RewriterStep]): Seq[Rewriter] = {
+case class PlainRewriterStepSequencer(sequenceName: String, taskProcessor: RewriterTaskProcessor) extends RewriterStepSequencer {
+  def fromStepSeq(steps: Seq[RewriterStep]): Seq[Rewriter] = {
     val tasks = steps.collect { case ApplyRewriter(name, rewriter) => RunRewriter(name, rewriter) }
     val rewriters = tasks.map(taskProcessor)
     rewriters
   }
 }
 
-case class ValidatingRewriterStepSequencer(sequenceName: String, taskProcessor: RewriterTaskProcessor) {
-
-  def apply(steps: RewriterStep*): Rewriter =
-    inSequence(apply(steps): _*)
-
-  def apply(steps: Seq[RewriterStep]): Seq[Rewriter] = {
+case class ValidatingRewriterStepSequencer(sequenceName: String, taskProcessor: RewriterTaskProcessor) extends RewriterStepSequencer {
+  def fromStepSeq(steps: Seq[RewriterStep]): Seq[Rewriter] = {
     val tasks = RewriterTaskBuilder(steps)
     val rewriters = tasks.map(taskProcessor)
     rewriters

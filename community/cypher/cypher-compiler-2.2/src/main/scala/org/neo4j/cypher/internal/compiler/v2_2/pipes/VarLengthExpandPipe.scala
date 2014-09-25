@@ -92,11 +92,6 @@ case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, 
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(head)(estimatedCardinality)
-  }
-
   override def localEffects = Effects.READS_ENTITIES
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))

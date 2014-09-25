@@ -30,10 +30,11 @@ case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negat
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
       (outerContext) =>
-        val innerState = state.copy(initialContext = Some(outerContext))
+        val innerState = state.copy(initialContext = Some(outerContext.clone()))
         val innerResults = inner.createResults(innerState)
         val holds = if (negated) innerResults.isEmpty else innerResults.nonEmpty
-        outerContext += (letVarName -> holds)
+        outerContext.put(letVarName, holds)
+        outerContext
     }
   }
 
@@ -44,11 +45,6 @@ case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negat
   def symbols: SymbolTable = source.symbols.add(letVarName, CTBoolean)
 
   override val sources = Seq(source, inner)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: inner :: Nil) = sources
-    copy(source = source, inner = inner)(estimatedCardinality)
-  }
 
   override def localEffects = Effects.NONE
 

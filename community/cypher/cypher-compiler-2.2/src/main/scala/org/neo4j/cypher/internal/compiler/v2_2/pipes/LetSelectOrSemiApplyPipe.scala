@@ -33,11 +33,12 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
     input.map {
       (outerContext) =>
         val holds = predicate.isTrue(outerContext)(state) || {
-          val innerState = state.copy(initialContext = Some(outerContext))
+          val innerState = state.copy(initialContext = Some(outerContext.clone()))
           val innerResults = inner.createResults(innerState)
           if (negated) innerResults.isEmpty else innerResults.nonEmpty
         }
-        outerContext += (letVarName -> holds)
+        outerContext.put(letVarName, holds)
+        outerContext
     }
   }
 
@@ -52,11 +53,6 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
   def symbols: SymbolTable = source.symbols.add(letVarName, CTBoolean)
 
   override val sources = Seq(source, inner)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: inner :: Nil) = sources
-    copy(source = source, inner = inner)(estimatedCardinality)
-  }
 
   override def localEffects = predicate.effects
 

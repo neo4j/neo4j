@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 case class NestedPipe(pipe: Pipe, path: ProjectedPath) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val innerState = state.copy(initialContext = Some(ctx))
+    // this copy is needed to support in-place update by expand
+    val innerState = state.copy(initialContext = Some(ctx.clone()))
     pipe.createResults(innerState).map(ctx => path(ctx)).toSeq
   }
 

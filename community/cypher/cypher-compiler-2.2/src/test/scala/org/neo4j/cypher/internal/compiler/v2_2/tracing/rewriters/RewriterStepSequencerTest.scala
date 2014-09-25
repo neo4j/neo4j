@@ -28,7 +28,7 @@ class RewriterStepSequencerTest extends CypherFunSuite {
     val dummyRewriter1 = Rewriter.noop
     val dummyRewriter2 = Rewriter.lift { case x: AnyRef => x }
 
-    RewriterStepSequencer.newValidating("test")(List.empty) should equal(Seq())
-    RewriterStepSequencer.newValidating("test")(List(ApplyRewriter("1", dummyRewriter1), ApplyRewriter("2", dummyRewriter2))) should equal(Seq(dummyRewriter1, dummyRewriter2))
+    RewriterStepSequencer.newValidating("test").fromStepSeq(List.empty) should equal(Seq())
+    RewriterStepSequencer.newValidating("test").fromStepSeq(List(ApplyRewriter("1", dummyRewriter1), ApplyRewriter("2", dummyRewriter2))) should equal(Seq(dummyRewriter1, dummyRewriter2))
   }
 }

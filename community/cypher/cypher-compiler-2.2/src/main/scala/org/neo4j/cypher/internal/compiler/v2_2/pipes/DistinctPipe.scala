@@ -66,10 +66,5 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
     SymbolTable(identifiers)
   }
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)
-  }
-
   override def localEffects = expressions.effects
 }

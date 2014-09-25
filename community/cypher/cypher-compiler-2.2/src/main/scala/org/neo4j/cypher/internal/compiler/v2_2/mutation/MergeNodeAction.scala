@@ -75,7 +75,8 @@ case class MergeNodeAction(identifier: String,
     if (foundNodes.isEmpty) {
       val query: QueryContext = state.query
       val createdNode: Node = query.createNode()
-      val newContext = context += (identifier -> createdNode)
+      val newContext = context
+      newContext.put(identifier, createdNode)
 
       onCreate.foreach {
         action => action.exec(newContext, state)

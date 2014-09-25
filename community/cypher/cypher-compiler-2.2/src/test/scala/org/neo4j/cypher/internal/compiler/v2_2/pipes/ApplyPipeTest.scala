@@ -31,14 +31,13 @@ class ApplyPipeTest extends CypherFunSuite {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
-    val rhs = new Pipe {
+    case object rhs extends Pipe {
       protected def internalCreateResults(state: QueryState) = Iterator(state.initialContext.get)
 
       def exists(pred: (Pipe) => Boolean) = ???
       def planDescription = ???
       def symbols: SymbolTable = ???
       def monitor: PipeMonitor = newMonitor
-      def dup(sources: List[Pipe]): Pipe = ???
       def sources: Seq[Pipe] = ???
     }
 
@@ -52,7 +51,7 @@ class ApplyPipeTest extends CypherFunSuite {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
     val rhsData = "c" -> 36
 
-    val rhs = new Pipe {
+    case object rhs extends Pipe {
       protected def internalCreateResults(state: QueryState) =
         Iterator(ExecutionContext.empty += rhsData)
 
@@ -60,7 +59,6 @@ class ApplyPipeTest extends CypherFunSuite {
       def planDescription = ???
       def symbols: SymbolTable = ???
       def monitor: PipeMonitor = newMonitor
-      def dup(sources: List[Pipe]): Pipe = ???
       def sources: Seq[Pipe] = ???
     }
 
@@ -73,15 +71,17 @@ class ApplyPipeTest extends CypherFunSuite {
     val lhsData = List(Map("a" -> 1, "b" -> 3), Map("a" -> 2, "b" -> 4))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
 
-    val rhs = new Pipe {
-      protected def internalCreateResults(state: QueryState) =
-        Iterator(state.initialContext.get += "b" -> null)
+    case object rhs extends Pipe {
+      protected def internalCreateResults(state: QueryState) = {
+        val initialContext = state.initialContext.get
+        initialContext.put("b", null)
+        Iterator(initialContext)
+      }
 
       def exists(pred: (Pipe) => Boolean) = ???
       def planDescription = ???
       def symbols: SymbolTable = ???
       def monitor: PipeMonitor = newMonitor
-      def dup(sources: List[Pipe]): Pipe = ???
       def sources: Seq[Pipe] = ???
     }
 

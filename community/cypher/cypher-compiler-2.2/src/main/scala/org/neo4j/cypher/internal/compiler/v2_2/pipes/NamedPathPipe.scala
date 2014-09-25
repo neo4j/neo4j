@@ -32,7 +32,9 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
                         (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
     input.map {
-      ctx => ctx += (pathName -> getPath(ctx))
+      ctx =>
+        ctx.put(pathName, getPath(ctx))
+        ctx
     }
 
   // TODO: This is duplicated with PathExtractor
@@ -79,11 +81,6 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
 
   override def planDescription =
     source.planDescription.andThen(this, "ExtractPath",  IntroducedIdentifier(pathName))
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)
-  }
 
   override def localEffects = Effects.NONE
 }

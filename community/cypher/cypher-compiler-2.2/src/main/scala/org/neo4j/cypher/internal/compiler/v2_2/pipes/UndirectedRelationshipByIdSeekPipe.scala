@@ -53,11 +53,6 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityBy
 
   def monitor = pipeMonitor
 
-  def dup(sources: List[Pipe]): Pipe = {
-    assert(sources.isEmpty)
-    this
-  }
-
   override def localEffects = Effects.READS_ENTITIES
 
   def sources: Seq[Pipe] = Seq.empty

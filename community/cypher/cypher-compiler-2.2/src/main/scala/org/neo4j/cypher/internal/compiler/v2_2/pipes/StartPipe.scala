@@ -53,11 +53,6 @@ case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProduce
   override def localEffects = Effects.READS_NODES
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
 }
 
 case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
@@ -66,10 +61,5 @@ case class RelationshipStartPipe(source: Pipe, name: String, createSource: Entit
   override def localEffects = Effects.READS_RELATIONSHIPS
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
 }
 

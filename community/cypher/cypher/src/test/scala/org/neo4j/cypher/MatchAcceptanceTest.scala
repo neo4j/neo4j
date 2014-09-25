@@ -1576,4 +1576,8 @@ return b
       result.lastRelationship() should equal (r1)
     }
   }
+
+  test("MATCH (t1:Track)--(al:Album)--(t2:Track) WHERE t1.duration = 61 AND t2.duration = 68 RETURN count(*);") {
+    val result = executeWithNewPlanner("MATCH (t1:Track)--(al:Album)--(t2:Track) WHERE t1.duration = 61 AND t2.duration = 68 RETURN count(*)").toList
+  }
 }

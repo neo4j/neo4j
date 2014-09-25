@@ -34,6 +34,8 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
                             mutationCommands: Queue[UpdateAction] = Queue.empty)
   extends MutableMap[String, Any] {
 
+  override def apply(key: String) = m(key)
+
   def get(key: String): Option[Any] = m.get(key)
 
   def iterator: Iterator[(String, Any)] = m.iterator
@@ -45,6 +47,9 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
   override def foreach[U](f: ((String, Any)) => U) {
     m.foreach(f)
   }
+
+  override def put(kv: String, v: Any) =
+    m.put(kv, v)
 
   def +=(kv: (String, Any)) = {
     m += kv

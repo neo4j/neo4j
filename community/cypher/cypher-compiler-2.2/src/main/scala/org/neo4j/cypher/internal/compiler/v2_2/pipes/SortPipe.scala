@@ -56,10 +56,5 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
       }
   }
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
-
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

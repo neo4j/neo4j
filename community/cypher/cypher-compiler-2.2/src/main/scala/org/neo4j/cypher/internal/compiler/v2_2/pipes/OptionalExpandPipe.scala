@@ -71,11 +71,6 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
 
   def symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
-
   override def localEffects = predicate.effects
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))

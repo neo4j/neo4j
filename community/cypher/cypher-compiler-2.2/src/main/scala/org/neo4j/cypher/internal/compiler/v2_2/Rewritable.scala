@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import java.lang.reflect.Method
+
 import scala.collection.mutable.{HashMap => MutableHashMap}
 
 object Rewriter {
@@ -43,6 +44,7 @@ object Rewritable {
   }
 
   implicit class DuplicatableAny(val that: AnyRef) extends AnyVal {
+
     import Foldable._
 
     def dup(children: Seq[AnyRef]): AnyRef = that match {
@@ -69,6 +71,7 @@ object Rewritable {
   }
 
   implicit class DuplicatableProduct(val product: Product) extends AnyVal {
+
     import Foldable._
 
     def dup(children: Seq[AnyRef]): Product = product match {
@@ -103,8 +106,8 @@ trait Rewritable {
   def dup(children: Seq[AnyRef]): this.type
 }
 
-object inSequence {
-  import Rewritable._
+case object inSequence {
+  import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 
   class InSequenceRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
     def apply(that: AnyRef): Some[AnyRef] =
@@ -116,7 +119,8 @@ object inSequence {
   def apply(rewriters: Rewriter*) = new InSequenceRewriter(rewriters)
 }
 
-object topDown {
+case object topDown extends (Rewriter => Rewriter) {
+
   import Foldable._
   import Rewritable._
 
@@ -130,12 +134,27 @@ object topDown {
   def apply(rewriter: Rewriter) = new TopDownRewriter(rewriter)
 }
 
-object bottomUp {
+case object topDownUntilMatching extends (Rewriter => Rewriter) {
+
+  import Foldable._
+  import Rewritable._
+
+  class TopDownUntilMatchingRewriter(rewriter: Rewriter) extends Rewriter {
+    def apply(that: AnyRef): Option[AnyRef] = {
+      rewriter(that) orElse Some(that.dup(that.children.map(t => this.apply(t).get).toList))
+    }
+  }
+
+  def apply(rewriter: Rewriter) = new TopDownUntilMatchingRewriter(rewriter)
+}
+
+case object bottomUp extends (Rewriter => Rewriter) {
+
   import Foldable._
   import Rewritable._
 
   class BottomUpRewriter(val rewriter: Rewriter) extends Rewriter {
-    def apply(that: AnyRef): Some[AnyRef] = {
+    def apply(that: AnyRef): Option[AnyRef] = {
       val rewrittenThat = that.dup(that.children.map(t => this.apply(t).get).toList)
       Some(rewrittenThat.rewrite(rewriter))
     }
@@ -145,6 +164,7 @@ object bottomUp {
 }
 
 case class repeat(rewriter: Rewriter) extends Rewriter {
+
   import Rewritable._
 
   def apply(that: AnyRef): Option[AnyRef] = {

@@ -77,7 +77,7 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
     val applyExpressionsOverwritingOriginal = (ctx: ExecutionContext, state: QueryState) => {
       expressions.foreach {
         case (name, expression) =>
-          ctx += name -> expression(ctx)(state)
+          ctx.put(name, expression(ctx)(state))
       }
       ctx
     }
@@ -85,7 +85,7 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
       val original = ctx.clone()
       expressions.foreach {
         case (name, expression) =>
-          ctx += name -> expression(original)(state)
+          ctx.put(name, expression(original)(state))
       }
       ctx
     }
@@ -103,11 +103,6 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
     val arguments = expressions.map(_._1).toSeq
 
     new PlanDescriptionImpl(this, "Extract", SingleChild(source.planDescription), Seq(KeyNames(arguments)))
-  }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)
   }
 
   override def localEffects = expressions.effects

@@ -41,11 +41,6 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: Option
 
   def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers)
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (l :: r :: Nil) = sources
-    copy(source = l, inner= r)(estimatedCardinality)
-  }
-
   override val sources: Seq[Pipe] = Seq(source, inner)
 
   override def localEffects = Effects.NONE

@@ -87,7 +87,7 @@ object Planner {
   def getRewriter(scopeTree: Scope): Rewriter = {
     val namespacedIdentifiers = namespaceIdentifiers(scopeTree)
 
-    RewriterStepSequencer.newDefault("Planner")(
+    RewriterStepSequencer.newDefault("Planner").fromSteps(
       ApplyRewriter("namespaceIdentifiers", namespacedIdentifiers),
 
       rewriteEqualityToInCollection,

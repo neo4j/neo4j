@@ -28,14 +28,12 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
 
   val newMonitor = mock[PipeMonitor]
 
-  def pipeWithResults(f: QueryState => Iterator[ExecutionContext]) = new Pipe {
+  case class pipeWithResults(f: QueryState => Iterator[ExecutionContext]) extends Pipe {
     protected def internalCreateResults(state: QueryState) = f(state)
     def exists(pred: (Pipe) => Boolean) = ???
     def planDescription = ???
     def symbols: SymbolTable = ???
     def monitor: PipeMonitor = newMonitor
-
-    def dup(sources: List[Pipe]): Pipe = ???
 
     def sources: Seq[Pipe] = ???
   }

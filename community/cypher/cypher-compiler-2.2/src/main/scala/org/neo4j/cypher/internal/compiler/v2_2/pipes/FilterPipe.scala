@@ -28,17 +28,43 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinali
                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   val symbols = source.symbols
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =
-    input.filter(ctx => predicate.isTrue(ctx)(state))
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
+    new FilterPipeIterator(input, state)
+
+  final class FilterPipeIterator(input: Iterator[ExecutionContext], state: QueryState) extends Iterator[ExecutionContext] {
+      private var result: ExecutionContext = null
+
+      def hasNext: Boolean = { ensureNextResult(); result != null }
+
+      def next(): ExecutionContext = {
+        ensureNextResult()
+        val retVal = result
+        if (retVal == null)
+          Iterator.empty.next()
+        else {
+          result = null
+          retVal
+        }
+      }
+
+      private def ensureNextResult(): Unit = {
+        if (result == null) {
+          while (input.hasNext) {
+            result = input.next()
+            if (predicate.isTrue(result)(state))
+              return
+          }
+          result = null
+        }
+      }
+    }
 
   def planDescription = source.planDescription.andThen(this, "Filter", LegacyExpression(predicate))
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
-  }
 
   override def localEffects = predicate.effects
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+
+  override def requiredRowLifetime: RowLifetime = ChainedLifetime
+  override def providedRowLifetime: RowLifetime = source.providedRowLifetime
 }

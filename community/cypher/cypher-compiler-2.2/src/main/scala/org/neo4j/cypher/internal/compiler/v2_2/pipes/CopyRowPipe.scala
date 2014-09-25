@@ -19,17 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
-case class EagerPipe(src: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) {
-  def symbols: SymbolTable = src.symbols
-
-  def planDescription = src.planDescription.andThen(this, "Eager")
+final case class CopyRowPipe(source: Pipe)(val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    input.toList.toIterator
+    new Iterator[ExecutionContext] {
+      def hasNext: Boolean = input.hasNext
+      def next(): ExecutionContext = input.next().clone()
+    }
 
-  override val effects = Effects.NONE
+  def planDescription = source.planDescription.andThen(this, "CopyRow")
+
+  val symbols = source.symbols
+
+  override def localEffects = Effects.NONE
+
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+
+  override def requiredRowLifetime: RowLifetime = ChainedLifetime
+  override def providedRowLifetime: RowLifetime = QueryLifetime
 }

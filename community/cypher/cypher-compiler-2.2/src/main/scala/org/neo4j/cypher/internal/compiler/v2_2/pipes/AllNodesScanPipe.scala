@@ -44,11 +44,6 @@ case class AllNodesScanPipe(ident: String)(val estimatedCardinality: Option[Long
 
   override def localEffects: Effects = Effects.READS_NODES
 
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
-
   def sources: Seq[Pipe] = Seq.empty
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))

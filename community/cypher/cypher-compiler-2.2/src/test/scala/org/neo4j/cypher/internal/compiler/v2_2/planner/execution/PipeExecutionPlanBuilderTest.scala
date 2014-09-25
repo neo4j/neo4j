@@ -149,7 +149,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength)_
     val pipeInfo = build(logicalPlan)
 
-    pipeInfo.pipe should equal(ExpandPipe( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq() )())
+    pipeInfo.pipe should equal(CopyRowPipe(ExpandPipe(AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq())())())
   }
 
   test("simple hash join") {
@@ -163,8 +163,8 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo.pipe should equal(NodeHashJoinPipe(
       Set("b"),
-      ExpandPipe( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq() )(),
-      ExpandPipe( AllNodesScanPipe("c")(), "c", "r2", "b", Direction.INCOMING, Seq() )()
+      CopyRowPipe(ExpandPipe( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq() )())(),
+      CopyRowPipe(ExpandPipe( AllNodesScanPipe("c")(), "c", "r2", "b", Direction.INCOMING, Seq() )())()
     )())
   }
 }

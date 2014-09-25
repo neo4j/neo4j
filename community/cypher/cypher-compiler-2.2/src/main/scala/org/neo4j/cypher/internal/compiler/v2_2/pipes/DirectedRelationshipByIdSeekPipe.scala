@@ -57,11 +57,6 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityById
 
   def monitor = pipeMonitor
 
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
-
   def sources: Seq[Pipe] = Seq.empty
 
   override def localEffects = Effects.READS_ENTITIES

@@ -90,10 +90,5 @@ case class LoadCSVPipe(source: Pipe,
   }
 
   override def localEffects = Effects.NONE
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)
-  }
 }
 

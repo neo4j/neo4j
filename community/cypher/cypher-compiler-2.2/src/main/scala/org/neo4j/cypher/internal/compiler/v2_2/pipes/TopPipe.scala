@@ -117,10 +117,5 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
 
   override def effects = Effects.NONE
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
-
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

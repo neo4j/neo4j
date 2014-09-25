@@ -66,11 +66,6 @@ case class NodeIndexSeekPipe(ident: String,
 
   override def monitor = pipeMonitor
 
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
-
   def sources: Seq[Pipe] = Seq.empty
 
   override def localEffects = Effects.READS_NODES

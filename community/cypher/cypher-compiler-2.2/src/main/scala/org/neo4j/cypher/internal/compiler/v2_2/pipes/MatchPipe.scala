@@ -48,9 +48,4 @@ case class MatchPipe(source: Pipe,
 
   override def planDescription =
     source.planDescription.andThen(this, matchingContext.builder.name, identifiersInClause.map(IntroducedIdentifier).toSeq:_*)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)
-  }
 }

@@ -58,10 +58,5 @@ case class OptionalMatchPipe(source: Pipe,
 
   def doMatch(state: QueryState)(ctx: ExecutionContext) = matchPipe.createResults(state)
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (l :: r :: Nil) = sources
-    copy(source = l, matchPipe = r)
-  }
-
   override val sources: Seq[Pipe] = Seq(source, matchPipe)
 }

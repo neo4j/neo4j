@@ -42,11 +42,6 @@ case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)(val estimatedCardinality: 
 
   def monitor: PipeMonitor = pipeMonitor
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (l :: r :: Nil) = sources
-    copy(lhs = l, rhs = r)(estimatedCardinality)
-  }
-
   def sources: Seq[Pipe] = Seq(lhs, rhs)
 
   override def localEffects = Effects.NONE

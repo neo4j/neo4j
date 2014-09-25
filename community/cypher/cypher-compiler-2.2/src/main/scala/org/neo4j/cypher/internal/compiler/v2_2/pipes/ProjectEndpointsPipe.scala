@@ -43,11 +43,6 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String, start: String, en
     source.planDescription
           .andThen(this, "ProjectEndpoints", KeyNames(Seq(relName, start, end)))
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
-  }
-
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 
   private def projector(qtx: QueryContext): Projector =
