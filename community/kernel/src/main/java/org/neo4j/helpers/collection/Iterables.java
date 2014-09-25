@@ -915,23 +915,7 @@ public final class Iterables
             @Override
             public Iterator<T> iterator()
             {
-                return new PrefetchingIterator<T>()
-                {
-                    private boolean returned;
-
-                    @Override
-                    protected T fetchNextOrNull()
-                    {
-                        try
-                        {
-                            return !returned ? item : null;
-                        }
-                        finally
-                        {
-                            returned = true;
-                        }
-                    }
-                };
+                return IteratorUtil.iterator( item );
             }
         };
     }

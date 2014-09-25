@@ -66,11 +66,9 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
-import static java.util.Collections.emptyList;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -395,23 +393,17 @@ public class StateHandlingStatementOperations implements
     @Override
     public IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey )
     {
-        Iterable<IndexDescriptor> committedRules;
-        try
-        {
-            committedRules = option( storeLayer.indexesGetForLabelAndPropertyKey( labelId,
-                    propertyKey ) );
-        }
-        catch ( SchemaRuleNotFoundException e )
-        {
-            committedRules = emptyList();
-        }
+        IndexDescriptor indexDescriptor = storeLayer.indexesGetForLabelAndPropertyKey( labelId, propertyKey );
+
+        Iterator<IndexDescriptor> committedRule = iterator( indexDescriptor );
+
         DiffSets<IndexDescriptor> ruleDiffSet = state.txState().indexDiffSetsByLabel( labelId );
 
         boolean hasTxStateWithChanges = state.hasTxStateWithChanges();
         Iterator<IndexDescriptor> rules = hasTxStateWithChanges ?
-                                          filterByPropertyKeyId( ruleDiffSet.apply( committedRules.iterator() ),
-                                                                 propertyKey ) :
-                                          committedRules.iterator();
+                filterByPropertyKeyId( ruleDiffSet.apply( committedRule ), propertyKey ) :
+                committedRule;
+
         return singleOrNull( rules );
     }
 

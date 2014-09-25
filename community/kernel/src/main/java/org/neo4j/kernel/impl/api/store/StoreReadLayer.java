@@ -115,11 +115,9 @@ public interface StoreReadLayer
     PrimitiveLongResourceIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
-    IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
-                                                                    throws SchemaRuleNotFoundException;
+    IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey );
 
-    InternalIndexState indexGetState( IndexDescriptor descriptor )
-                                                                            throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
