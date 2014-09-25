@@ -42,7 +42,7 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
     case property: PropertyEqualsAndLabelPredicate if property.propertyKey.propertyKeyId.isEmpty =>
       Selectivity(0)
 
-    // WHERE x:Label AND x.prop <> 42
+    // WHERE x:Label AND x.prop = 42
     case property: PropertyEqualsAndLabelPredicate =>
       val idxLookup: Option[Selectivity] = getSelectivityForPossibleIndex(property)
 
@@ -67,7 +67,7 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
       if func.function == Some(functions.Id) =>
       Cardinality(25) / stats.nodesWithLabelCardinality(None)
 
-    // WHERE id(x) = [...]
+    // WHERE id(x) IN [...]
     case SingleExpression(In(func@FunctionInvocation(_, _, IndexedSeq(_)), c:Collection))
       if func.function == Some(functions.Id) =>
       Cardinality(c.expressions.size) / stats.nodesWithLabelCardinality(None)
@@ -77,6 +77,10 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
 
     case ExistsCombination(_) =>
       Selectivity(1)
+
+    // WHERE n.prop = <exp>
+    case SingleExpression(In(Property(identifier: Identifier, _), Collection(elements))) =>
+      Selectivity(0.1) * Multiplier(elements.size)
 
     case _ =>
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY

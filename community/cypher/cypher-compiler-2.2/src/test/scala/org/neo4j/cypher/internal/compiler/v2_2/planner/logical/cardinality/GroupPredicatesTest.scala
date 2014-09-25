@@ -75,10 +75,11 @@ class GroupPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport
     // MATCH a WHERE a.prop IN ["foo"] AND a:BAR
     val p1 = ExpressionPredicate(inComparison)
     val p2 = ExpressionPredicate(hasLabelId1)
+    val p3 = ExistsPredicate(IdName(id1.name))
 
     groupPredicates(stubbedEstimateSelectivity)(Set(p1, p2)) should equal(
       Set(
-        (PropertyEqualsAndLabelPredicate(property.propertyKey, 1, BAR, Set(p1, p2)), Selectivity(0.2))
+        (PropertyEqualsAndLabelPredicate(property.propertyKey, 1, BAR, Set(p1, p2, p3)), Selectivity(0.2))
       )
     )
   }
@@ -86,10 +87,12 @@ class GroupPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport
   test("pattern gets passed through alone when it's the only one") {
     // MATCH a-->b
     val p1 = PatternPredicate(pattern)
+    val p2 = ExistsPredicate(IdName(id1.name))
+    val p3 = ExistsPredicate(IdName(id2.name))
 
     groupPredicates(stubbedEstimateSelectivity)(Set(p1)) should equal(
       Set(
-        (RelationshipWithLabels(None, p1.p, None, Set(p1)), Selectivity(0.3))
+        (RelationshipWithLabels(None, p1.p, None, Set(p1, p2, p3)), Selectivity(0.3))
       ))
   }
 
@@ -97,10 +100,12 @@ class GroupPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport
     // MATCH a-->b WHERE a:Bar
     val p1 = PatternPredicate(pattern)
     val p2 = ExpressionPredicate(hasLabelId1)
+    val p3 = ExistsPredicate(IdName(id1.name))
+    val p4 = ExistsPredicate(IdName(id2.name))
 
     groupPredicates(stubbedEstimateSelectivity)(Set(p1, p2)) should equal(
       Set(
-        (RelationshipWithLabels(Some(BAR), p1.p, None, Set(p1, p2)), Selectivity(0.35))
+        (RelationshipWithLabels(Some(BAR), p1.p, None, Set(p1, p2, p3, p4)), Selectivity(0.35))
       ))
   }
 
@@ -109,10 +114,12 @@ class GroupPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport
     val p1 = PatternPredicate(pattern)
     val p2 = ExpressionPredicate(hasLabelId1)
     val p3 = ExpressionPredicate(hasLabelId1Bis)
+    val p4 = ExistsPredicate(IdName(id1.name))
+    val p5 = ExistsPredicate(IdName(id2.name))
 
     groupPredicates(stubbedEstimateSelectivity)(Set(p1, p2, p3)) should equal(
       Set(
-        (RelationshipWithLabels(Some(BAR2), pattern, None, Set(p1, p3)), Selectivity(0.3)),
+        (RelationshipWithLabels(Some(BAR2), pattern, None, Set(p1, p3, p4, p5)), Selectivity(0.3)),
         (SingleExpression(p2.e), Selectivity(0.8))
       ))
   }
@@ -121,10 +128,12 @@ class GroupPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport
     // MATCH a-->b WHERE b:Bar
     val p1 = PatternPredicate(pattern)
     val p2 = ExpressionPredicate(hasLabelId2)
+    val p3 = ExistsPredicate(IdName(id1.name))
+    val p4 = ExistsPredicate(IdName(id2.name))
 
     groupPredicates(stubbedEstimateSelectivity)(Set(p1, p2)) should equal(
       Set(
-        (RelationshipWithLabels(None, pattern, Some(FOO), Set(p1, p2)), Selectivity(0.3))
+        (RelationshipWithLabels(None, pattern, Some(FOO), Set(p1, p2, p3, p4)), Selectivity(0.3))
       ))
   }
 
@@ -133,10 +142,12 @@ class GroupPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport
     val p1 = PatternPredicate(pattern)
     val p2 = ExpressionPredicate(hasLabelId1)
     val p3 = ExpressionPredicate(hasLabelId2)
+    val p4 = ExistsPredicate(IdName(id1.name))
+    val p5 = ExistsPredicate(IdName(id2.name))
 
     groupPredicates(stubbedEstimateSelectivity)(Set(p1, p2, p3)) should equal(
       Set(
-        (RelationshipWithLabels(Some(BAR), pattern, Some(FOO), Set(p1, p2, p3)), Selectivity(0.35))
+        (RelationshipWithLabels(Some(BAR), pattern, Some(FOO), Set(p1, p2, p3, p4, p5)), Selectivity(0.35))
       ))
   }
 }

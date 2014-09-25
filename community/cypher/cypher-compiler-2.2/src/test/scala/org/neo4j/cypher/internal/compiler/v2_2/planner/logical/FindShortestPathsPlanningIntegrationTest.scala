@@ -68,35 +68,29 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("find shortest paths on top of hash joins") {
-    val r1 = PatternRelationship("r1", ("a", "b"), Direction.INCOMING, Seq(), SimplePatternLength)
-    val r2 = PatternRelationship("r2", ("b", "c"), Direction.OUTGOING, Seq(), SimplePatternLength)
+    def myCardinality(plan: LogicalPlan): Cardinality = Cardinality(plan match {
+      case _: NodeIndexSeek                    => 10.0
+      case _: AllNodesScan                     => 10000
+      case _: NodeHashJoin                     => 42
+      case Expand(lhs, _, _, _, _, _, _, _, _) => (myCardinality(lhs) * Multiplier(10)).amount
+      case _: Selection                        => 100.04
+      case _: NodeByLabelScan                  => 100
+      case _                                   => Double.MaxValue
+    })
 
     (new given {
-      cardinality = mapCardinality {
-        case _: AllNodesScan => 200
-        case Expand(_, IdName("b"), _, _, _, _, _, _,_) => 10000
-        case _: Expand => 10
-        case _: NodeHashJoin => 20
-        case _ => Double.MaxValue
-      }
-    } planFor "MATCH (a)<-[r1]-(b)-[r2]->(c), p = shortestPath((a)-[r]->(c)) RETURN p").plan should equal(
-      planRegularProjection(
-        planShortestPaths(
-          planSelection(
-            Vector(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
-            planNodeHashJoin(Set(IdName("b")),
-              planExpand(planAllNodesScan("a", Set.empty), "a", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength, r1),
-              planExpand(planAllNodesScan("c", Set.empty), "c", Direction.INCOMING, Direction.OUTGOING, Seq(), "b", "r2", SimplePatternLength, r2)
-            )
-          ),
-          ShortestPathPattern(
-            Some("p"),
-            PatternRelationship("r", ("a", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
-            single = true
-          )(null)
-        ),
-        expressions = Map("p" -> Identifier("p") _)
-      )
+      cardinality = PartialFunction(myCardinality)
+    } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p").plan.toString should equal(
+      """Projection[p](Map("p" → p))
+        |↳ FindShortestPaths[p,r2,r1,a,b,c,r](p = shortestPath((a)-[r]->(c)))
+        |↳ Selection[r2,r1,a,b,c](ArrayBuffer(NotEquals(r1, r2)))
+        |↳ NodeHashJoin[r2,r1,a,b,c](Set(b))
+        |  ↳ left =
+        |    Expand[a,r1,b](a, INCOMING, INCOMING, ⬨, b, r1, , ArrayBuffer())
+        |    ↳ NodeByLabelScan[a](a, Left("X"), Set())
+        |  ↳ right =
+        |    Expand[c,r2,b](c, INCOMING, OUTGOING, ⬨, b, r2, , ArrayBuffer())
+        |    ↳ NodeByLabelScan[c](c, Left("X"), Set())""".stripMargin
     )
   }
 }

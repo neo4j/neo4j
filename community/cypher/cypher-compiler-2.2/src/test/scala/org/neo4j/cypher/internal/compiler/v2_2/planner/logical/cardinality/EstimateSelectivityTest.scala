@@ -80,8 +80,7 @@ class EstimateSelectivityTest extends CypherFunSuite with LogicalPlanningTestSup
       shouldHaveSelectivity((25.0 + 25) / (100 * 100))
   }
 
-  ignore("relationship given unknown type and directions, no labels") { // should work
-    ???
+  test("relationship given unknown type and directions, no labels") { // should work
     givenPredicate("(a)-[r]->(b)").
       withGraphNodes(100).
       withLabel('BAR -> 20).
@@ -93,7 +92,7 @@ class EstimateSelectivityTest extends CypherFunSuite with LogicalPlanningTestSup
       shouldHaveSelectivity((25.0 + 25 + 50) / (100 * 100))
   }
 
-  ignore("relationship given left label, type and direction") { // Should work
+  test("relationship given left label, type and direction") { // Should work
     givenPredicate("(a:FOO)-[r:TYPE]->(b)").
       withGraphNodes(200).
       withLabel('BAR -> 50).
@@ -103,7 +102,7 @@ class EstimateSelectivityTest extends CypherFunSuite with LogicalPlanningTestSup
       shouldHaveSelectivity( 25.0 / (200 * 200) )
   }
 
-  ignore("relationship given left label, type and incoming direction") { // Should work
+  test("relationship given left label, type and incoming direction") { // Should work
     givenPredicate("(a:FOO)<-[r:TYPE]-(b)").
       withGraphNodes(200).
       withLabel('BAR -> 50).
@@ -113,7 +112,7 @@ class EstimateSelectivityTest extends CypherFunSuite with LogicalPlanningTestSup
       shouldHaveSelectivity( (25.0 + 30) / (200 * 200) )
   }
 
-  ignore("relationship given right label, type and direction") { // Should work
+  test("relationship given right label, type and direction") { // Should work
     givenPredicate("(a)-[r:TYPE]->(b:FOO)").
       withGraphNodes(200).
       withLabel('BAR -> 50).
@@ -121,5 +120,17 @@ class EstimateSelectivityTest extends CypherFunSuite with LogicalPlanningTestSup
       withRelationshipCardinality('BAR -> 'TYPE -> 'FOO -> 25).
       withRelationshipCardinality('FOO -> 'TYPE -> 'FOO -> 30).
       shouldHaveSelectivity( (25.0 + 30) / (200 * 200) )
+  }
+
+  test("equality comparisons on node property") {
+    givenPredicate("(a) WHERE a.prop = 42").
+      withGraphNodes(200).
+      shouldHaveSelectivity( .1 )
+  }
+
+  test("equality comparisons") {
+    givenPredicate("(a) WHERE a = 42").
+    withGraphNodes(200).
+    shouldHaveSelectivity( .75 )
   }
 }

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Selectivity
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.groupPredicates.EstimatedPredicateCombination
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 object groupPredicates {
@@ -47,16 +48,18 @@ case class groupPredicates(selectivityEstimator: PredicateCombination => Selecti
   def findCombinations(predicates: Set[Predicate]): Set[EstimatedPredicateCombination] = {
     val combinations = predicates.flatMap {
       case expression@ExpressionPredicate(Not(In(Property(Identifier(name), propertyKey), Collection(expressions)))) =>
+        val exists = ExistsPredicate(IdName(name))
         val labelPredicates: Set[(LabelName, ExpressionPredicate)] = predicates.labelsFor(name)
         val labelsCombinedWithExpression: Set[PredicateCombination] = labelPredicates.map {
-          case (l, p) => PropertyNotEqualsAndLabelPredicate(propertyKey, expressions.length, l, Set(p, expression))
+          case (l, p) => PropertyNotEqualsAndLabelPredicate(propertyKey, expressions.length, l, Set(p, expression, exists))
         }
         labelsCombinedWithExpression + SingleExpression(expression.e)
 
       case expression@ExpressionPredicate(In(Property(Identifier(name), propertyKey), Collection(expressions))) =>
+        val exists = ExistsPredicate(IdName(name))
         val labelPredicates: Set[(LabelName, ExpressionPredicate)] = predicates.labelsFor(name)
         val labelsCombinedWithExpression: Set[PredicateCombination] = labelPredicates.map {
-          case (l, p) => PropertyEqualsAndLabelPredicate(propertyKey, expressions.length, l, Set(p, expression))
+          case (l, p) => PropertyEqualsAndLabelPredicate(propertyKey, expressions.length, l, Set(p, expression, exists))
         }
         labelsCombinedWithExpression + SingleExpression(expression.e)
 
@@ -67,9 +70,11 @@ case class groupPredicates(selectivityEstimator: PredicateCombination => Selecti
           lhs <- lhsGroupings
           rhs <- rhsGroupings
         } yield {
+          val lhsExists = ExistsPredicate(pattern.nodes._1)
+          val rhsExists = ExistsPredicate(pattern.nodes._2)
           val lhsLabel = lhs.map(_._1)
           val rhsLabel = rhs.map(_._1)
-          val containedPredicates: Set[Predicate] = Set[Predicate](patternPredicate) ++ lhs.map(_._2) ++ rhs.map(_._2)
+          val containedPredicates: Set[Predicate] = Set[Predicate](patternPredicate) ++ lhs.map(_._2) ++ rhs.map(_._2) + lhsExists + rhsExists
           RelationshipWithLabels(lhsLabel, pattern, rhsLabel, containedPredicates)
         }
 

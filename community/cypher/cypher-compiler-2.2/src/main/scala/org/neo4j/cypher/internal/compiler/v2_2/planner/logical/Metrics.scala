@@ -66,6 +66,7 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
 
 case class CostPerRow(cost: Double) {
   def +(other: CostPerRow) = CostPerRow(cost + other.cost)
+  def *(other: Multiplier) = CostPerRow(cost * other.coefficient)
 }
 
 case class Multiplier(coefficient: Double) {
