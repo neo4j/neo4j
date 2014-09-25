@@ -38,11 +38,13 @@ public class IoQueue implements WriterFactory
     private final ExecutorService executor;
     private final JobMonitor jobMonitor = new JobMonitor();
     private final WriterFactory delegateFactory;
+    private int maxIOThreads;
 
     public IoQueue( int maxIOThreads, WriterFactory delegateFactory )
     {
         this( Executors.newFixedThreadPool( maxIOThreads, new NamedThreadFactory( "IoQueue I/O thread" ) ),
                 delegateFactory );
+        this.maxIOThreads = maxIOThreads;
     }
 
     IoQueue( ExecutorService executor, WriterFactory delegateFactory )
@@ -94,5 +96,11 @@ public class IoQueue implements WriterFactory
         {
             throw new RuntimeException( e );
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[" + delegateFactory + ", threads:" + maxIOThreads + "]";
     }
 }

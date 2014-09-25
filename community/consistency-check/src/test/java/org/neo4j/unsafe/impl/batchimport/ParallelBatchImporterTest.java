@@ -66,6 +66,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.SilentExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
+import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
 import static java.lang.System.currentTimeMillis;
@@ -80,10 +81,17 @@ import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRON
 public class ParallelBatchImporterTest
 {
     private static final String[] LABELS = new String[]{"Person", "Guy"};
-    private static final int NODE_COUNT = 100_000;
+    private static final int NODE_COUNT = 10_000;
     public final @Rule TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private static final Configuration config = new Configuration.Default()
     {
+        @Override
+        public int batchSize()
+        {
+            // Set to extra low to exercise the internals and IoQueue a bit more.
+            return 100;
+        }
+
         @Override
         public int denseNodeThreshold()
         {
@@ -103,11 +111,13 @@ public class ParallelBatchImporterTest
                 // extra slow synchronous I/O, actual node id input
                 new Object[]{synchronousSlowWriterFactory, new LongInputIdGenerator(), IdMappings.actual()},
                 // synchronous I/O, string id input
-                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), IdMappings.strings( LongArrayFactory.AUTO )}
-                // FIXME: disable these WriterFactories due to a race in IoQueue
-//                ,
-//                new Object[]{"io-queue", new IoQueue( config.numberOfIoThreads(), SYNCHRONOUS )},
-//                new Object[]{"slow-io-queue", new IoQueue( config.numberOfIoThreads(), synchronousSlowWriterFactory )}
+                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), IdMappings.strings( LongArrayFactory.AUTO )},
+
+                // FIXME: we've seen this fail before with inconsistencies due to some kind of race in IoQueue
+                //        enabled here to try and trigger the error so that we can fix it.
+                // extra slow parallel I/O, actual node id input
+                new Object[]{new IoQueue( new Random().nextInt( 2 )+2, synchronousSlowWriterFactory ),
+                        new LongInputIdGenerator(), IdMappings.actual()}
         );
     }
 
@@ -128,8 +138,6 @@ public class ParallelBatchImporterTest
                 new SilentExecutionMonitor(), writerFactory );
 
         // WHEN
-        int nodeCount = 100_000;
-        int relationshipCount = nodeCount * 10;
         inserter.doImport(
                 nodes( NODE_COUNT, idGenerator ),
                 relationships( NODE_COUNT * 10, idGenerator ),
@@ -268,12 +276,16 @@ public class ParallelBatchImporterTest
             return new Writer()
             {
                 final Writer delegate = SYNCHRONOUS.create( channel, monitor );
+                final Random random = new Random();
 
                 @Override
                 public void write( ByteBuffer data, long position, Pool<ByteBuffer> pool )
                         throws IOException
                 {
-                    LockSupport.parkNanos( 50_000_000 ); // slowness comes from here
+                    if ( random.nextInt( 10 ) == 0 )
+                    {
+                        LockSupport.parkNanos( random.nextInt( 100 ) * 1_000_000 ); // slowness comes from here
+                    }
                     delegate.write( data, position, pool );
 
                 }
@@ -293,7 +305,7 @@ public class ParallelBatchImporterTest
         @Override
         public String toString()
         {
-            return "Slow SYNCHRONOUS";
+            return "Randomly slow";
         }
     };
 
