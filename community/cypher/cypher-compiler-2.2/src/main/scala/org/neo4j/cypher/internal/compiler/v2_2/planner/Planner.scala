@@ -74,7 +74,7 @@ case class Planner(monitors: Monitors,
       val argLeafPlan = Some(planQueryArgumentRow(expressionQueryGraph))
       val LogicalPlan = queryGraphSolver.plan(expressionQueryGraph)(context, argLeafPlan)
       LogicalPlan
-    }, metrics.cardinality)
+    }, metrics.cardinality, semanticTable)
 
 
     (plan, pipeBuildContext)

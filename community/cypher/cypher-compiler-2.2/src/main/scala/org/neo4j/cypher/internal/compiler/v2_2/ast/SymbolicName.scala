@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
-import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, PropertyKeyId}
+import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, RelTypeId, InputPosition, PropertyKeyId}
 
 trait SymbolicName extends ASTNode with ASTParticle {
   def name: String
@@ -31,7 +31,7 @@ final case class LabelName(name: String)(val position: InputPosition) extends Sy
 
 object LabelName {
   implicit class LabelNameId(that: LabelName)(implicit semanticTable: SemanticTable) {
-    def id = semanticTable.resolvedLabelIds.get(that.name)
+    def id: Option[LabelId] = semanticTable.resolvedLabelIds.get(that.name)
 
     def either = that.id match {
       case Some(id) => Right(id)
@@ -57,9 +57,9 @@ final case class RelTypeName(name: String)(val position: InputPosition) extends 
 
 object RelTypeName {
   implicit class RelTypeNameId(that: RelTypeName)(implicit semanticTable: SemanticTable) {
-    def id = semanticTable.resolvedRelTypeNames.get(that.name)
+    def id: Option[RelTypeId] = semanticTable.resolvedRelTypeNames.get(that.name)
 
-    def either = that.id match {
+    def either: Either[String, RelTypeId] = that.id match {
       case Some(id) => Right(id)
       case None => Left(that.name)
     }

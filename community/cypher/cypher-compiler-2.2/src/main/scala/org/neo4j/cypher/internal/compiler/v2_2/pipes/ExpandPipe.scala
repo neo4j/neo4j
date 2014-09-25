@@ -21,20 +21,30 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.ast.RelTypeName
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.IntroducedIdentifier
+import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 
-case class ExpandPipe(source: Pipe, from: String, relName: String, to: String, dir: Direction, types: Seq[String])
-                     (val estimatedCardinality: Option[Long] = None)
-                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+sealed abstract class ExpandPipe[T](source: Pipe,
+                                 from: String,
+                                 relName: String,
+                                 to: String,
+                                 dir: Direction,
+                                 types: Seq[T],
+                                 pipeMonitor: PipeMonitor)
+                    extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+
+  def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship]
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {
       row =>
         getFromNode(row) match {
           case n: Node =>
-            val relationships: Iterator[Relationship] = state.query.getRelationshipsFor(n, dir, types)
+            val relationships: Iterator[Relationship] = getRelationships(n, state.query, dir)
             relationships.map {
               case r =>
                 row.newWith2(relName, r, to, r.getOtherNode(n))
@@ -57,12 +67,49 @@ case class ExpandPipe(source: Pipe, from: String, relName: String, to: String, d
 
   val symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
 
+  override def localEffects = Effects.READS_ENTITIES
+}
+
+case class ExpandPipeForIntTypes(source: Pipe,
+                                from: String,
+                                relName: String,
+                                to: String,
+                                dir: Direction,
+                                types: Seq[Int])
+                               (val estimatedCardinality: Option[Long] = None)
+                               (implicit pipeMonitor: PipeMonitor)
+  extends ExpandPipe[Int](source, from, relName, to, dir, types, pipeMonitor) {
+
+  override def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship] =
+    (n:Node, query: QueryContext, dir:Direction) => query.getRelationshipsForIds(n, dir, types)
+
+
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
     copy(source = source)(estimatedCardinality)
   }
 
-  override def localEffects = Effects.READS_ENTITIES
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+}
+
+case class ExpandPipeForStringTypes(source: Pipe,
+                                    from: String,
+                                    relName: String,
+                                    to: String,
+                                    dir: Direction,
+                                    types: Seq[String])
+                                   (val estimatedCardinality: Option[Long] = None)
+                                   (implicit pipeMonitor: PipeMonitor)
+  extends ExpandPipe[String](source, from, relName, to, dir, types, pipeMonitor) {
+
+  override def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship] =
+    (n:Node, query: QueryContext, dir:Direction) => query.getRelationshipsFor(n, dir, types)
+
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (source :: Nil) = sources
+    copy(source = source)(estimatedCardinality)
+  }
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.spi.v2_2
 
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.api.KernelStatement
+import org.neo4j.kernel.impl.util.register.NeoRegister.RelType
 import org.neo4j.kernel.{InternalAbstractGraphDatabase, GraphDatabaseAPI}
 import collection.JavaConverters._
 import collection.mutable
@@ -112,6 +113,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] = types match {
     case Seq() => node.getRelationships(dir).iterator().asScala
     case _     => node.getRelationships(dir, types.map(withName): _*).iterator().asScala
+  }
+  def getRelationshipsForIds(node: Node, dir: Direction, types: Seq[Int]): Iterator[Relationship] = types match {
+    case Seq() => JavaConversionSupport.asScala(statement.readOperations().nodeGetRelationships(node.getId, dir)).map(relationshipOps.getById)
+    case _ => JavaConversionSupport.asScala(statement.readOperations().nodeGetRelationships(node.getId, dir, types: _* )).map(relationshipOps.getById)
   }
 
   def exactIndexSearch(index: IndexDescriptor, value: Any) =

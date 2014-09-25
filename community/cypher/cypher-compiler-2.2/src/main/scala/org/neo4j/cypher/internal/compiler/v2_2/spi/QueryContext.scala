@@ -48,6 +48,8 @@ trait QueryContext extends TokenContext {
 
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship]
 
+  def getRelationshipsForIds(node: Node, dir: Direction, types: Seq[Int]): Iterator[Relationship]
+
   def getOrCreateLabelId(labelName: String): Int
 
   def getLabelsForNode(node: Long): Iterator[Int]

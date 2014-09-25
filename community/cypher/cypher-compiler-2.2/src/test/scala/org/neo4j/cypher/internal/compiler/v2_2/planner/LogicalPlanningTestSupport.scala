@@ -64,6 +64,11 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       def apply(v1: LogicalPlan) = Cardinality(1)
     }
     when(context.cardinality).thenReturn(cardinality)
+    val semanticTable = SemanticTable()
+    semanticTable.resolvedRelTypeNames = mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3))
+
+    when(context.semanticTable).thenReturn(semanticTable)
+
     context
   }
 
