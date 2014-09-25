@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -43,16 +43,9 @@ import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.test.DoubleLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class KernelTransactionImplementationTest
 {
@@ -369,7 +362,7 @@ public class KernelTransactionImplementationTest
     {
         return new KernelTransactionImplementation( null, false, null, null, null, null, recordState,
                 null, neoStore, new NoOpClient(), hooks, null, headerInformation, commitProcess, transactionMonitor,
-                null, null, legacyIndexState, clock );
+                null, null, legacyIndexState, mock(Pool.class), clock );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

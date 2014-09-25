@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.collection.pool.LinkedQueuePool;
+import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Clock;
@@ -52,7 +54,7 @@ import static java.util.Collections.newSetFromMap;
 /**
  * Central source of transactions in the database.
  *
- * This class maintains references to all transactions and provides capabilities
+ * This class maintains references to all transactions, a pool of passive kernel transactions, and provides capabilities
  * for enumerating all running transactions. During normal operation, acquiring new transactions and enumerating live
  * ones requires no synchronization (although the live list is not guaranteed to be exact).
  */
@@ -85,13 +87,21 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     // End Tx Dependencies
 
     /**
-     * Used to enumerate all transactions in the system.
+     * Used to enumerate all transactions in the system, active and idle ones.
+     *
+     * This data structure is *only* updated when brand-new transactions are created, or when transactions are disposed
+     * of. During normal operation (where all transactions come from and are returned to the pool), this will be left
+     * in peace, working solely as a collection of references to all transaction objects (idle and active) in the
+     * database.
+     *
+     * As such, it provides a good mechanism for listing all transactions without requiring synchronization when
+     * starting and committing transactions.
      */
     private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap(
             new ConcurrentHashMap<KernelTransactionImplementation, Boolean>() );
 
     /**
-     * This is the factory that actually builds brand-new transaction instances.
+     * This is the factory that actually builds brand-new instances.
      */
     private final Factory<KernelTransactionImplementation> factory = new Factory<KernelTransactionImplementation>()
     {
@@ -110,20 +120,33 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                     labelScanStore, indexingService, updateableSchemaState, neoStoreTransaction, providerMap,
                     neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory.create(),
                     transactionCommitProcess, transactionMonitor, persistenceCache, storeLayer,
-                    legacyIndexTransactionState, Clock.SYSTEM_CLOCK )
-            {
-                @Override
-                protected void dispose()
-                {
-                    allTransactions.remove( this );
-                }
-            };
+                    legacyIndexTransactionState, localTxPool, Clock.SYSTEM_CLOCK );
 
             allTransactions.add( tx );
 
             return tx;
         }
     };
+
+    /**
+     * Global pool of transactions, wrapped by the thread-local marshland pool and so is not used directly.
+     */
+    private final LinkedQueuePool<KernelTransactionImplementation> globalTxPool
+            = new LinkedQueuePool<KernelTransactionImplementation>( 8, factory )
+    {
+        @Override
+        protected void dispose( KernelTransactionImplementation tx )
+        {
+            allTransactions.remove( tx );
+            tx.dispose();
+            super.dispose( tx );
+        }
+    };
+
+    /**
+     * Pool of unused transactions.
+     */
+    private final MarshlandPool<KernelTransactionImplementation> localTxPool = new MarshlandPool<>( globalTxPool );
 
     public KernelTransactions( NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier,
                                NeoStore neoStore, Locks locks, IntegrityValidator integrityValidator,
@@ -164,9 +187,9 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     public KernelTransaction newInstance()
     {
         assertDatabaseIsRunning();
-        return factory.newInstance().initialize(
+        return localTxPool.acquire().initialize(
                 transactionHeaderInformationFactory.create(),
-                neoStore.getLastCommittedTransactionId() );
+                neoStore.getLastCommittedTransactionId());
     }
 
     /**
@@ -188,7 +211,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     }
 
     /**
-     * Dispose of all transactions. This is done on shutdown or on internal events (like an HA mode switch) that
+     * Dispose of all pooled transactions. This is done on shutdown or on internal events (like an HA mode switch) that
      * require transactions to be re-created.
      */
     public void disposeAll()
@@ -200,6 +223,8 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                 tx.markForTermination();
             }
         }
+        localTxPool.disposeAll();
+        globalTxPool.disposeAll();
     }
 
     @Override

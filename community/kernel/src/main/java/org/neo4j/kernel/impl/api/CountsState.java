@@ -90,6 +90,14 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor
         return verifier.differences();
     }
 
+    /**
+     * Set this counter up to a pristine state, as if it had just been initialized.
+     */
+    public void initialize()
+    {
+        counts.clear();
+    }
+
     public static final class Difference
     {
         private final CountsKey key;
