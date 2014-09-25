@@ -80,10 +80,5 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
   override def planDescription =
     source.planDescription.andThen(this, "ExtractPath",  IntroducedIdentifier(pathName))
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)
-  }
-
   override def localEffects = Effects.NONE
 }

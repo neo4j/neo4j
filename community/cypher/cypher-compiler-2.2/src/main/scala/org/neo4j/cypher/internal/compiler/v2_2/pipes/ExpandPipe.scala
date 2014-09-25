@@ -40,15 +40,9 @@ case class ExpandPipe(source: Pipe, fromNode: String, relName: String, toNode: S
 
   val symbols = source.symbols.add(toNode, CTNode).add(relName, CTRelationship)
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
-  }
-
   override def localEffects = Effects.READS_ENTITIES
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
-
 
   class ExpandIterator(input: Iterator[ExecutionContext], query: QueryContext) extends Iterator[ExecutionContext] {
     var row: ExecutionContext = null

@@ -33,11 +33,6 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinali
 
   def planDescription = source.planDescription.andThen(this, "Filter", LegacyExpression(predicate))
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
-  }
-
   override def localEffects = predicate.effects
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))

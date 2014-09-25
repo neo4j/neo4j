@@ -105,11 +105,6 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
     new PlanDescriptionImpl(this, "Extract", SingleChild(source.planDescription), Seq(KeyNames(arguments)))
   }
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)
-  }
-
   override def localEffects = expressions.effects
 }
 

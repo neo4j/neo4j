@@ -64,11 +64,6 @@ case class ShortestPathPipe(source: Pipe, ast: ShortestPath)
   override def planDescription =
     source.planDescription.andThen(this, "ShortestPath", IntroducedIdentifier(ast.pathName))
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
-
   override def localEffects = Effects.READS_ENTITIES
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))

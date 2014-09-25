@@ -17,19 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.pipes
+package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+abstract class MappedRewriter(f: Rewriter => Rewriter) extends Rewriter {
+  val rewriter: Rewriter
 
-case class EagerPipe(src: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) {
-  def symbols: SymbolTable = src.symbols
-
-  def planDescription = src.planDescription.andThen(this, "Eager")
-
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    input.toList.toIterator
-
-  override val effects = Effects.NONE
+  def apply(v: AnyRef): Option[AnyRef] = f(rewriter).apply(v)
 }

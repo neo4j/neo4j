@@ -228,10 +228,10 @@ class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
       when(psq.isSolved).thenReturn(true)
       when(psq.tail).thenReturn(None)
 
-      plan.copy(pipe = new ExplodingPipe, query = psq)
+      plan.copy(pipe = ExplodingPipe(), query = psq)
     }
 
-  class ExplodingPipe extends Pipe {
+  case class ExplodingPipe() extends Pipe {
     def internalCreateResults(state: QueryState) = throw new ExplodingException
 
     def symbols: SymbolTable = new SymbolTable()
@@ -241,8 +241,6 @@ class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
     def exists(pred: Pipe => Boolean) = ???
 
     val monitor = mock[PipeMonitor]
-
-    def dup(sources: List[Pipe]): Pipe = ???
 
     def sources: scala.Seq[Pipe] = ???
   }

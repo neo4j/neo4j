@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
-
 // Marks a pipe being used by Ronja
 trait RonjaPipe {
-  self: Pipe =>
+
+  self: Pipe with Product =>
+
+  import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+  import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 
   def estimatedCardinality: Option[Long]
   def setEstimatedCardinality(estimated: Long): Pipe with RonjaPipe

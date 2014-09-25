@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-sealed trait NameId extends Any {
+// rewriting doesn't support anyval
+
+sealed trait NameId {
   def id: Int
 }
 
-final case class LabelId(id: Int) extends AnyVal with NameId
-final case class RelTypeId(id: Int) extends AnyVal with NameId
-final case class PropertyKeyId(id: Int) extends AnyVal with NameId
+final case class LabelId(id: Int) extends NameId
+final case class RelTypeId(id: Int) extends NameId
+final case class PropertyKeyId(id: Int) extends NameId

@@ -50,9 +50,4 @@ case class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Tr
     source.planDescription.andThen(this, "TraversalMatcher", KeyNames(trail.pathDescription))
 
   override def localEffects = Effects.READS_ENTITIES
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)
-  }
 }

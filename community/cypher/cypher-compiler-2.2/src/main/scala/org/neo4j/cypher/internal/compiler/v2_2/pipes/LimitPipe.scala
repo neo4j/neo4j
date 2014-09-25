@@ -46,11 +46,6 @@ case class LimitPipe(source: Pipe, exp: Expression)
 
   def symbols: SymbolTable = source.symbols
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
-
   override def localEffects = exp.effects
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))

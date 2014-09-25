@@ -19,10 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
@@ -98,7 +95,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     val c = FakePipeWithSources("c", List(b), Effects.WRITES_NODES)
     val d = FakePipeWithSources("d", List(c), Effects.NONE)
 
-    val result = addEagernessIfNecessary.apply(d)
+    val result = d.endoRewrite(addEagernessIfNecessary)
 
     result should equal(d)
   }
@@ -113,7 +110,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     val eagerC = FakePipeWithSources("c", List(eagerB), Effects.WRITES_NODES)
     val eagerD = FakePipeWithSources("d", List(eagerC), Effects.NONE)
 
-    val result = addEagernessIfNecessary.apply(d)
+    val result = d.endoRewrite(addEagernessIfNecessary)
 
     result should equal(eagerD)
   }
@@ -125,7 +122,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
 
     val expected = FakePipeWithSources("parent", List(EagerPipe(leaf1), leaf2), Effects.WRITES_NODES)
 
-    val result = addEagernessIfNecessary.apply(parent)
+    val result = parent.endoRewrite(addEagernessIfNecessary)
     result should equal(expected)
   }
 
@@ -137,7 +134,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     verify(pipe).dup(List.empty)
   }
 
-  case class FakePipeWithSources(name:String, sources: List[Pipe], override val localEffects: Effects = Effects.ALL) extends Pipe {
+  case class FakePipeWithSources(name: String, sources: List[Pipe], override val localEffects: Effects = Effects.ALL) extends Pipe {
     def monitor: PipeMonitor = mock[PipeMonitor]
 
     override def effects: Effects = sources.foldLeft(localEffects)(_ | _.effects)
@@ -147,8 +144,6 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     def symbols: SymbolTable = ???
 
     protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = ???
-
-    def dup(sources: List[Pipe]): Pipe = copy(sources = sources)
 
     def exists(pred: (Pipe) => Boolean): Boolean = ???
 
@@ -165,22 +160,9 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     }
 
     def constructedPipe: Pipe = {
-      val source = mock[Pipe]
-      when(source.dup(any())).thenReturn(source)
-      when(source.effects).thenReturn(from)
-      when(source.sources).thenReturn(Seq.empty)
-
-      val pipe = mock[Pipe]
-      when(pipe.effects).thenReturn(to)
-      when(pipe.sources).thenReturn(Seq(source))
-      when(pipe.dup(any())).thenAnswer(new Answer[Pipe] {
-        def answer(invocation: InvocationOnMock): Pipe = {
-          val sources = invocation.getArguments.head.asInstanceOf[List[Pipe]]
-          FakePipeWithSources("?", sources)
-        }
-      })
-
-      addEagernessIfNecessary.apply(pipe)
+      val source = FakePipeWithSources("?", List(), from)
+      val pipe = FakePipeWithSources("?", List(source), to)
+      pipe.endoRewrite(addEagernessIfNecessary)
     }
 
   }

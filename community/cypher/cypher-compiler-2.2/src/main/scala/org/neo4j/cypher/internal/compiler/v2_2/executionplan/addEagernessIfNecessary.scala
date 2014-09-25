@@ -19,25 +19,36 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
+import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EagerPipe, Pipe}
 
-object addEagernessIfNecessary extends (Pipe => Pipe) {
+case object addEagernessIfNecessary extends MappedRewriter(bottomUp) {
+
+  val rewriter = Rewriter.lift {
+    case eagerPipe: EagerPipe =>
+      eagerPipe
+
+    case toPipe: Pipe =>
+      val oldChildren = toPipe.children.toList
+      val innerRewriter = topDownUntilMatching(childRewriter(toPipe))
+      val newChildren = oldChildren.map { child =>
+        val result = innerRewriter(child)
+        result.getOrElse(child)
+      }
+      toPipe.dup(newChildren)
+  }
+
+  def childRewriter(toPipe: Pipe) = {
+    val sources = toPipe.sources
+    Rewriter.lift {
+      case fromPipe: Pipe if sources.contains(fromPipe) && wouldInterfere(fromPipe.effects, toPipe.effects) =>
+        new EagerPipe(fromPipe)(fromPipe.monitor)
+    }
+  }
+
   def wouldInterfere(from: Effects, to: Effects): Boolean = {
     val nodesInterfere = from.contains(Effects.READS_NODES) && to.contains(Effects.WRITES_NODES)
     val relsInterfere = from.contains(Effects.READS_RELATIONSHIPS) && to.contains(Effects.WRITES_RELATIONSHIPS)
     nodesInterfere || relsInterfere
-  }
-
-  def apply(toPipe: Pipe): Pipe = {
-    val sources = toPipe.sources.map(apply).map { fromPipe =>
-      val from = fromPipe.effects
-      val to = toPipe.effects
-      if (wouldInterfere(from, to)) {
-        new EagerPipe(fromPipe)(fromPipe.monitor)
-      } else {
-        fromPipe
-      }
-    }
-    toPipe.dup(sources.toList)
   }
 }

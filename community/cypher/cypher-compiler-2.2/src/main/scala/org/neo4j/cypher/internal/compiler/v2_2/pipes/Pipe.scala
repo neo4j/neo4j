@@ -40,12 +40,14 @@ trait PipeMonitor {
  * Pipes are combined to form an execution plan, and when iterated over,
  * the execute the query.
  */
-trait Pipe extends Effectful {
-  self: Pipe =>
+trait Pipe extends Effectful with Rewritable with Foldable {
+
+  self: Pipe with Product =>
+
+  import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+  import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 
   def monitor: PipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe
 
   def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(self, state)
@@ -80,6 +82,28 @@ trait Pipe extends Effectful {
   Runs the predicate on all the inner Pipe until no pipes are left, or one returns true.
    */
   def exists(pred: Pipe => Boolean): Boolean
+
+  override def dup(children: Seq[AnyRef]): this.type =
+    if (children.iterator eqElements this.children)
+      this
+    else {
+      val constructor = this.copyConstructor
+      val params = constructor.getParameterTypes
+      val args = children.toVector
+      val numParams = params.length
+
+      // Pipes with a monitor
+      if ((numParams == args.length + 1) && params(numParams - 1).isAssignableFrom(classOf[PipeMonitor]))
+        constructor.invoke(this, args :+ this.monitor: _*).asInstanceOf[this.type]
+      // RonjaPipes with estimated cardinality and monitor
+      else if ((numParams == args.length + 2)
+        && this.isInstanceOf[RonjaPipe]
+        && params(numParams - 2).isAssignableFrom(classOf[Option[Long]])
+        && params(numParams - 1).isAssignableFrom(classOf[PipeMonitor]))
+        constructor.invoke(this, args :+ this.asInstanceOf[RonjaPipe].estimatedCardinality :+ this.monitor: _*).asInstanceOf[this.type]
+      else
+        constructor.invoke(this, args: _*).asInstanceOf[this.type]
+    }
 }
 
 case class NullPipe(symbols: SymbolTable = SymbolTable())
@@ -103,8 +127,6 @@ case class NullPipe(symbols: SymbolTable = SymbolTable())
 
   override def localEffects = Effects.NONE
 
-  def dup(sources: List[Pipe]): Pipe = this
-
   def sources: Seq[Pipe] = Seq.empty
 
   def estimatedCardinality: Option[Long] = Some(1)
@@ -115,7 +137,7 @@ case class NullPipe(symbols: SymbolTable = SymbolTable())
   }
 }
 
-abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe {
+abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe with Product {
   override def createResults(state: QueryState): Iterator[ExecutionContext] = {
     val sourceResult = source.createResults(state)
 

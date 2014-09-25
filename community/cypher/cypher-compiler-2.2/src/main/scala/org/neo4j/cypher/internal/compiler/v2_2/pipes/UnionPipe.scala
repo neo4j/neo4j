@@ -34,13 +34,6 @@ case class UnionPipe(sources: List[Pipe], columns:List[String])(implicit val mon
 
   def exists(pred: Pipe => Boolean) = pred(this) || sources.exists(_.exists(pred))
 
-  def dup(sources: List[Pipe]): Pipe = {
-    if (sources.length != this.sources.length)
-      throw new InternalException("Cannot changes the number of pipes when rewriting")
-
-    copy(sources = sources)
-  }
-
   override def localEffects = Effects.NONE
 }
 
@@ -56,11 +49,6 @@ case class NewUnionPipe(l: Pipe, r: Pipe)
     l.createResults(state) ++ r.createResults(state)
 
   def exists(pred: Pipe => Boolean): Boolean = l.exists(pred) || r.exists(pred)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (l :: r :: Nil) = sources
-    copy(l, r)(estimatedCardinality)
-  }
 
   def sources: Seq[Pipe] = Seq(l, r)
 

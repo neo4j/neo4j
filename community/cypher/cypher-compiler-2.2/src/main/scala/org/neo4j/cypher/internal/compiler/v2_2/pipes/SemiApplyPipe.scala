@@ -44,11 +44,6 @@ case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
 
   override val sources = Seq(source, inner)
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: inner :: Nil) = sources
-    copy(source = source, inner = inner)(estimatedCardinality)
-  }
-
   override def localEffects = Effects.NONE
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))

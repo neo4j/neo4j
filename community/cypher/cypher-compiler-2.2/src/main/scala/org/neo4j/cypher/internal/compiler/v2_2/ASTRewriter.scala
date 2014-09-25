@@ -36,7 +36,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
     else
       (Rewriter.lift(PartialFunction.empty), Map.empty[String, Any])
 
-    val rewriter = RewriterStepSequencer.newDefault("ASTRewriter")(
+    val rewriter = RewriterStepSequencer.newDefault("ASTRewriter").fromSteps(
       ApplyRewriter("expandStar", expandStar(semanticState)),
       enableCondition(containsNoReturnAll()),
       enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),

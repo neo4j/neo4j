@@ -68,11 +68,6 @@ case class SlicePipe(source: Pipe, skip: Option[Expression], limit: Option[Expre
       .andThen(this, "Slice", skip.map(LegacyExpression).toSeq ++ limit.map(LegacyExpression).toSeq:_*)
   }
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)
-  }
-
   override def localEffects = (skip ++ limit).foldLeft(Effects.NONE)(_ | _.effects)
 }
 

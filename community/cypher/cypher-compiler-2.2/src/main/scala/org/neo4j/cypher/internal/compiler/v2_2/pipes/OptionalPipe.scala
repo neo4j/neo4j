@@ -44,11 +44,6 @@ case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)
 
   def symbols: SymbolTable = source.symbols
 
-  def dup(sources: List[Pipe]) = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
-
   override def localEffects = Effects.NONE
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))

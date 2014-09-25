@@ -28,14 +28,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.prepare.Ke
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_2.{Monitors, PreparedQuery}
+import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, Monitors, PreparedQuery}
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
 }
 
-class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
+// TODO: andThen copyRowsIfNecessary
+class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Rewriter = addEagernessIfNecessary)
   extends PatternGraphBuilder with PipeBuilder with GraphQueryBuilder {
 
   val VERSION = CypherVersion.v2_2_rule
@@ -43,7 +44,7 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
   def producePlan(in: PreparedQuery, planContext: PlanContext): PipeInfo = {
-    val rewriter = RewriterStepSequencer.newDefault("LegacyPipeBuilder")(reattachAliasedExpressions)
+    val rewriter = RewriterStepSequencer.newDefault("LegacyPipeBuilder").fromSteps(reattachAliasedExpressions)
     val rewrite = in.rewrite(rewriter)
 
     rewrite.abstractQuery match {
@@ -98,7 +99,7 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
     val planInProgress: ExecutionPlanInProgress =
       untilConverged(ExecutionPlanInProgress(initialPSQ, NullPipe(), isUpdating = false))
 
-    val pipe = eagernessRewriter(planInProgress.pipe)
+    val pipe: Pipe = planInProgress.pipe.endoRewrite(eagernessRewriter)
 
     PipeInfo(pipe, planInProgress.isUpdating, version = VERSION)
   }

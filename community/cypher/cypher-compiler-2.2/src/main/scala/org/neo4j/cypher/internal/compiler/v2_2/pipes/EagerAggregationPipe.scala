@@ -97,11 +97,6 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
 
   override def effects = Effects.NONE
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
-  }
-
   override def localEffects = keyExpressions.effects
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))

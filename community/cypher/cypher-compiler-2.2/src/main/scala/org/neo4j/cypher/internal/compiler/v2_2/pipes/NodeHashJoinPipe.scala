@@ -60,11 +60,6 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
 
   override val sources = Seq(left, right)
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (left :: right :: Nil) = sources
-    copy(left = left, right = right)(estimatedCardinality)
-  }
-
   override def localEffects = Effects.NONE
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))

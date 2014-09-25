@@ -51,11 +51,6 @@ case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
     source.planDescription
       .andThen(this, "Projection", KeyNames(expressions.keys.toSeq))
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
-  }
-
   override def localEffects = expressions.effects
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))

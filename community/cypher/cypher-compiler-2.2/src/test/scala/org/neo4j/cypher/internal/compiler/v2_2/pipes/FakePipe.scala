@@ -27,7 +27,7 @@ import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Map
 
-class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, CypherType)*) extends Pipe with MockitoSugar {
+case class FakePipe(data: Iterator[Map[String, Any]], identifiers: (String, CypherType)*) extends Pipe with MockitoSugar {
 
   def this(data: Traversable[Map[String, Any]], identifiers: (String, CypherType)*) = this(data.toIterator, identifiers:_*)
 
@@ -40,8 +40,6 @@ class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, Cyphe
   def exists(pred: Pipe => Boolean) = ???
 
   val monitor: PipeMonitor = mock[PipeMonitor]
-
-  def dup(sources: List[Pipe]): Pipe = ???
 
   def sources: Seq[Pipe] = ???
 
