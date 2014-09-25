@@ -38,13 +38,13 @@ public class DetailedExecutionMonitor extends PollingExecutionMonitor
 
     public DetailedExecutionMonitor( PrintStream out )
     {
-        super( SECONDS.toMillis( 2 ) );
-        this.out = out;
+        this( out, SECONDS.toMillis( 2 ) );
     }
 
-    public DetailedExecutionMonitor()
+    public DetailedExecutionMonitor( PrintStream out, long interval )
     {
-        this( System.out );
+        super( interval );
+        this.out = out;
     }
 
     @Override
@@ -83,13 +83,15 @@ public class DetailedExecutionMonitor extends PollingExecutionMonitor
 
     private void printStats( StageExecution execution, boolean first )
     {
+        int bottleNeckIndex = figureOutBottleNeck( execution );
+
         StringBuilder builder = new StringBuilder();
         int i = 0;
         for ( StepStats stats : execution.stats() )
         {
             builder.append( i > 0 ? format( "%n  " ) : (first ? "--" : " -") )
                    .append( stats.toString() )
-                   ;
+                   .append( i == bottleNeckIndex ? "  <== BOTTLE NECK" : "" );
             i++;
         }
 

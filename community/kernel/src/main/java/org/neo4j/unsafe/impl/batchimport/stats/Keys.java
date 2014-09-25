@@ -26,12 +26,11 @@ public enum Keys implements Key
 {
     received_batches( ">", "Number of batches received from upstream" ),
     done_batches( "!", "Number of batches processed and done, and sent off downstream" ),
-    total_processing_time( "total", "Total processing time for all done batches" ),
+    total_processing_time( "=", "Total processing time for all done batches" ),
     upstream_idle_time( "^", "Time spent waiting for batch from upstream" ),
     downstream_idle_time( "v", "Time spent waiting for downstream to catch up" ),
     avg_processing_time( "avg", "Average processing time per done batch" ),
-    write_throughput( "W", "Write throughput per second, I/O" ),
-    ;
+    write_throughput( "W", "Write throughput per second, I/O" );
 
     private final String shortName;
     private final String description;

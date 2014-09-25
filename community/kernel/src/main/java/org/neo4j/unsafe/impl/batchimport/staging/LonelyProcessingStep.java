@@ -69,8 +69,6 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
     {
         if ( ++batch == batchSize )
         {
-            // Also increments received batches here just to satisfy the default stillWorking() implementation.
-            receivedBatches.incrementAndGet();
             doneBatches.incrementAndGet();
             batch = 0;
             long time = currentTimeMillis();

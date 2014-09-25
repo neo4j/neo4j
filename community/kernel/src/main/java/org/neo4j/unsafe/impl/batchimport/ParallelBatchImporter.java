@@ -197,7 +197,7 @@ public class ParallelBatchImporter implements BatchImporter
                 BatchingNeoStore neoStore )
         {
             super( logging, "Nodes", config );
-            input( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );
+            add( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );
 
             NodeStore nodeStore = neoStore.getNodeStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
@@ -214,7 +214,7 @@ public class ParallelBatchImporter implements BatchImporter
                 IdMapper idMapper )
         {
             super( logging, "Calculate dense nodes", config );
-            input( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );
+            add( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );
 
             add( new CalculateDenseNodesStep( control(), config.workAheadSize(), nodeRelationshipLink,
                     idMapper, logger ) );
@@ -227,7 +227,7 @@ public class ParallelBatchImporter implements BatchImporter
                                   NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Relationships", config );
-            input( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );
+            add( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), input ) );
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
@@ -243,7 +243,7 @@ public class ParallelBatchImporter implements BatchImporter
         public NodeFirstRelationshipStage( BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Node first rel", config );
-            input( new NodeFirstRelationshipStep( control(), config.batchSize(),
+            add( new NodeFirstRelationshipStep( control(), config.batchSize(),
                     neoStore.getNodeStore(), neoStore.getRelationshipGroupStore(), nodeRelationshipLink ) );
         }
     }
@@ -253,7 +253,7 @@ public class ParallelBatchImporter implements BatchImporter
         public RelationshipLinkbackStage( BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Relationship back link", config );
-            input( new RelationshipLinkbackStep( control(), config.batchSize(),
+            add( new RelationshipLinkbackStep( control(), config.batchSize(),
                     neoStore.getRelationshipStore(), nodeRelationshipLink ) );
         }
     }

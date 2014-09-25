@@ -25,9 +25,10 @@ import java.util.Map;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertNotNull;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.uriPattern;
@@ -112,7 +113,7 @@ public class NodeRepresentationTest
         assertNotNull( repr );
         verifySerialisation( repr );
     }
-    
+
     @Test
     public void shouldHaveLabelsLink() throws BadInputException
     {
