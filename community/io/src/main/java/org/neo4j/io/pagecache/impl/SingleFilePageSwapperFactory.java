@@ -44,7 +44,6 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
             int filePageSize,
             PageEvictionCallback onEviction ) throws IOException
     {
-        StoreChannel channel = fs.open( file, "rw" );
-        return new SingleFilePageSwapper( file, channel, filePageSize, onEviction );
+        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction );
     }
 }

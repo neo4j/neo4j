@@ -107,6 +107,9 @@ public class MuninnPageCache implements RunnablePageCache
     // Linked list of free pages
     private final AtomicReference<MuninnPage> freelist;
 
+    // Linked list of threads waiting for free pages
+    private final AtomicReference<FreePageWaiter> freePageWaiters;
+
     // Linked list of mappings - guarded by synchronized(this)
     private volatile FileMapping mappedFiles;
 
@@ -152,6 +155,7 @@ public class MuninnPageCache implements RunnablePageCache
             pageList = page;
         }
         freelist = new AtomicReference<>( pageList );
+        freePageWaiters = new AtomicReference<>();
     }
 
     static void verifyHacks()
@@ -330,7 +334,7 @@ public class MuninnPageCache implements RunnablePageCache
         IOException exception = evictorException;
         if ( exception != null )
         {
-            throw new IOException( "The page eviction thread is dead.", exception );
+            throw new IOException( "Exception in the page eviction thread", exception );
         }
     }
 
@@ -352,7 +356,16 @@ public class MuninnPageCache implements RunnablePageCache
         Thread thread = evictorThread;
         if ( thread != null )
         {
+            FreePageWaiter waiter = new FreePageWaiter();
+            FreePageWaiter listHead;
+            do
+            {
+                listHead = freePageWaiters.get();
+                waiter.next = listHead;
+            }
+            while ( !freePageWaiters.compareAndSet( listHead, waiter ) );
             LockSupport.unpark( thread );
+            waiter.park( this );
         }
     }
 
@@ -484,6 +497,14 @@ public class MuninnPageCache implements RunnablePageCache
             }
 
             clockArm++;
+        }
+
+        // Unpark all the threads that were waiting for pages to be freed.
+        FreePageWaiter waiters = freePageWaiters.getAndSet( null );
+        while ( waiters != null )
+        {
+            waiters.unpark();
+            waiters = waiters.next;
         }
         return clockArm;
     }

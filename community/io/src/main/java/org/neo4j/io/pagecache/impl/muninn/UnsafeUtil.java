@@ -23,7 +23,7 @@ import java.lang.reflect.Field;
 
 import sun.misc.Unsafe;
 
-final class UnsafeUtil
+public final class UnsafeUtil
 {
     private static final Unsafe unsafe;
     private static final Object nullSentinelBase;
@@ -156,6 +156,11 @@ final class UnsafeUtil
     public static void putLong( Object obj, long offset, long value )
     {
         unsafe.putLong( obj, offset, value );
+    }
+
+    public static long getLongVolatile( Object obj, long offset )
+    {
+        return unsafe.getLongVolatile( obj, offset );
     }
 
     public static int getIntVolatile( Object obj, long offset )
