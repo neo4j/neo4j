@@ -29,6 +29,7 @@ import java.util.List;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -466,6 +467,15 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         stringPropertyStore.makeStoreOk();
         arrayPropertyStore.makeStoreOk();
         super.makeStoreOk();
+    }
+
+    @Override
+    public void visitStore( Visitor<CommonAbstractStore, RuntimeException> visitor )
+    {
+        propertyKeyTokenStore.visitStore( visitor );
+        stringPropertyStore.visitStore( visitor );
+        arrayPropertyStore.visitStore( visitor );
+        visitor.visit( this );
     }
 
     public static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars,

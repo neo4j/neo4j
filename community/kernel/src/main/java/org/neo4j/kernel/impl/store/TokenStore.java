@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -87,6 +88,13 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     {
         nameStore.makeStoreOk();
         super.makeStoreOk();
+    }
+
+    @Override
+    public void visitStore( Visitor<CommonAbstractStore, RuntimeException> visitor )
+    {
+        nameStore.visitStore( visitor );
+        visitor.visit( this );
     }
 
     public void freeId( int id )
