@@ -54,6 +54,8 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] = manyDbHits(inner.getRelationshipsFor(node, dir, types))
 
+  def getRelationshipsForIds(node: Node, dir: Direction, types: Seq[Int]): Iterator[Relationship] = manyDbHits(inner.getRelationshipsForIds(node, dir, types))
+
   def nodeOps = inner.nodeOps
 
   def relationshipOps = inner.relationshipOps
@@ -104,6 +106,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def relationshipStartNode(rel: Relationship) = inner.relationshipStartNode(rel)
 
   def relationshipEndNode(rel: Relationship) = inner.relationshipEndNode(rel)
+
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
-
 // Marks a pipe being used by Ronja
 trait RonjaPipe {
   self: Pipe =>

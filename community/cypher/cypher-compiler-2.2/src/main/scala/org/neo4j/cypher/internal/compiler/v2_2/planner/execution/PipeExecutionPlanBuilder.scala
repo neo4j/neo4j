@@ -21,26 +21,25 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{NodeStartItem, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.projectNamedPaths
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, NodeStartItem, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{Predicate => CommandPredicate, EntityProducerFactory, True}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{EntityProducerFactory, True, Predicate => CommandPredicate}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{CantHandleQueryException, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.helpers.Eagerly
 import org.neo4j.graphdb.Relationship
-import org.neo4j.kernel.api.Statement
 
-case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan, cardinality: Metrics.CardinalityModel) {
+case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan, cardinality: Metrics.CardinalityModel, semanticTable: SemanticTable) {
   def plan(expr: ast.PatternExpression) = f(expr)
 }
 
@@ -113,8 +112,14 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case CartesianProduct(left, right) =>
           CartesianProductPipe(buildPipe(left), buildPipe(right))()
 
-        case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), SimplePatternLength, _) =>
-          ExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name))()
+        case Expand(left, IdName(fromName), dir, projectedDir, types: Seq[RelTypeName], IdName(toName), IdName(relName), SimplePatternLength, _) =>
+          implicit val table: SemanticTable = context.semanticTable
+
+          if (types.exists(_.id == None))
+            ExpandPipeForStringTypes(buildPipe(left), fromName, relName, toName, dir, types.map(_.name))()
+          else {
+            ExpandPipeForIntTypes(buildPipe(left), fromName, relName, toName, dir, types.flatMap(_.id).map(_.id))()
+          }
 
         case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), predicates) =>
           val (keys, exprs) = predicates.unzip
@@ -127,7 +132,13 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
               result
             }
           }
-          VarLengthExpandPipe(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)()
+
+          implicit val table: SemanticTable = context.semanticTable
+
+          if (types.exists(_.id == None))
+            VarLengthExpandPipeForStringTypes(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)()
+          else
+            VarLengthExpandPipeForIntTypes(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.flatMap(_.id).map(_.id), min, max, predicate)()
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, predicates) =>
           val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())

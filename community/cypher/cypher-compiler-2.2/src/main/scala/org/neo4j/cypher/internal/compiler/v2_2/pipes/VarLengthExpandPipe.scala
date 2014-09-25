@@ -23,16 +23,25 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.IntroducedIdentifier
+import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 
 import scala.collection.mutable
 
-case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction,
-                               projectedDir: Direction, types: Seq[String], min: Int, max: Option[Int],
-                               filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true)
-                               (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+sealed abstract class VarLengthExpandPipe[T](source: Pipe,
+                                             fromName: String,
+                                             relName: String,
+                                             toName: String,
+                                             dir: Direction,
+                                             projectedDir: Direction,
+                                             types: Seq[T],
+                                             min: Int,
+                                             max: Option[Int],
+                                             filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true,
+                                             pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+
+  def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship]
 
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(Node, Seq[Relationship])] = {
@@ -43,7 +52,7 @@ case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, 
       def next(): (Node, Seq[Relationship]) = {
         val (node, rels) = stack.pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue)) {
-          val relationships: Iterator[Relationship] = state.query.getRelationshipsFor(node, dir, types)
+          val relationships: Iterator[Relationship] = getRelationships(node, state.query, dir)
           relationships.filter(filteringStep.curried(row)(state)).foreach { rel =>
             val otherNode = rel.getOtherNode(node)
             if (!rels.contains(rel)) {
@@ -92,12 +101,59 @@ case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, 
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
+
+  override def localEffects = Effects.READS_ENTITIES
+
+
+}
+
+
+case class VarLengthExpandPipeForIntTypes(source: Pipe,
+                                             fromName: String,
+                                             relName: String,
+                                             toName: String,
+                                             dir: Direction,
+                                             projectedDir: Direction,
+                                             types: Seq[Int],
+                                             min: Int,
+                                             max: Option[Int],
+                                             filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true)
+                                            (val estimatedCardinality: Option[Long] = None)
+                                            (implicit pipeMonitor: PipeMonitor) extends VarLengthExpandPipe[Int](source, fromName, relName, toName, dir, projectedDir, types, min, max, filteringStep, pipeMonitor) {
+
+  override def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship] =
+    (n: Node, query: QueryContext, dir: Direction) => query.getRelationshipsForIds(n, dir, types)
+
+
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
     copy(head)(estimatedCardinality)
   }
 
-  override def localEffects = Effects.READS_ENTITIES
+  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+}
+
+case class VarLengthExpandPipeForStringTypes(source: Pipe,
+                                             fromName: String,
+                                             relName: String,
+                                             toName: String,
+                                             dir: Direction,
+                                             projectedDir: Direction,
+                                             types: Seq[String],
+                                             min: Int,
+                                             max: Option[Int],
+                                             filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true)
+                                            (val estimatedCardinality: Option[Long] = None)
+                                            (implicit pipeMonitor: PipeMonitor) extends VarLengthExpandPipe[String](source, fromName, relName, toName, dir, projectedDir, types, min, max, filteringStep, pipeMonitor) {
+
+  override def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship] =
+    (n: Node, query: QueryContext, dir: Direction) => query.getRelationshipsFor(n, dir, types)
+
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(head)(estimatedCardinality)
+  }
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }
