@@ -19,16 +19,18 @@
  */
 package org.neo4j.cluster;
 
+import static org.neo4j.helpers.Uris.parameter;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.URI;
 
-import static org.neo4j.helpers.Uris.parameter;
-
 public class InstanceId implements Externalizable, Comparable<InstanceId>
 {
+    public static final InstanceId NONE = new InstanceId( Integer.MIN_VALUE );
+
     private int serverId;
 
     public InstanceId()
