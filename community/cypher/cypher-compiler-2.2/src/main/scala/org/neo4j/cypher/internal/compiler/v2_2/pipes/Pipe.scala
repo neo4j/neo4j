@@ -78,6 +78,10 @@ trait Pipe extends Effectful with Rewritable with Foldable {
 
   def effects: Effects = localEffects
 
+  def requiredRowLifetime: RowLifetime = QueryLifetime
+
+  def providedRowLifetime: RowLifetime = QueryLifetime
+
   /*
   Runs the predicate on all the inner Pipe until no pipes are left, or one returns true.
    */
@@ -105,6 +109,7 @@ trait Pipe extends Effectful with Rewritable with Foldable {
         constructor.invoke(this, args: _*).asInstanceOf[this.type]
     }
 }
+
 
 case class NullPipe(symbols: SymbolTable = SymbolTable())
                    (implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {

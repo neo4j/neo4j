@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, NodeStartItem}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{EntityProducerFactory, True, Predicate => CommandPredicate}
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeInfo, addEagernessIfNecessary}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{copyRowsIfNecessary, PipeInfo, addEagernessIfNecessary}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics
@@ -39,6 +39,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.helpers.Eagerly
 import org.neo4j.graphdb.Relationship
+
+import scala.annotation.tailrec
 
 case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan, cardinality: Metrics.CardinalityModel) {
   def plan(expr: ast.PatternExpression) = f(expr)
@@ -73,7 +75,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
       rewrittenExpr.asCommandPredicate
     }
 
-    def buildPipe(plan: LogicalPlan): Pipe = {
+    def buildPipe(plan: LogicalPlan): Pipe with RonjaPipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
 
       val result: Pipe with RonjaPipe = plan match {
@@ -212,15 +214,15 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
     }
 
     val topLevelPipe = buildPipe(plan)
-    val rewrittenTopLevelPipe = pipeRewriter(topLevelPipe)
-    val resultPipe = rewrittenTopLevelPipe.map(_.asInstanceOf[Pipe]).getOrElse(topLevelPipe)
+    val rewrittenTopLevelPipe = topLevelPipe.endoRewrite(PipeExecutionPlanBuilder.pipeRewriter)
 
-    PipeInfo(resultPipe, updating, None, CypherVersion.v2_2_cost)
+    PipeInfo(rewrittenTopLevelPipe, updating, None, CypherVersion.v2_2_cost)
   }
+}
 
-
+object PipeExecutionPlanBuilder {
   val pipeRewriter = RewriterStepSequencer.newDefault("RonjaPipes").fromSteps(
-    addEagernessIfNecessary
-//    copyRowsIfNecessary
+    addEagernessIfNecessary,
+    copyRowsIfNecessary
   )
 }

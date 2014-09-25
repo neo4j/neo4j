@@ -19,11 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-// Marks a pipe being used by Ronja
-trait RonjaPipe {
-
-  self: Pipe with Product =>
-
-  def estimatedCardinality: Option[Long]
-  def setEstimatedCardinality(estimated: Long): Pipe with RonjaPipe
+sealed trait RowLifetime {
+  def needsCopy(provided: RowLifetime): Boolean
 }
+
+case object QueryLifetime extends RowLifetime {
+  def needsCopy(provided: RowLifetime): Boolean = provided == ChainedLifetime
+}
+
+case object ChainedLifetime extends RowLifetime {
+  def needsCopy(provided: RowLifetime): Boolean = false
+}
+

@@ -72,8 +72,11 @@ class ApplyPipeTest extends CypherFunSuite {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
 
     case object rhs extends Pipe {
-      protected def internalCreateResults(state: QueryState) =
-        Iterator(state.initialContext.get += "b" -> null)
+      protected def internalCreateResults(state: QueryState) = {
+        val initialContext = state.initialContext.get
+        initialContext.put("b", null)
+        Iterator(initialContext)
+      }
 
       def exists(pred: (Pipe) => Boolean) = ???
       def planDescription = ???

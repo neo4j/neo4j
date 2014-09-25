@@ -21,30 +21,24 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{PlanDescriptionImpl, TwoChildren}
-import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
-case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
-                        (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+final case class CopyRowPipe(source: Pipe)(val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
-  def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.filter {
-      (outerContext) =>
-        val innerState = state.copy(initialContext = Some(outerContext.clone()))
-        val innerResults = inner.createResults(innerState)
-        if (negated) innerResults.isEmpty else innerResults.nonEmpty
+
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    new Iterator[ExecutionContext] {
+      def hasNext: Boolean = input.hasNext
+      def next(): ExecutionContext = input.next().clone()
     }
-  }
 
-  private def name = if (negated) "AntiSemiApply" else "SemiApply"
+  def planDescription = source.planDescription.andThen(this, "CopyRow")
 
-  def planDescription = PlanDescriptionImpl(this, name, TwoChildren(source.planDescription, inner.planDescription), Seq.empty)
-
-  def symbols: SymbolTable = source.symbols
-
-  override val sources = Seq(source, inner)
+  val symbols = source.symbols
 
   override def localEffects = Effects.NONE
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+
+  override def requiredRowLifetime: RowLifetime = ChainedLifetime
+  override def providedRowLifetime: RowLifetime = QueryLifetime
 }

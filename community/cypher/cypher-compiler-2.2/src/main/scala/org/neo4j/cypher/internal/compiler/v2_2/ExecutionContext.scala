@@ -48,6 +48,9 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
     m.foreach(f)
   }
 
+  override def put(kv: String, v: Any) =
+    m.put(kv, v)
+
   def +=(kv: (String, Any)) = {
     m += kv
     this

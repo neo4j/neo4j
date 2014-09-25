@@ -63,12 +63,18 @@ class ExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)().createResults(queryState).toList
+    val result = CopyRowPipe(ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)())().createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
-    first.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
-    second.m should equal(Map("a" -> startNode, "r" -> relationship2, "b" -> endNode2))
+
+    first("a") should equal(startNode)
+    first("r") should equal(relationship1)
+    first("b") should equal(endNode1)
+
+    second("a") should equal(startNode)
+    second("r") should equal(relationship2)
+    second("b") should equal(endNode2)
   }
 
   test("should support expand between two nodes with multiple relationships and self loops") {
@@ -78,12 +84,18 @@ class ExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)().createResults(queryState).toList
+    val result = CopyRowPipe(ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)())().createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
-    first.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
-    second.m should equal(Map("a" -> startNode, "r" -> selfRelationship, "b" -> startNode))
+
+    first("a") should equal(startNode)
+    first("r") should equal(relationship1)
+    first("b") should equal(endNode1)
+
+    second("a") should equal(startNode)
+    second("r") should equal(selfRelationship)
+    second("b") should equal(startNode)
   }
 
   test("given empty input, should return empty output") {

@@ -44,40 +44,46 @@ case class ExpandPipe(source: Pipe, fromNode: String, relName: String, toNode: S
 
   def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 
-  class ExpandIterator(input: Iterator[ExecutionContext], query: QueryContext) extends Iterator[ExecutionContext] {
-    var row: ExecutionContext = null
-    var node: Node = null
-    var relationships: Iterator[Relationship] = Iterator.empty
+  final class ExpandIterator(input: Iterator[ExecutionContext], query: QueryContext) extends Iterator[ExecutionContext] {
+    private var row: ExecutionContext = null
+    private var node: Node = null
+    private var relationships: Iterator[Relationship] = Iterator.empty
 
-    computeNextRelationships()
-
-    def hasNext: Boolean = relationships.hasNext
+    def hasNext: Boolean = { ensureNextRelationships(); relationships.hasNext }
 
     def next(): ExecutionContext = {
+      ensureNextRelationships()
+
       val r = relationships.next()
-      val result = row.newWith2(relName, r, toNode, r.getOtherNode(node))
-      if (!relationships.hasNext)
-        computeNextRelationships()
+      val result = row
+      row.put(relName, r)
+      row.put(toNode, r.getOtherNode(node))
+
       result
     }
 
-    def computeNextRelationships(): Unit = {
-      while (input.hasNext) {
-        row = input.next()
-        val value = row(fromNode)
-        if (value != null) {
-          value match {
-            case aNode: Node =>
-              node = aNode
-              relationships = query.getRelationshipsFor(node, dir, types)
-              if (relationships.hasNext)
-                return
-            case _ =>
-              throw new InternalException(s"Expected to find a node at $fromNode but found $value instead")
+    private def ensureNextRelationships(): Unit = {
+      if (!relationships.hasNext) {
+        while (input.hasNext) {
+          row = input.next()
+          val fromValue = row(fromNode)
+          if (fromValue != null) {
+            fromValue match {
+              case fromNode: Node =>
+                node = fromNode
+                relationships = query.getRelationshipsFor(node, dir, types)
+                if (relationships.hasNext)
+                  return
+              case _ =>
+                throw new InternalException(s"Expected to find a node at $fromNode but found $fromValue instead")
+            }
           }
         }
+        relationships = Iterator.empty
       }
-      relationships = Iterator.empty
     }
   }
+
+  override def requiredRowLifetime: RowLifetime = ChainedLifetime
+  override def providedRowLifetime: RowLifetime = ChainedLifetime
 }
