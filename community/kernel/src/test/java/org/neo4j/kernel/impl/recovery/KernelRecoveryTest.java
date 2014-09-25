@@ -27,6 +27,10 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -43,6 +47,7 @@ import static org.neo4j.kernel.impl.transaction.LogMatchers.startEntry;
 public class KernelRecoveryTest
 {
     @Rule public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Test
     public void shouldHandleWritesProperlyAfterRecovery() throws Exception
@@ -51,29 +56,18 @@ public class KernelRecoveryTest
         EphemeralFileSystemAbstraction fs = fsRule.get();
         GraphDatabaseService db = newDB( fs );
 
-        long node1;
-        try ( Transaction tx = db.beginTx() )
-        {
-            node1 = db.createNode().getId();
-            tx.success();
-        }
+        long node1 = createNode( db );
 
         // And given the power goes out
         EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
         db.shutdown();
         db = newDB( crashedFs );
 
-        // When
-        long node2;
-        try( Transaction tx = db.beginTx() )
-        {
-            node2 = db.createNode().getId();
-            tx.success();
-        }
+        long node2 = createNode( db );
         db.shutdown();
 
         // Then the logical log should be in sync
-        File logFile = new File( "target/test-data/impermanent-db/" +
+        File logFile = new File( storeDir,
                 PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0" );
         assertThat(
                 logEntries( crashedFs, logFile ),
@@ -91,10 +85,65 @@ public class KernelRecoveryTest
         );
     }
 
+    @Test
+    public void shouldBeAbleToApplyRecoveredTransactionsEvenIfIdGeneratorOpenedFine() throws Exception
+    {
+        // GIVEN
+        EphemeralFileSystemAbstraction fs = fsRule.get();
+        GraphDatabaseService db = newDB( fs );
+        long node1 = createNode( db );
+        long node2 = createNode( db );
+        deleteNode( db, node2 );
+        EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
+        db.shutdown();
+        repairIdGenerator( crashedFs,
+                new File( storeDir, NeoStore.DEFAULT_NAME + StoreFactory.NODE_STORE_NAME + ".id" ) );
+
+        // WHEN
+        db = newDB( crashedFs );
+        try ( Transaction tx = db.beginTx() )
+        {
+            // THEN we have this silly check, although the actual assertion is that recovery didn't blow up
+            db.getNodeById( node1 );
+            tx.success();
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private void deleteNode( GraphDatabaseService db, long node )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.getNodeById( node ).delete();
+            tx.success();
+        }
+    }
+
+    private void repairIdGenerator( FileSystemAbstraction fs, File file )
+    {
+        fs.deleteFile( file );
+        IdGeneratorImpl.createGenerator( fs, file, 1 );
+    }
+
     private GraphDatabaseService newDB( EphemeralFileSystemAbstraction fs )
     {
+        fs.mkdirs( storeDir );
         return new TestGraphDatabaseFactory()
                     .setFileSystem( fs )
-                    .newImpermanentDatabase();
+                    .newImpermanentDatabase( storeDir.getAbsolutePath() );
+    }
+
+    private long createNode( GraphDatabaseService db )
+    {
+        long node1;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node1 = db.createNode().getId();
+            tx.success();
+        }
+        return node1;
     }
 }
