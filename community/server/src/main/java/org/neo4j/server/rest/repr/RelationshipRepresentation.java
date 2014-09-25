@@ -95,7 +95,7 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
     @Mapping( "metadata" )
     public MapRepresentation metadata()
     {
-        return new MapRepresentation( map( "id", String.valueOf( rel.getId() ), "type", rel.getType().name() ) );
+        return new MapRepresentation( map( "type", rel.getType().name() ) );
     }
 
     @Override
