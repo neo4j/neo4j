@@ -151,7 +151,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
                 return label.name();
             }
         });
-        return new MapRepresentation( map( "id", String.valueOf( node.getId() ), "labels" , labels ) );
+        return new MapRepresentation( map( "labels" , labels ) );
     }
 
     @Override
