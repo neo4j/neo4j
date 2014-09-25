@@ -168,7 +168,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("use ExpandPipeForStringTypes when at least one is unknown") {
-    val names = Seq("existing1","nonexisting", "existing3")
+    val names = Seq("existing1", "nonexisting", "existing3")
     val relTypeNames = names.map(new RelTypeName(_)(null))
     val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, relTypeNames, "b", "r1", SimplePatternLength)_
     val pipeInfo = build(logicalPlan)
@@ -176,12 +176,40 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     pipeInfo.pipe should equal(ExpandPipeForStringTypes( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, names)())
   }
 
-  test("use ExpandPipeForIntTypes when all are known") {
-    val names = Seq("existing1","existing2", "existing3")
+  test("use ExpandPipeForIntTypes when all tokens are known") {
+    val names = Seq("existing1", "existing2", "existing3")
     val relTypeNames = names.map(new RelTypeName(_)(null))
     val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, relTypeNames, "b", "r1", SimplePatternLength)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(ExpandPipeForIntTypes( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq(1, 2, 3))())
+  }
+
+  test("use VarExpandPipeForStringTypes when at least one is unknown") {
+    val names = Seq("existing1", "nonexisting", "existing3")
+    val relTypeNames = names.map(new RelTypeName(_)(null))
+    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, relTypeNames, "b", "r1", new VarPatternLength(2, Some(5))) _
+    val pipeInfo = build(logicalPlan)
+
+    pipeInfo.pipe match {
+      case pipe: VarLengthExpandPipeForStringTypes => pipe.copy(filteringStep = null)(pipe.estimatedCardinality) should equal(
+        VarLengthExpandPipeForStringTypes(AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Direction.INCOMING, names, 2, Some(5))().copy(filteringStep = null)(pipe.estimatedCardinality))
+
+      case _ => fail("expected VarLengthExpandPipeForStringTypes")
+    }
+  }
+
+  test("use VarExpandPipeForIntTypes when all tokens are known") {
+    val names = Seq("existing1", "existing2", "existing3")
+    val relTypeNames = names.map(new RelTypeName(_)(null))
+    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, relTypeNames, "b", "r1", new VarPatternLength(2, Some(5))) _
+    val pipeInfo = build(logicalPlan)
+
+    pipeInfo.pipe match {
+      case pipe: VarLengthExpandPipeForIntTypes => pipe.copy(filteringStep = null)(pipe.estimatedCardinality) should equal(
+        VarLengthExpandPipeForIntTypes(AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Direction.INCOMING, Seq(1, 2, 3), 2, Some(5))().copy(filteringStep = null)(pipe.estimatedCardinality))
+
+      case _ => fail("expected VarLengthExpandPipeForIntTypes")
+    }
   }
 }

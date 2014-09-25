@@ -132,7 +132,13 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
               result
             }
           }
-          VarLengthExpandPipe(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)()
+
+          implicit val table: SemanticTable = context.semanticTable
+
+          if (types.exists(_.id == None))
+            VarLengthExpandPipeForStringTypes(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)()
+          else
+            VarLengthExpandPipeForIntTypes(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.flatMap(_.id).map(_.id), min, max, predicate)()
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, predicates) =>
           val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
