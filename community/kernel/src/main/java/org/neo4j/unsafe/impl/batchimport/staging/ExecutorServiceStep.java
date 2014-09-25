@@ -20,12 +20,13 @@
 package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.helpers.NamedThreadFactory;
 
 import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
 /**
@@ -36,8 +37,17 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
 {
     private final ExecutorService executor;
     private final int workAheadSize;
+    private final PrimitiveLongPredicate catchUp = new PrimitiveLongPredicate()
+    {
+        @Override
+        public boolean accept( long queueSizeThreshold )
+        {
+            return queuedBatches.get() <= queueSizeThreshold;
+        }
+    };
 
-    // Stats
+    // Time stamp for when we processed the last queued batch received from upstream.
+    // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
 
     protected ExecutorServiceStep( StageControl control, String name, int workAheadSize, int numberOfExecutors )
@@ -45,18 +55,19 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
         super( control, name );
         this.workAheadSize = workAheadSize;
         NamedThreadFactory threadFactory = new NamedThreadFactory( name );
-        this.executor = numberOfExecutors == 1 ? newSingleThreadExecutor( threadFactory ) :
-            Executors.newFixedThreadPool( numberOfExecutors, threadFactory );
+        this.executor = numberOfExecutors == 1 ?
+                newSingleThreadExecutor( threadFactory ) :
+                newFixedThreadPool( numberOfExecutors, threadFactory );
     }
 
     @Override
     public long receive( final long ticket, final T batch )
     {
-        long idleTime =
-                // Don't go too far ahead
-                awaitDownstreamToCatchUp( workAheadSize ) +
-                // Batches come in ordered
-                awaitTicket( ticket );
+        // Don't go too far ahead
+        long idleTime = await( catchUp, workAheadSize );
+
+        receivedBatch();
+
         executor.submit( new Runnable()
         {
             @Override
@@ -64,14 +75,25 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
             {
                 assertHealthy();
 
-                long startTime = startProcessingTimer();
+                long startTime = currentTimeMillis();
                 try
                 {
                     Object result = process( ticket, batch );
-                    endProcessingTimer( startTime );
+                    totalProcessingTime.addAndGet( currentTimeMillis()-startTime );
 
-                    doneBatches.incrementAndGet();
+                    await( rightTicket, ticket );
                     sendDownstream( ticket, result );
+
+                    long expectedTicket = doneBatches.incrementAndGet();
+                    assert expectedTicket == ticket : "Unexpected ticket " + ticket + ", expected " + expectedTicket;
+
+                    int queueSizeAfterThisJobDone = queuedBatches.decrementAndGet();
+                    assert queueSizeAfterThisJobDone >= 0 : "Negative queue size " + queueSizeAfterThisJobDone;
+                    if ( queueSizeAfterThisJobDone == 0 )
+                    {
+                        lastBatchEndTime.set( currentTimeMillis() );
+                    }
+                    checkNotifyEndDownstream();
                 }
                 catch ( Throwable e )
                 {
@@ -79,45 +101,20 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
                 }
             }
         } );
-        ticketReceived( ticket );
 
         return idleTime;
     }
 
-    private long startProcessingTimer()
+    private void receivedBatch()
     {
-        long startTime = currentTimeMillis();
-        updateUpstreamIdleTime( startTime );
-        return startTime;
-    }
-
-    private void endProcessingTimer( long startTime )
-    {
-        long endTime = currentTimeMillis();
-        totalProcessingTime.addAndGet( endTime-startTime );
-        lastBatchEndTime.set( endTime );
-    }
-
-    private void updateUpstreamIdleTime( long startTime )
-    {
-        if ( lastBatchEndTime.get() != 0 )
-        {
-            upstreamIdleTime.addAndGet( startTime-lastBatchEndTime.get() );
-        }
-    }
-
-    private long awaitDownstreamToCatchUp( int queueSizeThreshold )
-    {
-        if ( receivedBatches.get() - doneBatches.get() > queueSizeThreshold )
-        {
-            long startTime = currentTimeMillis();
-            while ( receivedBatches.get() - doneBatches.get() > queueSizeThreshold )
+        if ( queuedBatches.getAndIncrement() == 0 )
+        {   // This is the first batch after we last drained the queue.
+            long lastBatchEnd = lastBatchEndTime.get();
+            if ( lastBatchEnd != 0 )
             {
-                waitSome();
+                upstreamIdleTime.addAndGet( currentTimeMillis()-lastBatchEnd );
             }
-            return currentTimeMillis()-startTime;
         }
-        return 0;
     }
 
     /**

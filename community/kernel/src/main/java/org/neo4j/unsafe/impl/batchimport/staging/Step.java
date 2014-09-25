@@ -23,9 +23,15 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 /**
  * One step in {@link Stage}, where a {@link Stage} is a sequence of steps. Each step works on batches.
- * Batches are typically received from an upstream step, or in this step. If there are more steps
+ * Batches are typically received from an upstream step, or produced in the step itself. If there are more steps
  * {@link #setDownstream(Step) downstream} then processed batches are passed down. Each step has maximum
- * "work-ahead" size where it awaits its downstream step beyond that number.
+ * "work-ahead" size where it awaits the downstream step to catch up if the queue size goes beyond that number.
+ *
+ * Batches are associated with a ticket, which is simply a long value incremented for each batch.
+ * It's the first step that is responsible for generating these tickets, which will stay unchanged with
+ * each batch all the way through the stage. Steps that have multiple threads processing batches can process
+ * received batches in any order, but must make sure to send batches to its downstream
+ * (i.e. calling {@link #receive(long, Object)} on its downstream step) ordered by ticket.
  *
  * @param <T> the type of batch objects received from upstream.
  */

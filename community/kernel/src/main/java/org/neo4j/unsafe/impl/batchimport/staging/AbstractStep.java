@@ -21,8 +21,10 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.unsafe.impl.batchimport.stats.ProcessingStats;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
@@ -39,14 +41,30 @@ public abstract class AbstractStep<T> implements Step<T>
     private final String name;
     @SuppressWarnings( "rawtypes" )
     private volatile Step downstream;
-    protected volatile boolean endOfUpstream;
-    protected final AtomicLong downstreamIdleTime = new AtomicLong();
-    protected final AtomicLong upstreamIdleTime = new AtomicLong();
-    protected final AtomicLong receivedBatches = new AtomicLong();
-    protected final AtomicLong doneBatches = new AtomicLong();
-    protected final AtomicLong totalProcessingTime = new AtomicLong();
+    private volatile boolean endOfUpstream;
     private volatile boolean panic;
     private volatile boolean completed;
+    protected final PrimitiveLongPredicate rightTicket = new PrimitiveLongPredicate()
+    {
+        @Override
+        public boolean accept( long ticket )
+        {
+            return doneBatches.get() == ticket-1;
+        }
+    };
+
+    // Milliseconds awaiting downstream to process batches so that its queue size goes beyond the configured threshold
+    // If this is big then it means that this step is faster than downstream.
+    protected final AtomicLong downstreamIdleTime = new AtomicLong();
+    // Milliseconds awaiting upstream to hand over batches to this step.
+    // If this is big then it means that this step is faster than upstream.
+    protected final AtomicLong upstreamIdleTime = new AtomicLong();
+    // Number of batches received, but not yet processed.
+    protected final AtomicInteger queuedBatches = new AtomicInteger();
+    // Number of batches fully processed
+    protected final AtomicLong doneBatches = new AtomicLong();
+    // Milliseconds spent processing all received batches.
+    protected final AtomicLong totalProcessingTime = new AtomicLong();
 
     public AbstractStep( StageControl control, String name )
     {
@@ -68,15 +86,13 @@ public abstract class AbstractStep<T> implements Step<T>
 
     protected boolean stillWorking()
     {
-        // If there's a panic we'll just stop working
         if ( panic )
-        {
+        {   // There has been a panic, so we'll just stop working
             return false;
         }
 
-        // If upstream has run out and we've processed all
-        if ( endOfUpstream && doneBatches.get() == receivedBatches.get() )
-        {
+        if ( endOfUpstream && queuedBatches.get() == 0 )
+        {   // Upstream has run out and we've processed everything upstream sent us
             return false;
         }
 
@@ -96,14 +112,30 @@ public abstract class AbstractStep<T> implements Step<T>
         throw Exceptions.launderedException( cause );
     }
 
-    protected long awaitTicket( long ticket )
+    protected long await( PrimitiveLongPredicate predicate, long value )
     {
-        long waitTime = currentTimeMillis();
-        while ( receivedBatches.get() != ticket-1 )
+        if ( predicate.accept( value ) )
         {
-            waitSome();
+            return 0;
         }
-        return currentTimeMillis()-waitTime;
+
+        long startTime = currentTimeMillis();
+        for ( int i = 0; i < 1_000_000 && !predicate.accept( value ); i++ )
+        {   // Busy loop a while
+        }
+
+        while ( !predicate.accept( value ) )
+        {   // Sleeping wait
+            try
+            {
+                Thread.sleep( 1 );
+                Thread.yield();
+            }
+            catch ( InterruptedException e )
+            {   // It's OK
+            }
+        }
+        return currentTimeMillis()-startTime;
     }
 
     protected void assertHealthy()
@@ -111,27 +143,6 @@ public abstract class AbstractStep<T> implements Step<T>
         if ( panic )
         {
             throw new RuntimeException( "Panic called, so exiting" );
-        }
-    }
-
-    protected void waitSome()
-    {
-        try
-        {
-            Thread.sleep( 1 );
-            Thread.yield();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    protected void ticketReceived( long ticket )
-    {
-        if ( !receivedBatches.compareAndSet( ticket-1, ticket ) )
-        {
-            throw new IllegalStateException();
         }
     }
 
@@ -151,8 +162,8 @@ public abstract class AbstractStep<T> implements Step<T>
 
     protected void addStatsProviders( Collection<StatsProvider> providers )
     {
-        providers.add( new ProcessingStats( receivedBatches.get(), doneBatches.get(), totalProcessingTime.get(),
-                upstreamIdleTime.get(), downstreamIdleTime.get() ) );
+        providers.add( new ProcessingStats( doneBatches.get()+queuedBatches.get(), doneBatches.get(),
+                totalProcessingTime.get(), upstreamIdleTime.get(), downstreamIdleTime.get() ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -169,7 +180,6 @@ public abstract class AbstractStep<T> implements Step<T>
         {
             downstreamIdleTime.addAndGet( downstream.receive( ticket, batch ) );
         }
-        checkNotifyEndDownstream();
     }
 
     @Override

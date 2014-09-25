@@ -34,18 +34,11 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
 public class Stage
 {
     private final List<Step<?>> pipeline = new ArrayList<>();
-    private Step<?> inputStep;
     private final StageExecution execution;
 
     public Stage( Logging logging, String name, Configuration config )
     {
         this.execution = new StageExecution( logging, name, config, pipeline );
-    }
-
-    public void input( Step<?> inputStep )
-    {
-        this.inputStep = inputStep;
-        add( inputStep );
     }
 
     protected StageControl control()
@@ -61,7 +54,7 @@ public class Stage
     public StageExecution execute() throws Exception
     {
         linkSteps();
-        inputStep.receive( 1 /*a ticket, ignored anyway*/, null /*serves only as a start signal anyway*/ );
+        pipeline.get( 0 ).receive( 1 /*a ticket, ignored anyway*/, null /*serves only as a start signal anyway*/ );
         execution.start();
         return execution;
     }
