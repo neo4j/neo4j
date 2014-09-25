@@ -239,7 +239,6 @@ public class SchemaCache
     }
 
     public IndexDescriptor indexDescriptor( int labelId, int propertyKey )
-        throws SchemaRuleNotFoundException
     {
         Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( labelId );
         if ( byLabel != null )
@@ -250,16 +249,16 @@ public class SchemaCache
                 return committed.getDescriptor();
             }
         }
-        throw new SchemaRuleNotFoundException( labelId, propertyKey, "No such index found" );
+        return null;
     }
 
-    public IndexDescriptor indexDescriptor( long indexId ) throws SchemaRuleNotFoundException
+    public IndexDescriptor indexDescriptor( long indexId )
     {
         SchemaRule rule = rulesByIdMap.get( indexId );
         if ( rule instanceof IndexRule )
         {
             return indexDescriptor( rule.getLabel(), ((IndexRule) rule).getPropertyKey() );
         }
-        throw new SchemaRuleNotFoundException( "No index descriptor for schema rule " + indexId );
+        return null;
     }
 }

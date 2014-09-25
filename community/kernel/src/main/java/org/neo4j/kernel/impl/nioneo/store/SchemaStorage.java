@@ -108,6 +108,7 @@ public class SchemaStorage implements SchemaRuleAccess
             {
                 if ( foundRule != null )
                 {
+                    // todo: not the best exception type
                     throw new SchemaRuleNotFoundException( labelId, propertyKeyId, String.format("found more than one matching index rule, %s and %s", foundRule, candidate) );
                 }
                 foundRule = candidate;
