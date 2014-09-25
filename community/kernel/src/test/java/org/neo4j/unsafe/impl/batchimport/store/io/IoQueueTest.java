@@ -72,9 +72,7 @@ public class IoQueueTest
 
         // THEN
         verify( executor, times( 1 ) ).submit( any( Callable.class ) );
-
-        verify( channel ).position( 100 );
-        verify( channel ).write( buffer );
+        verify( channel ).write( buffer, 100 );
         verifyNoMoreInteractions( channel );
     }
 
@@ -111,11 +109,9 @@ public class IoQueueTest
         // THEN
         executor.shutdown();
         executor.awaitTermination( 10, SECONDS );
-        verify( channel1 ).position( position1 );
-        verify( channel1 ).position( position2 );
-        verify( channel2 ).position( position3 );
-        verify( channel1, times(2) ).write( buffer );
-        verify( channel2 ).write( buffer );
+        verify( channel1 ).write( buffer, position1 );
+        verify( channel1 ).write( buffer, position2 );
+        verify( channel2 ).write( buffer, position3 );
 
         verifyNoMoreInteractions( channel1 );
         verifyNoMoreInteractions( channel2 );

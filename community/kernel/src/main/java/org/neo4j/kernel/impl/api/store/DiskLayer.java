@@ -303,7 +303,6 @@ public class DiskLayer implements StoreReadLayer
 
     @Override
     public IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
-            throws SchemaRuleNotFoundException
     {
         return descriptor( schemaStorage.indexRule( labelId, propertyKey ) );
     }
@@ -441,16 +440,9 @@ public class DiskLayer implements StoreReadLayer
         return indexService.getProxyForRule( indexId( descriptor ) ).getPopulationFailure().asString();
     }
 
-    private long indexId( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    private long indexId( IndexDescriptor descriptor )
     {
-        try
-        {
-            return schemaStorage.indexRule( descriptor.getLabelId(), descriptor.getPropertyKeyId() ).getId();
-        }
-        catch ( SchemaRuleNotFoundException e )
-        {
-            throw new IndexNotFoundKernelException( e.getMessage(), e );
-        }
+        return schemaStorage.indexRule( descriptor.getLabelId(), descriptor.getPropertyKeyId() ).getId();
     }
 
     @Override

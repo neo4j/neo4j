@@ -25,6 +25,7 @@ import java.util.Iterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -79,7 +80,7 @@ public class SchemaStorage implements SchemaRuleAccess
      *
      * Otherwise throw if there are not exactly one matching candidate rule.
      */
-    public IndexRule indexRule( int labelId, int propertyKeyId ) throws SchemaRuleNotFoundException
+    public IndexRule indexRule( int labelId, int propertyKeyId )
     {
         return indexRule( labelId, propertyKeyId, IndexRuleKind.ALL );
     }
@@ -89,7 +90,7 @@ public class SchemaStorage implements SchemaRuleAccess
      *
      * Otherwise throw if there are not exactly one matching candidate rule.
      */
-    public IndexRule indexRule( int labelId, final int propertyKeyId, IndexRuleKind kind ) throws SchemaRuleNotFoundException
+    public IndexRule indexRule( int labelId, final int propertyKeyId, IndexRuleKind kind )
     {
         Iterator<IndexRule> rules = schemaRules(
                 IndexRule.class, labelId,
@@ -111,15 +112,10 @@ public class SchemaStorage implements SchemaRuleAccess
             {
                 if ( foundRule != null )
                 {
-                    throw new SchemaRuleNotFoundException( labelId, propertyKeyId, String.format("found more than one matching index rule, %s and %s", foundRule, candidate) );
+                    throw new ThisShouldNotHappenError( "Jake", String.format("Found more than one matching index rule, %s and %s", foundRule, candidate) );
                 }
                 foundRule = candidate;
             }
-        }
-
-        if ( foundRule == null )
-        {
-            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "not found" );
         }
 
         return foundRule;

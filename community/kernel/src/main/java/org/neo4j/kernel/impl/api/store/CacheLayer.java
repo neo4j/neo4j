@@ -351,7 +351,6 @@ public class CacheLayer implements StoreReadLayer
 
     @Override
     public IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
-            throws SchemaRuleNotFoundException
     {
         return schemaCache.indexDescriptor( labelId, propertyKey );
     }

@@ -548,20 +548,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 @Override
                 public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
                 {
-                    try
-                    {
-                        SchemaStorage.IndexRuleKind kind = isConstraintIndex?
-                                SchemaStorage.IndexRuleKind.CONSTRAINT : SchemaStorage.IndexRuleKind.INDEX;
-                        IndexRule rule = schemaStorage.indexRule( element.getLabelId(), element.getPropertyKeyId(), kind );
-                        recordState.dropSchemaRule( rule );
-                    }
-                    catch ( SchemaRuleNotFoundException e )
-                    {
-                        throw new ThisShouldNotHappenError(
-                                "Tobias Lindaaker",
-                                "Index to be removed should exist, since its existence should have " +
-                                        "been validated earlier and the schema should have been locked.", e );
-                    }
+                    SchemaStorage.IndexRuleKind kind = isConstraintIndex?
+                            SchemaStorage.IndexRuleKind.CONSTRAINT : SchemaStorage.IndexRuleKind.INDEX;
+                    IndexRule rule = schemaStorage.indexRule( element.getLabelId(), element.getPropertyKeyId(), kind );
+                    recordState.dropSchemaRule( rule );
                 }
 
                 @Override
@@ -569,20 +559,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 {
                     clearState.set( true );
                     long constraintId = schemaStorage.newRuleId();
-                    IndexRule indexRule;
-                    try
-                    {
-                        indexRule = schemaStorage.indexRule(
-                                element.label(),
-                                element.propertyKeyId(),
-                                SchemaStorage.IndexRuleKind.CONSTRAINT );
-                    }
-                    catch ( SchemaRuleNotFoundException e )
-                    {
-                        throw new ThisShouldNotHappenError(
-                                "Jacob Hansson",
-                                "Index is always created for the constraint before this point.", e );
-                    }
+                    IndexRule indexRule = schemaStorage.indexRule(
+                            element.label(),
+                            element.propertyKeyId(),
+                            SchemaStorage.IndexRuleKind.CONSTRAINT );
                     recordState.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
                             constraintId, element.label(), element.propertyKeyId(), indexRule.getId() ) );
                     recordState.setConstraintIndexOwner( indexRule, constraintId );

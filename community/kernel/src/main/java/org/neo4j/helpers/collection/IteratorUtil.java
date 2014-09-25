@@ -845,6 +845,43 @@ public abstract class IteratorUtil
         };
     }
 
+    public static <T> Iterator<T> iterator( final T item )
+    {
+        if ( item == null )
+        {
+            return emptyIterator();
+        }
+
+        return new Iterator<T>()
+        {
+            T myItem = item;
+
+            @Override
+            public boolean hasNext()
+            {
+                return myItem != null;
+            }
+
+            @Override
+            public T next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+                T toReturn = myItem;
+                myItem = null;
+                return toReturn;
+            }
+
+            @Override
+            public void remove()
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
+
     @SafeVarargs
     public static <T> Iterator<T> iterator( T ... items )
     {
