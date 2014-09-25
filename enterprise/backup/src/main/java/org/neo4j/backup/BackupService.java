@@ -184,6 +184,7 @@ class BackupService
             }
             catch ( ConsistencyCheckIncompleteException e )
             {
+                consistent = false;
                 logger.error( "Consistency check incomplete", e );
             }
             finally
