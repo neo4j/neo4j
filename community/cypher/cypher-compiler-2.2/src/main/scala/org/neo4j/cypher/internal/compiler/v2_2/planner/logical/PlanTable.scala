@@ -66,4 +66,6 @@ case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
 
 object PlanTable {
   val empty = PlanTable()
+
+  def apply(plans: LogicalPlan*): PlanTable = PlanTable(plans.map(p => p.availableSymbols -> p).toMap)
 }

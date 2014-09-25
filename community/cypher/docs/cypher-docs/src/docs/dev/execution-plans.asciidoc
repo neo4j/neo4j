@@ -30,7 +30,6 @@ include::ql/query-plan/node-by-label-scan.asciidoc[]
 include::ql/query-plan/node-by-id-seek.asciidoc[]
 include::ql/query-plan/node-index-seek.asciidoc[]
 include::ql/query-plan/node-unique-index-seek.asciidoc[]
-include::ql/query-plan/optional-expand.asciidoc[]
 include::ql/query-plan/projection.asciidoc[]
 include::ql/query-plan/selection.asciidoc[]
 include::ql/query-plan/select-or-anti-semi-apply.asciidoc[]
@@ -41,8 +40,3 @@ include::ql/query-plan/sort.asciidoc[]
 include::ql/query-plan/sorted-limit.asciidoc[]
 include::ql/query-plan/undirected-relationship-by-id-seek.asciidoc[]
 include::ql/query-plan/union.asciidoc[]
-
-////
-include::operators/node-outer-hash-join.asciidoc[]
-include::operators/single-row.asciidoc[]
-////

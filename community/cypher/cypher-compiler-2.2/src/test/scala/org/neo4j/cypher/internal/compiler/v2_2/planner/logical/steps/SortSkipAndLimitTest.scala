@@ -161,7 +161,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     val plan =
-      newMockedLogicalPlan2(Set(IdName("n")),
+      newMockedLogicalPlanWithSolved(Set(IdName("n")),
       PlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n")))
     )
 

@@ -150,23 +150,23 @@ class QueryPlanTest extends DocumentingTestBase {
     )
   }
 
-  @Test def optionalExpand() {
-    profileQuery(
-      title = "Optional Expand",
-      text =
-        """Optional expand traverses relationships from a given node, and makes sure that predicates are evaluated before producing rows.
-          |
-          |If no matching relationships are found, a single row with null for the relationship and end node identifier is produced.
-          |
-          |The following query will find all the people and the location they work in as long as they've worked there for more than 180 days.
-        """.stripMargin,
-      queryText =
-        """MATCH (p:Person)
-           OPTIONAL MATCH (p)-[works_in:WORKS_IN]->(l) WHERE works_in.duration > 180
-           RETURN p, l""",
-      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("OptionalExpand"))
-    )
-  }
+//  @Test def optionalExpand() {
+//    profileQuery(
+//      title = "Optional Expand",
+//      text =
+//        """Optional expand traverses relationships from a given node, and makes sure that predicates are evaluated before producing rows.
+//          |
+//          |If no matching relationships are found, a single row with null for the relationship and end node identifier is produced.
+//          |
+//          |The following query will find all the people and the location they work in as long as they've worked there for more than 180 days.
+//        """.stripMargin,
+//      queryText =
+//        """MATCH (p:Person)
+//           OPTIONAL MATCH (p)-[works_in:WORKS_IN]->(l) WHERE works_in.duration > 180
+//           RETURN p, l""",
+//      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("OptionalExpand"))
+//    )
+//  }
 
 //   @Test def nodeOuterHashJoin() {
 //    profileQuery(
