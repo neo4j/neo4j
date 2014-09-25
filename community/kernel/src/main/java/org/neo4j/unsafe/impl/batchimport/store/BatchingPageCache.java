@@ -74,8 +74,7 @@ public class BatchingPageCache implements PageCache
                 {
                     try
                     {
-                        channel.position( position );
-                        int written = channel.write( data );
+                        int written = channel.write( data, position );
                         monitor.dataWritten( written );
                     }
                     finally
