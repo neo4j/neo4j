@@ -99,6 +99,5 @@ public class RelationshipRepresentationTest
         assertNotNull( relrep.get( "metadata" ) );
         Map metadata = (Map) relrep.get( "metadata" );
         assertNotNull( metadata.get("type") );
-        assertRegexpMatches( "\\d+", (String) metadata.get( "id" ) );
     }
 }
