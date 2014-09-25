@@ -34,7 +34,7 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
       case item: ReturnItem => item.asDoc
       case items: ReturnItems => items.asDoc
       case where: Where => where.asDoc
-      case hint: UsingHint => hint.asDoc
+      case hint: Hint => hint.asDoc
       case orderBy: OrderBy => orderBy.asDoc
       case sortItem: SortItem => sortItem.asDoc
       case slice: ASTSlicingPhrase => slice.asDoc
@@ -117,7 +117,7 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
     }
   }
 
-  implicit class HintConverter(hint: UsingHint) {
+  implicit class HintConverter(hint: Hint) {
     def asDoc(pretty: DocConverter[Any]) = hint match {
       case UsingIndexHint(identifier, label, property) =>
         group("USING" :/: "INDEX" :/: group(pretty(identifier) :: block(pretty(label))(pretty(property))))

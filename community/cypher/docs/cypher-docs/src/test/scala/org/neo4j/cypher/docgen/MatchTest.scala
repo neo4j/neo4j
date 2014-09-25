@@ -20,7 +20,8 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Assert._
-import org.neo4j.graphdb.{DynamicLabel, DynamicRelationshipType, Path, Node}
+import org.junit.matchers.JUnitMatchers._
+import org.neo4j.graphdb._
 import org.junit.Test
 import org.neo4j.tooling.GlobalGraphOperations
 import collection.JavaConverters._
@@ -54,6 +55,53 @@ class MatchTest extends DocumentingTestBase {
 
   def section: String = "MATCH"
 
+  @Test def nodes_by_id() {
+    testQuery(
+      title = "Node by id",
+      text = """
+Search for nodes by id can be done with the 'id' function in a predicate.
+
+[NOTE]
+Neo4j reuses its internal ids when nodes and relationships are deleted,
+which means it's bad practice to refer to them in this way.
+Instead, use application generated ids.
+             """,
+      queryText = "match n where id(n) = %Charlie% return n",
+      optionalResultExplanation = "The corresponding node is returned.",
+      (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(node("Charlie"))))
+  }
+
+  @Test def relationships_by_id() {
+    testQuery(
+      title = "Relationship by id",
+      text = """
+Search for nodes by id can be done with the 'id' function in a predicate.
+
+See <<match-node-by-id>> for more information on Neo4j ids.
+             """,
+      queryText = "match ()-[r]->() where id(r) = 0 return r",
+      optionalResultExplanation = "The relationship with id +0+ is returned.",
+      (p) => assertThat(p.columnAs[Relationship]("r").toList.asJava, hasItem(rel(0))))
+  }
+
+  @Test def multiple_nodes_by_id() {
+    testQuery(
+      title = "Multiple nodes by id",
+      text = "Multiple nodes are selected by specifying them in an IN clause.",
+      queryText = "match n where id(n) in [%Charlie%, %Martin%, %Oliver%] return n",
+      optionalResultExplanation = "This returns the nodes listed in the `IN` expression.",
+      (p) => assertEquals(List(node("Charlie"), node("Martin"), node("Oliver")), p.columnAs[Node]("n").toList))
+  }
+
+  @Test def start_with_multiple_nodes() {
+    testQuery(
+      title = "Multiple identifiers by id",
+      text = "Sometimes you want to return multiple nodes by id and separate identifiers. Just list them separated by commas.",
+      queryText = "match a, b where id(a) = %Charlie% and id(b) = %Martin% return a, b",
+      optionalResultExplanation = """Both the nodes +Charlie+ and the +Martin+  are returned.""",
+      p => assertEquals(List(Map("a" -> node("Charlie"), "b" -> node("Martin"))), p.toList))
+  }
+
   @Test def get_all_nodes() {
     testQuery(
       title = "Get all nodes",
@@ -67,6 +115,21 @@ class MatchTest extends DocumentingTestBase {
       }
     )
   }
+
+  @Test def get_multiple_nodes() {
+    testQuery(
+      title = "Multiple starting points",
+      text = "By specifying two node patterns all combinations of the two nodes will be returned, so it is advised to add a constraint.",
+      queryText = """match (a), (b) where id(a) = id(b) return a, b""",
+      optionalResultExplanation = "Returns the combinations of the two nodes from the database.",
+      assertions = (p) => {
+        val allNodes: List[Node] = GlobalGraphOperations.at(db).getAllNodes.asScala.toList
+
+        assertEquals(allNodes, p.columnAs[Node]("a").toList)
+      }
+    )
+  }
+
   @Test def get_all_labeled_nodes() {
     testQuery(
       title = "Get all nodes with a label",

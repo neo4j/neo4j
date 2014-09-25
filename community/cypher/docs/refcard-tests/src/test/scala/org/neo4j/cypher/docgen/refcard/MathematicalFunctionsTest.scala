@@ -51,7 +51,6 @@ class MathematicalFunctionsTest extends RefcardTest with QueryStatisticsTestSupp
 
   def text = """
 ###assertion=returns-one parameters=expression
-START n=node(%ROOT%)
 RETURN
 
 abs({expr})
@@ -60,7 +59,6 @@ abs({expr})
 The absolute value.
 
 ###assertion=returns-one parameters=expression
-START n=node(%ROOT%)
 RETURN
 
 rand()
@@ -69,7 +67,6 @@ rand()
 A random value. Returns a new value for each call. Also useful for selecting subset or random ordering.
 
 ###assertion=returns-one parameters=expression
-START n=node(%ROOT%)
 RETURN
 
 round({expr})
@@ -80,7 +77,6 @@ round({expr})
 Round to the nearest integer, +ceil+ and +floor+ find the next integer up or down.
 
 ###assertion=returns-one parameters=expression
-START n=node(%ROOT%)
 RETURN
 
 sqrt({expr})
@@ -89,7 +85,6 @@ sqrt({expr})
 The square root.
 
 ###assertion=returns-one parameters=expression
-START n=node(%ROOT%)
 RETURN
 
 sign({expr})
@@ -98,7 +93,6 @@ sign({expr})
 `0` if zero, `-1` if negative, `1` if positive.
 
 ###assertion=returns-one parameters=expression
-START n=node(%ROOT%)
 RETURN
 
 sin({expr})
@@ -109,7 +103,6 @@ sin({expr})
 Trigonometric functions, also `cos`, `tan`, `cot`, `asin`, `acos`, `atan`, `atan2`, `haversin`.
 
 ###assertion=returns-one parameters=expression
-START n=node(%ROOT%)
 RETURN
 
 degrees({expr}), radians({expr}), pi()
@@ -118,7 +111,6 @@ degrees({expr}), radians({expr}), pi()
 Converts radians into degrees, use `radians` for the reverse. `pi` for π.
 
 ###assertion=returns-one parameters=expression
-START n=node(%ROOT%)
 RETURN
 
 log10({expr}), log({expr}), exp({expr}), e()

@@ -49,10 +49,10 @@ class WhereTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=returns-one parameters=aname
-START n=node(%A%), m=node(%B%)
 MATCH (n)-->(m)
+WHERE id(n) = %A% AND id(m) = %B%
 
-WHERE n.property <> {value}
+AND n.property <> {value}
 
 RETURN n,m###
 

@@ -17,19 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.LegacyIndexHint
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
-sealed trait UsingHint extends ASTNode with ASTPhrase with SemanticCheckable {
-  def identifier: Identifier
-}
-
-case class UsingIndexHint(identifier: Identifier, label: LabelName, property: Identifier)(val position: InputPosition) extends UsingHint {
-  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
-}
-
-case class UsingScanHint(identifier: Identifier, label: LabelName)(val position: InputPosition) extends UsingHint {
-  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
+case class LegacyIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])(val solved: PlannerQuery) extends LogicalLeafPlan {
+  def availableSymbols = argumentIds + idName
 }

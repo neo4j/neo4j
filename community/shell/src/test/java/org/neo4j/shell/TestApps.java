@@ -344,17 +344,17 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         executeCommand( "cd -a " + node.getId() );
-        executeCommand( "START n = node({self}) RETURN n.name;", nodeOneName );
+        executeCommand( "MATCH n WHERE n = {self} RETURN n.name;", nodeOneName );
         executeCommand( "cd -r " + relationship.getId() );
-        executeCommand( "START r = relationship({self}) RETURN r.name;", relationshipName );
+        executeCommand( "MATCH ()-[r]->() WHERE r = {self} RETURN r.name;", relationshipName );
         executeCommand( "cd " + otherNode.getId() );
-        executeCommand( "START n = node({self}) RETURN n.name;", nodeTwoName );
+        executeCommand( "MATCH n WHERE n = {self} RETURN n.name;", nodeTwoName );
 
         executeCommand( "cd -a " + strayNode.getId() );
         beginTx();
         strayNode.delete();
         finishTx();
-        executeCommand( "START n = node(" + node.getId() + ") RETURN n.name;", nodeOneName );
+        executeCommand( "MATCH n WHERE id(n) = " + node.getId() + " RETURN n.name;", nodeOneName );
     }
 
     @Test
@@ -366,7 +366,7 @@ public class TestApps extends AbstractShellTest
         node.createRelationshipTo( otherNode, RELATIONSHIP_TYPE );
         finishTx();
 
-        executeCommand( "START n = node(" + node.getId() + ") optional match p=n-[r*]-m RETURN p;", "\\d+ ms" );
+        executeCommand( "MATCH n WHERE id(n) = " + node.getId() + " optional match p=n-[r*]-m RETURN p;", "\\d+ ms" );
     }
 
     @Test
@@ -617,7 +617,7 @@ public class TestApps extends AbstractShellTest
             db.createNode();
             tx.success();
         }
-        executeCommand( client, "start n=node({id}) return n;", "1 row" );
+        executeCommand( client, "match n where id(n) = {id} return n;", "1 row" );
     }
 
     @Test
@@ -627,7 +627,7 @@ public class TestApps extends AbstractShellTest
         beginTx();
         createRelationshipChain( db.createNode(), type, 1 );
         finishTx();
-        executeCommand( "dump start n=node(0) match n-[r]->m return n,r,m;",
+        executeCommand( "dump match n-[r]->m where id(n) = 0 return n,r,m;",
                 "begin",
                 "create _0",
                 "create \\(_1\\)",

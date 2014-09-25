@@ -32,7 +32,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       argumentIds: Set[IdName] = Set.empty,
                       selections: Selections = Selections(),
                       optionalMatches: Seq[QueryGraph] = Seq.empty,
-                      hints: Set[UsingHint] = Set.empty,
+                      hints: Set[Hint] = Set.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty)
   extends InternalDocHandler.ToString[QueryGraph] with PageDocFormatting {
 
@@ -65,7 +65,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     copy(selections = selections ++ newSelections)
   }
 
-  def addHints(addedHints: GenTraversableOnce[UsingHint]): QueryGraph = copy(hints = hints ++ addedHints)
+  def addHints(addedHints: GenTraversableOnce[Hint]): QueryGraph = copy(hints = hints ++ addedHints)
 
   def withoutArguments(): QueryGraph = withArgumentIds(Set.empty)
   def withArgumentIds(newArgumentIds: Set[IdName]): QueryGraph =
@@ -103,7 +103,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     coveredIds ++ optionalMatchIds
   }
 
-  val allHints: Set[UsingHint] =
+  val allHints: Set[Hint] =
     if (optionalMatches.isEmpty) hints else hints ++ optionalMatches.flatMap(_.allHints)
 
   def numHints = allHints.size
@@ -138,7 +138,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                    argumentIds: Set[IdName] = argumentIds,
                    selections: Selections = selections,
                    optionalMatches: Seq[QueryGraph] = optionalMatches,
-                   hints: Set[UsingHint] = hints,
+                   hints: Set[Hint] = hints,
                    shortestPathPatterns: Set[ShortestPathPattern] = shortestPathPatterns) =
   QueryGraph(patternRelationships, patternNodes, argumentIds, selections, optionalMatches, hints, shortestPathPatterns)
 }

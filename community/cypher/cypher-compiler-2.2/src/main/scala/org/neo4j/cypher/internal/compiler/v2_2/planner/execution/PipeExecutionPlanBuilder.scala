@@ -21,21 +21,24 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{NodeStartItem, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{True, Predicate => CommandPredicate}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{Predicate => CommandPredicate, EntityProducerFactory, True}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.helpers.Eagerly
 import org.neo4j.graphdb.Relationship
+import org.neo4j.kernel.api.Statement
 
 case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan, cardinality: Metrics.CardinalityModel) {
   def plan(expr: ast.PatternExpression) = f(expr)
@@ -43,7 +46,9 @@ case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan, 
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
 
-  def build(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext): PipeInfo = {
+  val entityProducerFactory = new EntityProducerFactory
+
+  def build(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
     val updating = false
 
     object buildPipeExpressions extends Rewriter {
@@ -68,7 +73,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
       rewrittenExpr.asCommandPredicate
     }
 
-    def buildPipe(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext): Pipe = {
+    def buildPipe(plan: LogicalPlan): Pipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
 
       val result: Pipe with RonjaPipe = plan match {
@@ -193,6 +198,11 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
         case UnwindCollection(lhs, identifier, collection) =>
           UnwindPipe(buildPipe(lhs), collection.asCommandExpression, identifier.name)()
+
+        case LegacyIndexSeek(id, hint: NodeStartItem, _) =>
+          val source = new NullPipe(SymbolTable())
+          val ep = entityProducerFactory.nodeStartItems((planContext, StatementConverters.StartItemConverter(hint).asCommandStartItem))
+          NodeStartPipe(source, id.name, ep)()
 
         case x =>
           throw new CantHandleQueryException(x.toString)

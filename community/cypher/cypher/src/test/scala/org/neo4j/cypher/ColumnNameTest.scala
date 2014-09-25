@@ -27,22 +27,22 @@ class ColumnNameTest extends ExecutionEngineFunSuite {
   }
 
   test("should keep used expression 1") {
-    val result = execute("start n=node(0) return cOuNt( * )")
+    val result = execute("match (n) where id(n) = 0 return cOuNt( * )")
     result.columns should equal(List("cOuNt( * )"))
   }
 
   test("should keep used expression 2") {
-    val result = execute("start n=node(0) match p=n-->b return nOdEs( p )")
+    val result = execute("match p=n-->b where id(n) = 0 return nOdEs( p )")
     result.columns should equal(List("nOdEs( p )"))
   }
 
   test("should keep used expression 3") {
-    val result = execute("start n=node(0) match p=n-->b return coUnt( dIstInct p )")
+    val result = execute("match p=n-->b where id(n) = 0 return coUnt( dIstInct p )")
     result.columns should equal(List("coUnt( dIstInct p )"))
   }
 
   test("should keep used expression 4") {
-    val result = execute("start n=node(0) match p=n-->b return aVg(    n.aGe     )")
+    val result = execute("match p=n-->b where id(n) = 0 return aVg(    n.aGe     )")
     result.columns should equal(List("aVg(    n.aGe     )"))
   }
 }
