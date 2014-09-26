@@ -1576,4 +1576,12 @@ return b
       result.lastRelationship() should equal (r1)
     }
   }
+
+  test("falls back to the old planner for START queries") {
+    createNode()
+    createNode()
+    createNode()
+
+    execute("start n=node(*) return n").length should equal(3)
+  }
 }
