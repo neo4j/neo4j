@@ -66,12 +66,12 @@ public class RequestContextFactory extends LifecycleAdapter
         this.epoch = epoch;
     }
 
-    public RequestContext newRequestContext( long sessionId, int machineId, int eventIdentifier )
+    public RequestContext newRequestContext( long epoch, int machineId, int eventIdentifier )
     {
         long latestTxId = txIdStore.getLastCommittedTransactionId();
         if ( latestTxId == 0 )
         {
-            return new RequestContext( sessionId, machineId, eventIdentifier, 0, -1, -1 );
+            return new RequestContext( epoch, machineId, eventIdentifier, 0, -1, -1 );
         }
         TransactionMetadataCache.TransactionMetadata txMetadata = null;
         try
@@ -85,12 +85,12 @@ public class RequestContextFactory extends LifecycleAdapter
         if ( txMetadata != null )
         {
             return new RequestContext(
-                    sessionId, machineId, eventIdentifier, latestTxId, txMetadata.getMasterId(), txMetadata.getChecksum() );
+                    epoch, machineId, eventIdentifier, latestTxId, txMetadata.getMasterId(), txMetadata.getChecksum() );
         }
         else
         {
             return new RequestContext(
-                    sessionId, machineId, eventIdentifier, latestTxId, -1, -1 );
+                    epoch, machineId, eventIdentifier, latestTxId, -1, -1 );
         }
     }
 
