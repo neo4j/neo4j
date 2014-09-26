@@ -19,16 +19,25 @@
  */
 package org.neo4j.cluster;
 
+import static org.neo4j.helpers.Uris.parameter;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.URI;
 
-import static org.neo4j.helpers.Uris.parameter;
-
+/**
+ * Represents the concept of the cluster wide unique id of an instance. The
+ * main requirement is total order over the instances of the class, currently
+ * implemented by an encapsulated integer.
+ * It is also expected to be serializable, as it's transmitted over the wire
+ * as part of messages between instances.
+ */
 public class InstanceId implements Externalizable, Comparable<InstanceId>
 {
+    public static final InstanceId NONE = new InstanceId( Integer.MIN_VALUE );
+
     private int serverId;
 
     public InstanceId()

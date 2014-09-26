@@ -32,13 +32,16 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
 
 /**
- * Context for cluster API state machine
+ * Represents the context necessary for cluster operations. Includes instance membership calls, election
+ * facilities and liveness detection. This is expected to be used from a variety of cluster components
+ * as part of their state.
  *
  * @see ClusterState
  */
 public interface ClusterContext
     extends LoggingContext, TimeoutsContext, ConfigurationContext
 {
+    public static final int NO_ELECTOR_VERSION = -1;
 
     // Cluster API
     void addClusterListener( ClusterListener listener );
