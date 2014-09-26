@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -60,6 +61,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     private final LogVersionRepository logVersionRepository;
     private PhysicalLogVersionedStoreChannel channel;
     private final LogVersionBridge readerLogVersionBridge;
+    private final ReentrantLock pruneLock;
 
     public PhysicalLogFile( FileSystemAbstraction fileSystem, PhysicalLogFiles logFiles, long rotateAtSize,
                             LogPruneStrategy pruneStrategy, TransactionIdStore transactionIdStore,
@@ -79,6 +81,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         this.recoveredDataVisitor = recoveredDataVisitor;
         this.logFiles = logFiles;
         this.readerLogVersionBridge = new ReaderLogVersionBridge( fileSystem, logFiles );
+        pruneLock = new ReentrantLock();
     }
 
     @Override
@@ -193,6 +196,18 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
             channel = rotate( channel );
             writer.setChannel( channel );
         }
+
+        if ( pruneLock.tryLock() )
+        {
+            try
+            {
+                pruneStrategy.prune();
+            }
+            finally
+            {
+                pruneLock.unlock();
+            }
+        }
     }
 
     private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog )
@@ -213,7 +228,6 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
          */
         PhysicalLogVersionedStoreChannel newLog = openLogChannelForVersion( newLogVersion );
         currentLog.close();
-        pruneStrategy.prune();
         return newLog;
     }
 
