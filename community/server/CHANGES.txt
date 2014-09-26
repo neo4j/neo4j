@@ -1,12 +1,11 @@
+2.1.5
+-----
+o Node REST representations now contain the labels of the node
+
 2.1.2
 -----
 o Ensures transactional endpoint responds with an https location
   for https calls
-=======
-2.0.4
------
-o Ensure transactional endpoint responds with an https location for https
-  calls.
 
 2.0.2
 -----
