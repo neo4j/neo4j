@@ -1,5 +1,24 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+1.9.9
+-----
+Kernel:
+o Fixes issue in ReferenceCache which could lead to excessive
+  memory usage
+o Fixes potential ommission of relationships of a node when
+  transactions that affect them are rolled back
+o Fixes potential lock leak issue with the Lock Manager
+  component
+o Store files now no longer expand beyond what's necessary
+  during shutdown and no longer contain spans of zeroe'd
+  records
+o Solves issue with excessive number of Remove commands in
+  the lucene logs, caused by having auto indexing enabled
+  and changing properties
+o Auto indexing no longer attempts to remove properties that
+  have been removed from the configuration as candidates for
+  autoindexing
+
 1.9.8
 -----
 Kernel:
