@@ -229,4 +229,5 @@ trait CardinalityTestHelper extends QueryGraphProducer {
   }
 
   val DEFAULT_PREDICATE_SELECTIVITY = GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY.factor
+  val DEFAULT_EQUALITY_SELECTIVITY = .1
 }

@@ -93,7 +93,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       LogicalPlanningEnvironment(this).withLogicalPlanningContext(f)
     }
 
-    protected def mapCardinality(pf:PartialFunction[LogicalPlan, Double]): PartialFunction[LogicalPlan, Cardinality] = pf.andThen(Cardinality.apply)
+    protected def mapCardinality(pf: PartialFunction[LogicalPlan, Double]): PartialFunction[LogicalPlan, Cardinality] = pf.andThen(Cardinality.apply)
   }
 
   case class RealLogicalPlanningConfiguration() extends LogicalPlanningConfiguration {
@@ -104,7 +104,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       })
     }
     def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost] = {
-      val model = new SimpleCostModel(cardinality)
+      val model = new CardinalityCostModel(cardinality)
       ({
         case (plan: LogicalPlan) => model(plan)
       })

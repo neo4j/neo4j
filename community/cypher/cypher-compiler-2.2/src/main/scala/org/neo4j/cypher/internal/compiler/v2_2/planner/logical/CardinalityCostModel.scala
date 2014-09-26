@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Collection
+import org.neo4j.cypher.internal.compiler.v2_2.commands.ManyQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
@@ -27,7 +29,35 @@ A very simplistic cost model. Each row returned by an operator costs 1. That's i
  */
 case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel {
 
-  val costPerRow = CostPerRow(1)
+  val CPU_BOUND_PLAN_COST_PER_ROW = CostPerRow(0.1)
+  val DB_ACCESS_BOUND_PLAN_COST_PER_ROW = CostPerRow(1.0)
+
+  def costPerRow(plan: LogicalPlan) = plan match {
+    case _: NodeHashJoin |
+      _: Aggregation |
+      _: Apply |
+      _: CartesianProduct |
+      _: AbstractLetSemiApply |
+      _: Limit |
+      _: Optional |
+      _: SingleRow |
+      _: OuterHashJoin |
+      _: AbstractSemiApply |
+      _: Skip |
+      _: Sort |
+      _: SortedLimit |
+      _: Union |
+      _: UnwindCollection
+    => CPU_BOUND_PLAN_COST_PER_ROW
+
+    case NodeIndexSeek(_, _, _, ManyQueryExpression(Collection(elements)), _) =>
+      DB_ACCESS_BOUND_PLAN_COST_PER_ROW * Multiplier(elements.size)
+
+    case NodeIndexSeek(_, _, _, ManyQueryExpression(Collection(elements)), _) =>
+      DB_ACCESS_BOUND_PLAN_COST_PER_ROW * Multiplier(10)
+
+    case _ => DB_ACCESS_BOUND_PLAN_COST_PER_ROW
+  }
 
   def apply(plan: LogicalPlan): Cost = {
     // input cardinality for leaf plans is computed as the number of rows produced,
@@ -35,7 +65,7 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
     val inputCardinality =
       plan.lhs.map(cardinality).getOrElse(cardinality(plan))
 
-    inputCardinality * costPerRow +
+    inputCardinality * costPerRow(plan) +
     plan.lhs.map(this).getOrElse(Cost(0)) +
     plan.rhs.map(this).getOrElse(Cost(0))
   }

@@ -81,32 +81,31 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("Should build plans containing expand for looping relationship patterns") {
-    planFor("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan should equal(
-      Projection(
-        Selection(
-          predicates = Seq(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
-          left = Selection(
-            Seq(Equals(Identifier("a") _, Identifier("a$$$") _) _),
-            Expand(
-              Expand(AllNodesScan("b", Set.empty)(PlannerQuery.empty), "b", Direction.INCOMING, Direction.OUTGOING, Seq.empty, "a", "r1", SimplePatternLength)(PlannerQuery.empty),
-              "b", Direction.INCOMING, Direction.INCOMING, Seq.empty, "a$$$", "r2", SimplePatternLength)(PlannerQuery.empty)
-          )(PlannerQuery.empty)
-        )(PlannerQuery.empty),
-        Map(
-          "r1" -> Identifier("r1") _,
-          "r2" -> Identifier("r2") _
-        )
-      )(PlannerQuery.empty)
+    planFor("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan.toString should equal(
+      """Projection[r1,r2](Map("r1" → r1, "r2" → r2))
+         |↳ Selection[b,r1,a,r2](ArrayBuffer(NotEquals(r1, r2)))
+         |↳ NodeHashJoin[b,r1,a,r2](Set(b, a))
+         |  ↳ left =
+         |    Expand[b,r1,a](b, INCOMING, OUTGOING, ⬨, a, r1, , ArrayBuffer())
+         |    ↳ AllNodesScan[b](b, Set())
+         |  ↳ right =
+         |    Expand[b,r2,a](b, INCOMING, INCOMING, ⬨, a, r2, , ArrayBuffer())
+         |    ↳ AllNodesScan[b](b, Set())""".stripMargin
     )
   }
 
   test("Should build plans expanding from the cheaper side for single relationship pattern") {
+
+    def myCardinality(plan: LogicalPlan): Cardinality = Cardinality(plan match {
+      case _: NodeIndexSeek                    => 10.0
+      case _: AllNodesScan                     => 100.04
+      case Expand(lhs, _, _, _, _, _, _, _, _) => (myCardinality(lhs) * Multiplier(10)).amount
+      case _: Selection                        => 100.04
+      case _                                   => Double.MaxValue
+    })
+
     (new given {
-      cardinality = mapCardinality {
-        case _: NodeIndexSeek => 10.0
-        case _: AllNodesScan  => 100.04
-        case _                => Double.MaxValue
-      }
+      cardinality = PartialFunction(myCardinality)
     } planFor "MATCH (start)-[rel:x]-(a) WHERE a.name = 'Andres' return a").plan should equal(
       Projection(
         Expand(

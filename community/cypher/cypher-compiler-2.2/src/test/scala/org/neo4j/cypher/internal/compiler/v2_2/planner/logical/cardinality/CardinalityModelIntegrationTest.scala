@@ -104,8 +104,8 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
     givenPattern("MATCH (a:A) WHERE a.prop = 42").
       withGraphNodes(40).
       withLabel('A -> 30).
-      withIndexSelectivity(('A, 'prop) -> .5).
-      shouldHaveCardinality(30 * .5)
+      withIndexSelectivity(('A, 'prop) -> .05).
+      shouldHaveCardinality(30 * .05)
   }
 
   test("cardinality for label and property equality when index is not present") {
@@ -113,7 +113,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withGraphNodes(40).
       withKnownProperty('prop).
       withLabel('A -> 10).
-      shouldHaveCardinality(40.0 * Math.min(10.0 / 40, DEFAULT_PREDICATE_SELECTIVITY))
+      shouldHaveCardinality(40.0 * Math.min(10.0 / 40, DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   test("cardinality for label and property equality when index is not present 2") {
@@ -121,7 +121,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withGraphNodes(40).
       withKnownProperty('prop).
       withLabel('A -> 40).
-      shouldHaveCardinality(40 * DEFAULT_PREDICATE_SELECTIVITY)
+      shouldHaveCardinality(40 * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("cardinality for label and property NOT-equality when index is present") {
@@ -136,8 +136,8 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
     givenPattern("MATCH (a:A) WHERE a.prop = 42 OR a.prop = 43").
       withGraphNodes(40).
       withLabel('A -> 30).
-      withIndexSelectivity(('A, 'prop) -> .3).
-      shouldHaveCardinality(30 * .3 * 2)
+      withIndexSelectivity(('A, 'prop) -> .01).
+      shouldHaveCardinality(30 * .01 * 2)
   }
 
   test("cardinality for multiple OR:ed equality predicates on two indexes") {
@@ -146,7 +146,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .3).
       withIndexSelectivity(('A, 'bar) -> .4).
-      shouldHaveCardinality(40.0 * Math.min(30.0 / 40, DEFAULT_PREDICATE_SELECTIVITY))
+      shouldHaveCardinality(40.0 * Math.min(30.0 / 40, DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   test("cardinality for multiple OR:ed equality predicates where one is backed by index and one is not") {
@@ -155,7 +155,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .3).
       withKnownProperty('bar).
-      shouldHaveCardinality(40.0 * Math.min(30.0 / 40 , DEFAULT_PREDICATE_SELECTIVITY))
+      shouldHaveCardinality(40.0 * Math.min(30.0 / 40 , DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   ignore("cardinality for property equality predicate when property name is unknown") { // We can get away with not doing this
@@ -174,18 +174,18 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
     givenPattern("MATCH (a:A) WHERE a.prop = 42 AND a.bar = 43").
       withGraphNodes(40).
       withLabel('A -> 30).
-      withIndexSelectivity(('A, 'prop) -> .3).
-      withIndexSelectivity(('A, 'bar) -> .4).
-      shouldHaveCardinality(30 * Math.min(.3, DEFAULT_PREDICATE_SELECTIVITY))
+      withIndexSelectivity(('A, 'prop) -> .03).
+      withIndexSelectivity(('A, 'bar) -> .04).
+      shouldHaveCardinality(30 * Math.min(.03, DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   test("cardinality for multiple AND:ed equality predicates where one is backed by index and one is not") {
     givenPattern("MATCH (a:A) WHERE a.prop = 42 AND a.bar = 43").
       withGraphNodes(40).
       withLabel('A -> 30).
-      withIndexSelectivity(('A, 'prop) -> .3).
+      withIndexSelectivity(('A, 'prop) -> .03).
       withKnownProperty('bar).
-      shouldHaveCardinality(30 * Math.min(.3, DEFAULT_PREDICATE_SELECTIVITY))
+      shouldHaveCardinality(30 * Math.min(.03, DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   test("cardinality for label and property equality when no index is present") {
@@ -193,7 +193,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withGraphNodes(40).
       withLabel('A -> 30).
       withKnownProperty('prop).
-      shouldHaveCardinality(40.0 * Math.min(30.0 / 40, DEFAULT_PREDICATE_SELECTIVITY))
+      shouldHaveCardinality(40.0 * Math.min(30.0 / 40, DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   test("relationship cardinality given labels on both sides") {
