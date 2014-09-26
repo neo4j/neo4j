@@ -44,6 +44,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
   val mockRel = newPatternRelationship("a", "b", "r")
   val tokenResolver = new SimpleTokenResolver()
+  val solved = PlannerQuery.empty
 
   def newPatternRelationship(start: IdName, end: IdName, rel: IdName, dir: Direction = Direction.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
     PatternRelationship(rel, (start, end), dir, types, length)

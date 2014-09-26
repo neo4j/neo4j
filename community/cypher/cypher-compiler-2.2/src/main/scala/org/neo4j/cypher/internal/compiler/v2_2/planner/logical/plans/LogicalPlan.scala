@@ -23,9 +23,11 @@ import java.lang.reflect.Method
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+import org.neo4j.cypher.internal.compiler.v2_2.Rewritable
 import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
 import org.neo4j.cypher.internal.compiler.v2_2.perty.PageDocFormatting
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+import Rewritable._
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
@@ -35,6 +37,7 @@ further up. Thus, the edges of a tree represent data flow from bottom to top, i.
 to data in the database, to the root, which is the final operator producing the query answer. */
 abstract class LogicalPlan
   extends Product
+  with Rewritable
   with PageDocFormatting
   with InternalDocHandler.ToString[LogicalPlan]
 {
@@ -57,6 +60,19 @@ abstract class LogicalPlan
 
   def updateSolved(f: PlannerQuery => PlannerQuery): LogicalPlan =
     updateSolved(f(solved))
+
+  def dup(children: Seq[AnyRef]): this.type =
+    if (children.iterator eqElements this.children)
+      this
+    else {
+      val constructor = this.copyConstructor
+      val params = constructor.getParameterTypes
+      val args = children.toVector
+      if ((params.length == args.length + 1) && params.last.isAssignableFrom(classOf[PlannerQuery]))
+        constructor.invoke(this, args :+ this.solved: _*).asInstanceOf[this.type]
+      else
+        constructor.invoke(this, args: _*).asInstanceOf[this.type]
+    }
 }
 
 abstract class LogicalLeafPlan extends LogicalPlan {

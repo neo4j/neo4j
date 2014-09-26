@@ -17,12 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 
-sealed trait NameId {
-  def id: Int
+import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Apply, SingleRow}
+
+case object unnestEmptyApply extends Rewriter {
+
+  private val instance: Rewriter = Rewriter.lift {
+    case Apply(sr: SingleRow, rhs) if sr.coveredIds.isEmpty => rhs
+    case Apply(lhs, _: SingleRow)                           => lhs
+  }
+
+  override def apply(input: AnyRef) = bottomUp(instance).apply(input)
 }
-
-final case class LabelId(id: Int) extends NameId
-final case class RelTypeId(id: Int) extends NameId
-final case class PropertyKeyId(id: Int) extends NameId
