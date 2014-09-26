@@ -19,6 +19,13 @@
  */
 package org.neo4j.cluster.protocol.election;
 
+import static junit.framework.Assert.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,10 +51,6 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
-
-import static junit.framework.Assert.assertNull;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 public class ElectionContextTest
 {
@@ -94,9 +97,9 @@ public class ElectionContextTest
         ClusterContext clusterContext = mock( ClusterContext.class );
         when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
 
-        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
-                new ElectionRole( "coordinator" ) ), clusterConfiguration,
-                Mockito.mock(Executor.class), Mockito.mock(Logging.class),
+        MultiPaxosContext context = new MultiPaxosContext( new InstanceId( 1 ),
+                Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
+                clusterConfiguration, Mockito.mock(Executor.class), Mockito.mock(Logging.class),
                 Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
                 Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class) );
 
@@ -205,9 +208,9 @@ public class ElectionContextTest
 
         // When
         toTest.startElectionProcess( coordinatorRole );
-        toTest.voted( coordinatorRole, new InstanceId( 1 ), new IntegerElectionCredentials( 100 ), -1 );
-        toTest.voted( coordinatorRole, new InstanceId( 2 ), new IntegerElectionCredentials( 100 ), -1 );
-        toTest.voted( coordinatorRole, new InstanceId( 2 ), new IntegerElectionCredentials( 101 ), -1 );
+        toTest.voted( coordinatorRole, new InstanceId( 1 ), new IntegerElectionCredentials( 100 ), ClusterContext.NO_ELECTOR_VERSION );
+        toTest.voted( coordinatorRole, new InstanceId( 2 ), new IntegerElectionCredentials( 100 ), ClusterContext.NO_ELECTOR_VERSION );
+        toTest.voted( coordinatorRole, new InstanceId( 2 ), new IntegerElectionCredentials( 101 ), ClusterContext.NO_ELECTOR_VERSION );
 
         // Then
         assertNull( toTest.getElectionWinner( coordinatorRole ) );
@@ -311,6 +314,117 @@ public class ElectionContextTest
 
         assertEquals( 1, electionContext.getVoteCount( role1 ) );
         assertEquals( 1, electionContext.getVoteCount( role2 ) );
+    }
+
+
+    @Test
+    public void failedElectorRejoiningMustHaveItsVersionFromVoteRequestsSetTheElectorVersion() throws Throwable
+    {
+        // Given
+        final String role1 = "coordinator1";
+        InstanceId me = new InstanceId( 1 );
+        InstanceId failingInstance = new InstanceId( 2 );
+        InstanceId forQuorum = new InstanceId( 3 );
+
+        Logging logging = Mockito.mock( Logging.class, RETURNS_MOCKS );
+
+        ClusterConfiguration clusterConfiguration = mock( ClusterConfiguration.class );
+        List<InstanceId> clusterMemberIds = new LinkedList<InstanceId>();
+        clusterMemberIds.add( failingInstance );
+        clusterMemberIds.add( me );
+        clusterMemberIds.add( forQuorum );
+        when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
+
+        MultiPaxosContext context = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole>iterable(
+                new ElectionRole( role1 ) ), clusterConfiguration,
+                new Executor()
+                {
+                    @Override
+                    public void execute( Runnable command )
+                    {
+                        command.run();
+                    }
+                }, logging,
+                Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
+                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class) );
+
+        HeartbeatContext heartbeatContext = context.getHeartbeatContext();
+        ClusterContext clusterContext = context.getClusterContext();
+
+        clusterContext.setLastElector( failingInstance );
+        clusterContext.setLastElectorVersion( 8 );
+
+        // When the elector fails
+        heartbeatContext.suspicions( forQuorum, Collections.singleton( failingInstance ) );
+        heartbeatContext.suspect( failingInstance );
+
+        // Then the elector is reset to defaults
+        assertEquals( clusterContext.getLastElector(), InstanceId.NONE );
+        assertEquals( clusterContext.getLastElectorVersion(), ClusterContext.NO_ELECTOR_VERSION );
+
+        // When the elector comes back with an election result
+        clusterContext.elected( role1, forQuorum, failingInstance, 9 );
+
+        // Then the result is actually respected
+        assertEquals( clusterContext.getLastElector(), failingInstance );
+        assertEquals( clusterContext.getLastElectorVersion(), 9 );
+  }
+
+    /*
+     * This assumes an instance leaves the cluster normally and then rejoins, without any elections in between. The
+     * expected result is that it will succeed in sending election results.
+     */
+    @Test
+    public void electorLeavingAndRejoiningWithNoElectionsInBetweenMustStillHaveElectionsGoThrough() throws Exception
+    {
+        // Given
+        final String role1 = "coordinator1";
+        InstanceId me = new InstanceId( 1 );
+        InstanceId leavingInstance = new InstanceId( 2 );
+        InstanceId forQuorum = new InstanceId( 3 );
+
+        Logging logging = Mockito.mock( Logging.class, RETURNS_MOCKS );
+
+        ClusterConfiguration clusterConfiguration = mock( ClusterConfiguration.class );
+        List<InstanceId> clusterMemberIds = new LinkedList<InstanceId>();
+        clusterMemberIds.add( leavingInstance );
+        clusterMemberIds.add( me );
+        clusterMemberIds.add( forQuorum );
+        when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
+
+        MultiPaxosContext context = new MultiPaxosContext( me,
+                Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( role1 ) ), clusterConfiguration,
+                new Executor()
+                {
+                    @Override
+                    public void execute( Runnable command )
+                    {
+                        command.run();
+                    }
+                },
+                logging, Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
+                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class) );
+
+        HeartbeatContext heartbeatContext = context.getHeartbeatContext();
+        ClusterContext clusterContext = context.getClusterContext();
+
+        clusterContext.setLastElector( leavingInstance );
+        clusterContext.setLastElectorVersion( 8 );
+
+        // When the elector leaves the cluster
+        clusterContext.left( leavingInstance );
+
+        // Then the elector is reset to defaults
+        assertEquals( clusterContext.getLastElector(), InstanceId.NONE );
+        assertEquals( clusterContext.getLastElectorVersion(), ClusterContext.NO_ELECTOR_VERSION );
+
+        // When the elector comes back with an election result
+          // We don't need to join, election results do not check for elector membership
+        clusterContext.elected( role1, forQuorum, leavingInstance, 9 );
+
+        // Then the result is actually respected
+        assertEquals( clusterContext.getLastElector(), leavingInstance );
+        assertEquals( clusterContext.getLastElectorVersion(), 9 );
     }
 
     private void baseTestForElectionOk( Set<InstanceId> failed, boolean moreThanQuorum )
