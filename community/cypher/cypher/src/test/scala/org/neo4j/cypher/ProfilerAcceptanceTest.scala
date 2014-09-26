@@ -231,8 +231,14 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("reports RULE compiler when showing plan description") {
     val executionPlanDescription = eengine.execute("cypher 2.2-cost create ()").executionPlanDescription()
 
-    executionPlanDescription.toString should not include("2.2-cost")
+    executionPlanDescription.toString should not include "2.2-cost"
     executionPlanDescription.toString should include("2.2-rule")
+  }
+
+  test("does not use Apply for aggregation and order by") {
+    val a = profile("match n return n, count(*) as c order by c")
+
+    a.executionPlanDescription().toString should not include "Apply"
   }
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
