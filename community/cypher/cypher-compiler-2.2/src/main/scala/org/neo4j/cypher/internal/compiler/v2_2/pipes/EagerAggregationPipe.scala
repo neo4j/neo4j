@@ -104,5 +104,5 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
 
   override def localEffects = keyExpressions.effects
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

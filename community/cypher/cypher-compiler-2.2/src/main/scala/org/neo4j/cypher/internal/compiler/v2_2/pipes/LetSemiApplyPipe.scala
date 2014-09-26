@@ -52,5 +52,5 @@ case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negat
 
   override def localEffects = Effects.NONE
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

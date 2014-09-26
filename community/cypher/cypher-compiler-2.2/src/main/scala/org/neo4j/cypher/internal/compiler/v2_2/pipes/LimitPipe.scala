@@ -53,5 +53,5 @@ case class LimitPipe(source: Pipe, exp: Expression)
 
   override def localEffects = exp.effects
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

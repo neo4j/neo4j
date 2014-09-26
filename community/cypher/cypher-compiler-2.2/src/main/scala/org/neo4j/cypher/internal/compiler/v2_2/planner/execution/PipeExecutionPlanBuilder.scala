@@ -219,7 +219,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           throw new CantHandleQueryException(x.toString)
       }
 
-      result.setEstimatedCardinality(context.cardinality(plan).amount.toLong)
+      result.withEstimatedCardinality(context.cardinality(plan).amount.toLong)
     }
 
     val topLevelPipe = buildPipe(plan)

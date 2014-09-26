@@ -122,5 +122,5 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
     copy(source = head)(estimatedCardinality)
   }
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

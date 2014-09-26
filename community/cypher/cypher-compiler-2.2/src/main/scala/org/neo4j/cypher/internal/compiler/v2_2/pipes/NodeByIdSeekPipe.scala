@@ -72,5 +72,5 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)
 
   override def localEffects = Effects.READS_NODES
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

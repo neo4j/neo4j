@@ -58,5 +58,5 @@ case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
 
   override def localEffects = expressions.effects
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

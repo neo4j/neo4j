@@ -71,5 +71,5 @@ case class ShortestPathPipe(source: Pipe, ast: ShortestPath)
 
   override def localEffects = Effects.READS_ENTITIES
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

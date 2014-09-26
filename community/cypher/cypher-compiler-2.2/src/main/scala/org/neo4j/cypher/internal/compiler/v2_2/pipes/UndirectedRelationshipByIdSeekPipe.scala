@@ -62,5 +62,5 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityBy
 
   def sources: Seq[Pipe] = Seq.empty
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

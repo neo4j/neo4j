@@ -24,5 +24,5 @@ trait RonjaPipe {
   self: Pipe =>
 
   def estimatedCardinality: Option[Long]
-  def setEstimatedCardinality(estimated: Long): Pipe with RonjaPipe
+  def withEstimatedCardinality(estimated: Long): Pipe with RonjaPipe
 }

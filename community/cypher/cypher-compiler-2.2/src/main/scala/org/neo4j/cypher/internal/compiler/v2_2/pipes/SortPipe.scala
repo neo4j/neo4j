@@ -61,5 +61,5 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
     copy(source = head)(estimatedCardinality)
   }
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

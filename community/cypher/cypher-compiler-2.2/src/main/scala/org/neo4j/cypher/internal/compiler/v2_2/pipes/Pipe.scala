@@ -109,7 +109,7 @@ case class NullPipe(symbols: SymbolTable = SymbolTable())
 
   def estimatedCardinality: Option[Long] = Some(1)
 
-  def setEstimatedCardinality(estimated: Long): Pipe with RonjaPipe = {
+  def withEstimatedCardinality(estimated: Long): Pipe with RonjaPipe = {
     assert(estimated == 1)
     this
   }
