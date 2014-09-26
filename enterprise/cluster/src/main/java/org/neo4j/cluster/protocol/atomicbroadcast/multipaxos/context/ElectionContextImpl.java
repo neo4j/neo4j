@@ -19,6 +19,11 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
+import static org.neo4j.cluster.util.Quorums.isQuorum;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.toList;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,11 +48,6 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.cluster.util.Quorums.isQuorum;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toList;
 
 public class ElectionContextImpl
         extends AbstractContextImpl

@@ -19,6 +19,11 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.helpers.collection.Iterables.toList;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,15 +41,11 @@ import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.Predicates.in;
-import static org.neo4j.helpers.Predicates.not;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.helpers.collection.Iterables.toList;
 
 class ClusterContextImpl
         extends AbstractContextImpl
@@ -58,7 +59,6 @@ class ClusterContextImpl
     private ClusterMessage.ConfigurationResponseState joinDeniedConfigurationResponseState;
     private final Map<InstanceId, URI> currentlyJoiningInstances =
             new HashMap<InstanceId, URI>();
-
 
     private final Executor executor;
     private final ObjectOutputStreamFactory objectOutputStreamFactory;
@@ -82,6 +82,30 @@ class ClusterContextImpl
         this.objectInputStreamFactory = objectInputStreamFactory;
         this.learnerContext = learnerContext;
         this.heartbeatContext = heartbeatContext;
+        heartbeatContext.addHeartbeatListener(
+
+                /*
+                 * Here for invalidating the elector if it fails, so when it comes back, if no elections
+                 * happened in the meantime it can resume sending election results
+                 */
+                new HeartbeatListener.Adapter()
+                {
+                    @Override
+                    public void failed( InstanceId server )
+                    {
+                        invalidateElectorIfNecessary( server );
+                    }
+                }
+        );
+    }
+
+    private void invalidateElectorIfNecessary( InstanceId server )
+    {
+        if ( server.equals( lastElector ) )
+        {
+            lastElector = InstanceId.NONE;
+            electorVersion = NO_ELECTOR_VERSION;
+        }
     }
 
     private ClusterContextImpl( InstanceId me, CommonContextState commonState, Logging logging, Timeouts timeouts,
@@ -212,6 +236,7 @@ class ClusterContextImpl
         //   of join messages is a little out of whack.
 
         currentlyJoiningInstances.remove( instanceId );
+        invalidateElectorIfNecessary( instanceId );
     }
 
     @Override
@@ -219,6 +244,7 @@ class ClusterContextImpl
     {
         final URI member = commonState.configuration().getUriForId( node );
         commonState.configuration().left( node );
+        invalidateElectorIfNecessary( node );
         Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
         {
             @Override
@@ -232,7 +258,7 @@ class ClusterContextImpl
     @Override
     public void elected( final String roleName, final InstanceId instanceId )
     {
-        elected( roleName, instanceId, null, -1 );
+        elected( roleName, instanceId, InstanceId.NONE, NO_ELECTOR_VERSION );
     }
 
     @Override
@@ -278,7 +304,7 @@ class ClusterContextImpl
     @Override
     public void unelected( final String roleName, final org.neo4j.cluster.InstanceId instanceId )
     {
-        unelected( roleName, instanceId, null, -1 );
+        unelected( roleName, instanceId, InstanceId.NONE, NO_ELECTOR_VERSION );
     }
 
     @Override
