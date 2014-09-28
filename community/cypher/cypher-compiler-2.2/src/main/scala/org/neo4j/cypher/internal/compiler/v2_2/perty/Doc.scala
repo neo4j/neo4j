@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.print.Pretty
  * (cf. http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.34.2200&rep=rep1&type=pdf)
  *
  */
-sealed abstract class Doc extends docStructureDocGen.ToString[Doc] with LineDocFormatting {
+sealed abstract class Doc extends LineDocFormatting {
 
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 

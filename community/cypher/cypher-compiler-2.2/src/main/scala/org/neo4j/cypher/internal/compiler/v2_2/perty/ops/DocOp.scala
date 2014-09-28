@@ -17,17 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty
+package org.neo4j.cypher.internal.compiler.v2_2.perty.ops
+
+import scala.reflect.runtime.universe.TypeTag
 
 sealed trait DocOp[-T]
-case class AddContent[T](value: T) extends DocOp[T]
-case class AddBreak[T](breakWith: Option[T] = None) extends DocOp[T]
+final case class AddContent[T](value: T)(implicit val tag: TypeTag[T]) extends DocOp[T]
+sealed case class AddBreak[T](breakWith: Option[T] = None)(implicit val tag: TypeTag[T]) extends DocOp[T]
+object AddBreak extends AddBreak[Any](None)
 case object AddNoBreak extends DocOp[Any]
 
 sealed trait PushFrame extends DocOp[Any]
-case object PushFrameGroup extends PushFrame
-case object PushFramePage extends PushFrame
-case class PushFrameNest(indent: Option[Int] = None) extends PushFrame
+case object PushGroupFrame extends PushFrame
+case object PushPageFrame extends PushFrame
+sealed case class PushNestFrame(indent: Option[Int] = None) extends PushFrame
+object PushNestFrame extends PushNestFrame(None)
 
 case object PopFrame extends DocOp[Any]
 

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.bling._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.DocOp
 import org.neo4j.cypher.internal.compiler.v2_2.perty.print.PrintCommand
 
 import scala.collection.mutable
