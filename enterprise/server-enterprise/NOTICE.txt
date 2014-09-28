@@ -57,6 +57,7 @@ BSD - Scala License
 BSD License
   Commons Compiler
   Janino
+  Scala Compiler
 
 Bouncy Castle License
   Legion of the Bouncy Castle Java Cryptography APIs
