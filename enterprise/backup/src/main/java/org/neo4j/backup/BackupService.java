@@ -81,7 +81,7 @@ class BackupService
         {
             return Collections.unmodifiableMap( lastCommittedTxs );
         }
-        
+
         public boolean isConsistent()
         {
             return consistent;
@@ -115,7 +115,7 @@ class BackupService
         }
 
         Map<String, String> params = tuningConfiguration.getParams();
-        params.put( GraphDatabaseSettings.store_dir.name(), targetDirectory);
+        params.put( GraphDatabaseSettings.store_dir.name(), targetDirectory );
         tuningConfiguration.applyChanges( params );
 
         long timestamp = System.currentTimeMillis();
@@ -155,7 +155,7 @@ class BackupService
         }
         finally
         {
-            if(targetDb != null)
+            if ( targetDb != null )
             {
                 targetDb.shutdown();
             }
@@ -242,7 +242,7 @@ class BackupService
                 FileUtils.deleteRecursively( targetDirFile );
 
                 return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(),
-                                                      verification, config );
+                        verification, config );
             }
             catch ( Exception fullBackupFailure )
             {
