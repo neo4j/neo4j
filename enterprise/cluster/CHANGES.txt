@@ -1,4 +1,13 @@
-2.0.4
+1.9.9
+-----
+o Fixes issue where responses to learn requests from cluster
+  members could lead to NullPointerExceptions after topology
+  changes
+o Fixes issue where the lowest numbered instance would fail
+  to leave and rejoin the cluster, if it was not master
+  before leaving
+
+1.9.8
 -----
 o Adds version marking in election results, solving problems with
   incorrect election outcomes and instances failing to join the cluster

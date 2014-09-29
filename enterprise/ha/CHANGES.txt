@@ -1,4 +1,14 @@
-2.0.4
+1.9.9
+-----
+o Adds the ability for an instance state change to SLAVE can
+  be cancelled by appropriate events. This solves problems
+  with occasional high state switch times and potentially
+  instances failing to join
+o Fixes consistency issues with the state reported by
+  the HA bean. Now there will be no incompatible roles
+  reported in the JMX console for a particular instance
+
+1.9.8
 -----
 o Slave only instances no longer attempt to become coordinators, even if
   they instantiate the cluster.

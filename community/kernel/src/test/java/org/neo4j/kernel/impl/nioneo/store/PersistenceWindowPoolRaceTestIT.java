@@ -63,7 +63,7 @@ public class PersistenceWindowPoolRaceTestIT
         boolean readOnly = false;
         ConcurrentMap<Long, PersistenceRow> activeRowWindows = new ConcurrentHashMap<Long, PersistenceRow>();
         BrickElementFactory brickFactory = BrickElementFactory.DEFAULT;
-        StringLogger log = StringLogger.SYSTEM;
+        StringLogger log = StringLogger.DEV_NULL;
 
         PersistenceWindowPool pwp = new PersistenceWindowPool(
                 file,

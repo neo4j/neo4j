@@ -61,12 +61,12 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
     public void propertyChanged( T primitive, String propertyName,
             Object oldValue, Object newValue )
     {
-        if ( oldValue != null )
-        {
-            getIndexInternal().remove( primitive, propertyName, oldValue );
-        }
         if ( propertyKeysToInclude.contains( propertyName ) )
         {
+            if ( oldValue != null )
+            {
+                getIndexInternal().remove( primitive, propertyName, oldValue );
+            }
             getIndexInternal().add( primitive, propertyName, newValue );
         }
     }
@@ -74,7 +74,10 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
     public void propertyRemoved( T primitive, String propertyName,
             Object propertyValue )
     {
-        getIndexInternal().remove( primitive, propertyName );
+        if ( propertyKeysToInclude.contains( propertyName ) )
+        {
+            getIndexInternal().remove( primitive, propertyName );
+        }
     }
 
     @Override
