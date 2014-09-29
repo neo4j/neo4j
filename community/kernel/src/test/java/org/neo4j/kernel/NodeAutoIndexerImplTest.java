@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel;
 
+import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
 import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
-import org.junit.Test;
 
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;

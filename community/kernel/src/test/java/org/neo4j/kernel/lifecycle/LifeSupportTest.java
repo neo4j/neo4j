@@ -21,9 +21,11 @@ package org.neo4j.kernel.lifecycle;
 
 import java.util.LinkedList;
 import java.util.List;
-import org.neo4j.kernel.impl.util.StringLogger;
+
 import org.junit.Assert;
 import org.junit.Test;
+
+import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.junit.Assert.assertEquals;
 
@@ -271,7 +273,7 @@ public class LifeSupportTest
 
     @Test
     public void testAddInstanceWhenInitInitsInstance()
-            throws LifecycleException
+        throws LifecycleException
     {
         LifeSupport support = newLifeSupport();
 
@@ -310,7 +312,7 @@ public class LifeSupportTest
 
     @Test
     public void testAddInstanceWhenStoppedInitsInstance()
-            throws LifecycleException
+        throws LifecycleException
     {
         LifeSupport support = newLifeSupport();
 
@@ -332,7 +334,7 @@ public class LifeSupportTest
 
     @Test
     public void testAddInstanceWhenShutdownDoesNotAffectInstance()
-            throws LifecycleException
+        throws LifecycleException
     {
         LifeSupport support = newLifeSupport();
 
