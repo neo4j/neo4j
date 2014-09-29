@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
@@ -84,19 +85,28 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
  */
 public class MuninnPageCache implements RunnablePageCache
 {
+    // The number of times we will spin, during page faulting, on checking the
+    // freelist and LockSupport.unpark'ing the eviction thread, before blocking
+    // and waiting for the eviction thread to do something.
+    private static final int pageFaultSpinCount = Integer.getInteger(
+            "org.neo4j.io.pagecache.impl.muninn.pageFaultSpinCount",
+            FileUtils.OS_IS_WINDOWS? 10 : 1000 );
+
     // Keep this many pages free and ready for use in faulting.
     // This will be truncated to be no more than half of the number of pages
     // in the cache.
     private static final int pagesToKeepFree = Integer.getInteger(
             "org.neo4j.io.pagecache.impl.muninn.pagesToKeepFree", 30 );
 
-    // Set this to true, to disable the Java version check in verifyHacks:
-    private static final boolean allowAllJavaVersions = Boolean.getBoolean(
-            "org.neo4j.io.pagecache.impl.muninn.allowAllJavaVersions" );
-
     // This is a pre-allocated constant, so we can throw it without allocating any objects:
     private static final IOException oomException = new IOException(
             "OutOfMemoryError encountered in the page cache background eviction thread" );
+
+    // This is used as a poison-pill signal in the freePageWaiters list, to
+    // inform any page faulting thread that it is now no longer possible to
+    // queue up and wait for more pages to be evicted, because the page cache
+    // has been shut down.
+    private static final FreePageWaiter shutdownSignal = new FreePageWaiter();
 
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
@@ -106,6 +116,9 @@ public class MuninnPageCache implements RunnablePageCache
 
     // Linked list of free pages
     private final AtomicReference<MuninnPage> freelist;
+
+    // Linked list of threads waiting for free pages
+    private final AtomicReference<FreePageWaiter> freePageWaiters;
 
     // Linked list of mappings - guarded by synchronized(this)
     private volatile FileMapping mappedFiles;
@@ -152,6 +165,7 @@ public class MuninnPageCache implements RunnablePageCache
             pageList = page;
         }
         freelist = new AtomicReference<>( pageList );
+        freePageWaiters = new AtomicReference<>();
     }
 
     static void verifyHacks()
@@ -330,7 +344,7 @@ public class MuninnPageCache implements RunnablePageCache
         IOException exception = evictorException;
         if ( exception != null )
         {
-            throw new IOException( "The page eviction thread is dead.", exception );
+            throw new IOException( "Exception in the page eviction thread", exception );
         }
     }
 
@@ -346,14 +360,35 @@ public class MuninnPageCache implements RunnablePageCache
         return pages.length;
     }
 
-    void unparkEvictor() throws IOException
+    MuninnPage unparkEvictor( int iterationCount ) throws IOException
     {
         assertHealthy();
         Thread thread = evictorThread;
         if ( thread != null )
         {
-            LockSupport.unpark( thread );
+            if ( iterationCount > pageFaultSpinCount )
+            {
+                FreePageWaiter waiter = new FreePageWaiter();
+                FreePageWaiter listHead;
+                do
+                {
+                    listHead = freePageWaiters.get();
+                    if ( listHead == shutdownSignal )
+                    {
+                        throw new IllegalStateException( "The PageCache has been shut down" );
+                    }
+                    waiter.next = listHead;
+                }
+                while ( !freePageWaiters.compareAndSet( listHead, waiter ) );
+                LockSupport.unpark( thread );
+                return waiter.park( this );
+            }
+            else
+            {
+                LockSupport.unpark( thread );
+            }
         }
+        return null;
     }
 
     /**
@@ -381,6 +416,17 @@ public class MuninnPageCache implements RunnablePageCache
             int pageCountToEvict = parkUntilEvictionRequired( keepFree );
             clockArm = evictPages( pageCountToEvict, clockArm );
         }
+
+        // The last thing we do, is unparking any thread that might be waiting
+        // for free pages in a page fault.
+        // This can happen because files can be unmapped while their cursors
+        // are in use.
+        FreePageWaiter waiters = freePageWaiters.getAndSet( shutdownSignal );
+        while ( waiters != null )
+        {
+            waiters.unparkInterrupt();
+            waiters = waiters.next;
+        }
     }
 
     private int parkUntilEvictionRequired( int keepFree )
@@ -403,14 +449,18 @@ public class MuninnPageCache implements RunnablePageCache
                 availablePages++;
                 page = page.nextFree;
             }
-        } while ( availablePages == keepFree );
+        } while ( availablePages == keepFree && freePageWaiters.get() == null );
+
         return keepFree - availablePages;
     }
 
     int evictPages( int pageCountToEvict, int clockArm )
     {
+        FreePageWaiter waiters = freePageWaiters.getAndSet( null );
+        waiters = reverse( waiters );
+
         Thread currentThread = Thread.currentThread();
-        while ( pageCountToEvict > 0 && !currentThread.isInterrupted() ) {
+        while ( (pageCountToEvict > 0 || waiters != null) && !currentThread.isInterrupted() ) {
             if ( clockArm == pages.length )
             {
                 clockArm = 0;
@@ -472,20 +522,56 @@ public class MuninnPageCache implements RunnablePageCache
                         swapper.evicted( filePageId );
                         monitor.evicted( filePageId, swapper );
 
-                        MuninnPage next;
-                        do
+                        if ( waiters != null )
                         {
-                            next = freelist.get();
-                            page.nextFree = next;
+                            waiters.unpark( page );
+                            waiters = waiters.next;
                         }
-                        while ( !freelist.compareAndSet( next, page ) );
+                        else
+                        {
+                            MuninnPage next;
+                            do
+                            {
+                                next = freelist.get();
+                                page.nextFree = next;
+                            }
+                            while ( !freelist.compareAndSet( next, page ) );
+                        }
                     }
                 }
             }
 
             clockArm++;
         }
+
+        // If we still have waiters left, then it means our eviction loop was
+        // interrupted and that we are about to shut down.
+        // We first have to unblock our waiters and let them know what's going
+        // on, though.
+        // New waiters can queue up while we are doing this, however, so we
+        // must also take care of those waiters as the last thing we do before
+        // the eviction thread finally terminates. And we must prevent new
+        // waiters from queueing up.
+        while ( waiters != null )
+        {
+            waiters.unparkInterrupt();
+            waiters = waiters.next;
+        }
+
         return clockArm;
+    }
+
+    private FreePageWaiter reverse( FreePageWaiter waiters )
+    {
+        FreePageWaiter result = null;
+        while ( waiters != null )
+        {
+            FreePageWaiter tail = waiters.next;
+            waiters.next = result;
+            result = waiters;
+            waiters = tail;
+        }
+        return result;
     }
 
     @Override
