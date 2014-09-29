@@ -4,31 +4,30 @@ Match
 
 == Introduction ==
 
-+MATCH+ is the primary way of getting data from the database into the current set of bindings.
+The +MATCH+ clause allows you to specify the patterns Cypher will search for in the database, and
+it is the primary way of getting data into the current set of bindings.
+It is worth reading up more on the specification of the patterns themselves in <<introduction-pattern>>.
 
-The +MATCH+ clause allows you to specify the patterns Cypher will search for in the database.
-
-Nodes and relationships that are already known at this stage are called _bound pattern elements_.
-Cypher will now try to find the unknown parts of the pattern.
-
-If +MATCH+ is the first clause in your query, nothing is bound at this stage.
-Cypher needs starting points to do it's pattern matching.
-
-If no bound nodes exist, Cypher can scan all nodes in the database, all nodes with a certain label, or it can use indexes to quickly find the relevant starting points.
-For more information on indexes, see <<query-schema-index>>.
-If you want to use index hints to force Cypher to use a specific index, read more in <<query-using>>.
-
-+WHERE+ defines the +MATCH+ patterns in more detail.
+It is often coupled to a +WHERE+ clause which adds restrictions, or predicates, to the +MATCH+ patterns, making them more specific.
 The predicates are part of the pattern description, not a filter applied after the matching is done.
 This means that +WHERE+ should always be put together with the +MATCH+ clause it belongs to.
 
-After finding starting points -- either by using scans, indexes or already bound points -- the execution engine will use pattern matching to find matching subgraphs.
-As Cypher is declarative, it can change the order of these operations.
-Predicates in +WHERE+ clauses can be evaluated before pattern matching, during pattern matching, or after finding matches.
++MATCH+ can occur at the beginning of the query or later, possibly after a +WITH+.
+If it is the first, nothing will have been bound yet,
+and Cypher will design a search to find the results matching the clause and any associated predicates specified in any +WHERE+ clause.
+This could involve a scan of the database, a search for nodes of a certain label,
+or a search of an index to find starting points for the pattern matching.
+Nodes and relationships found by this search are available as _bound pattern elements_, and can be used for pattern matching of sub-graphs,
+as well as used in any further +MATCH+ clauses, where Cypher will use the known elements, and from there find further unknown elements.
 
+Cypher is declarative, and so usually the query itself does not specify the algorithm to use to perform the search.
+Cypher will automatically work out the best approach to finding start nodes and matching patterns.
+Predicates in +WHERE+ clauses can be evaluated before pattern matching, during pattern matching, or after finding matches.
+However, there are cases where you can influence the decisions taken by the query compiler.
+Read more about indexes in <<query-schema-index>>, and more about the specifying index hints to force Cypher to use a specific index in <<query-using>>.
 
 [TIP]
-To understand the patterns used in the +MATCH+ clause, read <<introduction-pattern>>.
+To understand more about the patterns used in the +MATCH+ clause, read <<introduction-pattern>>.
 
 The following graph is used for the examples below:
 

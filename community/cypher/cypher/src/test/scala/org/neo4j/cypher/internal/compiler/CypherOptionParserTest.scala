@@ -33,6 +33,7 @@ class CypherOptionParserTest extends CypherFunSuite {
     parse("CYPHER 1.9 MATCH") should equal(CypherQueryWithOptions("MATCH", Seq(VersionOption("1.9"))))
     parse("CYPHER 2.0 THAT") should equal(CypherQueryWithOptions("THAT", Seq(VersionOption("2.0"))))
     parse("CYPHER 2.1 YO") should equal(CypherQueryWithOptions("YO", Seq(VersionOption("2.1"))))
+    parse("CYPHER 2.2 HO") should equal(CypherQueryWithOptions("HO", Seq(VersionOption("2.2"))))
   }
 
   test("should parse profile") {

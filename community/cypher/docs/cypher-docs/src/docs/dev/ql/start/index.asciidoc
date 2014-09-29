@@ -5,17 +5,11 @@ Start
 [IMPORTANT]
 The +START+ clause should only be used when accessing legacy indexes (see <<indexing>>).
 In all other cases, use +MATCH+ instead (see <<query-match>>).
- 
-Every query describes a pattern, and in that pattern one can have multiple starting points.
-A starting point is a relationship or a node where a pattern is anchored.
-You can only introduce starting points by legacy index lookups.
-Note that trying to use a legacy index that doesn't exist will generate an error.
 
-[NOTE]
-The +START+ clause is only really needed when using legacy indexes.
-If you do not specify explicit starting points, Cypher will infer starting points from your query.
-This is done based on node labels and predicates contained in the query.
-See <<cypher-schema>> for more information.
+In Cypher, every query describes a pattern, and in that pattern one can have multiple starting points.
+A starting point is a relationship or a node where a pattern is anchored.
+Using +START+ you can only introduce starting points by legacy index lookups.
+Note that trying to use a legacy index that doesn't exist will generate an error.
 
 This is the graph the examples are using:
 

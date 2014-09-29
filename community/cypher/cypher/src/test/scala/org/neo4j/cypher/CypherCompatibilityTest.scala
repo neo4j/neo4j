@@ -103,6 +103,13 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
+  test("should not allow START n=node() to be used with newer compilers") {
+    runWithConfig() {
+      engine =>
+        intercept[SyntaxException](engine.execute("CYPHER 2.2 START n=node(0) RETURN n"))
+    }
+  }
+
   private def assertProfiled(engine: ExecutionEngine, q: String) {
     val result = engine.execute(q)
     val ignored = result.toList
