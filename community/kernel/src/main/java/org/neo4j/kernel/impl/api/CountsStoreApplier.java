@@ -39,7 +39,7 @@ import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
-public class CountStoreApplier extends NeoCommandHandler.Adapter
+public class CountsStoreApplier extends NeoCommandHandler.Adapter
 {
     private final CountsAcceptor countsStore;
     private final NodeStore nodeStore;
@@ -48,7 +48,7 @@ public class CountStoreApplier extends NeoCommandHandler.Adapter
     private final Map<Integer/*labelId*/, IntCounter> labelDelta = new HashMap<>();
     private final Map<Integer/*typeId*/, IntCounter> relationshipTypeDelta = new HashMap<>();
 
-    public CountStoreApplier( CountsAcceptor countsStore, NodeStore nodeStore )
+    public CountsStoreApplier( CountsAcceptor countsStore, NodeStore nodeStore )
     {
         this.countsStore = countsStore;
         this.nodeStore = nodeStore;

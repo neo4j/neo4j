@@ -88,7 +88,7 @@ public class TransactionRepresentationStoreApplier
         }
 
         // Counts store application
-        NeoCommandHandler countStoreApplier = new CountStoreApplier( neoStore.getCounts(), neoStore.getNodeStore() );
+        NeoCommandHandler countStoreApplier = new CountsStoreApplier( neoStore.getCounts(), neoStore.getNodeStore() );
 
         // Schema index application
         IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexingService,
