@@ -69,8 +69,8 @@ public class CountsComputer
             RelationshipRecord record = relationships.forceGetRecord( id );
             if ( record.inUse() )
             {
-                long[] startLabels = labels( nodes.getRecord( record.getFirstNode() ) );
-                long[] endLabels = labels( nodes.getRecord( record.getSecondNode() ) );
+                long[] startLabels = labels( nodes.forceGetRecord( record.getFirstNode() ) );
+                long[] endLabels = labels( nodes.forceGetRecord( record.getSecondNode() ) );
                 target.addRelationship( startLabels, record.getType(), endLabels );
             }
         }
