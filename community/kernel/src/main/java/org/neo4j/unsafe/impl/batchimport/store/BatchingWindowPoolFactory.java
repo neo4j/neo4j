@@ -316,7 +316,7 @@ public class BatchingWindowPoolFactory implements WindowPoolFactory
 
         private boolean idIsWithinCurrentWindow( long id )
         {
-            return id >= firstIdInWindow && id <= lastIdInWindow;
+            return windowIndex( id ) == currentWindowIndex;
         }
 
         @Override

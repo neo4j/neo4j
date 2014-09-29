@@ -38,7 +38,6 @@ import java.util.concurrent.Executor;
 
 import org.junit.Test;
 import org.mockito.Matchers;
-import org.mockito.Mockito;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
