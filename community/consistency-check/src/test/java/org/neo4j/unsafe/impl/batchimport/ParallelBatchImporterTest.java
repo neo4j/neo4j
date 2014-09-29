@@ -126,7 +126,6 @@ public class ParallelBatchImporterTest
         this.writerFactory = writerFactory;
         this.idGenerator = idGenerator;
         this.idMapping = idMapping;
-
     }
 
     @Test

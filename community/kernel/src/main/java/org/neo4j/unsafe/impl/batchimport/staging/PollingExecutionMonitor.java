@@ -19,10 +19,15 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
+
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.sleep;
+
+import static org.neo4j.unsafe.impl.batchimport.stats.Keys.downstream_idle_time;
+import static org.neo4j.unsafe.impl.batchimport.stats.Keys.upstream_idle_time;
 
 /**
  * {@link ExecutionMonitor} that polls the {@link StageExecution} about up to date stats.
@@ -97,5 +102,32 @@ public abstract class PollingExecutionMonitor implements ExecutionMonitor
                 break;
             }
         }
+    }
+
+    /**
+     * Tries to figure out which {@link Step} in a {@link StageExecution} that is the bottle neck
+     * I.e. which {@link Step} that waits very little for upstream work and very little
+     * for down stream to catch up.
+     *
+     * @return the {@link StepStats} index in {@link StageExecution#stats()} that is most likely
+     * the bottle neck of the execution.
+     */
+    protected int figureOutBottleNeck( StageExecution execution )
+    {
+        int leaderIndex = -1;
+        StepStats leader = null;
+        int index = 0;
+        for ( StepStats stat : execution.stats() )
+        {
+            if ( leader == null ||
+                   (stat.stat( downstream_idle_time ).asLong() + stat.stat( upstream_idle_time ).asLong()) <
+                   (leader.stat( downstream_idle_time ).asLong() + leader.stat( upstream_idle_time ).asLong()) )
+            {
+                leader = stat;
+                leaderIndex = index;
+            }
+            index++;
+        }
+        return leaderIndex;
     }
 }

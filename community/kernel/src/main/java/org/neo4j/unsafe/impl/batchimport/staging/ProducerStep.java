@@ -95,9 +95,6 @@ public abstract class ProducerStep<T> extends AbstractStep<Void>
 
     private long nextTicket()
     {
-        // Increment both done and received count to have stillWorking() evaluate properly
-        long ticket = doneBatches.incrementAndGet();
-        receivedBatches.incrementAndGet();
-        return ticket;
+        return doneBatches.incrementAndGet();
     }
 }
