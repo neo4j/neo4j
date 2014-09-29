@@ -35,6 +35,51 @@ o Fixes issue where the lowest numbered instance would fail
   to leave and rejoin the cluster, if it was not master
   before leaving
 
+HA:
+o Adds the ability for an instance state change to SLAVE can
+  be cancelled by appropriate events. This solves problems
+  with occasional high state switch times and potentially
+  instances failing to join
+o Fixes consistency issues with the state reported by
+  the HA bean. Now there will be no incompatible roles
+  reported in the JMX console for a particular instance
+
+1.9.9
+-----
+Kernel:
+o Fixes issue in ReferenceCache which could lead to excessive
+  memory usage
+o Fixes potential ommission of relationships of a node when
+  transactions that affect them are rolled back
+o Fixes potential lock leak issue with the Lock Manager
+  component
+o Store files now no longer expand beyond what's necessary
+  during shutdown and no longer contain spans of zeroe'd
+  records
+o Solves issue with excessive number of Remove commands in
+  the lucene logs, caused by having auto indexing enabled
+  and changing properties
+o Auto indexing no longer attempts to remove properties that
+  have been removed from the configuration as candidates for
+  autoindexing
+
+Server:
+o Ensure transactional endpoint responds with an https location for https
+  calls.
+
+Graph Algo:
+o Ability to return paths with diminishing cost from Dijkstra/Traversal AStar
+
+Cypher:
+o Adds UNWIND
+o Fixes problem where predicates are evaluated wrongly in NOT
+o Fixes problem when WITH introduces a symbol that shadows an existing identifier
+
+Cluster:
+o Fixes issue where responses to learn requests from cluster
+  members could lead to NullPointerExceptions after topology
+  changes
+
 2.1.4
 -----
 Cypher:
@@ -141,7 +186,8 @@ o Fixes issue with Forseti lock manager, which could miss grabbing
 o Update puller on master no longer tries to pull updates
   from itself
 
-2.1.0
+
+1.9.8
 -----
 Kernel:
 o Fixes potential leak of transaction state in entity locks that could
@@ -160,18 +206,6 @@ o Fixes a bug that could cause locks to improperly clean up state
 o Store upgrades will now migrate some transaction logs along with the
   store, allowing extraction of transactions without requiring
   new transactions to happen
-
-Server:
-o Ensure transactional endpoint responds with an https location for https
-  calls.
-
-Graph Algo:
-o Ability to return paths with diminishing cost from Dijkstra/Traversal AStar
-
-Cypher:
-o Adds UNWIND
-o Fixes problem where predicates are evaluated wrongly in NOT
-o Fixes problem when WITH introduces a symbol that shadows an existing identifier
 
 Cluster:
 o Adds version marking in election results, solving problems with
