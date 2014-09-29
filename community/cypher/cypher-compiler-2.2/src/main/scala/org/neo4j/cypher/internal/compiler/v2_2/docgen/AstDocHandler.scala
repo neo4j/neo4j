@@ -26,11 +26,12 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
 // Doc gen for printing any kind of ast node
 case object AstDocHandler extends DocHandler[ASTNode] {
   val docGen =
-    astPhraseDocGen.lift[ASTNode] ++
-    astParticleDocGen.lift[ASTNode] ++
-    astExpressionDocGen.lift[ASTNode]
+    ???
+//    astPhraseDocGen.lift[ASTNode] ++
+//    astParticleDocGen.lift[ASTNode] ++
+//    astExpressionDocGen.lift[ASTNode]
 }
 
 case object AstDocHandlerWithFallback extends DocHandler[ASTNode] {
-  val docGen = AstDocHandler.docGen ++ DefaultDocHandler.docGen
+  val docGen = AstDocHandler.docGen // ++ DefaultDocHandler.docGen
 }

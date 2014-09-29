@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.DocHandlerTestSuite
 
 class AstStructureDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstructionTestSupport {
 
-  val docGen = astPhraseDocGen ++ astExpressionDocGen ++ astParticleDocGen
+  val docGen = astPhraseDocGen // ++ astExpressionDocGen ++ astParticleDocGen
 
 
   test("Renders ast node together with its structure but only on the outer level") {

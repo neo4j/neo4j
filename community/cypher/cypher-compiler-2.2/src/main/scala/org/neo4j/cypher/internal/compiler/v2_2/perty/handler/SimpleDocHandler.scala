@@ -47,10 +47,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.{docStructureDocGen, sc
 //
 case object SimpleDocHandler extends CustomDocHandler[Any] {
   val docGen: DocGen[Any] =
-    // pretty printing the structure of docs themselves
-    docStructureDocGen.lift[Any] ++
-    // pretty printing anything common scala value (product, array, primitive)
-    scalaDocGen ++
-    // pretty printing by falling back to toString()
-    toStringDocGen
+    ???
+//    // pretty printing the structure of docs themselves
+//    docStructureDocGen.lift[Any] ++
+//    // pretty printing anything common scala value (product, array, primitive)
+//    scalaDocGen ++
+//    // pretty printing by falling back to toString()
+//    toStringDocGen
 }

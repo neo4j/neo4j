@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.{Extractor, SimpleExtractor}
 
 import scala.reflect.runtime.universe.TypeTag
 

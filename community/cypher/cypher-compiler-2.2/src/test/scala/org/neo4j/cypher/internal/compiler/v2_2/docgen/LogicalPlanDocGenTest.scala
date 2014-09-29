@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, Lo
 
 class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
 
-  val docGen = logicalPlanDocGen.lift[Any] ++ plannerDocGen ++ AstDocHandler.docGen.lift[Any] ++ DefaultDocHandler.docGen
+  val docGen = ??? //logicalPlanDocGen.lift[Any] ++ plannerDocGen ++ AstDocHandler.docGen.lift[Any] ++ DefaultDocHandler.docGen
 
   override def docFormatter = DocFormatters.pageFormatter(80)
 

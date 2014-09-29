@@ -17,7 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.Extractor
+
+import org.neo4j.cypher.internal.compiler.v2_2.perty.Extractor
 import org.scalatest.{Matchers, FunSuite}
 
 class SimpleExtractorTest extends FunSuite with Matchers {
@@ -41,21 +42,14 @@ class SimpleExtractorTest extends FunSuite with Matchers {
     extractor(baz) should equal(None)
   }
 
-  test("Simple extractor can mapInput") {
-    val barExtractor = extract[Bar, String] { b => Some(s"Bar:${b.name}") }
-    val strExtractor = barExtractor.mapInput(extract[String, Bar] { s => Some(Bar(s)) } )
-
-    strExtractor("Ava") should equal(Some("Bar:Ava"))
-  }
-
-  test("Simple extractor can mapOutput") {
+  test("Simple extractor andThen (1)") {
     val barExtractor = extract[Bar, String] { b => Some(b.name) }
-    val revExtractor = barExtractor.mapOutput(extract[String, String] { s => Some(s.reverse) } )
+    val revExtractor = barExtractor.andThen(extract[String, String] { s => Some(s.reverse) } )
 
     revExtractor(Bar("!avA")) should equal(Some("Ava!"))
   }
 
-  test("Simple extractor andThen") {
+  test("Simple extractor andThen (2)") {
     val barExtractor = extract[Bar, String] { b => Some(b.name) }
     val intExtractor = barExtractor.andThen(extract[String, Int] { s => Some(s.length) } )
 
@@ -76,14 +70,6 @@ class SimpleExtractorTest extends FunSuite with Matchers {
 
     extractor[List[Integer]](List(1, 2, 3)) should equal(Some(List(1, 2, 3)))
     extractor[List[String]](List("x")) should equal(None)
-  }
-
-  test("View simple extractor") {
-    val extractor1 = fromIdentity[List[Integer]].view[List[Number]]
-    val extractor2 = fromIdentity[List[Integer]].view[List[Byte]]
-
-    extractor1[List[Integer]](List(1, 2, 3)) should equal(Some(List(1, 2, 3)))
-    extractor2[List[Integer]](List(1, 2, 3)) should equal(None)
   }
 
   sealed trait Foo

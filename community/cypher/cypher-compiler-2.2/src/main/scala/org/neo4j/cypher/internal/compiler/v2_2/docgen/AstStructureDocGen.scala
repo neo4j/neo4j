@@ -19,14 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{SymbolicName, LabelName, ASTParticle, ASTNode}
-import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.SimpleDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocDrill, mkDocDrill, CustomDocGen}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
+import org.neo4j.cypher.internal.compiler.v2_2.perty.CustomDocGen
 
 // Doc builder for printing any kind of ast node together with it's structure
 case object AstStructureDocGen extends CustomDocGen[ASTNode] {
-
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
   def drill =
     ???

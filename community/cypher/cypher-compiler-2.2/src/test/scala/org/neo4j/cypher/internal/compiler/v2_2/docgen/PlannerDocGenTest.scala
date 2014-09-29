@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Direction
 
 class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTestSupport {
 
-  val docGen = plannerDocGen ++ AstDocHandler.docGen.lift[Any] ++ SimpleDocHandler.docGen
+  val docGen = ??? //plannerDocGen ++ AstDocHandler.docGen.lift[Any] ++ SimpleDocHandler.docGen
 
   val rel1 = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(), SimplePatternLength)
   val rel2 = PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.INCOMING, Seq(RelTypeName("X")(null)), SimplePatternLength)

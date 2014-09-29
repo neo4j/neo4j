@@ -35,7 +35,7 @@ package object perty {
   type DocOps[T] = Seq[DocOp[T]]
 
   // convert a value into a doc (digger)
-  type DocGen[-T] = SeqDrill[T, Doc]
+  type DocGen[-T] = Any /// SeqDrill[T, Doc]
 
   // convert a value into a doc (total function)
   type DocConverter[-T] = T => Doc
@@ -45,9 +45,6 @@ package object perty {
 
   // turns a sequence of print commands into a result of type T
   type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
-
-  // drills used by DocGens
-  type DocDrill[-T] = Drill[T, Doc]
 }
 
 

@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocDrill, Doc}
-
 trait Pretty[-T] {
-  def toDoc: DocDrill[T]
+  def toDoc: Any
 }
 

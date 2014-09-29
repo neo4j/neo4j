@@ -29,9 +29,10 @@ object pprintToString {
   def apply[T : TypeTag](value: T,
                          formatter: DocFormatter = DocFormatters.defaultPageFormatter)
                         (docGen: DocGen[T] = DefaultDocHandler.docGen): String = {
-    val doc = docGen(value).getOrElse {
-      throw new IllegalArgumentException(s"Error converting value of type ${typeOf[T]} to a Doc")
-    }
-    printCommandsToString(condense(formatter(doc)))
+//    val doc = docGen(value).getOrElse {
+//      throw new IllegalArgumentException(s"Error converting value of type ${typeOf[T]} to a Doc")
+//    }
+//    printCommandsToString(condense(formatter(doc)))
+    ???
   }
 }
