@@ -25,8 +25,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 public class CountsComputer
@@ -38,8 +36,13 @@ public class CountsComputer
 
     public static CountsState computeCounts( NeoStore stores )
     {
-        CountsState result = new CountsState();
-        new CountsComputer( stores.getNodeStore(), stores.getRelationshipStore() ).update( result );
+        return computeCounts( stores.getNodeStore(), stores.getRelationshipStore() );
+    }
+
+    public static CountsState computeCounts( NodeStore nodeStore, RelationshipStore relationshipStore )
+    {
+        final CountsState result = new CountsState();
+        new CountsComputer( nodeStore, relationshipStore ).update( result );
         return result;
     }
 
