@@ -40,11 +40,11 @@ case object astParticleDocGen extends CustomDocGen[ASTNode] {
 //    }
   }
 
-  implicit class SymbolicNameConverter(symbolicName: SymbolicName) {
-    def asDoc(pretty: DocConverter[Any]) = AstNameConverter(symbolicName.name).asDoc
-  }
-
-  implicit class LabelNameConverter(labelName: LabelName) {
-    def asDoc(pretty: DocConverter[Any]) = group(":" :: AstNameConverter(labelName.name).asDoc)
-  }
+//  implicit class SymbolicNameConverter(symbolicName: SymbolicName) {
+//    def asDoc(pretty: DocConverter[Any]) = AstNameConverter(symbolicName.name).asDoc
+//  }
+//
+//  implicit class LabelNameConverter(labelName: LabelName) {
+//    def asDoc(pretty: DocConverter[Any]) = group(":" :: AstNameConverter(labelName.name).asDoc)
+//  }
 }

@@ -19,32 +19,30 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.bling._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.DocOp
+import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.{BaseDocOp, DocOp}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.print.PrintCommand
 
 import scala.collection.mutable
-import scala.reflect.ClassTag
 
 /**
  * See pp.Doc
  */
 package object perty {
-  // Imperative description of how to construct a document
-  // that contains leaf values of T
-  type DocOps[T] = Seq[DocOp[T]]
+  // description of how to construct a doc
+  // that still may contain content that needs further processing
+  type DocOps[+T] = Seq[DocOp[T]]
+  type DocGen[-T] = Extractor[T, DocOps[Any]]
 
-  // convert a value into a doc (digger)
-  type DocGen[-T] = Any /// SeqDrill[T, Doc]
-
-  // convert a value into a doc (total function)
-  type DocConverter[-T] = T => Doc
+  // description of how to construct a doc
+  type BaseDocOps = Seq[BaseDocOp]
+  type BaseDocGen[T] = Extractor[T, BaseDocOps]
 
   // layout a doc as a series of print commands
   type DocFormatter = Doc => Seq[PrintCommand]
 
   // turns a sequence of print commands into a result of type T
   type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
+
 }
 
 

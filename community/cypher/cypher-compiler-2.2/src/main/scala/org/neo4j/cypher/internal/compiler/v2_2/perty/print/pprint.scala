@@ -27,6 +27,7 @@ object pprint {
   // Print value to PrintStream after converting to a doc using the given generator and formatter
   def apply[T : TypeTag](value: T,
                          formatter: DocFormatter = DocFormatters.defaultPageFormatter)
-                        (docGen: DocGen[T] = DefaultDocHandler.docGen): Unit =
+                        (docGen: DocGen[T] = DefaultDocHandler.docGen): Unit = {
     println(pprintToString(value, formatter)(docGen))
+  }
 }

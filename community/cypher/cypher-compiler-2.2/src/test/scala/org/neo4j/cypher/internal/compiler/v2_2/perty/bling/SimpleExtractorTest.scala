@@ -34,7 +34,7 @@ class SimpleExtractorTest extends FunSuite with Matchers {
   }
 
   test("Creating simple extractor from partial function") {
-    val extractor = pick[Foo, String] { case Bar(name) => Some(name) }
+    val extractor = pick[Foo, String] { case Bar(name) => name }
     val bar = Bar("Ava")
     val baz = Baz(1, bar)
 
@@ -57,8 +57,8 @@ class SimpleExtractorTest extends FunSuite with Matchers {
   }
 
   test("Simple extractor orElse") {
-    val barExtractor = pick[Foo, String] { case _: Bar => Some("Bar") }
-    val bazExtractor = pick[Foo, String] { case _: Baz => Some("Baz") }
+    val barExtractor = pick[Foo, String] { case _: Bar => "Bar" }
+    val bazExtractor = pick[Foo, String] { case _: Baz => "Baz" }
     val extractor = barExtractor orElse bazExtractor
 
     extractor(Bar("x")) should equal(Some("Bar"))

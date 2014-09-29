@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.DocHandlerTestSuite
 
 class AstExpressionDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstructionTestSupport {
 
-  val docGen = astExpressionDocGen // ++ astParticleDocGen
+  val docGen = ??? //astExpressionDocGen // ++ astParticleDocGen
 
   test("Identifier(\"a\") => a") {
     pprintToString(ident("a")) should equal("a")

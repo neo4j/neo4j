@@ -26,7 +26,7 @@ class DocStructureDocGenTest extends DocHandlerTestSuite[Doc] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
-  val docGen = docStructureDocGen
+  val docGen = ??? // docStructureDocGen
 
   test("end => \"ø\"") {
     pprintToString(nil) should equal("ø")

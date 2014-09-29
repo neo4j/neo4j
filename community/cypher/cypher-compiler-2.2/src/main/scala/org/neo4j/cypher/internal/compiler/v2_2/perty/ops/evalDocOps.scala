@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
 import scala.annotation.tailrec
 
-// Helper for evaluating a sequence of DocOp[String] to construct a Doc
+// Helper for evaluating a sequence of AnyDocOp to construct a Doc
 //
 // The resulting Doc is sanitized on the fly (removes unneeded wrappings, nils, and conses)
 //
-case object evalDocOps extends (Seq[DocOp[String]] => Doc) {
+case object evalDocOps extends (Seq[BaseDocOp] => Doc) {
 
-  def apply(ops: Seq[DocOp[String]]): Doc = ops match {
+  def apply(ops: Seq[BaseDocOp]): Doc = ops match {
     case Seq(_: PushFrame, _*) => convert(ops)
     case Seq()                 => NilDoc
     case _                     => convert(PushGroupFrame +: ops :+ PopFrame)
@@ -37,11 +37,11 @@ case object evalDocOps extends (Seq[DocOp[String]] => Doc) {
 
   @tailrec
   private def convert(input: Seq[DocOp[String]], frames: Seq[DocFrame] = Seq.empty): Doc = (input, frames) match {
-    case (Seq(AddContent(v: String), tail@_*), Seq(frame, tailFrames@_*)) =>
-      convert(tail, (frame :+ TextDoc(v)) +: tailFrames)
+    case (Seq(AddText(text: String), tail@_*), Seq(frame, tailFrames@_*)) =>
+      convert(tail, (frame :+ TextDoc(text)) +: tailFrames)
 
-    case (Seq(AddBreak(Some(v: String)), tail@_*), Seq(frame, tailFrames@_*)) =>
-      convert(tail, (frame :+ BreakWith(v)) +: tailFrames)
+    case (Seq(AddBreak(Some(breakWith: String)), tail@_*), Seq(frame, tailFrames@_*)) =>
+      convert(tail, (frame :+ BreakWith(breakWith)) +: tailFrames)
 
     case (Seq(AddBreak(None), tail@_*), Seq(frame, tailFrames@_*)) =>
       convert(tail, (frame :+ BreakDoc) +: tailFrames)
@@ -66,6 +66,9 @@ case object evalDocOps extends (Seq[DocOp[String]] => Doc) {
 
     case (Seq(PopFrame), Seq(frame)) =>
       frame.asDoc
+
+    case _ =>
+      throw new IllegalArgumentException(s"Unbalanced sequence of DocOps input: $input, frames: $frames")
   }
 
   private sealed abstract class DocFrame {

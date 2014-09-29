@@ -29,15 +29,15 @@ import scala.reflect.runtime.universe._
  *
  * (type-safe total version of a partial function)
  **/
-sealed abstract class Extractor[-I : TypeTag, O : TypeTag] {
+sealed abstract class Extractor[-I : TypeTag, +O : TypeTag] {
   self =>
 
   // Run extractor, trying to extract a value of type O
   def apply[X <: I : TypeTag](x: X): Option[O]
 
   // Return extractor that runs other after running self if self does not extract a value
-  def orElse[H <: I : TypeTag](other: Extractor[H, O]): ExtractorSeq[H, O] = {
-    val builder = ExtractorSeq.newBuilder[H, O]
+  def orElse[H <: I : TypeTag, P >: O : TypeTag](other: Extractor[H, P]): ExtractorSeq[H, P] = {
+    val builder = ExtractorSeq.newBuilder[H, P]
     builder += this
     builder += other
     builder.result()
@@ -51,6 +51,8 @@ sealed abstract class Extractor[-I : TypeTag, O : TypeTag] {
 
   // Return extractor with different input type that runs self for any value <: I && J
   def lift[J : TypeTag]: Extractor[J, O] = Extractor.fromFilteredInput[J, I] andThen self
+
+  def asSeq[P >: O : TypeTag]: ExtractorSeq[I, P]
 }
 
 object Extractor {
@@ -73,8 +75,8 @@ object Extractor {
   }
 
   // Extractor from partial function
-  implicit def pick[I : TypeTag, O : TypeTag](pf: PartialFunction[I, Option[O]]): SimpleExtractor[I, O] =
-    extract(pf.lift.andThen(_.flatten))
+  implicit def pick[I : TypeTag, O : TypeTag](pf: PartialFunction[I, O]): SimpleExtractor[I, O] =
+    extract(pf.lift)
 
   // Extractor from total function
   implicit def extract[I : TypeTag, O : TypeTag](f: I => Option[O]): SimpleExtractor[I, O] = {
@@ -84,10 +86,16 @@ object Extractor {
   }
 }
 
-abstract class SimpleExtractor[-I : TypeTag, O : TypeTag] extends Extractor[I, O]
+abstract class SimpleExtractor[-I : TypeTag, +O : TypeTag] extends Extractor[I, O] {
+  self: SimpleExtractor[I, O] =>
 
-final case class ExtractorSeq[-I : TypeTag, O : TypeTag](extractors: Seq[SimpleExtractor[I, O]])
+  def asSeq[P >: O : TypeTag]: ExtractorSeq[I, P] = ExtractorSeq[I, P](Seq(self))
+}
+
+final case class ExtractorSeq[-I : TypeTag, +O : TypeTag](extractors: Seq[SimpleExtractor[I, O]])
   extends Extractor[I, O]  {
+
+  self =>
 
   // Run extractor, trying to extract a value of type O
   def apply[X <: I : TypeTag](x: X): Option[O] = {
@@ -102,6 +110,12 @@ final case class ExtractorSeq[-I : TypeTag, O : TypeTag](extractors: Seq[SimpleE
 
     findFirstSolution(extractors)
   }
+
+  def asSeq[P >: O : TypeTag]: ExtractorSeq[I, P] =
+    if (typeOf[O] =:= typeOf[P])
+      self.asInstanceOf[ExtractorSeq[I, P]]
+    else
+      map(identity)
 
   override def andThen[P >: O : TypeTag, V : TypeTag](other: Extractor[P, V]): Extractor[I, V] =
     map( _ andThen other )
@@ -124,7 +138,7 @@ object ExtractorSeq {
     def +=(elem: Extractor[I, O]): this.type = {
       elem match {
         case simple: SimpleExtractor[I, O] => builder += simple
-        case ExtractorSeq(extractors)      => builder ++= extractors
+        case multi: ExtractorSeq[I, O]     => builder ++= multi.extractors
       }
       this
     }

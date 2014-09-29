@@ -27,7 +27,7 @@ class evalDocOpsTest extends CypherFunSuite {
   // Integration
 
   test("Builds complex document") {
-    val result = evalDocOps(Seq(AddContent("x"), PushGroupFrame, PushNestFrame, AddContent("y"), AddBreak, AddContent("z"), PopFrame, PopFrame))
+    val result = evalDocOps(Seq(AddText("x"), PushGroupFrame, PushNestFrame, AddText("y"), AddBreak, AddText("z"), PopFrame, PopFrame))
 
     result should equal(
       GroupDoc(ConsDoc(TextDoc("x"), ConsDoc(GroupDoc(NestDoc(ConsDoc(TextDoc("y"), ConsDoc(BreakDoc, ConsDoc(TextDoc("z")))))), NilDoc)))
@@ -37,7 +37,7 @@ class evalDocOpsTest extends CypherFunSuite {
   // Top-Level
 
   test("Wraps multiple, unwrapped top-level leaves in group") {
-    val result = evalDocOps(Seq(AddContent("x"), AddBreak))
+    val result = evalDocOps(Seq(AddText("x"), AddBreak))
 
     result should equal(GroupDoc(ConsDoc(TextDoc("x"), ConsDoc(BreakDoc, NilDoc))))
   }
@@ -49,7 +49,7 @@ class evalDocOpsTest extends CypherFunSuite {
   }
 
   test("Unwraps single top-level value doc in group") {
-    val result = evalDocOps(Seq(AddContent("x")))
+    val result = evalDocOps(Seq(AddText("x")))
 
     result should equal(TextDoc("x"))
   }
@@ -57,13 +57,13 @@ class evalDocOpsTest extends CypherFunSuite {
   // Groupings
 
   test("Makes groups containing non-consed doc") {
-    val result = evalDocOps(Seq(PushGroupFrame, PushNestFrame, AddContent("x"), AddBreak, PopFrame, PopFrame))
+    val result = evalDocOps(Seq(PushGroupFrame, PushNestFrame, AddText("x"), AddBreak, PopFrame, PopFrame))
 
     result should equal(GroupDoc(NestDoc(ConsDoc(TextDoc("x"), ConsDoc(BreakDoc, NilDoc)))))
   }
 
   test("Makes groups containing multiples leaves") {
-    val result = evalDocOps(Seq(PushGroupFrame, AddContent("x"), AddBreak, PopFrame))
+    val result = evalDocOps(Seq(PushGroupFrame, AddText("x"), AddBreak, PopFrame))
 
     result should equal(GroupDoc(ConsDoc(TextDoc("x"), ConsDoc(BreakDoc, NilDoc))))
   }
@@ -73,7 +73,7 @@ class evalDocOpsTest extends CypherFunSuite {
   }
 
   test("Unwraps double groupings") {
-    val result = evalDocOps(Seq(PushGroupFrame, PushGroupFrame, AddContent("x"), AddBreak, PopFrame, PopFrame))
+    val result = evalDocOps(Seq(PushGroupFrame, PushGroupFrame, AddText("x"), AddBreak, PopFrame, PopFrame))
 
     result should equal(GroupDoc(ConsDoc(TextDoc("x"), ConsDoc(BreakDoc, NilDoc))))
   }
@@ -81,13 +81,13 @@ class evalDocOpsTest extends CypherFunSuite {
   // Pages
 
   test("Makes pages containing non-consed doc") {
-    val result = evalDocOps(Seq(PushPageFrame, PushNestFrame, AddContent("x"), AddBreak, PopFrame, PopFrame))
+    val result = evalDocOps(Seq(PushPageFrame, PushNestFrame, AddText("x"), AddBreak, PopFrame, PopFrame))
 
     result should equal(PageDoc(NestDoc(ConsDoc(TextDoc("x"), ConsDoc(BreakDoc, NilDoc)))))
   }
 
   test("Makes pages containing multiples leaves") {
-    val result = evalDocOps(Seq(PushPageFrame, AddContent("x"), AddBreak, PopFrame))
+    val result = evalDocOps(Seq(PushPageFrame, AddText("x"), AddBreak, PopFrame))
 
     result should equal(PageDoc(ConsDoc(TextDoc("x"), ConsDoc(BreakDoc, NilDoc))))
   }
@@ -97,7 +97,7 @@ class evalDocOpsTest extends CypherFunSuite {
   }
 
   test("Unwraps single page in outer page") {
-    val result = evalDocOps(Seq(PushPageFrame, PushPageFrame, AddContent("x"), AddBreak, PopFrame, PopFrame))
+    val result = evalDocOps(Seq(PushPageFrame, PushPageFrame, AddText("x"), AddBreak, PopFrame, PopFrame))
 
     result should equal(PageDoc(ConsDoc(TextDoc("x"), ConsDoc(BreakDoc, NilDoc))))
   }
@@ -105,13 +105,13 @@ class evalDocOpsTest extends CypherFunSuite {
   // Nesting
 
   test("Makes nesting groups containing non-consed doc") {
-    val result = evalDocOps(Seq(PushNestFrame, PushNestFrame, AddContent("x"), AddBreak, PopFrame, PopFrame))
+    val result = evalDocOps(Seq(PushNestFrame, PushNestFrame, AddText("x"), AddBreak, PopFrame, PopFrame))
 
     result should equal(NestDoc(NestDoc(ConsDoc(TextDoc("x"), ConsDoc(BreakDoc, NilDoc)))))
   }
 
   test("Makes nesting groups containing multiples leaves") {
-    val result = evalDocOps(Seq(PushNestFrame, AddContent("x"), AddBreak, PopFrame))
+    val result = evalDocOps(Seq(PushNestFrame, AddText("x"), AddBreak, PopFrame))
 
     result should equal(NestDoc(ConsDoc(TextDoc("x"), ConsDoc(BreakDoc, NilDoc))))
   }
@@ -121,7 +121,7 @@ class evalDocOpsTest extends CypherFunSuite {
   }
 
   test("Does not unwrap double nesting groupings") {
-    val result = evalDocOps(Seq(PushNestFrame, PushNestFrame, AddContent("x"), AddBreak, PopFrame, PopFrame))
+    val result = evalDocOps(Seq(PushNestFrame, PushNestFrame, AddText("x"), AddBreak, PopFrame, PopFrame))
 
     result should equal(NestDoc(NestDoc(ConsDoc(TextDoc("x"), ConsDoc(BreakDoc, NilDoc)))))
   }

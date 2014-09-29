@@ -19,20 +19,38 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.ops
 
+import org.neo4j.cypher.internal.compiler.v2_2.perty.Extractor
+
 import scala.reflect.runtime.universe.TypeTag
 
-sealed trait DocOp[-T]
-final case class AddContent[T](value: T)(implicit val tag: TypeTag[T]) extends DocOp[T]
-sealed case class AddBreak[T](breakWith: Option[T] = None)(implicit val tag: TypeTag[T]) extends DocOp[T]
-object AddBreak extends AddBreak[Any](None)
-case object AddNoBreak extends DocOp[Any]
+sealed trait DocOp[+T]
 
-sealed trait PushFrame extends DocOp[Any]
+sealed abstract class AddContent[T](implicit val tag: TypeTag[T]) extends DocOp[T] {
+  def content: T
+  def apply[I >: T, O](extractor: Extractor[I, O]) = extractor(content)
+}
+
+case object AddContent {
+  def apply[T : TypeTag](value: => T) = new AddContent[T] {
+    def content: T = value
+  }
+}
+
+sealed trait BaseDocOp extends DocOp[Nothing]
+
+sealed case class AddText(text: String) extends BaseDocOp
+
+sealed case class AddBreak(breakWith: Option[String] = None) extends BaseDocOp
+object AddBreak extends AddBreak(None)
+
+case object AddNoBreak extends BaseDocOp
+
+sealed trait PushFrame extends BaseDocOp
 case object PushGroupFrame extends PushFrame
 case object PushPageFrame extends PushFrame
 sealed case class PushNestFrame(indent: Option[Int] = None) extends PushFrame
 object PushNestFrame extends PushNestFrame(None)
 
-case object PopFrame extends DocOp[Any]
+case object PopFrame extends BaseDocOp
 
 

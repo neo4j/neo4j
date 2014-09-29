@@ -47,54 +47,54 @@ case object astExpressionDocGen extends CustomDocGen[ASTNode] {
 //    }
   }
 
-  implicit class IdentifierConverter(identifier: Identifier) {
-    def asDoc(pretty: DocConverter[Any]) = AstNameConverter(identifier.name).asDoc
-  }
-
-  implicit class LiteralConverter(literal: Literal) {
-    def asDoc(pretty: DocConverter[Any]) = literal.asCanonicalStringVal
-  }
-
-  implicit class HasLabelsConverter(hasLabels: HasLabels) {
-    def asDoc(pretty: DocConverter[Any]) = group(pretty(hasLabels.expression) :: breakList(hasLabels.labels.map(pretty), break = breakSilent))
-  }
-
-  implicit class PropertyConverter(property: Property) {
-    def asDoc(pretty: DocConverter[Any]) = group(pretty(property.map) :: "." :: pretty(property.propertyKey))
-  }
-
-  implicit class ParameterConverter(param: Parameter) {
-    def asDoc(pretty: DocConverter[Any]) = braces(param.name)
-  }
-
-  implicit class BinOpConverter(binOp: BinaryOperatorExpression) {
-    def asDoc(pretty: DocConverter[Any]) = group(pretty(binOp.lhs) :/: binOp.canonicalOperatorSymbol :/: pretty(binOp.rhs))
-  }
-
-  implicit class LeftOpConverter(leftOp: LeftUnaryOperatorExpression) {
-    def asDoc(pretty: DocConverter[Any]) = group(leftOp.canonicalOperatorSymbol :/: pretty(leftOp.rhs))
-  }
-
-  implicit class RightOpConverter(rightOp: RightUnaryOperatorExpression) {
-    def asDoc(pretty: DocConverter[Any]) = group(pretty(rightOp.lhs) :/: rightOp.canonicalOperatorSymbol)
-  }
-
-  implicit class MultiOpConverter(multiOp: MultiOperatorExpression) {
-    def asDoc(pretty: DocConverter[Any]) = group(groupedSepList(multiOp.exprs.map(pretty), sep = break :: multiOp.canonicalOperatorSymbol))
-  }
-
-  implicit class FunctionInvocationConverter(fun: FunctionInvocation) {
-    def asDoc(pretty: DocConverter[Any]) = {
-      val callDoc = block(pretty(fun.functionName))(sepList(fun.args.map(pretty)))
-      if (fun.distinct) group("DISTINCT" :/: callDoc) else callDoc
-    }
-  }
-
-  implicit class CollectionConverter(coll: Collection) {
-    def asDoc(pretty: DocConverter[Any]) = brackets(sepList(coll.expressions.map(pretty)))
-  }
-
-  implicit class CountStarConverter(countStar: CountStar) {
-    def asDoc(pretty: DocConverter[Any]): Doc = "count(*)"
-  }
+//  implicit class IdentifierConverter(identifier: Identifier) {
+//    def asDoc(pretty: DocConverter[Any]) = AstNameConverter(identifier.name).asDoc
+//  }
+//
+//  implicit class LiteralConverter(literal: Literal) {
+//    def asDoc(pretty: DocConverter[Any]) = literal.asCanonicalStringVal
+//  }
+//
+//  implicit class HasLabelsConverter(hasLabels: HasLabels) {
+//    def asDoc(pretty: DocConverter[Any]) = group(pretty(hasLabels.expression) :: breakList(hasLabels.labels.map(pretty), break = breakSilent))
+//  }
+//
+//  implicit class PropertyConverter(property: Property) {
+//    def asDoc(pretty: DocConverter[Any]) = group(pretty(property.map) :: "." :: pretty(property.propertyKey))
+//  }
+//
+//  implicit class ParameterConverter(param: Parameter) {
+//    def asDoc(pretty: DocConverter[Any]) = braces(param.name)
+//  }
+//
+//  implicit class BinOpConverter(binOp: BinaryOperatorExpression) {
+//    def asDoc(pretty: DocConverter[Any]) = group(pretty(binOp.lhs) :/: binOp.canonicalOperatorSymbol :/: pretty(binOp.rhs))
+//  }
+//
+//  implicit class LeftOpConverter(leftOp: LeftUnaryOperatorExpression) {
+//    def asDoc(pretty: DocConverter[Any]) = group(leftOp.canonicalOperatorSymbol :/: pretty(leftOp.rhs))
+//  }
+//
+//  implicit class RightOpConverter(rightOp: RightUnaryOperatorExpression) {
+//    def asDoc(pretty: DocConverter[Any]) = group(pretty(rightOp.lhs) :/: rightOp.canonicalOperatorSymbol)
+//  }
+//
+//  implicit class MultiOpConverter(multiOp: MultiOperatorExpression) {
+//    def asDoc(pretty: DocConverter[Any]) = group(groupedSepList(multiOp.exprs.map(pretty), sep = break :: multiOp.canonicalOperatorSymbol))
+//  }
+//
+//  implicit class FunctionInvocationConverter(fun: FunctionInvocation) {
+//    def asDoc(pretty: DocConverter[Any]) = {
+//      val callDoc = block(pretty(fun.functionName))(sepList(fun.args.map(pretty)))
+//      if (fun.distinct) group("DISTINCT" :/: callDoc) else callDoc
+//    }
+//  }
+//
+//  implicit class CollectionConverter(coll: Collection) {
+//    def asDoc(pretty: DocConverter[Any]) = brackets(sepList(coll.expressions.map(pretty)))
+//  }
+//
+//  implicit class CountStarConverter(countStar: CountStar) {
+//    def asDoc(pretty: DocConverter[Any]): Doc = "count(*)"
+//  }
 }
