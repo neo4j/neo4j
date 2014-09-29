@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeWithClaus
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.combinePredicates
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
@@ -182,6 +183,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.costModel(cardinality)
       def newCardinalityEstimator(statistics: GraphStatistics, selectivity: Metrics.PredicateSelectivityCombiner, semanticTable: SemanticTable) =
         config.cardinalityModel(statistics, selectivity, semanticTable)
+
+      def newSelectivity() = combinePredicates.default
     }
 
     def table = Map.empty[PatternExpression, QueryGraph]

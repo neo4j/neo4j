@@ -95,10 +95,11 @@ object Selectivity {
 trait MetricsFactory {
   def newCardinalityEstimator(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable): CardinalityModel
   def newCostModel(cardinality: CardinalityModel): CostModel
+  def newSelectivity(): PredicateSelectivityCombiner
 
   def newMetrics(statistics: GraphStatistics,
-                 semanticTable: SemanticTable,
-                 selectivity: PredicateSelectivityCombiner = combinePredicates.default) = {
+                 semanticTable: SemanticTable) = {
+    val selectivity = newSelectivity()
     val cardinality = newCardinalityEstimator(statistics, selectivity, semanticTable)
     val cost = newCostModel(cardinality)
     Metrics(cost, cardinality, selectivity)
