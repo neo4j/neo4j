@@ -55,6 +55,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       SimpleMetricsFactory.newCardinalityEstimator(statistics, selectivity, semanticTable)
     def newCostModel(cardinality: CardinalityModel) =
       SimpleMetricsFactory.newCostModel(cardinality)
+    def newSelectivity() =
+      SimpleMetricsFactory.newSelectivity()
   }
 
   def newMockedQueryGraph = mock[QueryGraph]

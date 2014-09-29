@@ -44,6 +44,16 @@ sealed trait PlanDescription extends cypher.PlanDescription {
   def andThen(pipe: Pipe, name: String, arguments: Argument*) = PlanDescriptionImpl(pipe, name, SingleChild(this), arguments)
   def toSeq: Seq[PlanDescription]
 
+  def totalDbHits: Option[Long] = {
+    val allMaybeDbHits: Seq[Option[Long]] = toSeq.map {
+      case plan: PlanDescription => plan.arguments.collectFirst { case DbHits(x) => x}
+    }
+
+    allMaybeDbHits.reduce[Option[Long]] {
+      case (a: Option[Long], b: Option[Long]) => for (aVal <- a; bVal <- b) yield aVal + bVal
+    }
+  }
+
   lazy val asJava: JPlanDescription = new JPlanDescription {
 
     def getChildren: util.List[JPlanDescription] = children.toSeq.toList.map(_.asJava).asJava
