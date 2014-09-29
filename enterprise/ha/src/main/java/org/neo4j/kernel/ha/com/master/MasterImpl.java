@@ -25,23 +25,20 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.function.Consumer;
+import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.id.IdAllocation;
@@ -52,13 +49,16 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
+import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
+import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
-import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.slaveLocksTimeout;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -106,9 +106,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
         int getOrCreateProperty( String name );
 
         Locks.Client acquireClient();
+
+        JobScheduler.JobHandle scheduleRecurringJob( JobScheduler.Group group, long interval, Runnable job );
     }
 
-    public static final int UNFINISHED_TRANSACTION_CLEANUP_DELAY = 1;
+    public static final int UNFINISHED_TRANSACTION_CLEANUP_DELAY = 1_000;
 
     private final SPI spi;
     private final StringLogger msgLog;
@@ -116,10 +118,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private final Monitor monitor;
     private final long epoch;
 
-    private Map<RequestContext, LockSession> slaveLockSessions = new ConcurrentHashMap<>();
-    private ScheduledExecutorService staleSlaveReaper;
-    private long unfinishedTransactionThresholdMillis;
-    private final UnfinishedTransactionReaper reaper = new UnfinishedTransactionReaper();
+    private TimedRepository<RequestContext, Locks.Client> slaveLockSessions;
+    private JobScheduler.JobHandle staleSlaveReaperJob;
+
     private final int unfinishedSessionsCheckInterval;
 
     public MasterImpl( SPI spi, Monitor monitor, Logging logging, Config config )
@@ -127,10 +128,10 @@ public class MasterImpl extends LifecycleAdapter implements Master
         this( spi, monitor, logging, config, UNFINISHED_TRANSACTION_CLEANUP_DELAY );
     }
 
-    public MasterImpl( SPI spi, Monitor monitor, Logging logging, Config config, int unfinishedSessionsCheckInterval )
+    public MasterImpl( final SPI spi, Monitor monitor, Logging logging, Config config, int staleSlaveReapIntervalMillis )
     {
         this.spi = spi;
-        this.unfinishedSessionsCheckInterval = unfinishedSessionsCheckInterval;
+        this.unfinishedSessionsCheckInterval = staleSlaveReapIntervalMillis;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.config = config;
         this.monitor = monitor;
@@ -145,34 +146,27 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public void start() throws Throwable
     {
-        this.unfinishedTransactionThresholdMillis = config.get( HaSettings.lock_read_timeout ) + TX_TIMEOUT_ADDITION;
-        this.staleSlaveReaper =
-                Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Unfinished transaction reaper" ) );
-        this.staleSlaveReaper.scheduleWithFixedDelay( reaper,
-                unfinishedSessionsCheckInterval, unfinishedSessionsCheckInterval, TimeUnit.SECONDS );
+        this.slaveLockSessions = new TimedRepository<>( new Factory<Locks.Client>()
+            {
+                @Override public Locks.Client newInstance()
+                {
+                    return spi.acquireClient();
+                }
+            }, new Consumer<Locks.Client>()
+            {
+                @Override public void accept( Locks.Client value )
+                {
+                    value.close();
+                }
+            }, config.get( HaSettings.lock_read_timeout ) + TX_TIMEOUT_ADDITION, Clock.SYSTEM_CLOCK );
+        staleSlaveReaperJob = spi.scheduleRecurringJob( slaveLocksTimeout, unfinishedSessionsCheckInterval, slaveLockSessions );
     }
 
     @Override
     public void stop()
     {
-        staleSlaveReaper.shutdown();
+        staleSlaveReaperJob.cancel( false );
         slaveLockSessions = null;
-    }
-
-    @Override
-    public Response<Void> newLockSession( RequestContext context )
-    {
-        monitor.initializeTx( context );
-
-        if ( !spi.isAccessible() )
-        {
-            throw new TransactionFailureException( "Database is currently not available" );
-        }
-        assertCorrectEpoch( context );
-
-        LockSession locks = new LockSession( spi.acquireClient() );
-        slaveLockSessions.put( context, locks );
-        return spi.packTransactionObligationResponse( context, null );
     }
 
     /**
@@ -181,7 +175,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
      * Exceptions to the above are:
      * o {@link #handshake(long, StoreId)}
      * o {@link #copyStore(RequestContext, StoreWriter)}
-     * o {@link #copyTransactions(RequestContext, String, long, long)}
      * o {@link #pullUpdates(RequestContext)}
      *
      * all other methods must have this.
@@ -192,38 +185,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
         if ( this.epoch != context.getEpoch() )
         {
             throw new InvalidEpochException( epoch, context.getEpoch() );
-        }
-    }
-
-    private LockSession getLockSession( RequestContext txId )
-    {
-        LockSession result = slaveLockSessions.get( txId );
-        if ( result == null )
-        {
-            throw new TransactionNotPresentOnMasterException( txId );
-        }
-
-        // set time stamp to zero so that we don't even try to finish it off
-        // if getting old. This is because if the tx is active and old then
-        // it means it's waiting for a lock and we cannot do anything about it.
-        result.resetTime();
-        return result;
-    }
-
-    private void endLockSession0( RequestContext txId )
-    {
-        LockSession session = getLockSession( txId );
-        try
-        {
-            session.client().close();
-        }
-        catch ( Exception e )
-        {
-            throw Exceptions.launderedException( e );
-        }
-        finally
-        {
-            slaveLockSessions.remove( txId );
         }
     }
 
@@ -241,64 +202,58 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         assertCorrectEpoch( context );
 
-        // We need to hold a shared schema lock during slave commit, because otherwise the schema may change while we're
-        // committing. However, we don't have access to the slaves lock context (indeed, the slave may not be holding any
-        // locks for this transaction), so we use a temporary one here instead. That's dangerous, because it impedes
-        // deadlock detection. To mitigate that, we use tryLock(), and if that fails we know the schema is being changed
-        // and we fail the transaction. If it succeeds, we know the schema will remain stable during our commit.
-        try(Locks.Client locks = spi.acquireClient())
+        // There are two constraints relating to locking during commit:
+        // 1) If the client is has grabbed locks, we need to ensure those locks remain live during commit
+        // 2) We must hold a schema read lock while committing, to not race with schema transactions on the master
+        //
+        // To satisfy this, we must determine if the client is holding locks, and if so, use that lock client, and if
+        // not, we use a one-off lock client. The way the client signals this is via the 'eventIdentifier' in the
+        // request. -1 means no locks are held, any other number means there should be a matching lock session.
+
+        if(context.getEventIdentifier() == -1)
         {
-            if(locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ))
+            // Client is not holding locks, use a temporary lock client
+            try(Locks.Client locks = spi.acquireClient())
             {
-                long txId = spi.applyPreparedTransaction( preparedTransaction );
-                return spi.packTransactionObligationResponse( context, txId );
+                return commit0( context, preparedTransaction, locks );
             }
-            else
+        }
+        else
+        {
+            // Client is holding locks, use the clients lock session
+            try
             {
-                throw new TransactionFailureException( "Failed to commit, because another transaction is making " +
-                        "schema changes. Slave commits are disallowed while schema changes are being committed. " +
-                        "Retrying the transaction should yield a successful result." );
+                Locks.Client locks = slaveLockSessions.acquire( context );
+                try
+                {
+                    return commit0( context, preparedTransaction, locks );
+                }
+                finally
+                {
+                    slaveLockSessions.release( context );
+                }
+            }
+            catch(NoSuchEntryException | ConcurrentAccessException e)
+            {
+                throw new TransactionNotPresentOnMasterException(context);
             }
         }
     }
 
-    @Override
-    public Response<Void> endLockSession( RequestContext context, boolean success )
+    private Response<Long> commit0( RequestContext context, TransactionRepresentation preparedTransaction, Locks
+            .Client locks ) throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException
     {
-        assertCorrectEpoch( context );
-        boolean successfullyEnded = false;
-        try
+        if(locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ))
         {
-            resume( context );
-            successfullyEnded = true;
+            long txId = spi.applyPreparedTransaction( preparedTransaction );
+            return spi.packTransactionObligationResponse( context, txId );
         }
-        catch ( TransactionNotPresentOnMasterException e )
-        {   // Let these ones through straight away
-            throw e;
-        }
-        catch ( LockSessionAlreadyActiveException e )
-        {   // There's a lock acquisition active a.t.m. Below we'll mark it as "finish asap" so that
-            // the lock acquisition thread of the reaper will end it
-            return spi.packTransactionObligationResponse( context, null );
-        }
-        finally
+        else
         {
-            // We couldn't end the lock session now, but mark it so that when the reaper gets a hold of it,
-            // it will eventually end it
-            if ( !successfullyEnded )
-            {
-                // It is possible that the transaction is not there anymore, or never was. No need for an NPE to be thrown.
-                LockSession client = getLockSession( context );
-                if ( client != null )
-                {
-                    client.markAsCloseAsap();
-                }
-            }
+            throw new TransactionFailureException( Status.Schema.ModifiedConcurrently, "Failed to commit, because another transaction is making " +
+                    "schema changes. Slave commits are disallowed while schema changes are being committed. " +
+                    "Retrying the transaction should yield a successful result." );
         }
-
-        // Go and end the lock session right now
-        endLockSession0( context );
-        return spi.packTransactionObligationResponse( context, null );
     }
 
     @Override
@@ -359,64 +314,66 @@ public class MasterImpl extends LifecycleAdapter implements Master
     }
 
     @Override
+    public Response<Void> newLockSession( RequestContext context ) throws TransactionFailureException
+    {
+        monitor.initializeTx( context );
+
+        if ( !spi.isAccessible() )
+        {
+            throw new TransactionFailureException(Status.General.DatabaseUnavailable, "Database is currently not available" );
+        }
+        assertCorrectEpoch( context );
+
+        try
+        {
+            slaveLockSessions.begin( context );
+        }
+        catch ( ConcurrentAccessException e )
+        {
+            throw new TransactionFailureException(Status.Transaction.ConcurrentRequest, "The lock session requested to start is already in use. Please retry your request in a few seconds." );
+        }
+        return spi.packTransactionObligationResponse( context, null );
+    }
+
+    @Override
+    public Response<Void> endLockSession( RequestContext context, boolean success )
+    {
+        assertCorrectEpoch( context );
+        slaveLockSessions.end( context );
+        return spi.packTransactionObligationResponse( context, null );
+    }
+
+    @Override
     public Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type,
                                                       long... resourceIds )
     {
         assertCorrectEpoch( context );
-        LockSession session = resume( context );
+        Locks.Client session;
         try
         {
-            session.client().acquireExclusive( type, resourceIds );
-            Response<LockResult> lockResultResponse =
-                    spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
-
-            return lockResultResponse;
+            session = slaveLockSessions.acquire( context );
+        }
+        catch ( NoSuchEntryException | ConcurrentAccessException e)
+        {
+            return spi.packTransactionObligationResponse( context, new LockResult( "Unable to acquire exclusive lock: " + e.getMessage() ) );
+        }
+        try
+        {
+            session.acquireExclusive( type, resourceIds );
+            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
         catch ( DeadlockDetectedException e )
         {
-            Response<LockResult> lockResultResponse =
-                    spi.packTransactionObligationResponse( context, new LockResult( e.getMessage() ) );
-
-            return lockResultResponse;
+            return spi.packTransactionObligationResponse( context, new LockResult( "Can't acquire exclusive lock, because it would have caused a deadlock: " + e.getMessage() ) );
         }
         catch ( IllegalResourceException e )
         {
-            Response<LockResult> lockResultResponse =
-                    spi.packTransactionObligationResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
-
-            return lockResultResponse;
+            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
         }
         finally
         {
-            suspend( context, session );
+            slaveLockSessions.release( context );
         }
-    }
-
-    private void suspend( RequestContext context, LockSession session )
-    {
-        if ( session.closeAsap() )
-        {
-            endLockSession0( context );
-        }
-        else
-        {
-            session.updateTime();
-            session.suspend();
-        }
-    }
-
-    private LockSession resume( RequestContext context )
-    {
-        LockSession session = getLockSession( context );
-
-        session.resume();
-
-        // set time stamp to zero so that we don't even try to finish it off
-        // if getting old. This is because if the tx is active and old then
-        // it means it's waiting for a lock and we cannot do anything about it.
-        session.resetTime();
-
-        return session;
     }
 
     @Override
@@ -424,32 +381,31 @@ public class MasterImpl extends LifecycleAdapter implements Master
                                                    long... resourceIds )
     {
         assertCorrectEpoch( context );
-        LockSession session = resume( context );
+        Locks.Client session;
         try
         {
-            session.client().acquireShared( type, resourceIds );
-            Response<LockResult> lockResultResponse =
-                    spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
-
-            return lockResultResponse;
+            session = slaveLockSessions.acquire( context );
+        }
+        catch ( NoSuchEntryException | ConcurrentAccessException e)
+        {
+            return spi.packTransactionObligationResponse( context, new LockResult( "Unable to acquire shared lock: " + e.getMessage() ) );
+        }
+        try
+        {
+            session.acquireShared( type, resourceIds );
+            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
         catch ( DeadlockDetectedException e )
         {
-            Response<LockResult> lockResultResponse =
-                    spi.packTransactionObligationResponse( context, new LockResult( e.getMessage() ) );
-
-            return lockResultResponse;
+            return spi.packTransactionObligationResponse( context, new LockResult( e.getMessage() ) );
         }
         catch ( IllegalResourceException e )
         {
-            Response<LockResult> lockResultResponse =
-                    spi.packTransactionObligationResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
-
-            return lockResultResponse;
+            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
         }
         finally
         {
-            suspend( context, session );
+            slaveLockSessions.release( context );
         }
     }
 
@@ -461,7 +417,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public Map<Integer, Collection<RequestContext>> getOngoingTransactions()
     {
         Map<Integer, Collection<RequestContext>> result = new HashMap<>();
-        Set<RequestContext> contexts = slaveLockSessions.keySet();
+        Set<RequestContext> contexts = slaveLockSessions.keys();
         for ( RequestContext context : contexts.toArray( new RequestContext[contexts.size()] ) )
         {
             Collection<RequestContext> txs = result.get( context.machineId() );
@@ -473,116 +429,5 @@ public class MasterImpl extends LifecycleAdapter implements Master
             txs.add( context );
         }
         return result;
-    }
-
-    private static class LockSession
-    {
-        private final Locks.Client lockClient;
-        private final AtomicLong timeLastSuspended = new AtomicLong();
-        private boolean active;
-        private volatile boolean closeAsap;
-
-        LockSession( Locks.Client locksClient )
-        {
-            this.lockClient = locksClient;
-        }
-
-        synchronized void resume()
-        {
-            if ( active )
-            {
-                throw new LockSessionAlreadyActiveException();
-            }
-            active = true;
-        }
-
-        synchronized void suspend()
-        {
-            if ( !active )
-            {
-                throw new IllegalStateException( "Not active" );
-            }
-            active = false;
-        }
-
-        void updateTime()
-        {
-            this.timeLastSuspended.set( System.currentTimeMillis() );
-        }
-
-        void resetTime()
-        {
-            this.timeLastSuspended.set( 0 );
-        }
-
-        void markAsCloseAsap()
-        {
-            this.closeAsap = true;
-        }
-
-        public Locks.Client client()
-        {
-            return lockClient;
-        }
-
-        @Override
-        public String toString()
-        {
-            return lockClient + "[lastSuspended=" + timeLastSuspended + ", closeAsap=" + closeAsap +
-                    (active ? ", active" : "") + "]";
-        }
-
-        boolean closeAsap()
-        {
-            return this.closeAsap;
-        }
-    }
-
-    private class UnfinishedTransactionReaper implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            try
-            {
-                Map<RequestContext, LockSession> safeSessions;
-                synchronized ( slaveLockSessions )
-                {
-                    safeSessions = new HashMap<>( slaveLockSessions );
-                }
-
-                for ( Map.Entry<RequestContext, LockSession> entry : safeSessions.entrySet() )
-                {
-                    long time = entry.getValue().timeLastSuspended.get();
-                    if ( (time != 0 && System.currentTimeMillis() - time >= unfinishedTransactionThresholdMillis)
-                            || entry.getValue().closeAsap() )
-                    {
-                        long displayableTime = (time == 0 ? 0 : (System.currentTimeMillis() - time));
-                        RequestContext context = entry.getKey();
-                        String oldTxDescription = format( "old tx %s: %s at age %s ms",
-                                context, entry.getValue().client(), displayableTime );
-                        try
-                        {
-                            resume( context );
-                            endLockSession0( context );
-                            msgLog.info( "Rolled back " + oldTxDescription );
-                        }
-                        catch ( LockSessionAlreadyActiveException e )
-                        {   // Couldn't resume, already active, probably a pending lock acquisition. Don't yell about it
-                        }
-                        catch ( Throwable t )
-                        {
-                            // Not really expected
-                            msgLog.warn( "Unable to roll back " + oldTxDescription, t );
-                        }
-                    }
-                }
-            }
-            catch ( Throwable t )
-            {
-                // The show must go on
-                msgLog.warn( "Exception running " + getClass().getName() + ", although will continue...", t );
-            }
-        }
     }
 }

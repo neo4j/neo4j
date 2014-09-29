@@ -39,7 +39,20 @@ public interface JobScheduler extends Lifecycle
     {
         indexPopulation,
         masterTransactionPushing,
+
+        /**
+         * Rolls back idle transactions on the server.
+         */
         serverTransactionTimeout,
+
+        /**
+         * Aborts idle slave lock sessions on the master.
+         */
+        slaveLocksTimeout,
+
+        /**
+         * Pulls updates from the master.
+         */
         pullUpdates,
 
         /**

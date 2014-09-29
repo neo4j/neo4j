@@ -17,30 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking.community;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.kernel.impl.locking.Locks;
+package org.neo4j.kernel.impl.util.collection;
 
 /**
- * A transaction used for the sole purpose of acquiring locks via the community lock manager. This exists solely to
- * allow using the community lock manager with the {@link Locks} API.
+ * Used for the same cases as NoSuchElementException, but this is a checked exception.
  */
-public class LockTransaction
+public class NoSuchEntryException extends Exception
 {
-    private final static AtomicInteger IDS = new AtomicInteger( 0 );
-
-    private final int id = IDS.getAndIncrement();
-
-    public int getId()
+    public NoSuchEntryException( String message )
     {
-        return id;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "LockClient[%d]", id );
+        super(message);
     }
 }

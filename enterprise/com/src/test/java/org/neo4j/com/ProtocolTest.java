@@ -47,7 +47,7 @@ public class ProtocolTest
         byte[] additionalHeader = "extra".getBytes();
         int masterId = 1, authorId = 2;
         long timeStarted = 12345, lastTxWhenStarted = 12, timeCommitted = timeStarted+10;
-        transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, lastTxWhenStarted, timeCommitted );
+        transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, lastTxWhenStarted, timeCommitted, -1 );
         Protocol.TransactionSerializer serializer = new Protocol.TransactionSerializer( transaction );
         ChannelBuffer buffer = new ChannelBufferWrapper( new InMemoryLogChannel() );
 

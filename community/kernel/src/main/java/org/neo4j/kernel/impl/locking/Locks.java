@@ -111,7 +111,8 @@ public interface Locks extends Lifecycle
         @Override
         void close();
 
-        long getIdentifier();
+        /** For slave transactions, this tracks an identifier for the lock session running on the master */
+        int getLockSessionId();
     }
 
     /**

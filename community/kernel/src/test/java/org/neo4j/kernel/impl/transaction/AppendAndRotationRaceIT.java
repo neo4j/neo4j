@@ -260,7 +260,7 @@ public class AppendAndRotationRaceIT
         commands.add( createNodeCommand( transactionRightNow ) );
 
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
-        transaction.setHeader( new byte[10], 0, 0, timeStarted, transactionRightNow, currentTimeMillis() );
+        transaction.setHeader( new byte[10], 0, 0, timeStarted, transactionRightNow, currentTimeMillis(), -1 );
         return transaction;
     }
 

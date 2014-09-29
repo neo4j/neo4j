@@ -19,19 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.io.fs.FileUtils.deleteRecursively;
-
 import java.io.File;
 
 import org.junit.Rule;
@@ -47,6 +34,16 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
+
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class UniqueConstraintHaIT
 {
@@ -176,8 +173,7 @@ public class UniqueConstraintHaIT
         }
         catch( TransactionFailureException e )
         {
-            // It will come as wrapped in a RuntimeException because the master throws it that way
-            assertTrue( e.getCause().getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException);
+            assertThat(e.getCause().getCause(), instanceOf( org.neo4j.kernel.api.exceptions.TransactionFailureException.class ));
         }
 
         // And then both master and slave should keep working, accepting reads

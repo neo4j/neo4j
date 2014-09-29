@@ -74,8 +74,8 @@ public class NoOpClient implements Locks.Client
     }
 
     @Override
-    public long getIdentifier()
+    public int getLockSessionId()
     {
-        return 0;
+        return -1;
     }
 }
