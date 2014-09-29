@@ -406,7 +406,7 @@ public class ElectionContextTest
                     }
                 },
                 logging, mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
-                mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock(ElectionCredentialsProvider.class ) );
+                mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ) );
 
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         ClusterContext clusterContext = context.getClusterContext();

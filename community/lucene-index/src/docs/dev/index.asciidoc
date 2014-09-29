@@ -499,21 +499,7 @@ the final configuration is the same regardless of the method used to reach it.
 
 [[auto-indexing-update-removal]]
 === Updating the Automatic Index ===
-Updates to the auto indexed properties happen of course automatically as you update them. Removal of properties from the auto index happens for two reasons.
-One is that you actually removed the property. The other is that you stopped autoindexing on a property. When the latter happens, any primitive you touch and
-it has that property, it is removed from the auto index, regardless of any operations on the property.
-When you start or stop auto indexing on a property, no auto update operation happens currently. If you need to change the set of auto indexed properties and
-have them re-indexed, you currently have to do this by hand. An example will illustrate the above better:
-
-[snippet,java]
-----
-component=neo4j-lucene-index
-source=examples/AutoIndexerExampleTests.java
-tag=Mutations
-classifier=test-sources
-----
-
-[CAUTION]
-If you start the database with auto indexing enabled but different auto indexed properties than the last run, then already auto-indexed properties will be deleted from the index when a value is written to them (assuming the property isn't present in the new configuration).
-Make sure that the monitored set is what you want before enabling the functionality.
+Updates to the auto indexed properties happen of course automatically as you update them. Removal of properties from the auto index similarly
+happens when you remove the actual property, but only while the property is auto indexed. In particular, if you had configured your database
+to auto index a property, but later removed it from the configuration, deleting that property will not remove it from the auto index.
 

@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.lifecycle;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.LinkedList;
 import java.util.List;
-
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.junit.Assert;
 import org.junit.Test;
-import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test LifeSupport lifecycle transitions
@@ -157,8 +156,6 @@ public class LifeSupportTest
             assertEquals( stopThrowable, throwable.getCause());
             assertEquals( startThrowable, throwable.getCause().getCause().getCause() );
         }
-
-        lifeSupport.dump( StringLogger.DEV_NULL );
 
         assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus() );
         assertEquals( LifecycleStatus.STOPPED , instance1.getStatus());
