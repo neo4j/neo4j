@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import ch.qos.logback.classic.LoggerContext;
-
+import org.neo4j.backup.BackupService.BackupOutcome;
 import org.neo4j.com.ComException;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -68,11 +68,21 @@ public class BackupTool
         BackupTool tool = new BackupTool( new BackupService(new DefaultFileSystemAbstraction()), System.out );
         try
         {
-            tool.run( args );
+            BackupOutcome backupOutcome = tool.run( args );
+
+            if ( !backupOutcome.isConsistent() )
+            {
+                exitFailure( "WARNING: The database is inconsistent." );
+            }
         }
         catch ( ToolFailureException e )
         {
-            e.haltJVM();
+            if ( e.getCause() != null )
+            {
+                e.getCause().printStackTrace( System.out );
+            }
+
+            exitFailure( e.getMessage() );
         }
     }
 
@@ -87,7 +97,7 @@ public class BackupTool
         this.fs = new DefaultFileSystemAbstraction();
     }
 
-    void run( String[] args ) throws ToolFailureException
+    BackupOutcome run( String[] args ) throws ToolFailureException
     {
         Args arguments = new Args( args );
 
@@ -165,7 +175,7 @@ public class BackupTool
             if (str.contains( "://" ))
                 str = str.split( "://" )[1];
             systemOut.println("Performing backup from '" + str + "'");
-            doBackup( backupURI, to, verify, tuningConfiguration );
+            return doBackup( backupURI, to, verify, tuningConfiguration );
         }
         catch ( TransactionFailureException e )
         {
@@ -184,7 +194,7 @@ public class BackupTool
                             " - cannot continue, aborting.", e );
                 }
 
-                doBackup( backupURI, to, verify, tuningConfiguration );
+                return doBackup( backupURI, to, verify, tuningConfiguration );
             }
             else
             {
@@ -233,13 +243,14 @@ public class BackupTool
         return new Config( specifiedProperties, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
-    private void doBackup( URI from, String to, boolean checkConsistency, Config tuningConfiguration ) throws ToolFailureException
+    private BackupOutcome doBackup( URI from, String to, boolean checkConsistency, Config tuningConfiguration ) throws ToolFailureException
     {
         try
         {
-            backupService.doIncrementalBackupOrFallbackToFull( from.getHost(), extractPort( from ), to, checkConsistency,
+            BackupOutcome backupOutcome = backupService.doIncrementalBackupOrFallbackToFull( from.getHost(), extractPort( from ), to, checkConsistency,
                 tuningConfiguration );
             systemOut.println( "Done" );
+            return backupOutcome;
         }
         catch ( MismatchingStoreIdException e )
         {
@@ -286,16 +297,12 @@ public class BackupTool
         {
             super( message, cause );
         }
+    }
 
-        void haltJVM()
-        {
-            System.out.println( getMessage() );
-            if ( getCause() != null )
-            {
-                getCause().printStackTrace( System.out );
-            }
-            System.exit( 1 );
-        }
+    static void exitFailure( String msg )
+    {
+        System.out.println( msg );
+        System.exit( 1 );
     }
 
     private static String dash( String name )
