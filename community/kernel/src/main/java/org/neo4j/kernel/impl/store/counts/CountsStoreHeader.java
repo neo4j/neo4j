@@ -27,12 +27,13 @@ import org.neo4j.io.pagecache.PagedFile;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 final class CountsStoreHeader
 {
     static CountsStoreHeader empty( String storeFormatVersion )
     {
-        return new CountsStoreHeader( UTF8.encode( storeFormatVersion ), 0, 0 );
+        return new CountsStoreHeader( UTF8.encode( storeFormatVersion ), 0, BASE_TX_ID );
     }
 
     private static final int META_HEADER_SIZE = 2/*headerRecords*/ + 2/*versionLen*/ + 4/*dataRecords*/ + 8/*lastTxId*/;

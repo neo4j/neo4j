@@ -185,6 +185,10 @@ class CountsStore implements Closeable
     {
         return header.lastTxId();
     }
+    public long totalRecordsStored()
+    {
+        return header.dataRecords();
+    }
 
     public void accept( RecordVisitor visitor )
     {
@@ -223,6 +227,13 @@ class CountsStore implements Closeable
         int typeId = buffer.getInt();
         int endLabelId = buffer.getInt();
         long count = buffer.getLong();
+
+        // if the count is zero then it is unused
+        if ( count == 0 )
+        {
+            return;
+        }
+
         if ( count < 0 )
         {
             value = -count;

@@ -63,7 +63,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         void accept( RecordVisitor visitor );
     }
 
-    private static final String ALPHA = ".alpha", BETA = ".beta";
+    static final String ALPHA = ".alpha", BETA = ".beta";
     private final File alphaFile, betaFile;
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private volatile State state;
