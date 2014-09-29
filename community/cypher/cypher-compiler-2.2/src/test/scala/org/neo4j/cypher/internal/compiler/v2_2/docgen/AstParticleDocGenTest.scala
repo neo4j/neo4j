@@ -27,34 +27,34 @@ class AstParticleDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstru
   val docGen = ??? // astParticleDocGen
 
   test("LabelName(a) => :a") {
-    pprintToString(LabelName("a")_) should equal(":a")
+    pprintToString[LabelName](LabelName("a")_) should equal(":a")
   }
 
   test("LabelName(a.) => :`a.`") {
-    pprintToString(LabelName("a.")_) should equal(":`a.`")
+    pprintToString[LabelName](LabelName("a.")_) should equal(":`a.`")
   }
 
   test("RelTypeName(a) => a") {
-    pprintToString(RelTypeName("a")_) should equal("a")
+    pprintToString[RelTypeName](RelTypeName("a")_) should equal("a")
   }
 
   test("RelTypeName(a.) => `a.`") {
-    pprintToString(RelTypeName("a.")_) should equal("`a.`")
+    pprintToString[RelTypeName](RelTypeName("a.")_) should equal("`a.`")
   }
 
   test("PropertyKeyName(a) => a") {
-    pprintToString(PropertyKeyName("a")_) should equal("a")
+    pprintToString[PropertyKeyName](PropertyKeyName("a")_) should equal("a")
   }
 
   test("PropertyKeyName(a.) => `a.`") {
-    pprintToString(PropertyKeyName("a.")_) should equal("`a.`")
+    pprintToString[PropertyKeyName](PropertyKeyName("a.")_) should equal("`a.`")
   }
 
   test("FunctionName(a) => a") {
-    pprintToString(FunctionName("a")_) should equal("a")
+    pprintToString[FunctionName](FunctionName("a")_) should equal("a")
   }
 
   test("FunctionName(a.) => `a.`") {
-    pprintToString(FunctionName("a.")_) should equal("`a.`")
+    pprintToString[FunctionName](FunctionName("a.")_) should equal("`a.`")
   }
 }

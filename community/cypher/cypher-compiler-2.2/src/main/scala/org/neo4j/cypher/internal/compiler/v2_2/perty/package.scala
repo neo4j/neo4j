@@ -30,19 +30,22 @@ import scala.collection.mutable
 package object perty {
   // description of how to construct a doc
   // that still may contain content that needs further processing
+  //
+  // You should build these using DocGen and NewPretty
+  //
   type DocOps[+T] = Seq[DocOp[T]]
   type DocGen[-T] = Extractor[T, DocOps[Any]]
 
-  // description of how to construct a doc
+  // description of how to construct a doc (you won't work with these
+  // types usually)
   type BaseDocOps = Seq[BaseDocOp]
-  type BaseDocGen[T] = Extractor[T, BaseDocOps]
+  type BaseDocGen[-T] = Extractor[T, BaseDocOps]
 
   // layout a doc as a series of print commands
   type DocFormatter = Doc => Seq[PrintCommand]
 
   // turns a sequence of print commands into a result of type T
   type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
-
 }
 
 

@@ -41,17 +41,16 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.handler
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.{docStructureDocGen, scalaDocGen, toStringDocGen}
 
-// Like DefaultDocHandler just without supporting Pretty.toDoc
+// Like DefaultDocHandler just without supporting Pretty.toDocOps
 //
 // This is helpful when reflectively printing scala case classes whose toDoc leaves out information
 //
 case object SimpleDocHandler extends CustomDocHandler[Any] {
   val docGen: DocGen[Any] =
-    ???
-//    // pretty printing the structure of docs themselves
-//    docStructureDocGen.lift[Any] ++
-//    // pretty printing anything common scala value (product, array, primitive)
+    // pretty printing the structure of docs themselves
+    docStructureDocGen.lift[Any] orElse
+    // pretty printing anything common scala value (product, array, primitive)
 //    scalaDocGen ++
-//    // pretty printing by falling back to toString()
-//    toStringDocGen
+    // pretty printing by falling back to toString()
+    toStringDocGen
 }

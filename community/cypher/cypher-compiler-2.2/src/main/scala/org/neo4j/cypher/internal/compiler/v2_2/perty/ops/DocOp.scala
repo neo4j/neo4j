@@ -19,24 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.ops
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Extractor
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{Doc, Extractor}
 
 import scala.reflect.runtime.universe.TypeTag
 
 sealed trait DocOp[+T]
 
-sealed abstract class AddContent[T](implicit val tag: TypeTag[T]) extends DocOp[T] {
+// Values that needs to be converted to DocOps dynamically
+//
+// Uses lazy field content to be able to recover from errors
+// during pretty-printing conversion
+//
+sealed abstract class AddPretty[T](implicit val tag: TypeTag[T]) extends DocOp[T] {
   def content: T
   def apply[I >: T, O](extractor: Extractor[I, O]) = extractor(content)
 }
 
-case object AddContent {
-  def apply[T : TypeTag](value: => T) = new AddContent[T] {
+case object AddPretty {
+  def apply[T : TypeTag](value: => T) = new AddPretty[T] {
     def content: T = value
   }
 }
 
 sealed trait BaseDocOp extends DocOp[Nothing]
+
+sealed case class AddDoc(doc: Doc) extends BaseDocOp
 
 sealed case class AddText(text: String) extends BaseDocOp
 

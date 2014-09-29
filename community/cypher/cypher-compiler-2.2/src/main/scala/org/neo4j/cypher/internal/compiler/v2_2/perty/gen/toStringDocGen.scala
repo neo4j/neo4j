@@ -19,14 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 
+import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.NewPretty
+
+import scala.reflect.runtime.universe.TypeTag
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
 case object toStringDocGen extends CustomDocGen[Any] {
-  def drill = ???
-//  mkDocDrill[Any]() {
-//    case null   => inner => "null"
-//    case v: Any => inner => v.toString
-//  }
+  import NewPretty._
+
+  def apply[X <: Any : TypeTag](x: X): Option[DocOps[Any]] =
+    NewPretty( if (x == null) "null" else x.toString )
 }
 
 

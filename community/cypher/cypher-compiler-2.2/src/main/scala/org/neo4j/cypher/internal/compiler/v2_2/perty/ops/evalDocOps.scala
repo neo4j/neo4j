@@ -49,6 +49,12 @@ case object evalDocOps extends (Seq[BaseDocOp] => Doc) {
     case (Seq(AddNoBreak, tail@_*), Seq(frame, tailFrames@_*)) =>
       convert(tail, (frame :+ NoBreak) +: tailFrames)
 
+    case (Seq(AddDoc(doc: Doc), tail@_*), Seq(frame, tailFrames@_*)) =>
+      doc match {
+        case NilDoc => convert(tail, frames)
+        case _      => convert(tail, (frame :+ doc) +: tailFrames)
+      }
+
     case (Seq(op: PushFrame, tail@_*), tailFrames) =>
       val newFrame: DocFrame = op match {
         case PushGroupFrame        => GroupDocFrame.empty

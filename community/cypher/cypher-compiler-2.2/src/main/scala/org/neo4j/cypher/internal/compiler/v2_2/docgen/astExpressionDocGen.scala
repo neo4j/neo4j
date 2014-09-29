@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
-case object astExpressionDocGen extends CustomDocGen[ASTNode] {
+case object astExpressionDocGen { // extends CustomDocGen[ASTNode] {
   def drill = {
     ???
 //    val exprDocDrill = mkDocDrill[Expression]() {

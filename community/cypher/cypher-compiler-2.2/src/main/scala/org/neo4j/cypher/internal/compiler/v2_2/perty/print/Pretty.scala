@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.DocOps
 
-trait Pretty[T] {
-  def toDoc: DocOps[T]
+trait Pretty {
+  def toDocOps: Option[DocOps[Any]]
 }
 

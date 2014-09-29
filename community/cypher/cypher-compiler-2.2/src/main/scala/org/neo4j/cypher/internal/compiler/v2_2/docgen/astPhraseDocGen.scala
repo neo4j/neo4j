@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
 import scala.util.Try
 
-case object astPhraseDocGen extends CustomDocGen[ASTNode] {
+case object astPhraseDocGen { // extends CustomDocGen[ASTNode] {
 
   def drill = {
     ???

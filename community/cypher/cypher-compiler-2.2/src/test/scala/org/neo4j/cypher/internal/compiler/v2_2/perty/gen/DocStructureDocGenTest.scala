@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
-class DocStructureDocGenTest extends DocHandlerTestSuite[Doc] {
+class DocStructureDocGenTest  extends DocHandlerTestSuite[Doc] {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+  import Doc._
 
-  val docGen = ??? // docStructureDocGen
+  val docGen = docStructureDocGen
 
-  test("end => \"ø\"") {
+  test("nil => \"ø\"") {
     pprintToString(nil) should equal("ø")
   }
 
@@ -41,7 +41,7 @@ class DocStructureDocGenTest extends DocHandlerTestSuite[Doc] {
   }
 
   test("text(...) => \"...\"") {
-    pprintToString("...") should equal("\"...\"")
+    pprintToString[Doc]("...") should equal("\"...\"")
   }
 
   test("text(\"a\")·text(\"b\") => \"a\"·\"b\"·ø") {

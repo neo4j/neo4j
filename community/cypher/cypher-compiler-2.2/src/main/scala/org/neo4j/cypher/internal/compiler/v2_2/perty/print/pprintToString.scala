@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.{AddContent, evalDocOps, expandDocOps}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.{AddPretty, evalDocOps, expandDocOps}
 
 import scala.reflect.runtime.universe._
 
@@ -30,11 +30,10 @@ object pprintToString {
   def apply[T : TypeTag](value: T,
                          formatter: DocFormatter = DocFormatters.defaultPageFormatter)
                         (docGen: DocGen[T] = DefaultDocHandler.docGen): String = {
-    val docOps = expandDocOps(docGen).apply(Seq(AddContent(value)))
-    val doc = evalDocOps(docOps)
-    val formatted = formatter(doc)
-    val condensed = condense(formatted)
-    val result = printCommandsToString(condensed)
-    result
+    val doc = pprintToDoc(value)(docGen)
+    val commands = condense(formatter(doc))
+    val text = printCommandsToString(commands)
+    text
   }
 }
+

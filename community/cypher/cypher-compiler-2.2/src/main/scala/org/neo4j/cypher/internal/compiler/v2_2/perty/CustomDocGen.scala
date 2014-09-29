@@ -23,14 +23,14 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.print.pprintToString
 
 import scala.reflect.runtime.universe._
 
-abstract class CustomDocGen[T : TypeTag] { // extends DocGen[T] {
-//
-//  self =>
-//
-//  trait ToString[S <: T] extends ToStringSupport[S] {
-//    prettySelf: S with DocFormatting =>
-//
-//    override def toPrettyString(formatter: DocFormatter) =
-//      pprintToString[T](prettySelf, formatter = docFormatter)(self)
-//  }
+abstract class CustomDocGen[T : TypeTag] extends SimpleExtractor[T, DocOps[Any]] {
+
+  self =>
+
+  trait ToString[S <: T] extends ToStringSupport[S] {
+    prettySelf: S with DocFormatting =>
+
+    override def toPrettyString(formatter: DocFormatter) =
+      pprintToString[T](prettySelf, formatter = docFormatter)(self)
+  }
 }

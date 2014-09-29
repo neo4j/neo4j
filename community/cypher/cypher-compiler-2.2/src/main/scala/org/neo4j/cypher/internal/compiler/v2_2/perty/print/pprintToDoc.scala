@@ -17,31 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty.ops
+package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Extractor
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.{AddPretty, evalDocOps, expandDocOps}
 
-class expandDocOpsTest extends CypherFunSuite {
+import scala.reflect.runtime.universe._
 
-  import Extractor._
-  import NewPretty._
-
-  test("passes through plain doc ops") {
-    import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.NewPretty._
-
-    val doc = NewPretty("x" :/: "y")
-    val result = expandDocOps(Extractor.empty).apply(doc)
-
-    result should equal(doc)
-  }
-
-  test("replaces content in doc ops") {
-    val doc = NewPretty(pretty(1) :/: "y")
-    val result = expandDocOps[Int](pick {
-      case (a: Int) => NewPretty("1")
-    }).apply(doc)
-
-    result should equal(NewPretty("1" :/: "y"))
+object pprintToDoc {
+  def apply[T : TypeTag](value: T)(docGen: DocGen[T] = DefaultDocHandler.docGen): Doc = {
+    val docOps = expandDocOps(docGen).apply(Seq(AddPretty(value)))
+    val doc = evalDocOps(docOps)
+    doc
   }
 }

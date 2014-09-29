@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.{DocHandlerTestSuite, t
 
 class ToStringDocGenTest extends DocHandlerTestSuite[Any] {
 
-  val docGen = ??? // toStringDocGen
+  val docGen = toStringDocGen
 
   test("handles nulls") {
     pprintToString(null) should equal("null")

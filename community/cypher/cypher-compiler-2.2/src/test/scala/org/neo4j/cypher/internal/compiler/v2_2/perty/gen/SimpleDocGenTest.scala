@@ -108,10 +108,6 @@ class SimpleDocGenTest extends DocHandlerTestSuite[Any] {
   }
 
   test("simpleDocGen formats products") {
-    case object ZObj
-    case class Y(v: Either[ZObj.type, Char])
-    case class X[T](a: Y, b: T)
-
     pprintToString(X[Int]( a = Y(Left(ZObj)), b = 2 )) should equal("X(Y(Left(ZObj)), 2)")
     pprintToString(X[Int]( a = Y(Right('a')), b = 2 )) should equal("X(Y(Right('a')), 2)")
     pprintToString(X[(Int, Int)]( a = Y(Right('a')), b = (2, 3) )) should equal("X(Y(Right('a')), (2, 3))")
@@ -120,4 +116,8 @@ class SimpleDocGenTest extends DocHandlerTestSuite[Any] {
   test("simpleDocGen formats literal docs") {
     pprintToString(literal("a" :: "b")) should equal("DocLiteral(\"a\"·\"b\")")
   }
+
+  case object ZObj
+  case class Y(v: Either[ZObj.type, Char])
+  case class X[T](a: Y, b: T)
 }

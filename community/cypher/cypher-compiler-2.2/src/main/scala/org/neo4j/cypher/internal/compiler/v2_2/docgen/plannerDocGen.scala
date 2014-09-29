@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Direction
 
 import scala.annotation.tailrec
 
-case object plannerDocGen extends CustomDocGen[Any] {
+case object plannerDocGen { // extends CustomDocGen[Any] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 

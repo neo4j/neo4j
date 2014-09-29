@@ -19,25 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 
+import scala.reflect.runtime.universe._
+
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.PrintCommand
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{pprintToDoc, PrintCommand}
 
 abstract class DocHandlerTestSuite[T]
   extends CypherFunSuite
   with DocHandler[T]
   with LineDocFormatting {
 
-  def converter: (T) => Doc = ??? // docGen.asConverter
+  def pprint[S <: T : TypeTag](value: S, formatter: DocFormatter = docFormatter): Unit =
+    print.pprint(value, formatter)(docGen)
 
-  def pprint(value: T, formatter: DocFormatter = docFormatter): Unit =
-    ??? // print.pprint(value, formatter)(converter)
+  def pprintToString[S <: T : TypeTag](value: S, formatter: DocFormatter = docFormatter): String =
+    print.pprintToString(value, formatter)(docGen)
 
-  def pprintToString(value: T, formatter: DocFormatter = docFormatter): String =
-    ??? // print.pprintToString(value, formatter)(converter)
+  def convert[S <: T : TypeTag](value: S, formatter: DocFormatter = docFormatter): Doc =
+    pprintToDoc(value)(docGen)
 
-  def convert(value: T): Doc = converter(value)
-
-  def format(value: T, formatter: DocFormatter = docFormatter): Seq[PrintCommand] =
+  def format[S <: T : TypeTag](value: S, formatter: DocFormatter = docFormatter): Seq[PrintCommand] =
     formatter(convert(value))
 }

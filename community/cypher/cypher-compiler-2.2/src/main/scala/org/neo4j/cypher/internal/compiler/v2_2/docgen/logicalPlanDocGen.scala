@@ -38,12 +38,10 @@
 */
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{CustomDocGen, mkDocDrill}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.CustomDocGen
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
-case object logicalPlanDocGen extends CustomDocGen[LogicalPlan] {
-
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+case object logicalPlanDocGen { // extends CustomDocGen[LogicalPlan] {
 
   def drill = { /// mkDocDrill[LogicalPlan]() {
     ???

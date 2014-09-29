@@ -24,9 +24,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.format.{quoteChar, quoteStr
 
 import scala.collection.{immutable, mutable}
 
-case object scalaDocGen extends CustomDocGen[Any] {
+case object scalaDocGen { /// extends CustomDocGen[Any] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+
 
   def drill = ???
 
