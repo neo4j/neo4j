@@ -1,3 +1,8 @@
+2.1.5
+-----
+o Fixes issue where the lowest numbered instance would fail
+  to leave and rejoin the cluster, if it was not master
+  before leaving
 
 2.1.0-RC1
 ---------

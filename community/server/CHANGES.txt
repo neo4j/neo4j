@@ -4,15 +4,14 @@ o Changed the DELETE verb on a transaction to also mark it as terminated even if
   are concurrent requests that use the transaction. Consult community/kernel/CHANGES.txt and
   the manual for more details on the new transaction termination API.
 
+2.1.5
+-----
+o Node REST representations now contain the labels of the node
+
 2.1.2
 -----
 o Ensures transactional endpoint responds with an https location
   for https calls
-=======
-2.0.4
------
-o Ensure transactional endpoint responds with an https location for https
-  calls.
 
 2.0.2
 -----

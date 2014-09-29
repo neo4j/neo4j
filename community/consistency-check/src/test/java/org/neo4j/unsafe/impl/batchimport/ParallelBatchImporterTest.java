@@ -108,15 +108,13 @@ public class ParallelBatchImporterTest
         return Arrays.asList(
                 // synchronous I/O, actual node id input
                 new Object[]{SYNCHRONOUS, new LongInputIdGenerator(), IdMappings.actual()},
-                // extra slow synchronous I/O, actual node id input
-                new Object[]{synchronousSlowWriterFactory, new LongInputIdGenerator(), IdMappings.actual()},
                 // synchronous I/O, string id input
                 new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), IdMappings.strings( LongArrayFactory.AUTO )},
 
                 // FIXME: we've seen this fail before with inconsistencies due to some kind of race in IoQueue
                 //        enabled here to try and trigger the error so that we can fix it.
                 // extra slow parallel I/O, actual node id input
-                new Object[]{new IoQueue( new Random().nextInt( 2 )+2, synchronousSlowWriterFactory ),
+                new Object[]{new IoQueue( 4, synchronousSlowWriterFactory ),
                         new LongInputIdGenerator(), IdMappings.actual()}
         );
     }
@@ -139,7 +137,7 @@ public class ParallelBatchImporterTest
         // WHEN
         inserter.doImport(
                 nodes( NODE_COUNT, idGenerator ),
-                relationships( NODE_COUNT * 10, idGenerator ),
+                relationships( NODE_COUNT * 3, idGenerator ),
                 idMapping );
 
         // THEN
@@ -281,9 +279,9 @@ public class ParallelBatchImporterTest
                 public void write( ByteBuffer data, long position, Pool<ByteBuffer> pool )
                         throws IOException
                 {
-                    if ( random.nextInt( 10 ) == 0 )
+                    if ( random.nextInt( 7 ) == 0 )
                     {
-                        LockSupport.parkNanos( random.nextInt( 100 ) * 1_000_000 ); // slowness comes from here
+                        LockSupport.parkNanos( random.nextInt( 500 ) * 1_000_000 ); // slowness comes from here
                     }
                     delegate.write( data, position, pool );
 

@@ -23,6 +23,9 @@ o Fixes issue with high id calculation that could lead to store file sizes being
 o Fixes issue with property value equality definition in index state. It is now
   the same as for reading from indexes on disk
 
+Server:
+o Node REST representations now contain the labels of the node
+
 Consistency checker:
 o Added a consistency check for duplicate property names in a given
   node/relationship's property chain

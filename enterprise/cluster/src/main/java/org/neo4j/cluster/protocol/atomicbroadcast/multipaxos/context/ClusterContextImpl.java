@@ -19,11 +19,6 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
-import static org.neo4j.helpers.Predicates.in;
-import static org.neo4j.helpers.Predicates.not;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.helpers.collection.Iterables.toList;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,6 +41,11 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.helpers.collection.Iterables.toList;
 
 class ClusterContextImpl
         extends AbstractContextImpl
@@ -126,6 +126,7 @@ class ClusterContextImpl
     }
 
     // Cluster API
+    @Override
     public long getLastElectorVersion()
     {
         return electorVersion;
@@ -137,6 +138,7 @@ class ClusterContextImpl
         this.electorVersion = lastElectorVersion;
     }
 
+    @Override
     public InstanceId getLastElector()
     {
         return lastElector;

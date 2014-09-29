@@ -82,6 +82,7 @@ public class BatchingNeoStore implements AutoCloseable
         this.pageCacheFactory = new BatchingPageCache( fileSystem, config.fileChannelBufferSize(),
                 writerFactory, writeMonitor, APPEND_ONLY );
         this.neoStore = newNeoStore( pageCacheFactory );
+        flushNeoStoreAndAwaitEverythingWritten();
         this.propertyKeyRepository = new BatchingPropertyKeyTokenRepository( neoStore.getPropertyKeyTokenStore() );
         this.labelRepository = new BatchingLabelTokenRepository( neoStore.getLabelTokenStore() );
         this.relationshipTypeRepository =
@@ -142,12 +143,17 @@ public class BatchingNeoStore implements AutoCloseable
         propertyKeyRepository.close();
         labelRepository.close();
         relationshipTypeRepository.close();
-        neoStore.flush();
-
-        // Await those to be written
-        writerFactory.awaitEverythingWritten();
+        flushNeoStoreAndAwaitEverythingWritten();
 
         // Close the neo store
         neoStore.close();
+    }
+
+    private void flushNeoStoreAndAwaitEverythingWritten()
+    {
+        neoStore.flush();
+        // Issuing a "flush" might queue up I/O jobs to the WriterFactory given to this batching neo store.
+        // That's why we have to wait for any pending I/O jobs to be written after the flush.
+        writerFactory.awaitEverythingWritten();
     }
 }
