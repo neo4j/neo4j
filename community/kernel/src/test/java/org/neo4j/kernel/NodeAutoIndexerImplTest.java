@@ -22,7 +22,7 @@ package org.neo4j.kernel;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
+import org.neo4j.kernel.impl.coreapi.IndexProvider;
 import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.junit.Test;
 
@@ -39,8 +39,8 @@ public class NodeAutoIndexerImplTest
         String indexedPropertyName = "someProperty";
         String nonIndexedPropertyName = "someOtherProperty";
 
-        IndexManagerImpl indexManager = mock( IndexManagerImpl.class, RETURNS_MOCKS );
-        NodeAutoIndexerImpl index = new NodeAutoIndexerImpl( mock( Config.class ), indexManager,
+        IndexProvider indexProvider = mock( IndexProvider.class, RETURNS_MOCKS );
+        NodeAutoIndexerImpl index = new NodeAutoIndexerImpl( mock( Config.class ), indexProvider,
                 mock( NodeManager.class ) );
         index.startAutoIndexingProperty( indexedPropertyName );
 
@@ -48,7 +48,7 @@ public class NodeAutoIndexerImplTest
         index.propertyRemoved( mock( Node.class ), nonIndexedPropertyName, new Object() );
 
         // Then
-        verifyZeroInteractions( indexManager );
+        verifyZeroInteractions( indexProvider );
     }
 
     @Test
@@ -58,8 +58,8 @@ public class NodeAutoIndexerImplTest
         String indexedPropertyName = "someProperty";
         String nonIndexedPropertyName = "someOtherProperty";
 
-        IndexManagerImpl indexManager = mock( IndexManagerImpl.class, RETURNS_MOCKS );
-        NodeAutoIndexerImpl index = new NodeAutoIndexerImpl( mock( Config.class ), indexManager,
+        IndexProvider indexProvider = mock( IndexProvider.class, RETURNS_MOCKS );
+        NodeAutoIndexerImpl index = new NodeAutoIndexerImpl( mock( Config.class ), indexProvider,
                 mock( NodeManager.class ) );
         index.startAutoIndexingProperty( indexedPropertyName );
 
@@ -67,7 +67,7 @@ public class NodeAutoIndexerImplTest
         index.propertyAdded( mock( Node.class ), nonIndexedPropertyName, new Object() );
 
         // Then
-        verifyZeroInteractions( indexManager );
+        verifyZeroInteractions( indexProvider );
     }
 
     @Test
@@ -77,8 +77,8 @@ public class NodeAutoIndexerImplTest
         String indexedPropertyName = "someProperty";
         String nonIndexedPropertyName = "someOtherProperty";
 
-        IndexManagerImpl indexManager = mock( IndexManagerImpl.class, RETURNS_MOCKS );
-        NodeAutoIndexerImpl index = new NodeAutoIndexerImpl( mock( Config.class ), indexManager,
+        IndexProvider indexProvider = mock( IndexProvider.class, RETURNS_MOCKS );
+        NodeAutoIndexerImpl index = new NodeAutoIndexerImpl( mock( Config.class ), indexProvider,
                 mock( NodeManager.class ) );
         index.startAutoIndexingProperty( indexedPropertyName );
 
@@ -86,6 +86,6 @@ public class NodeAutoIndexerImplTest
         index.propertyChanged( mock( Node.class ), nonIndexedPropertyName, new Object(), new Object() );
 
         // Then
-        verifyZeroInteractions( indexManager );
+        verifyZeroInteractions( indexProvider );
     }
 }
