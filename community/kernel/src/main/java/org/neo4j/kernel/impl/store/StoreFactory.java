@@ -199,18 +199,21 @@ public class StoreFactory
     public PropertyStore newPropertyStore()
     {
         return newPropertyStore( storeFileName( PROPERTY_STRINGS_STORE_NAME ),
-                storeFileName( PROPERTY_ARRAYS_STORE_NAME ), storeFileName( PROPERTY_STORE_NAME ) );
+                storeFileName( PROPERTY_ARRAYS_STORE_NAME ), storeFileName( PROPERTY_STORE_NAME ),
+                storeFileName( PROPERTY_KEY_TOKEN_STORE_NAME ) );
     }
 
     public PropertyStore newPropertyStore( File baseFile )
     {
         return newPropertyStore( new File( baseFile.getPath() + STRINGS_PART ),
-                new File( baseFile.getPath() + ARRAYS_PART ), baseFile );
+                new File( baseFile.getPath() + ARRAYS_PART ), baseFile,
+                new File( baseFile.getPath() + INDEX_PART ) );
     }
 
-    private PropertyStore newPropertyStore( File propertyStringStore, File propertyArrayStore, File propertyStore )
+    private PropertyStore newPropertyStore( File propertyStringStore, File propertyArrayStore, File propertyStore,
+            File propertyKeysStore )
     {
-        PropertyKeyTokenStore propertyKeyTokenStore = newPropertyKeyTokenStore();
+        PropertyKeyTokenStore propertyKeyTokenStore = newPropertyKeyTokenStore( propertyKeysStore );
         DynamicStringStore stringPropertyStore = newDynamicStringStore( propertyStringStore, IdType.STRING_BLOCK );
         DynamicArrayStore arrayPropertyStore = newDynamicArrayStore( propertyArrayStore, IdType.ARRAY_BLOCK );
         return new PropertyStore( propertyStore, config, idGeneratorFactory,
@@ -226,7 +229,7 @@ public class StoreFactory
 
     public PropertyKeyTokenStore newPropertyKeyTokenStore( File baseFile )
     {
-        return newPropertyKeyTokenStore( new File( baseFile.getPath() + INDEX_PART + KEYS_PART ), baseFile );
+        return newPropertyKeyTokenStore( new File( baseFile.getPath() + KEYS_PART ), baseFile );
     }
 
     private PropertyKeyTokenStore newPropertyKeyTokenStore( File propertyKeyTokenNamesStore,

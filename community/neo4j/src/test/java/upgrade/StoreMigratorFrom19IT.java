@@ -60,7 +60,6 @@ import static java.lang.Integer.MAX_VALUE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
@@ -68,11 +67,12 @@ import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.NeoStore.versionLongToString;
-import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STORE_NAME;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatHugeStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+
+import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom19IT
 {
@@ -167,8 +167,7 @@ public class StoreMigratorFrom19IT
 
         // THEN
         // verify that there are no duplicate keys in the store
-        File propertyKeyStore = new File( storeDir.directory(), NeoStore.DEFAULT_NAME + PROPERTY_STORE_NAME );
-        PropertyKeyTokenStore tokenStore = cleanup.add( storeFactory.newPropertyKeyTokenStore( propertyKeyStore ) );
+        PropertyKeyTokenStore tokenStore = cleanup.add( storeFactory.newPropertyKeyTokenStore() );
         Token[] tokens = tokenStore.getTokens( MAX_VALUE );
         tokenStore.close();
         assertNoDuplicates( tokens );
