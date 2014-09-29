@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Pair;
@@ -250,7 +250,7 @@ public class LogEntryShuffler
     {
         private final long min;
         private final long max;
-        private final ThreadLocalRandom random = ThreadLocalRandom.current();
+        private final Random random = new Random( System.currentTimeMillis() );
 
         public InRangeRandomPicker( long min, long max )
         {
