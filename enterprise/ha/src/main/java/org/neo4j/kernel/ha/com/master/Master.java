@@ -56,7 +56,7 @@ public interface Master
      * Calling this method will create a new session with the cluster lock manager and associate that
      * session with the provided {@link RequestContext}.
      */
-    Response<Void> newLockSession( RequestContext context );
+    Response<Void> newLockSession( RequestContext context ) throws TransactionFailureException;
 
     /**
      * Calling this will end the current lock session (identified by the {@link RequestContext}),

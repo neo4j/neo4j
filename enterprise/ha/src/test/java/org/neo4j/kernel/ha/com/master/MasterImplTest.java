@@ -29,13 +29,12 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
+import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionObligationResponse;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.locking.Locks.ResourceType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
@@ -53,20 +53,15 @@ import org.neo4j.test.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class MasterImplTest
 {
     @Test
-    public void givenStartedAndInaccessibleWhenInitializeTxThenThrowException() throws Throwable
+    public void givenStartedAndInaccessibleWhenNewLockSessionThrowException() throws Throwable
     {
         // Given
         MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
@@ -84,14 +79,14 @@ public class MasterImplTest
             instance.newLockSession( new RequestContext( 0, 1, 2, 0, 1, 0 ) );
             fail();
         }
-        catch ( TransactionFailureException e )
+        catch ( org.neo4j.kernel.api.exceptions.TransactionFailureException e )
         {
             // Ok
         }
     }
 
     @Test
-    public void givenStartedAndAccessibleWhenInitializeTxThenSucceeds() throws Throwable
+    public void givenStartedAndAccessibleWhenNewLockSessionThenSucceeds() throws Throwable
     {
         // Given
         MasterImpl.SPI spi = mockedSpi();
@@ -126,15 +121,7 @@ public class MasterImplTest
         when( spi.isAccessible() ).thenReturn( true );
         when( spi.acquireClient() ).thenThrow( new RuntimeException( "Nope" ) );
         when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 1L ) );
-        when( spi.packEmptyResponse( any() ) ).thenAnswer( new Answer()
-        {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new TransactionObligationResponse<>( invocation.getArguments()[0], StoreId.DEFAULT,
-                        TransactionIdStore.BASE_TX_ID, ResourceReleaser.NO_OP );
-            }
-        } );
+        mockEmptyResponse( spi );
 
         MasterImpl instance = new MasterImpl( spi, mock( MasterImpl.Monitor.class ),
                 new DevNullLoggingService(), config );
@@ -154,6 +141,19 @@ public class MasterImplTest
             assertThat(e, instanceOf( RuntimeException.class ) );
             assertThat(e.getMessage(), equalTo( "Nope" ));
         }
+    }
+
+    private void mockEmptyResponse( SPI spi )
+    {
+        when( spi.packEmptyResponse( any() ) ).thenAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return new TransactionObligationResponse<>( invocation.getArguments()[0], StoreId.DEFAULT,
+                        TransactionIdStore.BASE_TX_ID, ResourceReleaser.NO_OP );
+            }
+        } );
     }
 
     @Test
@@ -209,6 +209,67 @@ public class MasterImplTest
         }
     }
 
+    @Test
+    public void shouldNotAllowCommitIfThereIsNoMatchingLockSession() throws Throwable
+    {
+        // Given
+        MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
+        Config config = config( 20 );
+
+        when( spi.isAccessible() ).thenReturn( true );
+        when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 1L ) );
+        mockEmptyResponse( spi );
+
+        MasterImpl master = new MasterImpl( spi, mock( MasterImpl.Monitor.class ),
+                new DevNullLoggingService(), config );
+        master.start();
+        HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
+
+        RequestContext ctx = new RequestContext( handshake.epoch(), 1, 2, 0, 1, 0 );
+
+        // When
+        try
+        {
+            master.commit( ctx, mock( TransactionRepresentation.class ) );
+            fail("Should have failed.");
+        }
+        catch ( TransactionNotPresentOnMasterException e )
+        {
+            // Then
+            assertThat(e.getMessage(), equalTo( new TransactionNotPresentOnMasterException( ctx ).getMessage() ));
+        }
+    }
+
+    @Test
+    public void shouldAllowCommitIfClientHoldsNoLocks() throws Throwable
+    {
+        // Given
+        MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
+        Config config = config( 20 );
+
+        Client locks = mock( Client.class );
+        when(locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ) ).thenReturn( true );
+
+        when( spi.isAccessible() ).thenReturn( true );
+        when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 1L ) );
+        when( spi.acquireClient()).thenReturn( locks );
+        mockEmptyResponse( spi );
+
+        MasterImpl master = new MasterImpl( spi, mock( MasterImpl.Monitor.class ), new DevNullLoggingService(), config );
+        master.start();
+        HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
+
+        int no_lock_session = -1;
+        RequestContext ctx = new RequestContext( handshake.epoch(), 1, no_lock_session, 0, 1, 0 );
+        TransactionRepresentation tx = mock( TransactionRepresentation.class );
+
+        // When
+        master.commit( ctx, tx );
+
+        // Then
+        verify(spi).applyPreparedTransaction( tx );
+    }
+    
     public final @Rule OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     private Config config( int lockReadTimeout )

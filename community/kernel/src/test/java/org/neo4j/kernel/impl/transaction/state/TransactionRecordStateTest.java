@@ -197,7 +197,7 @@ public class TransactionRecordStateTest
         List<Command> commands = new ArrayList<>();
         recordState.extractCommands( commands );
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
-        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0 );
+        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
         return transaction;
     }
 

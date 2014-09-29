@@ -201,7 +201,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public long getIdentifier()
+    public int getLockSessionId()
     {
         return lockTransaction.getId();
     }

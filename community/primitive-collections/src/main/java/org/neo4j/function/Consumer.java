@@ -17,30 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking.community;
+package org.neo4j.function;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.kernel.impl.locking.Locks;
-
-/**
- * A transaction used for the sole purpose of acquiring locks via the community lock manager. This exists solely to
- * allow using the community lock manager with the {@link Locks} API.
- */
-public class LockTransaction
+public interface Consumer<TYPE>
 {
-    private final static AtomicInteger IDS = new AtomicInteger( 0 );
-
-    private final int id = IDS.getAndIncrement();
-
-    public int getId()
-    {
-        return id;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "LockClient[%d]", id );
-    }
+    void accept(TYPE value);
 }

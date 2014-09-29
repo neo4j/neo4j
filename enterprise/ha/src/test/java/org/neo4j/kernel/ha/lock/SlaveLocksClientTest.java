@@ -31,7 +31,10 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -194,5 +197,28 @@ public class SlaveLocksClientTest
         // Then this should cause the local lock manager to hold the lock
         verify( local, times( 1 ) ).trySharedLock( NODE, 1l );
         verify( local, times( 0 ) ).releaseShared( NODE, 1l );
+    }
+
+    @Test
+    public void shouldReturnNoLockSessionIfNotInitialized() throws Exception
+    {
+        // When
+        int lockSessionId = client.getLockSessionId();
+
+        // Then
+        assertThat(lockSessionId, equalTo(-1));
+    }
+
+    @Test
+    public void shouldReturnDelegateIdIfInitialized() throws Exception
+    {
+        // Given
+        client.acquireExclusive( ResourceTypes.NODE, 1l );
+
+        // When
+        int lockSessionId = client.getLockSessionId();
+
+        // Then
+        assertThat(lockSessionId, equalTo(0));
     }
 }

@@ -30,6 +30,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
  */
 public interface TransactionRepresentation
 {
+    public static final int NO_LOCK_SESSION = -1;
+
     /**
      * Accepts a visitor into the commands making up this transaction.
      * @param visitor {@link Visitor} which will see the commands.
@@ -69,4 +71,9 @@ public interface TransactionRepresentation
      * @return time when transaction was committed. Reported in milliseconds.
      */
     long getTimeCommitted();
+
+    /**
+     * @return the identifier for the lock session associated with this transaction, or {@link #NO_LOCK_SESSION} if none. This is only used for slave commits.
+     */
+    int getLockSessionId();
 }

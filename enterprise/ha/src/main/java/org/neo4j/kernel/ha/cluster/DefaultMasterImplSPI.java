@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -51,6 +52,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.JobScheduler;
 
 class DefaultMasterImplSPI implements MasterImpl.SPI
 {
@@ -170,6 +172,12 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     public <T> Response<T> packTransactionObligationResponse( RequestContext context, T response )
     {
         return responsePacker.packTransactionObligationResponse( context, response );
+    }
+
+    @Override
+    public JobScheduler.JobHandle scheduleRecurringJob( JobScheduler.Group group, long interval, Runnable job )
+    {
+        return resolve( JobScheduler.class ).scheduleRecurring( group, job, interval, TimeUnit.MILLISECONDS);
     }
 
     @Override

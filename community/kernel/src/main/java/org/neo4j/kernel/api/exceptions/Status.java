@@ -206,6 +206,8 @@ public interface Status
 
         LabelLimitReached( ClientError, "The maximum number of labels supported has been reached, no more labels can be created." ),
 
+        ModifiedConcurrently( TransientError, "The database schema was modified while this transaction was running, the transaction should be retried." ),
+
         ;
 
         private final Code code;
@@ -249,6 +251,7 @@ public interface Status
         FailedIndex( DatabaseError, "The request (directly or indirectly) referred to an index that is in a failed " +
         "state. The index needs to be dropped and recreated manually." ),
         UnknownFailure( DatabaseError, "An unknown failure occurred." ),
+        DatabaseUnavailable( TransientError, "The database is not currently available to serve your request, refer to the database logs for more details. Retrying your request at a later time may succeed." ),
 
         CorruptSchemaRule( DatabaseError, "A malformed schema rule was encountered. Please contact your support representative." ),
 

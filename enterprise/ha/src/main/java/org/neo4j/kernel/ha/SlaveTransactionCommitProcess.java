@@ -48,7 +48,7 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
     {
         try
         {
-            return master.commit( requestContextFactory.newRequestContext(), representation ).response();
+            return master.commit( requestContextFactory.newRequestContext(representation.getLockSessionId()), representation ).response();
         }
         catch ( IOException e )
         {

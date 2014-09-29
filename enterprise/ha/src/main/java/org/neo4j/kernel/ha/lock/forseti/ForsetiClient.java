@@ -498,7 +498,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public long getIdentifier()
+    public int getLockSessionId()
     {
         return myId;
     }

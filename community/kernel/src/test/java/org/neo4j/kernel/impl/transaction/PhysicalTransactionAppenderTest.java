@@ -112,7 +112,7 @@ public class PhysicalTransactionAppenderTest
         final int masterId = 2, authorId = 1;
         final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted+10;
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
-                timeCommitted );
+                timeCommitted, -1 );
 
         appender.append( transaction );
 
@@ -152,7 +152,7 @@ public class PhysicalTransactionAppenderTest
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
                 singleCreateNodeCommand() );
         transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
-                latestCommittedTxWhenStarted, timeCommitted );
+                latestCommittedTxWhenStarted, timeCommitted, -1 );
 
         LogEntryStart start = new LogEntryStart( 0, 0, 0l, latestCommittedTxWhenStarted, null,
                 LogPosition.UNSPECIFIED );
@@ -197,7 +197,7 @@ public class PhysicalTransactionAppenderTest
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
                 singleCreateNodeCommand() );
         transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
-                latestCommittedTxWhenStarted, timeCommitted );
+                latestCommittedTxWhenStarted, timeCommitted, -1 );
 
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
 
@@ -446,7 +446,7 @@ public class PhysicalTransactionAppenderTest
             commands.add( nodeCommand );
         }
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
-        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0 );
+        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, -1 );
         return transaction;
     }
 
