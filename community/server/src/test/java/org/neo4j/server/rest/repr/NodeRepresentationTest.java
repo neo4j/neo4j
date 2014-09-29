@@ -152,5 +152,6 @@ public class NodeRepresentationTest
         Map metadata = (Map) noderep.get( "metadata" );
         List labels = (List) metadata.get( "labels" );
         assertTrue( labels.isEmpty() || labels.equals( asList( "Label" ) ) );
+        assertTrue( ( (Number) metadata.get("id") ).longValue() >= 0 );
     }
 }
