@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import org.neo4j.graphdb.{DynamicLabel, Node}
+import org.neo4j.graphdb.{Transaction, DynamicLabel, Node}
 import org.neo4j.graphdb.DynamicLabel._
 import org.neo4j.kernel.GraphDatabaseAPI
 import collection.JavaConverters._
@@ -63,10 +63,14 @@ trait GraphIcing {
 
     def statement: Statement = txBridge.instance()
 
-    def inTx[T](f: => T): T = {
+    // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
+    def inTx[T](f: => T): T = withTx(_ => f)
+
+    // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
+    def withTx[T](f: Transaction => T): T = {
       val tx = graph.beginTx()
       try {
-        val result = f
+        val result = f(tx)
         tx.success()
         result
       } finally {
