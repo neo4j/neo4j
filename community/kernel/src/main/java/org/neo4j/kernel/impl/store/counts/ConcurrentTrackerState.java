@@ -83,6 +83,12 @@ class ConcurrentTrackerState extends ConcurrentHashMap<CountsKey, AtomicLong> im
     }
 
     @Override
+    public long lastTxId()
+    {
+        return store.lastTxId();
+    }
+
+    @Override
     public CountsStore.Writer newWriter( File file, long lastCommittedTxId ) throws IOException
     {
         return store.newWriter( file, lastCommittedTxId );

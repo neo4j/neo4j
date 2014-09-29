@@ -29,12 +29,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.CountsAcceptor;
 import org.neo4j.kernel.impl.api.CountsKey;
-import org.neo4j.kernel.impl.api.CountsState;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
@@ -50,6 +48,8 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
     interface State extends Closeable
     {
+        long lastTxId();
+
         boolean hasChanges();
 
         long getCount( CountsKey key );
@@ -123,6 +123,11 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     public long countsForNode( int labelId )
     {
         return get( nodeKey( labelId ) );
+    }
+
+    public boolean acceptTx( long txId )
+    {
+        return state.lastTxId() < txId;
     }
 
     @Override
