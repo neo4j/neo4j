@@ -120,7 +120,7 @@ public class AutoIndexerExampleTests implements GraphHolder
             // node2 also had a property that should be ignored.
             assertFalse( autoNodeIndex.get( "nonIndexed",
                     "nodeProp2NonIndexedValue" ).hasNext() );
-    
+
             // Get the relationship auto index
             ReadableIndex<Relationship> autoRelIndex = graphDb.index()
                     .getRelationshipAutoIndexer()
@@ -196,7 +196,7 @@ public class AutoIndexerExampleTests implements GraphHolder
             // node2 also had a property that should be ignored.
             assertFalse( autoNodeIndex.get( "nonIndexed",
                     "nodeProp2NonIndexedValue" ).hasNext() );
-    
+
             // Get the relationship auto index
             ReadableIndex<Relationship> autoRelIndex = relAutoIndexer.getAutoIndex();
             // All properties ignored

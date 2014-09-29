@@ -27,7 +27,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest(BackupTool.ToolFailureException.class)
+@PrepareForTest(BackupTool.class)
 public class ExitCodeTest {
 
     @Test
@@ -37,7 +37,7 @@ public class ExitCodeTest {
         PowerMockito.mockStatic(System.class);
 
         // when
-        new BackupTool.ToolFailureException("tool failed").haltJVM();
+        BackupTool.exitFailure( "tool failed" );
 
         // then
         PowerMockito.verifyStatic();

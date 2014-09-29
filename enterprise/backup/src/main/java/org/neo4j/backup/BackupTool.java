@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 
 import ch.qos.logback.classic.LoggerContext;
 
+import org.neo4j.backup.BackupService.BackupOutcome;
 import org.neo4j.com.ComException;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -87,11 +88,21 @@ public class BackupTool
         BackupTool tool = new BackupTool( new BackupService( new DefaultFileSystemAbstraction() ), System.out );
         try
         {
-            tool.run( args );
+            BackupOutcome backupOutcome = tool.run( args );
+
+            if ( !backupOutcome.isConsistent() )
+            {
+                exitFailure( "WARNING: The database is inconsistent." );
+            }
         }
         catch ( ToolFailureException e )
         {
-            e.haltJVM();
+            if ( e.getCause() != null )
+            {
+                e.getCause().printStackTrace( System.out );
+            }
+
+            exitFailure( e.getMessage() );
         }
     }
 
@@ -106,7 +117,7 @@ public class BackupTool
         this.fs = new DefaultFileSystemAbstraction();
     }
 
-    void run( String[] args ) throws ToolFailureException
+    BackupOutcome run( String[] args ) throws ToolFailureException
     {
         Args arguments = new Args( args );
 
@@ -117,11 +128,11 @@ public class BackupTool
 
         if ( arguments.hasNonNull( FROM ) && !arguments.has( HOST ) && !arguments.has( PORT ) )
         {
-            runBackupWithLegacyArgs( arguments );
+            return runBackupWithLegacyArgs( arguments );
         }
         else if ( arguments.hasNonNull( HOST ) )
         {
-            runBackup( arguments );
+            return runBackup( arguments );
         }
         else
         {
@@ -129,7 +140,7 @@ public class BackupTool
         }
     }
 
-    private void runBackupWithLegacyArgs( Args args ) throws ToolFailureException
+    private BackupOutcome runBackupWithLegacyArgs( Args args ) throws ToolFailureException
     {
         String from = args.get( FROM ).trim();
         String to = args.get( TO ).trim();
@@ -140,10 +151,10 @@ public class BackupTool
 
         HostnamePort hostnamePort = newHostnamePort( backupURI );
 
-        executeBackup( hostnamePort, to, verify, tuningConfiguration );
+        return executeBackup( hostnamePort, to, verify, tuningConfiguration );
     }
 
-    private void runBackup( Args args ) throws ToolFailureException
+    private BackupOutcome runBackup( Args args ) throws ToolFailureException
     {
         String host = args.get( HOST ).trim();
         int port = args.getNumber( PORT, BackupServer.DEFAULT_PORT ).intValue();
@@ -167,16 +178,16 @@ public class BackupTool
 
         HostnamePort hostnamePort = newHostnamePort( backupURI );
 
-        executeBackup( hostnamePort, to, verify, tuningConfiguration );
+        return executeBackup( hostnamePort, to, verify, tuningConfiguration );
     }
 
-    private void executeBackup( HostnamePort hostnamePort, String to,
-                                boolean verify, Config tuningConfiguration ) throws ToolFailureException
+    private BackupOutcome executeBackup( HostnamePort hostnamePort, String to,
+                                         boolean verify, Config tuningConfiguration ) throws ToolFailureException
     {
         try
         {
             systemOut.println( "Performing backup from '" + hostnamePort + "'" );
-            doBackup( hostnamePort, to, verify, tuningConfiguration );
+            return doBackup( hostnamePort, to, verify, tuningConfiguration );
         }
         catch ( TransactionFailureException tfe )
         {
@@ -195,7 +206,7 @@ public class BackupTool
                             " - cannot continue, aborting.", e );
                 }
 
-                doBackup( hostnamePort, to, verify, tuningConfiguration );
+                return doBackup( hostnamePort, to, verify, tuningConfiguration );
             }
             else
             {
@@ -205,15 +216,17 @@ public class BackupTool
         }
     }
 
-    private void doBackup( HostnamePort hostnamePort, String to,
-                           boolean checkConsistency, Config config ) throws ToolFailureException
+    private BackupOutcome doBackup( HostnamePort hostnamePort, String to,
+                                    boolean checkConsistency, Config config ) throws ToolFailureException
     {
         try
         {
             String host = hostnamePort.getHost();
             int port = hostnamePort.getPort();
-            backupService.doIncrementalBackupOrFallbackToFull( host, port, to, checkConsistency, config );
+            BackupOutcome outcome =
+                    backupService.doIncrementalBackupOrFallbackToFull( host, port, to, checkConsistency, config );
             systemOut.println( "Done" );
+            return outcome;
         }
         catch ( MismatchingStoreIdException e )
         {
@@ -365,6 +378,12 @@ public class BackupTool
         return "-" + name;
     }
 
+    static void exitFailure( String msg )
+    {
+        System.out.println( msg );
+        System.exit( 1 );
+    }
+
     static class ToolFailureException extends Exception
     {
         ToolFailureException( String message )
@@ -375,16 +394,6 @@ public class BackupTool
         ToolFailureException( String message, Throwable cause )
         {
             super( message, cause );
-        }
-
-        void haltJVM()
-        {
-            System.out.println( getMessage() );
-            if ( getCause() != null )
-            {
-                getCause().printStackTrace( System.out );
-            }
-            System.exit( 1 );
         }
     }
 }
