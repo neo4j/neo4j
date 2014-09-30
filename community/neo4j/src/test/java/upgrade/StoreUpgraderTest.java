@@ -137,22 +137,6 @@ public class StoreUpgraderTest
     }
 
     @Test
-    public void shouldBackupOriginalStoreEvenIfMessagesLogIsMissing() throws ConsistencyCheckIncompleteException
-    {
-        // given
-        fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
-
-        // when
-        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
-
-        // then
-        File backupDirectory = new File( dbDirectory, "upgrade_backup" );
-        assertFalse( fileSystem.fileExists( new File( dbDirectory, StringLogger.DEFAULT_NAME ) ) );
-        assertFalse( fileSystem.fileExists( new File( backupDirectory, StringLogger.DEFAULT_NAME ) ) );
-        assertConsistentStore( dbDirectory );
-    }
-
-    @Test
     public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess()
     {
         UpgradeConfiguration vetoingUpgradeConfiguration = new UpgradeConfiguration()
