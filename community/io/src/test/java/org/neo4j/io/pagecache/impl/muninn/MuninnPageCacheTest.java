@@ -22,12 +22,18 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
+import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheMonitor;
@@ -36,11 +42,13 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RecordingPageCacheMonitor;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
@@ -249,5 +257,67 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         buf.flip();
         assertThat( buf.getLong(), is( 42L ) );
         assertThat( buf.getLong(), is( y ) );
+    }
+
+    @Test
+    public void mustUnblockPageFaultersWhenEvictionGetsException() throws Exception
+    {
+        writeInitialDataTo( file );
+
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
+        {
+            @Override
+            public StoreChannel open( File fileName, String mode ) throws IOException
+            {
+                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                {
+                    @Override
+                    public void writeAll( ByteBuffer src, long position ) throws IOException
+                    {
+                        throw new IOException( "uh-oh..." );
+                    }
+                };
+            }
+        };
+
+        MuninnPageCache pageCache = new MuninnPageCache( fs, 2, 8, PageCacheMonitor.NULL );
+        final PagedFile pagedFile = pageCache.map( file, 8 );
+
+        Future<?> task = executor.submit( new Callable<Object>()
+        {
+            @Override
+            public Object call() throws Exception
+            {
+                try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+                {
+                    for (;;)
+                    {
+                        assertTrue( cursor.next() );
+                    }
+                }
+            }
+        } );
+
+        try
+        {
+            task.get( 100, TimeUnit.MILLISECONDS );
+            fail( "expected a timeout" );
+        }
+        catch ( TimeoutException ignore )
+        {
+            // this is expected
+        }
+
+        pageCache.evictPages( 1, 0 );
+
+        try
+        {
+            task.get();
+            fail( "expected an execution exception" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), instanceOf( IOException.class ) );
+        }
     }
 }

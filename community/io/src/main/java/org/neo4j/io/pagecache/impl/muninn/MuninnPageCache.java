@@ -493,15 +493,25 @@ public class MuninnPageCache implements RunnablePageCache
                     // and that is the wrong lock order. We must always first
                     // lock on the translation table, and then on the page.
                     // Never the other way around. Otherwise we risk
-                    // dead-locking
+                    // dead-locking.
                     PageSwapper swapper = page.getSwapper();
                     long filePageId = page.getFilePageId();
                     boolean pageEvicted = false;
 
+                    // Assume that the eviction is going to succeed, so that we
+                    // always make some kind of progress. This means that, if
+                    // we have a temporary outage of the storage system, for
+                    // instance if the drive is full, then we won't spin in
+                    // this forever. Instead, we'll eventually make our way
+                    // back out to the main loop, where we have a chance to
+                    // sleep for a little while in `parkUntilEvictionRequired`.
+                    // This reduces the CPU load and power usage in such a
+                    // scenario.
+                    pageCountToEvict--;
+
                     try
                     {
                         page.evict();
-                        pageCountToEvict--;
                         evictorException = null;
                         pageEvicted = true;
                     }
@@ -548,6 +558,11 @@ public class MuninnPageCache implements RunnablePageCache
                             }
                             while ( !freelist.compareAndSet( next, page ) );
                         }
+                    }
+                    else if ( waiters != null && evictorException != null )
+                    {
+                        waiters.unparkException( evictorException );
+                        waiters = waiters.next;
                     }
                 }
             }

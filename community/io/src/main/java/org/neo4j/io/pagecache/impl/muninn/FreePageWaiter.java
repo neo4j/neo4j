@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import java.io.IOException;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -40,8 +41,15 @@ class FreePageWaiter
     // shutting down.
     private static final MuninnPage interruptSignal = new MuninnPage( 0, -1, null );
 
+    // Like the interruptSignal above, this is used to tell the FreePageWaiters that they
+    // should stop waiting, but this time the reason is that the eviction thread has
+    // encountered an exception, which must be bubbled out.
+    private static final MuninnPage exceptionSignal = new MuninnPage( 0, -2, null );
+
     FreePageWaiter next;
+
     private final Thread waiter;
+    private IOException exception;
     private volatile MuninnPage page;
 
     public FreePageWaiter()
@@ -49,7 +57,15 @@ class FreePageWaiter
         waiter = Thread.currentThread();
     }
 
-    public MuninnPage park( MuninnPageCache muninnPageCache )
+    /**
+     * Park and wait for a page to be transferred into the current threads possession.
+     *
+     * Returns 'null' if the page cache has been interrupted and is shutting down.
+     *
+     * Throws an IOException if the page cache has encountered an exception while trying
+     * to evict pages.
+     */
+    public MuninnPage park( MuninnPageCache muninnPageCache ) throws IOException
     {
         MuninnPage page;
         do
@@ -58,6 +74,11 @@ class FreePageWaiter
             page = this.page;
         }
         while ( page == null );
+
+        if ( page == exceptionSignal )
+        {
+            throw new IOException( "Exception in the page eviction thread", exception );
+        }
 
         return page == interruptSignal? null : page;
     }
@@ -81,6 +102,17 @@ class FreePageWaiter
     public void unparkInterrupt()
     {
         this.page = interruptSignal;
+        LockSupport.unpark( waiter );
+    }
+
+    /**
+     * Unpark the waiting thread and let it receive the given exception as the reason
+     * for why its request for a free page could not be fulfilled.
+     */
+    public void unparkException( IOException exception )
+    {
+        this.exception = exception;
+        this.page = exceptionSignal;
         LockSupport.unpark( waiter );
     }
 }
