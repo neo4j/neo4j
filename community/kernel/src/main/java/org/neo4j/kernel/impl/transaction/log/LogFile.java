@@ -50,7 +50,15 @@ public interface LogFile extends Lifecycle
 
     void accept( LogHeaderVisitor visitor ) throws IOException;
 
-    void checkRotation() throws IOException;
+    /**
+     * @return {@code true} if a rotation indeed happened.
+     */
+    boolean checkRotation() throws IOException;
+
+    /**
+     * Prunes historical log versions.
+     */
+    void prune();
 
     File currentLogFile();
 }

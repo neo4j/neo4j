@@ -93,25 +93,30 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     {
         long transactionId = -1;
         long ticket;
-        boolean hasLegacyIndexChanges;
+        boolean hasLegacyIndexChanges, rotated;
         // Synchronized with logFile to get absolute control over concurrent rotations happening
         synchronized ( logFile )
         {
             // We put log rotation check outside the private append method since it must happen before
             // we generate the next transaction id
-            logFile.checkRotation();
+            rotated = logFile.checkRotation();
             transactionId = txIdGenerator.generate( transaction );
             hasLegacyIndexChanges = append( transaction, transactionId );
             ticket = getCurrentTicket();
         }
 
         force( ticket );
-        afterForce( transactionId, hasLegacyIndexChanges );
+        afterForce( transactionId, hasLegacyIndexChanges, rotated );
         return transactionId;
     }
 
-    private void afterForce( long transactionId, boolean hasLegacyIndexChanges ) throws IOException
+    private void afterForce( long transactionId, boolean hasLegacyIndexChanges, boolean rotated ) throws IOException
     {
+        if ( rotated )
+        {
+            logFile.prune();
+        }
+
         if ( hasLegacyIndexChanges )
         {
             try
@@ -137,11 +142,11 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     {
         long transactionId;
         long ticket;
-        boolean hasLegacyIndexChanges;
+        boolean hasLegacyIndexChanges, rotated;
         // Synchronized with logFile to get absolute control over concurrent rotations happening
         synchronized ( logFile )
         {
-            logFile.checkRotation();
+            rotated = logFile.checkRotation();
             long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
             long candidateTransactionId = transaction.getCommitEntry().getTxId();
             if ( lastCommittedTxId + 1 == candidateTransactionId )
@@ -163,7 +168,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             }
         }
         force( ticket );
-        afterForce( transactionId, hasLegacyIndexChanges );
+        afterForce( transactionId, hasLegacyIndexChanges, rotated );
         return true;
     }
 
