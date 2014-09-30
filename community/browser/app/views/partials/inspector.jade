@@ -6,5 +6,8 @@
 
 .inspector-footer(ng-if="Inspector.length == 0")
   .inspector-footer-row
-    ul.list-unstyled.list-items
-      li(ng-bind="resultStatistics(frame)")
+    span
+      | Displaying
+      ng-pluralize(count='frame.response.graph.nodes().length', when="{one: '1 node', other: '{} nodes'}")
+      | ,
+      ng-pluralize(count='frame.response.graph.relationships().length', when="{one: '1 relationship', other: '{} relationships'}")
