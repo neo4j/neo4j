@@ -32,6 +32,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 import org.neo4j.unsafe.impl.batchimport.store.io.SimplePool;
 
@@ -150,8 +151,12 @@ public class BatchingPageCache implements PageCache
     public PagedFile map( File file, int pageSize ) throws IOException
     {
         StoreChannel channel = fs.open( file, "rw" );
-        BatchingPagedFile pageFile = new BatchingPagedFile( channel,
-                writerFactory.create( channel, monitor ), pageSize );
+        // This is a hack necessary to make sure that we write to disk immediately the changes to the
+        // counts store since we circumvent the page cache to read the counts
+        Writer writer = file.getName().contains( StoreFactory.COUNTS_STORE )
+                ? SYNCHRONOUS.create( channel, monitor )
+                : writerFactory.create( channel, monitor );
+        BatchingPagedFile pageFile = new BatchingPagedFile( channel, writer, pageSize );
         pagedFiles.put( file, pageFile );
         return pageFile;
     }
