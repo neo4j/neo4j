@@ -64,6 +64,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
+import static org.neo4j.helpers.DaemonThreadFactory.daemon;
 
 /**
  * TCP version of sending messages. This handles sending messages from state machines to other instances
@@ -144,8 +145,8 @@ public class NetworkSender
 
         // Start client bootstrap
         clientBootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
-                Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster client boss" ) ),
-                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster client worker" ) ), 2 ) );
+                Executors.newSingleThreadExecutor( daemon( "Cluster client boss" ) ),
+                Executors.newFixedThreadPool( 2, daemon( "Cluster client worker" ) ), 2 ) );
         clientBootstrap.setOption( "tcpNoDelay", true );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
     }
@@ -158,9 +159,15 @@ public class NetworkSender
         for ( ExecutorService executorService : senderExecutors.values() )
         {
             executorService.shutdown();
-            if ( !executorService.awaitTermination( 100, TimeUnit.SECONDS ) )
+        }
+        for ( Map.Entry<URI, ExecutorService> entry : senderExecutors.entrySet() )
+        {
+            URI targetAddress = entry.getKey();
+            ExecutorService executorService = entry.getValue();
+
+            if ( !executorService.awaitTermination( 50, TimeUnit.SECONDS ) )
             {
-                msgLog.warn( "Could not shut down send executor" );
+                msgLog.warn( "Could not shut down send executor towards: " + targetAddress );
             }
         }
         senderExecutors.clear();

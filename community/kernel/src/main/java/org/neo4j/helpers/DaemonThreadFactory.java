@@ -25,37 +25,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Yes, it's yet another daemon thread factory since Executors doesn't provide one. Sigh.
  */
-public class DaemonThreadFactory
-    implements ThreadFactory
+public class DaemonThreadFactory implements ThreadFactory
 {
-    static final AtomicInteger poolNumber = new AtomicInteger( 1 );
-    final ThreadGroup group;
-    final AtomicInteger threadNumber = new AtomicInteger( 1 );
-    final String namePrefix;
+    private static final AtomicInteger poolNumber = new AtomicInteger( 1 );
 
-    public DaemonThreadFactory(String name)
+    private final ThreadGroup group;
+    private final AtomicInteger threadNumber = new AtomicInteger( 1 );
+    private final String namePrefix;
+
+    public DaemonThreadFactory( String name )
     {
         SecurityManager s = System.getSecurityManager();
-        group = ( s != null ) ? s.getThreadGroup() :
-                Thread.currentThread().getThreadGroup();
-        namePrefix = name+"-" +
-                     poolNumber.getAndIncrement() +
-                     "-thread-";
+        group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
+        namePrefix = name + "-" + poolNumber.getAndIncrement() + "-thread-";
     }
 
-    public Thread newThread( Runnable r )
+    public static DaemonThreadFactory daemon( String name )
     {
-        Thread t = new Thread( group, r,
-                               namePrefix + threadNumber.getAndIncrement(),
-                               0 );
-        if( !t.isDaemon() )
-        {
-            t.setDaemon( true );
-        }
-        if( t.getPriority() != Thread.NORM_PRIORITY )
-        {
-            t.setPriority( Thread.NORM_PRIORITY );
-        }
+        return new DaemonThreadFactory( name );
+    }
+
+    public Thread newThread( Runnable runnable )
+    {
+        Thread t = new Thread( group, runnable, namePrefix + threadNumber.getAndIncrement() );
+        t.setDaemon( true );
+        t.setPriority( Thread.NORM_PRIORITY );
         return t;
     }
 }

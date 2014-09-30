@@ -19,9 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -30,8 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -45,9 +40,9 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -56,6 +51,13 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.Clock;
+
+import static java.lang.String.format;
+import static java.util.concurrent.Executors.newCachedThreadPool;
+
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.helpers.DaemonThreadFactory.daemon;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -76,7 +78,6 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     private final SocketAddress address;
     private final StringLogger msgLog;
-    private ExecutorService executor;
     private ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
     private final Protocol protocol;
     private final int frameLength;
@@ -115,10 +116,12 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     @Override
     public void start()
     {
-        executor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + "@" + address
-        ) );
-        bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
+        String threadNameFormat = "%s-" + getClass().getSimpleName() + "@" + address;
+        bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
+                newCachedThreadPool( daemon( format( threadNameFormat, "Boss" ) ) ),
+                newCachedThreadPool( daemon( format( threadNameFormat, "Worker" ) ) ) ) );
         bootstrap.setPipelineFactory( this );
+
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>( maxUnusedChannels,
                 new ResourcePool.CheckStrategy.TimeoutCheckStrategy( ResourcePool.DEFAULT_CHECK_INTERVAL,
                         Clock.REAL_CLOCK ),
@@ -186,7 +189,6 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         channelPool.close( true );
         bootstrap.releaseExternalResources();
-        executor.shutdownNow();
         mismatchingVersionHandlers.clear();
         msgLog.logMessage( toString() + " shutdown", true );
     }
