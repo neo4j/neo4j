@@ -19,20 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.DbHits
-
 object renderSummary extends (PlanDescription => String) {
   def apply(plan: PlanDescription): String =
-    "Total database accesses: " +
-    plan.toSeq.
-      map(extractDbHits).
-      reduce(optionallyAddTogether).
-      map(_.toString).
-      getOrElse("?")
-
-  private def optionallyAddTogether(a: Option[Long], b: Option[Long]): Option[Long] = for (a0 <- a; b0 <- b) yield a0 + b0
-
-  private def extractDbHits(pl: PlanDescription): Option[Long] = pl.arguments.collectFirst {
-    case DbHits(x) => x
-  }
+    "Total database accesses: " + plan.totalDbHits.getOrElse("?")
 }
