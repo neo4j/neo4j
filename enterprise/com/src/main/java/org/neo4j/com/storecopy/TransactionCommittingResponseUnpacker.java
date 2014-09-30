@@ -36,12 +36,13 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, Lifecycle
 {
     private final DependencyResolver resolver;
+    private final TxHandler txHandler;
 
     private TransactionAppender appender;
     private TransactionRepresentationStoreApplier storeApplier;
     private TransactionIdStore transactionIdStore;
 
-    private final TxHandler txHandler;
+    private volatile boolean stopped = false;
 
     public TransactionCommittingResponseUnpacker( DependencyResolver resolver, TxHandler txHandler )
     {
@@ -52,6 +53,10 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     @Override
     public void unpackResponse( Response<?> response ) throws IOException
     {
+        if ( stopped )
+        {
+            throw new IllegalStateException( "Component is currently stopped" );
+        }
         response.accept( new Visitor<CommittedTransactionRepresentation, IOException>()
         {
             @Override
@@ -96,14 +101,13 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.appender = resolver.resolveDependency( LogicalTransactionStore.class ).getAppender();
         this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class );
         this.transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+        this.stopped = false;
     }
 
     @Override
     public void stop() throws Throwable
     {
-        this.appender = null;
-        this.storeApplier = null;
-        this.transactionIdStore = null;
+        this.stopped = true;
     }
 
     @Override
