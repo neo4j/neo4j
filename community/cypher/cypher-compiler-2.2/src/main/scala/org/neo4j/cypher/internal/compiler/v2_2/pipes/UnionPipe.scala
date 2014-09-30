@@ -66,5 +66,5 @@ case class NewUnionPipe(l: Pipe, r: Pipe)
 
   override def localEffects = Effects.NONE
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

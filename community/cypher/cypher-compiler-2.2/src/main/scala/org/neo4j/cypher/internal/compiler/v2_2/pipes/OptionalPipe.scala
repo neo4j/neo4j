@@ -51,5 +51,5 @@ case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)
 
   override def localEffects = Effects.NONE
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

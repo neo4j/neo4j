@@ -48,7 +48,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String, start: String, en
     copy(source = source)(estimatedCardinality)
   }
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 
   private def projector(qtx: QueryContext): Projector =
     if (directed)

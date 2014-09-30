@@ -130,7 +130,7 @@ case class VarLengthExpandPipeForIntTypes(source: Pipe,
     copy(head)(estimatedCardinality)
   }
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }
 
 case class VarLengthExpandPipeForStringTypes(source: Pipe,
@@ -155,5 +155,5 @@ case class VarLengthExpandPipeForStringTypes(source: Pipe,
     copy(head)(estimatedCardinality)
   }
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

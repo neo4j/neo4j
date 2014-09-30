@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
 
-class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport {
+class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport with NewPlannerTestSupport {
 
   test("match n where n-[:FOO]->() return *") {
     //GIVEN
@@ -108,7 +108,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("no problem measuring creation") {
     //GIVEN
-    val result = profile("CREATE n")
+    val result = legacyProfile("CREATE n")
 
     //WHEN THEN
     assertDbHits(0)(result)("EmptyResult")
@@ -170,7 +170,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("should support profiling merge_queries") {
-    val result = profile("merge (a {x: 1}) return a.x as A")
+    val result = legacyProfile("merge (a {x: 1}) return a.x as A")
     result.toList.head("A") should equal(1)
   }
 
@@ -201,7 +201,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val initialTxCounts = graph.txCounts
 
     // when
-    val result = profile(query)
+    val result = legacyProfile(query)
 
     // then
 
@@ -253,8 +253,10 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     }
   }
 
-  override def profile(q: String, params: (String, Any)*): InternalExecutionResult = {
-    val result = super.execute("profile " + q, params: _*)
+  type Planner = (String, Seq[(String, Any)]) => InternalExecutionResult
+
+  def profileWithPlanner(planner: Planner, q: String, params: (String, Any)*): InternalExecutionResult = {
+    val result = planner("profile " + q, params)
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
     val planDescription: v2_2.planDescription.PlanDescription = result.executionPlanDescription()
     planDescription.toSeq.foreach {
@@ -266,6 +268,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     }
     result
   }
+
+  override def profile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithNewPlanner(_,_:_*), q, params:_*)
+
+  def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(super.execute(_,_:_*), q, params:_*)
+
+
 
   private def getArgument[A <: Argument](plan: v2_2.planDescription.PlanDescription)(implicit manifest: Manifest[A]): A = plan.arguments.collectFirst {
     case x: A => x

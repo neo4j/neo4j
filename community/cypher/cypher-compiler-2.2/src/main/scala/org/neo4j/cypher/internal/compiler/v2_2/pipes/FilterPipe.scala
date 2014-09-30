@@ -40,5 +40,5 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinali
 
   override def localEffects = predicate.effects
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

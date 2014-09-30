@@ -52,7 +52,7 @@ case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProduce
   def identifierType = CTNode
   override def localEffects = Effects.READS_NODES
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
@@ -65,7 +65,7 @@ case class RelationshipStartPipe(source: Pipe, name: String, createSource: Entit
   def identifierType = CTRelationship
   override def localEffects = Effects.READS_RELATIONSHIPS
 
-  def setEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
