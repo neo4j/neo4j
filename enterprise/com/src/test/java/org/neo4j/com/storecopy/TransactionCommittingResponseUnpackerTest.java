@@ -20,6 +20,9 @@
 package org.neo4j.com.storecopy;
 
 import java.io.IOException;
+
+import org.junit.Test;
+
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
@@ -32,7 +35,6 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.junit.Test;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -80,14 +82,14 @@ public class TransactionCommittingResponseUnpackerTest
         StoppingTxHandler stoppingTxHandler = new StoppingTxHandler();
 
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
-                dependencyResolver, stoppingTxHandler );
+                dependencyResolver );
         stoppingTxHandler.setUnpacker( unpacker );
 
         // When
         unpacker.start();
         int committingTransactionId = 2;
         DummyResponse response = new DummyResponse( committingTransactionId );
-        unpacker.unpackResponse( response );
+        unpacker.unpackResponse( response, stoppingTxHandler );
 
         // Then
         verify( txIdStore, times( 1 ) ).transactionCommitted( committingTransactionId );
@@ -98,7 +100,7 @@ public class TransactionCommittingResponseUnpackerTest
           // The txhandler has stopped the unpacker. It should not allow any more transactions to go through
         try
         {
-            unpacker.unpackResponse( mock( Response.class ) );
+            unpacker.unpackResponse( mock( Response.class ), stoppingTxHandler );
             fail( "A stopped transaction unpacker should not allow transactions to be applied" );
         }
         catch( IllegalStateException e)

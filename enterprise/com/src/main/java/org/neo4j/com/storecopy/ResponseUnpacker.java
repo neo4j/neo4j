@@ -26,13 +26,17 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
 public interface ResponseUnpacker
 {
-    void unpackResponse( Response<?> response ) throws IOException;
+    /**
+     * @param txHandler for getting an insight into which transactions gets applied.
+     */
+    void unpackResponse( Response<?> response, TxHandler txHandler ) throws IOException;
 
     public static final ResponseUnpacker NO_OP_RESPONSE_UNPACKER = new ResponseUnpacker()
     {
         @Override
-        public void unpackResponse( Response<?> response ) throws IOException
+        public void unpackResponse( Response<?> response, TxHandler txHandler ) throws IOException
         {
+            txHandler.done();
         }
     };
 

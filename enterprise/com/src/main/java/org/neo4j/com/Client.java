@@ -45,6 +45,7 @@ import org.jboss.netty.handler.queue.BlockingReadHandler;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
+import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -57,6 +58,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 import static org.neo4j.com.ResourcePool.DEFAULT_CHECK_INTERVAL;
+import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.NamedThreadFactory.named;
 
@@ -89,7 +91,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private ResourceReleaser resourcePoolReleaser;
     private final List<MismatchingVersionHandler> mismatchingVersionHandlers;
     private final ResponseUnpacker responseUnpacker;
-    private ByteCounterMonitor byteCounterMonitor;
+    private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
 
     public Client( String hostNameOrIp, int port, Logging logging, StoreId storeId, int frameLength,
@@ -201,12 +203,12 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
                                            Serializer serializer, Deserializer<R> deserializer )
     {
-        return sendRequest( type, context, serializer, deserializer, null );
+        return sendRequest( type, context, serializer, deserializer, null, NO_OP_TX_HANDLER );
     }
 
     protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
                                            Serializer serializer, Deserializer<R> deserializer,
-                                           StoreId specificStoreId )
+                                           StoreId specificStoreId, TxHandler txHandler )
     {
         boolean success = true;
         Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext;
@@ -243,7 +245,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
             if ( type.responseShouldBeUnpacked() )
             {
-                responseUnpacker.unpackResponse( response );
+                responseUnpacker.unpackResponse( response, txHandler );
             }
 
             if ( shouldCheckStoreId( type ) )

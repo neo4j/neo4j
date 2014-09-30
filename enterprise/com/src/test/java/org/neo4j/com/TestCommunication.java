@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.neo4j.com.storecopy.ResponseUnpacker;
+import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -38,6 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -384,13 +386,13 @@ public class TestCommunication
 
         // Then
         ArgumentCaptor<Response> captor = ArgumentCaptor.forClass( Response.class );
-        verify( responseUnpacker ).unpackResponse( captor.capture() );
+        verify( responseUnpacker ).unpackResponse( captor.capture(), any( TxHandler.class ) );
         assertEquals( storeIdToUse, captor.getValue().getStoreId() );
         assertEquals( 42 * 42, captor.getValue().response() );
     }
 
     @Test
-    public void masterResponseShouldNotBeUnpackedIfRequestTypeDoesNotRequire() throws IOException
+    public void masterResponseShouldNotBeUnpackedIfRequestTypeDoesNotRequire()
     {
         // Given
         ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );

@@ -79,7 +79,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
-import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class MasterClientTest
@@ -132,8 +131,7 @@ public class MasterClientTest
         when( txAppender.append( any( CommittedTransactionRepresentation.class ) ) ).thenReturn( true );
         when( txStore.getAppender() ).thenReturn( txAppender );
 
-        ResponseUnpacker unpacker =
-                initAndStart( new TransactionCommittingResponseUnpacker( resolver, NO_OP_TX_HANDLER ) );
+        ResponseUnpacker unpacker = initAndStart( new TransactionCommittingResponseUnpacker( resolver ) );
 
         MasterClient masterClient = cleanupRule.add( newMasterClient214( StoreId.DEFAULT, unpacker ) );
 

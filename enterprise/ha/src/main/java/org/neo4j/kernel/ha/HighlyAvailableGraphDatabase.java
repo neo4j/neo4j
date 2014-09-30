@@ -40,7 +40,6 @@ import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DependencyResolver;
@@ -164,7 +163,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         requestContextFactory = dependencies.satisfyDependency(new RequestContextFactory( serverId, getDependencyResolver() ));
 
         this.responseUnpacker = dependencies.satisfyDependency(
-                new TransactionCommittingResponseUnpacker( dependencyResolver, ResponseUnpacker.NO_OP_TX_HANDLER ) );
+                new TransactionCommittingResponseUnpacker( dependencyResolver ) );
 
         kernelProvider = new Provider<KernelAPI>()
         {
