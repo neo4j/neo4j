@@ -1,5 +1,0 @@
-# Define a role called 'monitor' with readonly access:
-monitor readonly
-# Uncomment this line to define a administrator role:
-#control readwrite
-
