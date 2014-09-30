@@ -19,14 +19,8 @@
  */
 package org.neo4j.server.rest.web;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
-
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -99,7 +93,11 @@ import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import com.sun.jersey.api.core.HttpContext;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -116,7 +114,6 @@ public class DatabaseActions
     public static final String INDEX_ORDER = "index";
     private final GraphDatabaseAPI graphDb;
     private final LeaseManager leases;
-    private final ForceMode defaultForceMode;
 
     private final TraversalDescriptionBuilder traversalDescriptionBuilder;
     private final boolean enableScriptSandboxing;
@@ -149,26 +146,18 @@ public class DatabaseActions
                 }
             };
 
-    public DatabaseActions( LeaseManager leaseManager, ForceMode defaultForceMode,
-                            boolean enableScriptSandboxing, GraphDatabaseAPI graphDatabaseAPI )
+    public DatabaseActions( LeaseManager leaseManager, boolean enableScriptSandboxing, GraphDatabaseAPI graphDatabaseAPI )
     {
         this.leases = leaseManager;
-        this.defaultForceMode = defaultForceMode;
         this.graphDb = graphDatabaseAPI;
         this.enableScriptSandboxing = enableScriptSandboxing;
         this.traversalDescriptionBuilder = new TraversalDescriptionBuilder( enableScriptSandboxing );
         this.propertySetter = new PropertySettingStrategy( graphDb );
     }
 
-    public DatabaseActions( LeaseManager leaseManager, ForceMode defaultForceMode, GraphDatabaseAPI graphDatabaseAPI )
+    public DatabaseActions( LeaseManager leaseManager, GraphDatabaseAPI graphDatabaseAPI )
     {
-        this( leaseManager, defaultForceMode, true, graphDatabaseAPI );
-    }
-
-    public DatabaseActions forceMode( ForceMode forceMode )
-    {
-        return forceMode == defaultForceMode || forceMode == null ? this : new DatabaseActions( leases, forceMode,
-                enableScriptSandboxing, graphDb );
+        this( leaseManager, true, graphDatabaseAPI );
     }
 
     private Node node( long id ) throws NodeNotFoundException

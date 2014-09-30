@@ -19,14 +19,10 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.com.MismatchingVersionHandler;
 import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
-import org.neo4j.kernel.ha.MasterClient201;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -34,6 +30,9 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class MasterClientResolver implements MasterClientFactory, MismatchingVersionHandler
 {
@@ -67,8 +66,6 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
     {
         this.responseUnpacker = responseUnpacker;
         protocolToFactoryMapping = new HashMap<>();
-        protocolToFactoryMapping.put( MasterClient201.PROTOCOL_VERSION, new F201( logging, readTimeout, lockReadTimeout,
-                channels, chunkSize ) );
         protocolToFactoryMapping.put( MasterClient210.PROTOCOL_VERSION, new F210( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
         protocolToFactoryMapping.put( MasterClient214.PROTOCOL_VERSION, new F214( logging, readTimeout, lockReadTimeout,
@@ -106,25 +103,6 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
             this.lockReadTimeout = lockReadTimeout;
             this.maxConcurrentChannels = maxConcurrentChannels;
             this.chunkSize = chunkSize;
-        }
-    }
-
-    private final class F201 extends StaticMasterClientFactory
-    {
-        public F201( Logging logging, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
-                     int chunkSize )
-        {
-            super( logging, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
-        }
-
-        @Override
-        public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors,
-                                         StoreId storeId, LifeSupport life )
-        {
-            return life.add( new MasterClient201( hostNameOrIp, port, logging, storeId, readTimeoutSeconds,
-                    lockReadTimeout, maxConcurrentChannels, chunkSize, responseUnpacker,
-                    monitors.newMonitor( ByteCounterMonitor.class, MasterClient201.class ),
-                    monitors.newMonitor( RequestMonitor.class, MasterClient201.class ) ) );
         }
     }
 

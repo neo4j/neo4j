@@ -19,10 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.index.impl.lucene.CommitContext.DocumentContext;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
@@ -33,6 +29,10 @@ import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class LuceneCommandApplier extends NeoCommandHandler.Adapter
 {
@@ -82,7 +82,7 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         Object value = command.getValue();
         context.ensureWriterInstantiated();
         DocumentContext document = context.getDocument( command.getEntityId(), false );
-        if ( document != null ) // TODO 2.2-future why null ckeck?
+        if ( document != null )
         {
             context.indexType.removeFromDocument( document.document, key, value );
             context.dataSource.invalidateCache( context.identifier, key, value );
@@ -102,8 +102,6 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
     @Override
     public boolean visitIndexCreateCommand( CreateCommand createCommand ) throws IOException
     {
-        // TODO Indexes are created lazily, they always have been. We could create them here instead
-        // but that can be changed later.
         return true;
     }
 

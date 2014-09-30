@@ -61,7 +61,6 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeL
  *
  * @author Mattias Persson
  */
-// TODO 2.2-future rewrite this using the new APIs
 public class LogTestUtils
 {
     public static interface LogHook<RECORD> extends Predicate<RECORD>

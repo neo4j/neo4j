@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import java.util.Map;
-
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -37,6 +35,8 @@ import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+
+import java.util.Map;
 
 public class IndexManagerImpl implements IndexManager
 {
@@ -82,7 +82,7 @@ public class IndexManagerImpl implements IndexManager
     {
         Index<Node> toReturn = provider.getOrCreateNodeIndex( indexName, customConfiguration );
 
-        // TODO 2.2-future move this into kernel layer
+        // TODO move this into kernel layer
         if ( NodeAutoIndexerImpl.NODE_AUTO_INDEX.equals( indexName ) )
         {
             toReturn = new AbstractAutoIndexerImpl.ReadOnlyIndexToIndexAdapter<Node>( toReturn );
@@ -125,7 +125,7 @@ public class IndexManagerImpl implements IndexManager
     {
         RelationshipIndex toReturn = provider.getOrCreateRelationshipIndex( indexName, customConfiguration );
 
-        // TODO 2.2-future move this into kernel layer
+        // TODO move this into kernel layer
         if ( RelationshipAutoIndexerImpl.RELATIONSHIP_AUTO_INDEX.equals( indexName ) )
         {
             toReturn = new RelationshipAutoIndexerImpl.RelationshipReadOnlyIndexToIndexAdapter( toReturn );
@@ -166,7 +166,7 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public String setConfiguration( Index<? extends PropertyContainer> index, String key, String value )
     {
-        // TODO 2.2-future configuration changes should be done transactionally. However this
+        // Configuration changes should be done transactionally. However this
         // has always been done non-transactionally, so it's not a regression.
         try ( Statement statement = transactionBridge.instance() )
         {
@@ -198,7 +198,7 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public String removeConfiguration( Index<? extends PropertyContainer> index, String key )
     {
-        // TODO 2.2-future configuration changes should be done transactionally. However this
+        // Configuration changes should be done transactionally. However this
         // has always been done non-transactionally, so it's not a regression.
         try ( Statement statement = transactionBridge.instance() )
         {

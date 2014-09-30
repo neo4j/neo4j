@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import java.util.Map;
-
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
@@ -30,6 +28,8 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+
+import java.util.Map;
 
 public class IndexProviderImpl implements IndexProvider
 {
@@ -47,7 +47,7 @@ public class IndexProviderImpl implements IndexProvider
     {
         try ( Statement statement = transactionBridge.instance() )
         {
-            // TODO 2.2-future there's a sub-o-meta thing here where we create index config,
+            // There's a sub-o-meta thing here where we create index config,
             // and the index will itself share the same IndexConfigStore as us and pick up and use
             // that. We should pass along config somehow with calls.
             statement.dataWriteOperations().nodeLegacyIndexCreateLazily( indexName, customConfiguration );
@@ -69,7 +69,7 @@ public class IndexProviderImpl implements IndexProvider
     {
         try ( Statement statement = transactionBridge.instance() )
         {
-            // TODO 2.2-future there's a sub-o-meta thing here where we create index config,
+            // There's a sub-o-meta thing here where we create index config,
             // and the index will itself share the same IndexConfigStore as us and pick up and use
             // that. We should pass along config somehow with calls.
             statement.dataWriteOperations().relationshipLegacyIndexCreateLazily( indexName, customConfiguration );

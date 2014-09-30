@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import java.util.Collection;
-import java.util.Map;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -38,6 +35,9 @@ import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.PathRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 
+import java.util.Collection;
+import java.util.Map;
+
 /**
  * A class that is helpful when testing DatabaseActions. The alternative would be to writ tx-scaffolding in each test.
  * <p/>
@@ -48,9 +48,9 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
 {
     private final GraphDatabaseAPI graph;
 
-    public TransactionWrappedDatabaseActions( LeaseManager leaseManager, ForceMode forced, GraphDatabaseAPI graph )
+    public TransactionWrappedDatabaseActions( LeaseManager leaseManager, GraphDatabaseAPI graph )
     {
-        super( leaseManager, forced, graph );
+        super( leaseManager, graph );
         this.graph = graph;
     }
 

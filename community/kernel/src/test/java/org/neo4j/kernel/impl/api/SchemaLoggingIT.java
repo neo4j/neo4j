@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.test.ImpermanentDatabaseRule;
+
+import java.util.concurrent.TimeUnit;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
@@ -54,8 +53,9 @@ public class SchemaLoggingIT
 
         // then
         logging.getMessagesLog( IndexPopulationJob.class ).assertExactly(
-                info( "Index population started: [:User(name) [provider: {key=in-memory, version=1.0}]]" ),
-                info( "Index population completed. Index is now online: [:User(name) [provider: {key=in-memory, version=1.0}]]" )
+                info( "Index population started: [:User(name) [provider: {key=in-memory-index, version=1.0}]]" ),
+                info( "Index population completed. Index is now online: [:User(name) [provider: {key=in-memory-index," +
+                        " version=1.0}]]" )
         );
     }
 

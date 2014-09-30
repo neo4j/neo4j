@@ -31,7 +31,7 @@ public class InMemoryLabelScanStoreExtension extends KernelExtensionFactory<InMe
 
     public InMemoryLabelScanStoreExtension()
     {
-        super( "in-memory" );
+        super( "in-memory-scan-store" );
     }
 
     @Override

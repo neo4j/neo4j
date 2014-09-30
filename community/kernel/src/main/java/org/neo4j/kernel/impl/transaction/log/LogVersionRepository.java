@@ -21,10 +21,6 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
-/*
- * TODO 2.2-future This should not be required. Please remove - log versions is a knowledge best shared by as
- * few as possible
- */
 public interface LogVersionRepository
 {
 	/**

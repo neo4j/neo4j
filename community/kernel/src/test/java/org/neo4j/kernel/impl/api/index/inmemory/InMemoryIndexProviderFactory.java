@@ -27,7 +27,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 @Service.Implementation(KernelExtensionFactory.class)
 public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemoryIndexProviderFactory.Dependencies>
 {
-    public static final String KEY = "in-memory";
+    public static final String KEY = "in-memory-index";
 
     public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
             new SchemaIndexProvider.Descriptor( KEY, "1.0" );

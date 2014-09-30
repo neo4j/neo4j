@@ -207,14 +207,14 @@ public class LockingStatementOperations implements
 
     @Override
     public long nodeCreate( KernelStatement statement )
-    {   // TODO 2.2-future Don't lock it, it's a new node so it isn't seen by anyone else anyway
+    {
         return entityWriteDelegate.nodeCreate( statement );
     }
 
     @Override
     public long relationshipCreate( KernelStatement state, int relationshipTypeId, long startNodeId, long endNodeId )
             throws EntityNotFoundException
-    {   // TODO 2.2-future Don't lock it, it's a new relationship so it isn't seen by anyone else anyway
+    {
         state.locks().acquireExclusive( ResourceTypes.NODE, startNodeId );
         state.locks().acquireExclusive( ResourceTypes.NODE, endNodeId );
         return entityWriteDelegate.relationshipCreate( state, relationshipTypeId, startNodeId, endNodeId );

@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
@@ -141,6 +131,16 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
+
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.state.CacheLoaders.nodeLoader;
@@ -230,22 +230,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
             {
                 source.neoStore.logIdUsage( log );
             }
-        },
-        PERSISTENCE_WINDOW_POOL_STATS( "Persistence Window Pool stats:" )
-        {
-            @Override
-            void dump( NeoStoreDataSource source, StringLogger.LineLogger log )
-            {
-                // TODO
-//                source.neoStore.logAllWindowPoolStats( log );
-            }
-
-            @Override
-            boolean applicable( DiagnosticsPhase phase )
-            {
-                return phase.isExplicitlyRequested();
-            }
         };
+
         private final String message;
 
         private Diagnostics( String message )
@@ -410,7 +396,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         {
             indexingService = new IndexingService( scheduler, providerMap, new NeoStoreIndexStoreView(
                     lockService, neoStore ), tokenNameLookup, updateableSchemaState, indexRuleLoader(), logging,
-                    indexingServiceMonitor ); // TODO 2.2-future What index rules should be
+                    indexingServiceMonitor );
             final IntegrityValidator integrityValidator = new IntegrityValidator( neoStore, indexingService );
             labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                     LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore();
@@ -601,10 +587,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         };
     }
 
-    // TODO 2.2-future: In TransactionFactory (now gone) was (#onRecoveryComplete)
-    //    forceEverything();
-    //    neoStore.makeStoreOk();
-    //    neoStore.setVersion( xaContainer.getLogicalLog().getHighestLogVersion() );
     public NeoStore getNeoStore()
     {
         return neoStore;
@@ -720,7 +702,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
     @Override
     public void awaitAllTransactionsClosed()
     {
-        // TODO 2.2-future what if this will never happen?
         while ( !neoStore.closedTransactionIdIsOnParWithCommittedTransactionId() )
         {
             LockSupport.parkNanos( 1_000_000 ); // 1 ms
@@ -786,7 +767,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
     @Override
     public void registerIndexProvider( String name, IndexImplementation index )
     {
-        assert !indexProviders.containsKey( name );
         indexProviders.put( name, index );
     }
 

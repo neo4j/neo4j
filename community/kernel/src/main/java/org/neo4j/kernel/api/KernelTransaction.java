@@ -20,8 +20,7 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
-import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.index.IndexEntityType;
 
 /**
  * Represents a transaction of changes to the underlying graph.
@@ -102,15 +101,6 @@ public interface KernelTransaction extends AutoCloseable
      */
     @Override
     public void close() throws TransactionFailureException;
-
-    /*
-     * TODO 2.2-future TransactionRecordState should not be visible anywhere. The problem is that there is
-     * TODO 2.2-future some inversion happening at some places where KernelTransaction should delegate down to
-     * TODO 2.2-future TRS instead. This must be fixed. This sentiment applies to all accessor methods below.
-     */
-    TransactionRecordState getTransactionRecordState();
-
-    LegacyIndexTransactionState getLegacyIndexTransactionState();
 
     boolean isOpen();
 

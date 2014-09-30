@@ -19,14 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -39,6 +34,10 @@ import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -173,6 +172,23 @@ public class PhysicalLogFileTest
         {
             life.shutdown();
         }
+    }
+
+    @Test
+    public void shouldVisitAllLogFiles()
+    {
+        // GIVEN
+        String name = "log";
+        LogRotationControl logRotationControl = mock( LogRotationControl.class );
+        LifeSupport life = new LifeSupport();
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategyFactory.NO_PRUNING,
+                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
+                new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
+
+        // WHEN
+
+        // THEN
     }
 
     @Test

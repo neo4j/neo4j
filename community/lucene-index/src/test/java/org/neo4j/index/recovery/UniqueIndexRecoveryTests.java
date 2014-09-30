@@ -19,6 +19,27 @@
  */
 package org.neo4j.index.recovery;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.impl.index.LuceneLabelScanStoreExtension;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -27,33 +48,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
-
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertFalse;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.single;
 
@@ -233,7 +231,8 @@ public class UniqueIndexRecoveryTests
     {
         List<KernelExtensionFactory<?>> extensionFactories = new ArrayList<>();
         extensionFactories.add( kernelExtensionFactory );
-        factory.addKernelExtensions( extensionFactories );
+        extensionFactories.add(new LuceneLabelScanStoreExtension());
+        factory.setKernelExtensions( extensionFactories );
         db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( storeDir.absolutePath() );
     }
 

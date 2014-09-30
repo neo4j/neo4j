@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.ha.backup;
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -52,6 +44,14 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 //@Service.Implementation(BackupExtensionService.class)
 public final class HaBackupProvider //extends BackupExtensionService
@@ -140,16 +140,6 @@ public final class HaBackupProvider //extends BackupExtensionService
             @Override
             public void memberIsAvailable( String role, InstanceId clusterUri, URI roleUri, StoreId storeId )
             {
-                // TODO 2.2-future is this extension even necessary?
-                // TODO 2.2-future reevaluate need for having support for HA backup before 2.2 goes out, please
-//                if ( OnlineBackupKernelExtension.BACKUP.equals( role ) )
-//                {
-//                    backupUris.put( clusterUri, roleUri );
-//                }
-//                else if ( HighAvailabilityModeSwitcher.MASTER.equals( role ) )
-//                {
-//                    master = clusterUri;
-//                }
 
                 if ( master != null && backupUris.containsKey( master ) )
                 {
