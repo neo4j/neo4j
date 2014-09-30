@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
 
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.*;
 import static org.neo4j.test.mocking.GraphMock.node;
@@ -99,5 +100,6 @@ public class RelationshipRepresentationTest
         assertNotNull( relrep.get( "metadata" ) );
         Map metadata = (Map) relrep.get( "metadata" );
         assertNotNull( metadata.get("type") );
+        assertTrue( ( (Number) metadata.get("id") ).longValue() >= 0 );
     }
 }
