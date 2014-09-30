@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -60,6 +62,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     private final LogVersionRepository logVersionRepository;
     private PhysicalLogVersionedStoreChannel channel;
     private final LogVersionBridge readerLogVersionBridge;
+    private final Lock pruneLock = new ReentrantLock();
 
     public PhysicalLogFile( FileSystemAbstraction fileSystem, PhysicalLogFiles logFiles, long rotateAtSize,
                             LogPruneStrategy pruneStrategy, TransactionIdStore transactionIdStore,
@@ -151,7 +154,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public void checkRotation() throws IOException
+    public boolean checkRotation() throws IOException
     {
         /*
          * Whereas channel.size() should be fine, we're safer calling position() due to possibility
@@ -164,7 +167,27 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
                 if ( channel.position() >= rotateAtSize )
                 {
                     doRotate();
+                    return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void prune()
+    {
+        // Only one is allowed to do pruning at any given time,
+        // and it's OK to skip pruning if another one is doing so right now.
+        if ( pruneLock.tryLock() )
+        {
+            try
+            {
+                pruneStrategy.prune();
+            }
+            finally
+            {
+                pruneLock.unlock();
             }
         }
     }
@@ -213,7 +236,6 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
          */
         PhysicalLogVersionedStoreChannel newLog = openLogChannelForVersion( newLogVersion );
         currentLog.close();
-        pruneStrategy.prune();
         return newLog;
     }
 
