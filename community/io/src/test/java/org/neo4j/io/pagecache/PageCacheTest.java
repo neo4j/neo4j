@@ -42,6 +42,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.adversaries.RandomAdversary;
@@ -51,6 +52,7 @@ import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.test.RepeatRule;
 
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
@@ -73,6 +75,9 @@ import static org.neo4j.test.ThreadTestUtils.fork;
 
 public abstract class PageCacheTest<T extends RunnablePageCache>
 {
+    @Rule
+    public RepeatRule repeatRule = new RepeatRule();
+
     protected static ExecutorService executor;
 
     protected final File file = new File( "a" );
@@ -3190,7 +3195,9 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         }
     }
 
-    @Test(timeout = 60000)
+
+    @RepeatRule.Repeat( times = 100 )
+    @Test( timeout = 60000 )
     public void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures() throws Exception
     {
         // NOTE: This test is inherently non-deterministic. This means that every failure must be
@@ -3231,6 +3238,20 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
             }
             catch ( AssertionError error )
             {
+                // Capture any exception that might have hit the eviction thread.
+                adversary.setProbabilityFactor( 0.0 );
+                try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+                {
+                    for ( int j = 0; j < 100; j++ )
+                    {
+                        cursor.next( rng.nextLong( maxPageId + 1 ) );
+                    }
+                }
+                catch ( Throwable throwable )
+                {
+                    error.addSuppressed( throwable );
+                }
+
                 throw error;
             }
             catch ( Throwable throwable )
@@ -3243,6 +3264,9 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         // Unmapping will cause pages to be flushed.
         // We don't want that to fail, since it will upset the test tear-down.
         adversary.setProbabilityFactor( 0.0 );
+        // Flushing all pages, if successful, should clear any internal
+        // exception.
+        pageCache.flush();
 
         // Do some post-chaos verification of what has been written.
         verifyAdversarialPagedContent( pfA );
@@ -3273,7 +3297,10 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         }
         while ( cursor.shouldRetry() );
         Arrays.fill( expectedPage, actualPage[0] );
-        assertThat( actualPage, byteArray( expectedPage ) );
+        String msg = String.format(
+                "filePageId = %s, pageSize = %s",
+                cursor.getCurrentPageId(), pageSize );
+        assertThat( msg, actualPage, byteArray( expectedPage ) );
     }
 
     private void performConsistentAdversarialWrite( PageCursor cursor, ThreadLocalRandom rng, int pageSize ) throws IOException
@@ -3281,7 +3308,9 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         for ( int j = 0; j < 3; j++ )
         {
             assertTrue( cursor.next() );
-            byte b = (byte) rng.nextInt();
+            // Avoid generating zeros, so we can tell them apart from the
+            // absence of a write:
+            byte b = (byte) rng.nextInt( 1, 127 );
             for ( int k = 0; k < pageSize; k++ )
             {
                 cursor.putByte( b );

@@ -273,8 +273,9 @@ public class MuninnPageCache implements RunnablePageCache
     @Override
     public synchronized void flush() throws IOException
     {
-        assertHealthy();
+        assertNotClosed();
         flushAllPages();
+        evictorException = null;
     }
 
     private void flushAllPages() throws IOException
@@ -337,14 +338,19 @@ public class MuninnPageCache implements RunnablePageCache
 
     private void assertHealthy() throws IOException
     {
-        if ( closed )
-        {
-            throw new IllegalStateException( "The PageCache has been shut down" );
-        }
+        assertNotClosed();
         IOException exception = evictorException;
         if ( exception != null )
         {
             throw new IOException( "Exception in the page eviction thread", exception );
+        }
+    }
+
+    private void assertNotClosed()
+    {
+        if ( closed )
+        {
+            throw new IllegalStateException( "The PageCache has been shut down" );
         }
     }
 
@@ -519,8 +525,13 @@ public class MuninnPageCache implements RunnablePageCache
 
                     if ( pageEvicted )
                     {
-                        swapper.evicted( filePageId );
-                        monitor.evicted( filePageId, swapper );
+                        if ( swapper != null )
+                        {
+                            // The swapper can be null if the last page fault
+                            // that page threw an exception.
+                            swapper.evicted( filePageId );
+                            monitor.evicted( filePageId, swapper );
+                        }
 
                         if ( waiters != null )
                         {
