@@ -28,6 +28,8 @@ import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.eclipse.jetty.servlet.ServletHolder;
+
+import org.neo4j.server.XForwardFilter;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
@@ -66,8 +68,13 @@ public abstract class JaxRsServletHolderFactory
         servletHolder.setInitParameter( ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf( !wadlEnabled ) );
         configure( servletHolder, toCommaSeparatedList( items ) );
         servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName() );
-        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS, CollectUserAgentFilter.class.getName() );
+        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS, getRequestFilterConfig() );
         return servletHolder;
+    }
+
+    private String getRequestFilterConfig()
+    {
+        return XForwardFilter.class.getName() + "," + CollectUserAgentFilter.class.getName();
     }
 
     protected abstract void configure( ServletHolder servletHolder, String commaSeparatedList );
