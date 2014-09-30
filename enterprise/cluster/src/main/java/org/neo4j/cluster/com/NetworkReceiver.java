@@ -52,10 +52,11 @@ import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.DaemonThreadFactory.daemon;
 
 /**
  * TCP version of a Networked Instance. This handles receiving messages to be consumed by local statemachines and
@@ -121,8 +122,8 @@ public class NetworkReceiver
 
         // Listen for incoming connections
         nioChannelFactory = new NioServerSocketChannelFactory(
-                Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster boss" ) ),
-                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster worker" ) ), 2 );
+                Executors.newCachedThreadPool( daemon( "Cluster boss" ) ),
+                Executors.newFixedThreadPool( 2, daemon( "Cluster worker" ) ), 2 );
         serverBootstrap = new ServerBootstrap( nioChannelFactory );
         serverBootstrap.setOption("child.tcpNoDelay", true);
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
