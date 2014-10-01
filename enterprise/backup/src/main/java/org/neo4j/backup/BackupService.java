@@ -201,7 +201,7 @@ class BackupService
                                     ds.getFileName( logVersion ),
                                     "rw" ).getChannel();
                             newLog.truncate( 0 );
-                            LogIoUtils.writeLogHeader( scratch, logVersion, -1 );
+                            LogIoUtils.writeLogHeader( scratch, logVersion, tx.second() - 1 );
                             // scratch buffer is flipped by writeLogHeader
                             newLog.write( scratch );
                             ReadableByteChannel received = tx.third().extract();
