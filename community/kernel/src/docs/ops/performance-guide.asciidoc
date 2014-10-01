@@ -22,7 +22,7 @@ Make sure a parallel/concurrent garbage collector is running (+-XX:+UseConcMarkS
 Finally make sure that the OS has some memory left to manage proper file system 
 caches. This means, if your server has 8GB of RAM don't use all of that RAM for 
 heap (unless you have turned off memory mapped buffers), but leave a good part of it to the OS. 
-For more information on this see <<embedded-configuration>>.
+For more information on configuration see <<configuration>>.
 
 For Linux specific tweaks, see <<linux-performance-guide>>.
 
