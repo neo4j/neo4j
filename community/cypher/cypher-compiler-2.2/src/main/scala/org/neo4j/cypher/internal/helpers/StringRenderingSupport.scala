@@ -33,4 +33,3 @@ trait StringRenderingSupport {
     builder ++= super.toString
   }
 }
-

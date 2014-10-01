@@ -33,7 +33,6 @@
   </scm>
 
   <modules>
-    <module>cypher-commons</module>
     <module>cypher-compiler-2.2</module>
     <module>cypher</module>
     <module>docs/cypher-docs</module>

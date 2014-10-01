@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import scala.collection.{TraversableLike, mutable, immutable}
+import scala.collection.{TraversableLike, immutable, mutable}
 
 // This is deprecated. All these helper classes should move
 // to cypher compiler so that we may change API between

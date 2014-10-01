@@ -120,11 +120,6 @@ the relevant Commercial Agreement.
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>${project.build.directory}/../../../community/cypher/cypher-commons/src/main/java/
-                  </directory>
-                  <filtering>false</filtering>
-                </resource>
-                <resource>
                   <directory>${project.build.directory}/../../../community/server-api/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>

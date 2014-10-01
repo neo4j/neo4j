@@ -97,22 +97,6 @@
         <scope>provided</scope>
     </dependency>
 
-    <!-- neo4j-cypher -->
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-commons</artifactId>
-      <scope>provided</scope>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-commons</artifactId>
-      <scope>provided</scope>
-      <type>test-jar</type>
-      <version>${project.version}</version>
-    </dependency>
-
     <!-- other -->
 
     <dependency>
@@ -124,6 +108,11 @@
       <artifactId>opencsv</artifactId>
       <version>2.3</version>
     </dependency>
+
+      <dependency>
+          <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
+          <artifactId>concurrentlinkedhashmap-lru</artifactId>
+      </dependency>
 
   </dependencies>
 

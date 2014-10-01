@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
+import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.{CypherVersion, SyntaxException}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.reattachAliasedExpressions
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
@@ -29,7 +30,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_2.{Monitors, PreparedQuery}
-import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
