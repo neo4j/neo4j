@@ -220,7 +220,7 @@ object ClauseConverters {
 
           if (nonHints.nonEmpty) {
             val itemString = items.mkString(", ")
-            throw new InternalException(s"Unsupported start items encountered: $itemString")
+            throw new CantHandleQueryException(s"Unsupported start items encountered: $itemString")
           }
 
           qg.addHints(hints)
