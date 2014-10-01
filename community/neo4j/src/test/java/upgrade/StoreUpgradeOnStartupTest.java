@@ -59,13 +59,15 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFi
 @RunWith(Parameterized.class)
 public class StoreUpgradeOnStartupTest
 {
-    private final String version;
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-    private final File workingDirectory = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+
+    private final String version;
+    private final File workingDirectory;
 
     public StoreUpgradeOnStartupTest( String version )
     {
         this.version = version;
+        workingDirectory = TargetDirectory.forTest( getClass() ).cleanDirectory( version );
     }
 
     @Parameterized.Parameters(name = "{0}")

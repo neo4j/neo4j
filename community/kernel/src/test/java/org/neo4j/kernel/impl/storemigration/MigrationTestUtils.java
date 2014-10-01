@@ -26,7 +26,9 @@ import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -111,13 +113,6 @@ public class MigrationTestUtils
         fileChannel.close();
     }
 
-    public static void prepareSampleLegacyDatabase( String version, EphemeralFileSystemAbstraction workingFs,
-                                                    File workingDirectory ) throws IOException
-    {
-        File resourceDirectory = findFormatStoreDirectoryForVersion( version );
-        workingFs.copyRecursivelyFromOtherFs( resourceDirectory, new DefaultFileSystemAbstraction(), workingDirectory );
-    }
-
     public static void prepareSampleLegacyDatabase( String version, FileSystemAbstraction workingFs,
                                                     File workingDirectory ) throws IOException
     {
@@ -185,7 +180,9 @@ public class MigrationTestUtils
     public static boolean allStoreFilesHaveVersion( FileSystemAbstraction fileSystem, File workingDirectory,
             String version ) throws IOException
     {
-        for ( StoreFile storeFile : StoreFile.legacyStoreFilesForVersion( version ) )
+        final Iterable<StoreFile> storeFilesWithGivenVersions =
+                Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( version ) );
+        for ( StoreFile storeFile : storeFilesWithGivenVersions )
         {
             StoreChannel channel = fileSystem.open( new File( workingDirectory, storeFile.storeFileName() ), "r" );
             int length = UTF8.encode( version ).length;
@@ -258,4 +255,13 @@ public class MigrationTestUtils
     {
         return new File( dbDirectory, "upgrade" );
     }
+
+    private static final Predicate<StoreFile> ALL_EXCEPT_COUNTS_STORE = new Predicate<StoreFile>()
+    {
+        @Override
+        public boolean accept( StoreFile item )
+        {
+            return item != StoreFile.COUNTS_STORE_ALPHA && item != StoreFile.COUNTS_STORE_BETA;
+        }
+    };
 }

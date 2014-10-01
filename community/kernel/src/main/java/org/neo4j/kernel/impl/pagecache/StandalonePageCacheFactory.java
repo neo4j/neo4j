@@ -47,11 +47,10 @@ public class StandalonePageCacheFactory
                 GraphDatabaseSettings.mapped_memory_total_size.name(), "" + (pageSize * maxPages) )
         );
         Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler( schedulerName ) );
-        LifecycledPageCache pageCache = life.add( new LifecycledPageCache(
+        return life.add( new LifecycledPageCache(
                 new SingleFilePageSwapperFactory( fileSystem ),
                 scheduler,
                 config,
                 PageCacheMonitor.NULL ) );
-        return pageCache;
     }
 }

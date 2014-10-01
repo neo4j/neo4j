@@ -39,6 +39,9 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -104,7 +107,7 @@ public class TestRecoveryScenarios
         try ( Transaction tx = db.beginTx() )
         {
             assertEquals( "Updates not propagated correctly during recovery", Collections.<Node>emptyList(),
-                          IteratorUtil.asList( db.findNodesByLabelAndProperty( label, "key", "value" ) ) );
+                    IteratorUtil.asList( db.findNodesByLabelAndProperty( label, "key", "value" ) ) );
             tx.success();
         }
     }
@@ -144,6 +147,30 @@ public class TestRecoveryScenarios
         }
     }
 
+    @Test
+    public void shouldRecoverCounts() throws Exception
+    {
+        // GIVEN
+        Node node = createNode( label );
+        rotateLog();
+        deleteNode( node );
+
+        // WHEN
+        crashAndRestart( indexProvider );
+
+        // THEN
+        // -- really the problem was that recovery threw exception, so mostly assert that.
+        try ( Transaction tx = db.beginTx() )
+        {
+            CountsTracker tracker = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
+            assertEquals( 0, tracker.countsForNode( -1 ) );
+            final LabelTokenHolder holder = db.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
+            int labelId = holder.getIdByName( label.name() );
+            assertEquals( 0, tracker.countsForNode( labelId ) );
+            tx.success();
+        }
+    }
+
     private void removeLabels( Node node, Label... labels )
     {
         try ( Transaction tx = db.beginTx() )
@@ -171,6 +198,16 @@ public class TestRecoveryScenarios
         {
             node.addLabel( label );
             tx.success();
+        }
+    }
+
+    private Node createNode( Label... labels )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( labels );
+            tx.success();
+            return node;
         }
     }
 

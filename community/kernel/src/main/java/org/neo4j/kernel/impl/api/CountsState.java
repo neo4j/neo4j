@@ -28,19 +28,21 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 
 import static java.util.Objects.requireNonNull;
 
+import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
+import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
-public class CountsState implements CountsVisitor.Visitable
+public class CountsState implements CountsVisitor.Visitable, CountsAcceptor
 {
     private final Map<CountsKey, Count> counts = new HashMap<>();
 
-    public void updateCountsForNode( int labelId, int delta )
+    public void updateCountsForNode( int labelId, long delta )
     {
         count( nodeKey( labelId ) ).update( delta );
     }
 
-    public void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, int delta )
+    public void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
     {
         count( relationshipKey( startLabelId, typeId, endLabelId ) ).update( delta );
     }
@@ -147,6 +149,36 @@ public class CountsState implements CountsVisitor.Visitable
         }
     }
 
+    public void addNode( long[] labels )
+    {
+        increment( ANY_LABEL );
+        for ( long label : labels )
+        {
+            increment( (int) label );
+        }
+    }
+
+    public void addRelationship( long[] startLabels, int type, long[] endLabels )
+    {
+        increment( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
+        increment( ANY_LABEL, type, ANY_LABEL );
+        for ( long startLabelId : startLabels )
+        {
+            increment( (int) startLabelId, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
+            increment( (int) startLabelId, type, ANY_LABEL );
+            for ( long endLabelId : endLabels )
+            {
+                increment( (int) startLabelId, ANY_RELATIONSHIP_TYPE, (int) endLabelId );
+                increment( (int) startLabelId, type, (int) endLabelId );
+            }
+        }
+        for ( long endLabelId : endLabels )
+        {
+            increment( ANY_LABEL, ANY_RELATIONSHIP_TYPE, (int) endLabelId );
+            increment( ANY_LABEL, type, (int) endLabelId );
+        }
+    }
+
     private Count count( CountsKey key )
     {
         Count count = counts.get( key );
@@ -161,9 +193,15 @@ public class CountsState implements CountsVisitor.Visitable
     {
         long value;
 
-        void update( int delta )
+        void update( long delta )
         {
             value += delta;
+        }
+
+        @Override
+        public String toString()
+        {
+            return Long.toString( value );
         }
     }
 

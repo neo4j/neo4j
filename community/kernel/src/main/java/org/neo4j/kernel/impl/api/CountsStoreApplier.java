@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.kernel.impl.store.CountsStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -40,16 +39,16 @@ import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
-public class CountStoreApplier extends NeoCommandHandler.Adapter
+public class CountsStoreApplier extends NeoCommandHandler.Adapter
 {
-    private final CountsStore countsStore;
+    private final CountsAcceptor countsStore;
     private final NodeStore nodeStore;
     private int nodesDelta;
     private int relsDelta;
     private final Map<Integer/*labelId*/, IntCounter> labelDelta = new HashMap<>();
     private final Map<Integer/*typeId*/, IntCounter> relationshipTypeDelta = new HashMap<>();
 
-    public CountStoreApplier( CountsStore countsStore, NodeStore nodeStore )
+    public CountsStoreApplier( CountsAcceptor countsStore, NodeStore nodeStore )
     {
         this.countsStore = countsStore;
         this.nodeStore = nodeStore;

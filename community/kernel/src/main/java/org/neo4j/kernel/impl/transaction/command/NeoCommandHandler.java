@@ -73,7 +73,7 @@ public interface NeoCommandHandler extends AutoCloseable
     boolean visitIndexCreateCommand( CreateCommand command ) throws IOException;
     boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException;
     boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException;
-    
+
     /**
      * Applies pending changes that might have been accumulated when visiting the commands.
      * A command handler can expect a call to {@link #apply()} before {@link #close()}.
@@ -86,6 +86,7 @@ public interface NeoCommandHandler extends AutoCloseable
     @Override
     void close();
 
+    public static final NeoCommandHandler EMPTY = new NeoCommandHandler.Adapter();
 
     public static class Adapter implements NeoCommandHandler
     {

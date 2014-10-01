@@ -30,18 +30,22 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.CountsAcceptor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -57,7 +61,6 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -71,9 +74,12 @@ import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionM
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static org.neo4j.helpers.UTF8.encode;
+import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
@@ -141,18 +147,52 @@ public class StoreMigrator implements StoreMigrationParticipant
         progressMonitor.started();
 
         if ( versionToUpgradeFrom.equals( Legacy21Store.LEGACY_VERSION ) )
-        {   // Don't migrate any store here
+        {
+            // ensure the stores have the new versions set before reading them to create a counts store
+            ensureStoreVersions( storeDir );
+            // create counters from scratch
+            rebuildCountsFromScratch( storeDir, migrationDir );
         }
         else
         {
             // migrate stores
             migrateWithBatchImporter( storeDir, migrationDir );
+            // create counters from scratch
+            rebuildCountsFromScratch( migrationDir, migrationDir );
         }
 
         // migrate logs
         legacyLogs.migrateLogs( storeDir, migrationDir );
 
         progressMonitor.finished();
+    }
+
+    private void rebuildCountsFromScratch( File storeDir, File migrationDir ) throws IOException
+    {
+        final LifeSupport life = new LifeSupport();
+        life.start();
+        try
+        {
+            final PageCache pageCache = createPageCache( fileSystem, "build-counts", life );
+            final File storeFileBase = new File( migrationDir, NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
+            CountsTracker.createEmptyCountsStore( pageCache, storeFileBase,
+                    buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
+
+            final StoreFactory storeFactory =
+                    new StoreFactory( fileSystem, storeDir, pageCache, DEV_NULL, new Monitors() );
+            try ( NodeStore nodeStore = storeFactory.newNodeStore();
+                  RelationshipStore relationshipStore = storeFactory.newRelationshipStore();
+                  CountsTracker tracker = new CountsTracker( fileSystem, pageCache, storeFileBase ) )
+            {
+                CountsComputer.computeCounts( nodeStore, relationshipStore ).
+                        accept( new CountsAcceptor.Initializer( tracker ) );
+                tracker.rotate( NeoStore.getTxId( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) ) );
+            }
+        }
+        finally
+        {
+            life.shutdown();
+        }
     }
 
     private void migrateWithBatchImporter( File storeDir, File migrationDir )
@@ -196,14 +236,12 @@ public class StoreMigrator implements StoreMigrationParticipant
             LifeSupport life = new LifeSupport();
             life.start();
             PageCache pageCache = createPageCache( fileSystem, "migrator-dedup-properties", life );
-            PropertyStore propertyStore = storeFactory( pageCache, migrationDir ).newPropertyStore();
-            try
+            try ( PropertyStore propertyStore = storeFactory( pageCache, migrationDir ).newPropertyStore() )
             {
                 migratePropertyKeys( legacy19Store, propertyStore );
             }
             finally
             {
-                propertyStore.close();
                 life.shutdown();
             }
         }
@@ -216,7 +254,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         return new StoreFactory(
                 StoreFactory.configForStoreDir( config, migrationDir ),
                 new DefaultIdGeneratorFactory(), pageCache,
-                fileSystem, StringLogger.DEV_NULL, new Monitors() );
+                fileSystem, DEV_NULL, new Monitors() );
     }
 
     private void migratePropertyKeys( Legacy19Store legacyStore, PropertyStore propertyStore ) throws IOException
@@ -378,7 +416,9 @@ public class StoreMigrator implements StoreMigrationParticipant
                         StoreFile.PROPERTY_STORE,
                         StoreFile.PROPERTY_KEY_TOKEN_STORE,
                         StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                        StoreFile.SCHEMA_STORE );
+                        StoreFile.SCHEMA_STORE,
+                        StoreFile.COUNTS_STORE_ALPHA,
+                        StoreFile.COUNTS_STORE_BETA );
                 idFilesToDelete = allExcept(
                         StoreFile.RELATIONSHIP_GROUP_STORE
                 );
@@ -388,13 +428,17 @@ public class StoreMigrator implements StoreMigrationParticipant
                 filesToMove = Arrays.asList(
                         StoreFile.NODE_STORE,
                         StoreFile.RELATIONSHIP_STORE,
-                        StoreFile.RELATIONSHIP_GROUP_STORE );
+                        StoreFile.RELATIONSHIP_GROUP_STORE,
+                        StoreFile.COUNTS_STORE_ALPHA,
+                        StoreFile.COUNTS_STORE_BETA );
                 idFilesToDelete = allExcept(
                         StoreFile.RELATIONSHIP_GROUP_STORE
                 );
                 break;
             case Legacy21Store.LEGACY_VERSION:
-                filesToMove = Iterables.empty();
+                filesToMove = Arrays.asList(
+                        StoreFile.COUNTS_STORE_ALPHA,
+                        StoreFile.COUNTS_STORE_BETA );
                 idFilesToDelete = new StoreFile[]{};
                 break;
             default:
@@ -410,7 +454,12 @@ public class StoreMigrator implements StoreMigrationParticipant
                 StoreFileType.values() );
 
         // ensure the store version is correct
-        StoreFile.ensureStoreVersion( fileSystem, storeDir, StoreFile.currentStoreFiles() );
+        if ( !versionToUpgradeFrom.equals( Legacy21Store.LEGACY_VERSION ) )
+        {
+            // we fix the store versions earlier on in order to create counts store for 2.1
+            ensureStoreVersions( storeDir );
+        }
+
         // update or add upgrade id and time
         updateOrAddUpgradeIdAndUpgradeTime( storeDir );
 
@@ -419,6 +468,12 @@ public class StoreMigrator implements StoreMigrationParticipant
         legacyLogs.renameLogFiles( storeDir );
     }
 
+    private void ensureStoreVersions( File dir ) throws IOException
+    {
+        final Iterable<StoreFile> versionedStores =
+                iterable( allExcept( StoreFile.COUNTS_STORE_ALPHA, StoreFile.COUNTS_STORE_BETA ) );
+        StoreFile.ensureStoreVersion( fileSystem, dir, versionedStores );
+    }
 
     private void updateOrAddUpgradeIdAndUpgradeTime( File storeDirectory )
     {

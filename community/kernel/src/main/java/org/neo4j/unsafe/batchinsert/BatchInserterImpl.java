@@ -72,6 +72,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
+import org.neo4j.kernel.impl.api.CountsAcceptor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -87,6 +88,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeLabels;
@@ -432,6 +434,11 @@ public class BatchInserterImpl implements BatchInserter
             populator.close( true );
         }
         labelUpdateVisitor.close();
+    }
+
+    private void rebuildCounts()
+    {
+        CountsComputer.computeCounts( neoStore ).accept( new CountsAcceptor.Initializer( neoStore.getCounts() ) );
     }
 
     private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>
@@ -800,6 +807,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new RuntimeException( e );
         }
+        rebuildCounts();
         neoStore.close();
 
         try

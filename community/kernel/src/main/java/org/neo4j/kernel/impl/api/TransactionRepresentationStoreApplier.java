@@ -86,7 +86,9 @@ public class TransactionRepresentationStoreApplier
         {
             storeApplier = new CacheInvalidationTransactionApplier( storeApplier, neoStore, cacheAccess );
         }
-        NeoCommandHandler countStoreApplier = new CountStoreApplier( neoStore.getCountsStore(), neoStore.getNodeStore() );
+
+        // Counts store application
+        NeoCommandHandler countsStoreApplier = getCountsStoreApplier( transactionId, mode );
 
         // Schema index application
         IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexingService,
@@ -99,9 +101,21 @@ public class TransactionRepresentationStoreApplier
 
         // Perform the application
         try ( CommandApplierFacade applier = new CommandApplierFacade(
-                storeApplier, countStoreApplier, indexApplier, legacyIndexApplier ) )
+                storeApplier, countsStoreApplier, indexApplier, legacyIndexApplier ) )
         {
             representation.accept( applier );
         }
     }
+
+    private NeoCommandHandler getCountsStoreApplier( long transactionId, TransactionApplicationMode mode )
+    {
+        if ( TransactionApplicationMode.RECOVERY == mode && !neoStore.getCounts().acceptTx( transactionId ) )
+        {
+            return NeoCommandHandler.EMPTY;
+        }
+
+        assert neoStore.getCounts().acceptTx( transactionId );
+        return new CountsStoreApplier( neoStore.getCounts(), neoStore.getNodeStore() );
+    }
+
 }
