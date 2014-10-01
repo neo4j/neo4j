@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
 import org.neo4j.cluster.InstanceId;
@@ -61,6 +62,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -537,14 +539,13 @@ public class ClusterManager
                 }
                 GraphDatabaseBuilder graphDatabaseBuilder = dbFactory.newHighlyAvailableDatabaseBuilder(
                             storeDir.getAbsolutePath() ).
-                                setConfig( ClusterSettings.cluster_name, name ).
+                                setConfig(ClusterSettings.cluster_name, name).
                                 setConfig( ClusterSettings.initial_hosts, initialHosts.toString() ).
                                 setConfig( ClusterSettings.server_id, serverId + "" ).
                                 setConfig( ClusterSettings.cluster_server, "0.0.0.0:"+clusterPort).
                                 setConfig( HaSettings.ha_server, ":" + haPort ).
-                        // TODO 2.2-future waiting for backup to work
-//                                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
-                                setConfig( commonConfig );
+                                setConfig(OnlineBackupSettings.online_backup_enabled, Settings.FALSE).
+                                setConfig(commonConfig);
                 if ( instanceConfig.containsKey( serverId.toIntegerIndex() ) )
                 {
                    graphDatabaseBuilder.setConfig( instanceConfig.get( serverId.toIntegerIndex() ) );

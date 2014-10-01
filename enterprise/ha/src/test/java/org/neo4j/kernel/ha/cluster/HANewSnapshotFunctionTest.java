@@ -45,8 +45,6 @@ public class HANewSnapshotFunctionTest
         // This is what the end result should look like
         List<MemberIsAvailable> events = new LinkedList<>();
         events.add( roleForId( MASTER, 1 ) );
-        // TODO 2.2-future is this needed?
-//        events.add( roleForId( BACKUP, 1 ) );
         events.add( roleForId( SLAVE, 2 ) );
         events.add( roleForId( SLAVE, 3 ) );
 
@@ -68,8 +66,6 @@ public class HANewSnapshotFunctionTest
         // This is the list of events
         List<MemberIsAvailable> events = new LinkedList<>();
         events.add( roleForId( MASTER, 1 ) );
-        // TODO 2.2-future is this needed?
-//        events.add( roleForId( BACKUP, 1 ) );
         events.add( roleForId( SLAVE, 2 ) );
         events.add( roleForId( SLAVE, 3 ) );
         events.add( roleForId( SLAVE, 2 ) );
@@ -77,8 +73,6 @@ public class HANewSnapshotFunctionTest
         // This is what it should look like
         List<MemberIsAvailable> expected = new LinkedList<>();
         expected.add( roleForId( MASTER, 1 ) );
-        // TODO 2.2-future is this needed?
-//        expected.add( roleForId( BACKUP, 1 ) );
         expected.add( roleForId( SLAVE, 2 ) );
         expected.add( roleForId( SLAVE, 3 ) );
 
@@ -99,8 +93,6 @@ public class HANewSnapshotFunctionTest
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<>();
         events.add( roleForId( MASTER, 1 ) );
-        // TODO 2.2-future is this needed?
-//        events.add( roleForId( BACKUP, 1 ) );
         events.add( roleForId( SLAVE, 2 ) );
         events.add( roleForId( SLAVE, 1 ) );
         events.add( roleForId( SLAVE, 3 ) );
@@ -153,8 +145,6 @@ public class HANewSnapshotFunctionTest
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<>();
         events.add( roleForId( MASTER, 1 ) );
-        // TODO 2.2-future is this needed?
-//        events.add( roleForId( BACKUP, 1 ) );
         events.add( roleForId( MASTER, 2 ) );
         events.add( roleForId( SLAVE, 3 ) );
         // and this expected outcome

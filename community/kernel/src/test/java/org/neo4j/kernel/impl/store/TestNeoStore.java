@@ -65,6 +65,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -281,7 +282,7 @@ public class TestNeoStore
     {
         txCount++;
         tx = ds.getKernel().newTransaction();
-        transaction = tx.getTransactionRecordState();
+        transaction = (( KernelTransactionImplementation)tx).getTransactionRecordState();
     }
 
     private void commitTx() throws TransactionFailureException
@@ -383,10 +384,10 @@ public class TestNeoStore
 
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName1 = "relationshiptype1";
-        transaction.createRelationshipTypeToken( relType1, typeName1 );
+        transaction.createRelationshipTypeToken( typeName1, relType1 );
         int relType2 = (int) nextId( RelationshipType.class );
         String typeName2 = "relationshiptype2";
-        transaction.createRelationshipTypeToken( relType2, typeName2 );
+        transaction.createRelationshipTypeToken( typeName2, relType2 );
         long rel1 = nextId( Relationship.class );
         transaction.relCreate( rel1, relType1, node1, node2 );
         long rel2 = nextId( Relationship.class );
@@ -1069,7 +1070,7 @@ public class TestNeoStore
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
-        transaction.createRelationshipTypeToken( relType1, typeName );
+        transaction.createRelationshipTypeToken( typeName, relType1 );
         long nodeIds[] = new long[3];
         for ( int i = 0; i < 3; i++ )
         {
@@ -1106,7 +1107,7 @@ public class TestNeoStore
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
-        transaction.createRelationshipTypeToken( relType1, typeName );
+        transaction.createRelationshipTypeToken( typeName, relType1 );
         long nodeIds[] = new long[3];
         for ( int i = 0; i < 3; i++ )
         {
@@ -1144,7 +1145,7 @@ public class TestNeoStore
         initializeStores( stringMap() );
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
-        transaction.createRelationshipTypeToken( relType1, "relationshiptype1" );
+        transaction.createRelationshipTypeToken( "relationshiptype1", relType1 );
         long nodeIds[] = new long[8];
         for ( int i = 0; i < nodeIds.length; i++ )
         {

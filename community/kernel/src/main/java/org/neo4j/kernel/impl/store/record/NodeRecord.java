@@ -164,4 +164,13 @@ public class NodeRecord extends PrimitiveRecord
             return item.inUse();
         }
     };
+
+    public void copyFrom( NodeRecord from )
+    {
+        this.nextRel = from.nextRel;
+        this.labels = from.labels;
+        this.isLight = from.isLight;
+        this.dense = from.dense;
+        this.setNextProp( from.getNextProp() );
+    }
 }

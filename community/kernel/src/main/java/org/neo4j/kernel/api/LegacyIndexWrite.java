@@ -26,9 +26,19 @@ import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelExce
 
 public interface LegacyIndexWrite
 {
+    /**
+     * Creates a legacy index in a separate transaction if not yet available.
+     */
     void nodeLegacyIndexCreateLazily( String indexName, Map<String, String> customConfig );
 
+    void nodeLegacyIndexCreate( String indexName, Map<String, String> customConfig );
+
+    /**
+     * Creates a legacy index in a separate transaction if not yet available.
+     */
     void relationshipLegacyIndexCreateLazily( String indexName, Map<String, String> customConfig );
+
+    void relationshipLegacyIndexCreate( String indexName, Map<String, String> customConfig );
 
     String nodeLegacyIndexSetConfiguration( String indexName, String key, String value )
             throws LegacyIndexNotFoundKernelException;

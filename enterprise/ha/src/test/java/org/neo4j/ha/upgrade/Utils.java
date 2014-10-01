@@ -87,7 +87,7 @@ public class Utils
         {
             File tmpDownload = new File( downloaded.getAbsolutePath() + ".tmp" );
             deleteFile( tmpDownload );
-            copyURLToFile( website, tmpDownload );
+            copyURLToFile( website, tmpDownload, 5000, 10000 );
             moveFile( tmpDownload, downloaded );
         }
         

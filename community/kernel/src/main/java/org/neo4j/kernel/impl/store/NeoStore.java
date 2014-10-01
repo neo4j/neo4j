@@ -854,13 +854,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         lastCommittedTx.offer( transactionId );
         if ( transactionId > previous )
         {
-            /*
-             * TODO 2.2-future
-             * In order to make pull updates to work I need to write this record everytime it is updated.
-             * Probably there are better ways to handle this, not sut though since it looks like slaves never
-             * flush the store so this record is never written to disk causing problem in sync when the old master
-             * becomes available again. In particular all the changes committed on the slaves are lost.
-             */
             setRecord( LATEST_TX_POSITION, lastCommittedTx.get() );
         }
     }
@@ -884,13 +877,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId )
     {
-        /*
-         * TODO 2.2-future
-         * In order to make pull updates to work I need to write this record everytime it is updated.
-         * Probably there are better ways to handle this, not sut though since it looks like slaves never
-         * flush the store so this record is never written to disk causing problem in sync when the old master
-         * becomes available again. In particular all the changes committed on the slaves are lost.
-         */
         setRecord( LATEST_TX_POSITION, transactionId );
         checkInitialized( lastCommittingTxField.get() );
         lastCommittingTxField.set( transactionId );

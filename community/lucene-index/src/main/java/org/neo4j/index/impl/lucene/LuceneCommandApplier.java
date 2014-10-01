@@ -82,7 +82,7 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         Object value = command.getValue();
         context.ensureWriterInstantiated();
         DocumentContext document = context.getDocument( command.getEntityId(), false );
-        if ( document != null ) // TODO 2.2-future why null ckeck?
+        if ( document != null )
         {
             context.indexType.removeFromDocument( document.document, key, value );
             context.dataSource.invalidateCache( context.identifier, key, value );
@@ -102,8 +102,6 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
     @Override
     public boolean visitIndexCreateCommand( CreateCommand createCommand ) throws IOException
     {
-        // TODO Indexes are created lazily, they always have been. We could create them here instead
-        // but that can be changed later.
         return true;
     }
 

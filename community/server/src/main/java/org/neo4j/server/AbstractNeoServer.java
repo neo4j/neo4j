@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.Filter;
 
 import org.apache.commons.configuration.Configuration;
@@ -75,7 +76,6 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.server.rest.web.ForceMode;
 import org.neo4j.server.rrd.RrdDbProvider;
 import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.security.KeyStoreFactory;
@@ -125,7 +125,7 @@ public abstract class AbstractNeoServer implements NeoServer
     protected WebServer webServer;
     protected final StatisticCollector statisticsCollector = new StatisticCollector();
 
-    private PreFlightTasks preFlight;
+    private final PreFlightTasks preFlight;
 
     private final List<ServerModule> serverModules = new ArrayList<>();
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
@@ -279,7 +279,6 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         return new DatabaseActions(
                 new LeaseManager( SYSTEM_CLOCK ),
-                ForceMode.forced,
                 configurator.configuration().getBoolean(
                         SCRIPT_SANDBOXING_ENABLED_KEY,
                         DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
@@ -618,8 +617,14 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         try
         {
-            if( rrdDbScheduler != null) rrdDbScheduler.stopJobs();
-            if( rrdDbWrapper != null )  rrdDbWrapper.close();
+            if( rrdDbScheduler != null)
+            {
+                rrdDbScheduler.stopJobs();
+            }
+            if( rrdDbWrapper != null )
+            {
+                rrdDbWrapper.close();
+            }
             log.log( "Successfully shutdown Neo4j Server." );
         } catch(IOException e)
         {

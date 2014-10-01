@@ -230,22 +230,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
             {
                 source.neoStore.logIdUsage( log );
             }
-        },
-        PERSISTENCE_WINDOW_POOL_STATS( "Persistence Window Pool stats:" )
-        {
-            @Override
-            void dump( NeoStoreDataSource source, StringLogger.LineLogger log )
-            {
-                // TODO
-//                source.neoStore.logAllWindowPoolStats( log );
-            }
-
-            @Override
-            boolean applicable( DiagnosticsPhase phase )
-            {
-                return phase.isExplicitlyRequested();
-            }
         };
+
         private final String message;
 
         private Diagnostics( String message )
@@ -410,7 +396,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         {
             indexingService = new IndexingService( scheduler, providerMap, new NeoStoreIndexStoreView(
                     lockService, neoStore ), tokenNameLookup, updateableSchemaState, indexRuleLoader(), logging,
-                    indexingServiceMonitor ); // TODO 2.2-future What index rules should be
+                    indexingServiceMonitor );
             final IntegrityValidator integrityValidator = new IntegrityValidator( neoStore, indexingService );
             labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                     LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore();
@@ -601,10 +587,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         };
     }
 
-    // TODO 2.2-future: In TransactionFactory (now gone) was (#onRecoveryComplete)
-    //    forceEverything();
-    //    neoStore.makeStoreOk();
-    //    neoStore.setVersion( xaContainer.getLogicalLog().getHighestLogVersion() );
     public NeoStore getNeoStore()
     {
         return neoStore;
@@ -720,7 +702,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
     @Override
     public void awaitAllTransactionsClosed()
     {
-        // TODO 2.2-future what if this will never happen?
         while ( !neoStore.closedTransactionIdIsOnParWithCommittedTransactionId() )
         {
             LockSupport.parkNanos( 1_000_000 ); // 1 ms
@@ -786,7 +767,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
     @Override
     public void registerIndexProvider( String name, IndexImplementation index )
     {
-        assert !indexProviders.containsKey( name );
+        assert !indexProviders.containsKey( name ) : "Index provider '" + name + "' already registered";
         indexProviders.put( name, index );
     }
 

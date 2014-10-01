@@ -40,8 +40,6 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
-import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.util.Providers;
 
 import static org.junit.Assert.assertEquals;
@@ -173,12 +171,6 @@ public class ConstraintIndexCreatorTest
                 }
 
                 @Override
-                public TransactionRecordState getTransactionRecordState()
-                {
-                    throw new UnsupportedOperationException( "Please implement" );
-                }
-
-                @Override
                 public void failure()
                 {
                 }
@@ -206,6 +198,7 @@ public class ConstraintIndexCreatorTest
                     return true;
                 }
 
+                @Override
                 public boolean shouldBeTerminated()
                 {
                     return false;
@@ -214,12 +207,6 @@ public class ConstraintIndexCreatorTest
                 @Override
                 public void markForTermination()
                 {
-                }
-
-                @Override
-                public LegacyIndexTransactionState getLegacyIndexTransactionState()
-                {
-                    throw new UnsupportedOperationException( "Please implement" );
                 }
             };
         }

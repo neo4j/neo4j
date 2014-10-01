@@ -48,9 +48,9 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
 {
     private final GraphDatabaseAPI graph;
 
-    public TransactionWrappedDatabaseActions( LeaseManager leaseManager, ForceMode forced, GraphDatabaseAPI graph )
+    public TransactionWrappedDatabaseActions( LeaseManager leaseManager, GraphDatabaseAPI graph )
     {
-        super( leaseManager, forced, graph );
+        super( leaseManager, graph );
         this.graph = graph;
     }
 

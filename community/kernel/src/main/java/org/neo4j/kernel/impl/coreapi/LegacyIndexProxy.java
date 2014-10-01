@@ -338,7 +338,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
                         }
                         catch ( NotFoundException e )
                         {   // By contract this is OK. So just skip it.
-                            // TODO 2.2-future this is probably the place to hook in "abandoned id read-repair as well"
+                            // TODO this is probably the place to hook in "abandoned id read-repair as well"
                         }
                     }
                 }

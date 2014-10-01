@@ -183,27 +183,6 @@ class LuceneTransactionState implements Closeable
         this.txData.clear();
     }
 
-    // TODO 2.2-future move this somewhere else?
-//    private void addAbandonedEntitiesToTheTx()
-//    {
-//        for ( Map.Entry<IndexIdentifier, TxDataBoth> entry : txData.entrySet() )
-//        {
-//            Collection<Long> abandonedIds = entry.getValue().index.abandonedIds;
-//            if ( !abandonedIds.isEmpty() )
-//            {
-//                CommandList commands = commandMap.get( entry.getKey() );
-//                for ( Long id : abandonedIds )
-//                {
-//                    RemoveCommand command = new RemoveCommand();
-//                    command.init( definitions().getOrAssignIndexNameId( entry.getKey().indexName ),
-//                            entry.getKey().entityType.id(), id, (byte)-1, null );
-//                    commands.add( command );
-//                }
-//                abandonedIds.clear();
-//            }
-//        }
-//    }
-
     // Bad name
     private class TxDataBoth
     {

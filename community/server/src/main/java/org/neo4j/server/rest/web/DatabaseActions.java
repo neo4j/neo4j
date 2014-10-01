@@ -116,7 +116,6 @@ public class DatabaseActions
     public static final String INDEX_ORDER = "index";
     private final GraphDatabaseAPI graphDb;
     private final LeaseManager leases;
-    private final ForceMode defaultForceMode;
 
     private final TraversalDescriptionBuilder traversalDescriptionBuilder;
     private final boolean enableScriptSandboxing;
@@ -149,26 +148,18 @@ public class DatabaseActions
                 }
             };
 
-    public DatabaseActions( LeaseManager leaseManager, ForceMode defaultForceMode,
-                            boolean enableScriptSandboxing, GraphDatabaseAPI graphDatabaseAPI )
+    public DatabaseActions( LeaseManager leaseManager, boolean enableScriptSandboxing, GraphDatabaseAPI graphDatabaseAPI )
     {
         this.leases = leaseManager;
-        this.defaultForceMode = defaultForceMode;
         this.graphDb = graphDatabaseAPI;
         this.enableScriptSandboxing = enableScriptSandboxing;
         this.traversalDescriptionBuilder = new TraversalDescriptionBuilder( enableScriptSandboxing );
         this.propertySetter = new PropertySettingStrategy( graphDb );
     }
 
-    public DatabaseActions( LeaseManager leaseManager, ForceMode defaultForceMode, GraphDatabaseAPI graphDatabaseAPI )
+    public DatabaseActions( LeaseManager leaseManager, GraphDatabaseAPI graphDatabaseAPI )
     {
-        this( leaseManager, defaultForceMode, true, graphDatabaseAPI );
-    }
-
-    public DatabaseActions forceMode( ForceMode forceMode )
-    {
-        return forceMode == defaultForceMode || forceMode == null ? this : new DatabaseActions( leases, forceMode,
-                enableScriptSandboxing, graphDb );
+        this( leaseManager, true, graphDatabaseAPI );
     }
 
     private Node node( long id ) throws NodeNotFoundException
