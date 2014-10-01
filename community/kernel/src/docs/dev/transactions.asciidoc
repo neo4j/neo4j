@@ -57,7 +57,7 @@ Trying to do so will result in error on each call to a write operation.
 Transactions in Neo4j use a read-committed isolation level, which means they will see data as soon as it has been committed and will not see data in other transactions that have not yet been committed.
 This type of isolation is weaker than serialization but offers significant performance advantages whilst being sufficient for the overwhelming majority of cases.
 
-In addition, the Neo4j Java API enables explicit locking of nodes and relationships.
+In addition, the Neo4j Java API (see <<advanced-usage>>) enables explicit locking of nodes and relationships.
 Using locks gives the opportunity to simulate the effects of higher levels of isolation by obtaining and releasing locks explicitly.
 For example, if a write lock is taken on a common node or relationship, then all transactions will serialize on that lock -- giving the effect of a serialization isolation level.
 

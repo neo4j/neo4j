@@ -666,7 +666,8 @@
                 <copy todir="${project.build.directory}/images" overwrite="true">
                   <fileset dir="${project.build.directory}/src/images" />
                 </copy>
-                <replace file="${project.build.directory}/neo4j-manual-shortinfo.xml" encoding="UTF-8" token="url=&quot;javadocs" value="url=&quot;http://docs.neo4j.org/chunked/${project.version}/javadocs" />
+                <replace file="${project.build.directory}/neo4j-manual-shortinfo.xml" encoding="UTF-8" token="url=&quot;javadocs" value="url=&quot;http://neo4j.com/docs/${project.version}/javadocs" />
+                <replace file="${project.build.directory}/neo4j-manual-shortinfo.xml" encoding="UTF-8" token="url=&quot;cypher-refcard" value="url=&quot;http://neo4j.com/docs/${project.version}/cypher-refcard" />
               </preProcess>
               <imgSrcPath>${project.build.directory}/images</imgSrcPath>
               <admonGraphicsPath>${project.build.directory}/images/icons/admon/</admonGraphicsPath>
