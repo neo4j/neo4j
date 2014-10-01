@@ -228,14 +228,14 @@ final class MuninnPage extends StampedLock implements Page
     @Override
     public void swapIn( StoreChannel channel, long offset, int length ) throws IOException
     {
-        assert isReadLocked() || isWriteLocked() : "swapIn requires lock";
+        assert isWriteLocked() : "swapIn requires write lock to protect the cache page";
+        int readTotal = 0;
         try
         {
             ByteBuffer bufferProxy = (ByteBuffer) directBufferCtor.newInstance(
                     pointer, cachePageSize );
             bufferProxy.clear();
             bufferProxy.limit( length );
-            int readTotal = 0;
             int read;
             do
             {
@@ -249,13 +249,12 @@ final class MuninnPage extends StampedLock implements Page
                 bufferProxy.put( (byte) 0 );
             }
         }
-        catch ( IOException e )
-        {
-            throw e;
-        }
         catch ( Exception e )
         {
-            throw new IOException( e );
+            String msg = String.format(
+                    "Read failed after %s of %s bytes from offset %s",
+                    readTotal, length, offset );
+            throw new IOException( msg, e );
         }
     }
 
@@ -328,9 +327,17 @@ final class MuninnPage extends StampedLock implements Page
         {
             throw new IllegalStateException( "Cannot fault on bound page" );
         }
-        this.swapper = swapper;
-        this.filePageId = filePageId;
+
+        // Note: It is important that we assign the filePageId before we swap
+        // the page in. If the swapping fails, the page will be considered
+        // loaded for the purpose of eviction, and will eventually return to
+        // the freelist. However, because we don't assign the swapper until the
+        // swapping-in has succeeded, the page will not be considered bound to
+        // the file page, so any subsequent thread that finds the page in their
+        // translation table will re-do the page fault.
+        this.filePageId = filePageId; // Page now considered isLoaded()
         swapper.read( filePageId, this );
+        this.swapper = swapper; // Page now considered isBoundTo( swapper, filePageId )
     }
 
     /**
