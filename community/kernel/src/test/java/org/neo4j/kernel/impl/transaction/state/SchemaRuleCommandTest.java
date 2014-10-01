@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV1;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
@@ -213,7 +213,7 @@ public class SchemaRuleCommandTest
     private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
             labelScanStore, mock( NodeStore.class ), mock( PropertyStore.class ), mock( CacheAccessBackDoor.class ),
             mock( PropertyLoader.class ), TransactionApplicationMode.INTERNAL );
-    private final PhysicalLogNeoCommandReaderV1 reader = new PhysicalLogNeoCommandReaderV1();
+    private final PhysicalLogNeoCommandReaderV2 reader = new PhysicalLogNeoCommandReaderV2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 
     private Collection<DynamicRecord> serialize( SchemaRule rule, long id, boolean inUse, boolean created )

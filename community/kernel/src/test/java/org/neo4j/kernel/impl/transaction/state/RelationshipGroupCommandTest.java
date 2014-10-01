@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandReader;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV1;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
@@ -68,7 +68,7 @@ public class RelationshipGroupCommandTest
         CommandWriter commandWriter = new CommandWriter( channel );
         commandWriter.visitRelationshipGroupCommand( cmd );
 
-        CommandReader commandReader = new PhysicalLogNeoCommandReaderV1();
+        CommandReader commandReader = new PhysicalLogNeoCommandReaderV2();
         Command.RelationshipGroupCommand result = (Command.RelationshipGroupCommand) commandReader.read( channel );
 
         RelationshipGroupRecord recordBefore = cmd.getRecord();

@@ -22,12 +22,13 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
 import static org.junit.Assert.assertEquals;
 
-public class PhysicalLogNeoCommandReaderV1Test
+public class PhysicalLogNeoCommandReaderV2Test
 {
     @Test
     public void shouldReadIndexCommandHeaderCorrectly() throws Exception
@@ -41,7 +42,7 @@ public class PhysicalLogNeoCommandReaderV1Test
         // Number 12 will do just fine.
 
         // GIVEN
-        PhysicalLogNeoCommandReaderV1 reader = new PhysicalLogNeoCommandReaderV1();
+        PhysicalLogNeoCommandReaderV2 reader = new PhysicalLogNeoCommandReaderV2();
         InMemoryLogChannel data = new InMemoryLogChannel();
         CommandWriter writer = new CommandWriter( data );
         AddRelationshipCommand command = new AddRelationshipCommand();

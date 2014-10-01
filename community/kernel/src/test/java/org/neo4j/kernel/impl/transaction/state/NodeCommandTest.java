@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandReader;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV1;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -65,7 +65,7 @@ public class NodeCommandTest
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     private NodeStore nodeStore;
     InMemoryLogChannel channel = new InMemoryLogChannel();
-    private final CommandReader commandReader = new PhysicalLogNeoCommandReaderV1();
+    private final CommandReader commandReader = new PhysicalLogNeoCommandReaderV2();
     private final CommandWriter commandWriter = new CommandWriter( channel );
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
