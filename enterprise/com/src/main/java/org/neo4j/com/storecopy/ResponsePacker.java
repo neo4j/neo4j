@@ -60,30 +60,36 @@ public class ResponsePacker
             final Predicate<CommittedTransactionRepresentation> filter )
     {
         final long toStartFrom = context.lastAppliedTransaction() + 1;
+        final long toEndAt = transactionIdStore.getLastCommittedTransactionId();
         TransactionStream transactions = new TransactionStream()
         {
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
             {
-                if ( toStartFrom > BASE_TX_ID && toStartFrom <= transactionIdStore.getLastCommittedTransactionId() )
+                // Check so that it's even worth thinking about extracting any transactions at all
+                if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
                 {
-                    extractTransactions( toStartFrom, filterVisitor( visitor, filter ) );
+                    extractTransactions( toStartFrom, filterVisitor( visitor, filter, toEndAt ) );
                 }
             }
         };
-        return new Response<>( response, db.storeId(), transactions, ResourceReleaser.NO_OP );
+        return new Response<>( response, storeId.instance(), transactions, ResourceReleaser.NO_OP );
     }
 
     protected Visitor<CommittedTransactionRepresentation, IOException> filterVisitor(
             final Visitor<CommittedTransactionRepresentation, IOException> delegate,
-            final Predicate<CommittedTransactionRepresentation> filter )
+            final Predicate<CommittedTransactionRepresentation> filter, final long txToEndAt )
     {
         return new Visitor<CommittedTransactionRepresentation, IOException>()
         {
             @Override
             public boolean visit( CommittedTransactionRepresentation element ) throws IOException
             {
-                return !filter.accept( element ) || delegate.visit( element );
+                if ( !filter.accept( element ) || element.getCommitEntry().getTxId() > txToEndAt )
+                {
+                    return false;
+                }
+                return delegate.visit( element );
             }
         };
     }
@@ -91,9 +97,13 @@ public class ResponsePacker
     protected void extractTransactions( long startingAtTransactionId,
             Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
     {
-        try (IOCursor<CommittedTransactionRepresentation> cursor = transactionStore.getTransactions( startingAtTransactionId) )
+        try ( IOCursor<CommittedTransactionRepresentation> cursor = transactionStore
+                .getTransactions( startingAtTransactionId ) )
         {
-            while (cursor.next() && visitor.visit( cursor.get() ));
+            while ( cursor.next() && visitor.visit( cursor.get() ) )
+            {
+                // Just keep on going
+            }
         }
     }
 }
