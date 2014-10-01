@@ -35,6 +35,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
+import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
@@ -314,7 +315,13 @@ public class MasterClient201 extends Client<Master> implements MasterClient
     @Override
     public Response<Void> pullUpdates( RequestContext context )
     {
-        return sendRequest( HaRequestType201.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
+        return pullUpdates( context, ResponseUnpacker.NO_OP_TX_HANDLER );
+    }
+
+    @Override
+    public Response<Void> pullUpdates( RequestContext context, TxHandler txHandler )
+    {
+        return sendRequest( HaRequestType201.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER, null, txHandler );
     }
 
     @Override
@@ -335,7 +342,7 @@ public class MasterClient201 extends Client<Master> implements MasterClient
                     {
                         return new HandshakeResult( buffer.readInt(), buffer.readLong(), buffer.readLong() );
                     }
-                }, storeId
+                }, storeId, ResponseUnpacker.NO_OP_TX_HANDLER
         );
     }
 

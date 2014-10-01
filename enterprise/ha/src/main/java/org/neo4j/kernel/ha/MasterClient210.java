@@ -28,19 +28,20 @@ import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.Protocol201;
+import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
+import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
-import org.neo4j.com.ProtocolVersion;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -266,7 +267,13 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     @Override
     public Response<Void> pullUpdates( RequestContext context )
     {
-        return sendRequest( HaRequestType210.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
+        return pullUpdates( context, ResponseUnpacker.NO_OP_TX_HANDLER );
+    }
+
+    @Override
+    public Response<Void> pullUpdates( RequestContext context, TxHandler txHandler )
+    {
+        return sendRequest( HaRequestType210.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER, null, txHandler );
     }
 
     @Override
@@ -287,7 +294,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
                     {
                         return new HandshakeResult( buffer.readInt(), buffer.readLong(), buffer.readLong() );
                     }
-                }, storeId
+                }, storeId, ResponseUnpacker.NO_OP_TX_HANDLER
         );
     }
 

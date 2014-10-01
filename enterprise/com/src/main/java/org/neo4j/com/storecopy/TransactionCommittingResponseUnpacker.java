@@ -36,7 +36,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, Lifecycle
 {
     private final DependencyResolver resolver;
-    private final TxHandler txHandler;
 
     private TransactionAppender appender;
     private TransactionRepresentationStoreApplier storeApplier;
@@ -44,14 +43,13 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
 
     private volatile boolean stopped = false;
 
-    public TransactionCommittingResponseUnpacker( DependencyResolver resolver, TxHandler txHandler )
+    public TransactionCommittingResponseUnpacker( DependencyResolver resolver )
     {
         this.resolver = resolver;
-        this.txHandler = txHandler;
     }
 
     @Override
-    public void unpackResponse( Response<?> response ) throws IOException
+    public void unpackResponse( Response<?> response, final TxHandler txHandler ) throws IOException
     {
         if ( stopped )
         {

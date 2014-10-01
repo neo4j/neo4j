@@ -307,7 +307,7 @@ class BackupService
         DependencyResolver resolver = targetDb.getDependencyResolver();
 
         ProgressTxHandler handler = new ProgressTxHandler();
-        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver, handler );
+        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver );
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort,
@@ -321,7 +321,7 @@ class BackupService
             client.start();
             unpacker.start();
 
-            unpacker.unpackResponse( client.incrementalBackup( context ) );
+            unpacker.unpackResponse( client.incrementalBackup( context ), handler );
 
             consistent = true;
         }

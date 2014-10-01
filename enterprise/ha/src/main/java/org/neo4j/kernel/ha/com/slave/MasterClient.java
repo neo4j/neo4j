@@ -32,6 +32,7 @@ import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.ha.MasterClient214;
@@ -122,6 +123,8 @@ public interface MasterClient extends Master
 
     @Override
     public Response<Void> pullUpdates( RequestContext context );
+
+    public Response<Void> pullUpdates( RequestContext context, TxHandler txHandler );
 
     @Override
     public Response<Void> copyStore( RequestContext context, final StoreWriter writer );
