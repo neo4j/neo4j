@@ -27,8 +27,9 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
+import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -39,15 +40,15 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 public class ResponsePacker
 {
     protected final LogicalTransactionStore transactionStore;
-    protected final GraphDatabaseAPI db; // for lazy storeId getter
+    protected final Provider<StoreId> storeId; // for lazy storeId getter
     private final TransactionIdStore transactionIdStore;
 
     public ResponsePacker( LogicalTransactionStore transactionStore, TransactionIdStore transactionIdStore,
-            GraphDatabaseAPI db )
+            Provider<StoreId> storeId )
     {
         this.transactionStore = transactionStore;
         this.transactionIdStore = transactionIdStore;
-        this.db = db; // just so that we can get the store ID at a later point. It's probably not available right now
+        this.storeId = storeId;
     }
 
     public <T> Response<T> packResponse( RequestContext context, T response )

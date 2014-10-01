@@ -24,7 +24,8 @@ import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.helpers.Provider;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -41,21 +42,21 @@ class BackupImpl implements TheBackupInterface
     private final StoreCopyServer storeCopyServer;
     private final ResponsePacker incrementalResponsePacker;
     private final LogicalTransactionStore logicalTransactionStore;
-    private final GraphDatabaseAPI db;
+    private final Provider<StoreId> storeId;
     private final TransactionIdStore transactionIdStore;
     private final LogFileInformation logFileInformation;
 
     public BackupImpl( StoreCopyServer storeCopyServer, Monitors monitors,
                        LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
-                       LogFileInformation logFileInformation, GraphDatabaseAPI db )
+                       LogFileInformation logFileInformation, Provider<StoreId> storeId )
     {
         this.storeCopyServer = storeCopyServer;
         this.logicalTransactionStore = logicalTransactionStore;
         this.transactionIdStore = transactionIdStore;
         this.logFileInformation = logFileInformation;
-        this.db = db;
+        this.storeId = storeId;
         this.backupMonitor = monitors.newMonitor( BackupMonitor.class, getClass() );
-        this.incrementalResponsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, db );
+        this.incrementalResponsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, storeId );
     }
 
     @Override
@@ -66,7 +67,7 @@ class BackupImpl implements TheBackupInterface
             backupMonitor.startCopyingFiles();
             RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter );
             ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
-                    transactionIdStore, logFileInformation, db,
+                    transactionIdStore, logFileInformation, storeId,
                     copyStartContext.lastAppliedTransaction() + 1 ); // mandatory transaction id
             long optionalTransactionId = boBackACoupleOfTransactionsIfRequired(
                     copyStartContext.lastAppliedTransaction() ); // optional transaction id

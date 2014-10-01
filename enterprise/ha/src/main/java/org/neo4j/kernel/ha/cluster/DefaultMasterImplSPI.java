@@ -30,6 +30,7 @@ import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -64,7 +65,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     private final File storeDir;
     private final ResponsePacker responsePacker;
 
-    public DefaultMasterImplSPI( GraphDatabaseAPI graphDb )
+    public DefaultMasterImplSPI( final GraphDatabaseAPI graphDb )
     {
         this.graphDb = graphDb;
         this.dependencyResolver = graphDb.getDependencyResolver();
@@ -75,7 +76,14 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         this.fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
         this.storeDir = new File( graphDb.getStoreDir() );
         this.txStore = dependencyResolver.resolveDependency( LogicalTransactionStore.class );
-        this.responsePacker = new ResponsePacker( txStore, transactionIdStore, graphDb );
+        this.responsePacker = new ResponsePacker( txStore, transactionIdStore, new Provider<StoreId>()
+        {
+            @Override
+            public StoreId instance()
+            {
+                return graphDb.storeId();
+            }
+        } );
     }
 
     @Override
