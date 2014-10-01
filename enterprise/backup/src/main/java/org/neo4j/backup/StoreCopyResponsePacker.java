@@ -22,8 +22,9 @@ package org.neo4j.backup;
 import java.io.IOException;
 
 import org.neo4j.com.storecopy.ResponsePacker;
+import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -44,9 +45,9 @@ public class StoreCopyResponsePacker extends ResponsePacker
 
     public StoreCopyResponsePacker( LogicalTransactionStore transactionStore,
             TransactionIdStore transactionIdStore, LogFileInformation logFileInformation,
-            GraphDatabaseAPI db, long mandatoryStartTransactionId )
+            Provider<StoreId> storeId, long mandatoryStartTransactionId )
     {
-        super( transactionStore, transactionIdStore, db );
+        super( transactionStore, transactionIdStore, storeId );
         this.transactionIdStore = transactionIdStore;
         this.mandatoryStartTransactionId = mandatoryStartTransactionId;
         this.logFileInformation = logFileInformation;

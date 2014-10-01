@@ -316,7 +316,7 @@ public class SwitchToSlave
                 public void accept( CommittedTransactionRepresentation tx )
                 {
                     long txId = tx.getCommitEntry().getTxId();
-                    if ( txId % 10 == 0 )
+                    if ( txId % 50 == 0 )
                     {
                         console.log( "  ...still catching up with master, now at " + txId );
                     }
