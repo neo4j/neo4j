@@ -92,8 +92,7 @@ public class DumpLogicalLog
             LogDeserializer deserializer = new LogDeserializer();
 
             PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
-                    fileChannel, logHeader.logVersion, logHeader.logFormatVersion
-            );
+                    fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
             ReadableVersionableLogChannel logChannel =
                     new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
 

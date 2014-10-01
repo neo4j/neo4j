@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 
+import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -122,6 +123,11 @@ public abstract class Command
 
     public abstract boolean handle( NeoCommandHandler handler ) throws IOException;
 
+    protected String beforeAndAfterToString( AbstractBaseRecord before, AbstractBaseRecord after )
+    {
+        return format( " -%s%n         +%s", before, after );
+    }
+
     public static class NodeCommand extends Command
     {
         private NodeRecord before;
@@ -150,7 +156,7 @@ public abstract class Command
         @Override
         public String toString()
         {
-            return after.toString();
+            return beforeAndAfterToString( before, after );
         }
 
         public NodeRecord getBefore()
@@ -311,7 +317,7 @@ public abstract class Command
         @Override
         public String toString()
         {
-            return after.toString();
+            return beforeAndAfterToString( before, after );
         }
 
         @Override
