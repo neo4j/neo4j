@@ -182,6 +182,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static java.lang.String.format;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.NamedThreadFactory.daemon;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
@@ -1405,8 +1406,8 @@ public abstract class InternalAbstractGraphDatabase
     {
         private final ConfigurationChangeListener listener = new ConfigurationChangeListener()
         {
-            Executor executor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Database configuration " +
-                    "restart", monitors.newMonitor(NamedThreadFactory.Monitor.class) ).setDaemon(true) );
+            Executor executor = Executors.newSingleThreadExecutor(
+                    daemon( "DB configuration restart", monitors.newMonitor( NamedThreadFactory.Monitor.class ) ) );
 
             @Override
             public void notifyConfigurationChanges( final Iterable<ConfigurationChange> change )

@@ -27,8 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -54,11 +52,14 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
+import static java.lang.String.format;
+import static java.util.concurrent.Executors.newCachedThreadPool;
+
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 import static org.neo4j.com.ResourcePool.DEFAULT_CHECK_INTERVAL;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-import static org.neo4j.helpers.NamedThreadFactory.named;
+import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -78,8 +79,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     private ClientBootstrap bootstrap;
     private final SocketAddress address;
-    protected final StringLogger msgLog;
-    private ExecutorService executor;
+    private final StringLogger msgLog;
     private ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
     private final Protocol protocol;
     private final int frameLength;
@@ -126,9 +126,12 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     @Override
     public void start()
     {
-        executor = Executors.newCachedThreadPool( named( getClass().getSimpleName() + "@" + address ) );
-        bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
+        String threadNameFormat = "%s-" + getClass().getSimpleName() + "@" + address;
+        bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
+                newCachedThreadPool( daemon( format( threadNameFormat, "Boss" ) ) ),
+                newCachedThreadPool( daemon( format( threadNameFormat, "Worker" ) ) ) ) );
         bootstrap.setPipelineFactory( this );
+
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>( maxUnusedChannels,
                 new ResourcePool.CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL, SYSTEM_CLOCK ),
                 new LoggingResourcePoolMonitor( msgLog ) )
@@ -193,7 +196,6 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         channelPool.close( true );
         bootstrap.releaseExternalResources();
-        executor.shutdownNow();
         mismatchingVersionHandlers.clear();
         msgLog.logMessage( toString() + " shutdown", true );
     }

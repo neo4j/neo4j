@@ -57,6 +57,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.helpers.NamedThreadFactory.daemon;
+
 /**
  * TCP version of a Networked Instance. This handles receiving messages to be consumed by local state-machines and
  * sending outgoing messages
@@ -132,10 +134,10 @@ public class NetworkReceiver
 
         // Listen for incoming connections
         nioChannelFactory = new NioServerSocketChannelFactory(
-                Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster boss", monitor ) ),
-                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster worker", monitor ) ), 2 );
+                Executors.newCachedThreadPool( daemon( "Cluster boss", monitor ) ),
+                Executors.newFixedThreadPool( 2, daemon( "Cluster worker", monitor ) ), 2 );
         serverBootstrap = new ServerBootstrap( nioChannelFactory );
-        serverBootstrap.setOption("child.tcpNoDelay", true);
+        serverBootstrap.setOption( "child.tcpNoDelay", true );
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
         int[] ports = config.clusterServer().getPorts();

@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +54,6 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -69,9 +67,15 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static java.util.concurrent.Executors.newScheduledThreadPool;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+
 import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.helpers.NamedThreadFactory.named;
+import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
@@ -169,18 +173,18 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         this.oldChannelThresholdMillis = config.getOldChannelThreshold();
         chunkSize = config.getChunkSize();
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
-        targetCallExecutor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + ":"
-                + config.getServerAddress().getPort() ) );
-        unfinishedTransactionExecutor = Executors.newScheduledThreadPool( 2, new NamedThreadFactory( "Unfinished " +
-                "transactions" ) );
-        silentChannelExecutor = Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Silent channel " +
-                "reaper" ) );
+
+        String className = getClass().getSimpleName();
+
+        targetCallExecutor = newCachedThreadPool( named( className + ":" + config.getServerAddress().getPort() ) );
+        unfinishedTransactionExecutor = newScheduledThreadPool( 2, named( "Unfinished transactions" ) );
+        silentChannelExecutor = newSingleThreadScheduledExecutor( named( "Silent channel reaper" ) );
         silentChannelExecutor.scheduleWithFixedDelay( silentChannelFinisher(), 5, 5, TimeUnit.SECONDS );
 
-        ExecutorService executor = Executors.newCachedThreadPool( new NamedThreadFactory( "Server receiving" ) );
-        ExecutorService workerExecutor = Executors.newCachedThreadPool( new NamedThreadFactory( "Server receiving" ) );
+        ExecutorService bossExecutor = newCachedThreadPool( daemon( "Boss-" + className ) );
+        ExecutorService workerExecutor = newCachedThreadPool( daemon( "Worker-" + className ) );
         bootstrap = new ServerBootstrap( new NioServerSocketChannelFactory(
-                executor, workerExecutor, config.getMaxConcurrentTransactions() ) );
+                bossExecutor, workerExecutor, config.getMaxConcurrentTransactions() ) );
         bootstrap.setPipelineFactory( this );
 
         Channel channel = null;
@@ -216,14 +220,16 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         if ( ex != null )
         {
             msgLog.logMessage( "Failed to bind server to " + socketAddress, ex );
-            executor.shutdown();
-            workerExecutor.shutdown();
+            bootstrap.releaseExternalResources();
+            targetCallExecutor.shutdownNow();
+            unfinishedTransactionExecutor.shutdownNow();
+            silentChannelExecutor.shutdownNow();
             throw new IOException( ex );
         }
 
         channelGroup = new DefaultChannelGroup();
         channelGroup.add( channel );
-        msgLog.logMessage( getClass().getSimpleName() + " communication server started and bound to " + socketAddress );
+        msgLog.logMessage( className + " communication server started and bound to " + socketAddress );
     }
 
     @Override
@@ -724,11 +730,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 channel,
                 chunkSize, getInternalProtocolVersion(), applicationProtocolVersion );
     }
-
-    // =====================================================================
-    // Just some methods which aren't really used when running an HA cluster,
-    // but exposed so that other tools can reach that information.
-    // =====================================================================
 
     private class PartialRequest
     {

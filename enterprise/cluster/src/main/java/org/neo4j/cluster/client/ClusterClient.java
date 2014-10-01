@@ -81,6 +81,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.helpers.NamedThreadFactory.daemon;
+
 public class ClusterClient extends LifecycleAdapter
         implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot, Election, BindingNotifier
 {
@@ -571,7 +573,7 @@ public class ClusterClient extends LifecycleAdapter
         public void start() throws Throwable
         {
             scheduler = Executors.newSingleThreadScheduledExecutor(
-                    new NamedThreadFactory( "timeout-clusterClient", monitors.newMonitor(NamedThreadFactory.Monitor.class) ).setDaemon(true) );
+                    daemon( "timeout-clusterClient", monitors.newMonitor( NamedThreadFactory.Monitor.class ) ) );
 
             tickFuture = scheduler.scheduleWithFixedDelay( new Runnable()
             {
