@@ -1,0 +1,9 @@
+usr/share/neo4j-arbiter/lib      var/lib/neo4j-arbiter/lib
+usr/share/neo4j-arbiter/system   var/lib/neo4j-arbiter/system
+
+var/log/neo4j-arbiter            var/lib/neo4j-arbiter/data/log
+
+etc/neo4j-arbiter                var/lib/neo4j-arbiter/conf
+
+# surely we don't need this anymore - but to we need a link for the arbiter? why is this here?
+#var/lib/neo4j-coordinator/bin/neo4j-coordinator-shell   usr/bin/neo4j-coordinator-shell

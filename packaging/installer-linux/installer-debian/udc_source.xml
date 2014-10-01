@@ -1,0 +1,30 @@
+<project>
+    <macrodef name="udc_source">
+        <attribute name="name"/>
+        <attribute name="packaging"/>
+        <attribute name="workingDir" default="${project.build.outputDirectory}"/>
+        <attribute name="parentDir" default="server/lib" />
+
+        <sequential>
+            <local name="udc.jar"/>
+            <property name="udc.tmpdir" location="${project.build.directory}/udc_tmp"/>
+            <property name="udc.properties" location="${udc.tmpdir}/org/neo4j/ext/udc/udc.properties"/>
+
+            <fileset id="udc.jars" dir="@{workingDir}/@{name}" includes="@{parentDir}/neo4j-udc*.jar"/>
+            <property name="udc.jar" value="${toString:udc.jars}"/>
+            <echo message="Working on: @{workingDir}/@{name}/${udc.jar}"/>
+            <unzip src="@{workingDir}/@{name}/${udc.jar}"
+                   dest="${udc.tmpdir}">
+                <patternset>
+                    <include name="**/udc.properties"/>
+                </patternset>
+            </unzip>
+            <replaceregexp file="${udc.properties}"
+                           match="maven"
+                           replace="@{packaging}"/>
+            <jar jarfile="@{workingDir}/@{name}/${udc.jar}" update="true">
+                <fileset dir="${udc.tmpdir}"/>
+            </jar>
+        </sequential>
+    </macrodef>
+</project>

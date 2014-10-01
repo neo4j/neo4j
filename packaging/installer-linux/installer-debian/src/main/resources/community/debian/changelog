@@ -1,0 +1,6 @@
+neo4j (${neo4j.version.debian_compliant}) ${neo4j.version.stability}; urgency=low
+
+  * See var/lib/neo4j/CHANGES.txt for more details.
+
+ -- ${neo4j.debian.maintainer}  ${neo4j.debian.buildDate}
+

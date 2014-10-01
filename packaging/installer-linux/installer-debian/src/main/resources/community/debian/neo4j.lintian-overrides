@@ -1,0 +1,4 @@
+
+# This jar contains web resources (javascript, css, html, images) that
+# neo4j-server expects on its classpath.
+neo4j binary: codeless-jar usr/share/neo4j/system/lib/neo4j-server-*-static-web.jar

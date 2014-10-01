@@ -1,0 +1,105 @@
+<project default="debian">
+    <include file="udc_source.xml" />
+
+
+
+    <macrodef name="package">
+
+        <attribute name="name"/>
+
+        <sequential>
+            <!-- Unzip the standalone distributions -->
+            <local name="source.distribution" />
+            <property name="source.distribution" location="${project.build.directory}/neo4j-@{name}-${neo4j.version}-unix.tar.gz"/>
+
+            <untar src="${source.distribution}"
+                   dest="${project.build.outputDirectory}"
+                   compression="gzip"/>
+
+            <!-- Handle the case of the arbiter -->
+            <copy toDir="${project.build.outputDirectory}/neo4j-arbiter-${neo4j.version}" failonerror="false">
+                <fileset dir="${project.build.outputDirectory}/neo4j-enterprise-${neo4j.version}"/>
+            </copy>
+
+            <!-- Move distributions into build folders -->
+            <move toDir="${project.build.outputDirectory}/@{name}/server">
+                <fileset dir="${project.build.outputDirectory}/neo4j-@{name}-${neo4j.version}"
+                         includes="**"/>
+            </move>
+
+            <!-- Make the arbiter init scripts available to debuild -->
+            <copy toDir="${project.build.outputDirectory}/@{name}/server">
+                <fileset dir="${project.build.sourceDirectory}/../resources/@{name}/debian/">
+                    <include name="neo4j-arbiter-service"/>
+                </fileset>
+            </copy>
+
+            <!-- Make the Neo4j init scripts available to debuild -->
+            <copy toDir="${project.build.outputDirectory}/@{name}/server">
+                <fileset dir="${project.build.sourceDirectory}/../resources/common">
+                    <include name="neo4j-service"/>
+                </fileset>
+            </copy>
+
+
+            <udc_source name="@{name}" packaging="debian" workingDir="${project.build.outputDirectory}"/>
+
+            <chmod perm="700">
+                <fileset dir="${project.build.outputDirectory}/@{name}">
+                    <include name="**/server/bin/neo4j"/>
+                    <include name="**/server/bin/neo4j-shell"/>
+                    <include name="**/server/bin/utils"/>
+                    <include name="**/server/bin/neo4j-backup"/>
+                    <include name="**/server/bin/neo4j-arbiter"/>
+                    <include name="**/server/bin/neo4j-coordinator"/>
+                    <include name="**/server/bin/neo4j-coordinator-shell"/>
+                </fileset>
+            </chmod>
+
+            <!-- Copy manpages into build folder -->
+            <copy toDir="${project.build.outputDirectory}/@{name}/manpages">
+                <fileset dir="${project.build.directory}/manpages" includes="**"/>
+            </copy>
+
+            <!-- Run installer projects -->
+            <exec executable="debuild"
+                  dir="${project.build.outputDirectory}/@{name}"
+                  failonerror="true" >
+                <arg line="-us"/>
+                <arg line="-uc"/>
+                <arg line="-B"/>
+            </exec>
+
+        </sequential>
+    </macrodef>
+
+    <target name="arbiter_dependency">
+        <copy file="${project.build.directory}/neo4j-enterprise-${neo4j.version}-unix.tar.gz"
+              tofile="${project.build.directory}/neo4j-arbiter-${neo4j.version}-unix.tar.gz" />
+    </target>
+
+    <target name="generate">
+        <package name="community"/>
+        <package name="advanced"/>
+        <package name="enterprise"/>
+        <package name="arbiter"/>
+    </target>
+
+    <target name="publish_to_target" depends="generate">
+        <!-- Copy installers from classes/ to target/ -->
+        <copy
+                file="${project.build.outputDirectory}/neo4j_${neo4j.version.debian_compliant}_all.deb"
+                toFile="${project.build.directory}/neo4j_${neo4j.version.debian_compliant}_all.deb"/>
+        <copy
+                file="${project.build.outputDirectory}/neo4j-advanced_${neo4j.version.debian_compliant}_all.deb"
+                toFile="${project.build.directory}/neo4j-advanced_${neo4j.version.debian_compliant}_all.deb"/>
+        <copy
+                file="${project.build.outputDirectory}/neo4j-enterprise_${neo4j.version.debian_compliant}_all.deb"
+                toFile="${project.build.directory}/neo4j-enterprise_${neo4j.version.debian_compliant}_all.deb"/>
+        <copy
+                file="${project.build.outputDirectory}/neo4j-arbiter_${neo4j.version.debian_compliant}_all.deb"
+                toFile="${project.build.directory}/neo4j-arbiter_${neo4j.version.debian_compliant}_all.deb"/>
+    </target>
+
+    <target name="debian" depends="arbiter_dependency, publish_to_target"/>
+</project>

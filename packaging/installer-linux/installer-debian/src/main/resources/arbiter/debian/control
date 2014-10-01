@@ -1,0 +1,16 @@
+Source: neo4j-arbiter
+Section: misc
+Priority: optional
+Maintainer: ${neo4j.debian.maintainer}
+Build-Depends: debhelper (>= 5)
+Standards-Version: 3.7.2
+Homepage: http://neo4j.org/
+
+Package: neo4j-arbiter
+Architecture: all
+Depends: ${misc:Depends}, daemon, adduser, psmisc, lsof, java7-runtime | j2re1.7
+Conflicts: 
+Replaces: 
+Description: Arbiter service for Neo4j clusters.
+ The arbiter service is used to break ties in Neo4j clusters that have an even number of cluster members.
+

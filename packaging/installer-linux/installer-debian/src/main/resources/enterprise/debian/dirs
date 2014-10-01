@@ -1,0 +1,15 @@
+
+# Debian policy is that database data goes in /var/lib/[package] 
+# (see http://people.debian.org/~seanius/policy/dbapp-policy.html/)
+var/lib/neo4j
+
+# Store neo4j log file in it's own directory, since log rotation is in place, so there will be
+# many of them.
+var/log/neo4j
+
+# Jars go in usr/share
+usr/share/neo4j
+
+# Configuration
+etc/neo4j
+

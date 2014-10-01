@@ -1,0 +1,20 @@
+server/CHANGES.txt      var/lib/neo4j-arbiter
+server/LICENSES.txt     var/lib/neo4j-arbiter
+server/README.txt       var/lib/neo4j-arbiter
+server/UPGRADE.txt      var/lib/neo4j-arbiter
+
+server/data/README.txt  var/lib/neo4j-arbiter/data
+
+server/bin/neo4j-arbiter            var/lib/neo4j-arbiter/bin
+server/bin/neo4j-coordinator        var/lib/neo4j-arbiter/bin
+server/bin/neo4j-coordinator-shell  var/lib/neo4j-arbiter/bin
+server/bin/utils                    var/lib/neo4j-arbiter/bin
+
+server/lib                          usr/share/neo4j-arbiter
+server/system                       usr/share/neo4j-arbiter
+
+server/conf/arbiter-wrapper.conf    etc/neo4j-arbiter
+server/conf/neo4j.properties        etc/neo4j-arbiter
+server/conf/neo4j-server.properties etc/neo4j-arbiter
+server/conf/neo4j-wrapper.conf      etc/neo4j-arbiter
+server/neo4j-arbiter-service        etc/init.d

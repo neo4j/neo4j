@@ -1,0 +1,142 @@
+#!/bin/bash
+
+source $(dirname $0)/utils
+installservice() {
+    detectos
+    findjava
+    selectinittool
+    if [ ! -x "$JAVACMD" ] ; then
+      if [[ $HEADLESS == false ]]; then
+        read -p "It was not possible to determine JAVA_HOME. Do you want to continue with the installation? [yN]" yn
+      else
+        yn='y'
+      fi
+      case $yn in
+              [yY]* ) echo "WARNING: Alright, but $FRIENDLY_NAME will fail to launch until Java has been properly installed and configured."
+              ;;
+      * ) echo "Aborting installation."
+          exit 1
+              ;;
+      esac
+    fi
+
+    if [[ -d "/etc/init.d" ]]; then
+      if [[ -e "/etc/init.d/${SERVICE_NAME}" ]]; then
+        echo "${SERVICE_NAME} already installed."
+      else
+        if [ $UID != 0 ] ; then
+          eval echo  'Must be root to install ${FRIENDLY_NAME}.'
+          exit 1
+        else
+          checkstatus
+          if [ ! -z $NEO4J_PID ] ; then
+            stopit
+          fi
+          if [[ $NEO4J_USER == $wrapper_user ]]; then 
+            default_user=$wrapper_user
+          else
+            default_user=$DEFAULT_USER
+          fi
+
+          if [[ $HEADLESS == false ]]; then
+            read -p "Graph-like power should be handled carefully. What user should run Neo4j? [$default_user] " proposed_user
+          fi
+          proposed_user=${proposed_user:-$default_user}
+
+          if ! `id $proposed_user &> /dev/null` ; then
+            if [[ $HEADLESS == false ]]; then
+              read -p "User \"$proposed_user\" does not yet exist. Shall I create the account for you? [Yn]" yn
+            else
+              yn="y"
+            fi
+            case $yn in
+              [Nn]* ) echo "WARNING: Alright, but Neo4j will fail to launch until that user has been created."
+              set_user $proposed_user
+              ;;
+            * ) create_user $proposed_user
+              ;;
+            esac
+          else
+            modify_user_config $proposed_user
+          fi
+          ln -s "${SCRIPT_NAME}" "/etc/init.d/${SERVICE_NAME}"
+          if [ $INIT_TOOL == 'chkconfig' ]; then
+            chkconfig --add ${SERVICE_NAME}
+          else
+            update-rc.d ${SERVICE_NAME} defaults
+          fi
+          chown -R $proposed_user: "$NEO4J_HOME/data" "$NEO4J_HOME/conf"
+        fi
+      fi
+    elif [[ $DIST_OS -eq "macosx" ]] ; then
+      mkdir -p $LAUNCHD_DIR
+      sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" -e "s^LAUNCHD_NAME^${LAUNCHD_NAME}^" <"${NEO4J_INSTANCE}/bin/org.neo4j.server.plist" >"${LAUNCHD_DIR}/${LAUNCHD_NAME}.plist"
+      launchctl load -w ${LAUNCHD_DIR}/${LAUNCHD_NAME}.plist
+      launchctl start ${LAUNCHD_NAME}
+    else
+      echo "Sorry, don't know how to install on ${DIST_OS}."
+    fi
+
+    if [ -x "$JAVACMD" ] ; then
+      if [[ $DIST_OS -ne "macosx" ]] ; then
+        startit
+      fi
+    fi
+}
+
+modify_user_config() {
+  created=${2:-"false"}
+  if `grep -q "wrapper\.user=" "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"` ; then
+    sed -i -e "s/^.*wrapper\.user=.*$/wrapper\.user=$1/" "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"
+  else
+    echo "wrapper.user=$1" >> "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"
+  fi
+
+  if `grep -q "wrapper\.user\.created=" "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"` ; then
+    sed -i -e "s/^.*wrapper\.user\.created=.*$/wrapper\.user\.created=${created}/" "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"
+  else
+    echo "wrapper.user.created=${created}" >> "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"
+  fi
+}
+
+choose_user() {
+  if [ -z "${wrapper_user}" ]; then
+    NEO4J_USER=`id -un`
+  else
+    NEO4J_USER=${wrapper_user}
+  fi
+}
+
+warning() {
+  echo "WARNING: this installer is deprecated and may not be the optimal way to install Neo4j on your system.
+  Please see the Neo4j Manual for up to date information on installing Neo4j."
+  read -p 'Press any key to continue'
+}
+
+WAIT=true
+SERVICE_NAME='neo4j-service'
+NEO4J_HOME=`(cd  $(dirname $0)/.. && pwd)`
+SCRIPT_NAME="${NEO4J_HOME}/bin/neo4j"
+NEO4J_INSTANCE=$NEO4J_HOME
+FRIENDLY_NAME='Neo4j'
+NEO4J_CONFIG=$NEO4J_INSTANCE/conf
+HEADLESS=false
+DEFAULT_USER='neo4j'
+LAUNCHD_DIR=~/Library/LaunchAgents/
+LAUNCHD_NAME="org.neo4j.server"
+
+case $1 in
+  install)
+    warning
+    getconfig "${NEO4J_CONFIG}/neo4j-wrapper.conf"
+    choose_user
+    installservice
+  ;;
+  remove)
+    getconfig "${NEO4J_CONFIG}/neo4j-wrapper.conf"
+    removeservice
+  ;;
+  *)
+  echo "Usage: $0 <install|remove>"
+  ;;
+esac
