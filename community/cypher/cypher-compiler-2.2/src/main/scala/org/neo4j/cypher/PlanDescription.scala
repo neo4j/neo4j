@@ -17,24 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.helpers
+package org.neo4j.cypher
 
-import java.util.{Iterator => JIterator}
-import java.lang.{Iterable => JIterable}
-import scala.collection.JavaConverters._
+import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription}
 
-object DynamicIterable {
-  def apply[T](f: => Iterator[T]) = new Iterable[T] {
-    override def iterator = f
-  }
-}
-
-object DynamicJavaIterable {
-  def apply[T](f: => Iterator[T]) = new JIterable[T] {
-    override def iterator = f.asJava
-  }
-
-  def apply[T](iterable: Iterable[T]) = new JIterable[T] {
-    override def iterator: JIterator[T] = iterable.iterator.asJava
-  }
+/**
+ * Abstract description of an execution plan
+ */
+trait PlanDescription {
+  def name: String
+  def asJava: JPlanDescription
+  def render(builder: StringBuilder, separator: String, levelSuffix: String)
+  def render(builder: StringBuilder)
 }

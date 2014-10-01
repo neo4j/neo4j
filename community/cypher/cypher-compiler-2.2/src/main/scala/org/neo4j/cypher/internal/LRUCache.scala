@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap
-import org.neo4j.cypher.CypherVersion
 
 class LRUCache[K, V](cacheSize: Int) extends ((K, => V) => V) {
 

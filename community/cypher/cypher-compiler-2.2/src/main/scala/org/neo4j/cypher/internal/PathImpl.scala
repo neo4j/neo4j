@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal
 
-import java.util.{Iterator => JavaIterator}
 import java.lang.{Iterable => JavaIterable}
-import collection.JavaConverters._
-import collection.mutable
+import java.util.{Iterator => JavaIterator}
+
 import org.neo4j.graphdb.traversal.Paths
-import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
+import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 case class PathImpl(pathEntities: PropertyContainer*)
   extends org.neo4j.graphdb.Path

@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, AggregatingFunction, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.CountStar
-import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.AggregationNameGenerator
+import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 /**
  * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so

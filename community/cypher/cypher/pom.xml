@@ -94,19 +94,6 @@
     </dependency>
 
     <!-- neo4j-cypher -->
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-commons</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-commons</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-      <type>test-jar</type>
-    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-1.9</artifactId>

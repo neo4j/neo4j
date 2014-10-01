@@ -147,10 +147,6 @@
                   <directory>${project.build.directory}/../../../community/cypher/cypher/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
-                <resource>
-                  <directory>${project.build.directory}/../../../community/cypher/cypher-commons/src/main/java/</directory>
-                  <filtering>false</filtering>
-                </resource>
              </resources>
             </configuration>
           </execution>

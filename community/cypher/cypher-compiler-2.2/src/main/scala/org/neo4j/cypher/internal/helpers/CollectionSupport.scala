@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import collection.Seq
-import collection.Map
 import java.lang.{Iterable => JavaIterable}
 import java.util.{Map => JavaMap}
-import collection.JavaConverters._
+
+import scala.collection.JavaConverters._
+import scala.collection.{Map, Seq}
 
 object IsCollection extends CollectionSupport {
   def unapply(x: Any):Option[Iterable[Any]] = {

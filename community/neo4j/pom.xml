@@ -185,10 +185,6 @@ the relevant Commercial Agreement.
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>${project.build.directory}/../../cypher/cypher-commons/src/main/java/</directory>
-                  <filtering>false</filtering>
-                </resource>
-                <resource>
                   <directory>${project.build.directory}/../../graph-algo/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
