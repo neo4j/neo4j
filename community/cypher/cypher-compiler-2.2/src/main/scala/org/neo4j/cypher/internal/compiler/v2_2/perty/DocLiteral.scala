@@ -17,18 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty.print
+package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.docStructureDocGen
 
-import scala.reflect.runtime.universe.TypeTag
-
-object pprint {
-  // Print value to PrintStream after converting to a doc using the given generator and formatter
-  def apply[T : TypeTag](value: T,
-                         formatter: DocFormatter = DocFormatters.defaultPageFormatter)
-                        (docGen: DocGenStrategy[T] = DefaultDocHandler.docGen): Unit = {
-    Console.print(pprintToString(value, formatter)(docGen))
-  }
+final case class DocLiteral(doc: Doc) extends ToPretty {
+  override def toPretty: Option[DocRecipe[Any]] = docStructureDocGen(doc)
 }

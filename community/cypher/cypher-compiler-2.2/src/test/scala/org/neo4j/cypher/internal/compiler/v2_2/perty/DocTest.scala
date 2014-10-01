@@ -23,7 +23,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 class DocTest extends FunSuite with Matchers  {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+  import Doc._
 
   test("cons(hd, tl) = ConsDocs(hd, tl)") {
     cons(BreakDoc, NilDoc) should equal(ConsDoc(BreakDoc, NilDoc))

@@ -33,16 +33,16 @@ class PrintableDocRecipeTest extends CypherFunSuite {
     val result = eval(Seq(AddText("x"), PushGroupFrame, PushNestFrame, AddText("y"), AddBreak, AddText("z"), PopFrame, PopFrame))
 
     result should equal(
-      GroupDoc(ConsDoc(TextDoc("x"), ConsDoc(GroupDoc(NestDoc(ConsDoc(TextDoc("y"), ConsDoc(BreakDoc, ConsDoc(TextDoc("z")))))), NilDoc)))
+      ConsDoc(TextDoc("x"), ConsDoc(GroupDoc(NestDoc(ConsDoc(TextDoc("y"), ConsDoc(BreakDoc, ConsDoc(TextDoc("z")))))), NilDoc))
     )
   }
 
   // Top-Level
 
-  test("Wraps multiple, unwrapped top-level leaves in group") {
+  test("Builds multiple, unwrapped top-level leaves") {
     val result = eval(Seq(AddText("x"), AddBreak))
 
-    result should equal(GroupDoc(ConsDoc(TextDoc("x"), ConsDoc(BreakDoc, NilDoc))))
+    result should equal(ConsDoc(TextDoc("x"), ConsDoc(BreakDoc, NilDoc)))
   }
 
   test("Builds nil doc for empty seq of doc ops") {

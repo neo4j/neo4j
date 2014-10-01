@@ -29,7 +29,7 @@ case object DefaultDocHandler extends CustomDocHandler[Any] {
     // pretty printing anything that implements Pretty
     prettyDocGen.lift[Any] orElse
     // pretty printing anything common scala value (product, array, primitive)
-//    scalaDocGen orElse
+    scalaDocGen orElse
     // pretty printing by falling back to toString()
     toStringDocGen
 }

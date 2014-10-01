@@ -20,8 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty.recipe
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.toStringDocGen
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.DocRecipe.strategyExpander
 import org.neo4j.cypher.internal.compiler.v2_2.perty.step._
 
+import scala.reflect.runtime.universe.TypeTag
 import scala.annotation.tailrec
 
 // Helper for evaluating a PrintableDocRecipe into a Doc
@@ -31,11 +34,21 @@ import scala.annotation.tailrec
 // Evaluation executes on the heap to avoid blowing up the JVM stack
 //
 case object PrintableDocRecipe {
+
+  case class evalUsingStrategy[T : TypeTag](docGen: DocGenStrategy[T] = toStringDocGen) extends (DocRecipe[T] => Doc) {
+    def apply(recipe: DocRecipe[T]): Doc = {
+      val expander = strategyExpander(docGen)
+      val expanded = expander.expand(recipe)
+      val printable = eval(expanded)
+      printable
+    }
+  }
+
   case object eval extends (PrintableDocRecipe => Doc) {
+
     def apply(ops: Seq[PrintableDocStep]): Doc = ops match {
-      case Seq(_: PushFrame, _*) => convert(ops)
       case Seq() => NilDoc
-      case _ => convert(PushGroupFrame +: ops :+ PopFrame)
+      case _     => convert(ops :+ PopFrame, Seq(FlatTopLevelDocFrame(Seq.empty)))
     }
 
     @tailrec
@@ -60,17 +73,17 @@ case object PrintableDocRecipe {
 
       case (Seq(op: PushFrame, tail@_*), tailFrames) =>
         val newFrame: DocFrame = op match {
-          case PushGroupFrame => GroupDocFrame.empty
-          case PushNestFrame(None) => NestDocFrame.empty
+          case PushGroupFrame        => GroupDocFrame.empty
+          case PushNestFrame(None)   => NestDocFrame.empty
           case PushNestFrame(indent) => NestDocFrame(indent, Seq.empty)
-          case PushPageFrame => PageDocFrame.empty
+          case PushPageFrame         => PageDocFrame.empty
         }
         convert(tail, newFrame +: tailFrames)
 
       case (Seq(PopFrame, tail@_*), Seq(curFrame, nextFrame, tailFrames@_*)) =>
         curFrame.asDoc match {
           case NilDoc => convert(tail, nextFrame +: tailFrames)
-          case doc => convert(tail, (nextFrame :+ doc) +: tailFrames)
+          case doc    => convert(tail, (nextFrame :+ doc) +: tailFrames)
         }
 
       case (Seq(PopFrame), Seq(frame)) =>
@@ -86,9 +99,9 @@ case object PrintableDocRecipe {
       def :+(doc: Doc): DocFrame
 
       def content = docs match {
-        case Seq() => NilDoc
+        case Seq()    => NilDoc
         case Seq(doc) => doc
-        case _ => Doc.list(docs)
+        case _        => Doc.list(docs)
       }
 
       def asDoc: Doc =
@@ -106,13 +119,20 @@ case object PrintableDocRecipe {
       protected def docFromContent(doc: Doc): Doc
     }
 
+    sealed private case class FlatTopLevelDocFrame(docs: Seq[Doc]) extends DocFrame {
+
+      def :+(doc: Doc): DocFrame = copy(docs = docs :+ doc)
+
+      protected def docFromContent(doc: Doc): Doc = doc
+    }
+
     sealed private case class GroupDocFrame(docs: Seq[Doc]) extends DocFrame {
 
       def :+(doc: Doc): DocFrame = copy(docs = docs :+ doc)
 
       protected def docFromContent(doc: Doc): Doc = doc match {
         case inner: GroupDoc => inner
-        case _ => GroupDoc(doc)
+        case _               => GroupDoc(doc)
       }
     }
 
@@ -149,7 +169,7 @@ case object PrintableDocRecipe {
 
       protected def docFromContent(doc: Doc): Doc = doc match {
         case inner: PageDoc => inner
-        case _ => PageDoc(doc)
+        case _              => PageDoc(doc)
       }
     }
 

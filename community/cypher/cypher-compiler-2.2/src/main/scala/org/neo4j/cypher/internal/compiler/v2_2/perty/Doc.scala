@@ -69,13 +69,6 @@ object Doc {
   val breakSilent: BreakingDoc = BreakWith("")
   def breakWith(value: String): BreakingDoc = BreakWith(value)
 
-  // useful to force a page break if a group is in PageMode and print nothing otherwise
-
-  def breakSilentBefore(doc: Doc): Doc = breakBefore(doc, break = breakSilent)
-
-  def breakBefore(doc: Doc, break: BreakingDoc = break): Doc =
-    if (doc.isNil) doc else break :: doc
-
   // *all* breaks in a group are either expanded to their value or a line break
 
   def group(doc: Doc): Doc = GroupDoc(doc)
@@ -83,6 +76,7 @@ object Doc {
   // change nesting level for inner content (used when breaks are printed as newlines)
 
   def nest(content: Doc): Doc = NestDoc(content)
+
   def nest(indent: Int, content: Doc): Doc = NestWith(indent, content)
 
   // force vertical layout
@@ -91,11 +85,7 @@ object Doc {
 
   // literals are helpful in tests to see the actual document produced instead of how it is rendered
 
-  def literal(doc: Doc) = DocLiteral(doc)
-
   // helper
-
-  implicit def opt(optDoc: Option[Doc]) = optDoc.getOrElse(nil)
 
   implicit def list(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil)(cons)
 
@@ -113,6 +103,19 @@ object Doc {
     case (hd, NilDoc) => hd :: nil
     case (hd, tail)   => group(hd :: sep) :: break :: tail
   }
+
+  // <-[[**-- Pretty --**]]->
+
+  def literal(doc: Doc) = DocLiteral(doc)
+
+  // useful to force a page break if a group is in PageMode and print nothing otherwise
+
+  def breakSilentBefore(doc: Doc): Doc = breakBefore(doc, break = breakSilent)
+
+  def breakBefore(doc: Doc, break: BreakingDoc = break): Doc =
+    if (doc.isNil) doc else break :: doc
+
+  implicit def opt(optDoc: Option[Doc]) = optDoc.getOrElse(nil)
 
   def block(name: Doc, open: Doc = "(", close: Doc = ")")(innerDoc: Doc): Doc =
     group( name :: surrounded(open, close, breakSilent, breakSilent )(innerDoc) )
@@ -185,8 +188,6 @@ final case class NestWith(indent: Int, content: Doc) extends NestingDoc {
   def optIndent = Some(indent)
 }
 
-final case class DocLiteral(doc: Doc) extends ToPretty {
-  override def toPretty: Option[DocRecipe[Any]] = docStructureDocGen(doc)
-}
+
 
 

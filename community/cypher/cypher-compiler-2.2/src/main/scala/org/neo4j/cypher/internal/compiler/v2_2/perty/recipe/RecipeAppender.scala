@@ -1,16 +1,38 @@
+/**
+ * Copyright (c) 2002-2014 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.recipe
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.DocRecipe
 import org.neo4j.cypher.internal.compiler.v2_2.perty.step.AddBreak
 
+// RecipeAppenders are DocRecipe[T] producers that take an
+// additional argument that gets appended to the produces
+// representation
 trait RecipeAppender[T] extends (DocRecipe[T] => DocRecipe[T]) {
   self =>
 
-  def ::(hd: RecipeAppender[T]) = new RecipeAppender[T] {
+  def ::(hd: RecipeAppender[T]): RecipeAppender[T] = new RecipeAppender[T] {
     def apply(append: DocRecipe[T]) = hd(self(append))
   }
 
-  def :/:(hd: RecipeAppender[T]) = new RecipeAppender[T] {
+  def :/:(hd: RecipeAppender[T]): RecipeAppender[T] = new RecipeAppender[T] {
     def apply(append: DocRecipe[T]) = hd(AddBreak +: self(append))
   }
 }

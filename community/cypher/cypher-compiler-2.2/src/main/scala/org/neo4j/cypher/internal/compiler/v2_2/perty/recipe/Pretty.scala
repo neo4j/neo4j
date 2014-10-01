@@ -20,64 +20,156 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty.recipe
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.step._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{Doc, DocRecipe}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocLiteral, Doc, DocRecipe}
 
 import scala.reflect.runtime.universe._
 
-// DSL for the easy and well-formed construction of DocOps
+// DSL for the easy and well-formed construction of DocRecipes
 //
-// The DSL constructs and combines Appenders (functions from DocOps[T] => DocOps[T]).
+// DocRecipes are flat representations of Docs that are suitable for
+// composition without hitting stack-depth problems. In particular,
+// recipes can contain abstract content that needs to be replaced
+// with actually renderable content (PrintableDocSteps instead
+// of regular DocSteps).
 //
-// This approach removes otherwise annoying differences between DocOp[T] and Seq[DocOp[T]]
-// as well as minimizes the amount of sequence concatenation.
+// However, building up DocRecipes is not as straightforward
+// as using Docs directly and does not ensure structural well-formedness.
 //
-// The DSL uses the stack' however stack depth shouldn't be a concern here as we support
-// AddContent on this level and everything is flattened away by expandDocOps
+// This gap is filled by Pretty. Pretty is a DSL for building up
+// a tree of RecipeAppenders.  Applying Pretty to a RecipeAppender
+// yields a DocRecipe, a flat representation of the tree described
+// by the DSL.
 //
-class Pretty[T] extends LowPriorityPrettyImplicits[T] {
+// Usually Pretty will only be used to render one "layer" (parent node
+// without it's children) of pretty printing and thus building a tree of
+// RecipeAppenders does not create a stack-depth problem. Multiple layers of
+// pretty-printing can then be composed safely by replacing abstract content
+// with DocRecipes from other layers. This is exactly what happens
+// in DocRecipe.strategyExpander.
+//
+// Additionally, Pretty contains quite a few helper methods for easing
+// the construction of DocRecipes.
+//
+// To use Pretty, import Pretty._ where needed and call DSL helpers
+// from inside a call to Pretty.apply.
+//
+class Pretty[T] extends MidPriorityPrettyImplicits[T] {
   def apply(appender: RecipeAppender[T]): DocRecipe[T] = appender(Seq.empty)
 
-  def group(ops: RecipeAppender[T]) = new RecipeAppender[T] {
-    def apply(append: DocRecipe[T]) = PushGroupFrame +: ops(PopFrame +: append)
-  }
-
-  def nest(ops: RecipeAppender[T]) = new RecipeAppender[T] {
-    def apply(append: DocRecipe[T]) = PushNestFrame +: ops(PopFrame +: append)
-  }
-
-  def page(ops: RecipeAppender[T]) = new RecipeAppender[T] {
-    def apply(append: DocRecipe[T]) = PushPageFrame +: ops(PopFrame +: append)
-  }
-
-  def break = new RecipeAppender[T] {
-    def apply(append: DocRecipe[T]) = AddBreak +: append
-  }
-
-  def breakWith(text: String) = new RecipeAppender[T] {
-    def apply(append: DocRecipe[T]) = AddBreak(Some(text)) +: append
-  }
-
-  def empty = new RecipeAppender[T] {
-    def apply(append: DocRecipe[T]) = append
-  }
-
-  def doc(doc: Doc) = new RecipeAppender[T] {
+  case class doc(doc: Doc) extends RecipeAppender[T] {
     def apply(append: DocRecipe[T]) = AddDoc(doc) +: append
   }
 
-  implicit def text(text: String) = new RecipeAppender[T] {
-      def apply(append: DocRecipe[T]) = AddText(text) +: append
+  case object break extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = AddBreak +: append
+  }
+
+  val silentBreak: RecipeAppender[T] = breakWith("")
+
+  case class breakWith(text: String) extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = AddBreak(Some(text)) +: append
+  }
+
+  case object noBreak extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = AddNoBreak +: append
+  }
+
+  case class group(ops: RecipeAppender[T]) extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = PushGroupFrame +: ops(PopFrame +: append)
+  }
+
+  case class nest(ops: RecipeAppender[T]) extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = PushNestFrame +: ops(PopFrame +: append)
+  }
+
+  case class page(ops: RecipeAppender[T]) extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = PushPageFrame +: ops(PopFrame +: append)
+  }
+
+  implicit class splicingAppender(recipe: DocRecipe[T]) extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = recipe ++ append
+  }
+
+  case object splice {
+    def apply(recipe: DocRecipe[T]) = new splicingAppender(recipe)
+  }
+
+  implicit class listAppender(recipes: TraversableOnce[RecipeAppender[T]]) extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) =
+      recipes.foldRight(append) { _.apply(_) }
+  }
+
+  case object list {
+    def apply(recipes: TraversableOnce[RecipeAppender[T]]) = new listAppender(recipes)
+  }
+
+  case class breakList(recipes: TraversableOnce[RecipeAppender[T]], break: RecipeAppender[T] = break)
+    extends RecipeAppender[T] {
+
+    def apply(append: DocRecipe[T]) = recipes.foldRight(append) {
+      case (hd, acc) if acc == append => hd(acc)
+      case (hd, acc)                  => hd(break(acc))
     }
+  }
 
-  implicit def liftDocRecipe(opts: DocRecipe[T]) = Some(opts)
-}
+  case class sepList(recipes: TraversableOnce[RecipeAppender[T]],
+                     sep: RecipeAppender[T] = text(","),
+                     break: RecipeAppender[T] = break)
+    extends RecipeAppender[T] {
 
-protected class LowPriorityPrettyImplicits[T] {
-  implicit def pretty[S <: T : TypeTag](content: => S) = new RecipeAppender[T] {
-    def apply(append: DocRecipe[T]) = AddPretty(content) +: append
+    def apply(append: DocRecipe[T]) = recipes.foldRight(append) {
+      case (hd, acc) if acc == append => hd(acc)
+      case (hd, acc)                  => hd(sep(break(acc)))
+    }
+  }
+
+  case class groupedSepList(recipes: TraversableOnce[RecipeAppender[T]],
+                            sep: RecipeAppender[T] = text(","),
+                            break: RecipeAppender[T] = break)
+    extends RecipeAppender[T] {
+
+    def apply(append: DocRecipe[T]) = recipes.foldRight(append) {
+      case (hd: RecipeAppender[T], acc: DocRecipe[T]) =>
+        if (acc == append)
+          hd(acc)
+        else
+          (group(hd :: sep) :: break)(acc)
+    }
   }
 }
 
-object Pretty extends Pretty[Any]
+protected class MidPriorityPrettyImplicits[T] extends LowPriorityPrettyImplicits[T] {
+  implicit class textAppender(text: String) extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = AddText(text) +: append
+  }
+
+  case object text {
+    def apply(value: String) = new textAppender(value)
+  }
+
+  // This allows writing Pretty(...) instead of Some(Pretty(...) when defining DocGens
+  implicit def liftDocRecipe(opts: DocRecipe[T]): Some[DocRecipe[T]] = Some(opts)
+}
+
+protected class LowPriorityPrettyImplicits[T] {
+  // Abstract "content" that still needs to be rendered into PrintableDocSteps
+  //
+  // The actual value is taken as a by name closure to be able to perform error
+  // handling when dealing with buggy / partially unimplemented classes.
+  //
+  implicit class prettyAppender[S <: T : TypeTag](content: => S) extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = AddPretty(content) +: append
+  }
+
+  case object pretty {
+    def apply[S <: T : TypeTag](content: => S) = new prettyAppender(content)
+  }
+}
+
+object Pretty extends Pretty[Any] {
+  case class literal(doc: Doc) extends RecipeAppender[Any] {
+    def apply(append: DocRecipe[Any]) = AddPretty(DocLiteral(doc)) +: append
+  }
+}
 
 

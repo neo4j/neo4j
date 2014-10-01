@@ -50,7 +50,7 @@ case object SimpleDocHandler extends CustomDocHandler[Any] {
     // pretty printing the structure of docs themselves
     docStructureDocGen.lift[Any] orElse
     // pretty printing anything common scala value (product, array, primitive)
-//    scalaDocGen ++
+    scalaDocGen orElse
     // pretty printing by falling back to toString()
     toStringDocGen
 }

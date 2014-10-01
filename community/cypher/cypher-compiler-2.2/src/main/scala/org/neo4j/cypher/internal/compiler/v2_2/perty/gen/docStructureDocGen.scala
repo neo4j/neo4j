@@ -32,17 +32,17 @@ case object docStructureDocGen extends CustomDocGen[Doc] {
   import Pretty._
 
   def apply[X <: Doc : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
-    case ConsDoc(hd, tl)       => Pretty(pretty(hd) :: "·" :: pretty(tl))
+    case ConsDoc(hd, tl)       => Pretty(prettyAppender(hd) :: "·" :: prettyAppender(tl))
     case NilDoc                => Pretty("ø")
 
     case TextDoc(value)        => Pretty(quoteString(value))
     case BreakDoc              => Pretty(breakWith("_"))
     case BreakWith(value)      => Pretty(breakWith(s"_${value}_"))
 
-    case GroupDoc(doc)         => Pretty(group("[" :: pretty(doc) :: "]"))
-    case NestDoc(doc)          => Pretty(nest("<" :: pretty(doc) :: ">"))
-    case NestWith(indent, doc) => Pretty(group(s"($indent)<" :: pretty(doc) :: ">"))
+    case GroupDoc(doc)         => Pretty(group("[" :: prettyAppender(doc) :: "]"))
+    case NestDoc(doc)          => Pretty(nest("<" :: prettyAppender(doc) :: ">"))
+    case NestWith(indent, doc) => Pretty(group(s"($indent)<" :: prettyAppender(doc) :: ">"))
 
-    case PageDoc(doc)          => Pretty(group("(|" :: pretty(doc) :: "|)"))
+    case PageDoc(doc)          => Pretty(group("(|" :: prettyAppender(doc) :: "|)"))
   }
 }
