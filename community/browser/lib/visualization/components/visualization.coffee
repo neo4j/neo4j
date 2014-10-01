@@ -31,6 +31,8 @@ neo.viz = (el, measureSize, graph, layout, style) ->
 
   onNodeDblClick = (node) => viz.trigger('nodeDblClicked', node)
 
+  onNodeDragToggle = (node) -> viz.trigger('nodeDragToggle', node)
+
   onRelationshipClick = (relationship) =>
     d3.event.stopPropagation()
     viz.trigger('relationshipClicked', relationship)
@@ -80,6 +82,13 @@ neo.viz = (el, measureSize, graph, layout, style) ->
 
 
   force = layout.init(render)
+    
+  #Add custom drag event listeners
+  force.drag().on('dragstart.node', (d) -> 
+    onNodeDragToggle(d)
+  ).on('dragend.node', () ->
+    onNodeDragToggle()
+  )
 
   viz.update = ->
     return unless graph

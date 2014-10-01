@@ -33,7 +33,8 @@ angular.module('neo4jApp.controllers')
       $scope.currentItem = null
       $scope.inspectorContracted = yes
       $scope.inspectorChanged = no
-      
+      $scope.inspectorFixed = no
+
       inspectorItem = (item, type) ->
         data: item
         type: type
@@ -48,6 +49,9 @@ angular.module('neo4jApp.controllers')
           $scope.inspectorChanged = yes
         , 0)
 
+      $scope.onNodeDragToggle = (node) ->
+        $scope.inspectorFixed = !!node
+
       $scope.onItemClick = (item, type) ->
         if item
           $scope.currentItem = inspectorItem(item, type)
@@ -58,6 +62,8 @@ angular.module('neo4jApp.controllers')
         triggerInspectorUIUpdate()
 
       $scope.onItemHover = (item, type) ->
+        return if $scope.inspectorFixed
+
         if item
           $scope.Inspector.reset(inspectorItem(item, type))
         else

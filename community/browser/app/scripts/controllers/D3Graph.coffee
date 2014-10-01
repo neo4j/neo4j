@@ -46,11 +46,9 @@ angular.module('neo4jApp.controllers')
             $scope.$apply(->exp($scope, {'$item': item }))
 
       itemMouseOver = attributeHandlerFactory('onItemMouseOver')
-
       itemMouseOut = attributeHandlerFactory('onItemMouseOut')
-
+      nodeDragToggle = attributeHandlerFactory('onNodeDragToggle')
       onCanvasClicked = attributeHandlerFactory('onCanvasClicked')
-
       selectItem = attributeHandlerFactory('onItemClick')
 
       selectedItem = null
@@ -114,6 +112,7 @@ angular.module('neo4jApp.controllers')
           )
           .on('nodeMouseOver', itemMouseOver)
           .on('nodeMouseOut', itemMouseOut)
+          .on('nodeDragToggle', nodeDragToggle)
           .on('relMouseOver', itemMouseOver)
           .on('relMouseOut', itemMouseOut)
           .on('canvasClicked', ->
