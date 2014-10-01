@@ -69,6 +69,7 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
 
 object Cardinality {
   implicit def lift(amount: Double): Cardinality = Cardinality(amount)
+  implicit def lift(amount: Long): Cardinality = lift(amount.doubleValue())
 }
 
 case class CostPerRow(cost: Double) {
