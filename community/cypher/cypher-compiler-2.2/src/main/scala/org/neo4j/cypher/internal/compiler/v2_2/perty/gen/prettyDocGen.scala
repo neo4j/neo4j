@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 import scala.reflect.runtime.universe.TypeTag
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.Pretty
 
-case object prettyDocGen extends CustomDocGen[Pretty] {
-  def apply[X <: Pretty : TypeTag](x: X): Option[DocOps[Any]] = x.toDocOps
+case object prettyDocGen extends CustomDocGen[ToPretty] {
+  def apply[X <: ToPretty : TypeTag](x: X): Option[DocRecipe[Any]] = x.toPretty
 }

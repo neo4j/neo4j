@@ -27,7 +27,7 @@ import scala.reflect.runtime.universe._
 /**
  * Type of an "unapply-like" converter from I to O
  *
- * (type-safe total version of a partial function)
+ * (type-safe total version of a partial function with static argument type tags)
  **/
 sealed abstract class Extractor[-I : TypeTag, +O : TypeTag] {
   self =>

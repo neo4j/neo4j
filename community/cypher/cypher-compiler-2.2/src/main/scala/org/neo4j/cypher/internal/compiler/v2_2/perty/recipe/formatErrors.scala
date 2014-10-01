@@ -17,31 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty.ops
+package org.neo4j.cypher.internal.compiler.v2_2.perty.recipe
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Extractor
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
-class expandDocOpsTest extends CypherFunSuite {
+protected case object formatErrors {
+  def apply(inner: => Option[DocRecipe[Any]]): Option[DocRecipe[Any]] = {
+    import Pretty._
 
-  import Extractor._
-  import NewPretty._
+    try {
+      inner
+    } catch {
+      case _: NotImplementedError =>
+        Pretty("???")
 
-  test("passes through plain doc ops") {
-    import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.NewPretty._
+      case _: MatchError =>
+        None
 
-    val doc = NewPretty("x" :/: "y")
-    val result = expandDocOps(Extractor.empty).apply(doc)
+      case e: Exception =>
+        Pretty(group(s"${e.getClass.getSimpleName}:" :/: e.toString))
 
-    result should equal(doc)
-  }
-
-  test("replaces content in doc ops") {
-    val doc = NewPretty(pretty(1) :/: "y")
-    val result = expandDocOps[Int](pick {
-      case (a: Int) => NewPretty("1")
-    }).apply(doc)
-
-    result should equal(NewPretty("1" :/: "y"))
+      case other: Throwable =>
+        throw other
+    }
   }
 }

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.{AddPretty, evalDocOps, expandDocOps}
 
 import scala.reflect.runtime.universe._
 
@@ -29,10 +28,11 @@ object pprintToString {
   // Convert value to String after converting to a doc using the given generator and formatter
   def apply[T : TypeTag](value: T,
                          formatter: DocFormatter = DocFormatters.defaultPageFormatter)
-                        (docGen: DocGen[T] = DefaultDocHandler.docGen): String = {
+                        (docGen: DocGenStrategy[T] = DefaultDocHandler.docGen): String = {
     val doc = pprintToDoc(value)(docGen)
-    val commands = condense(formatter(doc))
-    val text = printCommandsToString(commands)
+    val formatted = formatter(doc)
+    val condensed = condense(formatted)
+    val text = printCommandsToString(condensed)
     text
   }
 }

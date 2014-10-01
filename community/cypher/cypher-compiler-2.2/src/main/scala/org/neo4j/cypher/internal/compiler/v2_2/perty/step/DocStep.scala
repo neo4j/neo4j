@@ -17,22 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty.ops
+package org.neo4j.cypher.internal.compiler.v2_2.perty.step
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.{Doc, Extractor}
 
 import scala.reflect.runtime.universe.TypeTag
 
-sealed trait DocOp[+T]
+sealed trait DocStep[+T]
 
 // Values that needs to be converted to DocOps dynamically
 //
 // Uses lazy field content to be able to recover from errors
 // during pretty-printing conversion
 //
-sealed abstract class AddPretty[T](implicit val tag: TypeTag[T]) extends DocOp[T] {
+sealed abstract class AddPretty[T](implicit val tag: TypeTag[T]) extends DocStep[T] {
   def content: T
-  def apply[I >: T, O](extractor: Extractor[I, O]) = extractor(content)
+  def apply[I >: T, O](extractor: Extractor[I, O]): Option[O] = extractor(content)
 }
 
 case object AddPretty {
@@ -41,23 +41,28 @@ case object AddPretty {
   }
 }
 
-sealed trait BaseDocOp extends DocOp[Nothing]
+sealed trait PrintableDocStep extends DocStep[Nothing]
 
-sealed case class AddDoc(doc: Doc) extends BaseDocOp
+sealed case class AddDoc(doc: Doc) extends PrintableDocStep
 
-sealed case class AddText(text: String) extends BaseDocOp
+sealed case class AddText(text: String) extends PrintableDocStep
 
-sealed case class AddBreak(breakWith: Option[String] = None) extends BaseDocOp
+sealed case class AddBreak(breakWith: Option[String] = None) extends PrintableDocStep
+
 object AddBreak extends AddBreak(None)
 
-case object AddNoBreak extends BaseDocOp
+case object AddNoBreak extends PrintableDocStep
 
-sealed trait PushFrame extends BaseDocOp
+sealed trait PushFrame extends PrintableDocStep
+
 case object PushGroupFrame extends PushFrame
+
 case object PushPageFrame extends PushFrame
+
 sealed case class PushNestFrame(indent: Option[Int] = None) extends PushFrame
+
 object PushNestFrame extends PushNestFrame(None)
 
-case object PopFrame extends BaseDocOp
+case object PopFrame extends PrintableDocStep
 
 

@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.{AddPretty, evalDocOps, expandDocOps}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.{PrintableDocRecipe, DocRecipe}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.step.AddPretty
 
 import scala.reflect.runtime.universe._
 
 object pprintToDoc {
-  def apply[T : TypeTag](value: T)(docGen: DocGen[T] = DefaultDocHandler.docGen): Doc = {
-    val docOps = expandDocOps(docGen).apply(Seq(AddPretty(value)))
-    val doc = evalDocOps(docOps)
-    doc
+  def apply[T : TypeTag](value: T)(docGen: DocGenStrategy[T] = DefaultDocHandler.docGen): Doc = {
+    val steps = DocRecipe.strategyExpander(docGen).expand(Seq(AddPretty(value)))
+    val printableSteps = PrintableDocRecipe.eval(steps)
+    printableSteps
   }
 }

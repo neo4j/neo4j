@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.{docStructureDocGen, prettyDocGen, scalaDocGen, toStringDocGen}
 
 case object DefaultDocHandler extends CustomDocHandler[Any] {
-  val docGen: DocGen[Any] =
+  val docGen: DocGenStrategy[Any] =
     // pretty printing the structure of docs themselves
     docStructureDocGen.lift[Any] orElse
     // pretty printing anything that implements Pretty

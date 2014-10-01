@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 
+import org.neo4j.cypher.internal.compiler.v2_2.perty.ToPretty
 import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.Pretty
 
 class DefaultDocGenTest extends DocHandlerTestSuite[Any] {
 

@@ -19,32 +19,40 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.{BaseDocOp, DocOp}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.print.PrintCommand
+import org.neo4j.cypher.internal.compiler.v2_2.perty.step.{DocStep, PrintableDocStep}
 
 import scala.collection.mutable
 
-/**
- * See pp.Doc
- */
 package object perty {
-  // description of how to construct a doc
-  // that still may contain content that needs further processing
+  // DocRecipe is a description of how to construct a Doc
+  // by executing a sequence of DocSteps. DocSteps
+  // may contain content that still needs to be converted
+  // to a Doc (i.e. it includes un-rendered parts).
   //
-  // You should build these using DocGen and NewPretty
+  // You should build these using the Pretty DSL
   //
-  type DocOps[+T] = Seq[DocOp[T]]
-  type DocGen[-T] = Extractor[T, DocOps[Any]]
+  type DocRecipe[+T] = Seq[DocStep[T]]
 
-  // description of how to construct a doc (you won't work with these
-  // types usually)
-  type BaseDocOps = Seq[BaseDocOp]
-  type BaseDocGen[-T] = Extractor[T, BaseDocOps]
+  // DocGenStrategy is an extractor that may produce
+  // a DocRecipe for a given value (that could be used
+  // to produce a Doc for that value)
+  type DocGenStrategy[-T] = Extractor[T, DocRecipe[Any]]
 
-  // layout a doc as a series of print commands
+  // PrintableDocRecipe is a DocRecipe that does NOT
+  // contain content that still needs to be converted to a Doc
+  // (i.e. is ready to be formatted and printed)
+  type PrintableDocRecipe = Seq[PrintableDocStep]
+
+  // A PrintableDocGenStrategy is a DocGenStrategy that
+  // produces PrintableDocRecipes.
+  type PrintableDocGenStrategy[-T] = Extractor[T, PrintableDocRecipe]
+
+  // DocFormatters layout a given doc as a series of print commands
   type DocFormatter = Doc => Seq[PrintCommand]
 
-  // turns a sequence of print commands into a result of type T
+  // PrintingConverters turn a sequence of print commands into
+  // a result of type T (usually String)
   type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
 }
 

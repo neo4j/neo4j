@@ -20,5 +20,5 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
 trait DocHandler[-T] {
-  def docGen: DocGen[T]
+  def docGen: DocGenStrategy[T]
 }

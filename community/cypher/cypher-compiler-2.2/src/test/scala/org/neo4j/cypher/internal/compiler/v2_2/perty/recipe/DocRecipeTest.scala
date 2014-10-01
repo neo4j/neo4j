@@ -17,28 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty.ops
+package org.neo4j.cypher.internal.compiler.v2_2.perty.recipe
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocRecipe, Extractor}
 
-case object formatErrors {
-  def apply(inner: => Option[DocOps[Any]]): Option[DocOps[Any]] = {
-    import NewPretty._
+class DocRecipeTest extends CypherFunSuite {
 
-    try {
-      inner
-    } catch {
-      case _: NotImplementedError =>
-        NewPretty("???")
+  import Extractor._
+  import DocRecipe._
 
-      case _: MatchError =>
-        None
+  test("passes through plain doc ops") {
+    import Pretty._
 
-      case e: Exception =>
-        NewPretty(group(s"${e.getClass.getSimpleName}:" :/: e.toString))
+    val doc = Pretty("x" :/: "y")
+    val result = strategyExpander(Extractor.empty) expand doc
 
-      case other: Throwable =>
-        throw other
-    }
+    result should equal(doc)
+  }
+
+  test("replaces content in doc ops") {
+    import Pretty._
+
+    val docAppender = Pretty(1 :/: "y")
+
+    val expander = strategyExpander[Any](pick {
+      case (a: Int)    => Pretty("1")
+      case (s: String) => Pretty(s)
+    })
+    val result = expander.expand(docAppender)
+
+    result should equal(apply("1" :/: "y"))
   }
 }

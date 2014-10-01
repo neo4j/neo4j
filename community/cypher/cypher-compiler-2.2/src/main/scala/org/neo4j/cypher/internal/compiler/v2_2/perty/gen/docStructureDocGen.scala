@@ -23,26 +23,26 @@ import scala.reflect.runtime.universe._
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.format.quoteString
-import org.neo4j.cypher.internal.compiler.v2_2.perty.ops.NewPretty
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.Pretty
 
 // Print the structure of a document using the same syntax
 // as the paper by C. Lindig
 case object docStructureDocGen extends CustomDocGen[Doc] {
 
-  import NewPretty._
+  import Pretty._
 
-  def apply[X <: Any : TypeTag](x: X): Option[DocOps[Any]] = x match {
-    case ConsDoc(hd, tl)       => NewPretty(pretty(hd) :: "·" :: pretty(tl))
-    case NilDoc                => NewPretty("ø")
+  def apply[X <: Doc : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
+    case ConsDoc(hd, tl)       => Pretty(pretty(hd) :: "·" :: pretty(tl))
+    case NilDoc                => Pretty("ø")
 
-    case TextDoc(value)        => NewPretty(quoteString(value))
-    case BreakDoc              => NewPretty(breakWith("_"))
-    case BreakWith(value)      => NewPretty(breakWith(s"_${value}_"))
+    case TextDoc(value)        => Pretty(quoteString(value))
+    case BreakDoc              => Pretty(breakWith("_"))
+    case BreakWith(value)      => Pretty(breakWith(s"_${value}_"))
 
-    case GroupDoc(doc)         => NewPretty(group("[" :: pretty(doc) :: "]"))
-    case NestDoc(doc)          => NewPretty(nest("<" :: pretty(doc) :: ">"))
-    case NestWith(indent, doc) => NewPretty(group(s"($indent)<" :: pretty(doc) :: ">"))
+    case GroupDoc(doc)         => Pretty(group("[" :: pretty(doc) :: "]"))
+    case NestDoc(doc)          => Pretty(nest("<" :: pretty(doc) :: ">"))
+    case NestWith(indent, doc) => Pretty(group(s"($indent)<" :: pretty(doc) :: ">"))
 
-    case PageDoc(doc)          => NewPretty(group("(|" :: pretty(doc) :: "|)"))
+    case PageDoc(doc)          => Pretty(group("(|" :: pretty(doc) :: "|)"))
   }
 }

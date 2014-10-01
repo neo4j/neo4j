@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.docStructureDocGen
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.Pretty
 
 /**
  * Class of pretty-printable documents.
@@ -186,8 +185,8 @@ final case class NestWith(indent: Int, content: Doc) extends NestingDoc {
   def optIndent = Some(indent)
 }
 
-final case class DocLiteral(doc: Doc) extends Pretty {
-  override def toDocOps: Option[DocOps[Any]] = docStructureDocGen(doc)
+final case class DocLiteral(doc: Doc) extends ToPretty {
+  override def toPretty: Option[DocRecipe[Any]] = docStructureDocGen(doc)
 }
 
 

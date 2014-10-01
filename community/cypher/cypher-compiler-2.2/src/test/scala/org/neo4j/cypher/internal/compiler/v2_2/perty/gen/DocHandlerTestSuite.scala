@@ -31,7 +31,7 @@ abstract class DocHandlerTestSuite[T]
   with LineDocFormatting {
 
   def pprint[S <: T : TypeTag](value: S, formatter: DocFormatter = docFormatter): Unit =
-    print.pprint(value, formatter)(docGen)
+    print.pprintln(value, formatter)(docGen)
 
   def pprintToString[S <: T : TypeTag](value: S, formatter: DocFormatter = docFormatter): String =
     print.pprintToString(value, formatter)(docGen)

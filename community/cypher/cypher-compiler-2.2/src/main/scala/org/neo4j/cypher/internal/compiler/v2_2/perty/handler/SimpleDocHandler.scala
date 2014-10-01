@@ -46,7 +46,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.{docStructureDocGen, sc
 // This is helpful when reflectively printing scala case classes whose toDoc leaves out information
 //
 case object SimpleDocHandler extends CustomDocHandler[Any] {
-  val docGen: DocGen[Any] =
+  val docGen: DocGenStrategy[Any] =
     // pretty printing the structure of docs themselves
     docStructureDocGen.lift[Any] orElse
     // pretty printing anything common scala value (product, array, primitive)
