@@ -62,9 +62,9 @@ class MatchTest extends DocumentingTestBase {
 Search for nodes by id can be done with the 'id' function in a predicate.
 
 [NOTE]
-Neo4j reuses its internal ids when nodes and relationships are deleted,
-which means it's bad practice to refer to them in this way.
-Instead, use application generated ids.
+Neo4j reuses its internal ids when nodes and relationships are deleted.
+This means that applications using, and relying on internal Neo4j ids, are brittle or at risk of making mistakes.
+Rather use application generated ids.
              """,
       queryText = "match n where id(n) = %Charlie% return n",
       optionalResultExplanation = "The corresponding node is returned.",
@@ -77,7 +77,7 @@ Instead, use application generated ids.
       text = """
 Search for nodes by id can be done with the 'id' function in a predicate.
 
-See <<match-node-by-id>> for more information on Neo4j ids.
+This is not recommended practice. See <<match-node-by-id>> for more information on the use of Neo4j ids.
              """,
       queryText = "match ()-[r]->() where id(r) = 0 return r",
       optionalResultExplanation = "The relationship with id +0+ is returned.",

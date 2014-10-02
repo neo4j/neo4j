@@ -7,21 +7,34 @@ Parts of the changes are internal -- we add new pattern matchers, aggregators an
 
 Other changes are directly visible to our users -- the syntax is still changing.
 New concepts are being added and old ones changed to fit into new possibilities.
-To guard you from having to keep up with our syntax changes, Cypher allows you to use an older parser, but still gain the speed from new optimizations.
+To guard you from having to keep up with our syntax changes, Cypher allows you to use an older parser, but still gain speed from new optimizations.
 
 There are two ways you can select which parser to use.
-You can configure your database with the configuration parameter +cypher_parser_version+, and enter which parser you'd like to use (`1.9`, `2.0` are supported now).
-Any Cypher query that doesn't explicitly say anything else, will get the parser you have configured.
+You can configure your database with the configuration parameter +cypher_parser_version+, and enter which parser you'd like to use (`1.9`, `2.0`, `2.1` &  `2.2` are supported).
+Any Cypher query that doesn't explicitly say anything else, will get the parser you have configured, or the latest parser if none is configured.
 
 The other way is on a query by query basis.
-By simply putting +"CYPHER 1.9"+ at the beginning, that particular query will be parsed with the 1.9 version of the parser.
+By simply putting +"CYPHER 2.1"+ at the beginning, that particular query will be parsed with the 2.1 version of the parser.
 Below is an example using the +START+ clause to access a legacy index:
 
 [source,cypher]
 ----
-CYPHER 1.9
+CYPHER 2.1
 START n=node:nodes(name = "A")
 RETURN n
 ----
 
+In versions of Cypher prior to 2.2 it was also possible to access specific nodes or relationships using the +START+ clause. In this case you could use a syntax like the following:
 
+[source,cypher]
+----
+CYPHER 2.1
+START n=node(42)
+RETURN n
+----
+
+[NOTE]
+The use of the +START+ clause to find nodes by ID was deprecated from Cypher 2.0 onwards and is now entirely disabled in Cypher 2.2 and up.
+You should instead make use of the +MATCH+ clause for starting points.
+See <<query-match>> for more information on the correct syntax for this.
+The +START+ clause should only be used when accessing legacy indexes (see <<indexing>>).
