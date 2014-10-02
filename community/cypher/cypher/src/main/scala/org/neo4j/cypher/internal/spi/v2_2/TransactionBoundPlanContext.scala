@@ -85,4 +85,10 @@ class TransactionBoundPlanContext(statement: Statement, kernelAPI: KernelAPI, va
   }
 
   def statistics: GraphStatistics = HardcodedGraphStatistics
+
+//  def statistics: GraphStatistics = {
+//    val db = gdb.asInstanceOf[GraphDatabaseAPI]
+//    val queryCtx = new TransactionBoundQueryContext(db, null, true, statement)
+//    new QueriedGraphStatistics(gdb, queryCtx)
+//  }
 }
