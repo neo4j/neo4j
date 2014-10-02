@@ -26,10 +26,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.OtherConvert
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, NodeStartItem, RelTypeName}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier, NodeStartItem, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{EntityProducerFactory, True, Predicate => CommandPredicate}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
@@ -46,6 +47,7 @@ case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan, 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
 
   val entityProducerFactory = new EntityProducerFactory
+  val resolver = new KeyTokenResolver
 
   def build(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
     val updating = false
@@ -64,12 +66,14 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
     def buildExpression(expr: ast.Expression): CommandExpression = {
       val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)
-      rewrittenExpr.asCommandExpression
+
+      rewrittenExpr.asCommandExpression.rewrite(resolver.resolveExpressions(_, planContext))
     }
 
     def buildPredicate(expr: ast.Expression): CommandPredicate = {
-      val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)
-      rewrittenExpr.asCommandPredicate
+      val rewrittenExpr: Expression = expr.endoRewrite(buildPipeExpressions)
+
+      rewrittenExpr.asCommandPredicate.rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[CommandPredicate]
     }
 
     def buildPipe(plan: LogicalPlan): Pipe = {
