@@ -33,8 +33,8 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       selections: Selections = Selections(),
                       optionalMatches: Seq[QueryGraph] = Seq.empty,
                       hints: Set[Hint] = Set.empty,
-                      shortestPathPatterns: Set[ShortestPathPattern] = Set.empty)
-  extends InternalDocHandler.ToString[QueryGraph] with PageDocFormatting {
+                      shortestPathPatterns: Set[ShortestPathPattern] = Set.empty) {
+//  extends InternalDocHandler.ToString[QueryGraph] with PageDocFormatting {
 
   def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
 

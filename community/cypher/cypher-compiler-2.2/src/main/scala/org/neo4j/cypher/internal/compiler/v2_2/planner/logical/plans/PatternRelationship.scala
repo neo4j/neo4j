@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
 import org.neo4j.cypher.internal.compiler.v2_2.perty.PageDocFormatting
 import org.neo4j.graphdb.Direction
 
-final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName], length: PatternLength)
-  extends InternalDocHandler.ToString[PatternRelationship] with PageDocFormatting {
+final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName], length: PatternLength) {
+//  extends InternalDocHandler.ToString[PatternRelationship] with PageDocFormatting {
 
   def directionRelativeTo(node: IdName): Direction = if (node == left) dir else dir.reverse()
 
@@ -45,8 +45,8 @@ final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir:
 }
 
 // TODO: Remove ast representation
-final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)(val expr: ast.ShortestPaths)
-  extends InternalDocHandler.ToString[ShortestPathPattern] with PageDocFormatting {
+final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)(val expr: ast.ShortestPaths) {
+//  extends InternalDocHandler.ToString[ShortestPathPattern] with PageDocFormatting {
 
   def isFindableFrom(symbols: Set[IdName]) = symbols.contains(rel.left) && symbols.contains(rel.right)
 
@@ -54,7 +54,7 @@ final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelations
 }
 
 
-trait PatternLength extends InternalDocHandler.ToString[PatternLength] with PageDocFormatting {
+trait PatternLength { // extends InternalDocHandler.ToString[PatternLength] with PageDocFormatting {
   def implicitPatternNodeCount: Int
   def isSimple: Boolean
 }

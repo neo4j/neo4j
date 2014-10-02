@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty.recipe
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.step._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocLiteral, Doc, DocRecipe}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{BreakingDoc, DocLiteral, Doc, DocRecipe}
 
 import scala.reflect.runtime.universe._
 
@@ -29,7 +29,7 @@ import scala.reflect.runtime.universe._
 // DocRecipes are flat representations of Docs that are suitable for
 // composition without hitting stack-depth problems. In particular,
 // recipes can contain abstract content that needs to be replaced
-// with actually renderable content (PrintableDocSteps instead
+// with actually printable content (PrintableDocSteps instead
 // of regular DocSteps).
 //
 // However, building up DocRecipes is not as straightforward
@@ -56,12 +56,24 @@ import scala.reflect.runtime.universe._
 class Pretty[T] extends MidPriorityPrettyImplicits[T] {
   def apply(appender: RecipeAppender[T]): DocRecipe[T] = appender(Seq.empty)
 
+  case object nothing extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = append
+  }
+
   case class doc(doc: Doc) extends RecipeAppender[T] {
     def apply(append: DocRecipe[T]) = AddDoc(doc) +: append
   }
 
   case object break extends RecipeAppender[T] {
     def apply(append: DocRecipe[T]) = AddBreak +: append
+  }
+
+  case class breakBefore(doc: RecipeAppender[T], break: RecipeAppender[T] = break) extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = {
+      val afterDoc = doc(Seq.empty)
+      val brokenDoc = if (afterDoc.isEmpty) doc else break :: doc
+      brokenDoc(append)
+    }
   }
 
   val silentBreak: RecipeAppender[T] = breakWith("")
@@ -136,6 +148,33 @@ class Pretty[T] extends MidPriorityPrettyImplicits[T] {
           (group(hd :: sep) :: break)(acc)
     }
   }
+
+
+  // TODO: Test these
+
+  def block(name: RecipeAppender[T], open: RecipeAppender[T] = "(", close: RecipeAppender[T] = ")")(innerDoc: RecipeAppender[T]): RecipeAppender[T] =
+    group( name :: surrounded(open, close, silentBreak, silentBreak )(innerDoc) )
+
+  def brackets(innerDoc: RecipeAppender[T], break: RecipeAppender[T] = silentBreak) =
+    surrounded(open = "[", close = "]", break, break)(innerDoc)
+
+  def braces(innerDoc: RecipeAppender[T], break: RecipeAppender[T] = silentBreak) =
+    surrounded(open = "{", close = "}", break, break)(innerDoc)
+
+  def parens(innerDoc: RecipeAppender[T], break: RecipeAppender[T] = silentBreak) =
+    surrounded(open = "(", close = ")", break, break)(innerDoc)
+
+  def comment(innerDoc: RecipeAppender[T], break: RecipeAppender[T] = break) =
+    surrounded(open = "/*", close = "*/", break, break)(innerDoc)
+
+  case class surrounded(open: RecipeAppender[T],
+                        close: RecipeAppender[T],
+                        openBreak: RecipeAppender[T] = break,
+                        closeBreak: RecipeAppender[T] = break)(innerDoc: RecipeAppender[T])
+    extends RecipeAppender[T] {
+      def apply(append: DocRecipe[T]) =
+        group(open :: nest(group(breakBefore(innerDoc, openBreak))) :: breakBefore(close, closeBreak))(append)
+  }
 }
 
 protected class MidPriorityPrettyImplicits[T] extends LowPriorityPrettyImplicits[T] {
@@ -157,12 +196,13 @@ protected class LowPriorityPrettyImplicits[T] {
   // The actual value is taken as a by name closure to be able to perform error
   // handling when dealing with buggy / partially unimplemented classes.
   //
-  implicit class prettyAppender[S <: T : TypeTag](content: => S) extends RecipeAppender[T] {
+  implicit class prettyAppender[+S <: T : TypeTag](content: => S) extends RecipeAppender[T] {
     def apply(append: DocRecipe[T]) = AddPretty(content) +: append
   }
 
   case object pretty {
-    def apply[S <: T : TypeTag](content: => S) = new prettyAppender(content)
+    def apply[S <: T : TypeTag](content: => S): prettyAppender[S] =
+      new prettyAppender(content)
   }
 }
 
@@ -171,5 +211,3 @@ object Pretty extends Pretty[Any] {
     def apply(append: DocRecipe[Any]) = AddPretty(DocLiteral(doc)) +: append
   }
 }
-
-

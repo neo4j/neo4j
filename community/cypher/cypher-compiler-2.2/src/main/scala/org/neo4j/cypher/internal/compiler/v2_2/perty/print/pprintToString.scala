@@ -26,10 +26,10 @@ import scala.reflect.runtime.universe._
 
 object pprintToString {
   // Convert value to String after converting to a doc using the given generator and formatter
-  def apply[T : TypeTag](value: T,
-                         formatter: DocFormatter = DocFormatters.defaultPageFormatter)
-                        (docGen: DocGenStrategy[T] = DefaultDocHandler.docGen): String = {
-    val doc = pprintToDoc(value)(docGen)
+  def apply[T: TypeTag, S >: T : TypeTag](value: T,
+                                          formatter: DocFormatter = DocFormatters.defaultPageFormatter)
+                                         (docGen: DocGenStrategy[S] = DefaultDocHandler.docGen): String = {
+    val doc = pprintToDoc[T, S](value)(docGen)
     val formatted = formatter(doc)
     val condensed = condense(formatted)
     val text = printCommandsToString(condensed)

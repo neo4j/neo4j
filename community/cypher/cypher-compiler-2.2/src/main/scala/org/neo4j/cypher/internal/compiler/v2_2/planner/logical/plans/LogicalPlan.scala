@@ -39,7 +39,7 @@ abstract class LogicalPlan
   extends Product
   with Rewritable
   with PageDocFormatting
-  with InternalDocHandler.ToString[LogicalPlan]
+//  with InternalDocHandler.ToString[LogicalPlan]
 {
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
@@ -81,4 +81,4 @@ abstract class LogicalLeafPlan extends LogicalPlan {
 }
 
 final case class IdName(name: String)
- extends InternalDocHandler.ToString[IdName] with PageDocFormatting
+// extends InternalDocHandler.ToString[IdName] with PageDocFormatting

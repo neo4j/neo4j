@@ -33,6 +33,9 @@ sealed trait DocStep[+T]
 sealed abstract class AddPretty[T](implicit val tag: TypeTag[T]) extends DocStep[T] {
   def content: T
   def apply[I >: T, O](extractor: Extractor[I, O]): Option[O] = extractor(content)
+
+  // for debugging
+  override def toString = content.toString
 }
 
 case object AddPretty {

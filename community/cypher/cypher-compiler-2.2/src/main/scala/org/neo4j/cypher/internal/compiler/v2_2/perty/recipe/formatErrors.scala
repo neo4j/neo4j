@@ -31,8 +31,8 @@ protected case object formatErrors {
       case _: NotImplementedError =>
         Pretty("???")
 
-      case _: MatchError =>
-        None
+//      case _: MatchError =>
+//        None
 
       case e: Exception =>
         Pretty(group(s"${e.getClass.getSimpleName}:" :/: e.toString))

@@ -26,15 +26,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.PageDocFormatting
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class Predicate(dependencies: Set[IdName], expr: Expression)
-  extends InternalDocHandler.ToString[Predicate] with PageDocFormatting {
+case class Predicate(dependencies: Set[IdName], expr: Expression) {
+//  extends InternalDocHandler.ToString[Predicate] with PageDocFormatting {
 
   def hasDependenciesMet(symbols: Set[IdName]): Boolean =
     (dependencies -- symbols).isEmpty
 }
 
-case class Selections(predicates: Set[Predicate] = Set.empty)
-  extends InternalDocHandler.ToString[Selections] with PageDocFormatting {
+case class Selections(predicates: Set[Predicate] = Set.empty) {
+//  extends InternalDocHandler.ToString[Selections] with PageDocFormatting {
 
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate

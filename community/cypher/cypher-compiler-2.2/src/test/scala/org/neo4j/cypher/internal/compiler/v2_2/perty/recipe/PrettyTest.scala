@@ -34,6 +34,12 @@ class PrettyTest extends CypherFunSuite {
     pprintRecipeToDoc(innerRecipe) should equal(innerDoc)
   }
 
+  test("Pretty.nothing") {
+    val recipe = Pretty(nothing)
+
+    pprintRecipeToDoc(recipe) should equal(NilDoc)
+  }
+
   test("Pretty.text") {
     val recipe = Pretty(text("a"))
 
@@ -69,6 +75,18 @@ class PrettyTest extends CypherFunSuite {
     val recipe = Pretty(breakWith("x"))
 
     pprintRecipeToDoc(recipe) should equal(BreakWith("x"))
+  }
+
+  test("Pretty.breakBefore(nothing)") {
+    val recipe = Pretty(breakBefore(nothing))
+
+    pprintRecipeToDoc(recipe) should equal(NilDoc)
+  }
+
+  test("Pretty.breakBefore(text)") {
+    val recipe = Pretty(breakBefore("x"))
+
+    pprintRecipeToDoc(recipe) should equal(ConsDoc(BreakDoc, ConsDoc(TextDoc("x"), NilDoc)))
   }
 
   test("Pretty.noBreak") {
@@ -121,6 +139,53 @@ class PrettyTest extends CypherFunSuite {
     pprintRecipeToDoc(recipe) should equal(
       ConsDoc(GroupDoc(ConsDoc(TextDoc("a"), ConsDoc(TextDoc(","), NilDoc))),
         ConsDoc(BreakDoc, ConsDoc(TextDoc("b"), NilDoc)))
+    )
+  }
+
+  test("Pretty.parens") {
+    val recipe = Pretty(surrounded("(", ")")("neat"))
+
+    pprintRecipeToDoc(recipe) should equal(
+      GroupDoc(
+        ConsDoc(TextDoc("("),
+          ConsDoc(NestDoc(GroupDoc(ConsDoc(BreakDoc, ConsDoc(TextDoc("neat"), NilDoc)))),
+            ConsDoc(BreakDoc, ConsDoc(TextDoc(")"), NilDoc)))))
+    )
+  }
+
+  test("Pretty.brackets") {
+    val recipe = Pretty(surrounded("[", "]")("neat"))
+
+    pprintRecipeToDoc(recipe) should equal(
+      GroupDoc(
+        ConsDoc(TextDoc("["),
+          ConsDoc(NestDoc(GroupDoc(ConsDoc(BreakDoc, ConsDoc(TextDoc("neat"), NilDoc)))),
+            ConsDoc(BreakDoc, ConsDoc(TextDoc("]"), NilDoc)))))
+    )
+  }
+
+  test("Pretty.braces") {
+    val recipe = Pretty(surrounded("{", "}")("neat"))
+
+    pprintRecipeToDoc(recipe) should equal(
+      GroupDoc(
+        ConsDoc(TextDoc("{"),
+          ConsDoc(NestDoc(GroupDoc(ConsDoc(BreakDoc, ConsDoc(TextDoc("neat"), NilDoc)))),
+            ConsDoc(BreakDoc, ConsDoc(TextDoc("}"), NilDoc)))))
+    )
+  }
+
+  test("Pretty.block") {
+    val recipe = Pretty(block("Pretty")("neat"))
+
+    pprintRecipeToDoc(recipe) should equal(
+      GroupDoc(ConsDoc(TextDoc("Pretty"), ConsDoc(
+        GroupDoc(
+          ConsDoc(TextDoc("("),
+            ConsDoc(NestDoc(GroupDoc(ConsDoc(BreakWith(""), ConsDoc(TextDoc("neat"), NilDoc)))),
+              ConsDoc(BreakWith(""), ConsDoc(TextDoc(")"), NilDoc))))),
+        NilDoc
+      )))
     )
   }
 

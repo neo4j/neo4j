@@ -35,9 +35,9 @@ import scala.annotation.tailrec
 //
 case object PrintableDocRecipe {
 
-  case class evalUsingStrategy[T : TypeTag](docGen: DocGenStrategy[T] = toStringDocGen) extends (DocRecipe[T] => Doc) {
+  case class evalUsingStrategy[T : TypeTag, S >: T : TypeTag](docGen: DocGenStrategy[S] = toStringDocGen) extends (DocRecipe[T] => Doc) {
     def apply(recipe: DocRecipe[T]): Doc = {
-      val expander = strategyExpander(docGen)
+      val expander = strategyExpander[T, S](docGen)
       val expanded = expander.expand(recipe)
       val printable = eval(expanded)
       printable

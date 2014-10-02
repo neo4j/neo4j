@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
-trait ToStringSupport[S] {
+trait ToPrettyString {
   prettySelf: DocFormatting =>
 
   private var _toString: String = null

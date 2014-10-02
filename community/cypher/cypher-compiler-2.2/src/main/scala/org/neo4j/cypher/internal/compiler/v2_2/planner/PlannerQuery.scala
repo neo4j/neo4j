@@ -29,8 +29,8 @@ case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean)
 
 case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
                         horizon: QueryHorizon = QueryProjection.empty,
-                        tail: Option[PlannerQuery] = None)
-  extends InternalDocHandler.ToString[PlannerQuery] with PageDocFormatting {
+                        tail: Option[PlannerQuery] = None) {
+//  extends InternalDocHandler.ToString[PlannerQuery] with PageDocFormatting {
 
   def lastQueryGraph: QueryGraph = tail.map(_.lastQueryGraph).getOrElse(graph)
 

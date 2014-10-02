@@ -30,36 +30,39 @@ case object DocRecipe {
   // Removes any occurrence of AddContent from the input by repeatedly calling the given extractor
   // on it. If calling the extractor does not succeed, fails.
   //
-  case class strategyExpander[T : TypeTag](extractor: DocGenStrategy[T]) {
+  case class strategyExpander[T : TypeTag, S >: T : TypeTag](extractor: DocGenStrategy[S]) {
+    val tpe = typeOf[S]
 
     case object expand extends (DocRecipe[T] => PrintableDocRecipe) {
 
       def apply(input: DocRecipe[T]) = {
         @tailrec
-        def expand(remaining: DocRecipe[Any], result: PrintableDocRecipe): PrintableDocRecipe = remaining match {
-          case Seq(hd: AddPretty[_], tl@_*) if hd.tag.tpe <:< typeOf[T] =>
-            formatErrors {
-              extractContent(hd.asInstanceOf[AddPretty[_ <: T]])
-            } match {
-              case Some(recipe) =>
-                expand(recipe ++ tl, result)
+        def expand(remaining: DocRecipe[Any], result: PrintableDocRecipe): PrintableDocRecipe = {
+          remaining match {
+            case Seq(hd: AddPretty[_], tl@_*) if hd.tag.tpe <:< tpe =>
+              formatErrors {
+                extractContent(hd.asInstanceOf[AddPretty[_ <: T]])
+              } match {
+                case Some(recipe) =>
+                  expand(recipe ++ tl, result)
 
-              case None =>
-                throw new IllegalArgumentException(
-                  s"Extractor failed to expand value of type: ${hd.tag.tpe} (extractor: $extractor)"
-                )
-            }
+                case None =>
+                  throw new IllegalArgumentException(
+                    s"Extractor failed to expand value of type: ${hd.tag.tpe} (extractor: $extractor)"
+                  )
+              }
 
-          case Seq(hd: AddPretty[_], tl@_*) =>
-            throw new IllegalArgumentException(
-              s"Cannot expand value of type ${typeOf[T]} not within the extractor's supported type bound <:< ${hd.tag.tpe} (extractor: $extractor)"
-            )
+            case Seq(hd: AddPretty[_], tl@_*) =>
+              throw new IllegalArgumentException(
+                s"Cannot expand value of type ${typeOf[T]}, it is not within the extractor's supported type bound <:< ${hd.tag.tpe} (extractor: $extractor)"
+              )
 
-          case Seq(hd: PrintableDocStep, tl@_*) =>
-            expand(tl, result :+ hd)
+            case Seq(hd: PrintableDocStep, tl@_*) =>
+              expand(tl, result :+ hd)
 
-          case Seq() =>
-            result
+            case Seq() =>
+              result
+          }
         }
 
         expand(input, Seq.empty)

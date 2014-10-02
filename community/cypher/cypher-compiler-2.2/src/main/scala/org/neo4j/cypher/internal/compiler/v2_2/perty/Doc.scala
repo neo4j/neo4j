@@ -104,18 +104,12 @@ object Doc {
     case (hd, tail)   => group(hd :: sep) :: break :: tail
   }
 
-  // <-[[**-- Pretty --**]]->
-
   def literal(doc: Doc) = DocLiteral(doc)
 
   // useful to force a page break if a group is in PageMode and print nothing otherwise
 
-  def breakSilentBefore(doc: Doc): Doc = breakBefore(doc, break = breakSilent)
-
   def breakBefore(doc: Doc, break: BreakingDoc = break): Doc =
     if (doc.isNil) doc else break :: doc
-
-  implicit def opt(optDoc: Option[Doc]) = optDoc.getOrElse(nil)
 
   def block(name: Doc, open: Doc = "(", close: Doc = ")")(innerDoc: Doc): Doc =
     group( name :: surrounded(open, close, breakSilent, breakSilent )(innerDoc) )
@@ -133,13 +127,7 @@ object Doc {
     surrounded(open = "/*", close = "*/", break, break)(innerDoc)
 
   def surrounded(open: Doc, close: Doc, openBreak: BreakingDoc, closeBreak: BreakingDoc)(innerDoc: Doc): Doc =
-    surrounded(open, breakBefore(close, openBreak))(breakBefore(innerDoc, closeBreak))
-
-  def surrounded(open: Doc, close: Doc)(innerDoc: Doc): Doc =
-    group(open :: nest(group(innerDoc)) :: close)
-
-  def section(start: Doc, inner: Doc, break: BreakingDoc = break): Doc =
-    if (inner.isNil) inner else group(start :: nest(breakBefore(inner, break = break)))
+    group(open :: nest(group(breakBefore(innerDoc, openBreak))) :: breakBefore(close, closeBreak))
 }
 
 final case class ConsDoc(head: Doc, tail: Doc = NilDoc) extends Doc

@@ -27,6 +27,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.step.AddPretty
 import scala.reflect.runtime.universe._
 
 object pprintToDoc {
-  def apply[T : TypeTag](value: T)(docGen: DocGenStrategy[T] = DefaultDocHandler.docGen): Doc =
-    PrintableDocRecipe.evalUsingStrategy(docGen).apply(Seq(AddPretty(value)))
+  def apply[T : TypeTag, S >: T : TypeTag](value: T)(docGen: DocGenStrategy[S] = DefaultDocHandler.docGen): Doc =
+    PrintableDocRecipe.evalUsingStrategy[T, S](docGen).apply(Seq(AddPretty(value)))
 }
