@@ -93,15 +93,16 @@ class QueriedGraphStatistics(graph: GraphDatabaseService, queryContext: QueryCon
         _.hasProperty(propertyKeyName)
       }
 
-      var nodeCount = 0L
-      val valuesMap = new mutable.HashMap[Any, Long]()
+      val values = new mutable.HashSet[Any]()
       while (indexedNodes.hasNext) {
         val propertyValue = indexedNodes.next().getProperty(propertyKeyName)
-        valuesMap(propertyValue) = valuesMap.getOrElse(propertyValue, 0L) + 1L
-        nodeCount += 1L
+        values += propertyValue
       }
 
-      Some(Selectivity(valuesMap.values.map(_.toDouble / nodeCount).sum / valuesMap.size))
+      if (values.isEmpty)
+        Some(Selectivity(0)) // Avoids division by zero
+      else
+        Some(Selectivity(1.0 / values.size))
     }
   }
 

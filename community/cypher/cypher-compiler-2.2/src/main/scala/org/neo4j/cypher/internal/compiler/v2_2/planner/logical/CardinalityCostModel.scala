@@ -32,7 +32,7 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
   val CPU_BOUND_PLAN_COST_PER_ROW = CostPerRow(0.1)
   val DB_ACCESS_BOUND_PLAN_COST_PER_ROW = CostPerRow(1.0)
 
-  def costPerRow(plan: LogicalPlan) = plan match {
+  private def costPerRow(plan: LogicalPlan) = plan match {
     case _: NodeHashJoin |
       _: Aggregation |
       _: Apply |
@@ -59,14 +59,17 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
     case _ => DB_ACCESS_BOUND_PLAN_COST_PER_ROW
   }
 
-  def apply(plan: LogicalPlan): Cost = {
-    // input cardinality for leaf plans is computed as the number of rows produced,
-    // for non-leaf plans it is the cardinality of their lhs. This is probably still not right.
-    val inputCardinality =
-      plan.lhs.map(cardinality).getOrElse(cardinality(plan))
+  private def cardinalityForPlan(plan: LogicalPlan) = plan match {
+    case Selection(_, left) => cardinality(left)
+    case exp: Expand        => cardinality(exp)
+    case _                  => plan.lhs.map(cardinality).getOrElse(cardinality(plan))
+  }
 
-    inputCardinality * costPerRow(plan) +
+  def apply(plan: LogicalPlan): Cost = {
+    val totalCost = cardinalityForPlan(plan) * costPerRow(plan) +
     plan.lhs.map(this).getOrElse(Cost(0)) +
     plan.rhs.map(this).getOrElse(Cost(0))
+
+    totalCost
   }
 }
