@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 
-final class TransactionBoundPlanContext(statement: Statement, kernelAPI: KernelAPI, gdb: GraphDatabaseService)
+class TransactionBoundPlanContext(statement: Statement, kernelAPI: KernelAPI, val gdb: GraphDatabaseService)
   extends TransactionBoundTokenContext(statement) with PlanContext {
 
   @Deprecated

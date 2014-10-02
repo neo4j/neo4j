@@ -39,4 +39,25 @@ object combinePredicates {
     combinations.toSeq.sortBy(_._2).headOption.map {
       case (combination, selectivity) => combination.containedPredicates -> selectivity
     }.getOrElse(Set.empty[Predicate] -> Selectivity(1))
+
+  def averageBetweenDepAndIndep(combinations: Set[EstimatedPredicateCombination]) = {
+    val (assDepPreds, assDepSel) = assumeDependence(combinations)
+    val (assIndepPreds, assIndepSel) = assumeDependence(combinations)
+
+    (assDepPreds ++ assIndepPreds) -> Selectivity((assDepSel.factor + assIndepSel.factor) / 2)
+  }
+
+  def assumeWeakDependence(combinations: Set[EstimatedPredicateCombination]): (Set[Predicate], Selectivity) = {
+
+    val combinedSelectivity = combinations.toSeq.sortBy(_._2).zipWithIndex.foldLeft(1.0) {
+      case (acc, (sel: (PredicateCombination, Selectivity), index)) =>
+        acc * (0 to index).foldLeft(0.0) {
+          case (sum, i) => sum + Math.pow(2, -i) * sel._2.factor
+        }
+    }
+
+    val allPredicates = combinations.flatMap(_._1.containedPredicates)
+
+    allPredicates -> Selectivity(combinedSelectivity)
+  }
 }
