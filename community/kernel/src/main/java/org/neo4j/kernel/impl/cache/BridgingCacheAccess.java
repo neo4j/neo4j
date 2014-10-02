@@ -31,6 +31,10 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 
 public class BridgingCacheAccess implements CacheAccessBackDoor
 {
+    private static final long MAX_CHANGES_THRESHOLD = 10_000;
+    private long changes = 0;
+    private long maxChangesThreshold = MAX_CHANGES_THRESHOLD;
+
     private final SchemaCache schemaCache;
     private final SchemaState schemaState;
     private final PersistenceCache persistenceCache;
@@ -122,8 +126,24 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     }
 
     @Override
+    public void applyCountUpdates( long nodesDelta, long relsDelta, long labelsTotalDelta, long relTypesTotalDelta )
+    {
+        changes += nodesDelta + relsDelta + labelsTotalDelta + relTypesTotalDelta;
+        if ( changes >= maxChangesThreshold || changes < 0 /* overflow */ )
+        {
+            schemaState.clear();
+            changes = 0;
+        }
+    }
+
+    @Override
     public void applyLabelUpdates( Collection<NodeLabelUpdate> labelUpdates )
     {
         persistenceCache.apply( labelUpdates );
+    }
+
+    public void setMaxChangesThreshold( long maxChangesThreshold )
+    {
+        this.maxChangesThreshold = maxChangesThreshold;
     }
 }
