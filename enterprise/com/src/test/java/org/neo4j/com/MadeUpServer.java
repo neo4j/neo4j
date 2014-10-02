@@ -165,13 +165,13 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
                 }
             }
         }, Protocol.VOID_SERIALIZER )
-                {
-                    @Override
-                    public boolean responseShouldBeUnpacked()
-                    {
-                        return false;
-                    }
-                },
+        {
+            @Override
+            public boolean responseShouldBeUnpacked()
+            {
+                return false;
+            }
+        },
 
         THROW_EXCEPTION( new TargetCaller<MadeUpCommunicationInterface, Integer>()
         {
@@ -192,7 +192,27 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
                 throw new ThisShouldNotHappenError( "Jake", "Test should not reach this far, " +
                     "it should fail while reading the request context." );
             }
-        }, Protocol.VOID_SERIALIZER );
+        }, Protocol.VOID_SERIALIZER ),
+
+        STREAM_BACK_TRANSACTIONS( new TargetCaller<MadeUpCommunicationInterface, Integer>()
+        {
+            @Override
+            public Response<Integer> call( MadeUpCommunicationInterface master, RequestContext context,
+                    ChannelBuffer input, ChannelBuffer target )
+            {
+                return master.streamBackTransactions( input.readInt(), input.readInt() );
+            }
+        }, Protocol.INTEGER_SERIALIZER ),
+
+        INFORM_ABOUT_TX_OBLIGATIONS( new TargetCaller<MadeUpCommunicationInterface, Integer>()
+        {
+            @Override
+            public Response<Integer> call( MadeUpCommunicationInterface master, RequestContext context,
+                    ChannelBuffer input, ChannelBuffer target )
+            {
+                return master.informAboutTransactionObligations( input.readInt(), input.readLong() );
+            }
+        }, Protocol.INTEGER_SERIALIZER );
 
         private final TargetCaller masterCaller;
         private final ObjectSerializer serializer;

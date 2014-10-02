@@ -31,6 +31,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.RequestContext;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
@@ -67,6 +68,7 @@ public class UpdatePullerTest
     private final Master master = mock( Master.class );
     private final StringLogger stringLogger = mock( StringLogger.class );
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
+    private final DependencyResolver resolver = mock( DependencyResolver.class );
 
     @Before
     public void setup()
@@ -88,7 +90,8 @@ public class UpdatePullerTest
                 lastUpdateTime,
                 config,
                 scheduler,
-                stringLogger );
+                stringLogger,
+                resolver );
 
         // WHEN
         puller.init();
@@ -112,7 +115,8 @@ public class UpdatePullerTest
                 lastUpdateTime,
                 config,
                 scheduler,
-                stringLogger );
+                stringLogger,
+                resolver );
 
         // WHEN
         puller.init();
@@ -122,6 +126,7 @@ public class UpdatePullerTest
         assertNotNull( scheduler.getJob() );
 
         puller.start();
+        stateMachine.switchInstanceToSlave();
         scheduler.runJob();
 
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
@@ -146,11 +151,13 @@ public class UpdatePullerTest
                 lastUpdateTime,
                 config,
                 scheduler,
-                stringLogger );
+                stringLogger,
+                resolver );
 
         // WHEN
         puller.init();
         puller.start();
+        stateMachine.switchInstanceToSlave();
         scheduler.runJob();
 
         // THEN
@@ -179,11 +186,13 @@ public class UpdatePullerTest
                 lastUpdateTime,
                 config,
                 scheduler,
-                stringLogger );
+                stringLogger,
+                resolver );
 
         // WHEN
         puller.init();
         puller.start();
+        memberStateMachine.switchInstanceToSlave();
         scheduler.runJob();
 
         // THEN
@@ -214,11 +223,13 @@ public class UpdatePullerTest
                 lastUpdateTime,
                 config,
                 scheduler,
-                stringLogger );
+                stringLogger,
+                resolver );
 
         // WHEN
         puller.init();
         puller.start();
+        memberStateMachine.switchInstanceToSlave();
         scheduler.runJob();
 
         // THEN
@@ -228,6 +239,7 @@ public class UpdatePullerTest
 
         memberStateMachine.switchInstanceToMaster();
 
+        // This job should be ignored, since I'm now master
         scheduler.runJob();
 
         memberStateMachine.switchInstanceToSlave();
@@ -252,10 +264,12 @@ public class UpdatePullerTest
                 lastUpdateTime,
                 config,
                 scheduler,
-                stringLogger );
+                stringLogger,
+                resolver );
 
         puller.init();
         puller.start();
+        memberStateMachine.switchInstanceToSlave();
         scheduler.runJob();
 
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );

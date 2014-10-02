@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
+import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
@@ -170,7 +171,7 @@ public class RemoteStoreCopierTest
                         }
                     }
                 };
-                return response = spy( new Response<>( null, original.storeId(), transactions, NO_OP ) );
+                return response = spy( new TransactionStreamResponse<>( null, original.storeId(), transactions, NO_OP ) );
             }
 
             @Override

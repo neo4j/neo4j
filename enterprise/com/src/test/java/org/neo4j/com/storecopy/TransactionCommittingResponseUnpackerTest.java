@@ -26,8 +26,8 @@ import org.junit.Test;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
+import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -140,7 +140,7 @@ public class TransactionCommittingResponseUnpackerTest
         }
     }
 
-    private static class DummyResponse extends Response<Object>
+    private static class DummyResponse extends TransactionStreamResponse<Object>
     {
         private final CommittedTransactionRepresentation theTx;
 
@@ -159,11 +159,9 @@ public class TransactionCommittingResponseUnpackerTest
         }
 
         @Override
-        public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
+        public void accept( Response.Handler handler ) throws IOException
         {
-            visitor.visit( theTx );
+            handler.transactions().visit( theTx );
         }
-
-
     }
 }

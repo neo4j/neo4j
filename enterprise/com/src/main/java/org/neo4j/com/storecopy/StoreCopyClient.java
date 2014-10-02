@@ -160,15 +160,29 @@ public class StoreCopyClient
             final TransactionLogWriter writer = new TransactionLogWriter(
                     new LogEntryWriterv1( channel, new CommandWriter( channel ) ) );
             final AtomicLong firstTxId = new AtomicLong( -1 );
-            response.accept( new Visitor<CommittedTransactionRepresentation, IOException>()
+
+            response.accept( new Response.Handler()
             {
                 @Override
-                public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
+                public void obligation( long txId ) throws IOException
                 {
-                    long txId = transaction.getCommitEntry().getTxId();
-                    writer.append( transaction.getTransactionRepresentation(), txId );
-                    firstTxId.compareAndSet( -1, txId );
-                    return true;
+                    throw new UnsupportedOperationException( "Shouldn't be called" );
+                }
+
+                @Override
+                public Visitor<CommittedTransactionRepresentation, IOException> transactions()
+                {
+                    return new Visitor<CommittedTransactionRepresentation, IOException>()
+                    {
+                        @Override
+                        public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
+                        {
+                            long txId = transaction.getCommitEntry().getTxId();
+                            writer.append( transaction.getTransactionRepresentation(), txId );
+                            firstTxId.compareAndSet( -1, txId );
+                            return true;
+                        }
+                    };
                 }
             } );
 

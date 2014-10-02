@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 
@@ -46,7 +47,7 @@ public class AbstractTokenCreatorTest
     private final RequestContext context = new RequestContext( 1, 2, 3, 4, 5, 6 );
 
     private final String label = "A";
-    private final Response<Integer> response = new Response<>( 42, null, null, null );
+    private final Response<Integer> response = new TransactionStreamResponse<>( 42, null, null, null );
 
     private final AbstractTokenCreator creator = new AbstractTokenCreator( master, requestContextFactory )
     {

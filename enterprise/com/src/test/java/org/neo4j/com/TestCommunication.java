@@ -28,15 +28,19 @@ import org.mockito.ArgumentCaptor;
 
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.yield;
 
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -137,7 +141,7 @@ public class TestCommunication
             public Response<Void> fetchDataStream( MadeUpWriter writer, int dataSize )
             {
                 writer.write( new FailingByteChannel( dataSize, failureMessage ) );
-                return new Response<>( null, storeIdToUse, TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+                return new TransactionStreamResponse<>( null, storeIdToUse, TransactionStream.EMPTY, ResourceReleaser.NO_OP );
             }
         };
         MadeUpServer server = builder.server( serverImplementation );
@@ -406,6 +410,47 @@ public class TestCommunication
         verifyZeroInteractions( responseUnpacker );
     }
 
+    @Test
+    public void shouldStreamBackTransactions() throws Exception
+    {
+        // GIVEN
+        int value = 11, txCount = 3;
+        life.add( builder.server() );
+        MadeUpClient client = life.add( builder.client() );
+        life.start();
+        Response<Integer> respone = client.streamBackTransactions( value, txCount );
+        TransactionStreamVerifyingResponseHandler handler = new TransactionStreamVerifyingResponseHandler( txCount );
+
+        // WHEN
+        respone.accept( handler );
+        int responseValue = respone.response();
+
+        // THEN
+        assertEquals( value, responseValue );
+        assertEquals( txCount, handler.expectedTxId );
+    }
+
+    @Test
+    public void shouldAdhereToTransactionObligations() throws Exception
+    {
+        // GIVEN
+        int value = 15;
+        long desiredObligation = 8;
+        life.add( builder.server() );
+        MadeUpClient client = life.add( builder.client() );
+        life.start();
+        Response<Integer> respone = client.informAboutTransactionObligations( value, desiredObligation );
+        TransactionObligationVerifyingResponseHandler handler = new TransactionObligationVerifyingResponseHandler();
+
+        // WHEN
+        respone.accept( handler );
+        int responseValue = respone.response();
+
+        // THEN
+        assertEquals( value, responseValue );
+        assertEquals( desiredObligation, handler.obligationTxId );
+    }
+
     private void addToLifeAndStart( MadeUpServer server, MadeUpClient client )
     {
         life.add( server );
@@ -506,6 +551,55 @@ public class TestCommunication
                     applicationProtocolVersion, chunkSize ) );
             server.awaitStarted();
             return server;
+        }
+    }
+
+    public class TransactionStreamVerifyingResponseHandler
+            implements Response.Handler, Visitor<CommittedTransactionRepresentation, IOException>
+    {
+        private final long txCount;
+        private long expectedTxId;
+
+        public TransactionStreamVerifyingResponseHandler( int txCount )
+        {
+            this.txCount = txCount;
+        }
+
+        @Override
+        public void obligation( long txId ) throws IOException
+        {
+            fail( "Should not called" );
+        }
+
+        @Override
+        public Visitor<CommittedTransactionRepresentation, IOException> transactions()
+        {
+            return this;
+        }
+
+        @Override
+        public boolean visit( CommittedTransactionRepresentation element ) throws IOException
+        {
+            assertEquals( expectedTxId++, element.getCommitEntry().getTxId() );
+            assertThat( element.getCommitEntry().getTxId(), lessThan( txCount ) );
+            return true;
+        }
+    }
+
+    public class TransactionObligationVerifyingResponseHandler implements Response.Handler
+    {
+        volatile long obligationTxId;
+
+        @Override
+        public void obligation( long txId )
+        {
+            this.obligationTxId = txId;
+        }
+
+        @Override
+        public Visitor<CommittedTransactionRepresentation, IOException> transactions()
+        {
+            throw new UnsupportedOperationException( "Should not be called" );
         }
     }
 }

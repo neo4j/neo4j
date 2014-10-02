@@ -33,17 +33,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
-import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
-import org.neo4j.com.TransactionStream;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -99,7 +95,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer );
 
-        <T> Response<T> packResponse( RequestContext context, T response, Predicate<Long> filter );
+        <T> Response<T> packEmptyResponse( T response );
+
+        <T> Response<T> packTransactionStreamResponse( RequestContext context, T response );
+
+        <T> Response<T> packTransactionObligationResponse( RequestContext context, T response );
 
         int getOrCreateLabel( String name );
 
@@ -172,7 +172,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         LockSession locks = new LockSession( spi.acquireClient() );
         slaveLockSessions.put( context, locks );
-        return packResponse( context, null );
+        return spi.packTransactionObligationResponse( context, null );
     }
 
     /**
@@ -193,16 +193,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             throw new InvalidEpochException( epoch, context.getEpoch() );
         }
-    }
-
-    private <T> Response<T> packResponse( RequestContext context, T response )
-    {
-        return packResponse( context, response, Predicates.<Long>TRUE() );
-    }
-
-    private <T> Response<T> packResponse( RequestContext context, T response, Predicate<Long> filter )
-    {
-        return spi.packResponse( context, response, filter );
     }
 
     private LockSession getLockSession( RequestContext txId )
@@ -242,7 +232,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         assertCorrectEpoch( context );
         IdAllocation result = spi.allocateIds( idType );
-        return new Response<>( result, spi.storeId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+        return spi.packEmptyResponse( result );
     }
 
     @Override
@@ -261,7 +251,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             if(locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ))
             {
                 long txId = spi.applyPreparedTransaction( preparedTransaction );
-                return packResponse( context, txId );
+                return spi.packTransactionObligationResponse( context, txId );
             }
             else
             {
@@ -289,7 +279,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         catch ( LockSessionAlreadyActiveException e )
         {   // There's a lock acquisition active a.t.m. Below we'll mark it as "finish asap" so that
             // the lock acquisition thread of the reaper will end it
-            return packResponse( context, null );
+            return spi.packTransactionObligationResponse( context, null );
         }
         finally
         {
@@ -308,34 +298,34 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         // Go and end the lock session right now
         endLockSession0( context );
-        return packResponse( context, null );
+        return spi.packTransactionObligationResponse( context, null );
     }
 
     @Override
     public Response<Integer> createRelationshipType( RequestContext context, String name )
     {
         assertCorrectEpoch( context );
-        return packResponse( context, spi.createRelationshipType( name ) );
+        return spi.packTransactionObligationResponse( context, spi.createRelationshipType( name ) );
     }
 
     @Override
     public Response<Integer> createPropertyKey( RequestContext context, String name )
     {
         assertCorrectEpoch( context );
-        return packResponse( context, spi.getOrCreateProperty( name ) );
+        return spi.packTransactionObligationResponse( context, spi.getOrCreateProperty( name ) );
     }
 
     @Override
     public Response<Integer> createLabel( RequestContext context, String name )
     {
         assertCorrectEpoch( context );
-        return packResponse( context, spi.getOrCreateLabel( name ) );
+        return spi.packTransactionObligationResponse( context, spi.getOrCreateLabel( name ) );
     }
 
     @Override
     public Response<Void> pullUpdates( RequestContext context )
     {
-        return packResponse( context, null );
+        return spi.packTransactionStreamResponse( context, null );
     }
 
     @Override
@@ -343,15 +333,12 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         if ( txId <= BASE_TX_ID )
         {
-            return new Response<>( new HandshakeResult( -1, 0, epoch ), spi.storeId(), TransactionStream.EMPTY,
-                    ResourceReleaser.NO_OP );
+            return spi.packEmptyResponse( new HandshakeResult( -1, 0, epoch ) );
         }
         try
         {
             Pair<Integer, Long> masterId = spi.getMasterIdForCommittedTx( txId );
-            return new Response<>(
-                    new HandshakeResult( masterId.first(), masterId.other(), epoch ), spi.storeId(),
-                    TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+            return spi.packEmptyResponse( new HandshakeResult( masterId.first(), masterId.other(), epoch ) );
         }
         catch ( IOException e )
         {
@@ -368,7 +355,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             context = spi.flushStoresAndStreamStoreFiles( storeWriter );
         }   // close the store writer
 
-        return packResponse( context, null );
+        return spi.packTransactionStreamResponse( context, null );
     }
 
     @Override
@@ -380,19 +367,22 @@ public class MasterImpl extends LifecycleAdapter implements Master
         try
         {
             session.client().acquireExclusive( type, resourceIds );
-            Response<LockResult> lockResultResponse = packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
+            Response<LockResult> lockResultResponse =
+                    spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
 
             return lockResultResponse;
         }
         catch ( DeadlockDetectedException e )
         {
-            Response<LockResult> lockResultResponse = packResponse( context, new LockResult( e.getMessage() ) );
+            Response<LockResult> lockResultResponse =
+                    spi.packTransactionObligationResponse( context, new LockResult( e.getMessage() ) );
 
             return lockResultResponse;
         }
         catch ( IllegalResourceException e )
         {
-            Response<LockResult> lockResultResponse = packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
+            Response<LockResult> lockResultResponse =
+                    spi.packTransactionObligationResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
 
             return lockResultResponse;
         }
@@ -438,19 +428,22 @@ public class MasterImpl extends LifecycleAdapter implements Master
         try
         {
             session.client().acquireShared( type, resourceIds );
-            Response<LockResult> lockResultResponse = packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
+            Response<LockResult> lockResultResponse =
+                    spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
 
             return lockResultResponse;
         }
         catch ( DeadlockDetectedException e )
         {
-            Response<LockResult> lockResultResponse = packResponse( context, new LockResult( e.getMessage() ) );
+            Response<LockResult> lockResultResponse =
+                    spi.packTransactionObligationResponse( context, new LockResult( e.getMessage() ) );
 
             return lockResultResponse;
         }
         catch ( IllegalResourceException e )
         {
-            Response<LockResult> lockResultResponse = packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
+            Response<LockResult> lockResultResponse =
+                    spi.packTransactionObligationResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
 
             return lockResultResponse;
         }

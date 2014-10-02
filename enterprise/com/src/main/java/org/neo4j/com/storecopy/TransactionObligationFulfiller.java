@@ -17,21 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com;
+package org.neo4j.com.storecopy;
 
-import java.nio.channels.ReadableByteChannel;
-
-public interface MadeUpCommunicationInterface
+public interface TransactionObligationFulfiller
 {
-    Response<Integer> multiply( int value1, int value2 );
-
-    Response<Void> fetchDataStream( MadeUpWriter writer, int dataSize );
-
-    Response<Void> sendDataStream( ReadableByteChannel data );
-
-    Response<Integer> throwException( String messageInException );
-
-    Response<Integer> streamBackTransactions( int responseToSendBack, int txCount );
-
-    Response<Integer> informAboutTransactionObligations( int responseToSendBack, long desiredObligation );
+    void pullUpdates( final long toTxId ) throws InterruptedException;
 }

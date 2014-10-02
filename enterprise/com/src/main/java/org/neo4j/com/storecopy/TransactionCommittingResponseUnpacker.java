@@ -20,6 +20,7 @@
 package org.neo4j.com.storecopy;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.DependencyResolver;
@@ -40,6 +41,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private TransactionAppender appender;
     private TransactionRepresentationStoreApplier storeApplier;
     private TransactionIdStore transactionIdStore;
+    private TransactionObligationFulfiller obligationFulfiller;
 
     private volatile boolean stopped = false;
 
@@ -55,35 +57,61 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         {
             throw new IllegalStateException( "Component is currently stopped" );
         }
-        response.accept( new Visitor<CommittedTransactionRepresentation, IOException>()
+
+        // TODO return the future obligation future out from the unpackResponse method?
+        response.accept( new Response.Handler()
         {
             @Override
-            public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
+            public void obligation( long txId ) throws IOException
             {
-                // synchronized is needed here:
-                // read all about it at TransactionAppender#append(CommittedTransactionRepresentation)
-                synchronized ( appender )
+                try
                 {
-                    long transactionId = transaction.getCommitEntry().getTxId();
-                    if ( appender.append( transaction ) )
+                    obligationFulfiller.pullUpdates( txId ).get();
+                }
+                catch ( InterruptedException | ExecutionException e )
+                {
+                    throw new IOException( e );
+                }
+            }
+
+            @Override
+            public Visitor<CommittedTransactionRepresentation, IOException> transactions()
+            {
+                // TODO This is only supposed to be run from the update puller. But this looks odd
+                // the application of transactions should reside in the update puller, not here.
+                // Also... the batching and stuff and what not, should go here... and there should
+                // be one visitor instance and stuff.
+                return new Visitor<CommittedTransactionRepresentation, IOException>()
+                {
+                    @Override
+                    public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
                     {
-                        transactionIdStore.transactionCommitted( transactionId );
-                        try
+                        // synchronized is needed here:
+                        // read all about it at TransactionAppender#append(CommittedTransactionRepresentation)
+                        synchronized ( appender )
                         {
-                            try ( LockGroup locks = new LockGroup() )
+                            long transactionId = transaction.getCommitEntry().getTxId();
+                            if ( appender.append( transaction ) )
                             {
-                                storeApplier.apply( transaction.getTransactionRepresentation(), locks,
-                                                    transactionId, TransactionApplicationMode.EXTERNAL );
-                                txHandler.accept( transaction );
+                                transactionIdStore.transactionCommitted( transactionId );
+                                try
+                                {
+                                    try ( LockGroup locks = new LockGroup() )
+                                    {
+                                        storeApplier.apply( transaction.getTransactionRepresentation(), locks,
+                                                transactionId, TransactionApplicationMode.EXTERNAL );
+                                        txHandler.accept( transaction );
+                                    }
+                                }
+                                finally
+                                {
+                                    transactionIdStore.transactionClosed( transactionId );
+                                }
                             }
                         }
-                        finally
-                        {
-                            transactionIdStore.transactionClosed( transactionId );
-                        }
+                        return true;
                     }
-                }
-                return true;
+                };
             }
         } );
     }
@@ -99,6 +127,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.appender = resolver.resolveDependency( LogicalTransactionStore.class ).getAppender();
         this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class );
         this.transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+        this.obligationFulfiller = resolver.resolveDependency( TransactionObligationFulfiller.class );
         this.stopped = false;
     }
 

@@ -58,10 +58,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
@@ -525,7 +521,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             bufferToWriteTo.clear();
             final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, chunkSize,
                     getInternalProtocolVersion(), applicationProtocolVersion );
-            submitSilent( targetCallExecutor, targetCaller( type, channel, context, chunkingBuffer,
+            submitSilent( targetCallExecutor, new TargetCaller( type, channel, context, chunkingBuffer,
                     bufferToReadFrom ) );
         }
     }
@@ -553,50 +549,76 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         return (byte) (header[0] & 0x1);
     }
 
-    protected Runnable targetCaller( final RequestType<T> type, final Channel channel, final RequestContext context,
-                                     final ChunkingChannelBuffer targetBuffer, final ChannelBuffer bufferToReadFrom )
+    private class TargetCaller implements Response.Handler, Runnable
     {
-        return new Runnable()
+        private final RequestType<T> type;
+        private final Channel channel;
+        private final RequestContext context;
+        private final ChunkingChannelBuffer targetBuffer;
+        private final ChannelBuffer bufferToReadFrom;
+
+        TargetCaller( RequestType<T> type, Channel channel, RequestContext context,
+                ChunkingChannelBuffer targetBuffer, ChannelBuffer bufferToReadFrom )
         {
-            @Override
-            @SuppressWarnings("unchecked")
-            public void run()
+            this.type = type;
+            this.channel = channel;
+            this.context = context;
+            this.targetBuffer = targetBuffer;
+            this.bufferToReadFrom = bufferToReadFrom;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public void run()
+        {
+            Map<String, String> requestContext = new HashMap<>();
+            requestContext.put( "type", type.toString() );
+            requestContext.put( "remoteClient", channel.getRemoteAddress().toString() );
+            requestContext.put( "slaveContext", context.toString() );
+            requestMonitor.beginRequest( requestContext );
+            Response<R> response = null;
+            Throwable failure = null;
+            try
             {
-                Map<String, String> requestContext = new HashMap<>();
-                requestContext.put( "type", type.toString() );
-                requestContext.put( "remoteClient", channel.getRemoteAddress().toString() );
-                requestContext.put( "slaveContext", context.toString() );
-                requestMonitor.beginRequest( requestContext );
-                Response<R> response = null;
-                Throwable failure = null;
-                try
-                {
-                    unmapSlave( channel );
-                    response = type.getTargetCaller().call( requestTarget, context, bufferToReadFrom, targetBuffer );
-                    type.getObjectSerializer().write( response.response(), targetBuffer );
-                    writeStoreId( response.getStoreId(), targetBuffer );
-                    writeTransactionStreams( response, targetBuffer);
-                    targetBuffer.done();
-                    responseWritten( type, channel, context );
-                }
-                catch ( Throwable e )
-                {
-                    failure = e;
-                    targetBuffer.clear( true );
-                    writeFailureResponse( e, targetBuffer );
-                    tryToFinishOffChannel( channel, context );
-                    throw Exceptions.launderedException( e );
-                }
-                finally
-                {
-                    if ( response != null )
-                    {
-                        response.close();
-                    }
-                    requestMonitor.endRequest( failure );
-                }
+                unmapSlave( channel );
+                response = type.getTargetCaller().call( requestTarget, context, bufferToReadFrom, targetBuffer );
+                type.getObjectSerializer().write( response.response(), targetBuffer );
+                writeStoreId( response.getStoreId(), targetBuffer );
+                response.accept( this );
+                targetBuffer.done();
+                responseWritten( type, channel, context );
             }
-        };
+            catch ( Throwable e )
+            {
+                failure = e;
+                targetBuffer.clear( true );
+                writeFailureResponse( e, targetBuffer );
+                tryToFinishOffChannel( channel, context );
+                throw Exceptions.launderedException( e );
+            }
+            finally
+            {
+                if ( response != null )
+                {
+                    response.close();
+                }
+                requestMonitor.endRequest( failure );
+            }
+        }
+
+        @Override
+        public void obligation( long txId ) throws IOException
+        {
+            targetBuffer.writeByte( -1 );
+            targetBuffer.writeLong( txId );
+        }
+
+        @Override
+        public Visitor<CommittedTransactionRepresentation, IOException> transactions()
+        {
+            targetBuffer.writeByte( 1 );
+            return new CommittedTransactionSerializer( targetBuffer );
+        }
     }
 
     protected void writeFailureResponse( Throwable exception, ChunkingChannelBuffer buffer )
@@ -627,28 +649,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         targetBuffer.writeLong( storeId.getStoreVersion() );
         targetBuffer.writeLong( storeId.getUpgradeTime() );
         targetBuffer.writeLong( storeId.getUpgradeId() );
-    }
-
-    private static void writeTransactionStreams( Response<?> response,
-            ChannelBuffer buffer) throws IOException
-    {
-        final NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
-        final LogEntryWriterv1 writer = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
-        response.accept( new Visitor<CommittedTransactionRepresentation, IOException>()
-        {
-            @Override
-            public boolean visit( CommittedTransactionRepresentation tx ) throws IOException
-            {
-                LogEntryStart startEntry = tx.getStartEntry();
-                writer.writeStartEntry( startEntry.getMasterId(), startEntry.getLocalId(),
-                        startEntry.getTimeWritten(), startEntry.getLastCommittedTxWhenTransactionStarted(),
-                        startEntry.getAdditionalHeader() );
-                writer.serialize( tx.getTransactionRepresentation() );
-                LogEntryCommit commitEntry = tx.getCommitEntry();
-                writer.writeCommitEntry( commitEntry.getTxId(), commitEntry.getTimeWritten() );
-                return true;
-            }
-        } );
     }
 
     protected RequestContext readContext( ChannelBuffer buffer )

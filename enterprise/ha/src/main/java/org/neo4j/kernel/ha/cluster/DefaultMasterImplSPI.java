@@ -29,7 +29,6 @@ import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -47,7 +46,6 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -163,23 +161,21 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
-    public <T> Response<T> packResponse( RequestContext context, T response, Predicate<Long> filter )
+    public <T> Response<T> packTransactionStreamResponse( RequestContext context, T response )
     {
-        return responsePacker.packResponse( context, response, wrapLongFilter( filter ) );
+        return responsePacker.packTransactionStreamResponse( context, response );
     }
 
-    // TODO there should be no need to wrap this here, provide the proper predicate type from the outside
-    // directly instead
-    private Predicate<CommittedTransactionRepresentation> wrapLongFilter( final Predicate<Long> filter )
+    @Override
+    public <T> Response<T> packTransactionObligationResponse( RequestContext context, T response )
     {
-        return new Predicate<CommittedTransactionRepresentation>()
-        {
-            @Override
-            public boolean accept( CommittedTransactionRepresentation transaction )
-            {
-                return filter.accept( transaction.getCommitEntry().getTxId() );
-            }
-        };
+        return responsePacker.packTransactionObligationResponse( context, response );
+    }
+
+    @Override
+    public <T> Response<T> packEmptyResponse( T response )
+    {
+        return responsePacker.packEmptyResponse( response );
     }
 
     private <T> T resolve( Class<T> dependencyType )

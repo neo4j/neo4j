@@ -89,24 +89,33 @@ public abstract class Protocol
 
         PAYLOAD response = payloadDeserializer.read( dechunkingBuffer, input );
         StoreId storeId = readStoreId( dechunkingBuffer, input );
-        TransactionStream transactions = new TransactionStream()
-        {
-            @Override
-            public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
-            {
-                LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
-                NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
 
-                try ( PhysicalTransactionCursor<ReadableLogChannel> cursor =
-                              new PhysicalTransactionCursor<>( channel, reader ) )
+        byte firstByte = dechunkingBuffer.readByte();
+        if ( firstByte != -1 )
+        {   // It's a transaction stream in this response
+            TransactionStream transactions = new TransactionStream()
+            {
+                @Override
+                public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
                 {
-                    while (cursor.next() && visitor.visit( cursor.get() ))
+                    LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
+                    NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
+
+                    try ( PhysicalTransactionCursor<ReadableLogChannel> cursor =
+                            new PhysicalTransactionCursor<>( channel, reader ) )
                     {
+                        while ( cursor.next() && visitor.visit( cursor.get() ) )
+                        {   // Plow through it
+                        }
                     }
                 }
-            }
-        };
-        return new Response<>( response, storeId, transactions, channelReleaser );
+            };
+            return new TransactionStreamResponse<>( response, storeId, transactions, channelReleaser );
+        }
+
+        // It is a transaction obligation response
+        long obligationTxId = dechunkingBuffer.readLong();
+        return new TransactionObligationResponse<>( response, storeId, obligationTxId, channelReleaser );
     }
 
     protected abstract StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer );

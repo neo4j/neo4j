@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha.shell;
 
-import java.io.IOException;
 import java.rmi.RemoteException;
 
 import org.neo4j.kernel.ha.UpdatePuller;
@@ -44,7 +43,7 @@ public class Pullupdates extends NonTransactionProvidingApp
         {
             throw new ShellException( "Couldn't pull updates. Not a highly available database?" );
         }
-        catch ( IOException e )
+        catch ( InterruptedException e )
         {
             throw new RuntimeException( e );
         }

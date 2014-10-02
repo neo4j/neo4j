@@ -19,19 +19,24 @@
  */
 package org.neo4j.com;
 
-import java.nio.channels.ReadableByteChannel;
+import java.io.IOException;
 
-public interface MadeUpCommunicationInterface
+import org.neo4j.kernel.impl.store.StoreId;
+
+public class TransactionStreamResponse<T> extends Response<T>
 {
-    Response<Integer> multiply( int value1, int value2 );
+    private final TransactionStream transactions;
 
-    Response<Void> fetchDataStream( MadeUpWriter writer, int dataSize );
+    public TransactionStreamResponse( T response, StoreId storeId, TransactionStream transactions,
+            ResourceReleaser releaser )
+    {
+        super( response, storeId, releaser );
+        this.transactions = transactions;
+    }
 
-    Response<Void> sendDataStream( ReadableByteChannel data );
-
-    Response<Integer> throwException( String messageInException );
-
-    Response<Integer> streamBackTransactions( int responseToSendBack, int txCount );
-
-    Response<Integer> informAboutTransactionObligations( int responseToSendBack, long desiredObligation );
+    @Override
+    public void accept( Response.Handler handler ) throws IOException
+    {
+        transactions.accept( handler.transactions() );
+    }
 }

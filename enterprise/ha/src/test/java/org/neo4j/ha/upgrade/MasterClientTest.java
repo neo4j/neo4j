@@ -31,6 +31,7 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.com.TransactionStream;
+import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
@@ -192,7 +193,7 @@ public class MasterClientTest
 
     private static Response<Void> voidResponseWithTransactionLogs()
     {
-        return new Response<>( null, StoreId.DEFAULT, new TransactionStream()
+        return new TransactionStreamResponse<>( null, StoreId.DEFAULT, new TransactionStream()
         {
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException

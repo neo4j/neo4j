@@ -25,18 +25,16 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
-public class Response<T> implements AutoCloseable
+public abstract class Response<T> implements AutoCloseable
 {
     private final T response;
     private final StoreId storeId;
     private final ResourceReleaser releaser;
-    private final TransactionStream transactions;
 
-    public Response( T response, StoreId storeId, TransactionStream transactions, ResourceReleaser releaser )
+    public Response( T response, StoreId storeId, ResourceReleaser releaser )
     {
         this.storeId = storeId;
         this.response = response;
-        this.transactions = transactions;
         this.releaser = releaser;
     }
 
@@ -56,13 +54,29 @@ public class Response<T> implements AutoCloseable
         releaser.release();
     }
 
+    @SuppressWarnings( "unchecked" )
     public static <T> Response<T> empty()
     {
-        return new Response<>( null, StoreId.DEFAULT, TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+        return (Response<T>) EMPTY;
     }
 
-    public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
+    public abstract void accept( Handler handler ) throws IOException;
+
+    /**
+     * Handler of the transaction data part of a response. Callbacks for whether to await or apply
+     * certain transactions.
+     */
+    public interface Handler
     {
-        transactions.accept( visitor );
+        void obligation( long txId ) throws IOException;
+
+        /**
+         * Transaction stream is starting, containing the following data sources.
+         * Only called if there are at least one transaction in the coming transaction stream.
+         */
+        Visitor<CommittedTransactionRepresentation,IOException> transactions();
     }
+
+    public static final Response<Void> EMPTY = new TransactionObligationResponse<Void>( null, StoreId.DEFAULT,
+            -1, ResourceReleaser.NO_OP );
 }

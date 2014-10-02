@@ -19,23 +19,17 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import java.io.IOException;
-
-import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
-import org.neo4j.com.TransactionStream;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.com.master.Slave;
-import org.neo4j.kernel.impl.store.StoreId;
 
 public class SlaveImpl implements Slave
 {
-    private final StoreId storeId;
     private final UpdatePuller puller;
 
-    public SlaveImpl( StoreId storeId, UpdatePuller puller )
+    public SlaveImpl( UpdatePuller puller )
     {
-        this.storeId = storeId;
         this.puller = puller;
     }
 
@@ -44,18 +38,19 @@ public class SlaveImpl implements Slave
     {
         try
         {
-            puller.pullUpdates();
+            puller.pullUpdates( upToAndIncludingTxId );
         }
-        catch ( IOException e )
+        catch ( InterruptedException e )
         {
-            throw new RuntimeException( e );
+            throw Exceptions.launderedException( e );
         }
-        return new Response( null, storeId, TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+        return Response.EMPTY;
     }
 
     @Override
     public int getServerId()
     {
-        return 0;
+        throw new UnsupportedOperationException( "This should not be called. Knowing the server id is only needed " +
+                "on the client side, we're now on the server side." );
     }
 }

@@ -403,7 +403,7 @@ public class SwitchToSlave
     {
         MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), haCommunicationLife );
 
-        Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), resolver.resolveDependency( UpdatePuller.class ) );
+        Slave slaveImpl = new SlaveImpl( resolver.resolveDependency( UpdatePuller.class ) );
 
         SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging, byteCounterMonitor, requestMonitor);
 

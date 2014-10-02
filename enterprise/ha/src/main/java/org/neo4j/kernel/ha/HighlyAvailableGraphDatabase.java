@@ -163,7 +163,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         requestContextFactory = dependencies.satisfyDependency(new RequestContextFactory( serverId, getDependencyResolver() ));
 
         this.responseUnpacker = dependencies.satisfyDependency(
-                new TransactionCommittingResponseUnpacker( dependencyResolver ) );
+                new TransactionCommittingResponseUnpacker( getDependencyResolver() ) );
 
         kernelProvider = new Provider<KernelAPI>()
         {
@@ -181,7 +181,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         life.add( responseUnpacker );
 
         dependencies.satisfyDependency( life.add( new UpdatePuller( memberStateMachine, master, requestContextFactory,
-                availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog ) ) );
+                availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog, dependencyResolver ) ) );
 
         stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
 

@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
+import org.neo4j.com.storecopy.TransactionObligationFulfiller;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -33,14 +35,16 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CappedOperation;
+import org.neo4j.kernel.impl.util.Condition;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import static org.neo4j.kernel.ha.com.RequestContextFactory.VOID_EVENT_IDENTIFIER;
+import static java.lang.System.currentTimeMillis;
 
-public class UpdatePuller implements Lifecycle
+public class UpdatePuller implements Lifecycle, TransactionObligationFulfiller
 {
     private final HighAvailabilityMemberStateMachine memberStateMachine;
     private final Master master;
@@ -51,12 +55,16 @@ public class UpdatePuller implements Lifecycle
     private final JobScheduler scheduler;
     private final StringLogger logger;
     private final CappedOperation<Pair<String, ? extends Exception>> cappedLogger;
-    private volatile boolean pullUpdates = false;
     private final UpdatePullerHighAvailabilityMemberListener listener;
+    private UpdatePullingThread updatePuller;
+    private TransactionIdStore transactionIdStore;
+    private final DependencyResolver resolver;
 
     public UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine, Master master,
                          RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
-                         LastUpdateTime lastUpdateTime, Config config, JobScheduler scheduler, final StringLogger log )
+                         LastUpdateTime lastUpdateTime, Config config, JobScheduler scheduler, final StringLogger log,
+                         DependencyResolver resolver )
+
     {
         this.memberStateMachine = memberStateMachine;
         this.master = master;
@@ -66,6 +74,7 @@ public class UpdatePuller implements Lifecycle
         this.config = config;
         this.scheduler = scheduler;
         this.logger = log;
+        this.resolver = resolver;
         this.cappedLogger = new CappedOperation<Pair<String, ? extends Exception>>(
                 CappedOperation.count( 10 ) )
         {
@@ -76,21 +85,105 @@ public class UpdatePuller implements Lifecycle
             }
         };
 
-        listener = new UpdatePullerHighAvailabilityMemberListener( config.get( ClusterSettings.server_id ) );
-
+        this.listener = new UpdatePullerHighAvailabilityMemberListener( config.get( ClusterSettings.server_id ) );
     }
 
-    public void pullUpdates() throws IOException
+    public void pullUpdates() throws InterruptedException
+    {
+        if ( !updatePuller.isActive() )
+        {
+            return;
+        }
+
+        final int ticket = updatePuller.poke();
+        await( new Condition()
+        {
+            @Override
+            public boolean evaluate()
+            {
+                return updatePuller.current() >= ticket;
+            }
+        } );
+    }
+
+    private void await( Condition condition ) throws InterruptedException
+    {
+        while ( !condition.evaluate() )
+        {
+            if ( !updatePuller.isActive() )
+            {
+                throw new InterruptedException( "Update puller has been halted:" + updatePuller );
+            }
+
+            Thread.sleep( 1 );
+        }
+    }
+
+    /**
+     * Triggers pulling of updates up until at least {@code toTxId} if no pulling is currently happening
+     * and returns immediately.
+     * @return {@link Future} which will block on {@link Future#get()} until {@code toTxId} has been applied.
+     */
+    @Override
+    public void pullUpdates( final long toTxId ) throws InterruptedException
+    {
+        if ( !updatePuller.isActive() )
+        {
+            return;
+        }
+
+        updatePuller.poke();
+        await( new Condition()
+        {
+            @Override
+            public boolean evaluate()
+            {
+                return transactionIdStore.getLastCommittedTransactionId() >= toTxId;
+            }
+        } );
+    }
+
+    private void startUpdatePuller()
+    {
+        updatePuller = new UpdatePullingThread( new UpdatePullingThread.Operation()
+        {
+            @Override
+            public void perform()
+            {
+                doPullUpdates();
+            }
+        } );
+        updatePuller.start();
+    }
+
+    private void doPullUpdates()
     {
         if ( availabilityGuard.isAvailable( 5000 ) )
         {
-            master.pullUpdates( requestContextFactory.newRequestContext( VOID_EVENT_IDENTIFIER ) );
-            lastUpdateTime.setLastUpdateTime( System.currentTimeMillis() );
+            try
+            {
+                master.pullUpdates( requestContextFactory.newRequestContext() );
+            }
+            catch ( ComException e )
+            {
+                cappedLogger.event( Pair.of( "Pull updates failed due to network error.", e ) );
+            }
+            catch ( Exception e )
+            {
+                logger.error( "Pull updates failed", e );
+            }
+            lastUpdateTime.setLastUpdateTime( currentTimeMillis() );
         }
     }
 
     @Override
     public void init() throws Throwable
+    {
+        startUpdatePuller();
+        startIntervalTrigger();
+    }
+
+    private void startIntervalTrigger()
     {
         long pullInterval = config.get( HaSettings.pull_interval );
         if ( pullInterval > 0 )
@@ -100,45 +193,41 @@ public class UpdatePuller implements Lifecycle
                 @Override
                 public void run()
                 {
-                    if ( !pullUpdates )
-                    {
-                        return;
-                    }
                     try
                     {
                         pullUpdates();
                     }
-                    catch ( ComException e )
+                    catch ( InterruptedException e )
                     {
-                        cappedLogger.event( Pair.of( "Pull updates failed due to network error.", e ) );
-                    }
-                    catch ( Exception e )
-                    {
-                        logger.logMessage( "Pull updates failed", e );
+                        logger.error( "Pull updates failed", e );
                     }
                 }
             }, pullInterval, pullInterval, TimeUnit.MILLISECONDS );
         }
-        this.pullUpdates = false;
     }
 
     @Override
     public void start() throws Throwable
     {
-        this.pullUpdates = true;
         memberStateMachine.addHighAvailabilityMemberListener( listener );
     }
 
     @Override
     public void stop() throws Throwable
     {
-        this.pullUpdates = false;
+        updatePuller.pause( true );
         memberStateMachine.removeHighAvailabilityMemberListener( listener );
     }
 
     @Override
     public void shutdown() throws Throwable
     {
+        updatePuller.halt();
+        while ( updatePuller.getState() != Thread.State.TERMINATED )
+        {
+            Thread.sleep( 1 );
+            Thread.yield();
+        }
     }
 
     private class UpdatePullerHighAvailabilityMemberListener extends HighAvailabilityMemberListener.Adapter
@@ -155,7 +244,8 @@ public class UpdatePuller implements Lifecycle
         {
             if ( event.getInstanceId().equals( myInstanceId ) )
             {
-                pullUpdates = false;
+                // I'm the master, no need to pull updates
+                updatePuller.pause( true );
             }
         }
 
@@ -164,7 +254,13 @@ public class UpdatePuller implements Lifecycle
         {
             if ( event.getInstanceId().equals( myInstanceId ) )
             {
-                pullUpdates = true;
+                // I'm a slave, let the transactions stream in
+
+                // Pull out the transaction id store at this very moment, because we receive this event
+                // when joining a cluster or switching to a new master and there might have been a store copy
+                // just now where there has been a new transaction id store created.
+                transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+                updatePuller.pause( false );
             }
         }
     }

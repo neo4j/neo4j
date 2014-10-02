@@ -171,7 +171,8 @@ public class TransactionPropagator implements Lifecycle
     {
         int replicationFactor = desiredReplicationFactor;
         // If the author is not this instance, then we need to push to one less - the committer already has it
-        if ( config.getServerId().toIntegerIndex() != authorId )
+        boolean isAuthoredBySlave = config.getServerId().toIntegerIndex() != authorId;
+        if ( isAuthoredBySlave )
         {
             replicationFactor--;
         }
