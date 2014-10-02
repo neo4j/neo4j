@@ -49,7 +49,7 @@ object combinePredicates {
 
   def assumeWeakDependence(combinations: Set[EstimatedPredicateCombination]): (Set[Predicate], Selectivity) = {
 
-    val combinedSelectivity = combinations.zipWithIndex.foldLeft(1.0) {
+    val combinedSelectivity = combinations.toSeq.sortBy(_._2).zipWithIndex.foldLeft(1.0) {
       case (acc, (sel: (PredicateCombination, Selectivity), index)) =>
         acc * (0 to index).foldLeft(0.0) {
           case (sum, i) => sum + Math.pow(2, -i) * sel._2.factor
