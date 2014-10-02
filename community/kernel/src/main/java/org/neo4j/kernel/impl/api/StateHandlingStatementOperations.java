@@ -920,14 +920,15 @@ public class StateHandlingStatementOperations implements
     public long countsForNode( KernelStatement statement, int labelId )
     {
         long count = storeLayer.countsForNode( labelId );
-        if ( statement.hasTxState() )
-        {
-            if ( labelId != ReadOperations.ANY_LABEL )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-            count += statement.txState().addedAndRemovedNodes().delta();
-        }
+        // TODO: figure out how to read proper numbers from the txState
+//        if ( statement.hasTxState() )
+//        {
+//            if ( labelId != ReadOperations.ANY_LABEL )
+//            {
+//                throw new UnsupportedOperationException( "not implemented" );
+//            }
+//            count += statement.txState().addedAndRemovedNodes().delta();
+//        }
         return count;
     }
 
@@ -935,32 +936,33 @@ public class StateHandlingStatementOperations implements
     public long countsForRelationship( KernelStatement statement, int startLabelId, int typeId, int endLabelId )
     {
         long count = storeLayer.countsForRelationship( startLabelId, typeId, endLabelId );
-        if ( statement.hasTxState() )
-        {
-            if ( startLabelId == ReadOperations.ANY_LABEL && endLabelId == ReadOperations.ANY_LABEL )
-            {
-                if ( typeId == ReadOperations.ANY_RELATIONSHIP_TYPE )
-                {
-                    count += statement.txState().addedAndRemovedRels().delta();
-                }
-                else
-                {
-                    throw new UnsupportedOperationException( "not implemented" );
-                }
-            }
-            else if ( startLabelId == ReadOperations.ANY_LABEL )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-            else if ( endLabelId == ReadOperations.ANY_LABEL )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-        }
+        // TODO: figure out how to read proper numbers from the txState
+//        if ( statement.hasTxState() )
+//        {
+//            if ( startLabelId == ReadOperations.ANY_LABEL && endLabelId == ReadOperations.ANY_LABEL )
+//            {
+//                if ( typeId == ReadOperations.ANY_RELATIONSHIP_TYPE )
+//                {
+//                    count += statement.txState().addedAndRemovedRels().delta();
+//                }
+//                else
+//                {
+//                    throw new UnsupportedOperationException( "not implemented" );
+//                }
+//            }
+//            else if ( startLabelId == ReadOperations.ANY_LABEL )
+//            {
+//                throw new UnsupportedOperationException( "not implemented" );
+//            }
+//            else if ( endLabelId == ReadOperations.ANY_LABEL )
+//            {
+//                throw new UnsupportedOperationException( "not implemented" );
+//            }
+//            else
+//            {
+//                throw new UnsupportedOperationException( "not implemented" );
+//            }
+//        }
         return count;
     }
 
