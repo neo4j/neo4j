@@ -40,47 +40,41 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
 
     // If the property name is not known the the schema, nothing will match
     case property: PropertyEqualsAndLabelPredicate if property.propertyKey.propertyKeyId.isEmpty =>
-      Selectivity(0)
+      0.0
 
     // WHERE x:Label AND x.prop = 42
     case property: PropertyEqualsAndLabelPredicate =>
       val idxLookup: Option[Selectivity] = getSelectivityForPossibleIndex(property)
-
-      idxLookup.
-        map(_ * calculateSelectivityForLabel(property.label)).
-        getOrElse(Selectivity(1))
+      idxLookup.map(_ * calculateSelectivityForLabel(property.label)).getOrElse(1.0)
 
     // WHERE x:Label AND x.prop <> 42
     case property: PropertyNotEqualsAndLabelPredicate =>
       val idxLookup: Option[Selectivity] = getSelectivityForPossibleIndex(property)
-
-      idxLookup.
-        map(_.inverse * calculateSelectivityForLabel(property.label)).
-        getOrElse(Selectivity(1))
+      idxLookup.map(_.inverse * calculateSelectivityForLabel(property.label)).getOrElse(1.0)
 
     // WHERE false
     case SingleExpression(False()) =>
-      Selectivity(0)
+      0.0
 
     // WHERE id(x) = {param}
     case SingleExpression(In(func@FunctionInvocation(_, _, IndexedSeq(_)), Parameter(_)))
       if func.function == Some(functions.Id) =>
-      Cardinality(25) / stats.nodesWithLabelCardinality(None)
+      25.0 / stats.nodesWithLabelCardinality(None)
 
     // WHERE id(x) IN [...]
     case SingleExpression(In(func@FunctionInvocation(_, _, IndexedSeq(_)), c:Collection))
       if func.function == Some(functions.Id) =>
-      Cardinality(c.expressions.size) / stats.nodesWithLabelCardinality(None)
+      c.expressions.size / stats.nodesWithLabelCardinality(None)
 
     case OrCombination(_, inner) =>
       apply(inner)
 
     case ExistsCombination(_) =>
-      Selectivity(1)
+      1.0
 
     // WHERE n.prop = <exp>
     case SingleExpression(In(Property(identifier: Identifier, _), Collection(elements))) =>
-      Selectivity(0.1) * Multiplier(elements.size)
+      0.1 * elements.size
 
     case _ =>
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
@@ -90,36 +84,36 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
     calculateSelectivityForLabel(label.labelId)
 
   private def calculateSelectivityForLabel(label: Option[LabelId]): Selectivity = {
-    val nodeCardinality = stats.nodesWithLabelCardinality(None)
-    if (nodeCardinality == Cardinality(0)) {
-      return Selectivity(1)
+    val nodeCardinality: Cardinality = stats.nodesWithLabelCardinality(None)
+    if (nodeCardinality == Cardinality(0.0)) {
+      return 1.0
     }
 
-    val labelCardinality = label.
-      map(l => stats.nodesWithLabelCardinality(Some(l))).
-      getOrElse(Cardinality(0))
+    val labelCardinality: Cardinality = label.map(l => stats.nodesWithLabelCardinality(Some(l))).getOrElse(0.0)
     labelCardinality / nodeCardinality
   }
 
-  private def getSelectivityForPossibleIndex(in: PropertyAndLabelPredicate): Option[Selectivity] =
-    ((in.label.labelId, in.propertyKey.propertyKeyId) match {
+  private def getSelectivityForPossibleIndex(in: PropertyAndLabelPredicate): Option[Selectivity] = {
+    val selectivity: Option[Selectivity] = (in.label.labelId, in.propertyKey.propertyKeyId) match {
       case (Some(labelId), Some(propertyKeyId)) =>
         stats.indexSelectivity(labelId, propertyKeyId)
 
       case _ =>
-        Some(Selectivity(0))
-    }).map(_ * Multiplier(in.valueCount))
+        Some(0.0)
+    }
+    selectivity.map(_ * Multiplier(in.valueCount))
+  }
 
   private def calculateSelectivityForPatterns(in: RelationshipWithLabels): Selectivity = in match {
     case RelationshipWithLabels(Some(lhs), pattern, Some(rhs), _) =>
-      val maxRelCount = stats.nodesWithLabelCardinality(lhs.labelId) * stats.nodesWithLabelCardinality(rhs.labelId)
+      val maxRelCount:Cardinality = stats.nodesWithLabelCardinality(lhs.labelId) * stats.nodesWithLabelCardinality(rhs.labelId)
       if (maxRelCount == Cardinality(0))
-        return Selectivity(1)
+        return 1.0
 
       val lhsSelectivity = calculateSelectivityForLabel(lhs)
       val rhsSelectivity = calculateSelectivityForLabel(rhs)
 
-      val relCount =
+      val relCount: Cardinality =
         if (pattern.types.isEmpty) {
           (lhs.labelId, rhs.labelId) match {
             case (Some(lId), Some(rId)) if pattern.dir == Direction.OUTGOING =>
@@ -130,7 +124,7 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
               stats.cardinalityByLabelsAndRelationshipType(Some(lId), None, Some(rId)) * lhsSelectivity * rhsSelectivity +
                 stats.cardinalityByLabelsAndRelationshipType(Some(rId), None, Some(lId)) * lhsSelectivity * rhsSelectivity
             case _ =>
-              Cardinality(0)
+              0.0
           }
 
         } else {
@@ -144,7 +138,7 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
               stats.cardinalityByLabelsAndRelationshipType(Some(lId), Some(relId), Some(rId)) * lhsSelectivity * rhsSelectivity +
                 stats.cardinalityByLabelsAndRelationshipType(Some(rId), Some(relId), Some(lId)) * lhsSelectivity * rhsSelectivity
             case _ =>
-              Cardinality(0)
+              0.0
           }
         }
 
@@ -160,7 +154,7 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
     case RelationshipWithLabels(None, pattern: PatternRelationship, None, _) if pattern.types.isEmpty =>
       val maxRelCount = stats.nodesWithLabelCardinality(None) ^ 2
       if (maxRelCount == Cardinality(0))
-        return Selectivity(1)
+        return 1.0
       val relCount = stats.cardinalityByLabelsAndRelationshipType(None, None, None)
       relCount / maxRelCount
 
@@ -169,10 +163,10 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
 
       val maxRelCount = stats.nodesWithLabelCardinality(None) ^ 2
       if (maxRelCount == Cardinality(0))
-        return Selectivity(1)
-      val relCount = relationshipId.
+        return 1.0
+      val relCount: Cardinality = relationshipId.
         map(id => stats.cardinalityByLabelsAndRelationshipType(None, Some(id), None)).
-        getOrElse(Cardinality(0))
+        getOrElse(0.0)
       relCount / maxRelCount
   }
 
@@ -181,9 +175,9 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
                                                        lhsLabelId: Option[LabelId]): Selectivity = {
     val maxRelCount = stats.nodesWithLabelCardinality(None) * stats.nodesWithLabelCardinality(lhsLabelId)
     if (maxRelCount == Cardinality(0))
-      return Selectivity(1)
+      return 1.0
 
-    val relCount = (if (pattern.types.isEmpty) {
+    val relCount: Cardinality = (if (pattern.types.isEmpty) {
       lhsLabelId.map { _ =>
         if (dir == Direction.OUTGOING)
           stats.cardinalityByLabelsAndRelationshipType(lhsLabelId, None, None)
@@ -206,7 +200,7 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
               stats.cardinalityByLabelsAndRelationshipType(None, relationshipId, lhsLabelId)
         }
       }
-    }).getOrElse(Cardinality(0))
+    }).getOrElse(0.0)
 
     // We need to factor in the selectivity of the label predicate as well as the relationship selectivity
     calculateSelectivityForLabel(lhsLabelId) * (relCount / maxRelCount)

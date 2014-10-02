@@ -220,7 +220,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
-  def planContext: PlanContext = new TransactionBoundPlanContext(statement, kernelAPI, graph)
+  def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
 
   def newCurrentCompiler = new CypherCompiler(graph, kernelAPI, kernelMonitors, optionParser = mock[CypherOptionParser])
 }

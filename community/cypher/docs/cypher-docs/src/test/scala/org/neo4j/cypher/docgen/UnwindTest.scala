@@ -56,7 +56,7 @@ class UnwindTest extends DocumentingTestBase {
            MERGE (y)<-[:IN]-(e:Event {id:event.id})
            RETURN e.id as x order by x""",
       optionalResultExplanation = "Each value of the original collection is unwound and passed through distinct to create a unique set.",
-      assertions = (p) => assertEquals(List(1,2), p.columnAs[Int]("x").toList)
+      assertion = (p) => assertEquals(List(1,2), p.columnAs[Int]("x").toList)
     )
   }
 }

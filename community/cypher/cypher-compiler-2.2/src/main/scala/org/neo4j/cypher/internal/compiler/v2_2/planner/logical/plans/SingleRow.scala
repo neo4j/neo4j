@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
@@ -27,7 +28,9 @@ case class SingleRow(coveredIds: Set[IdName])(val solved: PlannerQuery)
   def availableSymbols = coveredIds
 
   override def dup(children: Seq[AnyRef]) = children match {
-    case (coveredIds: Set[IdName]) :: Nil =>
-      copy(coveredIds)(solved)(typeInfo).asInstanceOf[this.type]
+    case newCoveredIds :: Nil =>
+      copy(newCoveredIds.asInstanceOf[Set[IdName]])(solved)(typeInfo).asInstanceOf[this.type]
+    case _                    =>
+      throw new InternalException("Did not expect this code path to be used.")
   }
 }

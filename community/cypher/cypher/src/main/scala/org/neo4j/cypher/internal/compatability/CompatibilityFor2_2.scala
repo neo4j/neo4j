@@ -50,7 +50,7 @@ trait CompatibilityFor2_2 {
     def isPeriodicCommit = preparedQueryForV_2_2.map(_.isPeriodicCommit).getOrElse(false)
 
     def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {
-      val planContext = new TransactionBoundPlanContext(statement, kernelAPI, graph)
+      val planContext = new TransactionBoundPlanContext(statement, graph)
       val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_2.get, planContext)
       (new ExecutionPlanWrapper(planImpl), extractedParameters)
     }

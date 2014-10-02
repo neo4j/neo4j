@@ -21,13 +21,36 @@ package org.neo4j.cypher.internal.spi.v2_2
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, RelTypeId}
-import org.neo4j.kernel.api.heuristics.StatisticsData
+import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, NameId, PropertyKeyId, RelTypeId}
+import org.neo4j.kernel.api.{Statement => KernelStatement}
 
-class TransactionBoundGraphStatistics(statistics: StatisticsData) extends GraphStatistics {
-  def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = ???
+class TransactionBoundGraphStatistics(statement: KernelStatement) extends GraphStatistics {
+  import TransactionBoundGraphStatistics.toKernelEncode
 
-  def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = ???
+  def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
+    HardcodedGraphStatistics.indexSelectivity(label, property)
 
-  def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = ???
+  def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
+    statement.readOperations().countsForNode(labelId)
+
+  def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+    (fromLabel, toLabel) match {
+      case (Some(_), Some(_)) =>
+        import TransactionBoundGraphStatistics.WILDCARD
+        // TODO: read real counts from readOperations when they are gonna be properly computed and updated
+        Math.min(
+          statement.readOperations().countsForRelationship(fromLabel, relTypeId, WILDCARD ),
+          statement.readOperations().countsForRelationship(WILDCARD, relTypeId, toLabel)
+        )
+      case _ =>
+        statement.readOperations().countsForRelationship(fromLabel, relTypeId, toLabel)
+    }
+}
+
+object TransactionBoundGraphStatistics {
+  val WILDCARD: Int = -1
+
+  implicit def toKernelEncode(nameId: Option[NameId]): Int = {
+    nameId.map(_.id).getOrElse(WILDCARD)
+  }
 }

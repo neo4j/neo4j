@@ -50,7 +50,7 @@ class MatchTest extends DocumentingTestBase {
     "TheAmericanPresident" -> Map("title" -> "The American President")
   )
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   def section: String = "MATCH"
@@ -356,7 +356,7 @@ include::includes/match-match-with-properties-on-a-variable-length-path.preparat
         "WHERE charlie.name = 'Charlie Sheen' AND martin.name = 'Martin Sheen' " +
         "RETURN p",
       optionalResultExplanation = "Returns the paths between Charlie and Martin Sheen where all relationships have the +blocked+ property set to +FALSE+.",
-      assertions = p => {
+      assertion = p => {
         val path = p.next()("p").asInstanceOf[Path].asScala
 
         assert(!path.exists {

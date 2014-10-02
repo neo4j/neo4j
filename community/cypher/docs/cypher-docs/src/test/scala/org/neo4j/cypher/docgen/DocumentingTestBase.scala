@@ -152,15 +152,21 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     internalTestQuery(title, text, queryText, optionalResultExplanation, Some(classTag), None)
   }
 
-  def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, prepare: => Any, assertions: (InternalExecutionResult => Unit)*) {
-    internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(() => prepare), assertions: _*)
+  def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, prepare: => Any, assertion: (InternalExecutionResult => Unit)) {
+    internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(() => prepare), assertion)
   }
 
-  def profileQuery(title: String, text: String, queryText: String, assertions: (InternalExecutionResult => Unit)*) {
-    internalProfileQuery(title, text, "cypher 2.2-cost " + queryText, None, None, assertions: _*)
+  def profileQuery(title: String, text: String, queryText: String, realQuery: Option[String] = None, assertion: (InternalExecutionResult => Unit)) {
+    internalProfileQuery(title, text, "cypher 2.2-cost " + queryText, realQuery, None, None, assertion)
   }
 
-  private def internalProfileQuery(title: String, text: String, queryText: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (InternalExecutionResult => Unit)*) {
+  private def internalProfileQuery(title: String,
+                                   text: String,
+                                   queryText: String,
+                                   realQuery: Option[String],
+                                   expectedException: Option[ClassTag[_ <: CypherException]],
+                                   prepare: Option[() => Any],
+                                   assertions: (InternalExecutionResult => Unit)*) {
     parameters = null
     preparationQueries = List()
 
@@ -180,7 +186,9 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     }
 
     val query = db.inTx {
-      keySet.foldLeft(queryText)((acc, key) => acc.replace("%" + key + "%", node(key).getId.toString))
+      keySet.foldLeft(realQuery.getOrElse(queryText)) {
+        (acc, key) => acc.replace("%" + key + "%", node(key).getId.toString)
+      }
     }
 
     try {

@@ -37,8 +37,8 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans so the cheaper plan is on the left") {
     (new given {
       cost = {
-        case _: Selection => Cost(1000)
-        case _: NodeByLabelScan => Cost(20)
+        case _: Selection => 1000.0
+        case _: NodeByLabelScan => 20.0
       }
       cardinality = mapCardinality {
         case _: Selection => 10
@@ -52,9 +52,9 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   ignore("should combine three plans so the cost is minimized") {
     implicit val plan = new given {
       labelCardinality = Map(
-        "A" -> Cardinality(30),
-        "B" -> Cardinality(20),
-        "C" -> Cardinality(10)
+        "A" -> 30.0,
+        "B" -> 20.0,
+        "C" -> 10.0
       )
     } planFor "MATCH a, b, c WHERE a:A AND b:B AND c:C RETURN a, b, c"
 
@@ -72,8 +72,8 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("should combine two plans so the cost is minimized") {
     implicit val plan = new given {
       labelCardinality = Map(
-        "A" -> Cardinality(30),
-        "B" -> Cardinality(20)
+        "A" -> 30.0,
+        "B" -> 20.0
       )
     } planFor "MATCH a, b WHERE a:A AND b:B RETURN a, b"
 

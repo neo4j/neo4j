@@ -26,7 +26,7 @@ import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport {
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   def section = "Merge"
@@ -187,7 +187,7 @@ For more information on parameters, see <<cypher-parameters>>.""",
       prepare = setParameters(Map("param" -> Map("name" -> "Keanu Reeves", "role" -> "Neo"))),
       queryText = "merge (oliver:Person {name:{param}.name, role:{param}.role}) return oliver",
       optionalResultExplanation = "",
-      assertions = p => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
+      assertion = p => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
     )
   }
 

@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.{combinePredicates, Predicate}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.groupPredicates.EstimatedPredicateCombination
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import Metrics._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{TokenContext, GraphStatistics}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.groupPredicates.EstimatedPredicateCombination
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.{Predicate, combinePredicates}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 object Metrics {
   // This metric calculates how expensive executing a logical plan is.
@@ -45,47 +44,65 @@ object Metrics {
 case class Metrics(cost: CostModel, cardinality: CardinalityModel, selectivity: PredicateSelectivityCombiner)
 
 case class Cost(gummyBears: Double) extends Ordered[Cost] {
-  def +(other: Cost): Cost = Cost(other.gummyBears + gummyBears)
-  def *(other: Double): Cost = Cost(other * gummyBears)
-  def +(other: CostPerRow): CostPerRow = CostPerRow(other.cost * gummyBears)
+  def +(other: Cost): Cost = other.gummyBears + gummyBears
+  def *(other: Multiplier): Cost = gummyBears * other.coefficient
+  def +(other: CostPerRow): CostPerRow = other.cost * gummyBears
   def compare(that: Cost): Int = gummyBears.compare(that.gummyBears)
+}
+
+object Cost {
+  implicit def lift(amount: Double): Cost = Cost(amount)
 }
 
 case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def compare(that: Cardinality) = amount.compare(that.amount)
-  def *(that: Multiplier) = Cardinality(amount * that.coefficient)
-  def *(that: Selectivity) = Cardinality(amount * that.factor)
-  def +(that: Cardinality) = Cardinality(amount + that.amount)
-  def *(that: Cardinality) = Cardinality(amount * that.amount)
-  def /(that: Cardinality) = Selectivity(amount / that.amount)
-  def *(that: CostPerRow) = Cost(amount * that.cost)
-  def *(that: Cost) = Cost(amount * that.gummyBears)
-  def ^(a: Int) = Cardinality(Math.pow(amount, a))
-  def map(f: Double => Double) = Cardinality(f(amount))
+  def *(that: Multiplier): Cardinality = amount * that.coefficient
+  def *(that: Selectivity): Cardinality = amount * that.factor
+  def +(that: Cardinality): Cardinality = amount + that.amount
+  def *(that: Cardinality): Cardinality = amount * that.amount
+  def /(that: Cardinality): Selectivity = amount / that.amount
+  def *(that: CostPerRow): Cost = amount * that.cost
+  def *(that: Cost): Cost = amount * that.gummyBears
+  def ^(a: Int): Cardinality = Math.pow(amount, a)
+  def map(f: Double => Double): Cardinality = f(amount)
+}
+
+object Cardinality {
+  implicit def lift(amount: Double): Cardinality = Cardinality(amount)
+  implicit def lift(amount: Long): Cardinality = lift(amount.doubleValue())
 }
 
 case class CostPerRow(cost: Double) {
-  def +(other: CostPerRow) = CostPerRow(cost + other.cost)
-  def *(other: Multiplier) = CostPerRow(cost * other.coefficient)
+  def +(other: CostPerRow): CostPerRow = cost + other.cost
+  def *(other: Multiplier): CostPerRow = cost * other.coefficient
+}
+
+object CostPerRow {
+  implicit def lift(amount: Double): CostPerRow = CostPerRow(amount)
 }
 
 case class Multiplier(coefficient: Double) {
-  def +(other: Multiplier): Multiplier = Multiplier(other.coefficient + coefficient)
-  def -(other: Multiplier): Multiplier = Multiplier(other.coefficient - coefficient)
-  def *(other: Multiplier): Multiplier = Multiplier(other.coefficient * coefficient)
+  def +(other: Multiplier): Multiplier = other.coefficient + coefficient
+  def -(other: Multiplier): Multiplier = other.coefficient - coefficient
+  def *(other: Multiplier): Multiplier = other.coefficient * coefficient
+}
+
+object Multiplier {
+  implicit def lift(amount: Double): Multiplier = Multiplier(amount)
 }
 
 case class Selectivity(factor: Double) extends Ordered[Selectivity] {
-  def -(other: Selectivity) = Selectivity(factor - other.factor)
-  def *(other: Selectivity) = Selectivity(other.factor * factor)
-  def *(other: Multiplier) = Selectivity(factor * other.coefficient)
-  def ^(a: Int):Selectivity = Selectivity(Math.pow(factor, a))
-  def inverse: Selectivity = Selectivity(1 - factor)
+  def -(other: Selectivity): Selectivity = factor - other.factor
+  def *(other: Selectivity): Selectivity = other.factor * factor
+  def *(other: Multiplier): Selectivity = factor * other.coefficient
+  def ^(a: Int): Selectivity = Math.pow(factor, a)
+  def inverse: Selectivity = 1 - factor
 
   def compare(that: Selectivity) = factor.compare(that.factor)
 }
 
 object Selectivity {
+  implicit def lift(amount: Double): Selectivity = Selectivity(amount)
 
   implicit def turnSeqIntoSingleSelectivity(p: Seq[Selectivity]):Selectivity =
     p.reduceOption(_ * _).getOrElse(Selectivity(1))

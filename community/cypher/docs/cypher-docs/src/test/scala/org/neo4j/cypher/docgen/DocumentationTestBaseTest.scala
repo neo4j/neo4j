@@ -83,7 +83,7 @@ _When you do this, you can't create anything else in the same +CREATE+ statement
       ,
       queryText = "create ({props})",
       optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
+      assertion = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
 
     // ensure that the parameters are printed
     val resultSource = io.Source.fromFile("target/docs/dev/ql/internaltesting/create-multiple-nodes-with-parameters-for-properties.asciidoc", "utf-8")

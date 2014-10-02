@@ -29,19 +29,19 @@ import Metrics._
 
 class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 
-  val HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW = CostPerRow(0.001)
-  val HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW       = CostPerRow(0.0005)
-  val EXPRESSION_PROJECTION_OVERHEAD_PER_ROW   = CostPerRow(0.01)
-  val EXPRESSION_SELECTION_OVERHEAD_PER_ROW    = EXPRESSION_PROJECTION_OVERHEAD_PER_ROW
-  val INDEX_OVERHEAD_COST_PER_ROW              = CostPerRow(3.0)
-  val LABEL_INDEX_OVERHEAD_COST_PER_ROW        = CostPerRow(2.0)
-  val SORT_COST_PER_ROW                        = CostPerRow(0.01)
-  val STORE_ACCESS_COST_PER_ROW                = CostPerRow(1)
-  val DIJKSTRA_OVERHEAD                        = CostPerRow(0.05)
+  val HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW: CostPerRow = 0.001
+  val HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW: CostPerRow       = 0.0005
+  val EXPRESSION_PROJECTION_OVERHEAD_PER_ROW: CostPerRow   = 0.01
+  val EXPRESSION_SELECTION_OVERHEAD_PER_ROW: CostPerRow    = EXPRESSION_PROJECTION_OVERHEAD_PER_ROW
+  val INDEX_OVERHEAD_COST_PER_ROW: CostPerRow              = 3.0
+  val LABEL_INDEX_OVERHEAD_COST_PER_ROW: CostPerRow        = 2.0
+  val SORT_COST_PER_ROW: CostPerRow                        = 0.01
+  val STORE_ACCESS_COST_PER_ROW: CostPerRow                = 1.0
+  val DIJKSTRA_OVERHEAD: CostPerRow                        = 0.05
 
   def apply(plan: LogicalPlan): Cost = plan match {
     case sr: SingleRow =>
-      Cardinality(1) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * sr.coveredIds.size // This is probably too high but we need non-zero cost, even for sr
+      Cardinality(1.0) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * sr.coveredIds.size // This is probably too high but we need non-zero cost, even for sr
 
     case _: AllNodesScan =>
       cardinality(plan) * STORE_ACCESS_COST_PER_ROW

@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 object GuessingEstimation {
-  val LABEL_NOT_FOUND_SELECTIVITY = Selectivity(0.0)
-  val PREDICATE_SELECTIVITY = Selectivity(0.2)
-  val INDEX_SEEK_SELECTIVITY = Selectivity(0.02)
-  val DEFAULT_EXPAND_RELATIONSHIP_DEGREE = Multiplier(2.0)
-  val DEFAULT_CONNECTIVITY_CHANCE = Multiplier(1.0)
+  val LABEL_NOT_FOUND_SELECTIVITY: Selectivity = 0.0
+  val PREDICATE_SELECTIVITY: Selectivity = 0.2
+  val INDEX_SEEK_SELECTIVITY: Selectivity = 0.02
+  val DEFAULT_EXPAND_RELATIONSHIP_DEGREE: Multiplier = 2.0
+  val DEFAULT_CONNECTIVITY_CHANCE: Multiplier = 1.0
 }
 
 class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
@@ -64,46 +64,40 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       if (directed) cardinality(left) else cardinality(left) * Multiplier(2)
 
     case SingleRow(_) =>
-      Cardinality(1)
+      1.0
 
     case Sort(input, _) =>
       cardinality(input)
 
     case Skip(input, skip: ast.NumberLiteral) =>
-      Cardinality(
-        Math.max(
+      Math.max(
           0.0,
           cardinality(input).amount - skip.value.asInstanceOf[Number].doubleValue()
         )
-      )
+
 
     case Skip(input, _) =>
       cardinality(input)
 
     case Limit(input, limit: ast.NumberLiteral) =>
-      Cardinality(
-        Math.min(
-          cardinality(input).amount,
-          limit.value.asInstanceOf[Number].doubleValue()
-        )
+      Math.min(
+        cardinality(input).amount,
+        limit.value.asInstanceOf[Number].doubleValue()
       )
 
     case Limit(input, _) =>
       cardinality(input)
 
     case SortedLimit(input, limit: ast.NumberLiteral, _) =>
-      Cardinality(
-        Math.min(
-          cardinality(input).amount,
-          limit.value.asInstanceOf[Number].doubleValue()
-        )
+      Math.min(
+        cardinality(input).amount,
+        limit.value.asInstanceOf[Number].doubleValue()
       )
 
     case _: Aggregation =>
-      Cardinality(1)
-
+      1.0
     case _: UnwindCollection =>
-      Cardinality(1)
+      1.0
 
     case SortedLimit(input, _, _) =>
       cardinality(input)
@@ -112,11 +106,5 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       cardinality(l) + cardinality(r)
   }
 
-  def averagePathLength(length:PatternLength) = length match {
-    case SimplePatternLength              => 1
-    case VarPatternLength(_, Some(depth)) => depth
-    case VarPatternLength(_, None)        => 42
-  }
-
-  private def cardinality(plan: LogicalPlan) = apply(plan)
+  private def cardinality(plan: LogicalPlan): Cardinality = apply(plan)
 }
