@@ -47,6 +47,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -55,8 +56,10 @@ import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
+import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -222,6 +225,56 @@ public class BackupServiceIT
             assertThat( files, hasFile( storeFile.storeFileName() ) );
         }
 
+        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+    }
+
+    @Test
+    public void shouldBeAbleToBackupEvenIfTransactionLogsAreIncomplete() throws Throwable
+    {
+        /*
+        * This test deletes the old persisted log file and expects backup to still be functional. It
+        * should not be assumed that the log files have any particular length of history. They could
+        * for example have been mangled during backups or removed during pruning.
+        */
+
+        // given
+        GraphDatabaseAPI db = createDb( storeDir, defaultBackupPortHostParams() );
+
+        for ( int i = 0; i < 100; i++ )
+        {
+            createAndIndexNode( db, i );
+        }
+
+        File oldLog = db.getDependencyResolver().resolveDependency( LogFile.class ).currentLogFile();
+        db.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).forceRotate();
+
+        for ( int i = 0; i < 1; i++ )
+        {
+            createAndIndexNode( db, i );
+        }
+        db.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).forceRotate();
+
+        long lastCommittedTxBefore = db.getDependencyResolver().resolveDependency( NeoStore.class )
+                .getLastCommittedTransactionId();
+        db.shutdown();
+
+        FileUtils.deleteFile( oldLog );
+
+        db = createDb( storeDir, defaultBackupPortHostParams() );
+        long lastCommittedTxAfter = db.getDependencyResolver().resolveDependency( NeoStore.class )
+                .getLastCommittedTransactionId();
+
+        // when
+        BackupService backupService = new BackupService( fileSystem );
+        BackupService.BackupOutcome outcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
+                backupDir.getAbsolutePath(),
+                true, defaultConfig() );
+
+        db.shutdown();
+
+        // then
+        assertEquals( lastCommittedTxBefore, lastCommittedTxAfter );
+        assertTrue( outcome.isConsistent() );
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
     }
 
