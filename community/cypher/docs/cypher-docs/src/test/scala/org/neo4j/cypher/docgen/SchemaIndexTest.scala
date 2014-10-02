@@ -61,7 +61,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       prepare = executePreparationQueries(List("create index on :Person(name)")),
       queryText = "drop index on :Person(name)",
       optionalResultExplanation = "",
-      assertions = (p) => assertIndexesOnLabels("Person", List())
+      assertion = (p) => assertIndexesOnLabels("Person", List())
     )
   }
 

@@ -156,7 +156,7 @@ In this case we add a +Person+ label to the node as well.
       prepare = setParameters(Map("props" -> Map("name" -> "Andres", "position" -> "Developer"))),
       queryText = "create (n:Person {props}) return n",
       optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
+      assertion = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
   }
 
   @Test def create_multiple_nodes_from_maps() {
@@ -171,6 +171,6 @@ NOTE: When you do this, you can't create anything else in the same +CREATE+ clau
         Map("name" -> "Michael", "position" -> "Developer")))),
       queryText = "create (n {props}) return n",
       optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
+      assertion = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
   }
 }

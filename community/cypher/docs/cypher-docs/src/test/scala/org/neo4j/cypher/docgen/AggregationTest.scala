@@ -33,9 +33,9 @@ class AggregationTest extends DocumentingTestBase {
     "C" -> Map("property" -> 44, "eyes" -> "blue"),
     "D" -> Map("eyes" -> "brown"))
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
-    
+
   def section = "Aggregation"
 
   @Test def countNodes() {
@@ -168,7 +168,7 @@ include::includes/aggregation-introduction.preparation-graph.asciidoc[]
 """,
       prepare = executePreparationQueries(List("""
 MATCH (b:Person {name: 'B'}), (c:Person {name: 'C'})
-CREATE (d:Person {name: 'D'}), (b)-[:KNOWS]->(d), (c)-[:KNOWS]->(d) 
+CREATE (d:Person {name: 'D'}), (b)-[:KNOWS]->(d), (c)-[:KNOWS]->(d)
 """)),
       queryText = "" +
         "MATCH (me:Person)-->(friend:Person)-->(friend_of_friend:Person) " +
@@ -180,7 +180,7 @@ The first aggregate function, +count(DISTINCT friend_of_friend)+, will only see 
 The latter aggregate function, +count(friend_of_friend)+, might very well see the same `friend_of_friend` multiple times.
 In this case, both +B+ and +C+ know +D+ and thus +D+ will get counted twice, when not using ++DISTINCT++.
 """,
-      assertions = p => assertEquals(Map("count(distinct friend_of_friend)" -> 1, "count(friend_of_friend)" -> 2), p.toList.head))
+      assertion = p => assertEquals(Map("count(distinct friend_of_friend)" -> 1, "count(friend_of_friend)" -> 2), p.toList.head))
   }
 
   @Test def percentileDisc() {
