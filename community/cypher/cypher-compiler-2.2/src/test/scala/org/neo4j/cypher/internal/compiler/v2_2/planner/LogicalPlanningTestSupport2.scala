@@ -185,6 +185,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.cardinalityModel(statistics, selectivity, semanticTable)
 
       def newSelectivity() = combinePredicates.default
+
+      def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = CandidateList.apply
     }
 
     def table = Map.empty[PatternExpression, QueryGraph]

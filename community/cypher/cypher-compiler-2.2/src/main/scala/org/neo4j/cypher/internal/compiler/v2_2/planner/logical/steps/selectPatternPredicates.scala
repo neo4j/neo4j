@@ -56,7 +56,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
           }
         }
 
-      CandidateList(applyCandidates)
+      context.metrics.candidateListCreator(applyCandidates)
     }
 
     private def planPredicates(lhs: LogicalPlan, patternExpressions: Set[Expression], expressions: Set[Expression], letExpression: Option[Expression])

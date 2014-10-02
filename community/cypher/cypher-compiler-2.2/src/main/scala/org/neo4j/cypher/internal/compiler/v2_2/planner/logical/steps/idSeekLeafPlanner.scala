@@ -58,7 +58,7 @@ object idSeekLeafPlanner extends LeafPlanner {
         }
     }
 
-    CandidateList(candidatePlans)
+    context.metrics.candidateListCreator(candidatePlans)
   }
 
   private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: EntityByIdRhs, predicates: Seq[Expression], argumentIds: Set[IdName]): LogicalPlan = {

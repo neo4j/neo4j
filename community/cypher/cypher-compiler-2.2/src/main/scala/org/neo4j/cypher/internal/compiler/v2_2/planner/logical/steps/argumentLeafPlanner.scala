@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, Candidates, LeafPlanner}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LeafPlanner, LogicalPlanningContext}
 
 object argumentLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit ignored: LogicalPlanningContext) = {
+  def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
     val givenNodeIds = qg.argumentIds intersect qg.patternNodes
     if (givenNodeIds.isEmpty)
-      Candidates()
+      context.metrics.candidateListCreator(Seq.empty)
     else
-      Candidates(planQueryArgumentRow(qg))
+      context.metrics.candidateListCreator(Seq(planQueryArgumentRow(qg)))
   }
 }

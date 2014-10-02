@@ -56,7 +56,7 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
             selected.foldLeft(Map.empty[Set[IdName], CandidateList]) {
               case (acc, plan) =>
                 val ids = plan.availableSymbols.filterNot(idName => idName.name.endsWith("$$$_") || idName.name.endsWith("$$$"))
-                val candidates = acc.getOrElse(ids, CandidateList()) + plan
+                val candidates = acc.getOrElse(ids, context.metrics.candidateListCreator(Seq.empty)) + plan
                 acc + (ids -> candidates)
             }
 

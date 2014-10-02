@@ -52,7 +52,7 @@ abstract class IndexLeafPlanner extends LeafPlanner {
       }
     }
 
-    CandidateList(
+    context.metrics.candidateListCreator(
       predicates.collect {
         case inPredicate@In(Property(identifier@Identifier(name), propertyKeyName), ConstantExpression(valueExpr)) =>
           producePlanFor(name, propertyKeyName, inPredicate, ManyQueryExpression(valueExpr))
@@ -107,7 +107,7 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
 
 object legacyHintLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
-    CandidateList(qg.hints.toSeq.collect {
+    context.metrics.candidateListCreator(qg.hints.toSeq.collect {
       case hint: LegacyIndexHint => planLegacyHintSeek(IdName(hint.identifier.name), hint, qg.argumentIds)
     })
   }
