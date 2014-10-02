@@ -75,6 +75,12 @@ module.exports = (grunt) ->
         # Change this to '0.0.0.0' to access the server from outside.
         hostname: "0.0.0.0"
 
+      dist:
+        options:
+          port: 9001
+          middleware: (connect) ->
+            [proxySnippet, mountFolder(connect, yeomanConfig.dist)]
+
       livereload:
         options:
           middleware: (connect) ->
@@ -289,6 +295,7 @@ module.exports = (grunt) ->
   grunt.registerTask "server", ["clean:server", "coffee:dist", "configureProxies", "stylus", "jade", "livereload-start", "connect:livereload", "watch"]
   grunt.registerTask "test", ["clean:server", "coffee", "connect:test", "karma"]
   grunt.registerTask "build", ["clean:dist", "test", "coffee", "jade", "stylus", "useminPrepare", "concat", "copy", "imagemin", "cssmin", "htmlmin", "uglify", "usemin", "replace"]
+  grunt.registerTask "server:dist", ["build", "configureProxies", "connect:dist:keepalive"]
   grunt.registerTask "default", ["build"]
 
   grunt.task.loadTasks "tasks"
