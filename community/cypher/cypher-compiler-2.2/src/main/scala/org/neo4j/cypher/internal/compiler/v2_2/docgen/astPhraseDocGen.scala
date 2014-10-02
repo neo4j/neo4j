@@ -124,6 +124,18 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
 
       case UsingScanHint(identifier, label) =>
         group("USING" :/: "SCAN" :/: group(pretty(identifier) :: pretty(label)))
+
+      case NodeByIdentifiedIndex(identifier, index, key, value) => // START n = node:index(key = value)
+        group("START" :/: pretty(identifier) :/: " = " :/: "NODE:" :: pretty(index) :: parens(pretty(key) :/: "=" :/: pretty(value)))
+
+      case NodeByIndexQuery(identifier, index, query) => // START n = node:index("query")
+        group("START" :/: pretty(identifier) :/: " = " :/: "NODE:" :: pretty(index) :: parens(pretty(query)))
+
+      case RelationshipByIdentifiedIndex(identifier, index, key, value) => // START r = relationship:index(key = value)
+        group("START" :/: pretty(identifier) :/: " = " :/: "RELATIONSHIP:" :: pretty(index) :: parens(pretty(key) :/: "=" :/: pretty(value)))
+
+      case RelationshipByIndexQuery(identifier, index, query) => // START r = relationship:index("query")
+        group("START" :/: pretty(identifier) :/: " = " :/: "RELATIONSHIP:" :: pretty(index) :: parens(pretty(query)))
     }
   }
 
