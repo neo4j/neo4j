@@ -24,7 +24,10 @@ import symbols._
 
 sealed trait Command extends Statement
 
-case class CreateIndex(label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends Command {
+sealed trait IndexType
+final case object SimpleIndexType extends IndexType
+
+case class CreateIndex(indexType: IndexType, label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends Command {
   def semanticCheck = Seq()
 }
 

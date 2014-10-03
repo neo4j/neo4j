@@ -45,10 +45,23 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
   @Test def create_index_on_a_label() {
     testQuery(
       title = "Create index on a label",
-      text = "To create an index on a property for all nodes that have a label, use +CREATE+ +INDEX+ +ON+. " +
+      text = "To create a simple index on a property for all nodes that have a label, use +CREATE+ +INDEX+ +ON+. " +
         "Note that the index is not immediately available, but will be created in the background. " +
         "See <<graphdb-neo4j-schema-indexes>> for details.",
       queryText = "create index on :Person(name)",
+      optionalResultExplanation = "",
+      assertions = (p) => assertIndexesOnLabels("Person", List(List("name")))
+    )
+  }
+
+  @Test def create_simple_index_on_a_label() {
+    testQuery(
+      title = "Create simple index on a label",
+      text = "Cypher supports creating indexes of various types, although current releases only support the +SIMPLE+ type. " +
+        "This command is the same as <<schema-index-create-index-on-a-label>> command, but the type of the index is explicit. " +
+        "To create a +SIMPLE+ index on a property for all nodes that have a label, use +CREATE+ +SIMPLE+ +INDEX+ +ON+. " +
+        "This command behaves identically to the +CREATE+ +INDEX+ +ON+ command.",
+      queryText = "create simple index on :Person(name)",
       optionalResultExplanation = "",
       assertions = (p) => assertIndexesOnLabels("Person", List(List("name")))
     )

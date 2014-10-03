@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.parser
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.ast.SimpleIndexType
 import org.parboiled.scala._
 
 trait Command extends Parser
@@ -35,7 +36,10 @@ trait Command extends Parser
   )
 
   def CreateIndex: Rule1[ast.CreateIndex] = rule {
-    group(keyword("CREATE INDEX ON") ~~ NodeLabel ~~ "(" ~~ PropertyKeyName ~~ ")") ~~>> (ast.CreateIndex(_, _))
+    group((
+      keyword("CREATE INDEX ON") ~ push(SimpleIndexType)
+      | keyword("CREATE SIMPLE INDEX ON") ~ push(SimpleIndexType)
+    ) ~~ NodeLabel ~~ "(" ~~ PropertyKeyName ~~ ")") ~~>> (ast.CreateIndex(_, _, _))
   }
 
   def DropIndex: Rule1[ast.DropIndex] = rule {
