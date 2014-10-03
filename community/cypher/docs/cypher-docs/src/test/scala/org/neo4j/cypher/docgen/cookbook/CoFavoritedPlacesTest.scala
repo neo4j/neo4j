@@ -75,10 +75,10 @@ RETURN otherPlace.name, collect(tag.name)
 ORDER BY length(collect(tag.name)) DESC, otherPlace.name""",
       optionalResultExplanation = "This query returns other places than CoffeeShop1 which share the same tags; they are ranked by the number of tags.",
       assertions = (p) => {
-        assertEquals(Set(
-          Map("otherPlace.name" -> "MelsPlace", "collect(tag.name)" -> List("Cool", "Cosy")),
+        assertEquals(List(
+          Map("otherPlace.name" -> "MelsPlace", "collect(tag.name)" -> List("Cosy", "Cool")),
           Map("otherPlace.name" -> "CoffeeShop2", "collect(tag.name)" -> List("Cool")),
-          Map("otherPlace.name" -> "CoffeeShop3", "collect(tag.name)" -> List("Cosy"))), p.toSet)
+          Map("otherPlace.name" -> "CoffeeShop3", "collect(tag.name)" -> List("Cosy"))), p.toList)
       })
   }
 }

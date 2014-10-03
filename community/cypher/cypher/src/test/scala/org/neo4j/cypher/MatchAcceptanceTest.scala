@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.PathImpl
+import org.neo4j.graphdb._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 

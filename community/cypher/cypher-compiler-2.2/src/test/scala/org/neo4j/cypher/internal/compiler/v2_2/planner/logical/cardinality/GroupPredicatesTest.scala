@@ -79,7 +79,7 @@ class GroupPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport
 
     groupPredicates(stubbedEstimateSelectivity)(Set(p1, p2)) should equal(
       Set(
-        (PropertyEqualsAndLabelPredicate(property.propertyKey, 1, BAR, Set(p1, p2, p3)), Selectivity(0.2))
+        (PropertyEqualsAndLabelPredicate(IdName(id1.name), property.propertyKey, 1, BAR, Set(p1, p2, p3)), Selectivity(0.2))
       )
     )
   }

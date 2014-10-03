@@ -312,6 +312,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("shouldComplainWhenMissingParams") {
+    createNode()
     intercept[ParameterNotFoundException] {
       execute("match (pA) where id(pA) = {a} return pA").toList
     }
