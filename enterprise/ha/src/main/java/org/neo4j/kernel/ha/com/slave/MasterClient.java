@@ -24,8 +24,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
+import io.netty.buffer.ByteBuf;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.MismatchingVersionHandler;
 import org.neo4j.com.ObjectSerializer;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static java.lang.String.format;
-
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
 
@@ -52,7 +50,7 @@ public interface MasterClient extends Master
     static final ObjectSerializer<LockResult> LOCK_SERIALIZER = new ObjectSerializer<LockResult>()
     {
         @Override
-        public void write( LockResult responseObject, ChannelBuffer result ) throws IOException
+        public void write( LockResult responseObject, ByteBuf result ) throws IOException
         {
             result.writeByte( responseObject.getStatus().ordinal() );
             if ( responseObject.getStatus().hasMessage() )
@@ -65,7 +63,7 @@ public interface MasterClient extends Master
     static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = new Deserializer<LockResult>()
     {
         @Override
-        public LockResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+        public LockResult read( ByteBuf buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
             byte statusOrdinal = buffer.readByte();
             LockStatus status;
@@ -82,7 +80,7 @@ public interface MasterClient extends Master
             return status.hasMessage() ? new LockResult( readString( buffer ) ) : new LockResult( status );
         }
 
-        private String beginningOfBufferAsHexString( ChannelBuffer buffer, int maxBytesToPrint )
+        private String beginningOfBufferAsHexString( ByteBuf buffer, int maxBytesToPrint )
         {
             int prevIndex = buffer.readerIndex();
             buffer.readerIndex( 0 );
@@ -91,7 +89,7 @@ public interface MasterClient extends Master
                 ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream( buffer.readableBytes() );
                 PrintStream stream = new PrintStream( byteArrayStream );
                 HexPrinter printer = new HexPrinter( stream, 4, 8*4 );
-                for ( int i = 0; buffer.readable() && i < maxBytesToPrint; i++ )
+                for ( int i = 0; buffer.isReadable() && i < maxBytesToPrint; i++ )
                 {
                     printer.append( buffer.readByte() );
                 }

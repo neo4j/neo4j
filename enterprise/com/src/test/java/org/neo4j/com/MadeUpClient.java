@@ -25,8 +25,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
+import io.netty.buffer.ByteBuf;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -79,7 +78,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         return sendRequest( MadeUpServer.MadeUpRequestType.MULTIPLY, getRequestContext(), new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer ) throws IOException
+            public void write( ByteBuf buffer ) throws IOException
             {
                 buffer.writeInt( value1 );
                 buffer.writeInt( value2 );
@@ -99,14 +98,14 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         return sendRequest( MadeUpServer.MadeUpRequestType.FETCH_DATA_STREAM, getRequestContext(), new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer ) throws IOException
+            public void write( ByteBuf buffer ) throws IOException
             {
                 buffer.writeInt( dataSize );
             }
         }, new Deserializer<Void>()
         {
             @Override
-            public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
+            public Void read( ByteBuf buffer, ByteBuffer temporaryBuffer )
                     throws IOException
             {
                 writer.write( new BlockLogReader( buffer ) );
@@ -121,7 +120,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         return sendRequest( MadeUpServer.MadeUpRequestType.SEND_DATA_STREAM, getRequestContext(), new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer ) throws IOException
+            public void write( ByteBuf buffer ) throws IOException
             {
                 try ( BlockLogBuffer writer = new BlockLogBuffer( buffer, new Monitors().newMonitor( ByteCounterMonitor.class ) ) )
                 {
@@ -137,14 +136,14 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         return sendRequest( MadeUpServer.MadeUpRequestType.THROW_EXCEPTION, getRequestContext(), new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer ) throws IOException
+            public void write( ByteBuf buffer ) throws IOException
             {
                 writeString( buffer, messageInException );
             }
         }, new Deserializer<Integer>()
         {
             @Override
-            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
+            public Integer read( ByteBuf buffer, ByteBuffer temporaryBuffer )
                     throws IOException
             {
                 return buffer.readInt();

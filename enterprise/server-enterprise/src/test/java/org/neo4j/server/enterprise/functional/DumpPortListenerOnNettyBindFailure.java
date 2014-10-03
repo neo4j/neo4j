@@ -27,7 +27,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 
-import org.jboss.netty.channel.ChannelException;
+import io.netty.channel.ChannelException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;

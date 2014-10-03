@@ -112,6 +112,7 @@ public abstract class ResourcePool<R>
     // Guarded by nothing. Those are estimates, losing some values doesn't matter much
     private int currentPeakSize;
     private int targetSize;
+    private volatile boolean closed = false;
 
     protected ResourcePool( int minSize )
     {
@@ -224,21 +225,25 @@ public abstract class ResourcePool<R>
         }
     }
 
-    public final void close( boolean force )
+    public synchronized final void close( boolean force )
     {
-        List<R> dead = new LinkedList<R>();
-        synchronized ( unused )
+        if(!closed)
         {
-            dead.addAll( unused );
-            unused.clear();
-        }
-        if ( force )
-        {
-            dead.addAll( current.values() );
-        }
-        for ( R resource : dead )
-        {
-            dispose( resource );
+            closed = true;
+            List<R> dead = new LinkedList<R>();
+            synchronized ( unused )
+            {
+                dead.addAll( unused );
+                unused.clear();
+            }
+            if ( force )
+            {
+                dead.addAll( current.values() );
+            }
+            for ( R resource : dead )
+            {
+                dispose( resource );
+            }
         }
     }
 }

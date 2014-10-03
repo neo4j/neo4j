@@ -22,12 +22,11 @@ package org.neo4j.com;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.jboss.netty.buffer.ByteBufferBackedChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.MessageEvent;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
-
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.TickingClock;
 import org.neo4j.kernel.logging.DevNullLoggingService;
@@ -35,13 +34,8 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
 
@@ -64,7 +58,7 @@ public class ServerTest
         // When
         try
         {
-            server.messageReceived( channelCtx( channel ), message( reqType, ctx, channel, EMPTY_SERIALIZER ) );
+            server.channelRead( channelCtx( channel ), message( reqType, ctx, EMPTY_SERIALIZER ) );
             fail("Should have failed.");
         }
         catch(IllegalStateException e)
@@ -86,26 +80,22 @@ public class ServerTest
 
     }
 
-    private MessageEvent message( RequestType reqType, RequestContext ctx,
-                                  Channel serverToClientChannel, Serializer payloadSerializer ) throws IOException
+    private ByteBuf message( RequestType reqType, RequestContext ctx,
+                             Serializer payloadSerializer ) throws IOException
     {
         ByteBuffer backingBuffer = ByteBuffer.allocate( 1024 );
 
-        protocol.serializeRequest( new RecordingChannel(), new ByteBufferBackedChannelBuffer( backingBuffer ),
+        protocol.serializeRequest( new RecordingChannel(), Unpooled.wrappedBuffer( backingBuffer ),
                 reqType, ctx,
                 payloadSerializer );
 
-        MessageEvent event = mock(MessageEvent.class);
-        when(event.getMessage()).thenReturn( new ByteBufferBackedChannelBuffer( backingBuffer ) );
-        when(event.getChannel()).thenReturn( serverToClientChannel );
-
-        return event;
+        return Unpooled.wrappedBuffer( backingBuffer );
     }
 
     private ChannelHandlerContext channelCtx( Channel channel )
     {
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
-        when(ctx.getChannel()).thenReturn( channel );
+        when(ctx.channel()).thenReturn( channel );
         return ctx;
     }
 

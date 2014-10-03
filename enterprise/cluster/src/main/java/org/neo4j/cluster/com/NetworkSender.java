@@ -35,25 +35,23 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.ChannelStateEvent;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
-import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
-import org.jboss.netty.util.ThreadNameDeterminer;
-import org.jboss.netty.util.ThreadRenamingRunnable;
-
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.serialization.ObjectEncoder;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageType;
@@ -70,9 +68,11 @@ import static org.neo4j.helpers.NamedThreadFactory.daemon;
  * TCP version of sending messages. This handles sending messages from state machines to other instances
  * in the cluster.
  */
-public class NetworkSender
-        implements MessageSender, Lifecycle
+public class NetworkSender implements MessageSender, Lifecycle
 {
+
+    private NioEventLoopGroup workerGroup;
+
     public interface Monitor
         extends NamedThreadFactory.Monitor
     {
@@ -102,7 +102,7 @@ public class NetworkSender
     private Map<URI, ExecutorService> senderExecutors = new HashMap<URI, ExecutorService>();
     private Set<URI> failedInstances = new HashSet<URI>(); // Keeps track of what instances we have failed to open
     // connections to
-    private ClientBootstrap clientBootstrap;
+    private Bootstrap clientBootstrap;
 
     private final Monitor monitor;
     private Configuration config;
@@ -144,21 +144,22 @@ public class NetworkSender
     public void init()
             throws Throwable
     {
-        ThreadRenamingRunnable.setThreadNameDeterminer( ThreadNameDeterminer.CURRENT );
+        // TODO: Below is not available in Netty 4 - what was the point of this?
+//        ThreadRenamingRunnable.setThreadNameDeterminer( ThreadNameDeterminer.CURRENT );
     }
 
     @Override
     public void start()
             throws Throwable
     {
-        channels = new DefaultChannelGroup();
-
-        // Start client bootstrap
-        clientBootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
-                Executors.newSingleThreadExecutor( daemon( "Cluster client boss", monitor ) ),
-                Executors.newFixedThreadPool( 2, daemon( "Cluster client worker", monitor ) ), 2 ) );
-        clientBootstrap.setOption( "tcpNoDelay", true );
-        clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
+        channels = new DefaultChannelGroup( GlobalEventExecutor.INSTANCE );
+        workerGroup = new NioEventLoopGroup(0, daemon( "Cluster client worker", monitor ));
+        clientBootstrap = new Bootstrap()
+                .group( workerGroup )
+                .channel( NioSocketChannel.class )
+                .option( ChannelOption.SO_KEEPALIVE, true )
+                .option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
+                .handler( new NetworkNodeInitializer() );
     }
 
     @Override
@@ -183,7 +184,8 @@ public class NetworkSender
         senderExecutors.clear();
 
         channels.close().awaitUninterruptibly();
-        clientBootstrap.releaseExternalResources();
+        workerGroup.shutdownGracefully();
+        workerGroup.terminationFuture().sync();
         msgLog.debug( "Shutting down NetworkSender complete" );
     }
 
@@ -282,18 +284,16 @@ public class NetworkSender
 
                     msgLog.debug( "Sending to " + to + ": " + message );
 
-                    ChannelFuture future = channel.write( message );
+                    ChannelFuture future = channel.writeAndFlush( message );
                     future.addListener( new ChannelFutureListener()
                     {
                         @Override
                         public void operationComplete( ChannelFuture future ) throws Exception
                         {
                             monitor.sentMessage( message );
-
                             if ( !future.isSuccess() )
                             {
-                                msgLog.debug( "Unable to write " + message + " to " + future.getChannel(),
-                                        future.getCause() );
+                                msgLog.debug( "Unable to write " + message + " to " + future.channel(), future.cause() );
                             }
                         }
                     } );
@@ -379,13 +379,12 @@ public class NetworkSender
                 .defaultPort() : clusterUri.getPort() );
 
         ChannelFuture channelFuture = clientBootstrap.connect( address );
-
         try
         {
-            if ( channelFuture.await( 5, TimeUnit.SECONDS ) && channelFuture.getChannel().isConnected() )
+            if ( channelFuture.await( 5, TimeUnit.SECONDS ) && channelFuture.channel().isActive() )
             {
                 msgLog.info( me + " opened a new channel to " + address );
-                return channelFuture.getChannel();
+                return channelFuture.channel();
             }
 
             String msg = "Client could not connect to " + address;
@@ -401,52 +400,49 @@ public class NetworkSender
         }
     }
 
-    private class NetworkNodePipelineFactory
-            implements ChannelPipelineFactory
+    private class NetworkNodeInitializer extends ChannelInitializer<SocketChannel>
     {
         @Override
-        public ChannelPipeline getPipeline() throws Exception
+        protected void initChannel( SocketChannel ch ) throws Exception
         {
-            ChannelPipeline pipeline = Channels.pipeline();
-            pipeline.addLast( "frameEncoder", new ObjectEncoder( 2048 ) );
+            ChannelPipeline pipeline = ch.pipeline();
+            pipeline.addLast( "frameEncoder", new ObjectEncoder() );
             pipeline.addLast( "sender", new NetworkMessageSender() );
-            return pipeline;
         }
     }
 
-    private class NetworkMessageSender
-            extends SimpleChannelHandler
+    private class NetworkMessageSender extends ChannelDuplexHandler
     {
-        @Override
-        public void channelConnected( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
-        {
-            Channel ctxChannel = ctx.getChannel();
-            openedChannel( getURI( (InetSocketAddress) ctxChannel.getRemoteAddress() ), ctxChannel );
-            channels.add( ctxChannel );
-        }
 
         @Override
-        public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
+        public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
         {
-            final Message message = (Message) event.getMessage();
+            final Message message = (Message) msg;
             msgLog.debug( "Received: " + message );
             receiver.receive( message );
         }
 
         @Override
-        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelActive( ChannelHandlerContext ctx ) throws Exception
         {
-            closedChannel( ctx.getChannel() );
-            channels.remove( ctx.getChannel() );
+            Channel ctxChannel = ctx.channel();
+            openedChannel( getURI( (InetSocketAddress) ctxChannel.remoteAddress() ), ctxChannel );
+            channels.add( ctxChannel );
         }
 
         @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
+        public void channelInactive( ChannelHandlerContext ctx ) throws Exception
         {
-            Throwable cause = e.getCause();
-            if ( !(cause instanceof ConnectException || cause instanceof RejectedExecutionException) )
+            closedChannel( ctx.channel() );
+            channels.remove( ctx.channel() );
+        }
+
+        @Override
+        public void exceptionCaught( ChannelHandlerContext ctx, Throwable e ) throws Exception
+        {
+            if ( !(e instanceof ConnectException || e instanceof RejectedExecutionException) )
             {
-                msgLog.error( "Receive exception:", cause );
+                msgLog.error( "Receive exception:", e );
             }
         }
     }
