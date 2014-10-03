@@ -60,7 +60,7 @@ import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -1904,20 +1904,26 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
             }
         }
 
-        assertThat( monitor.countPins(), is( countedPages * 2 ) );
-        assertThat( monitor.countUnpins(), is( countedPages * 2 ) );
-        assertThat( monitor.countTakenExclusiveLocks(), is( 0 ) );
-        assertThat( monitor.countTakenSharedLocks(), is( countedPages * 2 ) );
-        assertThat( monitor.countReleasedExclusiveLocks(), is( 0 ) );
-        assertThat( monitor.countReleasedSharedLocks(), is( countedPages * 2 ) );
+        assertThat( "wrong count of pins", monitor.countPins(), is( countedPages * 2 ) );
+        assertThat( "wrong count of unpins", monitor.countUnpins(), is( countedPages * 2 ) );
+        assertThat( "wrong count of exclusive locks taken", monitor.countTakenExclusiveLocks(), is( 0 ) );
+        assertThat( "wrong count of shared locks taken", monitor.countTakenSharedLocks(), is( countedPages * 2 ) );
+        assertThat( "wrong count of exclusive locks released", monitor.countReleasedExclusiveLocks(), is( 0 ) );
+        assertThat( "wrong count of shared locks released", monitor.countReleasedSharedLocks(), is( countedPages * 2 ) );
         
         // We might be unlucky and fault in the second next call, on the page
         // we brought up in the first next call. That's why we assert that we
         // have observed *at least* the countedPages number of faults.
-        assertThat( monitor.countFaults(), greaterThanOrEqualTo( countedPages ) );
-        assertThat( monitor.countEvictions(),
+        int faults = monitor.countFaults();
+        assertThat( "wrong count of faults", faults, greaterThanOrEqualTo( countedPages ) );
+        // Every page we move forward can put the freelist behind so the cache
+        // wants to evict more pages. Plus, every page fault we do could also
+        // block and get a page directly transferred to it, and these kinds of
+        // evictions can count in addition to the evictions we do when the
+        // cache is behind on keeping the freelist full.
+        assertThat( "wrong count of evictions", monitor.countEvictions(),
                 both( greaterThanOrEqualTo( countedPages - maxPages ) )
-                        .and( lessThan( countedPages ) ) );
+                        .and( lessThanOrEqualTo( countedPages + faults ) ) );
         pageCache.unmap( file );
     }
 
@@ -1949,20 +1955,26 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
             pageCache.unmap( file );
         }
 
-        assertThat( monitor.countPins(), is( pagesToGenerate * 2 ) );
-        assertThat( monitor.countTakenExclusiveLocks(), is( pagesToGenerate * 2 ) );
-        assertThat( monitor.countTakenSharedLocks(), is( 0 ) );
-        assertThat( monitor.countReleasedExclusiveLocks(), is( pagesToGenerate * 2 ) );
-        assertThat( monitor.countReleasedSharedLocks(), is( 0 ) );
-        assertThat( monitor.countUnpins(), is( pagesToGenerate * 2 ) );
+        assertThat( "wrong count of pins", monitor.countPins(), is( pagesToGenerate * 2 ) );
+        assertThat( "wrong count of unpins", monitor.countUnpins(), is( pagesToGenerate * 2 ) );
+        assertThat( "wrong count of exclusive locks taken", monitor.countTakenExclusiveLocks(), is( pagesToGenerate * 2 ) );
+        assertThat( "wrong count of shared locks taken", monitor.countTakenSharedLocks(), is( 0 ) );
+        assertThat( "wrong count of exclusive locks released", monitor.countReleasedExclusiveLocks(), is( pagesToGenerate * 2 ) );
+        assertThat( "wrong count of shared locks released", monitor.countReleasedSharedLocks(), is( 0 ) );
 
         // We might be unlucky and fault in the second next call, on the page
         // we brought up in the first next call. That's why we assert that we
         // have observed *at least* the countedPages number of faults.
-        assertThat( monitor.countFaults(), greaterThanOrEqualTo( pagesToGenerate ) );
-        assertThat( monitor.countEvictions(),
+        int faults = monitor.countFaults();
+        assertThat( "wrong count of faults", faults, greaterThanOrEqualTo( pagesToGenerate ) );
+        // Every page we move forward can put the freelist behind so the cache
+        // wants to evict more pages. Plus, every page fault we do could also
+        // block and get a page directly transferred to it, and these kinds of
+        // evictions can count in addition to the evictions we do when the
+        // cache is behind on keeping the freelist full.
+        assertThat( "wrong count of evictions", monitor.countEvictions(),
                 both( greaterThanOrEqualTo( pagesToGenerate - maxPages ) )
-                        .and( lessThan( pagesToGenerate ) ) );
+                        .and( lessThanOrEqualTo( pagesToGenerate + faults ) ) );
 
         // We use greaterThanOrEqualTo because we visit each page twice, and
         // that leaves a small window wherein we can race with eviction, have
