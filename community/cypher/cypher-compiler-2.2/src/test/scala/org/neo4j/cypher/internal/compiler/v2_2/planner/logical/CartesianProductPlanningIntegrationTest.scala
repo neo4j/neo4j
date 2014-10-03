@@ -49,7 +49,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
-  ignore("should combine three plans so the cost is minimized") {
+  test("should combine three plans so the cost is minimized") {
     implicit val plan = new given {
       labelCardinality = Map(
         "A" -> 30.0,

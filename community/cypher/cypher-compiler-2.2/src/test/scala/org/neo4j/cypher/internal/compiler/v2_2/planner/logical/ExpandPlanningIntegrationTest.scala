@@ -58,9 +58,9 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             Selection(_,
               CartesianProduct(
                 Expand(
-                  AllNodesScan(IdName("a"), _), _, _, _, _, _, _, _,_),
+                  AllNodesScan(IdName("c"), _), _, _, _, _, _, _, _,_),
                 Expand(
-                  AllNodesScan(IdName("c"), _), _, _, _, _, _, _, _,_)
+                  AllNodesScan(IdName("a"), _), _, _, _, _, _, _, _,_)
               )
             ), _) => ()
     }
