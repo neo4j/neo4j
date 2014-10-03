@@ -17,9 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api.operations;
 
-public interface ReadOperations extends TokenRead, DataRead, SchemaRead, SchemaState,
-        Locking, LegacyIndexRead, CountsRead, IndexesCountsRead
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.impl.api.KernelStatement;
+
+public interface IndexCountsOperations
 {
+    double indexUniqueValuesPercentage( KernelStatement statement, int labelId, int propertyKeyId )
+            throws IndexNotFoundKernelException;
 }

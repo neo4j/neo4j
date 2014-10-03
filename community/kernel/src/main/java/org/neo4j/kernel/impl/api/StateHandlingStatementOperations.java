@@ -61,6 +61,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
+import org.neo4j.kernel.impl.api.operations.IndexCountsOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
@@ -93,6 +94,7 @@ public class StateHandlingStatementOperations implements
         SchemaReadOperations,
         SchemaWriteOperations,
         CountsOperations,
+        IndexCountsOperations,
         LegacyIndexReadOperations,
         LegacyIndexWriteOperations
 {
@@ -731,7 +733,7 @@ public class StateHandlingStatementOperations implements
         {
             legacyPropertyTrackers.relationshipRemoveStoreProperty( relationshipId, (DefinedProperty)
                     existingProperty );
-            state.txState().relationshipDoRemoveProperty( relationshipId, (DefinedProperty)existingProperty );
+            state.txState().relationshipDoRemoveProperty( relationshipId, (DefinedProperty) existingProperty );
         }
         return existingProperty;
     }
@@ -742,7 +744,7 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = graphGetProperty( state, propertyKeyId );
         if(existingProperty.isDefined())
         {
-            state.txState().graphDoRemoveProperty( (DefinedProperty)existingProperty );
+            state.txState().graphDoRemoveProperty( (DefinedProperty) existingProperty );
         }
         return existingProperty;
     }
@@ -963,6 +965,13 @@ public class StateHandlingStatementOperations implements
 //            }
 //        }
         return count;
+    }
+
+    @Override
+    public double indexUniqueValuesPercentage( KernelStatement statement, int labelId, int propertyKeyId )
+            throws IndexNotFoundKernelException
+    {
+        return storeLayer.indexUniqueValuesPercentage( labelId, propertyKeyId );
     }
 
     @Override
@@ -1200,7 +1209,7 @@ public class StateHandlingStatementOperations implements
     public void labelCreateForName( KernelStatement state, String labelName,
                                     int id ) throws IllegalTokenNameException, TooManyLabelsException
     {
-        state.txState().labelCreateForName(labelName, id);
+        state.txState().labelCreateForName( labelName, id );
     }
 
     @Override
@@ -1341,7 +1350,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public void nodeLegacyIndexCreate( KernelStatement statement, String indexName, Map<String, String> customConfig )
     {
-        statement.txState().nodeLegacyIndexDoCreate(indexName, customConfig);
+        statement.txState().nodeLegacyIndexDoCreate( indexName, customConfig );
     }
 
     @Override
@@ -1354,7 +1363,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public void relationshipLegacyIndexCreate( KernelStatement statement, String indexName, Map<String, String> customConfig )
     {
-        statement.txState().relationshipLegacyIndexDoCreate(indexName, customConfig);
+        statement.txState().relationshipLegacyIndexDoCreate( indexName, customConfig );
     }
 
     @Override

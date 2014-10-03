@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.lucene.search.IndexSearcher;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -51,35 +54,41 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
         }
     }
 
+    @Override
+    protected IndexReader makeNewReader( IndexSearcher searcher, Closeable closeable )
+    {
+        return new LuceneUniqueIndexAccessorReader( searcher, documentStructure, closeable );
+    }
+
     /* The fact that this is here is a sign of a design error, and we should revisit and
-     * remove this later on. Specifically, this is here because the unique indexes do validation
-     * of uniqueness, which they really shouldn't be doing. In fact, they shouldn't exist, the unique
-     * indexes are just indexes, and the logic of how they are used is not the responsibility of the
-     * storage system to handle, that should go in the kernel layer.
-     *
-     * Anyway, where was I.. right: The kernel depends on the unique indexes to handle the business
-     * logic of verifying domain uniqueness, and if they did not do that, race conditions appear for
-     * index creation (not online operations, note) where concurrent violation of a currently created
-     * index may break uniqueness.
-     *
-     * Phew. So, unique indexes currently have to pick up the slack here. The problem is that while
-     * they serve the role of business logic execution, they also happen to be indexes, which is part
-     * of the storage layer. There is one golden rule in the storage layer, which must never ever be
-     * violated: Operations are idempotent. All operations against the storage layer have to be
-     * executable over and over and have the same result, this is the basis of data recovery and
-     * system consistency.
-     *
-     * Clearly, the uniqueness indexes don't do this, and so they fail in fulfilling their primary
-     * contract in order to pick up the slack for the kernel not fulfilling it's contract. We hack
-     * around this issue by tracking state - we know that probably the only time the idempotent
-     * requirement will be invoked is during recovery, and we know that by happenstance, recovery is
-     * single-threaded. As such, when we are in recovery, we turn off the business logic part and
-     * correctly fulfill our actual contract. As soon as the database is online, we flip back to
-     * running business logic in the storage layer and incorrectly implementing the storage layer
-     * contract.
-     *
-     * One day, we should fix this.
-     */
+         * remove this later on. Specifically, this is here because the unique indexes do validation
+         * of uniqueness, which they really shouldn't be doing. In fact, they shouldn't exist, the unique
+         * indexes are just indexes, and the logic of how they are used is not the responsibility of the
+         * storage system to handle, that should go in the kernel layer.
+         *
+         * Anyway, where was I.. right: The kernel depends on the unique indexes to handle the business
+         * logic of verifying domain uniqueness, and if they did not do that, race conditions appear for
+         * index creation (not online operations, note) where concurrent violation of a currently created
+         * index may break uniqueness.
+         *
+         * Phew. So, unique indexes currently have to pick up the slack here. The problem is that while
+         * they serve the role of business logic execution, they also happen to be indexes, which is part
+         * of the storage layer. There is one golden rule in the storage layer, which must never ever be
+         * violated: Operations are idempotent. All operations against the storage layer have to be
+         * executable over and over and have the same result, this is the basis of data recovery and
+         * system consistency.
+         *
+         * Clearly, the uniqueness indexes don't do this, and so they fail in fulfilling their primary
+         * contract in order to pick up the slack for the kernel not fulfilling it's contract. We hack
+         * around this issue by tracking state - we know that probably the only time the idempotent
+         * requirement will be invoked is during recovery, and we know that by happenstance, recovery is
+         * single-threaded. As such, when we are in recovery, we turn off the business logic part and
+         * correctly fulfill our actual contract. As soon as the database is online, we flip back to
+         * running business logic in the storage layer and incorrectly implementing the storage layer
+         * contract.
+         *
+         * One day, we should fix this.
+         */
     private class LuceneUniquePropertyIndexUpdater extends UniquePropertyIndexUpdater
     {
         final IndexUpdater delegate;

@@ -61,7 +61,6 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -70,6 +69,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -818,5 +818,16 @@ public class DiskLayer implements StoreReadLayer
             throw new UnsupportedOperationException( "not implemented" );
         }
         return counts.countsForRelationship( startLabelId, typeId, endLabelId );
+    }
+
+    @Override
+    public double indexUniqueValuesPercentage( int labelId, int propertyKeyId ) throws IndexNotFoundKernelException
+    {
+        final IndexRule indexRule = schemaStorage.indexRule( labelId, propertyKeyId );
+        if (indexRule == null)
+        {
+            throw new IndexNotFoundKernelException( "No index for labelId " + labelId + " and " + propertyKeyId );
+        }
+        return indexService.indexUniqueValuesPercentage( indexRule );
     }
 }

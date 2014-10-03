@@ -506,6 +506,12 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
+    public double indexUniqueValuesPercentage( int labelId, int propertyKeyId ) throws IndexNotFoundKernelException
+    {
+        return diskLayer.indexUniqueValuesPercentage( labelId, propertyKeyId );
+    }
+
+    @Override
     public long highestNodeIdInUse()
     {
         return diskLayer.highestNodeIdInUse();
