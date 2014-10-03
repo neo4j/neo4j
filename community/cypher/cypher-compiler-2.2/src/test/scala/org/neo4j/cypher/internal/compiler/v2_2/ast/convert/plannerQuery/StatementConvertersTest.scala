@@ -885,6 +885,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     result should equal(expectation)
   }
 
+  //TODO needs perty
   ignore("Funny query from boostingRecommendations") {
     val UnionQuery(query :: Nil, _) = buildPlannerQuery(
       """MATCH (origin)-[r1:KNOWS|WORKS_AT]-(c)-[r2:KNOWS|WORKS_AT]-(candidate)

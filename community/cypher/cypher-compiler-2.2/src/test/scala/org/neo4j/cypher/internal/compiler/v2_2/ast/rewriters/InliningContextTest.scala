@@ -48,10 +48,8 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
     ctx.projections should equal(mapN ++ mapA)
   }
 
-  test("ignore new projections if they use an already seen identifier") {
-    val ctx = InliningContext().enterQueryPart(mapN).enterQueryPart(mapN)
-
-    ctx.projections should equal(mapN)
+  test("throw assertiona error when new projections use an already seen identifier") {
+    intercept[AssertionError](InliningContext().enterQueryPart(mapN).enterQueryPart(mapN))
   }
 
   test("ignore new projections when spoilIdentifier is called") {

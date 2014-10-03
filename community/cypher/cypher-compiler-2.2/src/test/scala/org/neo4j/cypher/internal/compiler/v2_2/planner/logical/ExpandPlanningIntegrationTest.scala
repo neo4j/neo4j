@@ -81,13 +81,13 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("Should build plans containing expand for looping relationship patterns") {
-    val plan: String = planFor("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan.toString
-    plan should equal(
+    val result: String = planFor("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan.toString
+    result should equal(
       """Projection[r1,r2](Map("r1" → r1, "r2" → r2))
-        |↳ Selection[a$$$,r2,r1,a,b](ArrayBuffer(NotEquals(r1, r2)))
+        |↳ Selection[a$$$,r2,r1,a,b](Vector(NotEquals(r1, r2)))
         |↳ Selection[a$$$,r2,r1,a,b](Equals(a, a$$$) ⸬ ⬨)
-        |↳ Expand[a$$$,r2,r1,a,b](b, INCOMING, INCOMING, ⬨, a$$$, r2, , ArrayBuffer())
-        |↳ Expand[b,r1,a](b, INCOMING, OUTGOING, ⬨, a, r1, , ArrayBuffer())
+        |↳ Expand[a$$$,r2,r1,a,b](b, INCOMING, INCOMING, ⬨, a$$$, r2, , Vector())
+        |↳ Expand[b,r1,a](b, INCOMING, OUTGOING, ⬨, a, r1, , Vector())
         |↳ AllNodesScan[b](b, Set())""".stripMargin
     )
   }

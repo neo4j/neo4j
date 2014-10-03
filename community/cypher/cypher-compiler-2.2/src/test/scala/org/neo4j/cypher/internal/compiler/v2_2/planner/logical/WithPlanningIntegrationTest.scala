@@ -32,16 +32,14 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor("MATCH (a) WITH a LIMIT 1 RETURN 1 as `b`").plan
     val expected =
       planRegularProjection(
-        planTailApply(
-          left = planStarProjection(
+
+         planStarProjection(
             planLimit(
               planAllNodesScan("a", Set.empty),
               UnsignedDecimalIntegerLiteral("1") _
             ),
             Map[String, Expression]("a" -> ident("a"))
           ),
-          right = planSingleRow()
-        ),
         Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1") _)
       )
 
@@ -54,7 +52,6 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b, r1 LIMIT 1 RETURN b as `b`").plan
     val expected =
       planRegularProjection(
-        planTailApply(
           planStarProjection(
             planLimit(
               planTailApply(
@@ -71,8 +68,6 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
             ),
             Map[String, Expression]("a" -> ident("a"), "b" -> ident("b"), "r1" -> ident("r1"))
           ),
-          planArgumentRow(patternNodes = Set("b"))
-        ),
         Map[String, Expression]("b" -> ident("b"))
       )
 

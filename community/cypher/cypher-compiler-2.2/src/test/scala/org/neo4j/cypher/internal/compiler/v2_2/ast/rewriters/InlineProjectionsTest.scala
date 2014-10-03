@@ -254,67 +254,37 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  // FIXME: 2014-4-30 Davide: No inlining due to missing scope information for the identifiers
-  ignore("should not inline identifiers which are reused multiple times: WITH 1 as n WITH 2 AS n RETURN n") {
-    val result = projectionInlinedAst(
+  test("should not inline identifiers which are reused multiple times: WITH 1 as n WITH 2 AS n RETURN n") {
+    intercept[AssertionError](projectionInlinedAst(
       """WITH 1 as n
         |WITH 2 AS n
         |RETURN n
-      """.stripMargin)
-
-    result should equal(ast(
-      """_PRAGMA WITH NONE
-        |_PRAGMA WITH NONE
-        |RETURN 2 as `n`
       """.stripMargin))
   }
 
-  // FIXME: 2014-4-30 Davide: This is not yet supported by the inline rewriter due to missing scope information for the identifiers
-  ignore("should inline same identifier across multiple WITH clauses, case #1: WITH 1 as n WITH n+1 AS n RETURN n => RETURN 1+1 as n") {
-    val result = projectionInlinedAst(
+  test("should inline same identifier across multiple WITH clauses, case #1: WITH 1 as n WITH n+1 AS n RETURN n => RETURN 1+1 as n") {
+    intercept[AssertionError](projectionInlinedAst(
       """WITH 1 as n
         |WITH n+1 AS n
         |RETURN n
-      """.stripMargin)
-
-    result should equal(ast(
-      """_PRAGMA WITH NONE
-        |_PRAGMA WITH NONE
-        |RETURN 1+1 as `n`
       """.stripMargin))
   }
 
-  // FIXME: 2014-4-30 Davide: This is not yet supported by the inline rewriter due to missing scope information for the identifiers
-  ignore("should inline same identifier across multiple WITH clauses, case #2: WITH 1 as n WITH n+2 AS m WITH n + m as n RETURN n => RETURN 1+1+2 as n") {
-    val result = projectionInlinedAst(
+  test("should inline same identifier across multiple WITH clauses, case #2: WITH 1 as n WITH n+2 AS m WITH n + m as n RETURN n => RETURN 1+1+2 as n") {
+    intercept[AssertionError](projectionInlinedAst(
       """WITH 1 as n
         |WITH n+2 AS m
         |WITH n + m as n
         |RETURN n
-      """.stripMargin)
-
-    result should equal(ast(
-      """_PRAGMA WITH NONE
-        |_PRAGMA WITH NONE
-        |_PRAGMA WITH NONE
-        |RETURN 1+(1+2) as `n`
       """.stripMargin))
   }
 
-  // FIXME: 2014-4-30 Davide: This is not yet supported by the inline rewriter due to missing scope information for the identifiers
-  ignore("should not inline identifiers which cannot be inlined when they are shadowed later on: WITH 1 as n MATCH (n) WITH 2 AS n RETURN n => WITH 1 as n MATCH (n) RETURN 2 as n") {
-    val result = projectionInlinedAst(
+  test("should not inline identifiers which cannot be inlined when they are shadowed later on: WITH 1 as n MATCH (n) WITH 2 AS n RETURN n => WITH 1 as n MATCH (n) RETURN 2 as n") {
+    intercept[AssertionError](projectionInlinedAst(
       """WITH 1 as n
         |MATCH (n)
         |WITH 2 AS n
         |RETURN n
-      """.stripMargin)
-
-    result should equal(ast(
-      """WITH 1 as n
-        |MATCH (n)
-        |_PRAGMA WITH NONE
-        |RETURN 2 as `n`
       """.stripMargin))
   }
 
@@ -359,8 +329,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  // TODO: Fix post dedup
-  ignore("removes unneeded projection") {
+  test("removes unneeded projection") {
     val query =
       """MATCH (owner)
         |WITH owner, COUNT(*) AS xyz
@@ -372,10 +341,12 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
 
     result should equal(parser.parse(
       """MATCH (owner)
-        |WITH owner, COUNT(*) AS xyz
-        |WITH owner, xyz
+        |WITH owner AS `owner`, COUNT(*) AS xyz
+        |WITH owner AS `owner`, xyz AS `xyz`
+        |WITH owner AS `owner`, xyz AS `xyz`, owner AS `owner`
         |WHERE (owner)--()
-        |RETURN owner
+        |WITH xyz AS `xyz`, owner AS `owner`
+        |RETURN owner AS `owner`
       """.stripMargin))
   }
 

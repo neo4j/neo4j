@@ -83,13 +83,13 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p").plan.toString should equal(
       """Projection[p](Map("p" → p))
         |↳ FindShortestPaths[p,r2,r1,a,b,c,r](p = shortestPath((a)-[r]->(c)))
-        |↳ Selection[r2,r1,a,b,c](ArrayBuffer(NotEquals(r1, r2)))
+        |↳ Selection[r2,r1,a,b,c](Vector(NotEquals(r1, r2)))
         |↳ NodeHashJoin[r2,r1,a,b,c](Set(b))
         |  ↳ left =
-        |    Expand[a,r1,b](a, INCOMING, INCOMING, ⬨, b, r1, , ArrayBuffer())
+        |    Expand[a,r1,b](a, INCOMING, INCOMING, ⬨, b, r1, , Vector())
         |    ↳ NodeByLabelScan[a](a, Left("X"), Set())
         |  ↳ right =
-        |    Expand[c,r2,b](c, INCOMING, OUTGOING, ⬨, b, r2, , ArrayBuffer())
+        |    Expand[c,r2,b](c, INCOMING, OUTGOING, ⬨, b, r2, , Vector())
         |    ↳ NodeByLabelScan[c](c, Left("X"), Set())""".stripMargin
     )
   }

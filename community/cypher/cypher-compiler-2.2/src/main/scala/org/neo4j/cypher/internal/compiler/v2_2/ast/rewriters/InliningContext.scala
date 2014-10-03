@@ -23,17 +23,24 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.bottomUp.BottomUpRewriter
 
-case class InliningContext(projections: Map[Identifier, Expression] = Map.empty) {
+case class InliningContext(projections: Map[Identifier, Expression] = Map.empty, seenIdentifiers: Set[Identifier] = Set.empty) {
 
   def enterQueryPart(newProjections: Map[Identifier, Expression]): InliningContext = {
     val inlineExpressions = TypedRewriter[Expression](identifierRewriter)
     val containsAggregation = newProjections.values.exists(containsAggregate)
+    val shadowing = newProjections.filterKeys(seenIdentifiers.contains).filter {
+      case (_, _: PathExpression) => false
+      case (key, value) => key != value
+    }
+
+   assert(shadowing.isEmpty, "Should have deduped by this point: " + shadowing)
+
     val resultProjections = if (containsAggregation) {
       projections
     } else {
       projections ++ newProjections.mapValues(inlineExpressions)
     }
-    copy(projections = resultProjections)
+    copy(projections = resultProjections, seenIdentifiers = seenIdentifiers ++ newProjections.keys)
   }
 
   def spoilIdentifier(identifier: Identifier): InliningContext =
