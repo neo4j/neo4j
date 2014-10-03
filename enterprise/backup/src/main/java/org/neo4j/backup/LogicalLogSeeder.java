@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1.writeLogHeader;
-
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -45,6 +43,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1.writeLogHeader;
 
 /**
  * When performing a full backup, if there are no transactions to apply after the backup, we will not have any logical
@@ -123,7 +123,7 @@ public class LogicalLogSeeder
                     long logVersion = ds.getCurrentLogVersion() - 1;
                     FileChannel newLog = new RandomAccessFile( ds.getFileName( logVersion ), "rw" ).getChannel();
                     newLog.truncate( 0 );
-                    writeLogHeader( scratch, logVersion, -1 );
+                    writeLogHeader( scratch, logVersion, tx.second() - 1 );
                     // scratch buffer is flipped by writeLogHeader
                     newLog.write( scratch );
                     ReadableByteChannel received = tx.third().extract();
