@@ -22,6 +22,8 @@ package org.neo4j.backup;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +38,7 @@ import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -52,6 +55,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.BackupMonitor;
@@ -60,6 +64,7 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
 
+import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -182,6 +187,27 @@ public class BackupServiceIT
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
         assertNotNull( getLastMasterForCommittedTx( DEFAULT_DATA_SOURCE_NAME ) );
+    }
+
+    @Test
+    public void shouldFindValidPreviousCommittedTxIdInFirstNeoStoreLog() throws Throwable
+    {
+        // given
+        GraphDatabaseService db = createDb( storeDir, defaultBackupPortHostParams() );
+        createAndIndexNode( db, 1 );
+        createAndIndexNode( db, 2 );
+        createAndIndexNode( db, 3 );
+        createAndIndexNode( db, 4 );
+
+        // when
+        BackupService backupService = new BackupService( fileSystem );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+                new Config( defaultBackupPortHostParams() ) );
+        db.shutdown();
+
+        // then
+        checkPreviousCommittedTxIdFromFirstLog( DEFAULT_DATA_SOURCE_NAME ); // neo store
+        checkPreviousCommittedTxIdFromFirstLog( DEFAULT_NAME ); // lucene
     }
 
     @Test
@@ -570,6 +596,30 @@ public class BackupServiceIT
                 description.appendText( String.format( "[%s] in list of copied files", fileName ) );
             }
         };
+    }
+
+    private void checkPreviousCommittedTxIdFromFirstLog( String dataSourceName ) throws IOException
+    {
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase(
+                backupDir.getAbsolutePath() );
+        try
+        {
+            XaDataSourceManager xaDataSourceManager = db.getDependencyResolver().resolveDependency(
+                    XaDataSourceManager.class );
+            XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
+            ReadableByteChannel logicalLog = dataSource.getLogicalLog( 1 );
+
+            ByteBuffer buffer = ByteBuffer.allocate( 64 );
+            long[] headerData = LogIoUtils.readLogHeader( buffer, logicalLog, true );
+
+            long previousCommittedTxIdFromFirstLog = headerData[1];
+
+            assertEquals( previousCommittedTxIdFromFirstLog, dataSource.getLastCommittedTxId() - 1 );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     private Pair<Integer,Long> getLastMasterForCommittedTx( String dataSourceName ) throws IOException
