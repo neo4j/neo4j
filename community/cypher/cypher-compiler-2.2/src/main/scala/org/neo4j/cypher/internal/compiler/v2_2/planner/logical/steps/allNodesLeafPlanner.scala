@@ -22,12 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, LeafPlanner, CandidateList}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
-
 
 object allNodesLeafPlanner extends LeafPlanner {
   def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) =
-    CandidateList(
+    context.metrics.candidateListCreator(
       queryGraph.patternNodes
         .map(planAllNodesScan(_, queryGraph.argumentIds)).toSeq
     )

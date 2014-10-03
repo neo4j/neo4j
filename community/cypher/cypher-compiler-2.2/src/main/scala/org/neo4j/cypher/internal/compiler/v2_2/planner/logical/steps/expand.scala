@@ -51,7 +51,7 @@ object expand extends CandidateGenerator[PlanTable] {
       else
         expandF(otherSide)
     }
-    CandidateList(expandPlans.toList)
+    context.metrics.candidateListCreator(expandPlans.toList)
   }
 
   /*

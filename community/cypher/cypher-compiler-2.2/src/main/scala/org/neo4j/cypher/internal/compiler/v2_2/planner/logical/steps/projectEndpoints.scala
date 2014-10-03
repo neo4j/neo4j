@@ -42,7 +42,7 @@ object projectEndpoints extends CandidateGenerator[PlanTable] with CollectionSup
       val predicates = Seq(optStartPredicate, optEndPredicate, optRelPredicate).flatten
       planEndpointProjection(plan, projectedStart, projectedEnd, predicates, patternRel)
     }
-    CandidateList(projectedEndpointPlans)
+    context.metrics.candidateListCreator(projectedEndpointPlans)
   }
 
   private def projectAndSelectIfNecessary(inScope: Set[IdName], node: IdName): (IdName, Option[Expression]) =

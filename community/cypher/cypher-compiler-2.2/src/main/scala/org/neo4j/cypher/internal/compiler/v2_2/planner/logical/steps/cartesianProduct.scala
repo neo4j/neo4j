@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CandidateList
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 
 object cartesianProduct extends CandidateGenerator[PlanTable] {
@@ -36,9 +35,9 @@ object cartesianProduct extends CandidateGenerator[PlanTable] {
           if planA.solved.graph.argumentIds.isEmpty
           if planB.solved.graph.argumentIds.isEmpty
         } yield planCartesianProduct(planA, planB)
-      CandidateList(cartesianProducts)
+      context.metrics.candidateListCreator(cartesianProducts)
     } else {
-      CandidateList()
+      context.metrics.candidateListCreator(Seq.empty)
     }
   }
 }

@@ -128,5 +128,19 @@
       <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
       <artifactId>concurrentlinkedhashmap-lru</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>com.novus</groupId>
+      <artifactId>salat-core_2.10</artifactId>
+      <version>1.9.8</version>
+      <exclusions>
+          <exclusion>
+              <groupId>org.scala-lang</groupId>
+              <artifactId>scala-library</artifactId>
+          </exclusion>
+      </exclusions>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 </project>

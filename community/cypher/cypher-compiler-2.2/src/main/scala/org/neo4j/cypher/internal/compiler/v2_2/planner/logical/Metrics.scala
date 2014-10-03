@@ -41,7 +41,10 @@ object Metrics {
   type PredicateSelectivityCombiner = Set[EstimatedPredicateCombination] => (Set[Predicate], Selectivity)
 }
 
-case class Metrics(cost: CostModel, cardinality: CardinalityModel, selectivity: PredicateSelectivityCombiner)
+case class Metrics(cost: CostModel,
+                   cardinality: CardinalityModel,
+                   selectivity: PredicateSelectivityCombiner,
+                   candidateListCreator: Seq[LogicalPlan] => CandidateList)
 
 case class Cost(gummyBears: Double) extends Ordered[Cost] {
   def +(other: Cost): Cost = other.gummyBears + gummyBears
@@ -113,13 +116,13 @@ trait MetricsFactory {
   def newCardinalityEstimator(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable): CardinalityModel
   def newCostModel(cardinality: CardinalityModel): CostModel
   def newSelectivity(): PredicateSelectivityCombiner
+  def newCandidateListCreator(): Seq[LogicalPlan] => CandidateList
 
-  def newMetrics(statistics: GraphStatistics,
-                 semanticTable: SemanticTable) = {
+  def newMetrics(statistics: GraphStatistics, semanticTable: SemanticTable) = {
     val selectivity = newSelectivity()
     val cardinality = newCardinalityEstimator(statistics, selectivity, semanticTable)
     val cost = newCostModel(cardinality)
-    Metrics(cost, cardinality, selectivity)
+    Metrics(cost, cardinality, selectivity, newCandidateListCreator())
   }
 }
 

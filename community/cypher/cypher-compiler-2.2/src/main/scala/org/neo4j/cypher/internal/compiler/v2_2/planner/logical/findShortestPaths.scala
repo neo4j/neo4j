@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.ShortestPathPattern
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import LogicalPlanProducer._
 
 object findShortestPaths extends CandidateGenerator[PlanTable] {
@@ -35,6 +34,6 @@ object findShortestPaths extends CandidateGenerator[PlanTable] {
             planShortestPaths(plan, shortestPath)
         }
       }
-      CandidateList(plans.toSeq)
+    context.metrics.candidateListCreator(plans.toSeq)
   }
 }
