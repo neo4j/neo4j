@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -43,15 +44,17 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
 {
     private final CountsAcceptor countsStore;
     private final NodeStore nodeStore;
+    private final CacheAccessBackDoor cacheAccess;
     private int nodesDelta;
     private int relsDelta;
     private final Map<Integer/*labelId*/, IntCounter> labelDelta = new HashMap<>();
     private final Map<Integer/*typeId*/, IntCounter> relationshipTypeDelta = new HashMap<>();
 
-    public CountsStoreApplier( CountsAcceptor countsStore, NodeStore nodeStore )
+    public CountsStoreApplier( CountsAcceptor countsStore, NodeStore nodeStore, CacheAccessBackDoor cacheAccess )
     {
         this.countsStore = countsStore;
         this.nodeStore = nodeStore;
+        this.cacheAccess = cacheAccess;
     }
 
     @Override
@@ -123,16 +126,24 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
     {
         // nodes
         countsStore.updateCountsForNode( ANY_LABEL, nodesDelta );
+        long labelsTotalDelta = 0;
         for ( Map.Entry<Integer, IntCounter> label : labelDelta.entrySet() )
         {
-            countsStore.updateCountsForNode( label.getKey(), label.getValue().value() );
+            final int count = label.getValue().value();
+            countsStore.updateCountsForNode( label.getKey(), count );
+            labelsTotalDelta += count;
         }
         // relationships
+        long relTypesTotalDelta = 0;
         countsStore.updateCountsForRelationship( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
         for ( Map.Entry<Integer, IntCounter> type : relationshipTypeDelta.entrySet() )
         {
-            countsStore.updateCountsForRelationship( ANY_LABEL, type.getKey(), ANY_LABEL, type.getValue().value() );
+            final int count = type.getValue().value();
+            countsStore.updateCountsForRelationship( ANY_LABEL, type.getKey(), ANY_LABEL, count );
+            relTypesTotalDelta += count;
         }
+
+        cacheAccess.applyCountUpdates( nodesDelta, relsDelta, labelsTotalDelta, relTypesTotalDelta );
     }
 
     private long[] labels( NodeRecord node )

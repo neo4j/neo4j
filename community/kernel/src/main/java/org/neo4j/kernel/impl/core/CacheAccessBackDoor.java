@@ -65,4 +65,6 @@ public interface CacheAccessBackDoor
      */
     void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
                                       long secondNodeNextRelId );
+
+    void applyCountUpdates( long nodesDelta, long relsDelta, long labelsTotalDelta, long relTypesTotalDelta );
 }

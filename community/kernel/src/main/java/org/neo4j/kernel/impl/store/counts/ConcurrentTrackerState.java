@@ -31,14 +31,15 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.api.CountsKey;
 
-class ConcurrentTrackerState extends ConcurrentHashMap<CountsKey, AtomicLong> implements CountsTracker.State
+class ConcurrentTrackerState implements CountsTracker.State
 {
     private static final int INITIAL_CHANGES_CAPACITY = 1024;
     private final CountsStore store;
+    private final ConcurrentMap<CountsKey, AtomicLong> cache = new ConcurrentHashMap<>( INITIAL_CHANGES_CAPACITY );
+    private boolean changed = false;
 
     ConcurrentTrackerState( CountsStore store )
     {
-        super( INITIAL_CHANGES_CAPACITY );
         this.store = store;
     }
 
@@ -50,24 +51,34 @@ class ConcurrentTrackerState extends ConcurrentHashMap<CountsKey, AtomicLong> im
 
     public boolean hasChanges()
     {
-        return !isEmpty();
+        return changed;
     }
 
     @Override
     public long getCount( CountsKey key )
     {
-        AtomicLong count = get( key );
-        return count == null ? store.get( key ) : count.get();
+        AtomicLong count = cache.get( key );
+        if ( count == null )
+        {
+            AtomicLong proposal = new AtomicLong( store.get( key ) );
+            count = cache.putIfAbsent( key, proposal );
+            if ( count == null )
+            {
+                count = proposal;
+            }
+        }
+        return count.get();
     }
 
     @Override
     public long updateCount( CountsKey key, long delta )
     {
-        AtomicLong count = get( key );
+        changed = true;
+        AtomicLong count = cache.get( key );
         if ( count == null )
         {
             AtomicLong proposal = new AtomicLong( store.get( key ) );
-            count = putIfAbsent( key, proposal );
+            count = cache.putIfAbsent( key, proposal );
             if ( count == null )
             {
                 count = proposal;
@@ -97,7 +108,7 @@ class ConcurrentTrackerState extends ConcurrentHashMap<CountsKey, AtomicLong> im
     @Override
     public void accept( RecordVisitor visitor )
     {
-        try ( Merger merger = new Merger( visitor, sortedUpdates( this ) ) )
+        try ( Merger merger = new Merger( visitor, sortedUpdates( cache ) ) )
         {
             store.accept( merger );
         }
@@ -112,7 +123,7 @@ class ConcurrentTrackerState extends ConcurrentHashMap<CountsKey, AtomicLong> im
     private static Update[] sortedUpdates( ConcurrentMap<CountsKey, AtomicLong> updates )
     {
         Update[] result = new Update[updates.size()];
-        Iterator<Entry<CountsKey, AtomicLong>> iterator = updates.entrySet().iterator();
+        Iterator<Map.Entry<CountsKey, AtomicLong>> iterator = updates.entrySet().iterator();
         for ( int i = 0; i < result.length; i++ )
         {
             if ( !iterator.hasNext() )
