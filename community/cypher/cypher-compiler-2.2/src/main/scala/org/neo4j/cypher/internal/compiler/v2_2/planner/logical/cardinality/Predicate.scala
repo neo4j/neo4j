@@ -61,18 +61,21 @@ case class ExistsCombination(idName: IdName) extends PredicateCombination {
 }
 
 trait PropertyAndLabelPredicate {
+  def idName: IdName
   def propertyKey: PropertyKeyName
   def valueCount: Int
   def label: LabelName
   def containedPredicates: Set[Predicate]
 }
 
-case class PropertyEqualsAndLabelPredicate(propertyKey: PropertyKeyName,
+case class PropertyEqualsAndLabelPredicate(idName: IdName,
+                                     propertyKey: PropertyKeyName,
                                      valueCount: Int,
                                      label: LabelName,
                                      containedPredicates: Set[Predicate]) extends PredicateCombination with PropertyAndLabelPredicate
 
-case class PropertyNotEqualsAndLabelPredicate(propertyKey: PropertyKeyName,
+case class PropertyNotEqualsAndLabelPredicate(idName: IdName,
+                                           propertyKey: PropertyKeyName,
                                            valueCount: Int,
                                            label: LabelName,
                                            containedPredicates: Set[Predicate]) extends PredicateCombination with PropertyAndLabelPredicate

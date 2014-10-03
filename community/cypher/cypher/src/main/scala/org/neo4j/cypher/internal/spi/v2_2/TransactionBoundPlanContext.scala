@@ -85,12 +85,5 @@ class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseSe
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  def statistics: GraphStatistics = {
-    Option(System.getenv("QUERIED_STATISTICS")) match {
-      case Some(_) =>
-        val queryCtx = new TransactionBoundQueryContext(gdb.asInstanceOf[GraphDatabaseAPI], null, true, statement)
-        new QueriedGraphStatistics(gdb, queryCtx)
-      case None => new TransactionBoundGraphStatistics(statement)
-    }
-  }
+  def statistics: GraphStatistics = new TransactionBoundGraphStatistics(statement)
 }

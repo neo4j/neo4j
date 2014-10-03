@@ -44,13 +44,23 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
 
     // WHERE x:Label AND x.prop = 42
     case property: PropertyEqualsAndLabelPredicate =>
+      val labelPredicate = ExpressionPredicate(HasLabels(Identifier(property.idName.name)(null), Seq(property.label))(null))
       val idxLookup: Option[Selectivity] = getSelectivityForPossibleIndex(property)
-      idxLookup.map(_ * calculateSelectivityForLabel(property.label)).getOrElse(1.0)
+      idxLookup.map {
+        case sel if property.containedPredicates(labelPredicate) =>
+          sel * calculateSelectivityForLabel(property.label)
+        case sel => sel
+      }.getOrElse(1.0)
 
     // WHERE x:Label AND x.prop <> 42
     case property: PropertyNotEqualsAndLabelPredicate =>
+      val labelPredicate = ExpressionPredicate(HasLabels(Identifier(property.idName.name)(null), Seq(property.label))(null))
       val idxLookup: Option[Selectivity] = getSelectivityForPossibleIndex(property)
-      idxLookup.map(_.inverse * calculateSelectivityForLabel(property.label)).getOrElse(1.0)
+      idxLookup.map(_.inverse).map {
+        case sel if property.containedPredicates(labelPredicate) =>
+          sel * calculateSelectivityForLabel(property.label)
+        case sel => sel
+      }.getOrElse(1.0)
 
     // WHERE false
     case SingleExpression(False()) =>
