@@ -17,9 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.impl.index;
 
-public interface ReadOperations extends TokenRead, DataRead, SchemaRead, SchemaState,
-        Locking, LegacyIndexRead, CountsRead, IndexesCountsRead
+import java.io.Closeable;
+
+import org.apache.lucene.search.IndexSearcher;
+
+class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
 {
+     LuceneUniqueIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
+    {
+        super( searcher, documentLogic, onClose );
+     }
+
+    @Override
+    public double uniqueValuesFrequencyInSample( long sampleSize, int frequency )
+    {
+        return 1.0d;
+    }
 }

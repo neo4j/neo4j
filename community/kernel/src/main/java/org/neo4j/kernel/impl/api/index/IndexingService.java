@@ -281,6 +281,21 @@ public class IndexingService extends LifecycleAdapter
         return indexProxy;
     }
 
+    public double indexUniqueValuesPercentage( IndexRule rule ) throws IndexNotFoundKernelException
+    {
+        final long indexId = rule.getId();
+        final IndexProxy indexProxy = indexMapReference.getIndexProxy( indexId );
+        if ( indexProxy == null )
+        {
+            throw new IndexNotFoundKernelException( "No index with id " + indexId + " exists." );
+        }
+
+        // TODO: compute this numbers by looking at the number of indexed entries in a lucene index
+        final int sampleSize = 100000;
+        final int frequency = 50;
+        return indexProxy.newReader().uniqueValuesFrequencyInSample( sampleSize, frequency );
+    }
+
     /*
      * Creates an index.
      *

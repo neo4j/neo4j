@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.api.operations.IndexCountsOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
@@ -58,6 +59,7 @@ public abstract class StatementOperationsTestHelper
             mock( SchemaStateOperations.class ),
             mock( LockOperations.class ),
             mock( CountsOperations.class ),
+            mock( IndexCountsOperations.class ),
             mock( LegacyIndexReadOperations.class ),
             mock( LegacyIndexWriteOperations.class ) );
     }

@@ -47,14 +47,18 @@ public interface IndexReader extends Resource
         }
 
         @Override
+        public double uniqueValuesFrequencyInSample( long sampleSize, int frequency ) { return 1.0d; }
+
+        @Override
         public void close()
         {
         }
     };
 
     /**
-     * Verifies that the given nodeId is indexed with the given property value, and returns true if that's
-     * the case. Returns false otherwise.
+     * Number of nodes indexed by the given property
      */
     int getIndexedCount( long nodeId, Object propertyValue );
+
+    public double uniqueValuesFrequencyInSample( long sampleSize, int frequency );
 }

@@ -25,10 +25,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, NameId, PropertyKeyId, 
 import org.neo4j.kernel.api.{Statement => KernelStatement}
 
 class TransactionBoundGraphStatistics(statement: KernelStatement) extends GraphStatistics {
+  import TransactionBoundGraphStatistics.WILDCARD
   import TransactionBoundGraphStatistics.toKernelEncode
 
   def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
-    HardcodedGraphStatistics.indexSelectivity(label, property)
+    HardcodedGraphStatistics.indexSelectivity(label,property)
 
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
     statement.readOperations().countsForNode(labelId)
@@ -36,7 +37,6 @@ class TransactionBoundGraphStatistics(statement: KernelStatement) extends GraphS
   def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
     (fromLabel, toLabel) match {
       case (Some(_), Some(_)) =>
-        import TransactionBoundGraphStatistics.WILDCARD
         // TODO: read real counts from readOperations when they are gonna be properly computed and updated
         Math.min(
           statement.readOperations().countsForRelationship(fromLabel, relTypeId, WILDCARD ),
@@ -50,7 +50,9 @@ class TransactionBoundGraphStatistics(statement: KernelStatement) extends GraphS
 object TransactionBoundGraphStatistics {
   val WILDCARD: Int = -1
 
-  implicit def toKernelEncode(nameId: Option[NameId]): Int = {
-    nameId.map(_.id).getOrElse(WILDCARD)
-  }
+  private implicit def toKernelEncode(nameId: NameId): Int =
+    nameId.id
+
+  private implicit def toKernelEncode(nameId: Option[NameId]): Int =
+    nameId.map(toKernelEncode).getOrElse(WILDCARD)
 }

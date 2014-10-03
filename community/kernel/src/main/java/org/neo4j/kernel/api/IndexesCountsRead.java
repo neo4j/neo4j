@@ -19,7 +19,16 @@
  */
 package org.neo4j.kernel.api;
 
-public interface ReadOperations extends TokenRead, DataRead, SchemaRead, SchemaState,
-        Locking, LegacyIndexRead, CountsRead, IndexesCountsRead
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+
+public interface IndexesCountsRead
 {
+    /**
+     * Calculate the index unique values percentage
+     *
+     * @param labelId the label of the indexed node
+     * @param propertyKeyId the property name of the indexed node
+     * @return the index unique values percentage
+     */
+    double indexUniqueValuesPercentage( int labelId, int propertyKeyId ) throws IndexNotFoundKernelException;
 }
